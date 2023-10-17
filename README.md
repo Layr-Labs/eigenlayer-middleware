@@ -12,7 +12,7 @@ The EigenLabs dev team has been building out a smart contract architecture for A
 
 ## The Registry Coordinator and Registries
 
-![Registry Architecture](docs/images/registry_architecture.png)
+![Registry Architecture](./docs/images/registry_architecture.png)
 
 There are two things that matter in terms of operators’ onchain interaction with AVS contracts:
 
