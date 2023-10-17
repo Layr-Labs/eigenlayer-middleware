@@ -1,38 +1,47 @@
-name: Run Parallel
+name: Tests
+
+concurrency:
+  cancel-in-progress: true
+  group: ${{github.workflow}}-${{github.ref}}
 
 on:
   push:
+    branches:
+      - master
   pull_request:
-    types: [opened, reopened]
+
+env:
+  FOUNDRY_PROFILE: ci
 
 jobs:
-  prepare:
+  check:
+    strategy:
+      fail-fast: true
+
+    name: Foundry project
     runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
-  run-tests:
-    needs: prepare
-    runs-on: ubuntu-latest
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-    
-    - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
-      with:
-        version: nightly
+      - name: Run Forge build
+        run: |
+          forge --version
+          forge build --sizes
+        id: build
 
-    - name: Install forge dependencies
-      run: forge install
+      - name: Run tests
+        shell: bash
+        run: |
+          forge test --no-match-contract FFI
 
-    - name: Run forge test for the file
-      run: forge test --no-match-contract FFI
-      env:
-        RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
-        CHAIN_ID: ${{ secrets.CHAIN_ID }}
+        env:
+          RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
+          CHAIN_ID: ${{ secrets.CHAIN_ID }}
+        id: test
