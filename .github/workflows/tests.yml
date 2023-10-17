@@ -15,18 +15,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Get list of .t.sol files in src/test
-      run: |
-        FILES=$(find src/test -type f -name '*.t.sol' | sed 's#test/##' | jq -R -s -c 'split("\n")[:-1]')
-        echo "::set-output name=matrix::$FILES"
-      id: set-matrix
-
   run-tests:
     needs: prepare
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        file: ${{fromJson(needs.prepare.outputs.matrix)}}
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -40,7 +32,7 @@ jobs:
       run: forge install
 
     - name: Run forge test for the file
-      run: forge test --match-path src/test/${{ matrix.file }} --no-match-contract FFI
+      run: forge test --no-match-contract FFI
       env:
         RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
         CHAIN_ID: ${{ secrets.CHAIN_ID }}
