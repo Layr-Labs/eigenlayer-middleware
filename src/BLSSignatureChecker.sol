@@ -6,7 +6,7 @@ import {BitmapUtils} from "eigenlayer-contracts/src/contracts/libraries/BitmapUt
 import {BN254} from "eigenlayer-contracts/src/contracts/libraries/BN254.sol";
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
-import {IBLSPubkeyRegistry} from "src/interfaces/IBLSPubKeyRegistry.sol";
+import {IBLSPubkeyRegistry} from "src/interfaces/IBLSPubkeyRegistry.sol";
 import {IBLSRegistryCoordinatorWithIndices} from "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
 
 /**
