@@ -17,7 +17,7 @@ jobs:
 
     - name: Get list of .t.sol files in src/test
       run: |
-        FILES=$(find src/test -type f -name '*.t.sol' | sed 's#src/test/##' | jq -R -s -c 'split("\n")[:-1]')
+        FILES=$(find src/test -type f -name '*.t.sol' | sed 's#test/##' | jq -R -s -c 'split("\n")[:-1]')
         echo "::set-output name=matrix::$FILES"
       id: set-matrix
 
