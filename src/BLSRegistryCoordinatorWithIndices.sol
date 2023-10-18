@@ -349,7 +349,6 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         //     "StakeRegistry._registerOperator: operator must be opted into slashing by the serviceManager"
         // );
         
-        _beforeRegisterOperator(operator, quorumNumbers);
         // get the quorum bitmap from the quorum numbers
         uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
         require(quorumBitmap <= MAX_QUORUM_BITMAP, "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: quorumBitmap exceeds of max bitmap size");
@@ -396,8 +395,6 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
 
             emit OperatorRegistered(operator, operatorId);
         }
-
-        _afterRegisterOperator(operator, quorumNumbers);
 
         // record a stake update not bonding the operator at all (unbonded at 0), because they haven't served anything yet
         // serviceManager.recordFirstStakeUpdate(operator, 0);
@@ -450,8 +447,6 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
 
         // check if the operator is completely deregistering
         bool completeDeregistration = quorumBitmapBeforeUpdate == quorumsToRemoveBitmap;
-        
-        _beforeDeregisterOperator(operator, quorumNumbersToRemove);
 
         // deregister the operator from the BLSPubkeyRegistry
         blsPubkeyRegistry.deregisterOperator(operator, quorumNumbersToRemove, pubkey);
@@ -461,8 +456,6 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
 
         // deregister the operator from the IndexRegistry
         indexRegistry.deregisterOperator(operatorId, quorumNumbersToRemove, operatorIdsToSwap);
-
-        _afterDeregisterOperator(operator, quorumNumbersToRemove);
 
         // set the toBlockNumber of the operator's quorum bitmap update
         _operatorIdToQuorumBitmapHistory[operatorId][operatorQuorumBitmapHistoryLengthMinusOne].nextUpdateBlockNumber = uint32(block.number);
@@ -486,34 +479,6 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
             emit OperatorDeregistered(operator, operatorId);
         }
     }
-
-    /**
-     * @dev Hook that is called before any operator registration to insert additional logic.
-     * @param operator The address of the operator to register.
-     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
-     */
-    function _beforeRegisterOperator(address operator, bytes memory quorumNumbers) internal virtual{} 
-
-    /**
-     * @dev Hook that is called after any operator registration to insert additional logic.
-     * @param operator The address of the operator to register.
-     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
-     */
-    function _afterRegisterOperator(address operator, bytes memory quorumNumbers) internal virtual {}
-    
-    /**
-     * @dev Hook that is called before any operator deregistration to insert additional logic.
-     * @param operator The address of the operator to deregister.
-     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
-     */
-    function _beforeDeregisterOperator(address operator, bytes memory quorumNumbers) internal virtual {}
-
-    /**
-     * @dev Hook that is called after any operator deregistration to insert additional logic.
-     * @param operator The address of the operator to deregister.
-     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
-     */
-    function _afterDeregisterOperator(address operator, bytes memory quorumNumbers) internal virtual {}
 
     /// @notice verifies churnApprover's signature on operator churn approval and increments the churnApprover nonce
     function _verifyChurnApproverSignatureOnOperatorChurnApproval(

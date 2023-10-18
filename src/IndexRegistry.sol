@@ -41,8 +41,6 @@ contract IndexRegistry is IndexRegistryStorage {
         bytes32 operatorId, 
         bytes calldata quorumNumbers
     ) external onlyRegistryCoordinator returns(uint32[] memory) {
-        _beforeRegisterOperator(operatorId, quorumNumbers);
-
         uint32[] memory numOperatorsPerQuorum = new uint32[](quorumNumbers.length);
         //add operator to operatorList
         globalOperatorList.push(operatorId);
@@ -58,7 +56,6 @@ contract IndexRegistry is IndexRegistryStorage {
             numOperatorsPerQuorum[i] = numOperators + 1;
         }
 
-        _afterRegisterOperator(operatorId, quorumNumbers);
         return numOperatorsPerQuorum;
     }
 
@@ -86,16 +83,12 @@ contract IndexRegistry is IndexRegistryStorage {
             "IndexRegistry.deregisterOperator: quorumNumbers and operatorIdsToSwap must be the same length"
         );
 
-        _beforeDeregisterOperator(operatorId, quorumNumbers);
-
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             uint32 indexOfOperatorToRemove = _operatorIdToIndexHistory[operatorId][quorumNumber][_operatorIdToIndexHistory[operatorId][quorumNumber].length - 1].index;
             _processOperatorRemoval(operatorId, quorumNumber, indexOfOperatorToRemove, operatorIdsToSwap[i]);
             _updateTotalOperatorHistory(quorumNumber, _totalOperatorsHistory[quorumNumber][_totalOperatorsHistory[quorumNumber].length - 1].index - 1);
         }
-
-        _afterDeregisterOperator(operatorId, quorumNumbers);
     }
 
     /*******************************************************************************
@@ -157,34 +150,6 @@ contract IndexRegistry is IndexRegistryStorage {
         // setting the index to OPERATOR_DEREGISTERED_INDEX. Note that this is a special meaning, and any other index value represents a real index
         _updateOperatorIdToIndexHistory(operatorId, quorumNumber, OPERATOR_DEREGISTERED_INDEX);
     }
-
-    /**
-     * @dev Hook that is called before any operator registration to insert additional logic.
-     * @param operatorId The id of the operator to register.
-     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
-     */
-    function _beforeRegisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal virtual{} 
-
-    /**
-     * @dev Hook that is called after any operator registration to insert additional logic.
-     * @param operatorId The id of the operator to register.
-     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
-     */
-    function _afterRegisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal virtual {}
-    
-    /**
-     * @dev Hook that is called before any operator deregistration to insert additional logic.
-     * @param operatorId The id of the operator to register.
-     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
-     */
-    function _beforeDeregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal virtual {}
-
-    /**
-     * @dev Hook that is called after any operator deregistration to insert additional logic.
-     * @param operatorId The id of the operator to register.
-     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
-     */
-    function _afterDeregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal virtual {}
 
     /**
      * @notice Returns the total number of operators of the service for the given `quorumNumber` at the given `blockNumber`
