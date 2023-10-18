@@ -126,34 +126,6 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     *******************************************************************************/
 
     /**
-     * @notice Sets parameters of the operator set for the given `quorumNumber`
-     * @param quorumNumber is the quorum number to set the maximum number of operators for
-     * @param operatorSetParam is the parameters of the operator set for the `quorumNumber`
-     * @dev only callable by the service manager owner
-     */
-    function setOperatorSetParams(uint8 quorumNumber, OperatorSetParam memory operatorSetParam) external onlyServiceManagerOwner {
-        _setOperatorSetParams(quorumNumber, operatorSetParam);
-    }
-
-    /**
-     * @notice Sets the churnApprover
-     * @param _churnApprover is the address of the churnApprover
-     * @dev only callable by the service manager owner
-     */
-    function setChurnApprover(address _churnApprover) external onlyServiceManagerOwner {
-        _setChurnApprover(_churnApprover);
-    }
-
-    /**
-     * @notice Sets the ejector
-     * @param _ejector is the address of the ejector
-     * @dev only callable by the service manager owner
-     */
-    function setEjector(address _ejector) external onlyServiceManagerOwner {
-        _setEjector(_ejector);
-    }
-
-    /**
      * @notice Registers msg.sender as an operator with the middleware
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
      * @param registrationData is the data that is decoded to get the operator's registration information
@@ -295,6 +267,19 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     }
 
     /**
+     * @notice Updates the socket of the msg.sender given they are a registered operator
+     * @param socket is the new socket of the operator
+     */
+    function updateSocket(string memory socket) external {
+        require(_operators[msg.sender].status == OperatorStatus.REGISTERED, "BLSRegistryCoordinatorWithIndicies.updateSocket: operator is not registered");
+        emit OperatorSocketUpdate(_operators[msg.sender].operatorId, socket);
+    }
+
+    /*******************************************************************************
+                            EXTERNAL FUNCTIONS - EJECTOR
+    *******************************************************************************/
+
+    /**
      * @notice Ejects the provided operator from the provided quorums from the AVS
      * @param operator is the operator to eject
      * @param quorumNumbers are the quorum numbers to eject the operator from
@@ -313,13 +298,36 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         _deregisterOperatorWithCoordinator(operator, quorumNumbers, pubkey, operatorIdsToSwap);
     }
 
+    /*******************************************************************************
+                    EXTERNAL FUNCTIONS - SERVICE MANAGER OWNER
+    *******************************************************************************/
+
     /**
-     * @notice Updates the socket of the msg.sender given they are a registered operator
-     * @param socket is the new socket of the operator
+     * @notice Sets parameters of the operator set for the given `quorumNumber`
+     * @param quorumNumber is the quorum number to set the maximum number of operators for
+     * @param operatorSetParam is the parameters of the operator set for the `quorumNumber`
+     * @dev only callable by the service manager owner
      */
-    function updateSocket(string memory socket) external {
-        require(_operators[msg.sender].status == OperatorStatus.REGISTERED, "BLSRegistryCoordinatorWithIndicies.updateSocket: operator is not registered");
-        emit OperatorSocketUpdate(_operators[msg.sender].operatorId, socket);
+    function setOperatorSetParams(uint8 quorumNumber, OperatorSetParam memory operatorSetParam) external onlyServiceManagerOwner {
+        _setOperatorSetParams(quorumNumber, operatorSetParam);
+    }
+
+    /**
+     * @notice Sets the churnApprover
+     * @param _churnApprover is the address of the churnApprover
+     * @dev only callable by the service manager owner
+     */
+    function setChurnApprover(address _churnApprover) external onlyServiceManagerOwner {
+        _setChurnApprover(_churnApprover);
+    }
+
+    /**
+     * @notice Sets the ejector
+     * @param _ejector is the address of the ejector
+     * @dev only callable by the service manager owner
+     */
+    function setEjector(address _ejector) external onlyServiceManagerOwner {
+        _setEjector(_ejector);
     }
 
     /*******************************************************************************

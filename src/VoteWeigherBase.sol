@@ -35,7 +35,7 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
     ) VoteWeigherBaseStorage(_strategyManager, _serviceManager) {}
 
     /*******************************************************************************
-                            EXTERNAL FUNCTIONS 
+                    EXTERNAL FUNCTIONS - SERVICE MANAGER OWNER
     *******************************************************************************/
 
     /// @notice Create a new quorum and add the strategies and their associated weights to the quorum.

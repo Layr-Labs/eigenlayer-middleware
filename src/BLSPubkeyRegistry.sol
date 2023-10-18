@@ -23,7 +23,7 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
     ) BLSPubkeyRegistryStorage(_registryCoordinator, _pubkeyCompendium) {}
 
     /*******************************************************************************
-                            EXTERNAL FUNCTIONS 
+                      EXTERNAL FUNCTIONS - REGISTRY COORDINATOR
     *******************************************************************************/
 
     /**

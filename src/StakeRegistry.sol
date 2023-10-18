@@ -73,58 +73,6 @@ contract StakeRegistry is StakeRegistryStorage {
                             EXTERNAL FUNCTIONS 
     *******************************************************************************/
 
-    /// @notice Adjusts the `minimumStakeFirstQuorum` -- i.e. the node stake (weight) requirement for inclusion in the 1st quorum.
-    function setMinimumStakeForQuorum(uint8 quorumNumber, uint96 minimumStake) external onlyServiceManagerOwner {
-        _setMinimumStakeForQuorum(quorumNumber, minimumStake);
-    }
-
-    /**
-     * @notice Registers the `operator` with `operatorId` for the specified `quorumNumbers`.
-     * @param operator The address of the operator to register.
-     * @param operatorId The id of the operator to register.
-     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
-     * @dev access restricted to the RegistryCoordinator
-     * @dev Preconditions (these are assumed, not validated in this contract):
-     *         1) `quorumNumbers` has no duplicates
-     *         2) `quorumNumbers.length` != 0
-     *         3) `quorumNumbers` is ordered in ascending order
-     *         4) the operator is not already registered
-     */
-    function registerOperator(
-        address operator,
-        bytes32 operatorId,
-        bytes calldata quorumNumbers
-    ) external virtual onlyRegistryCoordinator {
-        _beforeRegisterOperator(operator, operatorId, quorumNumbers);
-
-        _registerOperator(operator, operatorId, quorumNumbers);
-
-        _afterRegisterOperator(operator, operatorId, quorumNumbers);
-    }
-
-    /**
-     * @notice Deregisters the operator with `operatorId` for the specified `quorumNumbers`.
-     * @param operatorId The id of the operator to deregister.
-     * @param quorumNumbers The quorum numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
-     * @dev access restricted to the RegistryCoordinator
-     * @dev Preconditions (these are assumed, not validated in this contract):
-     *         1) `quorumNumbers` has no duplicates
-     *         2) `quorumNumbers.length` != 0
-     *         3) `quorumNumbers` is ordered in ascending order
-     *         4) the operator is not already deregistered
-     *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
-     */
-    function deregisterOperator(
-        bytes32 operatorId,
-        bytes calldata quorumNumbers
-    ) external virtual onlyRegistryCoordinator {
-        _beforeDeregisterOperator(operatorId, quorumNumbers);
-
-        _deregisterOperator(operatorId, quorumNumbers);
-
-        _afterDeregisterOperator(operatorId, quorumNumbers);
-    }
-
     /**
      * @notice Used for updating information on deposits of nodes.
      * @param operators are the addresses of the operators whose stake information is getting updated
@@ -182,6 +130,66 @@ contract StakeRegistry is StakeRegistryStorage {
         //         ++i;
         //     }
         // }
+    }
+
+    /*******************************************************************************
+                      EXTERNAL FUNCTIONS - REGISTRY COORDINATOR
+    *******************************************************************************/
+
+    /**
+     * @notice Registers the `operator` with `operatorId` for the specified `quorumNumbers`.
+     * @param operator The address of the operator to register.
+     * @param operatorId The id of the operator to register.
+     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
+     * @dev access restricted to the RegistryCoordinator
+     * @dev Preconditions (these are assumed, not validated in this contract):
+     *         1) `quorumNumbers` has no duplicates
+     *         2) `quorumNumbers.length` != 0
+     *         3) `quorumNumbers` is ordered in ascending order
+     *         4) the operator is not already registered
+     */
+    function registerOperator(
+        address operator,
+        bytes32 operatorId,
+        bytes calldata quorumNumbers
+    ) external virtual onlyRegistryCoordinator {
+        _beforeRegisterOperator(operator, operatorId, quorumNumbers);
+
+        _registerOperator(operator, operatorId, quorumNumbers);
+
+        _afterRegisterOperator(operator, operatorId, quorumNumbers);
+    }
+
+    /**
+     * @notice Deregisters the operator with `operatorId` for the specified `quorumNumbers`.
+     * @param operatorId The id of the operator to deregister.
+     * @param quorumNumbers The quorum numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
+     * @dev access restricted to the RegistryCoordinator
+     * @dev Preconditions (these are assumed, not validated in this contract):
+     *         1) `quorumNumbers` has no duplicates
+     *         2) `quorumNumbers.length` != 0
+     *         3) `quorumNumbers` is ordered in ascending order
+     *         4) the operator is not already deregistered
+     *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
+     */
+    function deregisterOperator(
+        bytes32 operatorId,
+        bytes calldata quorumNumbers
+    ) external virtual onlyRegistryCoordinator {
+        _beforeDeregisterOperator(operatorId, quorumNumbers);
+
+        _deregisterOperator(operatorId, quorumNumbers);
+
+        _afterDeregisterOperator(operatorId, quorumNumbers);
+    }
+
+    /*******************************************************************************
+                    EXTERNAL FUNCTIONS - SERVICE MANAGER OWNER
+    *******************************************************************************/
+
+    /// @notice Adjusts the `minimumStakeFirstQuorum` -- i.e. the node stake (weight) requirement for inclusion in the 1st quorum.
+    function setMinimumStakeForQuorum(uint8 quorumNumber, uint96 minimumStake) external onlyServiceManagerOwner {
+        _setMinimumStakeForQuorum(quorumNumber, minimumStake);
     }
 
     /*******************************************************************************

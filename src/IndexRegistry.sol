@@ -22,7 +22,7 @@ contract IndexRegistry is IndexRegistryStorage {
     ) IndexRegistryStorage(_registryCoordinator) {}
 
     /*******************************************************************************
-                            EXTERNAL FUNCTIONS 
+                      EXTERNAL FUNCTIONS - REGISTRY COORDINATOR
     *******************************************************************************/
 
     /**
