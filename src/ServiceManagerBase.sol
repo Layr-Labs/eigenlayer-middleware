@@ -5,11 +5,11 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {BLSSignatureChecker} from "src/BLSSignatureChecker.sol";
 import {IBLSRegistryCoordinatorWithIndices} from "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
+import {IServiceManager} from "src/interfaces/IServiceManager.sol";
+
 import {Pausable} from "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
-
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
-import {IServiceManager} from "eigenlayer-contracts/src/contracts/interfaces/IServiceManager.sol";
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 
@@ -84,7 +84,7 @@ abstract contract ServiceManagerBase is
     // PROXY CALLS TO EQUIVALENT SLASHER FUNCTIONS
 
     /**
-     * @notice Called by the Registry in the event of a new registration, to forward a call to the Slasher
+     * @notice Called by the registryCoordinator in the event of a new registration, to forward a call to the Slasher
      * @param operator The operator whose stake is being updated
      */
     function recordFirstStakeUpdate(
@@ -97,7 +97,7 @@ abstract contract ServiceManagerBase is
     /**
      * @notice Called by the registryCoordinator, in order to forward a call to the Slasher, informing it of a stake update
      * @param operator The operator whose stake is being updated
-     * @param updateBlock The block at which the update is being made
+     * @param updateBlock The block at which the update is/was made (<= current block)
      * @param prevElement The value of the previous element in the linked list of stake updates (generated offchain)
      */
     function recordStakeUpdate(
