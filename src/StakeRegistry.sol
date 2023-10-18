@@ -152,7 +152,7 @@ contract StakeRegistry is StakeRegistryStorage {
         address operator,
         bytes32 operatorId,
         bytes calldata quorumNumbers
-    ) external virtual onlyRegistryCoordinator {
+    ) public virtual onlyRegistryCoordinator {
         // check the operator is registering for only valid quorums
         require(
             uint8(quorumNumbers[quorumNumbers.length - 1]) < quorumCount,
@@ -210,7 +210,7 @@ contract StakeRegistry is StakeRegistryStorage {
     function deregisterOperator(
         bytes32 operatorId,
         bytes calldata quorumNumbers
-    ) external virtual onlyRegistryCoordinator {
+    ) public virtual onlyRegistryCoordinator {
         OperatorStakeUpdate memory _operatorStakeUpdate;
         // add the `updateBlockNumber` info
         _operatorStakeUpdate.updateBlockNumber = uint32(block.number);
