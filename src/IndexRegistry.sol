@@ -37,7 +37,10 @@ contract IndexRegistry is IndexRegistryStorage {
      *         3) `quorumNumbers` is ordered in ascending order
      *         4) the operator is not already registered
      */
-    function registerOperator(bytes32 operatorId, bytes calldata quorumNumbers) external onlyRegistryCoordinator returns(uint32[] memory) {
+    function registerOperator(
+        bytes32 operatorId, 
+        bytes calldata quorumNumbers
+    ) external onlyRegistryCoordinator returns(uint32[] memory) {
         _beforeRegisterOperator(operatorId, quorumNumbers);
 
         uint32[] memory numOperatorsPerQuorum = new uint32[](quorumNumbers.length);
@@ -188,7 +191,10 @@ contract IndexRegistry is IndexRegistryStorage {
      * @dev Returns zero if the @param blockNumber is from before the @param quorumNumber existed, and returns the current number 
      * of total operators if the @param blockNumber is in the future.
      */
-    function _getTotalOperatorsForQuorumAtBlockNumber(uint8 quorumNumber, uint32 blockNumber) internal view returns (uint32){
+    function _getTotalOperatorsForQuorumAtBlockNumber(
+        uint8 quorumNumber, 
+        uint32 blockNumber
+    ) internal view returns (uint32){
         // store list length in memory
         uint256 totalOperatorsHistoryLength = _totalOperatorsHistory[quorumNumber].length;
         // if there are no entries in the total operator history, return 0
@@ -217,7 +223,11 @@ contract IndexRegistry is IndexRegistryStorage {
      * @notice Returns the index of the `operatorId` at the given `blockNumber` for the given `quorumNumber`, or
      * `OPERATOR_DEREGISTERED_INDEX` if the operator was not registered for the `quorumNumber` at blockNumber
      */
-    function _getIndexOfOperatorForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber) internal view returns(uint32) {
+    function _getIndexOfOperatorForQuorumAtBlockNumber(
+        bytes32 operatorId, 
+        uint8 quorumNumber, 
+        uint32 blockNumber
+    ) internal view returns(uint32) {
         uint256 operatorIndexHistoryLength = _operatorIdToIndexHistory[operatorId][quorumNumber].length;
         // loop backward through index history to find the index of the operator at the given block number
         for (uint256 i = 0; i < operatorIndexHistoryLength; i++) {
@@ -327,7 +337,10 @@ contract IndexRegistry is IndexRegistryStorage {
     }
 
     /// @notice Returns an ordered list of operators of the services for the given `quorumNumber` at the given `blockNumber`
-    function getOperatorListForQuorumAtBlockNumber(uint8 quorumNumber, uint32 blockNumber) external view returns (bytes32[] memory){
+    function getOperatorListForQuorumAtBlockNumber(
+        uint8 quorumNumber, 
+        uint32 blockNumber
+    ) external view returns (bytes32[] memory){
         bytes32[] memory quorumOperatorList = new bytes32[](_getTotalOperatorsForQuorumAtBlockNumber(quorumNumber, blockNumber));
         for (uint256 i = 0; i < globalOperatorList.length; i++) {
             bytes32 operatorId = globalOperatorList[i];

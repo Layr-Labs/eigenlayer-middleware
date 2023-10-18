@@ -184,10 +184,10 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
     }
 
     /// @notice Returns the strategy and weight multiplier for the `index`'th strategy in the quorum `quorumNumber`
-    function strategyAndWeightingMultiplierForQuorumByIndex(uint8 quorumNumber, uint256 index)
-        public
-        view
-        returns (StrategyAndWeightingMultiplier memory)
+    function strategyAndWeightingMultiplierForQuorumByIndex(
+        uint8 quorumNumber, 
+        uint256 index
+    ) public view returns (StrategyAndWeightingMultiplier memory)
     {
         return strategiesConsideredAndMultipliers[quorumNumber][index];
     }
@@ -196,7 +196,10 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
      * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
      * @dev reverts in the case that `quorumNumber` is greater than or equal to `quorumCount`
      */
-    function weightOfOperatorForQuorumView(uint8 quorumNumber, address operator) public virtual view validQuorumNumber(quorumNumber) returns (uint96) {
+    function weightOfOperatorForQuorumView(
+        uint8 quorumNumber, 
+        address operator
+    ) public virtual view validQuorumNumber(quorumNumber) returns (uint96) {
         uint96 weight;
         uint256 stratsLength = strategiesConsideredAndMultipliersLength(quorumNumber);
         StrategyAndWeightingMultiplier memory strategyAndMultiplier;
@@ -226,7 +229,10 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
      * @dev reverts in the case that `quorumNumber` is greater than or equal to `quorumCount`
      * @dev a version of weightOfOperatorForQuorumView that can change state if needed
      */
-    function weightOfOperatorForQuorum(uint8 quorumNumber, address operator) public virtual validQuorumNumber(quorumNumber) returns (uint96) {
+    function weightOfOperatorForQuorum(
+        uint8 quorumNumber, 
+        address operator
+    ) public virtual validQuorumNumber(quorumNumber) returns (uint96) {
         return weightOfOperatorForQuorumView(quorumNumber, operator);
     }
 }

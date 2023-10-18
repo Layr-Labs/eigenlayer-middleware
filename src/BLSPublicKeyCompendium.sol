@@ -27,7 +27,11 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
      * @param pubkeyG1 is the corresponding G1 public key of the operator 
      * @param pubkeyG2 is the corresponding G2 public key of the operator
      */
-    function registerBLSPublicKey(BN254.G1Point memory signedMessageHash, BN254.G1Point memory pubkeyG1, BN254.G2Point memory pubkeyG2) external {
+    function registerBLSPublicKey(
+        BN254.G1Point memory signedMessageHash, 
+        BN254.G1Point memory pubkeyG1, 
+        BN254.G2Point memory pubkeyG2
+    ) external {
         bytes32 pubkeyHash = BN254.hashG1Point(pubkeyG1);
         require(
             operatorToPubkeyHash[msg.sender] == bytes32(0),

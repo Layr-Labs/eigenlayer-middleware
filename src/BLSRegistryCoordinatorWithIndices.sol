@@ -308,7 +308,10 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
      * @param operatorSetParam is the parameters of the operator set for the `quorumNumber`
      * @dev only callable by the service manager owner
      */
-    function setOperatorSetParams(uint8 quorumNumber, OperatorSetParam memory operatorSetParam) external onlyServiceManagerOwner {
+    function setOperatorSetParams(
+        uint8 quorumNumber, 
+        OperatorSetParam memory operatorSetParam
+    ) external onlyServiceManagerOwner {
         _setOperatorSetParams(quorumNumber, operatorSetParam);
     }
 
@@ -334,23 +337,13 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
                             INTERNAL FUNCTIONS
     *******************************************************************************/
 
-    function _setOperatorSetParams(uint8 quorumNumber, OperatorSetParam memory operatorSetParam) internal {
-        _quorumOperatorSetParams[quorumNumber] = operatorSetParam;
-        emit OperatorSetParamsUpdated(quorumNumber, operatorSetParam);
-    }
-    
-    function _setChurnApprover(address newChurnApprover) internal {
-        emit ChurnApproverUpdated(churnApprover, newChurnApprover);
-        churnApprover = newChurnApprover;
-    }
-
-    function _setEjector(address newEjector) internal {
-        emit EjectorUpdated(ejector, newEjector);
-        ejector = newEjector;
-    }
-
     /// @return numOperatorsPerQuorum is the list of number of operators per quorum in quorumNumberss
-    function _registerOperatorWithCoordinator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey, string memory socket) internal returns(uint32[] memory) {
+    function _registerOperatorWithCoordinator(
+        address operator, 
+        bytes calldata quorumNumbers, 
+        BN254.G1Point memory pubkey, 
+        string memory socket
+    ) internal returns(uint32[] memory) {
         // require(
         //     slasher.contractCanSlashOperatorUntilBlock(operator, address(serviceManager)) == type(uint32).max,
         //     "StakeRegistry._registerOperator: operator must be opted into slashing by the serviceManager"
@@ -414,7 +407,12 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         return numOperatorsPerQuorum;
     }
 
-    function _registerOperatorWithCoordinatorAndNoOverfilledQuorums(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey, string memory socket) internal {
+    function _registerOperatorWithCoordinatorAndNoOverfilledQuorums(
+        address operator, 
+        bytes calldata quorumNumbers, 
+        BN254.G1Point memory pubkey, 
+        string memory socket
+    ) internal {
         uint32[] memory numOperatorsPerQuorum = _registerOperatorWithCoordinator(operator, quorumNumbers, pubkey, socket);
         for (uint i = 0; i < numOperatorsPerQuorum.length; i++) {
             require(
@@ -424,7 +422,12 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         }
     }
 
-    function _deregisterOperatorWithCoordinator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap) internal {
+    function _deregisterOperatorWithCoordinator(
+        address operator, 
+        bytes calldata quorumNumbers, 
+        BN254.G1Point memory pubkey, 
+        bytes32[] memory operatorIdsToSwap
+    ) internal {
         require(_operators[operator].status == OperatorStatus.REGISTERED, "BLSRegistryCoordinatorWithIndices._deregisterOperatorWithCoordinator: operator is not registered");
 
         // get the operatorId of the operator
@@ -513,7 +516,11 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     function _afterDeregisterOperator(address operator, bytes memory quorumNumbers) internal virtual {}
 
     /// @notice verifies churnApprover's signature on operator churn approval and increments the churnApprover nonce
-    function _verifyChurnApproverSignatureOnOperatorChurnApproval(bytes32 registeringOperatorId, OperatorKickParam[] memory operatorKickParams, SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry) internal {
+    function _verifyChurnApproverSignatureOnOperatorChurnApproval(
+        bytes32 registeringOperatorId, 
+        OperatorKickParam[] memory operatorKickParams, 
+        SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry
+    ) internal {
         // make sure the salt hasn't been used already
         require(!isChurnApproverSaltUsed[signatureWithSaltAndExpiry.salt], "BLSRegistryCoordinatorWithIndices._verifyChurnApproverSignatureOnOperatorChurnApproval: churnApprover salt already used");
         require(signatureWithSaltAndExpiry.expiry >= block.timestamp, "BLSRegistryCoordinatorWithIndices._verifyChurnApproverSignatureOnOperatorChurnApproval: churnApprover signature expired");   
@@ -523,6 +530,21 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
 
         // check the churnApprover's signature 
         EIP1271SignatureUtils.checkSignature_EIP1271(churnApprover, calculateOperatorChurnApprovalDigestHash(registeringOperatorId, operatorKickParams, signatureWithSaltAndExpiry.salt, signatureWithSaltAndExpiry.expiry), signatureWithSaltAndExpiry.signature);
+    }
+
+    function _setOperatorSetParams(uint8 quorumNumber, OperatorSetParam memory operatorSetParam) internal {
+        _quorumOperatorSetParams[quorumNumber] = operatorSetParam;
+        emit OperatorSetParamsUpdated(quorumNumber, operatorSetParam);
+    }
+    
+    function _setChurnApprover(address newChurnApprover) internal {
+        emit ChurnApproverUpdated(churnApprover, newChurnApprover);
+        churnApprover = newChurnApprover;
+    }
+
+    function _setEjector(address newEjector) internal {
+        emit EjectorUpdated(ejector, newEjector);
+        ejector = newEjector;
     }
 
     /*******************************************************************************
@@ -555,7 +577,10 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     }
 
     /// @notice Returns the indices of the quorumBitmaps for the provided `operatorIds` at the given `blockNumber`
-    function getQuorumBitmapIndicesByOperatorIdsAtBlockNumber(uint32 blockNumber, bytes32[] memory operatorIds) external view returns (uint32[] memory) {
+    function getQuorumBitmapIndicesByOperatorIdsAtBlockNumber(
+        uint32 blockNumber, 
+        bytes32[] memory operatorIds
+    ) external view returns (uint32[] memory) {
         uint32[] memory indices = new uint32[](operatorIds.length);
         for (uint256 i = 0; i < operatorIds.length; i++) {
             uint32 length = uint32(_operatorIdToQuorumBitmapHistory[operatorIds[i]].length);
@@ -578,7 +603,11 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
      * @notice Returns the quorum bitmap for the given `operatorId` at the given `blockNumber` via the `index`
      * @dev reverts if `index` is incorrect 
      */ 
-    function getQuorumBitmapByOperatorIdAtBlockNumberByIndex(bytes32 operatorId, uint32 blockNumber, uint256 index) external view returns (uint192) {
+    function getQuorumBitmapByOperatorIdAtBlockNumberByIndex(
+        bytes32 operatorId, 
+        uint32 blockNumber, 
+        uint256 index
+    ) external view returns (uint192) {
         QuorumBitmapUpdate memory quorumBitmapUpdate = _operatorIdToQuorumBitmapHistory[operatorId][index];
         require(
             quorumBitmapUpdate.updateBlockNumber <= blockNumber, 
@@ -594,7 +623,10 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     }
 
     /// @notice Returns the `index`th entry in the operator with `operatorId`'s bitmap history
-    function getQuorumBitmapUpdateByOperatorIdByIndex(bytes32 operatorId, uint256 index) external view returns (QuorumBitmapUpdate memory) {
+    function getQuorumBitmapUpdateByOperatorIdByIndex(
+        bytes32 operatorId, 
+        uint256 index
+    ) external view returns (QuorumBitmapUpdate memory) {
         return _operatorIdToQuorumBitmapHistory[operatorId][index];
     }
 

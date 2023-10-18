@@ -429,7 +429,10 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param operatorId The id of the operator of interest.
      * @param quorumNumber The quorum number to get the stake for.
      */
-     function getOperatorIdToStakeHistory(bytes32 operatorId, uint8 quorumNumber) external view returns (OperatorStakeUpdate[] memory) {
+     function getOperatorIdToStakeHistory(
+        bytes32 operatorId, 
+        uint8 quorumNumber
+    ) external view returns (OperatorStakeUpdate[] memory) {
         return operatorIdToStakeHistory[operatorId][quorumNumber];
     }
 
