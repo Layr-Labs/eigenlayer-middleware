@@ -377,7 +377,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         bytes calldata quorumNumbers, 
         BN254.G1Point memory pubkey, 
         string memory socket
-    ) internal returns(uint32[] memory) {
+    ) internal virtual returns(uint32[] memory) {
         // require(
         //     slasher.contractCanSlashOperatorUntilBlock(operator, address(serviceManager)) == type(uint32).max,
         //     "StakeRegistry._registerOperator: operator must be opted into slashing by the serviceManager"
@@ -464,7 +464,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         bytes calldata quorumNumbers, 
         BN254.G1Point memory pubkey, 
         bytes32[] memory operatorIdsToSwap
-    ) internal {
+    ) internal virtual {
         require(_operators[operator].status == OperatorStatus.REGISTERED, "BLSRegistryCoordinatorWithIndices._deregisterOperatorWithCoordinator: operator is not registered");
 
         // get the operatorId of the operator
