@@ -363,8 +363,8 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         }
 
         uint256[3] memory amountsBefore;
-        amountsBefore[0] = stakeRegistry.weightOfOperatorForQuorumView(0, operator);
-        amountsBefore[1] = stakeRegistry.weightOfOperatorForQuorumView(1, operator);
+        amountsBefore[0] = stakeRegistry.weightOfOperatorForQuorum(0, operator);
+        amountsBefore[1] = stakeRegistry.weightOfOperatorForQuorum(1, operator);
         amountsBefore[2] = delegation.operatorShares(operator, wethStrat);
 
         //making additional deposits to the strategies
@@ -381,8 +381,8 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             uint256 stakerEthWeight = strategyManager.stakerStrategyShares(staker, updatedStrategies[0]);
             uint256 stakerEigenWeight = strategyManager.stakerStrategyShares(staker, updatedStrategies[1]);
 
-            uint256 operatorEthWeightAfter = stakeRegistry.weightOfOperatorForQuorumView(0, operator);
-            uint256 operatorEigenWeightAfter = stakeRegistry.weightOfOperatorForQuorumView(1, operator);
+            uint256 operatorEthWeightAfter = stakeRegistry.weightOfOperatorForQuorum(0, operator);
+            uint256 operatorEigenWeightAfter = stakeRegistry.weightOfOperatorForQuorum(1, operator);
 
             assertTrue(
                 operatorEthWeightAfter - amountsBefore[0] == stakerEthWeight,
