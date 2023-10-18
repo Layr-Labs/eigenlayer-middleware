@@ -1,0 +1,8 @@
+{
+    "importFilesToOrigRelpaths": {},
+    "primary_contract": "BLSRegistryCoordinatorWithIndicesHarness",
+    "specfile": "/Users/Jeffrey/Desktop/eigenlayer-middleware.nosync/certora/specs/BLSRegistryCoordinatorWithIndices.spec",
+    "specfileOrigRelpath": "certora/specs/BLSRegistryCoordinatorWithIndices.spec",
+    "specfilesToImportDecls": {},
+    "type": "spec"
+}

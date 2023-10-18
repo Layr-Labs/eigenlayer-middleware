@@ -1,0 +1,36 @@
+Saving last configuration file to .certora_internal/23_10_18_12_29_48_001/run.conf
+There is no TAC file. Going to script EVMVerifier/certoraBuild.py to main_with_args()
+Creating dir /Users/Jeffrey/Desktop/eigenlayer-middleware.nosync/.certora_internal/23_10_18_12_29_48_001/.certora_config
+In /Users/Jeffrey/Desktop/eigenlayer-middleware.nosync/certora/specs/BLSRegistryCoordinatorWithIndices.spec, found the imports: []
+copying spec file /Users/Jeffrey/Desktop/eigenlayer-middleware.nosync/certora/specs/BLSRegistryCoordinatorWithIndices.spec to /Users/Jeffrey/Desktop/eigenlayer-middleware.nosync/.certora_internal/23_10_18_12_29_48_001/.certora_sources/.0_BLSRegistryCoordinatorWithIndices.spec.spec
+In /Users/Jeffrey/Desktop/eigenlayer-middleware.nosync/certora/specs/BLSRegistryCoordinatorWithIndices.spec, found the imports: []
+writing /Users/Jeffrey/Desktop/eigenlayer-middleware.nosync/.certora_internal/23_10_18_12_29_48_001/.certora_verify.json
+writing /Users/Jeffrey/Desktop/eigenlayer-middleware.nosync/.certora_internal/23_10_18_12_29_48_001/.certora_verify.cvl1.json
+Path to typechecker is /Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/certora_jars/Typechecker.jar
+running ['java', '-jar', '/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/certora_jars/Typechecker.jar', '-buildDirectory', '/Users/Jeffrey/Desktop/eigenlayer-middleware.nosync/.certora_internal/23_10_18_12_29_48_001']
+
+building file certora/harnesses/BLSRegistryCoordinatorWithIndicesHarness.sol
+Running cmd /Library/Frameworks/Python.framework/Versions/3.11/bin/solc -o "/Users/Jeffrey/Desktop/eigenlayer-middleware.nosync/.certora_internal/23_10_18_12_29_48_001/.certora_config/BLSRegistryCoordinatorWithIndicesHarness.sol_0/" --overwrite --allow-paths "/Users/Jeffrey/Desktop/eigenlayer-middleware.nosync","lib/eigenlayer-contracts/lib/openzeppelin-contracts-upgradeable","lib/eigenlayer-contracts/lib/openzeppelin-contracts",. --standard-json
+stdout, stderr = /Users/Jeffrey/Desktop/eigenlayer-middleware.nosync/.certora_internal/23_10_18_12_29_48_001/.certora_config/BLSRegistryCoordinatorWithIndicesHarness.sol_0.standard.json.stdout, /Users/Jeffrey/Desktop/eigenlayer-middleware.nosync/.certora_internal/23_10_18_12_29_48_001/.certora_config/BLSRegistryCoordinatorWithIndicesHarness.sol_0.standard.json.stderr
+Exitcode 0
+Solc run /Library/Frameworks/Python.framework/Versions/3.11/bin/solc -o "/Users/Jeffrey/Desktop/eigenlayer-middleware.nosync/.certora_internal/23_10_18_12_29_48_001/.certora_config/BLSRegistryCoordinatorWithIndicesHarness.sol_0/" --overwrite --allow-paths "/Users/Jeffrey/Desktop/eigenlayer-middleware.nosync","lib/eigenlayer-contracts/lib/openzeppelin-contracts-upgradeable","lib/eigenlayer-contracts/lib/openzeppelin-contracts",. --standard-json time: 0.1383
+reading standard json data from /Users/Jeffrey/Desktop/eigenlayer-middleware.nosync/.certora_internal/23_10_18_12_29_48_001/.certora_config/BLSRegistryCoordinatorWithIndicesHarness.sol_0.standard.json.stdout
+build failed
+Failure traceback: 
+Shared.certoraUtils.CertoraUserInputError: /Library/Frameworks/Python.framework/Versions/3.11/bin/solc had an error:
+ParserError: Source "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol" not found: File not found. Searched the following locations: "".
+ --> /Users/Jeffrey/Desktop/eigenlayer-middleware.nosync/certora/munged/BLSRegistryCoordinatorWithIndices.sol:7:1:
+  |
+7 | import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Encountered an error running Certora Prover:
+/Library/Frameworks/Python.framework/Versions/3.11/bin/solc had an error:
+ParserError: Source "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol" not found: File not found. Searched the following locations: "".
+ --> /Users/Jeffrey/Desktop/eigenlayer-middleware.nosync/certora/munged/BLSRegistryCoordinatorWithIndices.sol:7:1:
+  |
+7 | import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
