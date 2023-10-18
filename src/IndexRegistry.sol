@@ -51,8 +51,15 @@ contract IndexRegistry is IndexRegistryStorage {
             //this is the would-be index of the operator being registered, the total number of operators for that quorum (which is last index + 1)
             uint256 quorumHistoryLength = _totalOperatorsHistory[quorumNumber].length;
             uint32 numOperators = quorumHistoryLength > 0 ? _totalOperatorsHistory[quorumNumber][quorumHistoryLength - 1].index : 0;
-            _updateOperatorIdToIndexHistory(operatorId, quorumNumber, numOperators);
-            _updateTotalOperatorHistory(quorumNumber, numOperators + 1);
+            _updateOperatorIdToIndexHistory({
+                operatorId: operatorId, 
+                quorumNumber: quorumNumber, 
+                index: numOperators
+            });
+            _updateTotalOperatorHistory({
+                quorumNumber: quorumNumber, 
+                numOperators: numOperators + 1
+            });
             numOperatorsPerQuorum[i] = numOperators + 1;
         }
 
@@ -86,8 +93,16 @@ contract IndexRegistry is IndexRegistryStorage {
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             uint32 indexOfOperatorToRemove = _operatorIdToIndexHistory[operatorId][quorumNumber][_operatorIdToIndexHistory[operatorId][quorumNumber].length - 1].index;
-            _processOperatorRemoval(operatorId, quorumNumber, indexOfOperatorToRemove, operatorIdsToSwap[i]);
-            _updateTotalOperatorHistory(quorumNumber, _totalOperatorsHistory[quorumNumber][_totalOperatorsHistory[quorumNumber].length - 1].index - 1);
+            _processOperatorRemoval({
+                operatorId: operatorId, 
+                quorumNumber: quorumNumber, 
+                indexOfOperatorToRemove: indexOfOperatorToRemove, 
+                operatorIdToSwap: operatorIdsToSwap[i]
+            });
+            _updateTotalOperatorHistory({
+                quorumNumber: quorumNumber, 
+                numOperators: _totalOperatorsHistory[quorumNumber][_totalOperatorsHistory[quorumNumber].length - 1].index - 1
+            });
         }
     }
 
@@ -144,11 +159,19 @@ contract IndexRegistry is IndexRegistryStorage {
         // if the operator is not the last in the list, we must swap the last operator into their positon
         if (operatorId != operatorIdToSwap) {
             //update the swapped operator's operatorIdToIndexHistory list with a new entry, as their index has now changed
-            _updateOperatorIdToIndexHistory(operatorIdToSwap, quorumNumber, indexOfOperatorToRemove);
+            _updateOperatorIdToIndexHistory({
+                operatorId: operatorIdToSwap, 
+                quorumNumber: quorumNumber, 
+                index: indexOfOperatorToRemove
+            });
         } 
         // marking the final entry in the deregistering operator's operatorIdToIndexHistory entry with the deregistration block number, 
         // setting the index to OPERATOR_DEREGISTERED_INDEX. Note that this is a special meaning, and any other index value represents a real index
-        _updateOperatorIdToIndexHistory(operatorId, quorumNumber, OPERATOR_DEREGISTERED_INDEX);
+        _updateOperatorIdToIndexHistory({
+            operatorId: operatorId, 
+            quorumNumber: quorumNumber, 
+            index: OPERATOR_DEREGISTERED_INDEX
+        });
     }
 
     /**

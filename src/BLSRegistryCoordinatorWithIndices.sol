@@ -138,7 +138,12 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         // get the operator's BLS public key
         (BN254.G1Point memory pubkey, string memory socket) = abi.decode(registrationData, (BN254.G1Point, string));
         // call internal function to register the operator
-        _registerOperatorWithCoordinatorAndNoOverfilledQuorums(msg.sender, quorumNumbers, pubkey, socket);
+        _registerOperatorWithCoordinatorAndNoOverfilledQuorums({
+            operator: msg.sender, 
+            quorumNumbers: quorumNumbers, 
+            pubkey: pubkey, 
+            socket: socket
+        });
     }
 
     /**
@@ -152,7 +157,12 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         BN254.G1Point memory pubkey,
         string calldata socket
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        _registerOperatorWithCoordinatorAndNoOverfilledQuorums(msg.sender, quorumNumbers, pubkey, socket);
+        _registerOperatorWithCoordinatorAndNoOverfilledQuorums({
+            operator: msg.sender, 
+            quorumNumbers: quorumNumbers, 
+            pubkey: pubkey, 
+            socket: socket
+        });
     }
 
     /**
@@ -173,14 +183,23 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         // register the operator
-        uint32[] memory numOperatorsPerQuorum = _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, socket);
+        uint32[] memory numOperatorsPerQuorum = _registerOperatorWithCoordinator({
+            operator: msg.sender,
+            quorumNumbers: quorumNumbers,
+            pubkey: pubkey,
+            socket: socket
+        });
 
         // get the registering operator's operatorId and set the operatorIdsToSwap to it because the registering operator is the one with the greatest index
         bytes32[] memory operatorIdsToSwap = new bytes32[](1);
         operatorIdsToSwap[0] = pubkey.hashG1Point();
 
         // verify the churnApprover's signature
-        _verifyChurnApproverSignatureOnOperatorChurnApproval(operatorIdsToSwap[0], operatorKickParams, signatureWithSaltAndExpiry);
+        _verifyChurnApproverSignatureOnOperatorChurnApproval({
+            registeringOperatorId: operatorIdsToSwap[0],
+            operatorKickParams: operatorKickParams,
+            signatureWithSaltAndExpiry: signatureWithSaltAndExpiry
+        });
 
         uint256 operatorToKickParamsIndex = 0;
         // kick the operators
@@ -223,12 +242,12 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
             }
             
             // kick the operator
-            _deregisterOperatorWithCoordinator(
-                operatorKickParams[i].operator, 
-                quorumNumbers[i:i+1], 
-                operatorKickParams[i].pubkey, 
-                operatorIdsToSwap
-            );
+            _deregisterOperatorWithCoordinator({
+                operator: operatorKickParams[0].operator,
+                quorumNumbers: quorumNumbers[i:i+1],
+                pubkey: operatorKickParams[i].pubkey, 
+                operatorIdsToSwap: operatorIdsToSwap
+            });
         }
     }
 
@@ -246,7 +265,12 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         (BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap) 
             = abi.decode(deregistrationData, (BN254.G1Point, bytes32[]));
         // call internal function to deregister the operator
-        _deregisterOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, operatorIdsToSwap);
+        _deregisterOperatorWithCoordinator({
+            operator: msg.sender, 
+            quorumNumbers: quorumNumbers, 
+            pubkey: pubkey, 
+            operatorIdsToSwap: operatorIdsToSwap
+        });
     }
 
     /**
@@ -263,7 +287,12 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         BN254.G1Point memory pubkey,
         bytes32[] memory operatorIdsToSwap
     ) external onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
-        _deregisterOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, operatorIdsToSwap);
+        _deregisterOperatorWithCoordinator({
+            operator: msg.sender, 
+            quorumNumbers: quorumNumbers, 
+            pubkey: pubkey, 
+            operatorIdsToSwap: operatorIdsToSwap
+        });
     }
 
     /**
@@ -295,7 +324,12 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         BN254.G1Point memory pubkey, 
         bytes32[] memory operatorIdsToSwap
     ) external onlyEjector {
-        _deregisterOperatorWithCoordinator(operator, quorumNumbers, pubkey, operatorIdsToSwap);
+        _deregisterOperatorWithCoordinator({
+            operator: operator, 
+            quorumNumbers: quorumNumbers, 
+            pubkey: pubkey, 
+            operatorIdsToSwap: operatorIdsToSwap
+        });
     }
 
     /*******************************************************************************
@@ -410,7 +444,13 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         BN254.G1Point memory pubkey, 
         string memory socket
     ) internal {
-        uint32[] memory numOperatorsPerQuorum = _registerOperatorWithCoordinator(operator, quorumNumbers, pubkey, socket);
+        uint32[] memory numOperatorsPerQuorum = _registerOperatorWithCoordinator({
+            operator: operator, 
+            quorumNumbers: quorumNumbers, 
+            pubkey: pubkey, 
+            socket: socket
+        });
+        
         for (uint i = 0; i < numOperatorsPerQuorum.length; i++) {
             require(
                 numOperatorsPerQuorum[i] <= _quorumOperatorSetParams[uint8(quorumNumbers[i])].maxOperatorCount,

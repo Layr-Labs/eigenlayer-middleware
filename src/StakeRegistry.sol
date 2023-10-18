@@ -101,11 +101,11 @@ contract StakeRegistry is StakeRegistryStorage {
                         ];
                     }
                     // update the operator's stake based on current state
-                    (uint96 stakeBeforeUpdate, uint96 stakeAfterUpdate) = _updateOperatorStake(
-                        operators[i],
-                        operatorId,
-                        quorumNumber
-                    );
+                    (uint96 stakeBeforeUpdate, uint96 stakeAfterUpdate) = _updateOperatorStake({
+                        operator: operators[i],
+                        operatorId: operatorId,
+                        quorumNumber: quorumNumber
+                    });
                     // calculate the new total stake for the quorum
                     totalStakeUpdate.stake = totalStakeUpdate.stake - stakeBeforeUpdate + stakeAfterUpdate;
                 }
@@ -167,7 +167,11 @@ contract StakeRegistry is StakeRegistryStorage {
             uint8 quorumNumber = uint8(quorumNumbers[quorumNumbersIndex]);
             // evaluate the stake for the operator
             // since we don't use the first output, this will use 1 extra sload when deregistered operator's register again
-            (, uint96 stake) = _updateOperatorStake(operator, operatorId, quorumNumber);
+            (, uint96 stake) = _updateOperatorStake({
+                operator: operator, 
+                operatorId: operatorId, 
+                quorumNumber: quorumNumber
+            });
             // check if minimum requirement has been met, will be 0 if not
             require(
                 stake != 0,
@@ -217,7 +221,11 @@ contract StakeRegistry is StakeRegistryStorage {
         for (uint8 quorumNumbersIndex = 0; quorumNumbersIndex < quorumNumbers.length; ) {
             uint8 quorumNumber = uint8(quorumNumbers[quorumNumbersIndex]);
             // update the operator's stake
-            uint96 stakeBeforeUpdate = _recordOperatorStakeUpdate(operatorId, quorumNumber, _operatorStakeUpdate);
+            uint96 stakeBeforeUpdate = _recordOperatorStakeUpdate({
+                operatorId: operatorId, 
+                quorumNumber: quorumNumber, 
+                operatorStakeUpdate: _operatorStakeUpdate
+            });
             // subtract the amounts staked by the operator that is getting deregistered from the total stake before deregistration
             // copy latest totalStakes to memory
             _newTotalStakeUpdate.stake =
@@ -299,7 +307,11 @@ contract StakeRegistry is StakeRegistryStorage {
             operatorStakeUpdate.stake = uint96(0);
         }
         // get stakeBeforeUpdate and update with new stake
-        uint96 stakeBeforeUpdate = _recordOperatorStakeUpdate(operatorId, quorumNumber, operatorStakeUpdate);
+        uint96 stakeBeforeUpdate = _recordOperatorStakeUpdate({
+            operatorId: operatorId, 
+            quorumNumber: quorumNumber, 
+            operatorStakeUpdate: operatorStakeUpdate
+        });
 
         emit StakeUpdate(operatorId, quorumNumber, operatorStakeUpdate.stake);
 
