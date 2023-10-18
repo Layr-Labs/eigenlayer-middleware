@@ -34,52 +34,9 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
         IServiceManager _serviceManager
     ) VoteWeigherBaseStorage(_strategyManager, _serviceManager) {}
 
-    /// @notice Returns the strategy and weight multiplier for the `index`'th strategy in the quorum `quorumNumber`
-    function strategyAndWeightingMultiplierForQuorumByIndex(uint8 quorumNumber, uint256 index)
-        public
-        view
-        returns (StrategyAndWeightingMultiplier memory)
-    {
-        return strategiesConsideredAndMultipliers[quorumNumber][index];
-    }
-
-    /**
-     * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
-     * @dev reverts in the case that `quorumNumber` is greater than or equal to `quorumCount`
-     */
-    function weightOfOperatorForQuorumView(uint8 quorumNumber, address operator) public virtual view validQuorumNumber(quorumNumber) returns (uint96) {
-        uint96 weight;
-        uint256 stratsLength = strategiesConsideredAndMultipliersLength(quorumNumber);
-        StrategyAndWeightingMultiplier memory strategyAndMultiplier;
-
-        for (uint256 i = 0; i < stratsLength;) {
-            // accessing i^th StrategyAndWeightingMultiplier struct for the quorumNumber
-            strategyAndMultiplier = strategiesConsideredAndMultipliers[quorumNumber][i];
-
-            // shares of the operator in the strategy
-            uint256 sharesAmount = delegation.operatorShares(operator, strategyAndMultiplier.strategy);
-
-            // add the weight from the shares for this strategy to the total weight
-            if (sharesAmount > 0) {
-                weight += uint96(sharesAmount * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR);
-            }
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        return weight;
-    }
-
-    /**
-     * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
-     * @dev reverts in the case that `quorumNumber` is greater than or equal to `quorumCount`
-     * @dev a version of weightOfOperatorForQuorumView that can change state if needed
-     */
-    function weightOfOperatorForQuorum(uint8 quorumNumber, address operator) public virtual validQuorumNumber(quorumNumber) returns (uint96) {
-        return weightOfOperatorForQuorumView(quorumNumber, operator);
-    }
+    /*******************************************************************************
+                            EXTERNAL FUNCTIONS 
+    *******************************************************************************/
 
     /// @notice Create a new quorum and add the strategies and their associated weights to the quorum.
     function createQuorum(
@@ -150,10 +107,9 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
         }
     }
 
-    /// @notice Returns the length of the dynamic array stored in `strategiesConsideredAndMultipliers[quorumNumber]`.
-    function strategiesConsideredAndMultipliersLength(uint8 quorumNumber) public view returns (uint256) {
-        return strategiesConsideredAndMultipliers[quorumNumber].length;
-    }
+    /*******************************************************************************
+                            INTERNAL FUNCTIONS
+    *******************************************************************************/
 
     /**
      * @notice Creates a quorum with the given_strategiesConsideredAndMultipliers.
@@ -216,5 +172,61 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
                 ++i;
             }
         }
+    }
+
+    /*******************************************************************************
+                            VIEW FUNCTIONS
+    *******************************************************************************/
+
+    /// @notice Returns the length of the dynamic array stored in `strategiesConsideredAndMultipliers[quorumNumber]`.
+    function strategiesConsideredAndMultipliersLength(uint8 quorumNumber) public view returns (uint256) {
+        return strategiesConsideredAndMultipliers[quorumNumber].length;
+    }
+
+    /// @notice Returns the strategy and weight multiplier for the `index`'th strategy in the quorum `quorumNumber`
+    function strategyAndWeightingMultiplierForQuorumByIndex(uint8 quorumNumber, uint256 index)
+        public
+        view
+        returns (StrategyAndWeightingMultiplier memory)
+    {
+        return strategiesConsideredAndMultipliers[quorumNumber][index];
+    }
+
+    /**
+     * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
+     * @dev reverts in the case that `quorumNumber` is greater than or equal to `quorumCount`
+     */
+    function weightOfOperatorForQuorumView(uint8 quorumNumber, address operator) public virtual view validQuorumNumber(quorumNumber) returns (uint96) {
+        uint96 weight;
+        uint256 stratsLength = strategiesConsideredAndMultipliersLength(quorumNumber);
+        StrategyAndWeightingMultiplier memory strategyAndMultiplier;
+
+        for (uint256 i = 0; i < stratsLength;) {
+            // accessing i^th StrategyAndWeightingMultiplier struct for the quorumNumber
+            strategyAndMultiplier = strategiesConsideredAndMultipliers[quorumNumber][i];
+
+            // shares of the operator in the strategy
+            uint256 sharesAmount = delegation.operatorShares(operator, strategyAndMultiplier.strategy);
+
+            // add the weight from the shares for this strategy to the total weight
+            if (sharesAmount > 0) {
+                weight += uint96(sharesAmount * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR);
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        return weight;
+    }
+
+    /**
+     * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
+     * @dev reverts in the case that `quorumNumber` is greater than or equal to `quorumCount`
+     * @dev a version of weightOfOperatorForQuorumView that can change state if needed
+     */
+    function weightOfOperatorForQuorum(uint8 quorumNumber, address operator) public virtual validQuorumNumber(quorumNumber) returns (uint96) {
+        return weightOfOperatorForQuorumView(quorumNumber, operator);
     }
 }

@@ -120,117 +120,10 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
             _setOperatorSetParams(i, _operatorSetParams[i]);
         }
     }
-    
-    // VIEW FUNCTIONS
 
-    /// @notice Returns the operator set params for the given `quorumNumber`
-    function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory) {
-        return _quorumOperatorSetParams[quorumNumber];
-    }
-
-    /// @notice Returns the operator struct for the given `operator`
-    function getOperator(address operator) external view returns (Operator memory) {
-        return _operators[operator];
-    }
-
-    /// @notice Returns the operatorId for the given `operator`
-    function getOperatorId(address operator) external view returns (bytes32) {
-        return _operators[operator].operatorId;
-    }
-
-    /// @notice Returns the operator address for the given `operatorId`
-    function getOperatorFromId(bytes32 operatorId) external view returns (address) {
-        return blsPubkeyRegistry.getOperatorFromPubkeyHash(operatorId);
-    }
-
-    /// @notice Returns the status for the given `operator`
-    function getOperatorStatus(address operator) external view returns (IRegistryCoordinator.OperatorStatus) {
-        return _operators[operator].status;
-    }
-
-    /// @notice Returns the indices of the quorumBitmaps for the provided `operatorIds` at the given `blockNumber`
-    function getQuorumBitmapIndicesByOperatorIdsAtBlockNumber(uint32 blockNumber, bytes32[] memory operatorIds) external view returns (uint32[] memory) {
-        uint32[] memory indices = new uint32[](operatorIds.length);
-        for (uint256 i = 0; i < operatorIds.length; i++) {
-            uint32 length = uint32(_operatorIdToQuorumBitmapHistory[operatorIds[i]].length);
-            for (uint32 j = 0; j < length; j++) {
-                if (_operatorIdToQuorumBitmapHistory[operatorIds[i]][length - j - 1].updateBlockNumber <= blockNumber) {
-                    require(
-                        _operatorIdToQuorumBitmapHistory[operatorIds[i]][length - j - 1].nextUpdateBlockNumber == 0 ||
-                        _operatorIdToQuorumBitmapHistory[operatorIds[i]][length - j - 1].nextUpdateBlockNumber > blockNumber,
-                        "BLSRegistryCoordinatorWithIndices.getQuorumBitmapIndicesByOperatorIdsAtBlockNumber: operatorId has no quorumBitmaps at blockNumber"
-                    );
-                    indices[i] = length - j - 1;
-                    break;
-                }
-            }
-        }
-        return indices;
-    }
-
-    /**
-     * @notice Returns the quorum bitmap for the given `operatorId` at the given `blockNumber` via the `index`
-     * @dev reverts if `index` is incorrect 
-     */ 
-    function getQuorumBitmapByOperatorIdAtBlockNumberByIndex(bytes32 operatorId, uint32 blockNumber, uint256 index) external view returns (uint192) {
-        QuorumBitmapUpdate memory quorumBitmapUpdate = _operatorIdToQuorumBitmapHistory[operatorId][index];
-        require(
-            quorumBitmapUpdate.updateBlockNumber <= blockNumber, 
-            "BLSRegistryCoordinatorWithIndices.getQuorumBitmapByOperatorIdAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber"
-        );
-        // if the next update is at or before the block number, then the quorum provided index is too early
-        // if the nex update  block number is 0, then this is the latest update
-        require(
-            quorumBitmapUpdate.nextUpdateBlockNumber > blockNumber || quorumBitmapUpdate.nextUpdateBlockNumber == 0, 
-            "BLSRegistryCoordinatorWithIndices.getQuorumBitmapByOperatorIdAtBlockNumberByIndex: quorumBitmapUpdate is from before blockNumber"
-        );
-        return quorumBitmapUpdate.quorumBitmap;
-    }
-
-    /// @notice Returns the `index`th entry in the operator with `operatorId`'s bitmap history
-    function getQuorumBitmapUpdateByOperatorIdByIndex(bytes32 operatorId, uint256 index) external view returns (QuorumBitmapUpdate memory) {
-        return _operatorIdToQuorumBitmapHistory[operatorId][index];
-    }
-
-    /// @notice Returns the current quorum bitmap for the given `operatorId` or 0 if the operator is not registered for any quorum
-    function getCurrentQuorumBitmapByOperatorId(bytes32 operatorId) external view returns (uint192) {
-        uint256 quorumBitmapHistoryLength = _operatorIdToQuorumBitmapHistory[operatorId].length;
-        // the first part of this if statement is met if the operator has never registered. 
-        // the second part is met if the operator has previously registered, but is currently deregistered
-        if (quorumBitmapHistoryLength == 0 || _operatorIdToQuorumBitmapHistory[operatorId][quorumBitmapHistoryLength - 1].nextUpdateBlockNumber != 0) {
-            return 0;
-        }
-        return _operatorIdToQuorumBitmapHistory[operatorId][quorumBitmapHistoryLength - 1].quorumBitmap;
-    }
-
-    /// @notice Returns the length of the quorum bitmap history for the given `operatorId`
-    function getQuorumBitmapUpdateByOperatorIdLength(bytes32 operatorId) external view returns (uint256) {
-        return _operatorIdToQuorumBitmapHistory[operatorId].length;
-    }
-
-    /// @notice Returns the number of registries
-    function numRegistries() external view returns (uint256) {
-        return registries.length;
-    }
-
-    /**
-     * @notice Public function for the the churnApprover signature hash calculation when operators are being kicked from quorums
-     * @param registeringOperatorId The is of the registering operator 
-     * @param operatorKickParams The parameters needed to kick the operator from the quorums that have reached their caps
-     * @param salt The salt to use for the churnApprover's signature
-     * @param expiry The desired expiry time of the churnApprover's signature
-     */
-    function calculateOperatorChurnApprovalDigestHash(
-        bytes32 registeringOperatorId,
-        OperatorKickParam[] memory operatorKickParams,
-        bytes32 salt,
-        uint256 expiry
-    ) public view returns (bytes32) {
-        // calculate the digest hash
-        return _hashTypedDataV4(keccak256(abi.encode(OPERATOR_CHURN_APPROVAL_TYPEHASH, registeringOperatorId, operatorKickParams, salt, expiry)));
-    }
-
-    // STATE CHANGING FUNCTIONS
+    /*******************************************************************************
+                            EXTERNAL FUNCTIONS 
+    *******************************************************************************/
 
     /**
      * @notice Sets parameters of the operator set for the given `quorumNumber`
@@ -429,7 +322,9 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         emit OperatorSocketUpdate(_operators[msg.sender].operatorId, socket);
     }
 
-    // INTERNAL FUNCTIONS
+    /*******************************************************************************
+                            INTERNAL FUNCTIONS
+    *******************************************************************************/
 
     function _setOperatorSetParams(uint8 quorumNumber, OperatorSetParam memory operatorSetParam) internal {
         _quorumOperatorSetParams[quorumNumber] = operatorSetParam;
@@ -620,5 +515,116 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
 
         // check the churnApprover's signature 
         EIP1271SignatureUtils.checkSignature_EIP1271(churnApprover, calculateOperatorChurnApprovalDigestHash(registeringOperatorId, operatorKickParams, signatureWithSaltAndExpiry.salt, signatureWithSaltAndExpiry.expiry), signatureWithSaltAndExpiry.signature);
+    }
+
+    /*******************************************************************************
+                            VIEW FUNCTIONS
+    *******************************************************************************/
+
+    /// @notice Returns the operator set params for the given `quorumNumber`
+    function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory) {
+        return _quorumOperatorSetParams[quorumNumber];
+    }
+
+    /// @notice Returns the operator struct for the given `operator`
+    function getOperator(address operator) external view returns (Operator memory) {
+        return _operators[operator];
+    }
+
+    /// @notice Returns the operatorId for the given `operator`
+    function getOperatorId(address operator) external view returns (bytes32) {
+        return _operators[operator].operatorId;
+    }
+
+    /// @notice Returns the operator address for the given `operatorId`
+    function getOperatorFromId(bytes32 operatorId) external view returns (address) {
+        return blsPubkeyRegistry.getOperatorFromPubkeyHash(operatorId);
+    }
+
+    /// @notice Returns the status for the given `operator`
+    function getOperatorStatus(address operator) external view returns (IRegistryCoordinator.OperatorStatus) {
+        return _operators[operator].status;
+    }
+
+    /// @notice Returns the indices of the quorumBitmaps for the provided `operatorIds` at the given `blockNumber`
+    function getQuorumBitmapIndicesByOperatorIdsAtBlockNumber(uint32 blockNumber, bytes32[] memory operatorIds) external view returns (uint32[] memory) {
+        uint32[] memory indices = new uint32[](operatorIds.length);
+        for (uint256 i = 0; i < operatorIds.length; i++) {
+            uint32 length = uint32(_operatorIdToQuorumBitmapHistory[operatorIds[i]].length);
+            for (uint32 j = 0; j < length; j++) {
+                if (_operatorIdToQuorumBitmapHistory[operatorIds[i]][length - j - 1].updateBlockNumber <= blockNumber) {
+                    require(
+                        _operatorIdToQuorumBitmapHistory[operatorIds[i]][length - j - 1].nextUpdateBlockNumber == 0 ||
+                        _operatorIdToQuorumBitmapHistory[operatorIds[i]][length - j - 1].nextUpdateBlockNumber > blockNumber,
+                        "BLSRegistryCoordinatorWithIndices.getQuorumBitmapIndicesByOperatorIdsAtBlockNumber: operatorId has no quorumBitmaps at blockNumber"
+                    );
+                    indices[i] = length - j - 1;
+                    break;
+                }
+            }
+        }
+        return indices;
+    }
+
+    /**
+     * @notice Returns the quorum bitmap for the given `operatorId` at the given `blockNumber` via the `index`
+     * @dev reverts if `index` is incorrect 
+     */ 
+    function getQuorumBitmapByOperatorIdAtBlockNumberByIndex(bytes32 operatorId, uint32 blockNumber, uint256 index) external view returns (uint192) {
+        QuorumBitmapUpdate memory quorumBitmapUpdate = _operatorIdToQuorumBitmapHistory[operatorId][index];
+        require(
+            quorumBitmapUpdate.updateBlockNumber <= blockNumber, 
+            "BLSRegistryCoordinatorWithIndices.getQuorumBitmapByOperatorIdAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber"
+        );
+        // if the next update is at or before the block number, then the quorum provided index is too early
+        // if the nex update  block number is 0, then this is the latest update
+        require(
+            quorumBitmapUpdate.nextUpdateBlockNumber > blockNumber || quorumBitmapUpdate.nextUpdateBlockNumber == 0, 
+            "BLSRegistryCoordinatorWithIndices.getQuorumBitmapByOperatorIdAtBlockNumberByIndex: quorumBitmapUpdate is from before blockNumber"
+        );
+        return quorumBitmapUpdate.quorumBitmap;
+    }
+
+    /// @notice Returns the `index`th entry in the operator with `operatorId`'s bitmap history
+    function getQuorumBitmapUpdateByOperatorIdByIndex(bytes32 operatorId, uint256 index) external view returns (QuorumBitmapUpdate memory) {
+        return _operatorIdToQuorumBitmapHistory[operatorId][index];
+    }
+
+    /// @notice Returns the current quorum bitmap for the given `operatorId` or 0 if the operator is not registered for any quorum
+    function getCurrentQuorumBitmapByOperatorId(bytes32 operatorId) external view returns (uint192) {
+        uint256 quorumBitmapHistoryLength = _operatorIdToQuorumBitmapHistory[operatorId].length;
+        // the first part of this if statement is met if the operator has never registered. 
+        // the second part is met if the operator has previously registered, but is currently deregistered
+        if (quorumBitmapHistoryLength == 0 || _operatorIdToQuorumBitmapHistory[operatorId][quorumBitmapHistoryLength - 1].nextUpdateBlockNumber != 0) {
+            return 0;
+        }
+        return _operatorIdToQuorumBitmapHistory[operatorId][quorumBitmapHistoryLength - 1].quorumBitmap;
+    }
+
+    /// @notice Returns the length of the quorum bitmap history for the given `operatorId`
+    function getQuorumBitmapUpdateByOperatorIdLength(bytes32 operatorId) external view returns (uint256) {
+        return _operatorIdToQuorumBitmapHistory[operatorId].length;
+    }
+
+    /// @notice Returns the number of registries
+    function numRegistries() external view returns (uint256) {
+        return registries.length;
+    }
+
+    /**
+     * @notice Public function for the the churnApprover signature hash calculation when operators are being kicked from quorums
+     * @param registeringOperatorId The is of the registering operator 
+     * @param operatorKickParams The parameters needed to kick the operator from the quorums that have reached their caps
+     * @param salt The salt to use for the churnApprover's signature
+     * @param expiry The desired expiry time of the churnApprover's signature
+     */
+    function calculateOperatorChurnApprovalDigestHash(
+        bytes32 registeringOperatorId,
+        OperatorKickParam[] memory operatorKickParams,
+        bytes32 salt,
+        uint256 expiry
+    ) public view returns (bytes32) {
+        // calculate the digest hash
+        return _hashTypedDataV4(keccak256(abi.encode(OPERATOR_CHURN_APPROVAL_TYPEHASH, registeringOperatorId, operatorKickParams, salt, expiry)));
     }
 }
