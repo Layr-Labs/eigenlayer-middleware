@@ -17,13 +17,21 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
     /// @notice mapping from pubkey hash to operator address
     mapping(bytes32 => address) public pubkeyHashToOperator;
 
+    /*******************************************************************************
+                            EXTERNAL FUNCTIONS 
+    *******************************************************************************/
+
     /**
      * @notice Called by an operator to register themselves as the owner of a BLS public key and reveal their G1 and G2 public key.
      * @param signedMessageHash is the registration message hash signed by the private key of the operator
      * @param pubkeyG1 is the corresponding G1 public key of the operator 
      * @param pubkeyG2 is the corresponding G2 public key of the operator
      */
-    function registerBLSPublicKey(BN254.G1Point memory signedMessageHash, BN254.G1Point memory pubkeyG1, BN254.G2Point memory pubkeyG2) external {
+    function registerBLSPublicKey(
+        BN254.G1Point memory signedMessageHash, 
+        BN254.G1Point memory pubkeyG1, 
+        BN254.G2Point memory pubkeyG2
+    ) external {
         bytes32 pubkeyHash = BN254.hashG1Point(pubkeyG1);
         require(
             operatorToPubkeyHash[msg.sender] == bytes32(0),
@@ -62,6 +70,10 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
 
         emit NewPubkeyRegistration(msg.sender, pubkeyG1, pubkeyG2);
     }
+
+    /*******************************************************************************
+                            VIEW FUNCTIONS
+    *******************************************************************************/
 
     /**
      * @notice Returns the message hash that an operator must sign to register their BLS public key.

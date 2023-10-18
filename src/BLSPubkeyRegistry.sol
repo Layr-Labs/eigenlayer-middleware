@@ -22,6 +22,10 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
         IBLSPublicKeyCompendium _pubkeyCompendium
     ) BLSPubkeyRegistryStorage(_registryCoordinator, _pubkeyCompendium) {}
 
+    /*******************************************************************************
+                      EXTERNAL FUNCTIONS - REGISTRY COORDINATOR
+    *******************************************************************************/
+
     /**
      * @notice Registers the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to register.
@@ -40,7 +44,6 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
         bytes memory quorumNumbers,
         BN254.G1Point memory pubkey
     ) external onlyRegistryCoordinator returns (bytes32) {
-        _beforeRegisterOperator(operator, quorumNumbers);
         //calculate hash of the operator's pubkey
         bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
 
@@ -53,7 +56,6 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
         // update each quorum's aggregate pubkey
         _processQuorumApkUpdate(quorumNumbers, pubkey);
 
-        _afterRegisterOperator(operator, quorumNumbers);
         // emit event so offchain actors can update their state
         emit OperatorAddedToQuorums(operator, quorumNumbers);
         return pubkeyHash;
@@ -78,7 +80,6 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
         bytes memory quorumNumbers,
         BN254.G1Point memory pubkey
     ) external onlyRegistryCoordinator {
-        _beforeDeregisterOperator(operator, quorumNumbers);
         bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
 
         require(
@@ -89,16 +90,65 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
         // update each quorum's aggregate pubkey
         _processQuorumApkUpdate(quorumNumbers, pubkey.negate());
 
-        _afterDeregisterOperator(operator, quorumNumbers);
-
         emit OperatorRemovedFromQuorums(operator, quorumNumbers);
     }
+
+    /*******************************************************************************
+                            INTERNAL FUNCTIONS
+    *******************************************************************************/
+
+    function _processQuorumApkUpdate(bytes memory quorumNumbers, BN254.G1Point memory point) internal {
+        BN254.G1Point memory apkAfterUpdate;
+
+        for (uint i = 0; i < quorumNumbers.length; ) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+
+            uint256 quorumApkUpdatesLength = quorumApkUpdates[quorumNumber].length;
+            if (quorumApkUpdatesLength > 0) {
+                // update nextUpdateBlockNumber of the current latest ApkUpdate
+                quorumApkUpdates[quorumNumber][quorumApkUpdatesLength - 1].nextUpdateBlockNumber = uint32(block.number);
+            }
+
+            apkAfterUpdate = quorumApk[quorumNumber].plus(point);
+
+            //update aggregate public key for this quorum
+            quorumApk[quorumNumber] = apkAfterUpdate;
+            //create new ApkUpdate to add to the mapping
+            ApkUpdate memory latestApkUpdate;
+            latestApkUpdate.apkHash = bytes24(BN254.hashG1Point(apkAfterUpdate));
+            latestApkUpdate.updateBlockNumber = uint32(block.number);
+            quorumApkUpdates[quorumNumber].push(latestApkUpdate);
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    function _validateApkHashForQuorumAtBlockNumber(ApkUpdate memory apkUpdate, uint32 blockNumber) internal pure {
+        require(
+            blockNumber >= apkUpdate.updateBlockNumber,
+            "BLSPubkeyRegistry._validateApkHashForQuorumAtBlockNumber: index too recent"
+        );
+        /**
+         * if there is a next update, check that the blockNumber is before the next update or if
+         * there is no next update, then apkUpdate.nextUpdateBlockNumber is 0.
+         */
+        require(
+            apkUpdate.nextUpdateBlockNumber == 0 || blockNumber < apkUpdate.nextUpdateBlockNumber,
+            "BLSPubkeyRegistry._validateApkHashForQuorumAtBlockNumber: not latest apk update"
+        );
+    }
+
+    /*******************************************************************************
+                            VIEW FUNCTIONS
+    *******************************************************************************/
 
     /**
      * @notice Returns the indices of the quorumApks index at `blockNumber` for the provided `quorumNumbers`
      * @dev Returns the current indices if `blockNumber >= block.number`
      */
-    function getApkIndicesForQuorumsAtBlockNumber(
+     function getApkIndicesForQuorumsAtBlockNumber(
         bytes calldata quorumNumbers,
         uint256 blockNumber
     ) external view returns (uint32[] memory) {
@@ -158,76 +208,5 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
     /// @notice Returns the operator address for the given `pubkeyHash`
     function getOperatorFromPubkeyHash(bytes32 pubkeyHash) public view returns (address) {
         return pubkeyCompendium.pubkeyHashToOperator(pubkeyHash);
-    }
-
-    function _processQuorumApkUpdate(bytes memory quorumNumbers, BN254.G1Point memory point) internal {
-        BN254.G1Point memory apkAfterUpdate;
-
-        for (uint i = 0; i < quorumNumbers.length; ) {
-            uint8 quorumNumber = uint8(quorumNumbers[i]);
-
-            uint256 quorumApkUpdatesLength = quorumApkUpdates[quorumNumber].length;
-            if (quorumApkUpdatesLength > 0) {
-                // update nextUpdateBlockNumber of the current latest ApkUpdate
-                quorumApkUpdates[quorumNumber][quorumApkUpdatesLength - 1].nextUpdateBlockNumber = uint32(block.number);
-            }
-
-            apkAfterUpdate = quorumApk[quorumNumber].plus(point);
-
-            //update aggregate public key for this quorum
-            quorumApk[quorumNumber] = apkAfterUpdate;
-            //create new ApkUpdate to add to the mapping
-            ApkUpdate memory latestApkUpdate;
-            latestApkUpdate.apkHash = bytes24(BN254.hashG1Point(apkAfterUpdate));
-            latestApkUpdate.updateBlockNumber = uint32(block.number);
-            quorumApkUpdates[quorumNumber].push(latestApkUpdate);
-
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
-    /**
-     * @dev Hook that is called before any operator registration to insert additional logic.
-     * @param operator The address of the operator to register.
-     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
-     */
-    function _beforeRegisterOperator(address operator, bytes memory quorumNumbers) internal virtual {}
-
-    /**
-     * @dev Hook that is called after any operator registration to insert additional logic.
-     * @param operator The address of the operator to register.
-     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
-     */
-    function _afterRegisterOperator(address operator, bytes memory quorumNumbers) internal virtual {}
-
-    /**
-     * @dev Hook that is called before any operator deregistration to insert additional logic.
-     * @param operator The address of the operator to deregister.
-     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
-     */
-    function _beforeDeregisterOperator(address operator, bytes memory quorumNumbers) internal virtual {}
-
-    /**
-     * @dev Hook that is called after any operator deregistration to insert additional logic.
-     * @param operator The address of the operator to deregister.
-     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
-     */
-    function _afterDeregisterOperator(address operator, bytes memory quorumNumbers) internal virtual {}
-
-    function _validateApkHashForQuorumAtBlockNumber(ApkUpdate memory apkUpdate, uint32 blockNumber) internal pure {
-        require(
-            blockNumber >= apkUpdate.updateBlockNumber,
-            "BLSPubkeyRegistry._validateApkHashForQuorumAtBlockNumber: index too recent"
-        );
-        /**
-         * if there is a next update, check that the blockNumber is before the next update or if
-         * there is no next update, then apkUpdate.nextUpdateBlockNumber is 0.
-         */
-        require(
-            apkUpdate.nextUpdateBlockNumber == 0 || blockNumber < apkUpdate.nextUpdateBlockNumber,
-            "BLSPubkeyRegistry._validateApkHashForQuorumAtBlockNumber: not latest apk update"
-        );
     }
 }
