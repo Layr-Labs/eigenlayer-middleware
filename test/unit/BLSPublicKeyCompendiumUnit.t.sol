@@ -43,7 +43,7 @@ contract BLSPublicKeyCompendiumUnitTests is Test {
         BN254.G1Point memory badPubKeyG1 = BN254.generatorG1().scalar_mul(420); // mismatch public keys
 
         vm.prank(alice);
-        vm.expectRevert(bytes("BLSPublicKeyCompendium.registerBLSPublicKey: G1 and G2 private key do not match"));
+        vm.expectRevert(bytes("BLSPublicKeyCompendium.registerBLSPublicKey: either the G1 signature is wrong, or G1 and G2 private key do not match"));
         compendium.registerBLSPublicKey(signedMessageHash, badPubKeyG1, pubKeyG2);
     }
 
@@ -51,7 +51,7 @@ contract BLSPublicKeyCompendiumUnitTests is Test {
         signedMessageHash = _signMessage(bob); // sign with wrong private key
 
         vm.prank(alice); 
-        vm.expectRevert(bytes("BLSPublicKeyCompendium.registerBLSPublicKey: G1 and G2 private key do not match"));
+        vm.expectRevert(bytes("BLSPublicKeyCompendium.registerBLSPublicKey: either the G1 signature is wrong, or G1 and G2 private key do not match"));
         compendium.registerBLSPublicKey(signedMessageHash, pubKeyG1, pubKeyG2);
     }
 
