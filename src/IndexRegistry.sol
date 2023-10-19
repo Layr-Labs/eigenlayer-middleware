@@ -107,7 +107,7 @@ contract IndexRegistry is IndexRegistryStorage {
     }
 
     /*******************************************************************************
-                            INTERNAL FUNCTIONS
+                                INTERNAL FUNCTIONS
     *******************************************************************************/
 
     /**
@@ -233,7 +233,7 @@ contract IndexRegistry is IndexRegistryStorage {
     }
 
     /*******************************************************************************
-                            VIEW FUNCTIONS
+                                 VIEW FUNCTIONS
     *******************************************************************************/
 
     /// @notice Returns the length of the globalOperatorList
