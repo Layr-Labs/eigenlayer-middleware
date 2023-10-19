@@ -40,7 +40,7 @@ contract IndexRegistry is IndexRegistryStorage {
     function registerOperator(
         bytes32 operatorId, 
         bytes calldata quorumNumbers
-    ) external onlyRegistryCoordinator returns(uint32[] memory) {
+    ) public virtual onlyRegistryCoordinator returns(uint32[] memory) {
         uint32[] memory numOperatorsPerQuorum = new uint32[](quorumNumbers.length);
         //add operator to operatorList
         globalOperatorList.push(operatorId);
@@ -84,7 +84,7 @@ contract IndexRegistry is IndexRegistryStorage {
         bytes32 operatorId, 
         bytes calldata quorumNumbers, 
         bytes32[] memory operatorIdsToSwap
-    ) external onlyRegistryCoordinator {
+    ) public virtual onlyRegistryCoordinator {
         require(
             quorumNumbers.length == operatorIdsToSwap.length, 
             "IndexRegistry.deregisterOperator: quorumNumbers and operatorIdsToSwap must be the same length"

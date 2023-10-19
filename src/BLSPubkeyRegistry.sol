@@ -43,7 +43,7 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
         address operator,
         bytes memory quorumNumbers,
         BN254.G1Point memory pubkey
-    ) external onlyRegistryCoordinator returns (bytes32) {
+    ) public virtual onlyRegistryCoordinator returns (bytes32) {
         //calculate hash of the operator's pubkey
         bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
 
@@ -79,7 +79,7 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
         address operator,
         bytes memory quorumNumbers,
         BN254.G1Point memory pubkey
-    ) external onlyRegistryCoordinator {
+    ) public virtual onlyRegistryCoordinator {
         bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
 
         require(
