@@ -11,8 +11,8 @@ import {BN254}from"eigenlayer-contracts/src/contracts/libraries/BN254.sol";
 interface IBLSPublicKeyCompendium {
 
     // EVENTS
-    /// @notice Emitted when `operator` registers with the public key `pk`.
-    event NewPubkeyRegistration(address operator, BN254.G1Point pubkeyG1, BN254.G2Point pubkeyG2);
+    /// @notice Emitted when `operator` registers with the public keys `pubkeyG1` and `pubkeyG2`.
+    event NewPubkeyRegistration(address indexed operator, BN254.G1Point pubkeyG1, BN254.G2Point pubkeyG2);
 
     /**
      * @notice mapping from operator address to pubkey hash.
