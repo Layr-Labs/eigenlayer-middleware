@@ -14,4 +14,8 @@ docs/
 # Dotenv file
 .env
 
+# Certora Outputs
+.certora_internal/
+.certora_recent_jobs.json
+
 *.DS_Store
