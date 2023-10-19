@@ -63,7 +63,7 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
             BN254.negGeneratorG2(),
             messageHash.plus(BN254.generatorG1().scalar_mul(gamma)),
             pubkeyG2
-        ), "BLSPublicKeyCompendium.registerBLSPublicKey: G1 and G2 private key do not match");
+        ), "BLSPublicKeyCompendium.registerBLSPublicKey: either the G1 signature is wrong (make sure the right msg is being signed), or G1 and G2 private key do not match");
 
         operatorToPubkeyHash[msg.sender] = pubkeyHash;
         pubkeyHashToOperator[pubkeyHash] = msg.sender;
