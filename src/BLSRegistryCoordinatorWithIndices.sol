@@ -243,7 +243,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
             
             // kick the operator
             _deregisterOperatorWithCoordinator({
-                operator: operatorKickParams[0].operator,
+                operator: operatorKickParams[i].operator,
                 quorumNumbers: quorumNumbers[i:i+1],
                 pubkey: operatorKickParams[i].pubkey, 
                 operatorIdsToSwap: operatorIdsToSwap
