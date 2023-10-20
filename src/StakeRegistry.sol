@@ -7,6 +7,7 @@ import "src/interfaces/IServiceManager.sol";
 import "src/interfaces/IStakeRegistry.sol";
 import "src/interfaces/IRegistryCoordinator.sol";
 import "src/StakeRegistryStorage.sol";
+import {VoteWeigherBase} from "src/VoteWeigherBase.sol";
 
 /**
  * @title A `Registry` that keeps track of stakes of operators for up to 256 quorums.
@@ -17,7 +18,7 @@ import "src/StakeRegistryStorage.sol";
  * It allows an additional functionality (in addition to registering and deregistering) to update the stake of an operator.
  * @author Layr Labs, Inc.
  */
-contract StakeRegistry is StakeRegistryStorage {
+contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
     /// @notice requires that the caller is the RegistryCoordinator
     modifier onlyRegistryCoordinator() {
         require(
@@ -31,12 +32,7 @@ contract StakeRegistry is StakeRegistryStorage {
         IRegistryCoordinator _registryCoordinator,
         IStrategyManager _strategyManager,
         IServiceManager _serviceManager
-    )
-        StakeRegistryStorage(_registryCoordinator, _strategyManager, _serviceManager)
-    // solhint-disable-next-line no-empty-blocks
-    {
-
-    }
+    ) VoteWeigherBase(_strategyManager, _serviceManager) StakeRegistryStorage(_registryCoordinator) {}
 
     /**
      * @notice Sets the minimum stake for each quorum and adds `_quorumStrategiesConsideredAndMultipliers` for each
