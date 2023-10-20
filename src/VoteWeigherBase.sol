@@ -192,6 +192,12 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
         return strategiesConsideredAndMultipliers[quorumNumber][index];
     }
 
+
+    /// TODO remove when core gets updated
+    function weightOfOperatorForQuorumView(
+        uint8 quorumNumber, 
+        address operator
+    ) public virtual view validQuorumNumber(quorumNumber) returns (uint96) {}
     /**
      * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
      * @dev reverts in the case that `quorumNumber` is greater than or equal to `quorumCount`
