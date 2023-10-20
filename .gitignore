@@ -8,10 +8,6 @@ node_modules/
 /broadcast/*/31337/
 /broadcast/**/dry-run/
 
-# Ignore local chain deployment output files
-!script/output/31337
-script/output/31337/**
-
 # Docs
 docs/
 
