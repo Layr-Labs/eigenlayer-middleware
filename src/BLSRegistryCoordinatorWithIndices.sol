@@ -4,21 +4,21 @@ pragma solidity =0.8.12;
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
-import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
-import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
-import {BN254} from "eigenlayer-contracts/src/contracts/libraries/BN254.sol";
-import {EIP1271SignatureUtils} from "eigenlayer-contracts/src/contracts/libraries/EIP1271SignatureUtils.sol";
-import {BitmapUtils} from "eigenlayer-contracts/src/contracts/libraries/BitmapUtils.sol";
-import {Pausable} from "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
+import "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
+import "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
+import "eigenlayer-contracts/src/contracts/libraries/BN254.sol";
+import "eigenlayer-contracts/src/contracts/libraries/EIP1271SignatureUtils.sol";
+import "eigenlayer-contracts/src/contracts/libraries/BitmapUtils.sol";
+import "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
 
-import {IBLSRegistryCoordinatorWithIndices} from "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
-import {ISocketUpdater} from  "src/interfaces/ISocketUpdater.sol";
-import {IServiceManager} from "src/interfaces/IServiceManager.sol";
-import {IBLSPubkeyRegistry} from "src/interfaces/IBLSPubkeyRegistry.sol";
-import {IVoteWeigher} from "src/interfaces/IVoteWeigher.sol";
-import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
-import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
-import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
+import "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
+import "src/interfaces/ISocketUpdater.sol";
+import "src/interfaces/IServiceManager.sol";
+import "src/interfaces/IBLSPubkeyRegistry.sol";
+import "src/interfaces/IVoteWeigher.sol";
+import "src/interfaces/IStakeRegistry.sol";
+import "src/interfaces/IIndexRegistry.sol";
+import "src/interfaces/IRegistryCoordinator.sol";
 
 
 
