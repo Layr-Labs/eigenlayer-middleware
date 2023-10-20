@@ -31,6 +31,11 @@ contract StakeRegistryHarness is StakeRegistry {
         return _weightOfOperatorForQuorum[quorumNumber][operator];
     }
 
+    /// TODO remove when core gets updated
+    function weightOfOperatorForQuorumView(uint8 quorumNumber, address operator) public override view returns(uint96) {
+        return _weightOfOperatorForQuorum[quorumNumber][operator];
+    }
+
     // mocked function so we can set this arbitrarily without having to mock other elements
     function setOperatorWeight(uint8 quorumNumber, address operator, uint96 weight) external {
         _weightOfOperatorForQuorum[quorumNumber][operator] = weight;
