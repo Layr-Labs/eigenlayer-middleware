@@ -15,7 +15,7 @@ certoraRun certora/harnesses/BLSRegistryCoordinatorWithIndicesHarness.sol \
     --prover_args '-optimisticFallback true -recursionEntryLimit 2 ' \
     $RULE \
     --loop_iter 2 \
-    --packages @openzeppelin=lib/eigenlayer-contracts/lib/openzeppelin-contracts @openzeppelin-upgrades=lib/eigenlayer-contracts/lib/openzeppelin-contracts-upgradeable \
+    --packages @openzeppelin=lib/eigenlayer-contracts/lib/openzeppelin-contracts @openzeppelin-upgrades=lib/eigenlayer-contracts/lib/openzeppelin-contracts-upgradeable eigenlayer-contracts=lib/eigenlayer-contracts \
     --msg "BLSRegistryCoordinatorWithIndices $1 $2" \
 
 # TODO: import a ServiceManager contract
