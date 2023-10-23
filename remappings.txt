@@ -1,8 +1,7 @@
 @openzeppelin-upgrades/=lib/eigenlayer-contracts/lib/openzeppelin-contracts-upgradeable/
 @openzeppelin/=lib/eigenlayer-contracts/lib/openzeppelin-contracts/
-ds-test/=lib/forge-std/lib/ds-test/src/
+ds-test/=lib/ds-test/src/
 eigenlayer-contracts/=lib/eigenlayer-contracts/
-erc4626-tests/=lib/eigenlayer-contracts/lib/openzeppelin-contracts-upgradeable/lib/erc4626-tests/
 forge-std/=lib/forge-std/src/
 openzeppelin-contracts-upgradeable/=lib/eigenlayer-contracts/lib/openzeppelin-contracts-upgradeable/
 openzeppelin-contracts/=lib/eigenlayer-contracts/lib/openzeppelin-contracts/
