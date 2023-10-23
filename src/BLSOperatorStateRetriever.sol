@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
-import {IBLSPubkeyRegistry} from "src/interfaces/IBLSPubkeyRegistry.sol";
-import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
-import {IBLSRegistryCoordinatorWithIndices} from "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
-import {BitmapUtils} from "eigenlayer-contracts/src/contracts/libraries/BitmapUtils.sol";
+import "src/interfaces/IStakeRegistry.sol";
+import "src/interfaces/IBLSPubkeyRegistry.sol";
+import "src/interfaces/IIndexRegistry.sol";
+import "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
+import "eigenlayer-contracts/src/contracts/libraries/BitmapUtils.sol";
 
 /**
  * @title BLSOperatorStateRetriever with view functions that allow to retrieve the state of an AVSs registry system.

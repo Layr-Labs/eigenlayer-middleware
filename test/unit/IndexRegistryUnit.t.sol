@@ -80,14 +80,14 @@ contract IndexRegistryUnitTests is Test {
         );
 
         // Check _totalOperatorsHistory updates
-        IIndexRegistry.OperatorIndexUpdate memory totalOperatorUpdate = indexRegistry
-            .getTotalOperatorsUpdateForQuorumAtIndex(1, 0);
+        IIndexRegistry.QuorumUpdate memory quorumUpdate = indexRegistry
+            .getQuorumUpdateAtIndex(1, 0);
         require(
-            totalOperatorUpdate.index == 1,
-            "IndexRegistry.registerOperator: totalOperatorsHistory index (num operators) not 1"
+            quorumUpdate.numOperators == 1,
+            "IndexRegistry.registerOperator: totalOperatorsHistory num operators not 1"
         );
         require(
-            totalOperatorUpdate.fromBlockNumber == block.number,
+            quorumUpdate.fromBlockNumber == block.number,
             "IndexRegistry.registerOperator: totalOperatorsHistory fromBlockNumber not correct"
         );
         require(
@@ -135,14 +135,14 @@ contract IndexRegistryUnitTests is Test {
         );
 
         // Check _totalOperatorsHistory updates
-        IIndexRegistry.OperatorIndexUpdate memory totalOperatorUpdate = indexRegistry
-            .getTotalOperatorsUpdateForQuorumAtIndex(2, 0);
+        IIndexRegistry.QuorumUpdate memory quorumUpdate = indexRegistry
+            .getQuorumUpdateAtIndex(2, 0);
         require(
-            totalOperatorUpdate.index == 1,
-            "IndexRegistry.registerOperator: totalOperatorsHistory index (num operators) not 1"
+            quorumUpdate.numOperators == 1,
+            "IndexRegistry.registerOperator: totalOperatorsHistory num operators not 1"
         );
         require(
-            totalOperatorUpdate.fromBlockNumber == block.number,
+            quorumUpdate.fromBlockNumber == block.number,
             "IndexRegistry.registerOperator: totalOperatorsHistory fromBlockNumber not correct"
         );
         require(
@@ -188,14 +188,14 @@ contract IndexRegistryUnitTests is Test {
         );
 
         // Check _totalOperatorsHistory updates for quorum 1
-        IIndexRegistry.OperatorIndexUpdate memory totalOperatorUpdate = indexRegistry
-            .getTotalOperatorsUpdateForQuorumAtIndex(1, 0);
+        IIndexRegistry.QuorumUpdate memory quorumUpdate = indexRegistry
+            .getQuorumUpdateAtIndex(1, 0);
         require(
-            totalOperatorUpdate.index == 1,
-            "IndexRegistry.registerOperator: totalOperatorsHistory index (num operators) not 1"
+            quorumUpdate.numOperators == 1,
+            "IndexRegistry.registerOperator: totalOperatorsHistory numOperators not 1"
         );
         require(
-            totalOperatorUpdate.fromBlockNumber == block.number,
+            quorumUpdate.fromBlockNumber == block.number,
             "IndexRegistry.registerOperator: totalOperatorsHistory fromBlockNumber not correct"
         );
         require(
@@ -212,13 +212,13 @@ contract IndexRegistryUnitTests is Test {
         );
 
         // Check _totalOperatorsHistory updates for quorum 2
-        totalOperatorUpdate = indexRegistry.getTotalOperatorsUpdateForQuorumAtIndex(2, 0);
+        quorumUpdate = indexRegistry.getQuorumUpdateAtIndex(2, 0);
         require(
-            totalOperatorUpdate.index == 1,
-            "IndexRegistry.registerOperator: totalOperatorsHistory index (num operators) not 1"
+            quorumUpdate.numOperators == 1,
+            "IndexRegistry.registerOperator: totalOperatorsHistory num operators not 1"
         );
         require(
-            totalOperatorUpdate.fromBlockNumber == block.number,
+            quorumUpdate.fromBlockNumber == block.number,
             "IndexRegistry.registerOperator: totalOperatorsHistory fromBlockNumber not correct"
         );
         require(
@@ -265,14 +265,14 @@ contract IndexRegistryUnitTests is Test {
         );
 
         // Check _totalOperatorsHistory updates
-        IIndexRegistry.OperatorIndexUpdate memory totalOperatorUpdate = indexRegistry
-            .getTotalOperatorsUpdateForQuorumAtIndex(1, 1);
+        IIndexRegistry.QuorumUpdate memory quorumUpdate = indexRegistry
+            .getQuorumUpdateAtIndex(1, 1);
         require(
-            totalOperatorUpdate.index == 2,
-            "IndexRegistry.registerOperator: totalOperatorsHistory index (num operators) not 2"
+            quorumUpdate.numOperators == 2,
+            "IndexRegistry.registerOperator: totalOperatorsHistory num operators not 2"
         );
         require(
-            totalOperatorUpdate.fromBlockNumber == block.number,
+            quorumUpdate.fromBlockNumber == block.number,
             "IndexRegistry.registerOperator: totalOperatorsHistory fromBlockNumber not correct"
         );
         require(
@@ -316,10 +316,10 @@ contract IndexRegistryUnitTests is Test {
         require(indexUpdate.index == type(uint32).max, "incorrect index");
 
         // Check total operators
-        IIndexRegistry.OperatorIndexUpdate memory totalOperatorUpdate = indexRegistry
-            .getTotalOperatorsUpdateForQuorumAtIndex(defaultQuorumNumber, 1);
-        require(totalOperatorUpdate.fromBlockNumber == block.number, "fromBlockNumber not set correctly");
-        require(totalOperatorUpdate.index == 0, "incorrect total number of operators");
+        IIndexRegistry.QuorumUpdate memory quorumUpdate = indexRegistry
+            .getQuorumUpdateAtIndex(defaultQuorumNumber, 1);
+        require(quorumUpdate.fromBlockNumber == block.number, "fromBlockNumber not set correctly");
+        require(quorumUpdate.numOperators == 0, "incorrect total number of operators");
         require(indexRegistry.totalOperatorsForQuorum(1) == 0, "operator not deregistered correctly");
     }
 
@@ -373,10 +373,10 @@ contract IndexRegistryUnitTests is Test {
 
         // Check total operators for removed quorums
         for (uint256 i = 0; i < quorumsToRemove.length; i++) {
-            IIndexRegistry.OperatorIndexUpdate memory totalOperatorUpdate = indexRegistry
-                .getTotalOperatorsUpdateForQuorumAtIndex(uint8(quorumsToRemove[i]), 3); // 4 updates total
-            require(totalOperatorUpdate.fromBlockNumber == block.number, "fromBlockNumber not set correctly");
-            require(totalOperatorUpdate.index == 2, "incorrect total number of operators");
+            IIndexRegistry.QuorumUpdate memory quorumUpdate = indexRegistry
+                .getQuorumUpdateAtIndex(uint8(quorumsToRemove[i]), 3); // 4 updates total
+            require(quorumUpdate.fromBlockNumber == block.number, "fromBlockNumber not set correctly");
+            require(quorumUpdate.numOperators == 2, "incorrect total number of operators");
             require(
                 indexRegistry.totalOperatorsForQuorum(uint8(quorumsToRemove[i])) == 2,
                 "operator not deregistered correctly"
@@ -664,15 +664,15 @@ contract IndexRegistryUnitTests is Test {
         }
 
         // Check _totalOperatorsHistory updates
-        IIndexRegistry.OperatorIndexUpdate memory totalOperatorUpdate;
+        IIndexRegistry.QuorumUpdate memory quorumUpdate;
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            totalOperatorUpdate = indexRegistry.getTotalOperatorsUpdateForQuorumAtIndex(uint8(quorumNumbers[i]), 0);
+            quorumUpdate = indexRegistry.getQuorumUpdateAtIndex(uint8(quorumNumbers[i]), 0);
             require(
-                totalOperatorUpdate.index == 1,
-                "IndexRegistry.registerOperator: totalOperatorsHistory index (num operators) not 1"
+                quorumUpdate.numOperators == 1,
+                "IndexRegistry.registerOperator: totalOperatorsHistory num operators not 1"
             );
             require(
-                totalOperatorUpdate.fromBlockNumber == block.number,
+                quorumUpdate.fromBlockNumber == block.number,
                 "IndexRegistry.registerOperator: totalOperatorsHistory fromBlockNumber not correct"
             );
             require(
@@ -703,20 +703,20 @@ contract IndexRegistryUnitTests is Test {
         );
 
         // Check history of _totalOperatorsHistory updates at each blockNumber
-        IIndexRegistry.OperatorIndexUpdate memory totalOperatorUpdate;
+        IIndexRegistry.QuorumUpdate memory quorumUpdate;
         uint256 numOperators = 1;
         for (uint256 blockNumber = block.number - 20; blockNumber <= block.number; blockNumber += 10) {
             for (uint256 i = 0; i < quorumNumbers.length; i++) {
-                totalOperatorUpdate = indexRegistry.getTotalOperatorsUpdateForQuorumAtIndex(
+                quorumUpdate = indexRegistry.getQuorumUpdateAtIndex(
                     uint8(quorumNumbers[i]),
                     uint32(numOperators - 1)
                 );
                 require(
-                    totalOperatorUpdate.index == numOperators,
-                    "IndexRegistry.registerOperator: totalOperatorsHistory index (num operators) not correct"
+                    quorumUpdate.numOperators == numOperators,
+                    "IndexRegistry.registerOperator: totalOperatorsHistory num operators not correct"
                 );
                 require(
-                    totalOperatorUpdate.fromBlockNumber == blockNumber,
+                    quorumUpdate.fromBlockNumber == blockNumber,
                     "IndexRegistry.registerOperator: totalOperatorsHistory fromBlockNumber not correct"
                 );
             }
@@ -781,10 +781,10 @@ contract IndexRegistryUnitTests is Test {
 
         // Check total operators for removed quorums
         for (uint256 i = 0; i < quorumsToRemove.length; i++) {
-            IIndexRegistry.OperatorIndexUpdate memory totalOperatorUpdate = indexRegistry
-                .getTotalOperatorsUpdateForQuorumAtIndex(uint8(quorumsToRemove[i]), 2); // 3 updates total
-            require(totalOperatorUpdate.fromBlockNumber == block.number, "fromBlockNumber not set correctly");
-            require(totalOperatorUpdate.index == 1, "incorrect total number of operators");
+            IIndexRegistry.QuorumUpdate memory quorumUpdate = indexRegistry
+                .getQuorumUpdateAtIndex(uint8(quorumsToRemove[i]), 2); // 3 updates total
+            require(quorumUpdate.fromBlockNumber == block.number, "fromBlockNumber not set correctly");
+            require(quorumUpdate.numOperators == 1, "incorrect total number of operators");
             require(
                 indexRegistry.totalOperatorsForQuorum(uint8(quorumsToRemove[i])) == 1,
                 "operator not deregistered correctly"

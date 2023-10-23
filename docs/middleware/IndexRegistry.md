@@ -9,18 +9,27 @@ This contract assigns each operator an index (0 indexed) within each of its quor
 The RegistryCoordinator for the AVS makes call to the IndexRegistry to register an operator for a certain set of quorums. The IndexRegistry will assign the next index in each of the quorums the operator is registering for to the operator storing the following struct:
 ```solidity
 // struct used to give definitive ordering to operators at each blockNumber. 
-// NOTE: this struct is slightly abused for also storing the total number of operators for each quorum over time
 struct OperatorIndexUpdate {
     // blockNumber number from which `index` was the operators index
-    // the operator's index or the total number of operators at a `blockNumber` is the first entry such that `blockNumber >= entry.fromBlockNumber`
+    // the operator's index is the first entry such that `blockNumber >= entry.fromBlockNumber`
     uint32 fromBlockNumber;
-    // index of the operator in array of operators, or the total number of operators if in the 'totalOperatorsHistory'
+    // index of the operator in array of operators
     // index = type(uint32).max = OPERATOR_DEREGISTERED_INDEX implies the operator was deregistered
     uint32 index;
 }
 ```
 
-The IndexRegistry also adds the operator's id to the append only list of operators that have registered for the middleware and it stores the total number of operators after the registering operator has registered for each of the quorums the operator is registering for by pushing the above struct to a growing array.
+The IndexRegistry also adds the operator's id to the append only list of operators that have registered for the middleware and it stores the total number of operators after the registering operator has registered for each of the quorums the operator is registering for by pushing the below struct to a growing array.
+
+```solidity
+// struct used to denote the number of operators in a quorum at a given blockNumber
+struct QuorumUpdate {
+    // The total number of operators at a `blockNumber` is the first entry such that `blockNumber >= entry.fromBlockNumber`
+    uint32 fromBlockNumber;
+    // The number of operators at `fromBlockNumber`
+    uint32 numOperators;
+}
+```
 
 ### deregisterOperator
 

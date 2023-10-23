@@ -12,7 +12,7 @@ contract G2Operations is Test {
         string[] memory inputs = new string[](5);
         inputs[0] = "go";
         inputs[1] = "run";
-        inputs[2] = "src/test/ffi/go/g2mul.go";
+        inputs[2] = "test/ffi/go/g2mul.go";
         inputs[3] = x.toString(); 
 
         inputs[4] = "1";

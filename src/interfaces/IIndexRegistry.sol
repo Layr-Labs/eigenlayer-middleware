@@ -16,14 +16,21 @@ interface IIndexRegistry is IRegistry {
     // DATA STRUCTURES
 
     // struct used to give definitive ordering to operators at each blockNumber. 
-    // NOTE: this struct is slightly abused for also storing the total number of operators for each quorum over time
     struct OperatorIndexUpdate {
         // blockNumber number from which `index` was the operators index
-        // the operator's index or the total number of operators at a `blockNumber` is the first entry such that `blockNumber >= entry.fromBlockNumber`
+        // the operator's index is the first entry such that `blockNumber >= entry.fromBlockNumber`
         uint32 fromBlockNumber;
-        // index of the operator in array of operators, or the total number of operators if in the 'totalOperatorsHistory'
+        // index of the operator in array of operators
         // index = type(uint32).max = OPERATOR_DEREGISTERED_INDEX implies the operator was deregistered
         uint32 index;
+    }
+
+    // struct used to denote the number of operators in a quorum at a given blockNumber
+    struct QuorumUpdate {
+        // The total number of operators at a `blockNumber` is the first entry such that `blockNumber >= entry.fromBlockNumber`
+        uint32 fromBlockNumber;
+        // The number of operators at `fromBlockNumber`
+        uint32 numOperators;
     }
 
     /**
@@ -63,7 +70,7 @@ interface IIndexRegistry is IRegistry {
     function getOperatorIndexUpdateOfOperatorIdForQuorumAtIndex(bytes32 operatorId, uint8 quorumNumber, uint32 index) external view returns (OperatorIndexUpdate memory);
 
     /// @notice Returns the _totalOperatorsHistory entry for the specified `quorumNumber` at the specified `index`
-    function getTotalOperatorsUpdateForQuorumAtIndex(uint8 quorumNumber, uint32 index) external view returns (OperatorIndexUpdate memory);
+    function getQuorumUpdateAtIndex(uint8 quorumNumber, uint32 index) external view returns (QuorumUpdate memory);
 
     /**
      * @notice Looks up the `operator`'s index for `quorumNumber` at the specified `blockNumber` using the `index`.
