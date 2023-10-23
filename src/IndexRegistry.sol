@@ -50,7 +50,7 @@ contract IndexRegistry is IndexRegistryStorage {
 
             //this is the would-be index of the operator being registered, the total number of operators for that quorum (which is last index + 1)
             uint256 quorumHistoryLength = _totalOperatorsHistory[quorumNumber].length;
-            uint32 numOperators = quorumHistoryLength > 0 ? _totalOperatorsHistory[quorumNumber][quorumHistoryLength - 1].index : 0;
+            uint32 numOperators = quorumHistoryLength > 0 ? _totalOperatorsHistory[quorumNumber][quorumHistoryLength - 1].numOperators : 0;
             _updateOperatorIdToIndexHistory({
                 operatorId: operatorId, 
                 quorumNumber: quorumNumber, 
@@ -101,13 +101,13 @@ contract IndexRegistry is IndexRegistryStorage {
             });
             _updateTotalOperatorHistory({
                 quorumNumber: quorumNumber, 
-                numOperators: _totalOperatorsHistory[quorumNumber][_totalOperatorsHistory[quorumNumber].length - 1].index - 1
+                numOperators: _totalOperatorsHistory[quorumNumber][_totalOperatorsHistory[quorumNumber].length - 1].numOperators - 1
             });
         }
     }
 
     /*******************************************************************************
-                            INTERNAL FUNCTIONS
+                                INTERNAL FUNCTIONS
     *******************************************************************************/
 
     /**
@@ -116,12 +116,12 @@ contract IndexRegistry is IndexRegistryStorage {
      * @param numOperators is the number of operators in the quorum
      */
     function _updateTotalOperatorHistory(uint8 quorumNumber, uint32 numOperators) internal {
-        OperatorIndexUpdate memory totalOperatorUpdate;
+        QuorumUpdate memory quorumUpdate;
         // In the case of totalOperatorsHistory, the index parameter is the number of operators in the quorum
-        totalOperatorUpdate.index = numOperators;
-        totalOperatorUpdate.fromBlockNumber = uint32(block.number);
+        quorumUpdate.numOperators = numOperators;
+        quorumUpdate.fromBlockNumber = uint32(block.number);
 
-        _totalOperatorsHistory[quorumNumber].push(totalOperatorUpdate);
+        _totalOperatorsHistory[quorumNumber].push(quorumUpdate);
     }
 
     /**
@@ -152,7 +152,7 @@ contract IndexRegistry is IndexRegistryStorage {
     ) internal {   
         uint32 operatorIdToSwapIndex = _operatorIdToIndexHistory[operatorIdToSwap][quorumNumber][_operatorIdToIndexHistory[operatorIdToSwap][quorumNumber].length - 1].index;
         require(
-            _totalOperatorsHistory[quorumNumber][_totalOperatorsHistory[quorumNumber].length - 1].index - 1 == operatorIdToSwapIndex, 
+            _totalOperatorsHistory[quorumNumber][_totalOperatorsHistory[quorumNumber].length - 1].numOperators - 1 == operatorIdToSwapIndex, 
             "IndexRegistry._processOperatorRemoval: operatorIdToSwap is not the last operator in the quorum"
         );
 
@@ -198,13 +198,13 @@ contract IndexRegistry is IndexRegistryStorage {
         // loop backwards through the total operator history to find the total number of operators at the given block number
         for (uint256 i = 0; i <= totalOperatorsHistoryLength - 1; i++) {
             uint256 listIndex = (totalOperatorsHistoryLength - 1) - i;
-            OperatorIndexUpdate memory totalOperatorUpdate = _totalOperatorsHistory[quorumNumber][listIndex];
+            QuorumUpdate memory quorumUpdate = _totalOperatorsHistory[quorumNumber][listIndex];
             // look for the first update that began before or at `blockNumber`
-            if (totalOperatorUpdate.fromBlockNumber <= blockNumber) {
-                return _totalOperatorsHistory[quorumNumber][listIndex].index;
+            if (quorumUpdate.fromBlockNumber <= blockNumber) {
+                return _totalOperatorsHistory[quorumNumber][listIndex].numOperators;
             }
         }        
-        return _totalOperatorsHistory[quorumNumber][0].index;
+        return _totalOperatorsHistory[quorumNumber][0].numOperators;
     }
     
     /** 
@@ -233,7 +233,7 @@ contract IndexRegistry is IndexRegistryStorage {
     }
 
     /*******************************************************************************
-                            VIEW FUNCTIONS
+                                 VIEW FUNCTIONS
     *******************************************************************************/
 
     /// @notice Returns the length of the globalOperatorList
@@ -251,10 +251,10 @@ contract IndexRegistry is IndexRegistryStorage {
     }
 
     /// @notice Returns the _totalOperatorsHistory entry for the specified `quorumNumber` at the specified `index`
-    function getTotalOperatorsUpdateForQuorumAtIndex(
+    function getQuorumUpdateAtIndex(
         uint8 quorumNumber, 
         uint32 index
-    ) external view returns (OperatorIndexUpdate memory) {
+    ) external view returns (QuorumUpdate memory) {
         return _totalOperatorsHistory[quorumNumber][index];
     }
 
@@ -305,23 +305,23 @@ contract IndexRegistry is IndexRegistryStorage {
         uint32 blockNumber, 
         uint32 index
     ) external view returns (uint32){
-        OperatorIndexUpdate memory operatorIndexToCheck = _totalOperatorsHistory[quorumNumber][index];
+        QuorumUpdate memory quorumUpdate = _totalOperatorsHistory[quorumNumber][index];
 
         // blocknumber must be at or after the "index'th" entry's fromBlockNumber
         require(
-            blockNumber >= operatorIndexToCheck.fromBlockNumber, 
+            blockNumber >= quorumUpdate.fromBlockNumber, 
             "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: provided index is too far in the past for provided block number"
         );
         
         // if there is an index update after the "index'th" update, the blocknumber must be before the next entry's fromBlockNumber
         if (index != _totalOperatorsHistory[quorumNumber].length - 1){
-            OperatorIndexUpdate memory nextOperatorIndex = _totalOperatorsHistory[quorumNumber][index + 1];
+            QuorumUpdate memory nextQuorumUpdate = _totalOperatorsHistory[quorumNumber][index + 1];
             require(
-                blockNumber < nextOperatorIndex.fromBlockNumber, 
+                blockNumber < nextQuorumUpdate.fromBlockNumber, 
                 "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: provided index is too far in the future for provided block number"
             );
         }
-        return operatorIndexToCheck.index;
+        return quorumUpdate.numOperators;
     }
 
     /// @notice Returns an ordered list of operators of the services for the given `quorumNumber` at the given `blockNumber`
@@ -347,6 +347,6 @@ contract IndexRegistry is IndexRegistryStorage {
         if (totalOperatorsHistoryLength == 0) {
             return 0;
         }
-        return _totalOperatorsHistory[quorumNumber][totalOperatorsHistoryLength - 1].index;
+        return _totalOperatorsHistory[quorumNumber][totalOperatorsHistoryLength - 1].numOperators;
     }
 }

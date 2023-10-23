@@ -25,7 +25,7 @@ abstract contract IndexRegistryStorage is Initializable, IIndexRegistry {
     /// @notice mapping of operatorId => quorumNumber => index history of that operator
     mapping(bytes32 => mapping(uint8 => OperatorIndexUpdate[])) internal _operatorIdToIndexHistory;
     /// @notice mapping of quorumNumber => history of numbers of unique registered operators
-    mapping(uint8 => OperatorIndexUpdate[]) internal _totalOperatorsHistory;
+    mapping(uint8 => QuorumUpdate[]) internal _totalOperatorsHistory;
 
     constructor(
         IRegistryCoordinator _registryCoordinator
