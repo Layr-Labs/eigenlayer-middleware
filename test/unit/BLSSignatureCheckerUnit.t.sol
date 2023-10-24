@@ -133,11 +133,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         stakeRegistry.recordOperatorStakeUpdate(
             nonSignerOperatorId, 
             uint8(quorumNumbers[0]), 
-            IStakeRegistry.OperatorStakeUpdate({
-                updateBlockNumber: uint32(block.number),
-                nextUpdateBlockNumber: 0,
-                stake: 1234
-            })
+            1234
         );
         
         // set the nonSignerStakeIndices to a different value
