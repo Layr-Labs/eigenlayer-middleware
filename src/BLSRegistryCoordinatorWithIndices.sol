@@ -572,15 +572,16 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     ) external view returns (uint32[] memory) {
         uint32[] memory indices = new uint32[](operatorIds.length);
         for (uint256 i = 0; i < operatorIds.length; i++) {
-            uint32 length = uint32(_operatorIdToQuorumBitmapHistory[operatorIds[i]].length);
-            for (uint32 j = 0; j < length; j++) {
+            uint length = _operatorIdToQuorumBitmapHistory[operatorIds[i]].length;
+            for (uint j = 0; j < length; j++) {
                 if (_operatorIdToQuorumBitmapHistory[operatorIds[i]][length - j - 1].updateBlockNumber <= blockNumber) {
+                    uint32 nextUpdateBlockNumber = 
+                        _operatorIdToQuorumBitmapHistory[operatorIds[i]][length - j - 1].nextUpdateBlockNumber;
                     require(
-                        _operatorIdToQuorumBitmapHistory[operatorIds[i]][length - j - 1].nextUpdateBlockNumber == 0 ||
-                        _operatorIdToQuorumBitmapHistory[operatorIds[i]][length - j - 1].nextUpdateBlockNumber > blockNumber,
+                        nextUpdateBlockNumber == 0 || nextUpdateBlockNumber > blockNumber,
                         "BLSRegistryCoordinatorWithIndices.getQuorumBitmapIndicesByOperatorIdsAtBlockNumber: operatorId has no quorumBitmaps at blockNumber"
                     );
-                    indices[i] = length - j - 1;
+                    indices[i] = uint32(length - j - 1);
                     break;
                 }
             }
