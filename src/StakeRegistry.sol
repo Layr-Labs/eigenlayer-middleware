@@ -117,19 +117,21 @@ contract StakeRegistry is VoteWeigherBaseStorage, StakeRegistryStorage {
         bytes32 operatorId,
         bytes calldata quorumNumbers
     ) public virtual onlyRegistryCoordinator {
-
-        for (uint256 i = 0; i < quorumNumbers.length; ) {            
-            
+        // check the operator is registering for only valid quorums
+        require(
+            uint8(quorumNumbers[quorumNumbers.length - 1]) < quorumCount,
+            "StakeRegistry._registerOperator: greatest quorumNumber must be less than quorumCount"
+        );
+        OperatorStakeUpdate memory _newTotalStakeUpdate;
+        // add the `updateBlockNumber` info
+        _newTotalStakeUpdate.updateBlockNumber = uint32(block.number);
+        // for each quorum, evaluate stake and add to total stake
+        for (uint i = 0; i < quorumNumbers.length; ) {
+            // get the next quorumNumber
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            require(_totalStakeHistory[quorumNumber].length != 0, "StakeRegistry.registerOperator: quorum does not exist");
-            
-            /**
-             * Update the operator's stake for the quorum and retrieve their current stake
-             * as well as the change in stake.
-             * - If this method returns `hasMinimumStake == false`, the operator has not met 
-             *   the minimum stake requirement for this quorum
-             */
-            (int256 stakeDelta, bool hasMinimumStake) = _updateOperatorStake({
+            // evaluate the stake for the operator
+            // since we don't use the first output, this will use 1 extra sload when deregistered operator's register again
+            (, uint96 stake) = _updateOperatorStake({
                 operator: operator, 
                 operatorId: operatorId, 
                 quorumNumber: quorumNumber
@@ -163,6 +165,7 @@ contract StakeRegistry is VoteWeigherBaseStorage, StakeRegistryStorage {
         bytes32 operatorId,
         bytes calldata quorumNumbers
     ) public virtual onlyRegistryCoordinator {
+<<<<<<< HEAD
         /**
          * For each quorum, remove the operator's stake for the quorum and update
          * the quorum's total stake to account for the removal
@@ -173,6 +176,19 @@ contract StakeRegistry is VoteWeigherBaseStorage, StakeRegistryStorage {
 
             // Update the operator's stake for the quorum and retrieve the shares removed
             int256 stakeDelta = _recordOperatorStakeUpdate({
+=======
+        OperatorStakeUpdate memory _operatorStakeUpdate;
+        // add the `updateBlockNumber` info
+        _operatorStakeUpdate.updateBlockNumber = uint32(block.number);
+        OperatorStakeUpdate memory _newTotalStakeUpdate;
+        // add the `updateBlockNumber` info
+        _newTotalStakeUpdate.updateBlockNumber = uint32(block.number);
+        // loop through the operator's quorums and remove the operator's stake for each quorum
+        for (uint i = 0; i < quorumNumbers.length; ) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+            // update the operator's stake
+            uint96 stakeBeforeUpdate = _recordOperatorStakeUpdate({
+>>>>>>> 095a082 (style: use  for loop indices when the index is just an index)
                 operatorId: operatorId, 
                 quorumNumber: quorumNumber, 
                 newStake: 0
@@ -275,8 +291,13 @@ contract StakeRegistry is VoteWeigherBaseStorage, StakeRegistryStorage {
         uint8 quorumNumber,
         uint32 blockNumber
     ) internal view returns (uint32) {
+<<<<<<< HEAD
         uint256 length = operatorIdToStakeHistory[operatorId][quorumNumber].length;
         for (uint256 i = 0; i < length; i++) {
+=======
+        uint length = operatorIdToStakeHistory[operatorId][quorumNumber].length;
+        for (uint i = 0; i < length; i++) {
+>>>>>>> 095a082 (style: use  for loop indices when the index is just an index)
             if (operatorIdToStakeHistory[operatorId][quorumNumber][length - i - 1].updateBlockNumber <= blockNumber) {
                 uint32 nextUpdateBlockNumber = 
                     operatorIdToStakeHistory[operatorId][quorumNumber][length - i - 1].nextUpdateBlockNumber;
@@ -611,8 +632,13 @@ contract StakeRegistry is VoteWeigherBaseStorage, StakeRegistryStorage {
                 _totalStakeHistory[quorumNumber][0].updateBlockNumber <= blockNumber,
                 "StakeRegistry.getTotalStakeIndicesByQuorumNumbersAtBlockNumber: quorum has no stake history at blockNumber"
             );
+<<<<<<< HEAD
             uint256 length = _totalStakeHistory[quorumNumber].length;
             for (uint256 j = 0; j < length; j++) {
+=======
+            uint length = _totalStakeHistory[quorumNumber].length;
+            for (uint j = 0; j < length; j++) {
+>>>>>>> 095a082 (style: use  for loop indices when the index is just an index)
                 if (_totalStakeHistory[quorumNumber][length - j - 1].updateBlockNumber <= blockNumber) {
                     indices[i] = uint32(length - j - 1);
                     break;
