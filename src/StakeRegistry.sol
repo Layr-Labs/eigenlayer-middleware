@@ -148,9 +148,9 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
         // add the `updateBlockNumber` info
         _newTotalStakeUpdate.updateBlockNumber = uint32(block.number);
         // for each quorum, evaluate stake and add to total stake
-        for (uint8 quorumNumbersIndex = 0; quorumNumbersIndex < quorumNumbers.length; ) {
+        for (uint i = 0; i < quorumNumbers.length; ) {
             // get the next quorumNumber
-            uint8 quorumNumber = uint8(quorumNumbers[quorumNumbersIndex]);
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
             // evaluate the stake for the operator
             // since we don't use the first output, this will use 1 extra sload when deregistered operator's register again
             (, uint96 stake) = _updateOperatorStake({
@@ -176,7 +176,7 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
             // update storage of total stake
             _recordTotalStakeUpdate(quorumNumber, _newTotalStakeUpdate);
             unchecked {
-                ++quorumNumbersIndex;
+                ++i;
             }
         }
     }
@@ -204,8 +204,8 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
         // add the `updateBlockNumber` info
         _newTotalStakeUpdate.updateBlockNumber = uint32(block.number);
         // loop through the operator's quorums and remove the operator's stake for each quorum
-        for (uint8 quorumNumbersIndex = 0; quorumNumbersIndex < quorumNumbers.length; ) {
-            uint8 quorumNumber = uint8(quorumNumbers[quorumNumbersIndex]);
+        for (uint i = 0; i < quorumNumbers.length; ) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
             // update the operator's stake
             uint96 stakeBeforeUpdate = _recordOperatorStakeUpdate({
                 operatorId: operatorId, 
@@ -227,7 +227,7 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
                 0
             );
             unchecked {
-                ++quorumNumbersIndex;
+                ++i;
             }
         }
     }
@@ -250,16 +250,16 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
         uint8 quorumNumber,
         uint32 blockNumber
     ) internal view returns (uint32) {
-        uint32 length = uint32(operatorIdToStakeHistory[operatorId][quorumNumber].length);
-        for (uint32 i = 0; i < length; i++) {
+        uint length = operatorIdToStakeHistory[operatorId][quorumNumber].length;
+        for (uint i = 0; i < length; i++) {
             if (operatorIdToStakeHistory[operatorId][quorumNumber][length - i - 1].updateBlockNumber <= blockNumber) {
+                uint32 nextUpdateBlockNumber = 
+                    operatorIdToStakeHistory[operatorId][quorumNumber][length - i - 1].nextUpdateBlockNumber;
                 require(
-                    operatorIdToStakeHistory[operatorId][quorumNumber][length - i - 1].nextUpdateBlockNumber == 0 ||
-                        operatorIdToStakeHistory[operatorId][quorumNumber][length - i - 1].nextUpdateBlockNumber >
-                        blockNumber,
+                    nextUpdateBlockNumber == 0 || nextUpdateBlockNumber > blockNumber,
                     "StakeRegistry._getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber: operatorId has no stake update at blockNumber"
                 );
-                return length - i - 1;
+                return uint32(length - i - 1);
             }
         }
         revert(
@@ -424,10 +424,10 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
                 _totalStakeHistory[quorumNumber][0].updateBlockNumber <= blockNumber,
                 "StakeRegistry.getTotalStakeIndicesByQuorumNumbersAtBlockNumber: quorum has no stake history at blockNumber"
             );
-            uint32 length = uint32(_totalStakeHistory[quorumNumber].length);
-            for (uint32 j = 0; j < length; j++) {
+            uint length = _totalStakeHistory[quorumNumber].length;
+            for (uint j = 0; j < length; j++) {
                 if (_totalStakeHistory[quorumNumber][length - j - 1].updateBlockNumber <= blockNumber) {
-                    indices[i] = length - j - 1;
+                    indices[i] = uint32(length - j - 1);
                     break;
                 }
             }
