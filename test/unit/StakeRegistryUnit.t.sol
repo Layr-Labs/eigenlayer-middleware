@@ -493,10 +493,14 @@ contract StakeRegistryUnitTests is Test {
         uint32 cumulativeBlockNumber = intialBlockNumber;
         // loop through each one of the blocks passed, roll that many blocks, create an Operator Stake Update for total stake, and trigger a total stake update
         for (uint256 i = 0; i < blocksPassed.length; i++) {
-            IStakeRegistry.OperatorStakeUpdate memory totalStakeUpdate;
-            totalStakeUpdate.stake = stakes[i];
+            int256 stakeDelta;
+            if (i == 0) {
+                stakeDelta = _calculateDelta({prev: 0, cur: stakes[i]});
+            } else {
+                stakeDelta = _calculateDelta({prev: stakes[i-1], cur: stakes[i]});
+            }
 
-            stakeRegistry.recordTotalStakeUpdate(defaultQuorumNumber, totalStakeUpdate);
+            stakeRegistry.recordTotalStakeUpdate(defaultQuorumNumber, stakeDelta);
 
             cumulativeBlockNumber += blocksPassed[i];
             cheats.roll(cumulativeBlockNumber);
@@ -612,5 +616,13 @@ contract StakeRegistryUnitTests is Test {
 
     function _incrementBytes32(bytes32 start, uint256 inc) internal pure returns(bytes32) {
         return bytes32(uint256(start) + inc);
+    }
+
+    function _calculateDelta(uint96 prev, uint96 cur) internal pure returns (int256) {
+        if (cur >= prev) {
+            return int256(uint256(cur - prev));
+        } else {
+            return -int256(uint256(prev - cur));
+        }
     }
 }
