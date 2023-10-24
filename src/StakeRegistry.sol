@@ -103,13 +103,8 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
                 }
             }
 
-            // If we have a change in total stake for this quorum, update state
-            // TODO - do we want to record the update, even if the delta is zero?
-            //        maybe this makes sense in the case that the quorum doesn't have
-            //        an update for this block?
-            if (totalStakeDelta != 0) {
-                _recordTotalStakeUpdate(quorumNumber, totalStakeDelta);
-            }
+            // Record the update for the quorum's total stake
+            _recordTotalStakeUpdate(quorumNumber, totalStakeDelta);
 
             unchecked {
                 ++quorumNumber;
@@ -148,19 +143,17 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
             /**
              * Update the operator's stake for the quorum and retrieve their current stake
              * as well as the change in stake.
-             * If this method returns `stake == 0`, the operator has not met the minimum requirement
-             * 
-             * TODO - we only use the `stake` return here. It's probably better to use a bool instead
-             *        of relying on the method returning "0" in only this one case.
+             * - If this method returns `hasMinimumStake == false`, the operator has not met 
+             *   the minimum stake requirement for this quorum
              */
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            (int256 stakeDelta, uint96 stake) = _updateOperatorStake({
+            (int256 stakeDelta, bool hasMinimumStake) = _updateOperatorStake({
                 operator: operator, 
                 operatorId: operatorId, 
                 quorumNumber: quorumNumber
             });
             require(
-                stake != 0,
+                hasMinimumStake,
                 "StakeRegistry._registerOperator: Operator does not meet minimum stake requirement for quorum"
             );
 
@@ -253,14 +246,14 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
     /**
      * @notice Finds the updated stake for `operator` for `quorumNumber`, stores it and records the update
      * @dev **DOES NOT UPDATE `totalStake` IN ANY WAY** -- `totalStake` updates must be done elsewhere.
-     * @return `int256` The change in the operator's stake as a signed int256
-     * @return `uint96` The operator's new stake after the update
+     * @return delta The change in the operator's stake as a signed int256
+     * @return hasMinimumStake Whether the operator meets the minimum stake requirement for the quorum
      */
     function _updateOperatorStake(
         address operator,
         bytes32 operatorId,
         uint8 quorumNumber
-    ) internal returns (int256, uint96) {
+    ) internal returns (int256 delta, bool hasMinimumStake) {
         /**
          * Get the operator's current stake for the quorum. If their stake
          * is below the quorum's threshold, set their stake to 0
@@ -268,20 +261,22 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
         uint96 currentStake = weightOfOperatorForQuorum(quorumNumber, operator);
         if (currentStake < minimumStakeForQuorum[quorumNumber]) {
             currentStake = uint96(0);
+        } else {
+            hasMinimumStake = true;
         }
         
         // Update the operator's stake and retrieve the delta
-        int256 delta = _recordOperatorStakeUpdate({
+        delta = _recordOperatorStakeUpdate({
             operatorId: operatorId, 
             quorumNumber: quorumNumber, 
             newStake: currentStake
         });
 
-        return (delta, currentStake);
+        return (delta, hasMinimumStake);
     }
 
     /**
-     * @notice Records that `operatorId`'s current stake for `quorumNumber` is now param @operatorStakeUpdate
+     * @notice Records that `operatorId`'s current stake for `quorumNumber` is now `newStake`
      * @return The change in the operator's stake as a signed int256
      */
     function _recordOperatorStakeUpdate(
@@ -289,55 +284,79 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
         uint8 quorumNumber,
         uint96 newStake
     ) internal returns (int256) {
-        /**
-         * If the operator has previous stake history, update the previous entry
-         * and fetch their previous stake
-         */
+
         uint96 prevStake;
         uint256 historyLength = operatorIdToStakeHistory[operatorId][quorumNumber].length;
-        if (historyLength != 0) {
-            operatorIdToStakeHistory[operatorId][quorumNumber][historyLength - 1]
-                .nextUpdateBlockNumber = uint32(block.number);
 
-            prevStake = 
-                operatorIdToStakeHistory[operatorId][quorumNumber][historyLength - 1].stake;
+        if (historyLength == 0) {
+            // No prior stake history - push our first entry
+            operatorIdToStakeHistory[operatorId][quorumNumber].push(OperatorStakeUpdate({
+                updateBlockNumber: uint32(block.number),
+                nextUpdateBlockNumber: 0,
+                stake: newStake
+            }));
+        } else {
+            // We have prior stake history - fetch our last-recorded stake
+            prevStake = operatorIdToStakeHistory[operatorId][quorumNumber][historyLength-1].stake;
+
+            /**
+             * If our last stake entry was made in the current block, update the entry
+             * Otherwise, push a new entry and update the previous entry's "next" field
+             */ 
+            if (operatorIdToStakeHistory[operatorId][quorumNumber][historyLength-1].updateBlockNumber == uint32(block.number)) {
+                operatorIdToStakeHistory[operatorId][quorumNumber][historyLength-1].stake = newStake;
+            } else {
+                operatorIdToStakeHistory[operatorId][quorumNumber][historyLength-1].nextUpdateBlockNumber = uint32(block.number);
+                operatorIdToStakeHistory[operatorId][quorumNumber].push(OperatorStakeUpdate({
+                    updateBlockNumber: uint32(block.number),
+                    nextUpdateBlockNumber: 0,
+                    stake: newStake
+                }));
+            }
         }
-        
-        // Create a new stake update and push it to storage
-        // TODO - update the entry instead of pushing, if the last update block is this block
-        operatorIdToStakeHistory[operatorId][quorumNumber].push(OperatorStakeUpdate({
-            updateBlockNumber: uint32(block.number),
-            nextUpdateBlockNumber: 0,
-            stake: newStake
-        }));
 
+        // Log update and return stake delta
         emit StakeUpdate(operatorId, quorumNumber, newStake);
-
-        // Return the change in stake
         return _calculateDelta({ prev: prevStake, cur: newStake });
     }
 
-    /// @notice Records that the `totalStake` for `quorumNumber` is now equal to the input param @_totalStake
+    /// @notice Applies a delta to the total stake recorded for `quorumNumber`
     function _recordTotalStakeUpdate(uint8 quorumNumber, int256 stakeDelta) internal {
-        /**
-         * If this quorum has previous stake history, update the previous entry
-         * and fetch the previous total stake
-         */
+        // Return early if no update is needed
+        if (stakeDelta == 0) {
+            return;
+        }
+
         uint96 prevStake;
         uint256 historyLength = _totalStakeHistory[quorumNumber].length;
-        if (historyLength != 0) {
-            _totalStakeHistory[quorumNumber][historyLength - 1].nextUpdateBlockNumber = uint32(block.number);
 
+        if (historyLength == 0) {
+            // No prior stake history - push our first entry
+            _totalStakeHistory[quorumNumber].push(OperatorStakeUpdate({
+                updateBlockNumber: uint32(block.number),
+                nextUpdateBlockNumber: 0,
+                stake: _applyDelta(prevStake, stakeDelta)
+            }));
+        } else {
+            // We have prior stake history - calculate our new stake as a function of our last-recorded stake
             prevStake = _totalStakeHistory[quorumNumber][historyLength - 1].stake;
+            uint96 newStake = _applyDelta(prevStake, stakeDelta);
+
+            /**
+             * If our last stake entry was made in the current block, update the entry
+             * Otherwise, push a new entry and update the previous entry's "next" field
+             */
+            if (_totalStakeHistory[quorumNumber][historyLength-1].updateBlockNumber == uint32(block.number)) {
+                _totalStakeHistory[quorumNumber][historyLength-1].stake = newStake;
+            } else {
+                _totalStakeHistory[quorumNumber][historyLength-1].nextUpdateBlockNumber = uint32(block.number);
+                _totalStakeHistory[quorumNumber].push(OperatorStakeUpdate({
+                    updateBlockNumber: uint32(block.number),
+                    nextUpdateBlockNumber: 0,
+                    stake: newStake
+                }));
+            }
         }
-        
-        // Apply the stake delta to the previous stake, and push an update to the
-        // quorum's stake history
-        _totalStakeHistory[quorumNumber].push(OperatorStakeUpdate({
-            updateBlockNumber: uint32(block.number),
-            nextUpdateBlockNumber: 0,
-            stake: _applyDelta(prevStake, stakeDelta)
-        }));
     }
 
     /// @notice Returns the change between a previous and current value as a signed int
