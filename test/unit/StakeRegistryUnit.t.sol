@@ -619,10 +619,6 @@ contract StakeRegistryUnitTests is Test {
     }
 
     function _calculateDelta(uint96 prev, uint96 cur) internal pure returns (int256) {
-        if (cur >= prev) {
-            return int256(uint256(cur - prev));
-        } else {
-            return -int256(uint256(prev - cur));
-        }
+        return int256(uint256(cur)) - int256(uint256(prev));
     }
 }
