@@ -81,7 +81,7 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
         for (uint8 quorumNumber = 0; quorumNumber < quorumCount; ) {
             int256 totalStakeDelta;
 
-            for (uint i = 0; i < operators.length; ) {
+            for (uint256 i = 0; i < operators.length; ) {
                 bytes32 operatorId = registryCoordinator.getOperatorId(operators[i]);
                 uint192 quorumBitmap = registryCoordinator.getCurrentQuorumBitmapByOperatorId(operatorId);
 
@@ -144,7 +144,7 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
             "StakeRegistry._registerOperator: greatest quorumNumber must be less than quorumCount"
         );
 
-        for (uint i = 0; i < quorumNumbers.length; ) {            
+        for (uint256 i = 0; i < quorumNumbers.length; ) {            
             /**
              * Update the operator's stake for the quorum and retrieve their current stake
              * as well as the change in stake.
@@ -192,7 +192,7 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
          * For each quorum, remove the operator's stake for the quorum and update
          * the quorum's total stake to account for the removal
          */
-        for (uint i = 0; i < quorumNumbers.length; ) {
+        for (uint256 i = 0; i < quorumNumbers.length; ) {
             // Update the operator's stake for the quorum and retrieve the shares removed
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             int256 stakeDelta = _recordOperatorStakeUpdate({
@@ -228,8 +228,8 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
         uint8 quorumNumber,
         uint32 blockNumber
     ) internal view returns (uint32) {
-        uint length = operatorIdToStakeHistory[operatorId][quorumNumber].length;
-        for (uint i = 0; i < length; i++) {
+        uint256 length = operatorIdToStakeHistory[operatorId][quorumNumber].length;
+        for (uint256 i = 0; i < length; i++) {
             if (operatorIdToStakeHistory[operatorId][quorumNumber][length - i - 1].updateBlockNumber <= blockNumber) {
                 uint32 nextUpdateBlockNumber = 
                     operatorIdToStakeHistory[operatorId][quorumNumber][length - i - 1].nextUpdateBlockNumber;
@@ -342,11 +342,7 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
 
     /// @notice Returns the change between a previous and current value as a signed int
     function _calculateDelta(uint96 prev, uint96 cur) internal pure returns (int256) {
-        if (cur >= prev) {
-            return int256(uint256(cur - prev));
-        } else {
-            return -int256(uint256(prev - cur));
-        }
+        return int256(uint256(cur)) - int256(uint256(prev));
     }
 
     /// @notice Adds or subtracts delta from value, according to its sign
@@ -442,8 +438,8 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
                 _totalStakeHistory[quorumNumber][0].updateBlockNumber <= blockNumber,
                 "StakeRegistry.getTotalStakeIndicesByQuorumNumbersAtBlockNumber: quorum has no stake history at blockNumber"
             );
-            uint length = _totalStakeHistory[quorumNumber].length;
-            for (uint j = 0; j < length; j++) {
+            uint256 length = _totalStakeHistory[quorumNumber].length;
+            for (uint256 j = 0; j < length; j++) {
                 if (_totalStakeHistory[quorumNumber][length - j - 1].updateBlockNumber <= blockNumber) {
                     indices[i] = uint32(length - j - 1);
                     break;
