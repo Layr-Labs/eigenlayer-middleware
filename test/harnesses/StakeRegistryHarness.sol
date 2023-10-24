@@ -18,7 +18,7 @@ contract StakeRegistryHarness is StakeRegistry {
         return _recordOperatorStakeUpdate(operatorId, quorumNumber, newStake);
     }
 
-    function updateOperatorStake(address operator, bytes32 operatorId, uint8 quorumNumber) external returns (int256, uint96) {
+    function updateOperatorStake(address operator, bytes32 operatorId, uint8 quorumNumber) external returns (int256, bool) {
         return _updateOperatorStake(operator, operatorId, quorumNumber);
     }
 
@@ -50,23 +50,21 @@ contract StakeRegistryHarness is StakeRegistry {
             "StakeRegistry._registerOperator: greatest quorumNumber must be less than quorumCount"
         );
 
-        for (uint i = 0; i < quorumNumbers.length; ) {            
+        for (uint256 i = 0; i < quorumNumbers.length; ) {            
             /**
              * Update the operator's stake for the quorum and retrieve their current stake
              * as well as the change in stake.
-             * If this method returns `stake == 0`, the operator has not met the minimum requirement
-             * 
-             * TODO - we only use the `stake` return here. It's probably better to use a bool instead
-             *        of relying on the method returning "0" in only this one case.
+             * - If this method returns `hasMinimumStake == false`, the operator has not met 
+             *   the minimum stake requirement for this quorum
              */
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            (int256 stakeDelta, uint96 stake) = _updateOperatorStake({
+            (int256 stakeDelta, bool hasMinimumStake) = _updateOperatorStake({
                 operator: operator, 
                 operatorId: operatorId, 
                 quorumNumber: quorumNumber
             });
             require(
-                stake != 0,
+                hasMinimumStake,
                 "StakeRegistry._registerOperator: Operator does not meet minimum stake requirement for quorum"
             );
 
