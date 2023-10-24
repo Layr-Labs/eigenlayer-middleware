@@ -399,10 +399,12 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
 
         /**
          * If the operator has an existing bitmap history, combine the last entry with `quorumBitmap`
-         * and set its `nextUpdateBlockNumber` to the current block
+         * and set its `nextUpdateBlockNumber` to the current block.
+         * Skip this step if the `nextUpdateBlockNumber` is already set for the last entry in the operator's bitmap history,
+         * as this indicates that the operator previously completely deregistered, and thus is no longer registered for any quorums.
          */
         uint256 historyLength = _operatorIdToQuorumBitmapHistory[operatorId].length;
-        if(historyLength > 0) {
+        if (historyLength != 0 && _operatorIdToQuorumBitmapHistory[operatorId][historyLength - 1].nextUpdateBlockNumber == 0) {
             uint256 prevQuorumBitmap = _operatorIdToQuorumBitmapHistory[operatorId][historyLength - 1].quorumBitmap;
             require(prevQuorumBitmap & quorumBitmap == 0, "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: operator already registered for some quorums being registered for");
             // new stored quorumBitmap is the previous quorumBitmap or'd with the new quorumBitmap to register for

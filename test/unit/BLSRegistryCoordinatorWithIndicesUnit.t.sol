@@ -579,6 +579,23 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         );
     }
 
+    // @notice verify that it is possible for an operator to register, deregister, and then register again!
+    function testReregisterOperatorWithCoordinator_Valid() public {
+        testDeregisterOperatorWithCoordinatorForSingleQuorumAndSingleOperator_Valid();
+
+        uint32 registrationBlockNumber = 201;
+
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        cheats.startPrank(defaultOperator);
+        
+        cheats.roll(registrationBlockNumber);
+        
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey, defaultSocket);
+
+        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
+    }
 
     function testRegisterOperatorWithCoordinatorWithKicks_Valid(uint256 pseudoRandomNumber) public {
         uint32 numOperators = defaultMaxOperatorCount;
