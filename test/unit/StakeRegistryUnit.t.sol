@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
+import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {Slasher} from "eigenlayer-contracts/src/contracts/core/Slasher.sol";
@@ -10,25 +10,25 @@ import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/Pau
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
-import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
-import {IVoteWeigher} from "../../src/interfaces/IVoteWeigher.sol";
-import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
-import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
-import {IBLSPubkeyRegistry} from "../../src/interfaces/IBLSPubkeyRegistry.sol";
+import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
+import {IServiceManager} from "src/interfaces/IServiceManager.sol";
+import {IVoteWeigher} from "src/interfaces/IVoteWeigher.sol";
+import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
+import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
+import {IBLSPubkeyRegistry} from "src/interfaces/IBLSPubkeyRegistry.sol";
 
-import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
+import {BitmapUtils} from "eigenlayer-contracts/src/contracts/libraries/BitmapUtils.sol";
 
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
 import {EigenPodManagerMock} from "eigenlayer-contracts/src/test/mocks/EigenPodManagerMock.sol";
-import {ServiceManagerMock} from "../mocks/ServiceManagerMock.sol";
+import {ServiceManagerMock} from "test/mocks/ServiceManagerMock.sol";
 import {OwnableMock} from "eigenlayer-contracts/src/test/mocks/OwnableMock.sol";
 import {DelegationManagerMock} from "eigenlayer-contracts/src/test/mocks/DelegationManagerMock.sol";
 import {SlasherMock} from "eigenlayer-contracts/src/test/mocks/SlasherMock.sol";
 
-import {StakeRegistryHarness} from "../harnesses/StakeRegistryHarness.sol";
-import {StakeRegistry} from "../../src/StakeRegistry.sol";
-import {BLSRegistryCoordinatorWithIndicesHarness} from "../harnesses/BLSRegistryCoordinatorWithIndicesHarness.sol";
+import {StakeRegistryHarness} from "test/harnesses/StakeRegistryHarness.sol";
+import {StakeRegistry} from "src/StakeRegistry.sol";
+import {BLSRegistryCoordinatorWithIndicesHarness} from "test/harnesses/BLSRegistryCoordinatorWithIndicesHarness.sol";
 
 import "forge-std/Test.sol";
 
@@ -299,39 +299,39 @@ contract StakeRegistryUnitTests is Test {
             // reset the cumulative block number
             cumulativeBlockNumber = initialBlockNumber;
 
+            // make sure the number of total stake updates is as expected
+            assertEq(stakeRegistry.getLengthOfTotalStakeHistoryForQuorum(i), numOperatorsInQuorum[i]);
+
             uint96 cumulativeStake = 0;
             // for each operator
             for (uint256 j = 0; j < quorumBitmaps.length; j++) {
                 // if the operator is in the quorum
                 if (quorumBitmaps[j] >> i & 1 == 1) {
                     cumulativeStake += paddedStakesForQuorums[j][operatorQuorumIndices[j]];
+                    // make sure the number of stake updates is as expected
+                    assertEq(stakeRegistry.getLengthOfOperatorIdStakeHistoryForQuorum(_incrementBytes32(defaultOperatorId, j), i), 1);
+
+                    // make sure that the stake update is as expected
+                    IStakeRegistry.OperatorStakeUpdate memory totalStakeUpdate =
+                        stakeRegistry.getTotalStakeUpdateForQuorumFromIndex(i, operatorCount);
+
+                    assertEq(totalStakeUpdate.stake, cumulativeStake);
+                    assertEq(totalStakeUpdate.updateBlockNumber, cumulativeBlockNumber);
+                    // make sure that the next update block number of the previous stake update is as expected
+                    if (operatorCount != 0) {
+                        IStakeRegistry.OperatorStakeUpdate memory prevTotalStakeUpdate =
+                            stakeRegistry.getTotalStakeUpdateForQuorumFromIndex(i, operatorCount - 1);
+                        assertEq(prevTotalStakeUpdate.nextUpdateBlockNumber, cumulativeBlockNumber);
+                    }
 
                     operatorQuorumIndices[j]++;
                     operatorCount++;
+                } else {
+                    // make sure the number of stake updates is as expected
+                    assertEq(stakeRegistry.getLengthOfOperatorIdStakeHistoryForQuorum(_incrementBytes32(defaultOperatorId, j), i), 0);
                 }
                 cumulativeBlockNumber += blocksPassed[j];
-            }
-
-            uint historyLength = stakeRegistry.getLengthOfTotalStakeHistoryForQuorum(i);
-
-            // If we don't have stake history, it should be because there is no stake
-            if (historyLength == 0) {
-                assertEq(cumulativeStake, 0);
-                continue;
-            }
-
-            // make sure that the stake update is as expected
-            IStakeRegistry.OperatorStakeUpdate memory totalStakeUpdate =
-            stakeRegistry.getTotalStakeUpdateForQuorumFromIndex(i, historyLength-1);
-
-            assertEq(totalStakeUpdate.stake, cumulativeStake);
-            assertEq(totalStakeUpdate.updateBlockNumber, cumulativeBlockNumber);
-            // make sure that the next update block number of the previous stake update is as expected
-            if (historyLength >= 2) {
-                IStakeRegistry.OperatorStakeUpdate memory prevTotalStakeUpdate =
-                    stakeRegistry.getTotalStakeUpdateForQuorumFromIndex(i, historyLength-2);
-                assertEq(prevTotalStakeUpdate.nextUpdateBlockNumber, cumulativeBlockNumber);
-            }
+            }   
         }
     }
 
@@ -377,8 +377,13 @@ contract StakeRegistryUnitTests is Test {
             (quorumBitmaps[i],) = _registerOperatorRandomValid(_incrementAddress(defaultOperator, i), _incrementBytes32(defaultOperatorId, i), pseudoRandomNumber + i);
         }
 
-        cumulativeBlockNumber += 1;
-        cheats.roll(cumulativeBlockNumber);
+        {
+            bool shouldPassBlockBeforeDeregistration  = uint256(keccak256(abi.encodePacked(pseudoRandomNumber, "shouldPassBlockBeforeDeregistration"))) & 1 == 1;
+            if (shouldPassBlockBeforeDeregistration) {
+                cumulativeBlockNumber += 1;
+                cheats.roll(cumulativeBlockNumber);
+            }
+        }
 
         // deregister the operator from a subset of the quorums
         uint256 deregistrationQuroumBitmap = quorumBitmap & deregistrationQuorumsFlag;
@@ -406,13 +411,13 @@ contract StakeRegistryUnitTests is Test {
                 assertEq(lastStakeUpdate.updateBlockNumber, cumulativeBlockNumber, "testDeregisterFirstOperator_Valid_2");
                 assertEq(lastStakeUpdate.nextUpdateBlockNumber, 0, "testDeregisterFirstOperator_Valid_3");
 
-                // Get history length for quorum
-                uint historyLength = stakeRegistry.getLengthOfTotalStakeHistoryForQuorum(i);
+                // make the analogous check for total stake history
+                assertEq(stakeRegistry.getLengthOfTotalStakeHistoryForQuorum(i), numOperatorsInQuorum[i] + 1, "testDeregisterFirstOperator_Valid_4");
                 // make sure that the last stake update is as expected
                 IStakeRegistry.OperatorStakeUpdate memory lastTotalStakeUpdate 
-                    = stakeRegistry.getTotalStakeUpdateForQuorumFromIndex(i, historyLength-1);
+                    = stakeRegistry.getTotalStakeUpdateForQuorumFromIndex(i, numOperatorsInQuorum[i]);
                 assertEq(lastTotalStakeUpdate.stake, 
-                    stakeRegistry.getTotalStakeUpdateForQuorumFromIndex(i, historyLength-2).stake // the previous total stake
+                    stakeRegistry.getTotalStakeUpdateForQuorumFromIndex(i, numOperatorsInQuorum[i] - 1).stake // the previous total stake
                         - paddedStakesForQuorum[quorumNumberIndex], // minus the stake that was deregistered
                     "testDeregisterFirstOperator_Valid_5"    
                 );
@@ -452,43 +457,65 @@ contract StakeRegistryUnitTests is Test {
             cheats.roll(cumulativeBlockNumber);
         }
 
+        // reset for checking indices
+        cumulativeBlockNumber = intialBlockNumber;
+        // make sure that the stake updates are as expected
+        for (uint256 i = 0; i < blocksPassed.length - 1; i++) {
+            IStakeRegistry.OperatorStakeUpdate memory operatorStakeUpdate = stakeRegistry.getStakeUpdateForQuorumFromOperatorIdAndIndex(defaultQuorumNumber, defaultOperatorId, i);
+            
+            uint96 expectedStake = stakes[i];
+            if (expectedStake < stakeRegistry.minimumStakeForQuorum(defaultQuorumNumber)) {
+                expectedStake = 0;
+            }
+
+            assertEq(operatorStakeUpdate.stake, expectedStake);
+            assertEq(operatorStakeUpdate.updateBlockNumber, cumulativeBlockNumber);
+            cumulativeBlockNumber += blocksPassed[i];
+            assertEq(operatorStakeUpdate.nextUpdateBlockNumber, cumulativeBlockNumber);
+        }
+
         // make sure that the last stake update is as expected
-        IStakeRegistry.OperatorStakeUpdate memory lastOperatorStakeUpdate = stakeRegistry.getMostRecentStakeUpdateByOperatorId(defaultOperatorId, defaultQuorumNumber);
+        IStakeRegistry.OperatorStakeUpdate memory lastOperatorStakeUpdate = stakeRegistry.getStakeUpdateForQuorumFromOperatorIdAndIndex(defaultQuorumNumber, defaultOperatorId, blocksPassed.length - 1);
         assertEq(lastOperatorStakeUpdate.stake, stakes[blocksPassed.length - 1]);
+        assertEq(lastOperatorStakeUpdate.updateBlockNumber, cumulativeBlockNumber);
         assertEq(lastOperatorStakeUpdate.nextUpdateBlockNumber, uint32(0));
     }
 
     function testRecordTotalStakeUpdate_Valid(
-        uint24 blocksPassed,
+        uint24[] memory blocksPassed,
         uint96[] memory stakes
     ) public {
+        cheats.assume(blocksPassed.length > 0);
+        cheats.assume(blocksPassed.length <= stakes.length);
         // initialize at a non-zero block number
         uint32 intialBlockNumber = 100;
         cheats.roll(intialBlockNumber);
         uint32 cumulativeBlockNumber = intialBlockNumber;
         // loop through each one of the blocks passed, roll that many blocks, create an Operator Stake Update for total stake, and trigger a total stake update
-        for (uint256 i = 0; i < stakes.length; i++) {
+        for (uint256 i = 0; i < blocksPassed.length; i++) {
             int256 stakeDelta;
             if (i == 0) {
                 stakeDelta = _calculateDelta({prev: 0, cur: stakes[i]});
             } else {
                 stakeDelta = _calculateDelta({prev: stakes[i-1], cur: stakes[i]});
             }
-                
 
-            // Perform the update
             stakeRegistry.recordTotalStakeUpdate(defaultQuorumNumber, stakeDelta);
-            
-            IStakeRegistry.OperatorStakeUpdate memory newStakeUpdate;
-            uint historyLength = stakeRegistry.getLengthOfTotalStakeHistoryForQuorum(defaultQuorumNumber);
-            if (historyLength != 0) {
-                newStakeUpdate = stakeRegistry.getTotalStakeUpdateForQuorumFromIndex(defaultQuorumNumber, historyLength-1);
-            }
-            // Check that the most recent entry reflects the correct stake
-            assertEq(newStakeUpdate.stake, stakes[i]);
 
-            cumulativeBlockNumber += blocksPassed;
+            cumulativeBlockNumber += blocksPassed[i];
             cheats.roll(cumulativeBlockNumber);
+        }
+
+        // reset for checking indices
+        cumulativeBlockNumber = intialBlockNumber;
+        // make sure that the total stake updates are as expected
+        for (uint256 i = 0; i < blocksPassed.length - 1; i++) {
+            IStakeRegistry.OperatorStakeUpdate memory totalStakeUpdate = stakeRegistry.getTotalStakeUpdateForQuorumFromIndex(defaultQuorumNumber, i);
+
+            assertEq(totalStakeUpdate.stake, stakes[i]);
+            assertEq(totalStakeUpdate.updateBlockNumber, cumulativeBlockNumber);
+            cumulativeBlockNumber += blocksPassed[i];
+            assertEq(totalStakeUpdate.nextUpdateBlockNumber, cumulativeBlockNumber);
         }
     }
 
@@ -592,6 +619,10 @@ contract StakeRegistryUnitTests is Test {
     }
 
     function _calculateDelta(uint96 prev, uint96 cur) internal pure returns (int256) {
-        return int256(uint256(cur)) - int256(uint256(prev));
+        if (cur >= prev) {
+            return int256(uint256(cur - prev));
+        } else {
+            return -int256(uint256(prev - cur));
+        }
     }
 }
