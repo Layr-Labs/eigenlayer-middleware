@@ -25,12 +25,12 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
 
     IRegistryCoordinator public immutable registryCoordinator;
     IStakeRegistry public immutable stakeRegistry;
-    address public immutable blsPubkeyRegistry;
+    IBLSPubkeyRegistry public immutable blsPubkeyRegistry;
 
     constructor(IBLSRegistryCoordinatorWithIndices _registryCoordinator) {
         registryCoordinator = IRegistryCoordinator(_registryCoordinator);
         stakeRegistry = _registryCoordinator.stakeRegistry();
-        blsPubkeyRegistry = address(_registryCoordinator.blsPubkeyRegistry());
+        blsPubkeyRegistry = _registryCoordinator.blsPubkeyRegistry();
     }
 
     /**
