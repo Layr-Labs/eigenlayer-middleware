@@ -432,7 +432,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
             socket: socket
         });
         
-        for (uint i = 0; i < numOperatorsPerQuorum.length; i++) {
+        for (uint256 i = 0; i < numOperatorsPerQuorum.length; i++) {
             require(
                 numOperatorsPerQuorum[i] <= _quorumOperatorSetParams[uint8(quorumNumbers[i])].maxOperatorCount,
                 "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinatorAndNoOverfilledQuorums: quorum is overfilled"
@@ -568,8 +568,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     ) external view returns (uint32[] memory) {
         uint32[] memory indices = new uint32[](operatorIds.length);
         for (uint256 i = 0; i < operatorIds.length; i++) {
-            uint length = _operatorIdToQuorumBitmapHistory[operatorIds[i]].length;
-            for (uint j = 0; j < length; j++) {
+            uint256 length = _operatorIdToQuorumBitmapHistory[operatorIds[i]].length;
+            for (uint256 j = 0; j < length; j++) {
                 if (_operatorIdToQuorumBitmapHistory[operatorIds[i]][length - j - 1].updateBlockNumber <= blockNumber) {
                     uint32 nextUpdateBlockNumber = 
                         _operatorIdToQuorumBitmapHistory[operatorIds[i]][length - j - 1].nextUpdateBlockNumber;
