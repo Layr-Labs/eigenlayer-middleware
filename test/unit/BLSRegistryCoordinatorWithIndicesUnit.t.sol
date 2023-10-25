@@ -579,6 +579,52 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         );
     }
 
+    // @notice verify that it is possible for an operator to register, deregister, and then register again!
+    function testReregisterOperatorWithCoordinator_Valid() public {
+        testDeregisterOperatorWithCoordinatorForSingleQuorumAndSingleOperator_Valid();
+
+        uint32 reregistrationBlockNumber = 201;
+
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        cheats.startPrank(defaultOperator);
+        
+        cheats.roll(reregistrationBlockNumber);
+        
+        // store data before registering, to check against later
+        IRegistryCoordinator.QuorumBitmapUpdate memory previousQuorumBitmapUpdate =
+            registryCoordinator.getQuorumBitmapUpdateByOperatorIdByIndex(defaultOperatorId, 0);
+
+        // re-register the operator
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey, defaultSocket);
+
+        // check success of registration
+        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
+        assertEq(registryCoordinator.getOperatorId(defaultOperator), defaultOperatorId);
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))), 
+            keccak256(abi.encode(IRegistryCoordinator.Operator({
+                operatorId: defaultOperatorId,
+                status: IRegistryCoordinator.OperatorStatus.REGISTERED
+            })))
+        );
+        assertEq(registryCoordinator.getCurrentQuorumBitmapByOperatorId(defaultOperatorId), quorumBitmap);
+        // check that previous entry in bitmap history was not changed
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByOperatorIdByIndex(defaultOperatorId, 0))), 
+            keccak256(abi.encode(previousQuorumBitmapUpdate))
+        );
+        // check that new entry in bitmap history is as expected
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByOperatorIdByIndex(defaultOperatorId, 1))), 
+            keccak256(abi.encode(IRegistryCoordinator.QuorumBitmapUpdate({
+                quorumBitmap: uint192(quorumBitmap),
+                updateBlockNumber: uint32(reregistrationBlockNumber),
+                nextUpdateBlockNumber: 0
+            })))
+        );
+    }
 
     function testRegisterOperatorWithCoordinatorWithKicks_Valid(uint256 pseudoRandomNumber) public {
         uint32 numOperators = defaultMaxOperatorCount;

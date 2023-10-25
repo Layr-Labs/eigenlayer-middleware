@@ -84,10 +84,7 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
             for (uint i = 0; i < operators.length; ) {
                 bytes32 operatorId = registryCoordinator.getOperatorId(operators[i]);
                 uint192 quorumBitmap = registryCoordinator.getCurrentQuorumBitmapByOperatorId(operatorId);
-                // if the operator is not a part of any quorums, skip
-                if (quorumBitmap == 0) {
-                    continue;
-                }
+
                 // if the operator is a part of the quorum
                 if (BitmapUtils.numberIsInBitmap(quorumBitmap, quorumNumber)) {
                     // if the total stake has not been loaded yet, load it

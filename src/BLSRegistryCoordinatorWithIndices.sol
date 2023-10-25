@@ -388,29 +388,29 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         require(quorumBitmap <= MAX_QUORUM_BITMAP, "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: quorumBitmap exceeds of max bitmap size");
         require(quorumBitmap != 0, "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: quorumBitmap cannot be 0");
         
-        // register the operator with the BLSPubkeyRegistry and get the operatorId (in this case, the pubkeyHash) back
-        // note that the operatorId is the hash of the operator's BLS public key which is irreversibly linked to their address
-        // in the BLSPublicKeyCompendium, so this will always be the same for the same operator
+        /**
+         * Register the operator with the BLSPubkeyRegistry, StakeRegistry, and IndexRegistry. Retrieves:
+         * - operatorId: hash of the operator's pubkey, unique to the operator
+         * - numOperatorsPerQuorum: list of # operators for each quorum in `quorumNumbers`
+         */
         bytes32 operatorId = blsPubkeyRegistry.registerOperator(operator, quorumNumbers, pubkey);
+        stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
+        uint32[] memory numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
 
-        uint256 operatorQuorumBitmapHistoryLength = _operatorIdToQuorumBitmapHistory[operatorId].length;
-        if(operatorQuorumBitmapHistoryLength > 0) {
-            uint256 prevQuorumBitmap = _operatorIdToQuorumBitmapHistory[operatorId][operatorQuorumBitmapHistoryLength - 1].quorumBitmap;
+        /**
+         * If the operator has an existing bitmap history, combine the last entry with `quorumBitmap`
+         * and set its `nextUpdateBlockNumber` to the current block.
+         * Skip this step if the `nextUpdateBlockNumber` is already set for the last entry in the operator's bitmap history,
+         * as this indicates that the operator previously completely deregistered, and thus is no longer registered for any quorums.
+         */
+        uint256 historyLength = _operatorIdToQuorumBitmapHistory[operatorId].length;
+        if (historyLength != 0 && _operatorIdToQuorumBitmapHistory[operatorId][historyLength - 1].nextUpdateBlockNumber == 0) {
+            uint256 prevQuorumBitmap = _operatorIdToQuorumBitmapHistory[operatorId][historyLength - 1].quorumBitmap;
             require(prevQuorumBitmap & quorumBitmap == 0, "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: operator already registered for some quorums being registered for");
             // new stored quorumBitmap is the previous quorumBitmap or'd with the new quorumBitmap to register for
             quorumBitmap |= prevQuorumBitmap;
-        }
 
-        // register the operator with the StakeRegistry
-        stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
-
-        // register the operator with the IndexRegistry
-        uint32[] memory numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
-
-        uint256 quorumBitmapHistoryLength = _operatorIdToQuorumBitmapHistory[operatorId].length;
-        if(quorumBitmapHistoryLength != 0) {
-            // set the toBlockNumber of the previous quorum bitmap update
-            _operatorIdToQuorumBitmapHistory[operatorId][quorumBitmapHistoryLength - 1].nextUpdateBlockNumber = uint32(block.number);
+            _operatorIdToQuorumBitmapHistory[operatorId][historyLength - 1].nextUpdateBlockNumber = uint32(block.number);
         }
 
         // set the operatorId to quorum bitmap history
