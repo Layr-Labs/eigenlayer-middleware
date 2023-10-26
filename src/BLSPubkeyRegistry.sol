@@ -94,6 +94,20 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
         emit OperatorRemovedFromQuorums(operator, quorumNumbers);
     }
 
+    /**
+     * @notice Creates a new quorum by pushing its first apk update
+     * @param quorumNumber The number of the new quorum
+     */
+    function createQuorum(uint8 quorumNumber) public virtual onlyRegistryCoordinator {
+        require(quorumApkUpdates[quorumNumber].length == 0, "BLSPubkeyRegistry.createQuorum: quorum already exists");
+
+        quorumApkUpdates[quorumNumber].push(ApkUpdate({
+            apkHash: bytes24(0),
+            updateBlockNumber: uint32(block.number),
+            nextUpdateBlockNumber: 0
+        }));
+    }
+
     /*******************************************************************************
                             INTERNAL FUNCTIONS
     *******************************************************************************/
@@ -104,21 +118,24 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
         for (uint i = 0; i < quorumNumbers.length; ) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
 
-            uint256 quorumApkUpdatesLength = quorumApkUpdates[quorumNumber].length;
-            if (quorumApkUpdatesLength > 0) {
-                // update nextUpdateBlockNumber of the current latest ApkUpdate
-                quorumApkUpdates[quorumNumber][quorumApkUpdatesLength - 1].nextUpdateBlockNumber = uint32(block.number);
-            }
+            // Validate quorumNumber
+            uint256 historyLength = quorumApkUpdates[quorumNumber].length;
+            require(historyLength != 0, "BLSPubkeyRegistry._processQuorumApkUpdate: quorum does not exist");
 
+            // Update the last entry to point at the current block
+            // TODO - if the last entry was made in this block, update the entry instead
+            quorumApkUpdates[quorumNumber][historyLength - 1].nextUpdateBlockNumber = uint32(block.number);
+
+            // Update aggregate public key for this quorum
             apkAfterUpdate = quorumApk[quorumNumber].plus(point);
-
-            //update aggregate public key for this quorum
             quorumApk[quorumNumber] = apkAfterUpdate;
-            //create new ApkUpdate to add to the mapping
-            ApkUpdate memory latestApkUpdate;
-            latestApkUpdate.apkHash = bytes24(BN254.hashG1Point(apkAfterUpdate));
-            latestApkUpdate.updateBlockNumber = uint32(block.number);
-            quorumApkUpdates[quorumNumber].push(latestApkUpdate);
+
+            // Push update to history
+            quorumApkUpdates[quorumNumber].push(ApkUpdate({
+                apkHash: bytes24(BN254.hashG1Point(apkAfterUpdate)),
+                updateBlockNumber: uint32(block.number),
+                nextUpdateBlockNumber: 0
+            }));
 
             unchecked {
                 ++i;
@@ -126,6 +143,7 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
         }
     }
 
+    // TODO - should this fail if apkUpdate.apkHash == 0? This will be the case for the first entry in each quorum
     function _validateApkHashForQuorumAtBlockNumber(ApkUpdate memory apkUpdate, uint32 blockNumber) internal pure {
         require(
             blockNumber >= apkUpdate.updateBlockNumber,
