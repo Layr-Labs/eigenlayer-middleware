@@ -21,23 +21,12 @@ abstract contract VoteWeigherBaseStorage is Initializable, IVoteWeigher {
     uint8 public constant MAX_WEIGHING_FUNCTION_LENGTH = 32;
     /// @notice Constant used as a divisor in dealing with BIPS amounts.
     uint256 internal constant MAX_BIPS = 10000;
-    /// @notice The maximum number of quorums that the VoteWeigher is considering.
-    uint8 public constant MAX_QUORUM_COUNT = 192;
 
     /// @notice The address of the Delegation contract for EigenLayer.
     IDelegationManager public immutable delegation;
 
-    /// @notice The address of the StrategyManager contract for EigenLayer.
-    IStrategyManager public immutable strategyManager;
-
-    /// @notice The address of the Slasher contract for EigenLayer.
-    ISlasher public immutable slasher;
-
     /// @notice The ServiceManager contract for this middleware, where tasks are created / initiated.
     IServiceManager public immutable serviceManager;
-
-    /// @notice The number of quorums that the VoteWeigher is considering.
-    uint16 public quorumCount;
 
     /**
      * @notice mapping from quorum number to the list of strategies considered and their
@@ -46,12 +35,10 @@ abstract contract VoteWeigherBaseStorage is Initializable, IVoteWeigher {
     mapping(uint8 => StrategyAndWeightingMultiplier[]) public strategiesConsideredAndMultipliers;
 
     constructor(
-        IStrategyManager _strategyManager,
+        IDelegationManager _delegationManager,
         IServiceManager _serviceManager
     ) {
-        strategyManager = _strategyManager;
-        delegation = _strategyManager.delegation();
-        slasher = _strategyManager.slasher();
+        delegation = _delegationManager;
         serviceManager = _serviceManager;
         // disable initializers so that the implementation contract cannot be initialized
         _disableInitializers();

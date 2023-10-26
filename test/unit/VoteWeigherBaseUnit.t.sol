@@ -12,9 +12,9 @@ import {IEigenPodManager} from "eigenlayer-contracts/src/contracts/interfaces/IE
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 import {IServiceManager} from "src/interfaces/IServiceManager.sol";
 import {IVoteWeigher} from "src/interfaces/IVoteWeigher.sol";
-import {VoteWeigherBase} from "src/VoteWeigherBase.sol";
+import {StakeRegistry} from "src/StakeRegistry.sol";
 
-import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
+import {RegistryCoordinatorMock} from "test/mocks/RegistryCoordinatorMock.sol";
 import {OwnableMock} from "eigenlayer-contracts/src/test/mocks/OwnableMock.sol";
 import {DelegationManagerMock} from "eigenlayer-contracts/src/test/mocks/DelegationManagerMock.sol";
 
@@ -25,16 +25,16 @@ contract VoteWeigherBaseUnitTests is Test {
 
     ProxyAdmin public proxyAdmin;
     PauserRegistry public pauserRegistry;
-    IStrategyManager public strategyManager;
 
     address serviceManagerOwner;
     IServiceManager public serviceManager;
 
     DelegationManagerMock delegationMock;
+    RegistryCoordinatorMock registryCoordinatorMock;
 
-    VoteWeigherBase public voteWeigher;
+    StakeRegistry public voteWeigher;
 
-    VoteWeigherBase public voteWeigherImplementation;
+    StakeRegistry public voteWeigherImplementation;
 
     address public pauser = address(555);
     address public unpauser = address(999);
@@ -71,31 +71,23 @@ contract VoteWeigherBaseUnitTests is Test {
         pausers[0] = pauser;
         pauserRegistry = new PauserRegistry(pausers, unpauser);
 
-        StrategyManagerMock strategyManagerMock = new StrategyManagerMock();
+        registryCoordinatorMock = new RegistryCoordinatorMock();
         delegationMock = new DelegationManagerMock();
-        strategyManagerMock.setAddresses(
-            delegationMock,
-            IEigenPodManager(address(uint160(uint256(keccak256(abi.encodePacked("eigenPodManager")))))),
-            ISlasher(address(uint160(uint256(keccak256(abi.encodePacked("slasher"))))))
-        );
-
-        strategyManager = IStrategyManager(address(strategyManagerMock));
 
         // make the serviceManagerOwner the owner of the serviceManager contract
         cheats.prank(serviceManagerOwner);
         serviceManager = IServiceManager(address(new OwnableMock()));
 
-        voteWeigherImplementation = new VoteWeigherBase(strategyManager, serviceManager);
+        voteWeigherImplementation = new StakeRegistry(registryCoordinatorMock, delegationMock, serviceManager);
 
-        voteWeigher = VoteWeigherBase(address(new TransparentUpgradeableProxy(address(voteWeigherImplementation), address(proxyAdmin), "")));
+        voteWeigher = StakeRegistry(address(new TransparentUpgradeableProxy(address(voteWeigherImplementation), address(proxyAdmin), "")));
 
         fuzzedAddressMapping[address(proxyAdmin)] = true;
     }
 
     function testCorrectConstructionParameters() public {
-        assertEq(address(voteWeigherImplementation.strategyManager()), address(strategyManager));
-        assertEq(address(voteWeigherImplementation.slasher()), address(strategyManager.slasher()));
-        assertEq(address(voteWeigherImplementation.delegation()), address(strategyManager.delegation()));
+        assertEq(address(voteWeigherImplementation.registryCoordinator()), address(registryCoordinatorMock));
+        assertEq(address(voteWeigherImplementation.delegation()), address(delegationMock));
         assertEq(address(voteWeigherImplementation.serviceManager()), address(serviceManager));
     }
 

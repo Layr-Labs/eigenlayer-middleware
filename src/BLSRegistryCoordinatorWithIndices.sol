@@ -20,8 +20,6 @@ import "src/interfaces/IStakeRegistry.sol";
 import "src/interfaces/IIndexRegistry.sol";
 import "src/interfaces/IRegistryCoordinator.sol";
 
-
-
 /**
  * @title A `RegistryCoordinator` that has three registries:
  *      1) a `StakeRegistry` that keeps track of operators' stakes
@@ -44,18 +42,22 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     uint8 internal constant PAUSED_REGISTER_OPERATOR = 0;
     /// @notice Index for flag that pauses operator deregistration
     uint8 internal constant PAUSED_DEREGISTER_OPERATOR = 1;
+    /// @notice The maximum number of quorums this contract supports
+    uint8 internal constant MAX_QUORUM_COUNT = 192;
 
     /// @notice the EigenLayer Slasher
     ISlasher public immutable slasher;
     /// @notice the Service Manager for the service that this contract is coordinating
     IServiceManager public immutable serviceManager;
     /// @notice the BLS Pubkey Registry contract that will keep track of operators' BLS public keys
-    IBLSPubkeyRegistry public immutable blsPubkeyRegistry;
+    BLSPubkeyRegistry public immutable blsPubkeyRegistry;
     /// @notice the Stake Registry contract that will keep track of operators' stakes
-    IStakeRegistry public immutable stakeRegistry;
+    StakeRegistry public immutable stakeRegistry;
     /// @notice the Index Registry contract that will keep track of operators' indexes
-    IIndexRegistry public immutable indexRegistry;
+    IndexRegistry public immutable indexRegistry;
 
+    /// @notice the current number of quorums supported by the registry coordinator
+    uint8 public quorumCount;
     /// @notice the mapping from quorum number to a quorums operator cap and kick parameters
     mapping(uint8 => OperatorSetParam) internal _quorumOperatorSetParams;
     /// @notice the mapping from operator's operatorId to the updates of the bitmap of quorums they are registered for
@@ -82,6 +84,14 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         _;
     }
 
+    modifier quorumExists(uint8 quorumNumber) {
+        require(
+            quorumNumber < quorumCount, 
+            "BLSRegistryCoordinatorWithIndices.quorumExists: quorum does not exist"
+        );
+        _;
+    }
+
     constructor(
         ISlasher _slasher,
         IServiceManager _serviceManager,
@@ -99,25 +109,30 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     function initialize(
         address _churnApprover,
         address _ejector,
-        OperatorSetParam[] memory _operatorSetParams,
         IPauserRegistry _pauserRegistry,
-        uint256 _initialPausedStatus
+        uint256 _initialPausedStatus,
+        OperatorSetParam[] memory _operatorSetParams,
+        uint96[] memory _minimumStakes,
+        IVoteWeigher.StrategyAndWeightingMultiplier[][] memory _strategyParams
     ) external initializer {
-        // set initial paused status
+        require(
+            _operatorSetParams.length == _minimumStakes.length && _minimumStakes.length == _strategyParams.length,
+            "BLSRegistryCoordinatorWithIndices.initialize: input length mismatch"
+        );
+        
+        // Initialize roles
         _initializePauser(_pauserRegistry, _initialPausedStatus);
-        // set the churnApprover
         _setChurnApprover(_churnApprover);
-        // set the ejector
         _setEjector(_ejector);
-        // add registry contracts to the registries array
+
+        // Add registry contracts to the registries array
         registries.push(address(stakeRegistry));
         registries.push(address(blsPubkeyRegistry));
         registries.push(address(indexRegistry));
 
-        // set the operator set params
-        require(IVoteWeigher(address(stakeRegistry)).quorumCount() == _operatorSetParams.length, "BLSRegistryCoordinatorWithIndices: operator set params length mismatch");
-        for (uint8 i = 0; i < _operatorSetParams.length; i++) {
-            _setOperatorSetParams(i, _operatorSetParams[i]);
+        // Create quorums
+        for (uint256 i = 0; i < _operatorSetParams.length; i++) {
+            _createQuorum(_operatorSetParams[i], _minimumStakes[i], _strategyParams[i]);
         }
     }
 
@@ -322,16 +337,27 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     *******************************************************************************/
 
     /**
-     * @notice Sets parameters of the operator set for the given `quorumNumber`
+     * @notice Creates a quorum and initializes it in each registry contract
+     */
+    function createQuorum(
+        OperatorSetParam memory operatorSetParams,
+        uint96 minimumStake,
+        IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategyParams
+    ) external virtual onlyServiceManagerOwner {
+        _createQuorum(operatorSetParams, minimumStake, strategyParams);
+    }
+
+    /**
+     * @notice Updates a quorum's OperatorSetParams
      * @param quorumNumber is the quorum number to set the maximum number of operators for
-     * @param operatorSetParam is the parameters of the operator set for the `quorumNumber`
+     * @param operatorSetParams is the parameters of the operator set for the `quorumNumber`
      * @dev only callable by the service manager owner
      */
     function setOperatorSetParams(
         uint8 quorumNumber, 
-        OperatorSetParam memory operatorSetParam
-    ) external onlyServiceManagerOwner {
-        _setOperatorSetParams(quorumNumber, operatorSetParam);
+        OperatorSetParam memory operatorSetParams
+    ) external onlyServiceManagerOwner quorumExists(quorumNumber) {
+        _setOperatorSetParams(quorumNumber, operatorSetParams);
     }
 
     /**
@@ -521,9 +547,32 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         EIP1271SignatureUtils.checkSignature_EIP1271(churnApprover, calculateOperatorChurnApprovalDigestHash(registeringOperatorId, operatorKickParams, signatureWithSaltAndExpiry.salt, signatureWithSaltAndExpiry.expiry), signatureWithSaltAndExpiry.signature);
     }
 
-    function _setOperatorSetParams(uint8 quorumNumber, OperatorSetParam memory operatorSetParam) internal {
-        _quorumOperatorSetParams[quorumNumber] = operatorSetParam;
-        emit OperatorSetParamsUpdated(quorumNumber, operatorSetParam);
+    /**
+     * @notice Creates and initializes a quorum in each registry contract
+     */
+    function _createQuorum(
+        OperatorSetParam memory operatorSetParams,
+        uint96 minimumStake,
+        IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategyParams
+    ) internal {
+        // Increment the total quorum count. Fails if we're already at the max
+        uint8 prevQuorumCount = quorumCount;
+        require(prevQuorumCount < MAX_QUORUM_COUNT, "BLSRegistryCoordinatorWithIndicies.createQuorum: max quorums reached");
+        quorumCount = prevQuorumCount + 1;
+        
+        // The previous count is the new quorum's number
+        uint8 quorumNumber = prevQuorumCount;
+
+        // Initialize the quorum here and in each registry
+        _setOperatorSetParams(quorumNumber, operatorSetParams);
+        stakeRegistry.createQuorum(quorumNumber, minimumStake, strategyParams);
+        indexRegistry.createQuorum(quorumNumber);
+        blsPubkeyRegistry.createQuorum(quorumNumber);
+    }
+
+    function _setOperatorSetParams(uint8 quorumNumber, OperatorSetParam memory operatorSetParams) internal {
+        _quorumOperatorSetParams[quorumNumber] = operatorSetParams;
+        emit OperatorSetParamsUpdated(quorumNumber, operatorSetParams);
     }
     
     function _setChurnApprover(address newChurnApprover) internal {

@@ -46,9 +46,12 @@ contract IndexRegistry is IndexRegistryStorage {
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
 
-            //this is the would-be index of the operator being registered, the total number of operators for that quorum (which is last index + 1)
-            uint256 quorumHistoryLength = _totalOperatorsHistory[quorumNumber].length;
-            uint32 numOperators = quorumHistoryLength > 0 ? _totalOperatorsHistory[quorumNumber][quorumHistoryLength - 1].numOperators : 0;
+            // Check that the quorum exists
+            uint256 historyLength = _totalOperatorsHistory[quorumNumber].length;
+            require(historyLength != 0, "IndexRegistry.registerOperator: quorum does not exist");
+
+            // Get the number of operators currently in the quorum, which will be operator's new index
+            uint32 numOperators = historyLength > 0 ? _totalOperatorsHistory[quorumNumber][historyLength - 1].numOperators : 0;
             _updateOperatorIdToIndexHistory({
                 operatorId: operatorId, 
                 quorumNumber: quorumNumber, 
@@ -90,9 +93,22 @@ contract IndexRegistry is IndexRegistryStorage {
             });
             _updateTotalOperatorHistory({
                 quorumNumber: quorumNumber, 
-                numOperators: _totalOperatorsHistory[quorumNumber][_totalOperatorsHistory[quorumNumber].length - 1].numOperators - 1
+                numOperators: _totalOperatorsHistory[quorumNumber][historyLength - 1].numOperators - 1
             });
         }
+    }
+
+    /**
+     * @notice Creates a new quorum by pushing its first quorum update
+     * @param quorumNumber The number of the new quorum
+     */
+    function createQuorum(uint8 quorumNumber) public virtual onlyRegistryCoordinator {
+        require(_totalOperatorsHistory[quorumNumber].length == 0, "IndexRegistry.createQuorum: quorum already exists");
+
+        _totalOperatorsHistory[quorumNumber].push(QuorumUpdate({
+            numOperators: 0,
+            fromBlockNumber: uint32(block.number)
+        }));
     }
 
     /*******************************************************************************
@@ -105,12 +121,10 @@ contract IndexRegistry is IndexRegistryStorage {
      * @param numOperators is the number of operators in the quorum
      */
     function _updateTotalOperatorHistory(uint8 quorumNumber, uint32 numOperators) internal {
-        QuorumUpdate memory quorumUpdate;
-        // In the case of totalOperatorsHistory, the index parameter is the number of operators in the quorum
-        quorumUpdate.numOperators = numOperators;
-        quorumUpdate.fromBlockNumber = uint32(block.number);
-
-        _totalOperatorsHistory[quorumNumber].push(quorumUpdate);
+        _totalOperatorsHistory[quorumNumber].push(QuorumUpdate({
+            numOperators: numOperators,
+            fromBlockNumber: uint32(block.number)
+        }));
     }
 
     /**
