@@ -2,7 +2,7 @@
 pragma solidity >=0.5.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Slasher} from "eigenlayer-contracts/src/contracts/core/Slasher.sol";
+import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 
 /**
  * @title Interface for a `ServiceManager`-type contract.
