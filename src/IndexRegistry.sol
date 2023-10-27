@@ -140,7 +140,7 @@ contract IndexRegistry is IndexRegistryStorage {
         uint8 quorumNumber, 
         uint32 indexOfOperatorToRemove 
     ) internal {   
-        uint32 currentNumOperators = _totalOperatorsHistory[quorumNumber][_totalOperatorsHistory[quorumNumber].length - 1].numOperators;
+        uint32 currentNumOperators = _totalOperatorsForQuorum(quorumNumber);
         bytes32 operatorIdToSwap = _indexToOperatorIdHistory[quorumNumber][currentNumOperators - 1][_indexToOperatorIdHistory[quorumNumber][currentNumOperators - 1].length - 1].operatorId;
         // if the operator is not the last in the list, we must swap the last operator into their positon
         if (operatorId != operatorIdToSwap) {
@@ -190,6 +190,15 @@ contract IndexRegistry is IndexRegistryStorage {
             }
         }        
         return _totalOperatorsHistory[quorumNumber][0].numOperators;
+    }
+
+    /// @notice Returns the total number of operators for a given `quorumNumber`
+    function _totalOperatorsForQuorum(uint8 quorumNumber) internal view returns (uint32){
+        uint256 totalOperatorsHistoryLength = _totalOperatorsHistory[quorumNumber].length;
+        if (totalOperatorsHistoryLength == 0) {
+            return 0;
+        }
+        return _totalOperatorsHistory[quorumNumber][totalOperatorsHistoryLength - 1].numOperators;
     }
     
     /**
@@ -279,10 +288,6 @@ contract IndexRegistry is IndexRegistryStorage {
 
     /// @notice Returns the total number of operators for a given `quorumNumber`
     function totalOperatorsForQuorum(uint8 quorumNumber) external view returns (uint32){
-        uint256 totalOperatorsHistoryLength = _totalOperatorsHistory[quorumNumber].length;
-        if (totalOperatorsHistoryLength == 0) {
-            return 0;
-        }
-        return _totalOperatorsHistory[quorumNumber][totalOperatorsHistoryLength - 1].numOperators;
+        return _totalOperatorsForQuorum(quorumNumber);
     }
 }
