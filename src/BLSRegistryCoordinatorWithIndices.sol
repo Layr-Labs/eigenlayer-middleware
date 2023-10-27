@@ -378,6 +378,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         BN254.G1Point memory pubkey, 
         string memory socket
     ) internal virtual returns(uint32[] memory) {
+        // TODO after slashing: revert registration when operator is slashable in the EigenLayer Slasher
         // require(
         //     slasher.contractCanSlashOperatorUntilBlock(operator, address(serviceManager)) == type(uint32).max,
         //     "StakeRegistry._registerOperator: operator must be opted into slashing by the serviceManager"

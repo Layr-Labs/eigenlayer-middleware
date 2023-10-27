@@ -1,5 +1,9 @@
 # AVS Smart Contract Architecture
 
+<p align="center"><b><font size="+1">
+🚧 The Slasher contract is under active development and its interface expected to change. We recommend writing slashing logic without integrating with the Slasher at this point in time. 🚧
+</font></b><p>
+
 ## Introduction
 
 EigenLayer AVSs are a new type of protocol that makes use of EigenLayer’s restaking primitive. AVSs are different from current chains and other smart contract protocols in that they are validated by EigenLayer operators. There are 3 specific types of conditions that AVSs implement in smart contracts onchain:
