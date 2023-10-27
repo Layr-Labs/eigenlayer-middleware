@@ -540,6 +540,7 @@ contract StakeRegistryUnitTests is Test {
         }
     }
 
+    /// forge-config: default.fuzz.runs = 5
     function testUpdateStakes_200Operators(
         address[200] calldata operators,
         uint256[200] calldata pseudoRandomNumbers
