@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 
 /**
@@ -13,9 +12,6 @@ interface IServiceManager {
 
     // ServiceManager proxies to the slasher
     function slasher() external view returns (ISlasher);
-
-    /// @notice Returns the current 'taskNumber' for the middleware
-    function taskNumber() external view returns (uint32);
 
     /// @notice function that causes the ServiceManager to freeze the operator on EigenLayer, through a call to the Slasher contract
     /// @dev this function should contain slashing logic, to make sure operators are not needlessly being slashed
