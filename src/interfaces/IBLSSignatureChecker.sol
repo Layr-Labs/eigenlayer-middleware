@@ -43,7 +43,7 @@ interface IBLSSignatureChecker {
 
     function registryCoordinator() external view returns (IRegistryCoordinator);
     function stakeRegistry() external view returns (IStakeRegistry);
-    function blsPubkeyRegistry() external view returns (address);
+    function blsPubkeyRegistry() external view returns (IBLSPubkeyRegistry);
 
     /**
      * @notice This function is called by disperser when it has aggregated all the signatures of the operators
