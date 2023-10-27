@@ -60,7 +60,7 @@ contract StakeRegistryUnitTests is Test {
     bytes32 defaultOperatorId = keccak256("defaultOperatorId");
     uint8 defaultQuorumNumber = 0;
     uint8 numQuorums = 192;
-    uint8 maxQuorumsToRegisterFor = 4;
+    uint8 maxQuorumsToRegisterFor = 10;
 
     uint256 gasUsed;
 
@@ -538,6 +538,40 @@ contract StakeRegistryUnitTests is Test {
             StakeRegistry.OperatorStakeUpdate memory operatorStakeUpdate = stakeRegistry.getStakeUpdateForQuorumFromOperatorIdAndIndex(uint8(quorumNumbers[i]), defaultOperatorId, 1);
             assertEq(operatorStakeUpdate.stake, stakesForQuorum[i] + 1);
         }
+    }
+
+    function testUpdateStakes_200Operators(
+        address[200] calldata operators,
+        uint256[200] calldata pseudoRandomNumbers
+    ) public {
+        address[] memory updateOperators = new address[](200);
+
+        for (uint256 i = 0; i < 200; ++i) {
+            cheats.assume(operators[i] != address(0));
+            defaultOperator = operators[i];
+
+
+            (uint256 quorumBitmap, uint96[] memory stakesForQuorum) = _registerOperatorRandomValid(defaultOperator, defaultOperatorId, pseudoRandomNumbers[i]);
+            registryCoordinator.setOperatorId(defaultOperator, defaultOperatorId);
+            registryCoordinator.recordOperatorQuorumBitmapUpdate(defaultOperatorId, uint192(quorumBitmap));
+
+            uint32 intialBlockNumber = 100;
+            cheats.roll(intialBlockNumber);
+
+            bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
+            for (uint j = 0; j < stakesForQuorum.length; j++) {
+                stakeRegistry.setOperatorWeight(uint8(quorumNumbers[j]), defaultOperator, stakesForQuorum[j] + 1);
+            }
+
+            updateOperators[i] = operators[i];
+        }
+
+        stakeRegistry.updateStakes(updateOperators); 
+
+        // for(uint i = 0; i < quorumNumbers.length; i++) {
+        //     StakeRegistry.OperatorStakeUpdate memory operatorStakeUpdate = stakeRegistry.getStakeUpdateForQuorumFromOperatorIdAndIndex(uint8(quorumNumbers[i]), defaultOperatorId, 1);
+        //     assertEq(operatorStakeUpdate.stake, stakesForQuorum[i] + 1);
+        // }
     }
 
     // utility function for registering an operator with a valid quorumBitmap and stakesForQuorum using provided randomness
