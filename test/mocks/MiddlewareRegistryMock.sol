@@ -22,18 +22,10 @@ contract MiddlewareRegistryMock{
 
     function registerOperator(address operator, uint32 serveUntil) public {        
         require(slasher.canSlash(operator, address(serviceManager)), "Not opted into slashing");
-        serviceManager.recordFirstStakeUpdate(operator, serveUntil);
 
     }
 
     function deregisterOperator(address operator) public {
-        uint32 latestServeUntilBlock = serviceManager.latestServeUntilBlock();
-        serviceManager.recordLastStakeUpdateAndRevokeSlashingAbility(operator, latestServeUntilBlock);
-    }
-
-    function propagateStakeUpdate(address operator, uint32 blockNumber, uint256 prevElement) external {
-        uint32 latestServeUntilBlock = serviceManager.latestServeUntilBlock();
-        serviceManager.recordStakeUpdate(operator, blockNumber, latestServeUntilBlock, prevElement);
     }
 
     function isActiveOperator(address operator) external pure returns (bool) {

@@ -14,25 +14,11 @@ contract ServiceManagerMock is IServiceManager{
 
     }
 
-    /// @notice Returns the current 'taskNumber' for the middleware
-    function taskNumber() external pure returns (uint32) {
-        return 0;
-    }
-
     /// @notice Permissioned function that causes the ServiceManager to freeze the operator on EigenLayer, through a call to the Slasher contract
     function freezeOperator(address operator) external {
         slasher.freezeOperator(operator);
     }
     
-    /// @notice Permissioned function to have the ServiceManager forward a call to the slasher, recording an initial stake update (on operator registration)
-    function recordFirstStakeUpdate(address operator, uint32 serveUntil) external pure {}
-
-    /// @notice Permissioned function to have the ServiceManager forward a call to the slasher, recording a stake update
-    function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntilBlock, uint256 prevElement) external pure {}
-
-    /// @notice Permissioned function to have the ServiceManager forward a call to the slasher, recording a final stake update (on operator deregistration)
-    function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntil) external pure {}
-
     /// @notice Token used for placing guarantee on challenges & payment commits
     function paymentChallengeToken() external pure returns (IERC20) {
         return IERC20(address(0));
