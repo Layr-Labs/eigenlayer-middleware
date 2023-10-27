@@ -5,14 +5,16 @@ methods {
     function _.quorumCount() external => DISPATCHER(true);
     function _.getCurrentTotalStakeForQuorum(uint8 quorumNumber) external => DISPATCHER(true);
     function _.getCurrentOperatorStakeForQuorum(bytes32 operatorId, uint8 quorumNumber) external => DISPATCHER(true);
-    function _.registerOperator(address, bytes32, bytes) external => DISPATCHER(true);
+    // function _.registerOperator(address, bytes32, bytes) external => DISPATCHER(true);
+    function _.registerOperator(address, bytes32, bytes) external => NONDET;
     function _.deregisterOperator(bytes32, bytes) external => DISPATCHER(true);
 
 	// external calls to Slasher
     function _.contractCanSlashOperatorUntilBlock(address, address) external => DISPATCHER(true);
 
     // external calls to BLSPubkeyRegistry
-    function _.registerOperator(address, bytes, BN254.G1Point) external => DISPATCHER(true);
+    // function _.registerOperator(address, bytes, BN254.G1Point) external => DISPATCHER(true);
+    function _.registerOperator(address, bytes, BN254.G1Point) external => NONDET;
     function _.deregisterOperator(address, bytes, BN254.G1Point) external => DISPATCHER(true);
 
 	// external calls to ServiceManager
@@ -20,12 +22,14 @@ methods {
     function _.recordLastStakeUpdateAndRevokeSlashingAbility(address, uint256) external => DISPATCHER(true);
 
 	// external calls to IndexRegistry
-    function _.registerOperator(bytes32, bytes) external => DISPATCHER(true);
+    // function _.registerOperator(bytes32, bytes) external => DISPATCHER(true);
+    function _.registerOperator(bytes32, bytes) external => NONDET;
     function _.deregisterOperator(bytes32, bytes, bytes32[]) external => DISPATCHER(true);
 
     // external calls to ERC1271 (can import OpenZeppelin mock implementation)
     // isValidSignature(bytes32 hash, bytes memory signature) returns (bytes4 magicValue) => DISPATCHER(true)
-    function _.isValidSignature(bytes32, bytes) external => DISPATCHER(true);
+    // function _.isValidSignature(bytes32, bytes) external => DISPATCHER(true);
+    function _.isValidSignature(bytes32, bytes) external => NONDET;
 
 	// external calls to BLSPubkeyCompendium
     function _.pubkeyHashToOperator(bytes32) external => DISPATCHER(true);
