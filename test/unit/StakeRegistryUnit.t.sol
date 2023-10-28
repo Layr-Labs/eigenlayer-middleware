@@ -848,8 +848,7 @@ contract updateStakesGasTests_200Operators is StakeRegistryUnitTests {
      */
     /// forge-config: default.fuzz.runs = 5
     function testUpdateStakes_10StratsForQuorum0_StakedAllQuorums(
-        address[200] calldata operators,
-        uint256[200] calldata pseudoRandomNumbers
+        address[200] calldata operators
     ) public {
         // Add 9 additional stratgies to quorum 0 which already has 1 strategy
         uint256 numStratsToAdd = 9;
@@ -915,6 +914,70 @@ contract updateStakesGasTests_200Operators is StakeRegistryUnitTests {
             registryCoordinator.setOperatorId(defaultOperator, operatorId);
             registryCoordinator.recordOperatorQuorumBitmapUpdate(operatorId, uint192(quorumBitmap));
 
+            uint32 intialBlockNumber = 100;
+            cheats.roll(intialBlockNumber);
+
+            bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
+            for (uint j = 0; j < stakesForQuorum.length; j++) {
+                stakeRegistry.setOperatorWeight(uint8(quorumNumbers[j]), defaultOperator, stakesForQuorum[j] + 1);
+            }
+
+            updateOperators[i] = operators[i];
+        }
+
+        stakeRegistry.updateStakes(updateOperators);
+    }
+
+    /**
+     * @notice 200 operators, 10 quorums w/ 1 strategy each except for quorum 0, quorum0 has 10 strategies
+     * 200 operators all staked into quorum 0
+     * 50 of those operators are also staked into other quorums
+     */
+    /// forge-config: default.fuzz.runs = 5
+    function testUpdateStakes_10StratsForQuorum0_200OpsQuorum0_50OpsRemainingQuorums(
+        address[200] calldata operators,
+        uint256[200] calldata pseudoRandomNumbers
+    ) public {
+        // Add 9 additional stratgies to quorum 0 which already has 1 strategy
+        uint256 numStratsToAdd = 9;
+        IVoteWeigher.StrategyAndWeightingMultiplier[] memory quorumStrategiesConsideredAndMultipliers = new IVoteWeigher.StrategyAndWeightingMultiplier[](numStratsToAdd);
+        for (uint256 i = 0; i < numStratsToAdd; ++i) {
+            quorumStrategiesConsideredAndMultipliers[i] = IVoteWeigher.StrategyAndWeightingMultiplier(
+                new StrategyBase(strategyManagerMock),
+                uint96(i+1)
+            );
+        }
+        cheats.startPrank(serviceManagerOwner);
+        stakeRegistry.addStrategiesConsideredAndMultipliers(0, quorumStrategiesConsideredAndMultipliers);
+        address[] memory updateOperators = new address[](operators.length);
+        // Register 200 operators for quorum0
+        for (uint256 i = 0; i < operators.length; ++i) {
+            cheats.assume(operators[i] != address(0));
+            defaultOperator = operators[i];
+            bytes32 operatorId = bytes32(i);
+
+            (uint256 quorumBitmap, uint96[] memory stakesForQuorum) = _registerOperatorSpecificQuorum(defaultOperator, operatorId, /*quorumNumber*/ 0);
+            require(quorumBitmap == 1, "quorumBitmap should be 1");
+            registryCoordinator.setOperatorId(defaultOperator, operatorId);
+            registryCoordinator.recordOperatorQuorumBitmapUpdate(operatorId, uint192(quorumBitmap));
+
+            uint32 intialBlockNumber = 100;
+            cheats.roll(intialBlockNumber);
+
+            bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
+            for (uint j = 0; j < stakesForQuorum.length; j++) {
+                stakeRegistry.setOperatorWeight(uint8(quorumNumbers[j]), defaultOperator, stakesForQuorum[j] + 1);
+            }
+
+            updateOperators[i] = operators[i];
+        }
+        // Register 50 operators for quorums 1-9
+        for (uint256 i = 0; i < 50; i++) {
+            defaultOperator = operators[i];
+            bytes32 operatorId = bytes32(i);
+            (uint256 quorumBitmap, uint96[] memory stakesForQuorum) = _registerOperatorRandomValid(defaultOperator, operatorId, pseudoRandomNumbers[i]);
+            registryCoordinator.setOperatorId(defaultOperator, operatorId);
+            registryCoordinator.recordOperatorQuorumBitmapUpdate(operatorId, uint192(quorumBitmap));
             uint32 intialBlockNumber = 100;
             cheats.roll(intialBlockNumber);
 
