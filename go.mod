@@ -1,4 +1,4 @@
-module github.com/Layr-Labs/ffi
+module github.com/layr-labs/eigenlayer-middleware
 
 go 1.20
 
