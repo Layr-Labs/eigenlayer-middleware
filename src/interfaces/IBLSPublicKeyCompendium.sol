@@ -15,10 +15,16 @@ interface IBLSPublicKeyCompendium {
     event NewPubkeyRegistration(address indexed operator, BN254.G1Point pubkeyG1, BN254.G2Point pubkeyG2);
 
     /**
-     * @notice mapping from operator address to pubkey hash.
-     * Returns *zero* if the `operator` has never registered, and otherwise returns the hash of the public key of the operator.
+     * @notice mappings from operator address to X and Y coordinate of operator's G1 pubkey.
+     * Returns *zero* if the `operator` has never registered, and otherwise returns the X or Y coordinate of the public key of the operator.
+     * @dev separating into two mappings (instead of a operatorToG1Pubkey mapping to a BN254.G1Point) because Axiom's mapping queries
+     * (https://docs-v2.axiom.xyz/axiom-repl/data-functions#solidity-nested-mapping-subquery) can only return a single slot.
+     * so even if we had a mapping to a BN254.G1Point the query would only return the first X value.
+     * Hence we would need to compute the slots directly and pass them as input, export them as public outputs and validate their value in the
+     * axiomv2callback, which is a lot of work... hopefully they'll add a better api to their mapping queries soon and we can refactor this.
      */
-    function operatorToPubkeyHash(address operator) external view returns (bytes32);
+    function operatorToG1PubkeyX(address operator) external view returns (uint256);
+    function operatorToG1PubkeyY(address operator) external view returns (uint256);
 
     /**
      * @notice mapping from pubkey hash to operator address.

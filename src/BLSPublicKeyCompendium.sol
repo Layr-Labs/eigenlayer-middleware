@@ -12,8 +12,10 @@ import "eigenlayer-contracts/src/contracts/libraries/BN254.sol";
 contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
     using BN254 for BN254.G1Point;
 
-    /// @notice mapping from operator address to pubkey hash
-    mapping(address => bytes32) public operatorToPubkeyHash;
+    /// @notice mapping from operator address to G1 pubkey coordinates 
+    /// (see interface for explanation of why we keep them as separate mappings)
+    mapping(address => uint256) public operatorToG1PubkeyX;
+    mapping(address => uint256) public operatorToG1PubkeyY;
     /// @notice mapping from pubkey hash to operator address
     mapping(bytes32 => address) public pubkeyHashToOperator;
 
@@ -34,7 +36,7 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
     ) external {
         bytes32 pubkeyHash = BN254.hashG1Point(pubkeyG1);
         require(
-            operatorToPubkeyHash[msg.sender] == bytes32(0),
+            operatorToG1PubkeyX[msg.sender] == 0,
             "BLSPublicKeyCompendium.registerBLSPublicKey: operator already registered pubkey"
         );
         require(
@@ -65,7 +67,8 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
             pubkeyG2
         ), "BLSPublicKeyCompendium.registerBLSPublicKey: either the G1 signature is wrong, or G1 and G2 private key do not match");
 
-        operatorToPubkeyHash[msg.sender] = pubkeyHash;
+        operatorToG1PubkeyX[msg.sender] = pubkeyG1.X;
+        operatorToG1PubkeyY[msg.sender] = pubkeyG1.Y;
         pubkeyHashToOperator[pubkeyHash] = msg.sender;
 
         emit NewPubkeyRegistration(msg.sender, pubkeyG1, pubkeyG2);
