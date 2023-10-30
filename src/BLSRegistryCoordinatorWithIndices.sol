@@ -245,8 +245,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
             _deregisterOperatorWithCoordinator({
                 operator: operatorKickParams[i].operator,
                 quorumNumbers: quorumNumbers[i:i+1],
-                pubkey: operatorKickParams[i].pubkey, 
-                operatorIdsToSwap: operatorIdsToSwap
+                pubkey: operatorKickParams[i].pubkey 
             });
         }
     }
@@ -262,14 +261,12 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         bytes calldata deregistrationData
     ) external onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
         // get the operator's deregistration information
-        (BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap) 
-            = abi.decode(deregistrationData, (BN254.G1Point, bytes32[]));
+        (BN254.G1Point memory pubkey) = abi.decode(deregistrationData, (BN254.G1Point));
         // call internal function to deregister the operator
         _deregisterOperatorWithCoordinator({
             operator: msg.sender, 
             quorumNumbers: quorumNumbers, 
-            pubkey: pubkey, 
-            operatorIdsToSwap: operatorIdsToSwap
+            pubkey: pubkey 
         });
     }
 
@@ -277,21 +274,15 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
      * @notice Deregisters the msg.sender as an operator from the middleware
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registered for
      * @param pubkey is the BLS public key of the operator
-     * @param operatorIdsToSwap is the list of the operator ids to swap the index of the operator with in each 
-     * quorum when removing the operator from the quorum's ordered list. The provided operator ids should be the 
-     * those of the operator's with the largest index in each quorum that the operator is deregistering from, in
-     * ascending order of quorum number.
      */
     function deregisterOperatorWithCoordinator(
         bytes calldata quorumNumbers,
-        BN254.G1Point memory pubkey,
-        bytes32[] memory operatorIdsToSwap
+        BN254.G1Point memory pubkey
     ) external onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
         _deregisterOperatorWithCoordinator({
             operator: msg.sender, 
             quorumNumbers: quorumNumbers, 
-            pubkey: pubkey, 
-            operatorIdsToSwap: operatorIdsToSwap
+            pubkey: pubkey
         });
     }
 
@@ -313,22 +304,16 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
      * @param operator is the operator to eject
      * @param quorumNumbers are the quorum numbers to eject the operator from
      * @param pubkey is the BLS public key of the operator
-     * @param operatorIdsToSwap is the list of the operator ids to swap the index of the operator with in each 
-     * quorum when removing the operator from the quorum's ordered list. The provided operator ids should be the 
-     * those of the operator's with the largest index in each quorum that the operator is being ejected from, in
-     * ascending order of quorum number.
      */
     function ejectOperatorFromCoordinator(
         address operator, 
         bytes calldata quorumNumbers, 
-        BN254.G1Point memory pubkey, 
-        bytes32[] memory operatorIdsToSwap
+        BN254.G1Point memory pubkey
     ) external onlyEjector {
         _deregisterOperatorWithCoordinator({
             operator: operator, 
             quorumNumbers: quorumNumbers, 
-            pubkey: pubkey, 
-            operatorIdsToSwap: operatorIdsToSwap
+            pubkey: pubkey
         });
     }
 
@@ -399,10 +384,12 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
 
         /**
          * If the operator has an existing bitmap history, combine the last entry with `quorumBitmap`
-         * and set its `nextUpdateBlockNumber` to the current block
+         * and set its `nextUpdateBlockNumber` to the current block.
+         * Skip this step if the `nextUpdateBlockNumber` is already set for the last entry in the operator's bitmap history,
+         * as this indicates that the operator previously completely deregistered, and thus is no longer registered for any quorums.
          */
         uint256 historyLength = _operatorIdToQuorumBitmapHistory[operatorId].length;
-        if(historyLength > 0) {
+        if (historyLength != 0 && _operatorIdToQuorumBitmapHistory[operatorId][historyLength - 1].nextUpdateBlockNumber == 0) {
             uint256 prevQuorumBitmap = _operatorIdToQuorumBitmapHistory[operatorId][historyLength - 1].quorumBitmap;
             require(prevQuorumBitmap & quorumBitmap == 0, "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: operator already registered for some quorums being registered for");
             // new stored quorumBitmap is the previous quorumBitmap or'd with the new quorumBitmap to register for
@@ -460,8 +447,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     function _deregisterOperatorWithCoordinator(
         address operator, 
         bytes calldata quorumNumbers, 
-        BN254.G1Point memory pubkey, 
-        bytes32[] memory operatorIdsToSwap
+        BN254.G1Point memory pubkey
     ) internal virtual {
         require(_operators[operator].status == OperatorStatus.REGISTERED, "BLSRegistryCoordinatorWithIndices._deregisterOperatorWithCoordinator: operator is not registered");
 
@@ -493,7 +479,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         stakeRegistry.deregisterOperator(operatorId, quorumNumbersToRemove);
 
         // deregister the operator from the IndexRegistry
-        indexRegistry.deregisterOperator(operatorId, quorumNumbersToRemove, operatorIdsToSwap);
+        indexRegistry.deregisterOperator(operatorId, quorumNumbersToRemove);
 
         // set the toBlockNumber of the operator's quorum bitmap update
         _operatorIdToQuorumBitmapHistory[operatorId][operatorQuorumBitmapHistoryLengthMinusOne].nextUpdateBlockNumber = uint32(block.number);

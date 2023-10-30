@@ -20,7 +20,7 @@ import "eigenlayer-contracts/src/contracts/pods/EigenPodManager.sol";
 import "eigenlayer-contracts/src/contracts/pods/DelayedWithdrawalRouter.sol";
 
 import "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
-import "eigenlayer-contracts/src/contracts/middleware/BLSPublicKeyCompendium.sol";
+import "src/BLSPublicKeyCompendium.sol";
 
 import "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 import "eigenlayer-contracts/src/test/mocks/ETHDepositMock.sol";
@@ -229,7 +229,6 @@ contract EigenLayerDeploy is Script, Test {
             ethPOSDeposit,
             delayedWithdrawalRouter,
             eigenPodManager,
-            uint64(REQUIRED_BALANCE_WEI),
             uint64(REQUIRED_BALANCE_WEI),
             1000 // temp genesis time, TODO: set if needed
         );

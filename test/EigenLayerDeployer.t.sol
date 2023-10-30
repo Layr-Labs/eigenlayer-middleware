@@ -82,7 +82,6 @@ contract EigenLayerDeployer is Operators {
     uint256 REQUIRED_BALANCE_WEI = 31 ether;
     uint64 MAX_PARTIAL_WTIHDRAWAL_AMOUNT_GWEI = 1 ether / 1e9;
     uint64 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 32e9;
-    uint64 EFFECTIVE_RESTAKED_BALANCE_OFFSET = 75e7;
     uint64 GOERLI_GENESIS_TIME = 1616508000;
 
     address pauser;
@@ -172,7 +171,7 @@ contract EigenLayerDeployer is Operators {
         beaconChainOracleAddress = address(new BeaconChainOracleMock());
 
         ethPOSDeposit = new ETHPOSDepositMock();
-        pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, EFFECTIVE_RESTAKED_BALANCE_OFFSET, GOERLI_GENESIS_TIME);
+        pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, GOERLI_GENESIS_TIME);
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
@@ -252,7 +251,7 @@ contract EigenLayerDeployer is Operators {
         );
 
         ethPOSDeposit = new ETHPOSDepositMock();
-        pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, EFFECTIVE_RESTAKED_BALANCE_OFFSET, GOERLI_GENESIS_TIME);
+        pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, GOERLI_GENESIS_TIME);
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
