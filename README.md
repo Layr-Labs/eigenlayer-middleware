@@ -89,7 +89,7 @@ The current implementation of this contract is the [BLSSignatureChecker](./docs/
 More detailed functional docs have been written on the AVS architecture implemented in the middleware contracts. The recommended order for reading the other docs in this folder is
 
 1. [BLSRegistryCoordinatorWithIndices](./docs/BLSRegistryCoordinatorWithIndices.md)
-2. [BLSPublicKeyCompendium](./docs/BLSPublicKeyCompendium.md) and [BLSPublicKeyRegistry](./docs/middleware/BLSPubkeyRegistry.md)
+2. [BLSPublicKeyCompendium](./docs/BLSPublicKeyCompendium.md) and [BLSPublicKeyRegistry](./docs/BLSPubkeyRegistry.md)
 3. [StakeRegistry](./docs/StakeRegistry.md)
 4. [IndexRegistry](./docs/IndexRegistry.md)
 5. [BLSOperatorStateRetriever](./docs/BLSOperatorStateRetriever.md)
