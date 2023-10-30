@@ -16,13 +16,12 @@ interface IIndexRegistry is IRegistry {
     // DATA STRUCTURES
 
     // struct used to give definitive ordering to operators at each blockNumber. 
-    struct OperatorIndexUpdate {
+    struct OperatorUpdate {
         // blockNumber number from which `index` was the operators index
         // the operator's index is the first entry such that `blockNumber >= entry.fromBlockNumber`
         uint32 fromBlockNumber;
-        // index of the operator in array of operators
-        // index = type(uint32).max = OPERATOR_DEREGISTERED_INDEX implies the operator was deregistered
-        uint32 index;
+        // the operator at this index
+        bytes32 operatorId;
     }
 
     // struct used to denote the number of operators in a quorum at a given blockNumber
@@ -51,8 +50,6 @@ interface IIndexRegistry is IRegistry {
      * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumNumbers`.
      * @param operatorId is the id of the operator that is being deregistered
      * @param quorumNumbers is the quorum numbers the operator is deregistered for
-     * @param operatorIdsToSwap is the list of operatorIds that have the largest indexes in each of the `quorumNumbers`
-     * they will be swapped with the operator's current index when the operator is removed from the list
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
@@ -61,28 +58,13 @@ interface IIndexRegistry is IRegistry {
      *         4) the operator is not already deregistered
      *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
      */
-    function deregisterOperator(bytes32 operatorId, bytes calldata quorumNumbers, bytes32[] memory operatorIdsToSwap) external;
+    function deregisterOperator(bytes32 operatorId, bytes calldata quorumNumbers) external;
 
-    /// @notice Returns the length of the globalOperatorList
-    function getGlobalOperatorListLength() external view returns (uint256);
-
-    /// @notice Returns the _operatorIdToIndexHistory entry for the specified `operatorId` and `quorumNumber` at the specified `index`
-    function getOperatorIndexUpdateOfOperatorIdForQuorumAtIndex(bytes32 operatorId, uint8 quorumNumber, uint32 index) external view returns (OperatorIndexUpdate memory);
+    /// @notice Returns the _indexToOperatorIdHistory entry for the specified `operatorIndex` and `quorumNumber` at the specified `index`
+    function getOperatorIndexUpdateOfIndexForQuorumAtIndex(uint32 operatorIndex, uint8 quorumNumber, uint32 index) external view returns (OperatorUpdate memory);
 
     /// @notice Returns the _totalOperatorsHistory entry for the specified `quorumNumber` at the specified `index`
     function getQuorumUpdateAtIndex(uint8 quorumNumber, uint32 index) external view returns (QuorumUpdate memory);
-
-    /**
-     * @notice Looks up the `operator`'s index for `quorumNumber` at the specified `blockNumber` using the `index`.
-     * @param operatorId is the id of the operator for which the index is desired
-     * @param quorumNumber is the quorum number for which the operator index is desired
-     * @param blockNumber is the block number at which the index of the operator is desired
-     * @param index Used to specify the entry within the dynamic array `operatorIdToIndexHistory[operatorId]` to 
-     * read data from
-     * @dev Function will revert in the event that the specified `index` input does not identify the appropriate entry in the
-     * array `operatorIdToIndexHistory[operatorId][quorumNumber]` to pull the info from.
-     */
-    function getOperatorIndexForQuorumAtBlockNumberByIndex(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber, uint32 index) external view returns (uint32);
 
     /**
      * @notice Looks up the number of total operators for `quorumNumber` at the specified `blockNumber`.
