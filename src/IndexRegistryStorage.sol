@@ -13,8 +13,8 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
  */
 abstract contract IndexRegistryStorage is Initializable, IIndexRegistry {
 
-    /// @notice The value that indices of deregistered operators are set to
-    uint32 public constant OPERATOR_DEREGISTERED_INDEX = type(uint32).max;
+    /// @notice The value that is returned when an operator does not exist at an index at a certain block
+    bytes32 public constant OPERATOR_DOES_NOT_EXIST_ID = bytes32(0);
 
     /// @notice The RegistryCoordinator contract for this middleware
     IRegistryCoordinator public immutable registryCoordinator;
@@ -22,8 +22,10 @@ abstract contract IndexRegistryStorage is Initializable, IIndexRegistry {
     /// @notice list of all operators ever registered, may include duplicates. used to avoid running an indexer on nodes
     bytes32[] public globalOperatorList;
 
-    /// @notice mapping of operatorId => quorumNumber => index history of that operator
-    mapping(bytes32 => mapping(uint8 => OperatorIndexUpdate[])) internal _operatorIdToIndexHistory;
+    /// @notice mapping of quorumNumber => operator id => current index
+    mapping(uint8 => mapping(bytes32 => uint32)) public operatorIdToIndex;
+    /// @notice mapping of quorumNumber => index => operator id history for that index
+    mapping(uint8 => mapping(uint32 => OperatorUpdate[])) internal _indexToOperatorIdHistory;
     /// @notice mapping of quorumNumber => history of numbers of unique registered operators
     mapping(uint8 => QuorumUpdate[]) internal _totalOperatorsHistory;
 

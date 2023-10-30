@@ -59,12 +59,10 @@ interface IBLSRegistryCoordinatorWithIndices is ISignatureUtils, IRegistryCoordi
      * @param operator is the operator to eject
      * @param quorumNumbers are the quorum numbers to eject the operator from
      * @param pubkey is the BLS public key of the operator
-     * @param operatorIdsToSwap is the list of the operator ids tho swap the index of the operator with in each
      */
     function ejectOperatorFromCoordinator(
         address operator, 
         bytes calldata quorumNumbers, 
-        BN254.G1Point memory pubkey, 
-        bytes32[] memory operatorIdsToSwap
+        BN254.G1Point memory pubkey 
     ) external;
 }

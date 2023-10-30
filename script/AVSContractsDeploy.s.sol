@@ -230,7 +230,6 @@ contract EigenLayerDeploy is Script, Test {
             delayedWithdrawalRouter,
             eigenPodManager,
             uint64(REQUIRED_BALANCE_WEI),
-            uint64(REQUIRED_BALANCE_WEI),
             1000 // temp genesis time, TODO: set if needed
         );
 
