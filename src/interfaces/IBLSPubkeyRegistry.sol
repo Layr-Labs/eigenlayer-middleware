@@ -62,6 +62,12 @@ interface IBLSPubkeyRegistry is IRegistry {
      */ 
     function deregisterOperator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey) external;
     
+    /**
+     * @notice Initializes a new quorum by pushing its first apk update
+     * @param quorumNumber The number of the new quorum
+     */
+    function initializeQuorum(uint8 quorumNumber) external;
+
     /// @notice Returns the current APK for the provided `quorumNumber `
     function getApkForQuorum(uint8 quorumNumber) external view returns (BN254.G1Point memory);
 

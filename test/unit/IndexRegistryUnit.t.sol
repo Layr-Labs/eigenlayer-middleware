@@ -20,12 +20,20 @@ contract IndexRegistryUnitTests is Test {
     bytes32 operatorId2 = bytes32(uint256(35));
     bytes32 operatorId3 = bytes32(uint256(36));
 
+    // Track initialized quorums so we can filter these out when fuzzing
+    mapping(uint8 => bool) initializedQuorums;
+
     // Test 0 length operators in operators to remove
     function setUp() public {
         // deploy the contract
         registryCoordinatorMock = new RegistryCoordinatorMock();
         indexRegistry = new IndexRegistry(registryCoordinatorMock);
         bitmapUtilsWrapper = new BitmapUtilsWrapper();
+
+        // Initialize quorums and add to fuzz filter
+        _initializeQuorum(defaultQuorumNumber);
+        _initializeQuorum(defaultQuorumNumber + 1);
+        _initializeQuorum(defaultQuorumNumber + 2);
     }
 
     function testConstructor() public {
@@ -72,7 +80,7 @@ contract IndexRegistryUnitTests is Test {
 
         // Check _totalOperatorsHistory updates
         IIndexRegistry.QuorumUpdate memory quorumUpdate = indexRegistry
-            .getQuorumUpdateAtIndex(1, 0);
+            .getQuorumUpdateAtIndex(1, 1);
         require(
             quorumUpdate.numOperators == 1,
             "IndexRegistry.registerOperator: totalOperatorsHistory num operators not 1"
@@ -117,7 +125,7 @@ contract IndexRegistryUnitTests is Test {
 
         // Check _totalOperatorsHistory updates
         IIndexRegistry.QuorumUpdate memory quorumUpdate = indexRegistry
-            .getQuorumUpdateAtIndex(2, 0);
+            .getQuorumUpdateAtIndex(2, 1);
         require(
             quorumUpdate.numOperators == 1,
             "IndexRegistry.registerOperator: totalOperatorsHistory num operators not 1"
@@ -160,7 +168,7 @@ contract IndexRegistryUnitTests is Test {
 
         // Check _totalOperatorsHistory updates for quorum 1
         IIndexRegistry.QuorumUpdate memory quorumUpdate = indexRegistry
-            .getQuorumUpdateAtIndex(1, 0);
+            .getQuorumUpdateAtIndex(1, 1);
         require(
             quorumUpdate.numOperators == 1,
             "IndexRegistry.registerOperator: totalOperatorsHistory numOperators not 1"
@@ -183,7 +191,7 @@ contract IndexRegistryUnitTests is Test {
         );
 
         // Check _totalOperatorsHistory updates for quorum 2
-        quorumUpdate = indexRegistry.getQuorumUpdateAtIndex(2, 0);
+        quorumUpdate = indexRegistry.getQuorumUpdateAtIndex(2, 1);
         require(
             quorumUpdate.numOperators == 1,
             "IndexRegistry.registerOperator: totalOperatorsHistory num operators not 1"
@@ -227,7 +235,7 @@ contract IndexRegistryUnitTests is Test {
 
         // Check _totalOperatorsHistory updates
         IIndexRegistry.QuorumUpdate memory quorumUpdate = indexRegistry
-            .getQuorumUpdateAtIndex(1, 1);
+            .getQuorumUpdateAtIndex(1, 2);
         require(
             quorumUpdate.numOperators == 2,
             "IndexRegistry.registerOperator: totalOperatorsHistory num operators not 2"
@@ -264,7 +272,7 @@ contract IndexRegistryUnitTests is Test {
 
         // Check total operators
         IIndexRegistry.QuorumUpdate memory quorumUpdate = indexRegistry
-            .getQuorumUpdateAtIndex(defaultQuorumNumber, 1);
+            .getQuorumUpdateAtIndex(defaultQuorumNumber, 2);
         require(quorumUpdate.fromBlockNumber == block.number, "fromBlockNumber not set correctly");
         require(quorumUpdate.numOperators == 0, "incorrect total number of operators");
         require(indexRegistry.totalOperatorsForQuorum(1) == 0, "operator not deregistered correctly");
@@ -299,7 +307,7 @@ contract IndexRegistryUnitTests is Test {
         // Check total operators for removed quorums
         for (uint256 i = 0; i < quorumsToRemove.length; i++) {
             IIndexRegistry.QuorumUpdate memory quorumUpdate = indexRegistry
-                .getQuorumUpdateAtIndex(uint8(quorumsToRemove[i]), 3); // 4 updates total
+                .getQuorumUpdateAtIndex(uint8(quorumsToRemove[i]), 4); // 5 updates total
             require(quorumUpdate.fromBlockNumber == block.number, "fromBlockNumber not set correctly");
             require(quorumUpdate.numOperators == 2, "incorrect total number of operators");
             require(
@@ -359,7 +367,7 @@ contract IndexRegistryUnitTests is Test {
         uint32 prevTotal = indexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex(
             defaultQuorumNumber,
             uint32(block.number - 10),
-            0
+            1
         );
         require(prevTotal == 1, "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: prev total not 1");
 
@@ -367,7 +375,7 @@ contract IndexRegistryUnitTests is Test {
         uint32 currentTotal = indexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex(
             defaultQuorumNumber,
             uint32(block.number),
-            1
+            2
         );
         require(currentTotal == 2, "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: current total not 2");
     }
@@ -463,13 +471,10 @@ contract IndexRegistryUnitTests is Test {
      * 5. operator is not already registerd for any quorums being registered for
      */
     function testFuzzRegisterOperatorMultipleQuorums(bytes memory quorumNumbers) public {
-        // Validate quorumNumbers
-        cheats.assume(quorumNumbers.length > 0);
-        cheats.assume(bitmapUtilsWrapper.isArrayStrictlyAscendingOrdered(quorumNumbers));
-        uint256 bitmap = bitmapUtilsWrapper.orderedBytesArrayToBitmap(quorumNumbers);
-        cheats.assume(bitmap <= type(uint192).max);
+        // Initialize quorum numbers, skipping invalid tests
+        _initializeFuzzedQuorums(quorumNumbers);
 
-        // Register operator
+        // Register for quorums
         cheats.prank(address(registryCoordinatorMock));
         uint32[] memory numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId1, quorumNumbers);
 
@@ -500,7 +505,7 @@ contract IndexRegistryUnitTests is Test {
         // Check _totalOperatorsHistory updates
         IIndexRegistry.QuorumUpdate memory quorumUpdate;
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            quorumUpdate = indexRegistry.getQuorumUpdateAtIndex(uint8(quorumNumbers[i]), 0);
+            quorumUpdate = indexRegistry.getQuorumUpdateAtIndex(uint8(quorumNumbers[i]), 1);
             require(
                 quorumUpdate.numOperators == 1,
                 "IndexRegistry.registerOperator: totalOperatorsHistory num operators not 1"
@@ -516,12 +521,9 @@ contract IndexRegistryUnitTests is Test {
         }
     }
 
-    function testFuzzRegsiterMultipleOperatorsMultipleQuorums(bytes memory quorumNumbers) public {
-        // Validate quorumNumbers
-        cheats.assume(quorumNumbers.length > 0);
-        cheats.assume(bitmapUtilsWrapper.isArrayStrictlyAscendingOrdered(quorumNumbers));
-        uint256 bitmap = bitmapUtilsWrapper.orderedBytesArrayToBitmap(quorumNumbers);
-        cheats.assume(bitmap <= type(uint192).max);
+    function testFuzzRegisterMultipleOperatorsMultipleQuorums(bytes memory quorumNumbers) public {
+        // Initialize quorum numbers, skipping invalid tests
+        _initializeFuzzedQuorums(quorumNumbers);
 
         // Register operators 1,2,3
         _registerOperator(operatorId1, quorumNumbers);
@@ -537,7 +539,7 @@ contract IndexRegistryUnitTests is Test {
             for (uint256 i = 0; i < quorumNumbers.length; i++) {
                 quorumUpdate = indexRegistry.getQuorumUpdateAtIndex(
                     uint8(quorumNumbers[i]),
-                    uint32(numOperators - 1)
+                    uint32(numOperators)
                 );
                 require(
                     quorumUpdate.numOperators == numOperators,
@@ -563,13 +565,11 @@ contract IndexRegistryUnitTests is Test {
     }
 
     function testFuzzDeregisterOperator(bytes memory quorumsToAdd, uint256 bitsToFlip) public {
-        // Validate quorumsToAdd
-        cheats.assume(quorumsToAdd.length > 0);
-        cheats.assume(bitmapUtilsWrapper.isArrayStrictlyAscendingOrdered(quorumsToAdd));
-        uint256 bitmap = bitmapUtilsWrapper.orderedBytesArrayToBitmap(quorumsToAdd);
-        cheats.assume(bitmap <= type(uint192).max);
-
-        // Format quorumsToRemove
+        // Initialize quorum numbers, skipping invalid tests
+        _initializeFuzzedQuorums(quorumsToAdd);
+        uint bitmap = bitmapUtilsWrapper.orderedBytesArrayToBitmap(quorumsToAdd);
+        
+        // Format
         bitsToFlip = bound(bitsToFlip, 1, quorumsToAdd.length);
         uint256 bitsFlipped = 0;
         uint256 bitPosition = 0;
@@ -605,7 +605,7 @@ contract IndexRegistryUnitTests is Test {
         // Check total operators for removed quorums
         for (uint256 i = 0; i < quorumsToRemove.length; i++) {
             IIndexRegistry.QuorumUpdate memory quorumUpdate = indexRegistry
-                .getQuorumUpdateAtIndex(uint8(quorumsToRemove[i]), 2); // 3 updates total
+                .getQuorumUpdateAtIndex(uint8(quorumsToRemove[i]), 3); // 4 updates total
             require(quorumUpdate.fromBlockNumber == block.number, "fromBlockNumber not set correctly");
             require(quorumUpdate.numOperators == 1, "incorrect total number of operators");
             require(
@@ -620,6 +620,28 @@ contract IndexRegistryUnitTests is Test {
                 .getOperatorIndexUpdateOfIndexForQuorumAtIndex({operatorIndex: 0, quorumNumber: uint8(quorumsToRemove[i]), index: 1}); // 2 indexes -> 1 update and 1 swap
             require(operatorUpdate.fromBlockNumber == block.number, "fromBlockNumber not set correctly");
             require(operatorUpdate.operatorId == operatorId2, "incorrect operatorId");
+        }
+    }
+
+    function _initializeQuorum(uint8 quorumNumber) internal {
+        cheats.prank(address(registryCoordinatorMock));
+
+        // Initialize quorum and mark registered
+        indexRegistry.initializeQuorum(quorumNumber);
+        initializedQuorums[quorumNumber] = true;
+    }
+
+    function _initializeFuzzedQuorums(bytes memory quorumNumbers) internal {
+        cheats.assume(quorumNumbers.length > 0);
+        cheats.assume(bitmapUtilsWrapper.isArrayStrictlyAscendingOrdered(quorumNumbers));
+        uint256 bitmap = bitmapUtilsWrapper.orderedBytesArrayToBitmap(quorumNumbers);
+        cheats.assume(bitmap <= type(uint192).max);
+
+        // Initialize quorums and add to fuzz filter
+        for (uint i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+            cheats.assume(!initializedQuorums[quorumNumber]);
+            _initializeQuorum(quorumNumber);
         }
     }
 

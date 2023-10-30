@@ -60,6 +60,12 @@ interface IIndexRegistry is IRegistry {
      */
     function deregisterOperator(bytes32 operatorId, bytes calldata quorumNumbers) external;
 
+    /**
+     * @notice Initialize a quorum by pushing its first quorum update
+     * @param quorumNumber The number of the new quorum
+     */
+    function initializeQuorum(uint8 quorumNumber) external;
+
     /// @notice Returns the _indexToOperatorIdHistory entry for the specified `operatorIndex` and `quorumNumber` at the specified `index`
     function getOperatorIndexUpdateOfIndexForQuorumAtIndex(uint32 operatorIndex, uint8 quorumNumber, uint32 index) external view returns (OperatorUpdate memory);
 

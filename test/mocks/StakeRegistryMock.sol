@@ -40,8 +40,59 @@ contract StakeRegistryMock is IStakeRegistry {
      */
     function deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) external {}
 
+    /**
+     * @notice Initialize a new quorum created by the registry coordinator by setting strategies, weights, and minimum stake
+     */
+    function initializeQuorum(uint8 quorumNumber, uint96 minimumStake, StrategyAndWeightingMultiplier[] memory strategyParams) external {}
+
+    /// @notice Adds new strategies and the associated multipliers to the @param quorumNumber.
+    function addStrategies(
+        uint8 quorumNumber,
+        StrategyAndWeightingMultiplier[] memory strategyParams
+    ) external {}
+
+    /**
+     * @notice This function is used for removing strategies and their associated weights from the
+     * mapping strategiesConsideredAndMultipliers for a specific @param quorumNumber.
+     * @dev higher indices should be *first* in the list of @param indicesToRemove, since otherwise
+     * the removal of lower index entries will cause a shift in the indices of the other strategiesToRemove
+     */
+    function removeStrategies(uint8 quorumNumber, uint256[] calldata indicesToRemove) external {}
+
+    /**
+     * @notice This function is used for modifying the weights of strategies that are already in the
+     * mapping strategiesConsideredAndMultipliers for a specific
+     * @param quorumNumber is the quorum number to change the strategy for
+     * @param strategyIndices are the indices of the strategies to change
+     * @param newMultipliers are the new multipliers for the strategies
+     */
+    function modifyStrategyParams(
+        uint8 quorumNumber,
+        uint256[] calldata strategyIndices,
+        uint96[] calldata newMultipliers
+    ) external {}
+
+    function delegation() external view returns (IDelegationManager) {}
+    function serviceManager() external view returns (IServiceManager) {}
+
+    function WEIGHTING_DIVISOR() external pure returns (uint256) {}
+
+    function strategiesConsideredAndMultipliersLength(uint8 quorumNumber) external view returns (uint256) {}
+
     /// @notice In order to register for a quorum i, an operator must have at least `minimumStakeForQuorum[i]`
     function minimumStakeForQuorum(uint256 quorumNumber) external view returns (uint96) {}
+
+    /// @notice Returns the strategy and weight multiplier for the `index`'th strategy in the quorum `quorumNumber`
+    function strategyAndWeightingMultiplierForQuorumByIndex(
+        uint8 quorumNumber,
+        uint256 index
+    ) external view returns (StrategyAndWeightingMultiplier memory) {}
+
+    /**
+     * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
+     * @dev reverts in the case that `quorumNumber` is greater than or equal to `quorumCount`
+     */
+    function weightOfOperatorForQuorum(uint8 quorumNumber, address operator) external view returns (uint96) {}
 
     /**
      * @notice Returns the entire `operatorIdToStakeHistory[operatorId][quorumNumber]` array.

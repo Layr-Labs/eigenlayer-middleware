@@ -86,6 +86,7 @@ contract IndexRegistry is IndexRegistryStorage {
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             uint32 indexOfOperatorToRemove = operatorIdToIndex[quorumNumber][operatorId];
+            uint256 historyLength = _totalOperatorsHistory[quorumNumber].length;
             _processOperatorRemoval({
                 operatorId: operatorId, 
                 quorumNumber: quorumNumber, 
@@ -99,10 +100,10 @@ contract IndexRegistry is IndexRegistryStorage {
     }
 
     /**
-     * @notice Creates a new quorum by pushing its first quorum update
+     * @notice Initialize a quorum by pushing its first quorum update
      * @param quorumNumber The number of the new quorum
      */
-    function createQuorum(uint8 quorumNumber) public virtual onlyRegistryCoordinator {
+    function initializeQuorum(uint8 quorumNumber) public virtual onlyRegistryCoordinator {
         require(_totalOperatorsHistory[quorumNumber].length == 0, "IndexRegistry.createQuorum: quorum already exists");
 
         _totalOperatorsHistory[quorumNumber].push(QuorumUpdate({
@@ -133,10 +134,10 @@ contract IndexRegistry is IndexRegistryStorage {
      * @param index the latest index of that operator in the list of operators registered for this quorum
      */ 
     function _updateOperatorIdToIndexHistory(bytes32 operatorId, uint8 quorumNumber, uint32 index) internal {
-        OperatorUpdate memory latestOperatorUpdate;
-        latestOperatorUpdate.operatorId = operatorId;
-        latestOperatorUpdate.fromBlockNumber = uint32(block.number);
-        _indexToOperatorIdHistory[quorumNumber][index].push(latestOperatorUpdate);
+        _indexToOperatorIdHistory[quorumNumber][index].push(OperatorUpdate({
+            operatorId: operatorId,
+            fromBlockNumber: uint32(block.number)
+        }));
 
         operatorIdToIndex[quorumNumber][operatorId] = index;
 

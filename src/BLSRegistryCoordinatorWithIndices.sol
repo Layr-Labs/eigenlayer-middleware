@@ -15,7 +15,6 @@ import "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
 import "src/interfaces/ISocketUpdater.sol";
 import "src/interfaces/IServiceManager.sol";
 import "src/interfaces/IBLSPubkeyRegistry.sol";
-import "src/interfaces/IVoteWeigher.sol";
 import "src/interfaces/IStakeRegistry.sol";
 import "src/interfaces/IIndexRegistry.sol";
 import "src/interfaces/IRegistryCoordinator.sol";
@@ -50,11 +49,11 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     /// @notice the Service Manager for the service that this contract is coordinating
     IServiceManager public immutable serviceManager;
     /// @notice the BLS Pubkey Registry contract that will keep track of operators' BLS public keys
-    BLSPubkeyRegistry public immutable blsPubkeyRegistry;
+    IBLSPubkeyRegistry public immutable blsPubkeyRegistry;
     /// @notice the Stake Registry contract that will keep track of operators' stakes
-    StakeRegistry public immutable stakeRegistry;
+    IStakeRegistry public immutable stakeRegistry;
     /// @notice the Index Registry contract that will keep track of operators' indexes
-    IndexRegistry public immutable indexRegistry;
+    IIndexRegistry public immutable indexRegistry;
 
     /// @notice the current number of quorums supported by the registry coordinator
     uint8 public quorumCount;
@@ -113,7 +112,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         uint256 _initialPausedStatus,
         OperatorSetParam[] memory _operatorSetParams,
         uint96[] memory _minimumStakes,
-        IVoteWeigher.StrategyAndWeightingMultiplier[][] memory _strategyParams
+        IStakeRegistry.StrategyAndWeightingMultiplier[][] memory _strategyParams
     ) external initializer {
         require(
             _operatorSetParams.length == _minimumStakes.length && _minimumStakes.length == _strategyParams.length,
@@ -342,7 +341,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     function createQuorum(
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
-        IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategyParams
+        IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategyParams
     ) external virtual onlyServiceManagerOwner {
         _createQuorum(operatorSetParams, minimumStake, strategyParams);
     }
@@ -388,12 +387,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         bytes calldata quorumNumbers, 
         BN254.G1Point memory pubkey, 
         string memory socket
-    ) internal virtual returns(uint32[] memory) {
-        // require(
-        //     slasher.contractCanSlashOperatorUntilBlock(operator, address(serviceManager)) == type(uint32).max,
-        //     "StakeRegistry._registerOperator: operator must be opted into slashing by the serviceManager"
-        // );
-        
+    ) internal virtual returns(uint32[] memory) {        
         // get the quorum bitmap from the quorum numbers
         uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
         require(quorumBitmap <= MAX_QUORUM_BITMAP, "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: quorumBitmap exceeds of max bitmap size");
@@ -553,7 +547,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     function _createQuorum(
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
-        IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategyParams
+        IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategyParams
     ) internal {
         // Increment the total quorum count. Fails if we're already at the max
         uint8 prevQuorumCount = quorumCount;
@@ -565,9 +559,9 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
 
         // Initialize the quorum here and in each registry
         _setOperatorSetParams(quorumNumber, operatorSetParams);
-        stakeRegistry.createQuorum(quorumNumber, minimumStake, strategyParams);
-        indexRegistry.createQuorum(quorumNumber);
-        blsPubkeyRegistry.createQuorum(quorumNumber);
+        stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
+        indexRegistry.initializeQuorum(quorumNumber);
+        blsPubkeyRegistry.initializeQuorum(quorumNumber);
     }
 
     function _setOperatorSetParams(uint8 quorumNumber, OperatorSetParam memory operatorSetParams) internal {

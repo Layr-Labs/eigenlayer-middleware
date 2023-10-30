@@ -45,6 +45,9 @@ interface IRegistryCoordinator {
         uint192 quorumBitmap;
     }
 
+    /// @notice Returns the number of quorums the registry coordinator has created
+    function quorumCount() external view returns (uint8);
+
     /// @notice Returns the operator struct for the given `operator`
     function getOperator(address operator) external view returns (Operator memory);
 

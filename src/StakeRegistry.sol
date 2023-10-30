@@ -7,7 +7,6 @@ import "src/interfaces/IServiceManager.sol";
 import "src/interfaces/IStakeRegistry.sol";
 import "src/interfaces/IRegistryCoordinator.sol";
 import "src/StakeRegistryStorage.sol";
-import "src/VoteWeigherBaseStorage.sol";
 
 /**
  * @title A `Registry` that keeps track of stakes of operators for up to 256 quorums.
@@ -18,7 +17,7 @@ import "src/VoteWeigherBaseStorage.sol";
  * It allows an additional functionality (in addition to registering and deregistering) to update the stake of an operator.
  * @author Layr Labs, Inc.
  */
-contract StakeRegistry is VoteWeigherBaseStorage, StakeRegistryStorage {
+contract StakeRegistry is StakeRegistryStorage {
     
     modifier onlyRegistryCoordinator() {
         require(
@@ -42,7 +41,7 @@ contract StakeRegistry is VoteWeigherBaseStorage, StakeRegistryStorage {
         IRegistryCoordinator _registryCoordinator,
         IDelegationManager _delegationManager,
         IServiceManager _serviceManager
-    ) VoteWeigherBaseStorage(_delegationManager, _serviceManager) StakeRegistryStorage(_registryCoordinator) {}
+    ) StakeRegistryStorage(_registryCoordinator, _delegationManager, _serviceManager) {}
 
     /*******************************************************************************
                             EXTERNAL FUNCTIONS 
@@ -187,15 +186,21 @@ contract StakeRegistry is VoteWeigherBaseStorage, StakeRegistryStorage {
         }
     }
 
-    /// @notice Create a new quorum and add the strategies and their associated weights to the quorum.
-    function createQuorum(
+    /// @notice Initialize a new quorum and push its first history update
+    function initializeQuorum(
         uint8 quorumNumber,
         uint96 minimumStake,
         StrategyAndWeightingMultiplier[] memory strategyParams
     ) public virtual onlyRegistryCoordinator {
-        require(_totalStakeHistory[quorumNumber].length == 0, "StakeRegistry.createQuorum: quorum already exists");
+        require(_totalStakeHistory[quorumNumber].length == 0, "StakeRegistry.initializeQuorum: quorum already exists");
         _addStrategyParams(quorumNumber, strategyParams);
         _setMinimumStakeForQuorum(quorumNumber, minimumStake);
+
+        _totalStakeHistory[quorumNumber].push(OperatorStakeUpdate({
+            updateBlockNumber: uint32(block.number),
+            nextUpdateBlockNumber: 0,
+            stake: 0
+        }));
     }
 
     function setMinimumStakeForQuorum(
@@ -211,7 +216,7 @@ contract StakeRegistry is VoteWeigherBaseStorage, StakeRegistryStorage {
      * @dev This function has no check to make sure that the strategies for a single quorum have the same underlying asset. This is a concious choice,
      * since a middleware may want, e.g., a stablecoin quorum that accepts USDC, USDT, DAI, etc. as underlying assets and trades them as "equivalent".
      */
-    function addStrategyParams(
+    function addStrategies(
         uint8 quorumNumber, 
         StrategyAndWeightingMultiplier[] memory strategyParams
     ) public virtual onlyServiceManagerOwner quorumExists(quorumNumber) {
@@ -223,7 +228,7 @@ contract StakeRegistry is VoteWeigherBaseStorage, StakeRegistryStorage {
      * @dev higher indices should be *first* in the list of @param indicesToRemove, since otherwise
      * the removal of lower index entries will cause a shift in the indices of the other strategies to remove
      */
-    function removeStrategyParams(
+    function removeStrategies(
         uint8 quorumNumber,
         uint256[] memory indicesToRemove
     ) public virtual onlyServiceManagerOwner quorumExists(quorumNumber) {
@@ -492,7 +497,7 @@ contract StakeRegistry is VoteWeigherBaseStorage, StakeRegistryStorage {
      * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
      * @dev this method DOES NOT check that the quorum exists
      */
-    function _weightOfOperatorForQuorum(uint8 quorumNumber, address operator) internal view returns (uint96) {
+    function _weightOfOperatorForQuorum(uint8 quorumNumber, address operator) internal virtual view returns (uint96) {
         uint96 weight;
         uint256 stratsLength = strategiesConsideredAndMultipliersLength(quorumNumber);
         StrategyAndWeightingMultiplier memory strategyAndMultiplier;
