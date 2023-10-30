@@ -7,7 +7,10 @@ import "src/interfaces/IServiceManager.sol";
 import "src/interfaces/IStakeRegistry.sol";
 import "src/interfaces/IRegistryCoordinator.sol";
 import "src/StakeRegistryStorage.sol";
+<<<<<<< HEAD
 import {VoteWeigherBase} from "src/VoteWeigherBase.sol";
+=======
+>>>>>>> 12b09de (fix: fix compilation issues and tests)
 
 /**
  * @title A `Registry` that keeps track of stakes of operators for up to 256 quorums.
@@ -18,8 +21,13 @@ import {VoteWeigherBase} from "src/VoteWeigherBase.sol";
  * It allows an additional functionality (in addition to registering and deregistering) to update the stake of an operator.
  * @author Layr Labs, Inc.
  */
+<<<<<<< HEAD
 contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
     /// @notice requires that the caller is the RegistryCoordinator
+=======
+contract StakeRegistry is StakeRegistryStorage {
+    
+>>>>>>> 12b09de (fix: fix compilation issues and tests)
     modifier onlyRegistryCoordinator() {
         require(
             msg.sender == address(registryCoordinator),
@@ -32,6 +40,7 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
         IRegistryCoordinator _registryCoordinator,
         IStrategyManager _strategyManager,
         IServiceManager _serviceManager
+<<<<<<< HEAD
     ) VoteWeigherBase(_strategyManager, _serviceManager) StakeRegistryStorage(_registryCoordinator) {}
 
     /**
@@ -64,6 +73,9 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
             }
         }
     }
+=======
+    ) StakeRegistryStorage(_registryCoordinator, _delegationManager, _serviceManager) {}
+>>>>>>> 12b09de (fix: fix compilation issues and tests)
 
     /*******************************************************************************
                             EXTERNAL FUNCTIONS 
@@ -203,15 +215,103 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
         }
     }
 
+<<<<<<< HEAD
     /*******************************************************************************
                     EXTERNAL FUNCTIONS - SERVICE MANAGER OWNER
     *******************************************************************************/
 
     /// @notice Adjusts the `minimumStakeFirstQuorum` -- i.e. the node stake (weight) requirement for inclusion in the 1st quorum.
     function setMinimumStakeForQuorum(uint8 quorumNumber, uint96 minimumStake) external onlyServiceManagerOwner {
+=======
+    /// @notice Initialize a new quorum and push its first history update
+    function initializeQuorum(
+        uint8 quorumNumber,
+        uint96 minimumStake,
+        StrategyAndWeightingMultiplier[] memory strategyParams
+    ) public virtual onlyRegistryCoordinator {
+        require(_totalStakeHistory[quorumNumber].length == 0, "StakeRegistry.initializeQuorum: quorum already exists");
+        _addStrategyParams(quorumNumber, strategyParams);
+>>>>>>> 12b09de (fix: fix compilation issues and tests)
+        _setMinimumStakeForQuorum(quorumNumber, minimumStake);
+
+        _totalStakeHistory[quorumNumber].push(OperatorStakeUpdate({
+            updateBlockNumber: uint32(block.number),
+            nextUpdateBlockNumber: 0,
+            stake: 0
+        }));
+    }
+
+<<<<<<< HEAD
+=======
+    function setMinimumStakeForQuorum(
+        uint8 quorumNumber, 
+        uint96 minimumStake
+    ) public virtual onlyServiceManagerOwner quorumExists(quorumNumber) {
         _setMinimumStakeForQuorum(quorumNumber, minimumStake);
     }
 
+    /** 
+     * @notice Adds strategies and weights to the quorum
+     * @dev Checks to make sure that the *same* strategy cannot be added multiple times (checks against both against existing and new strategies).
+     * @dev This function has no check to make sure that the strategies for a single quorum have the same underlying asset. This is a concious choice,
+     * since a middleware may want, e.g., a stablecoin quorum that accepts USDC, USDT, DAI, etc. as underlying assets and trades them as "equivalent".
+     */
+    function addStrategies(
+        uint8 quorumNumber, 
+        StrategyAndWeightingMultiplier[] memory strategyParams
+    ) public virtual onlyServiceManagerOwner quorumExists(quorumNumber) {
+        _addStrategyParams(quorumNumber, strategyParams);
+    }
+
+    /**
+     * @notice Remove strategies and their associated weights from the quorum's considered strategies
+     * @dev higher indices should be *first* in the list of @param indicesToRemove, since otherwise
+     * the removal of lower index entries will cause a shift in the indices of the other strategies to remove
+     */
+    function removeStrategies(
+        uint8 quorumNumber,
+        uint256[] memory indicesToRemove
+    ) public virtual onlyServiceManagerOwner quorumExists(quorumNumber) {
+        uint256 toRemoveLength = indicesToRemove.length;
+        require(toRemoveLength > 0, "StakeRegistry.removeStrategyParams: no indices to remove provided");
+
+        StrategyAndWeightingMultiplier[] storage strategyParams = strategiesConsideredAndMultipliers[quorumNumber];
+
+        for (uint256 i = 0; i < toRemoveLength; i++) {
+            emit StrategyRemovedFromQuorum(quorumNumber, strategyParams[indicesToRemove[i]].strategy);
+            emit StrategyMultiplierUpdated(quorumNumber, strategyParams[indicesToRemove[i]].strategy, 0);
+
+            // Replace index to remove with the last item in the list, then pop the last item
+            strategyParams[indicesToRemove[i]] = strategyParams[strategyParams.length - 1];
+            strategyParams.pop();
+        }
+    }
+
+    /**
+     * @notice Modifys the weights of existing strategies for a specific quorum
+     * @param quorumNumber is the quorum number to which the strategies belong
+     * @param strategyIndices are the indices of the strategies to change
+     * @param newMultipliers are the new multipliers for the strategies
+     */
+    function modifyStrategyParams(
+        uint8 quorumNumber,
+        uint256[] calldata strategyIndices,
+        uint96[] calldata newMultipliers
+    ) public virtual onlyServiceManagerOwner quorumExists(quorumNumber) {
+        uint256 numStrats = strategyIndices.length;
+        require(numStrats > 0, "StakeRegistry.modifyStrategyParams: no strategy indices provided");
+        require(newMultipliers.length == numStrats, "StakeRegistry.modifyStrategyParams: input length mismatch");
+
+        StrategyAndWeightingMultiplier[] storage strategyParams = strategiesConsideredAndMultipliers[quorumNumber];
+
+        for (uint256 i = 0; i < numStrats; i++) {
+            // Change the strategy's associated multiplier
+            strategyParams[strategyIndices[i]].multiplier = newMultipliers[i];
+            emit StrategyMultiplierUpdated(quorumNumber, strategyParams[strategyIndices[i]].strategy, newMultipliers[i]);
+        }
+    }
+
+>>>>>>> 12b09de (fix: fix compilation issues and tests)
     /*******************************************************************************
                             INTERNAL FUNCTIONS
     *******************************************************************************/
@@ -388,6 +488,38 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
         );
     }
 
+<<<<<<< HEAD
+=======
+    /**
+     * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
+     * @dev this method DOES NOT check that the quorum exists
+     */
+    function _weightOfOperatorForQuorum(uint8 quorumNumber, address operator) internal virtual view returns (uint96) {
+        uint96 weight;
+        uint256 stratsLength = strategiesConsideredAndMultipliersLength(quorumNumber);
+        StrategyAndWeightingMultiplier memory strategyAndMultiplier;
+
+        for (uint256 i = 0; i < stratsLength;) {
+            // accessing i^th StrategyAndWeightingMultiplier struct for the quorumNumber
+            strategyAndMultiplier = strategiesConsideredAndMultipliers[quorumNumber][i];
+
+            // shares of the operator in the strategy
+            uint256 sharesAmount = delegation.operatorShares(operator, strategyAndMultiplier.strategy);
+
+            // add the weight from the shares for this strategy to the total weight
+            if (sharesAmount > 0) {
+                weight += uint96(sharesAmount * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR);
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        return weight;
+    }
+
+>>>>>>> 12b09de (fix: fix compilation issues and tests)
     /*******************************************************************************
                             VIEW FUNCTIONS
     *******************************************************************************/

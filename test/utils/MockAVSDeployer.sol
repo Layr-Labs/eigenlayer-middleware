@@ -13,6 +13,7 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISi
 import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
 import {BN254} from "../../src/libraries/BN254.sol";
 
+<<<<<<< HEAD
 import {BLSPublicKeyCompendium} from "../../src/BLSPublicKeyCompendium.sol";
 import {BLSOperatorStateRetriever} from "../../src/BLSOperatorStateRetriever.sol";
 import {BLSRegistryCoordinatorWithIndices} from "../../src/BLSRegistryCoordinatorWithIndices.sol";
@@ -27,6 +28,21 @@ import {IVoteWeigher} from "../../src/interfaces/IVoteWeigher.sol";
 import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
 import {IBLSRegistryCoordinatorWithIndices} from "../../src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
+=======
+import {BLSPublicKeyCompendium} from "src/BLSPublicKeyCompendium.sol";
+import {BLSOperatorStateRetriever} from "src/BLSOperatorStateRetriever.sol";
+import {BLSRegistryCoordinatorWithIndices} from "src/BLSRegistryCoordinatorWithIndices.sol";
+import {BLSRegistryCoordinatorWithIndicesHarness} from "test/harnesses/BLSRegistryCoordinatorWithIndicesHarness.sol";
+import {BLSPubkeyRegistry} from "src/BLSPubkeyRegistry.sol";
+import {StakeRegistry} from "src/StakeRegistry.sol";
+import {IndexRegistry} from "src/IndexRegistry.sol";
+import {IServiceManager} from "src/interfaces/IServiceManager.sol";
+import {IBLSPubkeyRegistry} from "src/interfaces/IBLSPubkeyRegistry.sol";
+import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
+import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
+import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
+import {IBLSRegistryCoordinatorWithIndices} from "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
+>>>>>>> 12b09de (fix: fix compilation issues and tests)
 
 
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
@@ -195,14 +211,38 @@ contract MockAVSDeployer is Test {
             )
         );
 
+        cheats.stopPrank();
+        cheats.startPrank(proxyAdminOwner);
+
         stakeRegistryImplementation = new StakeRegistryHarness(
             IRegistryCoordinator(registryCoordinator),
-            strategyManagerMock,
+            delegationMock,
             IServiceManager(address(serviceManagerMock))
         );
 
-        cheats.stopPrank();
-        cheats.startPrank(proxyAdminOwner);
+        proxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(stakeRegistry))),
+            address(stakeRegistryImplementation)
+        );
+
+        blsPubkeyRegistryImplementation = new BLSPubkeyRegistry(
+            registryCoordinator,
+            BLSPublicKeyCompendium(address(pubkeyCompendium))
+        );
+
+        proxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(blsPubkeyRegistry))),
+            address(blsPubkeyRegistryImplementation)
+        );
+
+        indexRegistryImplementation = new IndexRegistry(
+            registryCoordinator
+        );
+
+        proxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(indexRegistry))),
+            address(indexRegistryImplementation)
+        );
 
         // setup the dummy minimum stake for quorum
         uint96[] memory minimumStakeForQuorum = new uint96[](numQuorumsToAdd);
@@ -211,25 +251,15 @@ contract MockAVSDeployer is Test {
         }
 
         // setup the dummy quorum strategies
-        IVoteWeigher.StrategyAndWeightingMultiplier[][] memory quorumStrategiesConsideredAndMultipliers =
-            new IVoteWeigher.StrategyAndWeightingMultiplier[][](numQuorumsToAdd);
+        IStakeRegistry.StrategyAndWeightingMultiplier[][] memory quorumStrategiesConsideredAndMultipliers =
+            new IStakeRegistry.StrategyAndWeightingMultiplier[][](numQuorumsToAdd);
         for (uint256 i = 0; i < quorumStrategiesConsideredAndMultipliers.length; i++) {
-            quorumStrategiesConsideredAndMultipliers[i] = new IVoteWeigher.StrategyAndWeightingMultiplier[](1);
-            quorumStrategiesConsideredAndMultipliers[i][0] = IVoteWeigher.StrategyAndWeightingMultiplier(
+            quorumStrategiesConsideredAndMultipliers[i] = new IStakeRegistry.StrategyAndWeightingMultiplier[](1);
+            quorumStrategiesConsideredAndMultipliers[i][0] = IStakeRegistry.StrategyAndWeightingMultiplier(
                 IStrategy(address(uint160(i))),
                 uint96(i+1)
             );
         }
-
-        proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(stakeRegistry))),
-            address(stakeRegistryImplementation),
-            abi.encodeWithSelector(
-                StakeRegistry.initialize.selector,
-                minimumStakeForQuorum,
-                quorumStrategiesConsideredAndMultipliers
-            )
-        );
 
         registryCoordinatorImplementation = new BLSRegistryCoordinatorWithIndicesHarness(
             slasher,
@@ -256,31 +286,14 @@ contract MockAVSDeployer is Test {
                     BLSRegistryCoordinatorWithIndices.initialize.selector,
                     churnApprover,
                     ejector,
-                    operatorSetParams,
                     pauserRegistry,
-                    0/*initialPausedStatus*/
+                    0/*initialPausedStatus*/,
+                    operatorSetParams,
+                    minimumStakeForQuorum,
+                    quorumStrategiesConsideredAndMultipliers
                 )
             );
         }
-
-        blsPubkeyRegistryImplementation = new BLSPubkeyRegistry(
-            registryCoordinator,
-            BLSPublicKeyCompendium(address(pubkeyCompendium))
-        );
-
-        proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(blsPubkeyRegistry))),
-            address(blsPubkeyRegistryImplementation)
-        );
-
-        indexRegistryImplementation = new IndexRegistry(
-            registryCoordinator
-        );
-
-        proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(indexRegistry))),
-            address(indexRegistryImplementation)
-        );
 
         operatorStateRetriever = new BLSOperatorStateRetriever();
 

@@ -9,9 +9,9 @@ contract StakeRegistryHarness is StakeRegistry {
 
     constructor(
         IRegistryCoordinator _registryCoordinator,
-        IStrategyManager _strategyManager,
+        IDelegationManager _delegationManager,
         IServiceManager _serviceManager
-    ) StakeRegistry(_registryCoordinator, _strategyManager, _serviceManager) {
+    ) StakeRegistry(_registryCoordinator, _delegationManager, _serviceManager) {
     }
 
     function recordOperatorStakeUpdate(bytes32 operatorId, uint8 quorumNumber, uint96 newStake) external returns(int256) {
@@ -34,6 +34,10 @@ contract StakeRegistryHarness is StakeRegistry {
     /// TODO remove when core gets updated
     function weightOfOperatorForQuorumView(uint8 quorumNumber, address operator) public override view returns(uint96) {
         return _weightOfOperatorForQuorum[quorumNumber][operator];
+    }
+
+    function _weightOfOperatorForQuorum(uint8 quorumNumber, address operator) internal override view returns(uint96) {
+        return __weightOfOperatorForQuorum[quorumNumber][operator];
     }
 
     // mocked function so we can set this arbitrarily without having to mock other elements

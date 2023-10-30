@@ -58,7 +58,15 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
 
         // make sure the contract intializers are disabled
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
-        registryCoordinator.initialize(churnApprover, ejector, operatorSetParams, pauserRegistry, 0/*initialPausedStatus*/);
+        registryCoordinator.initialize(
+            churnApprover, 
+            ejector, 
+            pauserRegistry, 
+            0/*initialPausedStatus*/, 
+            operatorSetParams, 
+            new uint96[](0), 
+            new IStakeRegistry.StrategyAndWeightingMultiplier[][](0)
+        );
     }
 
     function testSetOperatorSetParams_NotServiceManagerOwner_Reverts() public {
@@ -135,7 +143,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         bytes memory quorumNumbersNotCreated = new bytes(1);
         quorumNumbersNotCreated[0] = 0x0B;
         cheats.prank(defaultOperator);
-        cheats.expectRevert("StakeRegistry._registerOperator: greatest quorumNumber must be less than quorumCount");
+        cheats.expectRevert("BLSPubkeyRegistry._processQuorumApkUpdate: quorum does not exist");
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbersNotCreated, defaultPubKey, defaultSocket);
     }
 

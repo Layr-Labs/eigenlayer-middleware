@@ -95,10 +95,10 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
     }
 
     /**
-     * @notice Creates a new quorum by pushing its first apk update
+     * @notice Initializes a new quorum by pushing its first apk update
      * @param quorumNumber The number of the new quorum
      */
-    function createQuorum(uint8 quorumNumber) public virtual onlyRegistryCoordinator {
+    function initializeQuorum(uint8 quorumNumber) public virtual onlyRegistryCoordinator {
         require(quorumApkUpdates[quorumNumber].length == 0, "BLSPubkeyRegistry.createQuorum: quorum already exists");
 
         quorumApkUpdates[quorumNumber].push(ApkUpdate({

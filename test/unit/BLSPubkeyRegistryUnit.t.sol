@@ -26,10 +26,16 @@ contract BLSPubkeyRegistryUnitTests is Test {
 
     uint8 internal defaultQuorumNumber = 0;
 
+    // Track initialized quorums so we can filter these out when fuzzing
+    mapping(uint8 => bool) initializedQuorums;
+
     function setUp() external {
         registryCoordinator = new RegistryCoordinatorMock();
         pkCompendium = new BLSPublicKeyCompendiumMock();
         blsPubkeyRegistry = new BLSPubkeyRegistry(registryCoordinator, pkCompendium);
+
+        // Initialize a quorum
+        _initializeQuorum(defaultQuorumNumber);
     }
 
     function testConstructorArgs() public view {
@@ -99,19 +105,23 @@ contract BLSPubkeyRegistryUnitTests is Test {
         bytes memory quorumNumbers = new bytes(2);
         quorumNumbers[0] = bytes1(quorumNumber1);
         quorumNumbers[1] = bytes1(quorumNumber2);
+        if (!initializedQuorums[quorumNumber1]) {
+            _initializeFuzzedQuorum(quorumNumber1);
+        }
+        if (!initializedQuorums[quorumNumber2]) {
+            _initializeFuzzedQuorum(quorumNumber2);
+        }
 
         BN254.G1Point[] memory quorumApksBefore = new BN254.G1Point[](quorumNumbers.length);
         for(uint8 i = 0; i < quorumNumbers.length; i++){
             quorumApksBefore[i] = blsPubkeyRegistry.getApkForQuorum(uint8(quorumNumbers[i]));
         }
 
-        cheats.startPrank(defaultOperator);
+        cheats.prank(defaultOperator);
         pkCompendium.registerPublicKey(defaultPubKey);
-        cheats.stopPrank();
         
-        cheats.startPrank(address(registryCoordinator));
+        cheats.prank(address(registryCoordinator));
         blsPubkeyRegistry.registerOperator(defaultOperator, quorumNumbers, defaultPubKey);
-        cheats.stopPrank();
 
         //check quorum apk updates
         for(uint8 i = 0; i < quorumNumbers.length; i++){
@@ -148,6 +158,8 @@ contract BLSPubkeyRegistryUnitTests is Test {
         bytes memory quorumNumbers = new bytes(2);
         quorumNumbers[0] = bytes1(quorumNumber1);
         quorumNumbers[1] = bytes1(quorumNumber2);
+        _initializeFuzzedQuorum(quorumNumber1);
+        _initializeFuzzedQuorum(quorumNumber2);
 
         testQuorumApkUpdates(quorumNumber1, quorumNumber2);
 
@@ -200,19 +212,20 @@ contract BLSPubkeyRegistryUnitTests is Test {
             testRegisterOperatorBLSPubkey(defaultOperator, pk);
             quorumApk = quorumApk.plus(BN254.hashToG1(pk));
             quorumApkHash = bytes24(BN254.hashG1Point(quorumApk));
-            require(quorumApkHash == blsPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex(defaultQuorumNumber, uint32(block.number + blockGap) , i), "incorrect quorum aok updates");
+            require(quorumApkHash == blsPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex(defaultQuorumNumber, uint32(block.number + blockGap) , i + 1), "incorrect quorum aok updates");
             cheats.roll(block.number + 100);
             if(_generateRandomNumber(i) % 2 == 0){
                _deregisterOperator(pk);
                quorumApk = quorumApk.plus(BN254.hashToG1(pk).negate());
                quorumApkHash = bytes24(BN254.hashG1Point(quorumApk));
-                require(quorumApkHash == blsPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex(defaultQuorumNumber, uint32(block.number + blockGap) , i + 1), "incorrect quorum aok updates");
+                require(quorumApkHash == blsPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex(defaultQuorumNumber, uint32(block.number + blockGap) , i + 2), "incorrect quorum aok updates");
                 cheats.roll(block.number + 100);
                 i++;
             }
         }
     }
 
+    /// TODO - fix test
     function testIncorrectBlockNumberForQuorumApkUpdates(uint256 numRegistrants, uint32 indexToCheck, uint32 wrongBlockNumber) external {
         cheats.assume(numRegistrants > 0 && numRegistrants <  100);
         cheats.assume(indexToCheck < numRegistrants - 1);
@@ -225,13 +238,31 @@ contract BLSPubkeyRegistryUnitTests is Test {
             cheats.roll(block.number + 100);
         }
         if(wrongBlockNumber < startingBlockNumber + indexToCheck*100){
+            emit log_named_uint("index too recent: ", indexToCheck);
             cheats.expectRevert(bytes("BLSPubkeyRegistry._validateApkHashForQuorumAtBlockNumber: index too recent"));
             blsPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex(defaultQuorumNumber, wrongBlockNumber, indexToCheck);
         } 
-         if (wrongBlockNumber >= startingBlockNumber + (indexToCheck+1)*100){
+        if (wrongBlockNumber >= startingBlockNumber + (indexToCheck+1)*100){
+            emit log_named_uint("index not latest: ", indexToCheck);
             cheats.expectRevert(bytes("BLSPubkeyRegistry._validateApkHashForQuorumAtBlockNumber: not latest apk update"));
             blsPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex(defaultQuorumNumber, wrongBlockNumber, indexToCheck);
         }
+    }
+
+    function _initializeQuorum(
+        uint8 quorumNumber
+    ) internal {
+        cheats.prank(address(registryCoordinator));
+
+        blsPubkeyRegistry.initializeQuorum(quorumNumber);
+        initializedQuorums[quorumNumber] = true;
+    }
+
+    function _initializeFuzzedQuorum(
+        uint8 quorumNumber
+    ) internal {
+        cheats.assume(!initializedQuorums[quorumNumber]);
+        _initializeQuorum(quorumNumber);
     }
 
     function _getRandomPk(uint256 seed) internal view returns (bytes32) {
