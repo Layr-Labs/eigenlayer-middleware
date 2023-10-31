@@ -114,19 +114,24 @@ contract BLSMockAVSDeployer is MockAVSDeployer {
         uint32 referenceBlockNumber = registrationBlockNumber + blocksBetweenRegistrations * uint32(maxOperatorsToRegister) + 1;
         cheats.roll(referenceBlockNumber + 100);
 
-        BLSOperatorStateRetriever.CheckSignaturesIndices memory checkSignaturesIndices = operatorStateRetriever.getCheckSignaturesIndices(
+        (
+        uint32[] memory nonSignerQuorumBitmapIndices,
+        uint32[] memory quorumApkIndices,
+        uint32[] memory totalStakeIndices,
+        uint32[][] memory nonSignerStakeIndices
+        ) = abi.decode(abi.encode(operatorStateRetriever.getCheckSignaturesIndices(
             registryCoordinator,
             referenceBlockNumber, 
             quorumNumbers, 
             nonSignerOperatorIds
-        );
+        )), (uint32[], uint32[], uint32[], uint32[][]));
 
-        nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices = checkSignaturesIndices.nonSignerQuorumBitmapIndices;
+        nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices = nonSignerQuorumBitmapIndices;
         nonSignerStakesAndSignature.apkG2 = aggSignerApkG2;
         nonSignerStakesAndSignature.sigma = sigma;
-        nonSignerStakesAndSignature.quorumApkIndices = checkSignaturesIndices.quorumApkIndices;
-        nonSignerStakesAndSignature.totalStakeIndices = checkSignaturesIndices.totalStakeIndices;
-        nonSignerStakesAndSignature.nonSignerStakeIndices = checkSignaturesIndices.nonSignerStakeIndices;
+        nonSignerStakesAndSignature.quorumApkIndices = quorumApkIndices;
+        nonSignerStakesAndSignature.totalStakeIndices = totalStakeIndices;
+        nonSignerStakesAndSignature.nonSignerStakeIndices = nonSignerStakeIndices;
 
         return (referenceBlockNumber, nonSignerStakesAndSignature);
     }
