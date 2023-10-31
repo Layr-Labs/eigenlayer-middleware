@@ -4,7 +4,7 @@ pragma solidity =0.8.12;
 import {BLSSignatureChecker} from "src/BLSSignatureChecker.sol";
 import {MockAVSDeployer} from "test/utils/MockAVSDeployer.sol";
 import {BN254} from "eigenlayer-contracts/src/contracts/libraries/BN254.sol";
-import {BLSOperatorStateRetriever} from "../../src/BLSOperatorStateRetriever.sol";
+import {BLSOperatorStateRetriever} from "src/BLSOperatorStateRetriever.sol";
 import {BitmapUtils} from "eigenlayer-contracts/src/contracts/libraries/BitmapUtils.sol";
 
 contract BLSMockAVSDeployer is MockAVSDeployer {
