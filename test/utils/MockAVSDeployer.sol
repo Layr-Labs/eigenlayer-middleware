@@ -14,7 +14,7 @@ import {BitmapUtils} from "eigenlayer-contracts/src/contracts/libraries/BitmapUt
 import {BN254} from "eigenlayer-contracts/src/contracts/libraries/BN254.sol";
 
 import {BLSPublicKeyCompendium} from "src/BLSPublicKeyCompendium.sol";
-import {BLSOperatorStateRetriever} from "src/BLSOperatorStateRetriever.sol";
+import {BLSOperatorStateRetriever} from "../../src/BLSOperatorStateRetriever.sol";
 import {BLSRegistryCoordinatorWithIndices} from "src/BLSRegistryCoordinatorWithIndices.sol";
 import {BLSRegistryCoordinatorWithIndicesHarness} from "test/harnesses/BLSRegistryCoordinatorWithIndicesHarness.sol";
 import {BLSPubkeyRegistry} from "src/BLSPubkeyRegistry.sol";
