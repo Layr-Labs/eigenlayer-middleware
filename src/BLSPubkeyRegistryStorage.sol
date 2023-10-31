@@ -20,6 +20,8 @@ abstract contract BLSPubkeyRegistryStorage is Initializable, IBLSPubkeyRegistry 
     mapping(uint8 => ApkUpdate[]) public quorumApkUpdates;
     /// @notice mapping of quorumNumber => current aggregate pubkey of quorum
     mapping(uint8 => BN254.G1Point) public quorumApk;
+    mapping(uint8 => uint256) public quorumG1ApkX;
+    mapping(uint8 => uint256) public quorumG1ApkY;
 
     constructor(IRegistryCoordinator _registryCoordinator, IBLSPublicKeyCompendium _pubkeyCompendium) {
         registryCoordinator = _registryCoordinator;

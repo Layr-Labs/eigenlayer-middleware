@@ -113,6 +113,8 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
 
             //update aggregate public key for this quorum
             quorumApk[quorumNumber] = apkAfterUpdate;
+            quorumG1ApkX[quorumNumber] = apkAfterUpdate.X;
+            quorumG1ApkY[quorumNumber] = apkAfterUpdate.Y;
             //create new ApkUpdate to add to the mapping
             ApkUpdate memory latestApkUpdate;
             latestApkUpdate.apkHash = bytes24(BN254.hashG1Point(apkAfterUpdate));
