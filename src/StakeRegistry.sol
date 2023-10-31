@@ -427,35 +427,26 @@ contract StakeRegistry is StakeRegistryStorage {
             return;
         }
 
-        uint96 prevStake;
+        // Get our last-recorded stake update
         uint256 historyLength = _totalStakeHistory[quorumNumber].length;
+        OperatorStakeUpdate storage lastStakeUpdate = _totalStakeHistory[quorumNumber][historyLength - 1];
+        
+        // Calculate the new total stake by applying the delta to our previous stake
+        uint96 newStake = _applyDelta(lastStakeUpdate.stake, stakeDelta);
 
-        if (historyLength == 0) {
-            // No prior stake history - push our first entry
+        /**
+         * If our last stake entry was made in the current block, update the entry
+         * Otherwise, push a new entry and update the previous entry's "next" field
+         */
+        if (lastStakeUpdate.updateBlockNumber == uint32(block.number)) {
+            lastStakeUpdate.stake = newStake;
+        } else {
+            lastStakeUpdate.nextUpdateBlockNumber = uint32(block.number);
             _totalStakeHistory[quorumNumber].push(OperatorStakeUpdate({
                 updateBlockNumber: uint32(block.number),
                 nextUpdateBlockNumber: 0,
-                stake: _applyDelta(prevStake, stakeDelta)
+                stake: newStake
             }));
-        } else {
-            // We have prior stake history - calculate our new stake as a function of our last-recorded stake
-            prevStake = _totalStakeHistory[quorumNumber][historyLength - 1].stake;
-            uint96 newStake = _applyDelta(prevStake, stakeDelta);
-
-            /**
-             * If our last stake entry was made in the current block, update the entry
-             * Otherwise, push a new entry and update the previous entry's "next" field
-             */
-            if (_totalStakeHistory[quorumNumber][historyLength-1].updateBlockNumber == uint32(block.number)) {
-                _totalStakeHistory[quorumNumber][historyLength-1].stake = newStake;
-            } else {
-                _totalStakeHistory[quorumNumber][historyLength-1].nextUpdateBlockNumber = uint32(block.number);
-                _totalStakeHistory[quorumNumber].push(OperatorStakeUpdate({
-                    updateBlockNumber: uint32(block.number),
-                    nextUpdateBlockNumber: 0,
-                    stake: newStake
-                }));
-            }
         }
     }
 

@@ -212,13 +212,15 @@ contract BLSPubkeyRegistryUnitTests is Test {
             testRegisterOperatorBLSPubkey(defaultOperator, pk);
             quorumApk = quorumApk.plus(BN254.hashToG1(pk));
             quorumApkHash = bytes24(BN254.hashG1Point(quorumApk));
-            require(quorumApkHash == blsPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex(defaultQuorumNumber, uint32(block.number + blockGap) , i + 1), "incorrect quorum aok updates");
+            uint historyLength = blsPubkeyRegistry.getQuorumApkHistoryLength(defaultQuorumNumber);
+            assertEq(quorumApkHash, blsPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex(defaultQuorumNumber, uint32(block.number + blockGap), historyLength-1), "incorrect quorum apk update");
             cheats.roll(block.number + 100);
             if(_generateRandomNumber(i) % 2 == 0){
-               _deregisterOperator(pk);
-               quorumApk = quorumApk.plus(BN254.hashToG1(pk).negate());
-               quorumApkHash = bytes24(BN254.hashG1Point(quorumApk));
-                require(quorumApkHash == blsPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex(defaultQuorumNumber, uint32(block.number + blockGap) , i + 2), "incorrect quorum aok updates");
+                _deregisterOperator(pk);
+                quorumApk = quorumApk.plus(BN254.hashToG1(pk).negate());
+                quorumApkHash = bytes24(BN254.hashG1Point(quorumApk));
+                historyLength = blsPubkeyRegistry.getQuorumApkHistoryLength(defaultQuorumNumber);
+                assertEq(quorumApkHash, blsPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex(defaultQuorumNumber, uint32(block.number + blockGap), historyLength-1), "incorrect quorum apk update");
                 cheats.roll(block.number + 100);
                 i++;
             }

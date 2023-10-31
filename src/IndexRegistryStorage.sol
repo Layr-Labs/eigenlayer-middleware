@@ -19,15 +19,12 @@ abstract contract IndexRegistryStorage is Initializable, IIndexRegistry {
     /// @notice The RegistryCoordinator contract for this middleware
     IRegistryCoordinator public immutable registryCoordinator;
 
-    /// @notice list of all operators ever registered, may include duplicates. used to avoid running an indexer on nodes
-    bytes32[] public globalOperatorList;
-
-    /// @notice mapping of quorumNumber => operator id => current index
-    mapping(uint8 => mapping(bytes32 => uint32)) public operatorIdToIndex;
-    /// @notice mapping of quorumNumber => index => operator id history for that index
-    mapping(uint8 => mapping(uint32 => OperatorUpdate[])) internal _indexToOperatorIdHistory;
-    /// @notice mapping of quorumNumber => history of numbers of unique registered operators
-    mapping(uint8 => QuorumUpdate[]) internal _totalOperatorsHistory;
+    /// @notice maps quorumNumber => operator id => current index
+    mapping(uint8 => mapping(bytes32 => uint32)) public currentOperatorIndex;
+    /// @notice maps quorumNumber => index => historical operator ids at that index
+    mapping(uint8 => mapping(uint32 => OperatorUpdate[])) internal _indexHistory;
+    /// @notice maps quorumNumber => historical number of unique registered operators
+    mapping(uint8 => QuorumUpdate[]) internal _operatorCountHistory;
 
     constructor(
         IRegistryCoordinator _registryCoordinator

@@ -71,7 +71,7 @@ contract IndexRegistryUnitTests is Test {
 
         // Check _operatorIdToIndexHistory updates
         IIndexRegistry.OperatorUpdate memory operatorUpdate = indexRegistry
-            .getOperatorIndexUpdateOfIndexForQuorumAtIndex({operatorIndex: 0, quorumNumber: 1, index: 0});
+            .getOperatorUpdateAtIndex({operatorIndex: 0, quorumNumber: 1, index: 0});
         require(operatorUpdate.operatorId == operatorId1, "IndexRegistry.registerOperator: operatorId not operatorId1");
         require(
             operatorUpdate.fromBlockNumber == block.number,
@@ -116,7 +116,7 @@ contract IndexRegistryUnitTests is Test {
 
         // Check _operatorIdToIndexHistory updates
         IIndexRegistry.OperatorUpdate memory operatorUpdate = indexRegistry
-            .getOperatorIndexUpdateOfIndexForQuorumAtIndex({operatorIndex: 0, quorumNumber: 2, index: 0});
+            .getOperatorUpdateAtIndex({operatorIndex: 0, quorumNumber: 2, index: 0});
         require(operatorUpdate.operatorId == operatorId1, "IndexRegistry.registerOperator: operatorId not operatorId1");
         require(
             operatorUpdate.fromBlockNumber == block.number,
@@ -159,7 +159,7 @@ contract IndexRegistryUnitTests is Test {
 
         // Check _operatorIdToIndexHistory updates for quorum 1
         IIndexRegistry.OperatorUpdate memory operatorUpdate = indexRegistry
-            .getOperatorIndexUpdateOfIndexForQuorumAtIndex({operatorIndex: 0, quorumNumber: 1, index: 0});
+            .getOperatorUpdateAtIndex({operatorIndex: 0, quorumNumber: 1, index: 0});
         require(operatorUpdate.operatorId == operatorId1, "IndexRegistry.registerOperator: operatorId not 1operatorId1");
         require(
             operatorUpdate.fromBlockNumber == block.number,
@@ -183,7 +183,7 @@ contract IndexRegistryUnitTests is Test {
         );
 
         // Check _operatorIdToIndexHistory updates for quorum 2
-        operatorUpdate = indexRegistry.getOperatorIndexUpdateOfIndexForQuorumAtIndex({operatorIndex: 0 , quorumNumber: 2, index: 0});
+        operatorUpdate = indexRegistry.getOperatorUpdateAtIndex({operatorIndex: 0 , quorumNumber: 2, index: 0});
         require(operatorUpdate.operatorId == operatorId1, "IndexRegistry.registerOperator: operatorId not operatorId1");
         require(
             operatorUpdate.fromBlockNumber == block.number,
@@ -226,7 +226,7 @@ contract IndexRegistryUnitTests is Test {
 
         // Check _operatorIdToIndexHistory updates
         IIndexRegistry.OperatorUpdate memory operatorUpdate = indexRegistry
-            .getOperatorIndexUpdateOfIndexForQuorumAtIndex({operatorIndex: 1, quorumNumber: 1, index: 0});
+            .getOperatorUpdateAtIndex({operatorIndex: 1, quorumNumber: 1, index: 0});
         require(operatorUpdate.operatorId == operatorId2, "IndexRegistry.registerOperator: operatorId not operatorId2");
         require(
             operatorUpdate.fromBlockNumber == block.number,
@@ -266,7 +266,7 @@ contract IndexRegistryUnitTests is Test {
 
         // Check operator's index
         IIndexRegistry.OperatorUpdate memory operatorUpdate = indexRegistry
-            .getOperatorIndexUpdateOfIndexForQuorumAtIndex({operatorIndex: 0, quorumNumber: defaultQuorumNumber, index: 1});
+            .getOperatorUpdateAtIndex({operatorIndex: 0, quorumNumber: defaultQuorumNumber, index: 1});
         require(operatorUpdate.fromBlockNumber == block.number, "fromBlockNumber not set correctly");
         require(operatorUpdate.operatorId == bytes32(0), "incorrect operatorId");
 
@@ -299,7 +299,7 @@ contract IndexRegistryUnitTests is Test {
         // Check operator's index for removed quorums
         for (uint256 i = 0; i < quorumsToRemove.length; i++) {
             IIndexRegistry.OperatorUpdate memory operatorUpdate = indexRegistry
-                .getOperatorIndexUpdateOfIndexForQuorumAtIndex({operatorIndex: 2, quorumNumber: uint8(quorumsToRemove[i]), index: 1}); // 2 indexes -> 1 update and 1 remove
+                .getOperatorUpdateAtIndex({operatorIndex: 2, quorumNumber: uint8(quorumsToRemove[i]), index: 1}); // 2 indexes -> 1 update and 1 remove
             require(operatorUpdate.fromBlockNumber == block.number, "fromBlockNumber not set correctly");
             require(operatorUpdate.operatorId == bytes32(0), "incorrect operatorId");
         }
@@ -319,7 +319,7 @@ contract IndexRegistryUnitTests is Test {
         // Check swapped operator's index for removed quorums
         for (uint256 i = 0; i < quorumsToRemove.length; i++) {
             IIndexRegistry.OperatorUpdate memory operatorUpdate = indexRegistry
-                .getOperatorIndexUpdateOfIndexForQuorumAtIndex({operatorIndex: 0, quorumNumber: uint8(quorumsToRemove[i]), index: 1}); // 2 indexes -> 1 update and 1 swap
+                .getOperatorUpdateAtIndex({operatorIndex: 0, quorumNumber: uint8(quorumsToRemove[i]), index: 1}); // 2 indexes -> 1 update and 1 swap
             require(operatorUpdate.fromBlockNumber == block.number, "fromBlockNumber not set correctly");
             require(operatorUpdate.operatorId == operatorId3, "incorrect operatorId");
         }
@@ -336,9 +336,9 @@ contract IndexRegistryUnitTests is Test {
         _registerOperator(operatorId1, quorumNumbers);
 
         cheats.expectRevert(
-            "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: provided index is too far in the past for provided block number"
+            "IndexRegistry.getTotalOperatorsForIndexAtBlockNumber: provided index is too far in the past for provided block number"
         );
-        indexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex(defaultQuorumNumber, uint32(block.number - 1), 0);
+        indexRegistry.getTotalOperatorsForIndexAtBlockNumber(defaultQuorumNumber, uint32(block.number - 1), 0);
     }
 
     function testGetTotalOperatorsForQuorumAtBlockNumberByIndex_revert_indexBlockMismatch() public {
@@ -350,9 +350,9 @@ contract IndexRegistryUnitTests is Test {
         _registerOperator(operatorId2, quorumNumbers);
 
         cheats.expectRevert(
-            "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: provided index is too far in the future for provided block number"
+            "IndexRegistry.getTotalOperatorsForIndexAtBlockNumber: provided index is too far in the future for provided block number"
         );
-        indexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex(defaultQuorumNumber, uint32(block.number), 0);
+        indexRegistry.getTotalOperatorsForIndexAtBlockNumber(defaultQuorumNumber, uint32(block.number), 0);
     }
 
     function testGetTotalOperatorsForQuorumAtBlockNumberByIndex() public {
@@ -364,20 +364,20 @@ contract IndexRegistryUnitTests is Test {
         _registerOperator(operatorId2, quorumNumbers);
 
         // Check that the first total is correct
-        uint32 prevTotal = indexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex(
+        uint32 prevTotal = indexRegistry.getTotalOperatorsForIndexAtBlockNumber(
             defaultQuorumNumber,
             uint32(block.number - 10),
             1
         );
-        require(prevTotal == 1, "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: prev total not 1");
+        require(prevTotal == 1, "IndexRegistry.getTotalOperatorsForIndexAtBlockNumber: prev total not 1");
 
         // Check that the total is correct
-        uint32 currentTotal = indexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex(
+        uint32 currentTotal = indexRegistry.getTotalOperatorsForIndexAtBlockNumber(
             defaultQuorumNumber,
             uint32(block.number),
             2
         );
-        require(currentTotal == 2, "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: current total not 2");
+        require(currentTotal == 2, "IndexRegistry.getTotalOperatorsForIndexAtBlockNumber: current total not 2");
     }
 
     function testGetOperatorListForQuorumAtBlockNumber() public {
@@ -394,46 +394,46 @@ contract IndexRegistryUnitTests is Test {
         indexRegistry.deregisterOperator(operatorId1, quorumNumbers);
 
         // Check the operator list after first registration
-        bytes32[] memory operatorList = indexRegistry.getOperatorListForQuorumAtBlockNumber(
+        bytes32[] memory operatorList = indexRegistry.getOperatorListAtBlockNumber(
             defaultQuorumNumber,
             uint32(block.number - 20)
         );
         require(
             operatorList.length == 1,
-            "IndexRegistry.getOperatorListForQuorumAtBlockNumber: operator list length not 1"
+            "IndexRegistry.getOperatorListAtBlockNumber: operator list length not 1"
         );
         require(
             operatorList[0] == operatorId1,
-            "IndexRegistry.getOperatorListForQuorumAtBlockNumber: operator list incorrect"
+            "IndexRegistry.getOperatorListAtBlockNumber: operator list incorrect"
         );
 
         // Check the operator list after second registration
-        operatorList = indexRegistry.getOperatorListForQuorumAtBlockNumber(
+        operatorList = indexRegistry.getOperatorListAtBlockNumber(
             defaultQuorumNumber,
             uint32(block.number - 10)
         );
         require(
             operatorList.length == 2,
-            "IndexRegistry.getOperatorListForQuorumAtBlockNumber: operator list length not 2"
+            "IndexRegistry.getOperatorListAtBlockNumber: operator list length not 2"
         );
         require(
             operatorList[0] == operatorId1,
-            "IndexRegistry.getOperatorListForQuorumAtBlockNumber: operator list incorrect"
+            "IndexRegistry.getOperatorListAtBlockNumber: operator list incorrect"
         );
         require(
             operatorList[1] == operatorId2,
-            "IndexRegistry.getOperatorListForQuorumAtBlockNumber: operator list incorrect"
+            "IndexRegistry.getOperatorListAtBlockNumber: operator list incorrect"
         );
 
         // Check the operator list after deregistration
-        operatorList = indexRegistry.getOperatorListForQuorumAtBlockNumber(defaultQuorumNumber, uint32(block.number));
+        operatorList = indexRegistry.getOperatorListAtBlockNumber(defaultQuorumNumber, uint32(block.number));
         require(
             operatorList.length == 1,
-            "IndexRegistry.getOperatorListForQuorumAtBlockNumber: operator list length not 1"
+            "IndexRegistry.getOperatorListAtBlockNumber: operator list length not 1"
         );
         require(
             operatorList[0] == operatorId2,
-            "IndexRegistry.getOperatorListForQuorumAtBlockNumber: operator list incorrect"
+            "IndexRegistry.getOperatorListAtBlockNumber: operator list incorrect"
         );
     }
 
@@ -490,7 +490,7 @@ contract IndexRegistryUnitTests is Test {
         // Check _operatorIdToIndexHistory updates
         IIndexRegistry.OperatorUpdate memory operatorUpdate;
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            operatorUpdate = indexRegistry.getOperatorIndexUpdateOfIndexForQuorumAtIndex({
+            operatorUpdate = indexRegistry.getOperatorUpdateAtIndex({
                 operatorIndex: 0,
                 quorumNumber: uint8(quorumNumbers[i]),
                 index: 0
@@ -597,7 +597,7 @@ contract IndexRegistryUnitTests is Test {
         // Check operator's index for removed quorums
         for (uint256 i = 0; i < quorumsToRemove.length; i++) {
             IIndexRegistry.OperatorUpdate memory operatorUpdate = indexRegistry
-                .getOperatorIndexUpdateOfIndexForQuorumAtIndex({operatorIndex: 1, quorumNumber: uint8(quorumsToRemove[i]), index: 1}); // 2 indexes -> 1 update and 1 remove
+                .getOperatorUpdateAtIndex({operatorIndex: 1, quorumNumber: uint8(quorumsToRemove[i]), index: 1}); // 2 indexes -> 1 update and 1 remove
             require(operatorUpdate.fromBlockNumber == block.number, "fromBlockNumber not set correctly");
             require(operatorUpdate.operatorId == bytes32(0), "incorrect operatorId");
         }
@@ -617,7 +617,7 @@ contract IndexRegistryUnitTests is Test {
         // Check swapped operator's index for removed quorums
         for (uint256 i = 0; i < quorumsToRemove.length; i++) {
             IIndexRegistry.OperatorUpdate memory operatorUpdate = indexRegistry
-                .getOperatorIndexUpdateOfIndexForQuorumAtIndex({operatorIndex: 0, quorumNumber: uint8(quorumsToRemove[i]), index: 1}); // 2 indexes -> 1 update and 1 swap
+                .getOperatorUpdateAtIndex({operatorIndex: 0, quorumNumber: uint8(quorumsToRemove[i]), index: 1}); // 2 indexes -> 1 update and 1 swap
             require(operatorUpdate.fromBlockNumber == block.number, "fromBlockNumber not set correctly");
             require(operatorUpdate.operatorId == operatorId2, "incorrect operatorId");
         }
