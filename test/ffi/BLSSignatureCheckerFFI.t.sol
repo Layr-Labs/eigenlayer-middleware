@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {G2Operations} from "test/ffi/util/G2Operations.sol";
-import {MockAVSDeployer} from "test/utils/MockAVSDeployer.sol";
-import {BLSSignatureChecker} from "src/BLSSignatureChecker.sol";
+import {G2Operations} from "./util/G2Operations.sol";
+import {MockAVSDeployer} from "../utils/MockAVSDeployer.sol";
+import {BLSSignatureChecker} from "../../src/BLSSignatureChecker.sol";
 import {BN254} from "eigenlayer-contracts/src/contracts/libraries/BN254.sol";
-import {BLSOperatorStateRetriever} from "src/BLSOperatorStateRetriever.sol";
+import {BLSOperatorStateRetriever} from "../../src/BLSOperatorStateRetriever.sol";
 import {BitmapUtils} from "eigenlayer-contracts/src/contracts/libraries/BitmapUtils.sol";
 
 
