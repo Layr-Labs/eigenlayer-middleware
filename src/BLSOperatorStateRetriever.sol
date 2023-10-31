@@ -70,7 +70,7 @@ contract BLSOperatorStateRetriever {
         Operator[][] memory operators = new Operator[][](quorumNumbers.length);
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            bytes32[] memory operatorIds = indexRegistry.getOperatorListForQuorumAtBlockNumber(quorumNumber, blockNumber);
+            bytes32[] memory operatorIds = indexRegistry.getOperatorListAtBlockNumber(quorumNumber, blockNumber);
             operators[i] = new Operator[](operatorIds.length);
             for (uint256 j = 0; j < operatorIds.length; j++) {
                 bytes32 operatorId = bytes32(operatorIds[j]);
