@@ -977,7 +977,9 @@ contract updateStakesGasTests_200Operators is StakeRegistryUnitTests {
             bytes32 operatorId = bytes32(i);
             (uint256 quorumBitmap, uint96[] memory stakesForQuorum) = _registerOperatorRandomValid(defaultOperator, operatorId, pseudoRandomNumbers[i]);
             registryCoordinator.setOperatorId(defaultOperator, operatorId);
-            registryCoordinator.recordOperatorQuorumBitmapUpdate(operatorId, uint192(quorumBitmap));
+            uint256 currentOperatorBitmap = registryCoordinator.getCurrentQuorumBitmapByOperatorId(operatorId);
+            uint256 newBitmap = currentOperatorBitmap | quorumBitmap;
+            registryCoordinator.recordOperatorQuorumBitmapUpdate(operatorId, uint192(newBitmap));
             uint32 intialBlockNumber = 100;
             cheats.roll(intialBlockNumber);
 
@@ -1035,14 +1037,18 @@ contract updateStakesGasTests_200Operators is StakeRegistryUnitTests {
             defaultOperator = operators[i];
             bytes32 operatorId = bytes32(i);
             // Register operator for each quorum 1-9
+            uint256 newBitmap;
             for (uint256 j = 1; j < 10; j++) {
                 console.log("quorum number: %s", j);
                 // stakesForQuorum has 1 element for quorum j
                 (uint256 quorumBitmap, uint96[] memory stakesForQuorum) = _registerOperatorSpecificQuorum(defaultOperator, operatorId, /*quorumNumber*/ j);
+                uint256 currentOperatorBitmap = registryCoordinator.getCurrentQuorumBitmapByOperatorId(operatorId);
+                newBitmap = currentOperatorBitmap | quorumBitmap;
                 registryCoordinator.setOperatorId(defaultOperator, operatorId);
-                registryCoordinator.recordOperatorQuorumBitmapUpdate(operatorId, uint192(quorumBitmap));
+                registryCoordinator.recordOperatorQuorumBitmapUpdate(operatorId, uint192(newBitmap));
                 stakeRegistry.setOperatorWeight(/* quorumNumber */ uint8(j), defaultOperator, stakesForQuorum[0] + 1);
             }
+            require(newBitmap == (1<<maxQuorumsToRegisterFor)-1, "Should be registered all quorums");
         }
 
         stakeRegistry.updateStakes(updateOperators);
