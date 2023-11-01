@@ -132,16 +132,7 @@ contract IndexRegistry is IndexRegistryStorage {
         QuorumUpdate storage lastUpdate = _latestQuorumUpdate(quorumNumber);
         uint32 newOperatorCount = lastUpdate.numOperators + 1;
         
-        // If the last update was made in this block, update the entry
-        // Otherwise, push a new historical entry.
-        if (lastUpdate.fromBlockNumber == uint32(block.number)) {
-            lastUpdate.numOperators = newOperatorCount;
-        } else {
-            _operatorCountHistory[quorumNumber].push(QuorumUpdate({
-                numOperators: newOperatorCount,
-                fromBlockNumber: uint32(block.number)
-            }));
-        }
+        _updateOperatorCountHistory(quorumNumber, lastUpdate, newOperatorCount);
 
         return newOperatorCount;
     }
@@ -153,8 +144,21 @@ contract IndexRegistry is IndexRegistryStorage {
         QuorumUpdate storage lastUpdate = _latestQuorumUpdate(quorumNumber);
         uint32 newOperatorCount = lastUpdate.numOperators - 1;
         
-        // If the last update was made in this block, update the entry
-        // Otherwise, push a new historical entry.
+        _updateOperatorCountHistory(quorumNumber, lastUpdate, newOperatorCount);
+        
+        return newOperatorCount;
+    }
+
+    /**
+     * @notice Update `_operatorCountHistory` with a new operator count
+     * @dev If the lastUpdate was made in the this block, update the entry.
+     * Otherwise, push a new historical entry.
+     */
+    function _updateOperatorCountHistory(
+        uint8 quorumNumber,
+        QuorumUpdate storage lastUpdate,
+        uint32 newOperatorCount
+    ) internal {
         if (lastUpdate.fromBlockNumber == uint32(block.number)) {
             lastUpdate.numOperators = newOperatorCount;
         } else {
@@ -163,8 +167,6 @@ contract IndexRegistry is IndexRegistryStorage {
                 fromBlockNumber: uint32(block.number)
             }));
         }
-
-        return newOperatorCount;
     }
 
     /**
