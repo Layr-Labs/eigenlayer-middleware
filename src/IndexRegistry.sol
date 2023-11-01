@@ -177,17 +177,9 @@ contract IndexRegistry is IndexRegistryStorage {
     function _popLastOperator(uint8 quorumNumber, uint32 index) internal returns (bytes32) {
         OperatorUpdate storage lastUpdate = _latestIndexUpdate(quorumNumber, index);
         bytes32 removedOperatorId = lastUpdate.operatorId;
-         
-        // If the last update was made in this block, update the entry
-        // Otherwise, push a new historical entry for the index
-        if (lastUpdate.fromBlockNumber == uint32(block.number)) {
-            lastUpdate.operatorId = OPERATOR_DOES_NOT_EXIST_ID;
-        } else {
-            _indexHistory[quorumNumber][index].push(OperatorUpdate({
-                operatorId: OPERATOR_DOES_NOT_EXIST_ID,
-                fromBlockNumber: uint32(block.number)
-            }));
-        }
+
+        // Set the current operator id for this quorum/index to 0
+        _updateIndexHistory(quorumNumber, index, lastUpdate, OPERATOR_DOES_NOT_EXIST_ID);
 
         return removedOperatorId;
     }
@@ -201,20 +193,32 @@ contract IndexRegistry is IndexRegistryStorage {
     function _assignOperatorToIndex(bytes32 operatorId, uint8 quorumNumber, uint32 index) internal {
         OperatorUpdate storage lastUpdate = _latestIndexUpdate(quorumNumber, index);
 
-        // If the last update was made in this block, update the entry
-        // Otherwise, push a new historical entry for the index
-        if (lastUpdate.fromBlockNumber == uint32(block.number)) {
-            lastUpdate.operatorId = operatorId;
-        } else {
-            _indexHistory[quorumNumber][index].push(OperatorUpdate({
-                operatorId: operatorId,
-                fromBlockNumber: uint32(block.number)
-            }));
-        }
+        _updateIndexHistory(quorumNumber, index, lastUpdate, operatorId);
 
         // Assign the operator to their new current index
         currentOperatorIndex[quorumNumber][operatorId] = index;
         emit QuorumIndexUpdate(operatorId, quorumNumber, index);
+    }
+
+    /**
+     * @notice Update `_indexHistory` with a new operator id for the current block
+     * @dev If the lastUpdate was made in the this block, update the entry.
+     * Otherwise, push a new historical entry.
+     */
+    function _updateIndexHistory(
+        uint8 quorumNumber,
+        uint32 index,
+        OperatorUpdate storage lastUpdate,
+        bytes32 newOperatorId
+    ) internal {
+        if (lastUpdate.fromBlockNumber == uint32(block.number)) {
+            lastUpdate.operatorId = newOperatorId;
+        } else {
+            _indexHistory[quorumNumber][index].push(OperatorUpdate({
+                operatorId: newOperatorId,
+                fromBlockNumber: uint32(block.number)
+            }));
+        }
     }
 
     /// @notice Returns the most recent operator count update for a quorum
