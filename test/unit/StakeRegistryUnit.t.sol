@@ -991,4 +991,60 @@ contract updateStakesGasTests_200Operators is StakeRegistryUnitTests {
 
         stakeRegistry.updateStakes(updateOperators);
     }
+
+    /**
+     * @notice Testing gas estimations for 10 quorums, quorum0 has 10 strategies and quorum1-9 have 1 strategy each
+     * 200 operators all staked into quorum 0
+     * 50 operators are also staked into each of the quorums 1-9
+     */
+    /// forge-config: default.fuzz.runs = 5
+    function testUpdateStakes_10StratsQuorum0_200OpsQuorum0_50OpsAllOtherQuorums(
+        address[200] memory operators
+    ) public {
+        // Add 9 additional stratgies to quorum 0 which already has 1 strategy
+        uint256 numStratsToAdd = 9;
+        IVoteWeigher.StrategyAndWeightingMultiplier[] memory quorumStrategiesConsideredAndMultipliers = new IVoteWeigher.StrategyAndWeightingMultiplier[](numStratsToAdd);
+        for (uint256 i = 0; i < numStratsToAdd; ++i) {
+            quorumStrategiesConsideredAndMultipliers[i] = IVoteWeigher.StrategyAndWeightingMultiplier(
+                new StrategyBase(strategyManagerMock),
+                uint96(i+1)
+            );
+        }
+        cheats.startPrank(serviceManagerOwner);
+        stakeRegistry.addStrategiesConsideredAndMultipliers(0, quorumStrategiesConsideredAndMultipliers);
+        address[] memory updateOperators = new address[](operators.length);
+        // Register 200 operators for quorum0
+        for (uint256 i = 0; i < operators.length; ++i) {
+            cheats.assume(operators[i] != address(0));
+            defaultOperator = operators[i];
+            bytes32 operatorId = bytes32(i);
+
+            (uint256 quorumBitmap, uint96[] memory stakesForQuorum) = _registerOperatorSpecificQuorum(defaultOperator, operatorId, /*quorumNumber*/ 0);
+            require(quorumBitmap == 1, "quorumBitmap should be 1");
+            registryCoordinator.setOperatorId(defaultOperator, operatorId);
+            registryCoordinator.recordOperatorQuorumBitmapUpdate(operatorId, uint192(quorumBitmap));
+
+            bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
+            for (uint j = 0; j < stakesForQuorum.length; j++) {
+                stakeRegistry.setOperatorWeight(uint8(quorumNumbers[j]), defaultOperator, stakesForQuorum[j] + 1);
+            }
+            updateOperators[i] = operators[i];
+        }
+        // For each of the quorums 1-9, register 50 operators
+        for (uint256 i = 0; i < 50; ++i) {
+            defaultOperator = operators[i];
+            bytes32 operatorId = bytes32(i);
+            // Register operator for each quorum 1-9
+            for (uint256 j = 1; j < 10; j++) {
+                console.log("quorum number: %s", j);
+                // stakesForQuorum has 1 element for quorum j
+                (uint256 quorumBitmap, uint96[] memory stakesForQuorum) = _registerOperatorSpecificQuorum(defaultOperator, operatorId, /*quorumNumber*/ j);
+                registryCoordinator.setOperatorId(defaultOperator, operatorId);
+                registryCoordinator.recordOperatorQuorumBitmapUpdate(operatorId, uint192(quorumBitmap));
+                stakeRegistry.setOperatorWeight(/* quorumNumber */ uint8(j), defaultOperator, stakesForQuorum[0] + 1);
+            }
+        }
+
+        stakeRegistry.updateStakes(updateOperators);
+    }
 }
