@@ -126,7 +126,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
 
     function testRegisterOperatorWithCoordinator_EmptyQuorumNumbers_Reverts() public {
         bytes memory emptyQuorumNumbers = new bytes(0);
-        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: quorumBitmap cannot be 0");
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: bitmap cannot be 0");
         cheats.prank(defaultOperator);
         registryCoordinator.registerOperatorWithCoordinator(emptyQuorumNumbers, defaultPubKey, defaultSocket);
     }
@@ -134,7 +134,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
     function testRegisterOperatorWithCoordinator_QuorumNumbersTooLarge_Reverts() public {
         bytes memory quorumNumbersTooLarge = new bytes(1);
         quorumNumbersTooLarge[0] = 0xC0;
-        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: quorumBitmap exceeds of max bitmap size");
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: bitmap exceeds max bitmap size");
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbersTooLarge, defaultPubKey, defaultSocket);
     }
 
@@ -805,7 +805,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         cheats.roll(registrationBlockNumber);
         ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry = _signOperatorChurnApproval(operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp - 1);
         cheats.prank(operatorToRegister);
-        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._verifyChurnApproverSignatureOnOperatorChurnApproval: churnApprover signature expired");
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._verifyChurnApproverSignature: churnApprover signature expired");
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket, operatorKickParams, signatureWithSaltAndExpiry);
     }
 

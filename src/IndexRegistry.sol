@@ -133,6 +133,15 @@ contract IndexRegistry is IndexRegistryStorage {
         
         _updateOperatorCountHistory(quorumNumber, lastUpdate, newOperatorCount);
 
+        // If this is the first time we're using this index, push its first update
+        // This maintains an invariant: existing indices have nonzero history
+        if (_indexHistory[quorumNumber][newOperatorCount - 1].length == 0) {
+            _indexHistory[quorumNumber][newOperatorCount - 1].push(OperatorUpdate({
+                operatorId: OPERATOR_DOES_NOT_EXIST_ID,
+                fromBlockNumber: uint32(block.number)
+            }));
+        }
+
         return newOperatorCount;
     }
 
@@ -302,6 +311,18 @@ contract IndexRegistry is IndexRegistryStorage {
         return _operatorCountHistory[quorumNumber][index];
     }
 
+    /// @notice Returns the most recent _operatorCountHistory entry for the specified quorumNumber
+    /// @dev Reverts if the quorum does not exist
+    function getLatestQuorumUpdate(uint8 quorumNumber) external view returns (QuorumUpdate memory) {
+        return _latestQuorumUpdate(quorumNumber);
+    }
+
+    /// @notice Returns the most recent _operatorCountHistory entry for the specified quorumNumber
+    /// @dev Reverts if there is no update for the given index
+    function getLatestOperatorUpdate(uint8 quorumNumber, uint32 index) external view returns (OperatorUpdate memory) {
+        return _latestIndexUpdate(quorumNumber, index);
+    }
+
     /**
      * @notice Looks up the number of total operators for `quorumNumber` at the specified `blockNumber`.
      * @param quorumNumber is the quorum number for which the total number of operators is desired
@@ -319,7 +340,7 @@ contract IndexRegistry is IndexRegistryStorage {
         // blocknumber must be at or after the "index'th" entry's fromBlockNumber
         require(
             blockNumber >= quorumUpdate.fromBlockNumber, 
-            "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: provided index is too far in the past for provided block number"
+            "IndexRegistry.getTotalOperatorsForIndexAtBlockNumber: provided index is too far in the past for provided block number"
         );
         
         // if there is an index update after the "index'th" update, the blocknumber must be before the next entry's fromBlockNumber
@@ -327,7 +348,7 @@ contract IndexRegistry is IndexRegistryStorage {
             QuorumUpdate memory nextQuorumUpdate = _operatorCountHistory[quorumNumber][index + 1];
             require(
                 blockNumber < nextQuorumUpdate.fromBlockNumber, 
-                "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: provided index is too far in the future for provided block number"
+                "IndexRegistry.getTotalOperatorsForIndexAtBlockNumber: provided index is too far in the future for provided block number"
             );
         }
         return quorumUpdate.numOperators;
