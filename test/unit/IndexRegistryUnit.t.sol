@@ -333,57 +333,6 @@ contract IndexRegistryUnitTests is Test {
                                 UNIT TESTS - GETTERS
     *******************************************************************************/
 
-    function testGetTotalOperatorsForQuorumAtBlockNumberByIndex_revert_indexTooEarly() public {
-        // Add operator
-        bytes memory quorumNumbers = new bytes(1);
-        quorumNumbers[0] = bytes1(defaultQuorumNumber);
-        _registerOperator(operatorId1, quorumNumbers);
-
-        cheats.expectRevert(
-            "IndexRegistry.getTotalOperatorsForIndexAtBlockNumber: provided index is too far in the past for provided block number"
-        );
-        indexRegistry.getTotalOperatorsForIndexAtBlockNumber(defaultQuorumNumber, uint32(block.number - 1), 0);
-    }
-
-    function testGetTotalOperatorsForQuorumAtBlockNumberByIndex_revert_indexBlockMismatch() public {
-        // Add two operators
-        bytes memory quorumNumbers = new bytes(1);
-        quorumNumbers[0] = bytes1(defaultQuorumNumber);
-        _registerOperator(operatorId1, quorumNumbers);
-        vm.roll(block.number + 10);
-        _registerOperator(operatorId2, quorumNumbers);
-
-        cheats.expectRevert(
-            "IndexRegistry.getTotalOperatorsForIndexAtBlockNumber: provided index is too far in the future for provided block number"
-        );
-        indexRegistry.getTotalOperatorsForIndexAtBlockNumber(defaultQuorumNumber, uint32(block.number), 0);
-    }
-
-    function testGetTotalOperatorsForIndexAtBlockNumber() public {
-        // Add two operators
-        bytes memory quorumNumbers = new bytes(1);
-        quorumNumbers[0] = bytes1(defaultQuorumNumber);
-        _registerOperator(operatorId1, quorumNumbers);
-        vm.roll(block.number + 10);
-        _registerOperator(operatorId2, quorumNumbers);
-
-        // Check that the first total is correct
-        uint32 prevTotal = indexRegistry.getTotalOperatorsForIndexAtBlockNumber(
-            defaultQuorumNumber,
-            uint32(block.number - 10),
-            0
-        );
-        require(prevTotal == 1, "IndexRegistry.getTotalOperatorsForIndexAtBlockNumber: prev total not 1");
-
-        // Check that the total is correct
-        uint32 currentTotal = indexRegistry.getTotalOperatorsForIndexAtBlockNumber(
-            defaultQuorumNumber,
-            uint32(block.number),
-            1
-        );
-        require(currentTotal == 2, "IndexRegistry.getTotalOperatorsForIndexAtBlockNumber: current total not 2");
-    }
-
     function testGetOperatorListForQuorumAtBlockNumber() public {
         // Register two operators
         bytes memory quorumNumbers = new bytes(1);

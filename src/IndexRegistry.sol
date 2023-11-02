@@ -323,37 +323,6 @@ contract IndexRegistry is IndexRegistryStorage {
         return _latestIndexUpdate(quorumNumber, index);
     }
 
-    /**
-     * @notice Looks up the number of total operators for `quorumNumber` at the specified `blockNumber`.
-     * @param quorumNumber is the quorum number for which the total number of operators is desired
-     * @param blockNumber is the block number at which the total number of operators is desired
-     * @param index is the index of the entry in the dynamic array `_operatorCountHistory[quorumNumber]` to read data from
-     * @dev Function will revert in the event that the specified `index` input is outisde the bounds of the provided `blockNumber`
-     */
-    function getTotalOperatorsForIndexAtBlockNumber(
-        uint8 quorumNumber, 
-        uint32 blockNumber, 
-        uint32 index
-    ) external view returns (uint32){
-        QuorumUpdate memory quorumUpdate = _operatorCountHistory[quorumNumber][index];
-
-        // blocknumber must be at or after the "index'th" entry's fromBlockNumber
-        require(
-            blockNumber >= quorumUpdate.fromBlockNumber, 
-            "IndexRegistry.getTotalOperatorsForIndexAtBlockNumber: provided index is too far in the past for provided block number"
-        );
-        
-        // if there is an index update after the "index'th" update, the blocknumber must be before the next entry's fromBlockNumber
-        if (index != _operatorCountHistory[quorumNumber].length - 1){
-            QuorumUpdate memory nextQuorumUpdate = _operatorCountHistory[quorumNumber][index + 1];
-            require(
-                blockNumber < nextQuorumUpdate.fromBlockNumber, 
-                "IndexRegistry.getTotalOperatorsForIndexAtBlockNumber: provided index is too far in the future for provided block number"
-            );
-        }
-        return quorumUpdate.numOperators;
-    }
-
     /// @notice Returns an ordered list of operators of the services for the given `quorumNumber` at the given `blockNumber`
     function getOperatorListAtBlockNumber(
         uint8 quorumNumber, 
