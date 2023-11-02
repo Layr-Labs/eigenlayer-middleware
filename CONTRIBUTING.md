@@ -7,7 +7,7 @@ Node.js
 ## Setup Repo
 
 ```bash
-git clone --recurse-submodules -j8 git@github.com:sablier-labs/v2-core.git
+git clone git@github.com:Layr-Labs/eigenlayer-middleware.git
 ```
 
 ### Install Dependencies
