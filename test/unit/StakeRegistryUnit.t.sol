@@ -136,9 +136,9 @@ contract StakeRegistryUnitTests is Test {
         // Initialize quorums with dummy minimum stake and strategies
         for (uint i = 0; i < maxQuorumsToRegisterFor; i++) {
             uint96 minimumStake = uint96(i + 1);
-            IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategyParams =
-                new IStakeRegistry.StrategyAndWeightingMultiplier[](1);
-            strategyParams[0] = IStakeRegistry.StrategyAndWeightingMultiplier(
+            IStakeRegistry.StrategyParams[] memory strategyParams =
+                new IStakeRegistry.StrategyParams[](1);
+            strategyParams[0] = IStakeRegistry.StrategyParams(
                 IStrategy(address(uint160(i))),
                 uint96(i+1)
             );
@@ -207,19 +207,19 @@ contract StakeRegistryUnitTests is Test {
         for (uint8 i = 0; i < maxQuorumsToRegisterFor; i++) {
             if (quorumBitmap >> i & 1 == 1) {
                 // check that the operator has 1 stake update in the quorum numbers they registered for
-                assertEq(stakeRegistry.getLengthOfOperatorIdStakeHistoryForQuorum(defaultOperatorId, i), 1);
+                assertEq(stakeRegistry.getOperatorStakeHistoryLength(defaultOperatorId, i), 1);
                 // make sure that the stake update is as expected
                 IStakeRegistry.OperatorStakeUpdate memory stakeUpdate =
-                    stakeRegistry.getStakeUpdateForQuorumFromOperatorIdAndIndex(i, defaultOperatorId, 0);
+                    stakeRegistry.getStakeUpdateForOperatorAtIndex(i, defaultOperatorId, 0);
                 emit log_named_uint("length  of paddedStakesForQuorum", paddedStakesForQuorum.length);
                 assertEq(stakeUpdate.stake, paddedStakesForQuorum[quorumNumberIndex]);
                 assertEq(stakeUpdate.updateBlockNumber, uint32(block.number));
                 assertEq(stakeUpdate.nextUpdateBlockNumber, 0);
 
                 // make the analogous check for total stake history
-                assertEq(stakeRegistry.getLengthOfTotalStakeHistoryForQuorum(i), 1);
+                assertEq(stakeRegistry.getTotalStakeHistoryLength(i), 1);
                 // make sure that the stake update is as expected
-                stakeUpdate = stakeRegistry.getTotalStakeUpdateForQuorumFromIndex(i, 0);
+                stakeUpdate = stakeRegistry.getTotalStakeUpdateAtIndex(i, 0);
                 assertEq(stakeUpdate.stake, paddedStakesForQuorum[quorumNumberIndex]);
                 assertEq(stakeUpdate.updateBlockNumber, uint32(block.number));
                 assertEq(stakeUpdate.nextUpdateBlockNumber, 0);
@@ -227,9 +227,9 @@ contract StakeRegistryUnitTests is Test {
                 quorumNumberIndex++;
             } else {
                 // check that the operator has 0 stake updates in the quorum numbers they did not register for
-                assertEq(stakeRegistry.getLengthOfOperatorIdStakeHistoryForQuorum(defaultOperatorId, i), 0);
+                assertEq(stakeRegistry.getOperatorStakeHistoryLength(defaultOperatorId, i), 0);
                 // make the analogous check for total stake history
-                assertEq(stakeRegistry.getLengthOfTotalStakeHistoryForQuorum(i), 1);
+                assertEq(stakeRegistry.getTotalStakeHistoryLength(i), 1);
             }
         }
     }
@@ -297,7 +297,7 @@ contract StakeRegistryUnitTests is Test {
                 cumulativeBlockNumber += blocksPassed[j];
             }
 
-            uint historyLength = stakeRegistry.getLengthOfTotalStakeHistoryForQuorum(i);
+            uint historyLength = stakeRegistry.getTotalStakeHistoryLength(i);
 
             // If we don't have stake history, it should be because there is no stake
             if (historyLength == 0) {
@@ -307,13 +307,13 @@ contract StakeRegistryUnitTests is Test {
 
             // make sure that the stake update is as expected
             IStakeRegistry.OperatorStakeUpdate memory totalStakeUpdate =
-                stakeRegistry.getTotalStakeUpdateForQuorumFromIndex(i, historyLength-1);
+                stakeRegistry.getTotalStakeUpdateAtIndex(i, historyLength-1);
 
             assertEq(totalStakeUpdate.stake, cumulativeStake);
             // make sure that the next update block number of the previous stake update is as expected
             if (historyLength >= 2) {
                 IStakeRegistry.OperatorStakeUpdate memory prevTotalStakeUpdate =
-                    stakeRegistry.getTotalStakeUpdateForQuorumFromIndex(i, historyLength-2);
+                    stakeRegistry.getTotalStakeUpdateAtIndex(i, historyLength-2);
                 assertEq(prevTotalStakeUpdate.nextUpdateBlockNumber, cumulativeBlockNumber);
             }
         }
@@ -382,21 +382,21 @@ contract StakeRegistryUnitTests is Test {
         for (uint8 i = 0; i < maxQuorumsToRegisterFor; i++) {
             if (deregistrationQuroumBitmap >> i & 1 == 1) {
                 // check that the operator has 2 stake updates in the quorum numbers they registered for
-                assertEq(stakeRegistry.getLengthOfOperatorIdStakeHistoryForQuorum(operatorIdToDeregister, i), 2, "testDeregisterFirstOperator_Valid_0");
+                assertEq(stakeRegistry.getOperatorStakeHistoryLength(operatorIdToDeregister, i), 2, "testDeregisterFirstOperator_Valid_0");
                 // make sure that the last stake update is as expected
                 IStakeRegistry.OperatorStakeUpdate memory lastStakeUpdate =
-                    stakeRegistry.getStakeUpdateForQuorumFromOperatorIdAndIndex(i, operatorIdToDeregister, 1);
+                    stakeRegistry.getStakeUpdateForOperatorAtIndex(i, operatorIdToDeregister, 1);
                 assertEq(lastStakeUpdate.stake, 0, "testDeregisterFirstOperator_Valid_1");
                 assertEq(lastStakeUpdate.updateBlockNumber, cumulativeBlockNumber, "testDeregisterFirstOperator_Valid_2");
                 assertEq(lastStakeUpdate.nextUpdateBlockNumber, 0, "testDeregisterFirstOperator_Valid_3");
 
                 // Get history length for quorum
-                uint historyLength = stakeRegistry.getLengthOfTotalStakeHistoryForQuorum(i);
+                uint historyLength = stakeRegistry.getTotalStakeHistoryLength(i);
                 // make sure that the last stake update is as expected
                 IStakeRegistry.OperatorStakeUpdate memory lastTotalStakeUpdate 
-                    = stakeRegistry.getTotalStakeUpdateForQuorumFromIndex(i, historyLength-1);
+                    = stakeRegistry.getTotalStakeUpdateAtIndex(i, historyLength-1);
                 assertEq(lastTotalStakeUpdate.stake, 
-                    stakeRegistry.getTotalStakeUpdateForQuorumFromIndex(i, historyLength-2).stake // the previous total stake
+                    stakeRegistry.getTotalStakeUpdateAtIndex(i, historyLength-2).stake // the previous total stake
                         - paddedStakesForQuorum[quorumNumberIndex], // minus the stake that was deregistered
                     "testDeregisterFirstOperator_Valid_5"    
                 );
@@ -404,12 +404,12 @@ contract StakeRegistryUnitTests is Test {
                 assertEq(lastTotalStakeUpdate.nextUpdateBlockNumber, 0, "testDeregisterFirstOperator_Valid_7");
                 quorumNumberIndex++;
             } else if (quorumBitmap >> i & 1 == 1) {
-                assertEq(stakeRegistry.getLengthOfOperatorIdStakeHistoryForQuorum(operatorIdToDeregister, i), 1, "testDeregisterFirstOperator_Valid_8");
-                assertEq(stakeRegistry.getLengthOfTotalStakeHistoryForQuorum(i), numOperatorsInQuorum[i] + 1, "testDeregisterFirstOperator_Valid_9");
+                assertEq(stakeRegistry.getOperatorStakeHistoryLength(operatorIdToDeregister, i), 1, "testDeregisterFirstOperator_Valid_8");
+                assertEq(stakeRegistry.getTotalStakeHistoryLength(i), numOperatorsInQuorum[i] + 1, "testDeregisterFirstOperator_Valid_9");
                 quorumNumberIndex++;
             } else {
                 // check that the operator has 0 stake updates in the quorum numbers they did not register for
-                assertEq(stakeRegistry.getLengthOfOperatorIdStakeHistoryForQuorum(operatorIdToDeregister, i), 0, "testDeregisterFirstOperator_Valid_10");
+                assertEq(stakeRegistry.getOperatorStakeHistoryLength(operatorIdToDeregister, i), 0, "testDeregisterFirstOperator_Valid_10");
             }
         }
     }
@@ -464,9 +464,9 @@ contract StakeRegistryUnitTests is Test {
             stakeRegistry.recordTotalStakeUpdate(defaultQuorumNumber, stakeDelta);
             
             IStakeRegistry.OperatorStakeUpdate memory newStakeUpdate;
-            uint historyLength = stakeRegistry.getLengthOfTotalStakeHistoryForQuorum(defaultQuorumNumber);
+            uint historyLength = stakeRegistry.getTotalStakeHistoryLength(defaultQuorumNumber);
             if (historyLength != 0) {
-                newStakeUpdate = stakeRegistry.getTotalStakeUpdateForQuorumFromIndex(defaultQuorumNumber, historyLength-1);
+                newStakeUpdate = stakeRegistry.getTotalStakeUpdateAtIndex(defaultQuorumNumber, historyLength-1);
             }
             // Check that the most recent entry reflects the correct stake
             assertEq(newStakeUpdate.stake, stakes[i]);
@@ -513,7 +513,7 @@ contract StakeRegistryUnitTests is Test {
     function _initializeQuorum(
         uint8 quorumNumber, 
         uint96 minimumStake, 
-        IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategyParams
+        IStakeRegistry.StrategyParams[] memory strategyParams
     ) internal {
         cheats.prank(address(registryCoordinator));
 

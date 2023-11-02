@@ -251,11 +251,11 @@ contract MockAVSDeployer is Test {
         }
 
         // setup the dummy quorum strategies
-        IStakeRegistry.StrategyAndWeightingMultiplier[][] memory quorumStrategiesConsideredAndMultipliers =
-            new IStakeRegistry.StrategyAndWeightingMultiplier[][](numQuorumsToAdd);
+        IStakeRegistry.StrategyParams[][] memory quorumStrategiesConsideredAndMultipliers =
+            new IStakeRegistry.StrategyParams[][](numQuorumsToAdd);
         for (uint256 i = 0; i < quorumStrategiesConsideredAndMultipliers.length; i++) {
-            quorumStrategiesConsideredAndMultipliers[i] = new IStakeRegistry.StrategyAndWeightingMultiplier[](1);
-            quorumStrategiesConsideredAndMultipliers[i][0] = IStakeRegistry.StrategyAndWeightingMultiplier(
+            quorumStrategiesConsideredAndMultipliers[i] = new IStakeRegistry.StrategyParams[](1);
+            quorumStrategiesConsideredAndMultipliers[i][0] = IStakeRegistry.StrategyParams(
                 IStrategy(address(uint160(i))),
                 uint96(i+1)
             );

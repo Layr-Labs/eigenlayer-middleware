@@ -45,13 +45,13 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
     OperatorStakeUpdate[][256] internal _totalStakeHistory;
 
     /// @notice mapping from operator's operatorId to the history of their stake updates
-    mapping(bytes32 => mapping(uint8 => OperatorStakeUpdate[])) internal operatorIdToStakeHistory;
+    mapping(bytes32 => mapping(uint8 => OperatorStakeUpdate[])) internal operatorStakeHistory;
 
     /**
      * @notice mapping from quorum number to the list of strategies considered and their
      * corresponding multipliers for that specific quorum
      */
-    mapping(uint8 => StrategyAndWeightingMultiplier[]) public strategiesConsideredAndMultipliers;
+    mapping(uint8 => StrategyParams[]) public strategyParams;
 
     constructor(
         IRegistryCoordinator _registryCoordinator, 
