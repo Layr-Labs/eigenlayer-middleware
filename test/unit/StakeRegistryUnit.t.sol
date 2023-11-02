@@ -13,9 +13,9 @@ import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 import {IServiceManager} from "src/interfaces/IServiceManager.sol";
 import {IVoteWeigher} from "src/interfaces/IVoteWeigher.sol";
-import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 import {IBLSPubkeyRegistry} from "src/interfaces/IBLSPubkeyRegistry.sol";
+import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
 
 import {BitmapUtils} from "eigenlayer-contracts/src/contracts/libraries/BitmapUtils.sol";
 
@@ -25,6 +25,7 @@ import {ServiceManagerMock} from "test/mocks/ServiceManagerMock.sol";
 import {OwnableMock} from "eigenlayer-contracts/src/test/mocks/OwnableMock.sol";
 import {DelegationManagerMock} from "eigenlayer-contracts/src/test/mocks/DelegationManagerMock.sol";
 import {SlasherMock} from "eigenlayer-contracts/src/test/mocks/SlasherMock.sol";
+import {IndexRegistryMock} from "test/mocks/IndexRegistryMock.sol";
 
 import {StakeRegistryHarness} from "test/harnesses/StakeRegistryHarness.sol";
 import {StakeRegistry} from "src/StakeRegistry.sol";
@@ -49,6 +50,7 @@ contract StakeRegistryUnitTests is Test {
     StrategyManagerMock public strategyManagerMock;
     DelegationManagerMock public delegationMock;
     EigenPodManagerMock public eigenPodManagerMock;
+    IndexRegistryMock public indexRegistryMock;
 
     address public serviceManagerOwner = address(uint160(uint256(keccak256("serviceManagerOwner"))));
     address public pauser = address(uint160(uint256(keccak256("pauser"))));
@@ -60,7 +62,7 @@ contract StakeRegistryUnitTests is Test {
     bytes32 defaultOperatorId = keccak256("defaultOperatorId");
     uint8 defaultQuorumNumber = 0;
     uint8 numQuorums = 192;
-    uint8 maxQuorumsToRegisterFor = 4;
+    uint8 maxQuorumsToRegisterFor = 10;
 
     uint256 gasUsed;
 
@@ -98,12 +100,14 @@ contract StakeRegistryUnitTests is Test {
             slasher
         );
 
+        indexRegistryMock = new IndexRegistryMock();
+
         registryCoordinator = new BLSRegistryCoordinatorWithIndicesHarness(
             slasher,
             serviceManagerMock,
             stakeRegistry,
             IBLSPubkeyRegistry(pubkeyRegistry),
-            IIndexRegistry(indexRegistry)
+            IIndexRegistry(indexRegistryMock)
         );
 
         cheats.startPrank(serviceManagerOwner);
@@ -111,7 +115,7 @@ contract StakeRegistryUnitTests is Test {
         serviceManagerMock = new ServiceManagerMock(slasher);
         stakeRegistryImplementation = new StakeRegistryHarness(
             IRegistryCoordinator(address(registryCoordinator)),
-            IIndexRegistry(indexRegistry),
+            IIndexRegistry(indexRegistryMock),
             strategyManagerMock,
             IServiceManager(address(serviceManagerMock))
         );
@@ -540,6 +544,68 @@ contract StakeRegistryUnitTests is Test {
             assertEq(operatorStakeUpdate.stake, stakesForQuorum[i] + 1);
         }
     }
+
+    /**
+     * @notice Testing updateStakesAllOperators() with 10 operators randmoly registered across all quorums
+     * Operators are 'pseudorandomly' registered into the StakeRegistry but are always registered in at least quorum0.
+     * Asserts total stakes are updated appropriately for each quorum. Test case passes as all operator and corresponding
+     * operatorIds are in ascending order as well as all the respective operators per quorum are included in the operatersToUpdate array.
+     */
+    function testUpdateStakesAllOperators_Valid(uint256[10] memory psuedoRandomNumbers) external {
+        // register all operators
+        address[] memory operatorsToUpdate = new address[](10);
+        // Keeping track of operatorsPerQuorum to set IndexRegistryMock correctly
+        uint32[] memory operatorsPerQuorum = new uint32[](maxQuorumsToRegisterFor);
+        uint96[] memory totalStakesForQuorum = new uint96[](maxQuorumsToRegisterFor);
+        for (uint256 i = 0; i < operatorsToUpdate.length; i++) {
+            address operator = address(uint160(i + 1));
+            bytes32 operatorId = bytes32(i + 1);
+            (uint256 quorumBitmap, uint96[] memory stakesForQuorum) = _registerOperatorRandomValid(operator, operatorId, psuedoRandomNumbers[i]);
+            // start ids from 1 to avoid default operator id being 0
+            registryCoordinator.setOperatorId(operator, operatorId);
+            registryCoordinator.recordOperatorQuorumBitmapUpdate(operatorId, uint192(quorumBitmap));
+
+            uint32 intialBlockNumber = 100;
+            cheats.roll(intialBlockNumber);
+
+            bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
+            for (uint256 j = 0; j < quorumNumbers.length; j++) {
+                uint8 quorumNumber = uint8(quorumNumbers[j]);
+                uint96 stakeWeight = stakesForQuorum[j] + 1;
+
+                operatorsPerQuorum[quorumNumber] += 1;
+                totalStakesForQuorum[quorumNumber] += stakeWeight;
+                stakeRegistry.setOperatorWeight(quorumNumber, operator, stakeWeight);
+            }
+            operatorsToUpdate[i] = operator;
+        }
+
+        // Set IndexRegistryMock total number of operators as the StakeRegistry.updateStakesAllOperators() will call
+        // IndexRegistry.totalOperatorsForQuorum() to get the total operators for each quorum
+        for (uint i = 0; i < maxQuorumsToRegisterFor; ++i) {
+            indexRegistryMock.setTotalOperatorsForQuorum(i, operatorsPerQuorum[i]);
+        }
+
+        address updatingOperator = operatorsToUpdate[0];
+        cheats.prank(updatingOperator);
+        stakeRegistry.updateStakesAllOperators(operatorsToUpdate);
+        // Check total stakes increased correctly for each quorum
+        for (uint256 i = 0; i < maxQuorumsToRegisterFor; i++) {
+            uint256 stakeHistoryLength = stakeRegistry.getLengthOfTotalStakeHistoryForQuorum(uint8(i));
+            // Need stake history length, if no entries in _totalStakeHistory[quorumNumber] then getCurrentTotalStakeForQuorum() will revert
+            // trying to index length - 1 of empty array
+            if (stakeHistoryLength != 0) {
+                uint96 totalQuorumStake = stakeRegistry.getCurrentTotalStakeForQuorum(uint8(i));
+                assertEq(totalQuorumStake, totalStakesForQuorum[i]);
+            }
+        }
+    }
+
+    function testUpdateStakesAllOperators_Reverts_DuplicateAddress(uint256[10] memory psuedoRandomNumbers) external {}
+
+    function testUpdateStakesAllOperators_Reverts_NonIncreasingOperatorIds(uint256[10] memory psuedoRandomNumbers) external {}
+
+    function testUpdateStakesAllOperators_Reverts_InsufficientQuorumOperatorCount(uint256[10] memory psuedoRandomNumbers) external {}
 
     // utility function for registering an operator with a valid quorumBitmap and stakesForQuorum using provided randomness
     function _registerOperatorRandomValid(
