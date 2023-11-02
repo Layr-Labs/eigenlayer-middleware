@@ -107,7 +107,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                     }
 
                     nonSignerQuorumBitmaps[i] = 
-                        registryCoordinator.getQuorumBitmapByOperatorIdAtBlockNumberByIndex(
+                        registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(
                             nonSignerPubkeyHashes[i], 
                             referenceBlockNumber, 
                             nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices[i]

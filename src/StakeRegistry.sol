@@ -95,7 +95,7 @@ contract StakeRegistry is StakeRegistryStorage {
 
             for (uint256 i = 0; i < operators.length; ) {
                 bytes32 operatorId = registryCoordinator.getOperatorId(operators[i]);
-                uint192 quorumBitmap = registryCoordinator.getCurrentQuorumBitmapByOperatorId(operatorId);
+                uint192 quorumBitmap = registryCoordinator.getCurrentQuorumBitmap(operatorId);
 
                 /**
                  * If the operator is a part of the quorum, update their current stake

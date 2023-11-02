@@ -61,22 +61,22 @@ interface IRegistryCoordinator {
     function getOperatorStatus(address operator) external view returns (IRegistryCoordinator.OperatorStatus);
 
     /// @notice Returns the indices of the quorumBitmaps for the provided `operatorIds` at the given `blockNumber`
-    function getQuorumBitmapIndicesByOperatorIdsAtBlockNumber(uint32 blockNumber, bytes32[] memory operatorIds) external view returns (uint32[] memory);
+    function getQuorumBitmapIndicesAtBlockNumber(uint32 blockNumber, bytes32[] memory operatorIds) external view returns (uint32[] memory);
 
     /**
      * @notice Returns the quorum bitmap for the given `operatorId` at the given `blockNumber` via the `index`
      * @dev reverts if `index` is incorrect 
      */ 
-    function getQuorumBitmapByOperatorIdAtBlockNumberByIndex(bytes32 operatorId, uint32 blockNumber, uint256 index) external view returns (uint192);
+    function getQuorumBitmapAtBlockNumberByIndex(bytes32 operatorId, uint32 blockNumber, uint256 index) external view returns (uint192);
 
     /// @notice Returns the `index`th entry in the operator with `operatorId`'s bitmap history
-    function getQuorumBitmapUpdateByOperatorIdByIndex(bytes32 operatorId, uint256 index) external view returns (QuorumBitmapUpdate memory);
+    function getQuorumBitmapUpdateByIndex(bytes32 operatorId, uint256 index) external view returns (QuorumBitmapUpdate memory);
 
     /// @notice Returns the current quorum bitmap for the given `operatorId`
-    function getCurrentQuorumBitmapByOperatorId(bytes32 operatorId) external view returns (uint192);
+    function getCurrentQuorumBitmap(bytes32 operatorId) external view returns (uint192);
 
     /// @notice Returns the length of the quorum bitmap history for the given `operatorId`
-    function getQuorumBitmapUpdateByOperatorIdLength(bytes32 operatorId) external view returns (uint256);
+    function getQuorumBitmapHistoryLength(bytes32 operatorId) external view returns (uint256);
 
     /// @notice Returns the registry at the desired index
     function registries(uint256) external view returns (address);
