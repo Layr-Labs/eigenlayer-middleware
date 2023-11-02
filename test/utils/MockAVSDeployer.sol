@@ -197,6 +197,7 @@ contract MockAVSDeployer is Test {
 
         stakeRegistryImplementation = new StakeRegistryHarness(
             IRegistryCoordinator(registryCoordinator),
+            indexRegistry,
             strategyManagerMock,
             IServiceManager(address(serviceManagerMock))
         );

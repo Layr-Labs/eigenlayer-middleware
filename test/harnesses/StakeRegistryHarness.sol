@@ -9,9 +9,10 @@ contract StakeRegistryHarness is StakeRegistry {
 
     constructor(
         IRegistryCoordinator _registryCoordinator,
+        IIndexRegistry _indexRegistry,
         IStrategyManager _strategyManager,
         IServiceManager _serviceManager
-    ) StakeRegistry(_registryCoordinator, _strategyManager, _serviceManager) {
+    ) StakeRegistry(_registryCoordinator, _indexRegistry, _strategyManager, _serviceManager) {
     }
 
     function recordOperatorStakeUpdate(bytes32 operatorId, uint8 quorumNumber, OperatorStakeUpdate memory operatorStakeUpdate) external returns(uint96) {

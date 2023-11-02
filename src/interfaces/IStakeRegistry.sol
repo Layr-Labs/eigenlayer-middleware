@@ -157,4 +157,11 @@ interface IStakeRegistry is IRegistry {
      * @param operators are the addresses of the operators whose stake information is getting updated
      */
     function updateStakes(address[] memory operators) external;
+
+    /**
+     * @notice Used for updating information on deposits of nodes for all registered operators.
+     * @param operators are the addresses of the operators whose stake information is getting updated
+     * note: operators array must be sorted in ascending order based on their corresponding operatorId
+     */
+    function updateStakesAllOperators(address[] calldata operators) external;
 }

@@ -5,6 +5,7 @@ import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IS
 import {IServiceManager} from "src/interfaces/IServiceManager.sol";
 import {IStakeRegistry} from  "src/interfaces/IStakeRegistry.sol";
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
+import {IIndexRegistry} from  "src/interfaces/IIndexRegistry.sol";
 
 /**
  * @title Storage variables for the `StakeRegistry` contract.
@@ -14,6 +15,8 @@ import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 abstract contract StakeRegistryStorage is IStakeRegistry {
     /// @notice the coordinator contract that this registry is associated with
     IRegistryCoordinator public immutable registryCoordinator;
+
+    IIndexRegistry public immutable indexRegistry;
 
     /// @notice In order to register for a quorum i, an operator must have at least `minimumStakeForQuorum[i]`
     /// evaluated by this contract's 'VoteWeigher' logic.
@@ -25,8 +28,9 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
     /// @notice mapping from operator's operatorId to the history of their stake updates
     mapping(bytes32 => mapping(uint8 => OperatorStakeUpdate[])) internal operatorIdToStakeHistory;
 
-    constructor(IRegistryCoordinator _registryCoordinator) {
+    constructor(IRegistryCoordinator _registryCoordinator, IIndexRegistry _indexRegistry) {
         registryCoordinator = _registryCoordinator;
+        indexRegistry = _indexRegistry;
     }
 
     // storage gap for upgradeability

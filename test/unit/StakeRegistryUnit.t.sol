@@ -111,6 +111,7 @@ contract StakeRegistryUnitTests is Test {
         serviceManagerMock = new ServiceManagerMock(slasher);
         stakeRegistryImplementation = new StakeRegistryHarness(
             IRegistryCoordinator(address(registryCoordinator)),
+            IIndexRegistry(indexRegistry),
             strategyManagerMock,
             IServiceManager(address(serviceManagerMock))
         );
