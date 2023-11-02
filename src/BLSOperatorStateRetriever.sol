@@ -42,9 +42,9 @@ contract BLSOperatorStateRetriever {
     ) external view returns (uint256, Operator[][] memory) {
         bytes32[] memory operatorIds = new bytes32[](1);
         operatorIds[0] = operatorId;
-        uint256 index = registryCoordinator.getQuorumBitmapIndicesByOperatorIdsAtBlockNumber(blockNumber, operatorIds)[0];
+        uint256 index = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds)[0];
     
-        uint256 quorumBitmap = registryCoordinator.getQuorumBitmapByOperatorIdAtBlockNumberByIndex(operatorId, blockNumber, index);
+        uint256 quorumBitmap = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
 
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
@@ -108,7 +108,7 @@ contract BLSOperatorStateRetriever {
         CheckSignaturesIndices memory checkSignaturesIndices;
 
         // get the indices of the quorumBitmap updates for each of the operators in the nonSignerOperatorIds array
-        checkSignaturesIndices.nonSignerQuorumBitmapIndices = registryCoordinator.getQuorumBitmapIndicesByOperatorIdsAtBlockNumber(referenceBlockNumber, nonSignerOperatorIds);
+        checkSignaturesIndices.nonSignerQuorumBitmapIndices = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(referenceBlockNumber, nonSignerOperatorIds);
         // get the indices of the totalStake updates for each of the quorums in the quorumNumbers array
         checkSignaturesIndices.totalStakeIndices = stakeRegistry.getTotalStakeIndicesByQuorumNumbersAtBlockNumber(referenceBlockNumber, quorumNumbers);
         
@@ -121,7 +121,7 @@ contract BLSOperatorStateRetriever {
             for (uint i = 0; i < nonSignerOperatorIds.length; i++) {
                 // get the quorumBitmap for the operator at the given blocknumber and index
                 uint192 nonSignerQuorumBitmap = 
-                    registryCoordinator.getQuorumBitmapByOperatorIdAtBlockNumberByIndex(
+                    registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(
                         nonSignerOperatorIds[i], 
                         referenceBlockNumber, 
                         checkSignaturesIndices.nonSignerQuorumBitmapIndices[i]
