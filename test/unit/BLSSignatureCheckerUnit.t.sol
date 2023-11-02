@@ -161,7 +161,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         // set the quorumApkIndices to a different value
         nonSignerStakesAndSignature.quorumApkIndices[0] = 0;
 
-        cheats.expectRevert("BLSPubkeyRegistry._validateApkHashForQuorumAtBlockNumber: not latest apk update");
+        cheats.expectRevert("BLSPubkeyRegistry._validateApkHashAtBlockNumber: not latest apk update");
         blsSignatureChecker.checkSignatures(
             msgHash, 
             quorumNumbers,
