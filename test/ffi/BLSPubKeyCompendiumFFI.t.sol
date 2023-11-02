@@ -8,6 +8,8 @@ contract BLSPublicKeyCompendiumFFITests is G2Operations {
     using BN254 for BN254.G1Point;
     using Strings for uint256;
 
+    Vm cheats = Vm(HEVM_ADDRESS);
+
     BLSPublicKeyCompendium compendium;
 
     uint256 privKey;
@@ -22,6 +24,7 @@ contract BLSPublicKeyCompendiumFFITests is G2Operations {
     }
 
     function testRegisterBLSPublicKey(uint256 _privKey) public {
+        cheats.assume(_privKey != 0);
         _setKeys(_privKey);
 
         signedMessageHash = _signMessage(alice);

@@ -9,8 +9,6 @@ import "eigenlayer-contracts/src/contracts/libraries/BN254.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
 abstract contract BLSPubkeyRegistryStorage is Initializable, IBLSPubkeyRegistry {
-    /// @notice the hash of the zero pubkey aka BN254.G1Point(0,0)
-    bytes32 internal constant ZERO_PK_HASH = hex"ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5";
     /// @notice the registry coordinator contract
     IRegistryCoordinator public immutable registryCoordinator;
     /// @notice the BLSPublicKeyCompendium contract against which pubkey ownership is checked

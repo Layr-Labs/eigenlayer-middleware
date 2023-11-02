@@ -47,7 +47,7 @@ contract BLSOperatorStateRetrieverUnitTests is MockAVSDeployer {
         cheats.roll(deregistrationBlockNumber);
 
         cheats.prank(_incrementAddress(defaultOperator, operatorIndexToDeregister));
-        registryCoordinator.deregisterOperator(quorumNumbersToDeregister, operatorMetadatas[operatorIndexToDeregister].pubkey);
+        registryCoordinator.deregisterOperator(quorumNumbersToDeregister);
         // modify expectedOperatorOverallIndices by moving th operatorIdsToSwap to the index where the operatorIndexToDeregister was
         for (uint i = 0; i < quorumNumbersToDeregister.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbersToDeregister[i]);
