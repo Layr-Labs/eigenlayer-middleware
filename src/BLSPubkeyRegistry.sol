@@ -31,7 +31,6 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
      * @notice Registers the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to register.
      * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
-     * @param pubkey The operator's BLS public key.
      * @return pubkeyHash of the operator's pubkey
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
@@ -42,31 +41,23 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
      */
     function registerOperator(
         address operator,
-        bytes memory quorumNumbers,
-        BN254.G1Point memory pubkey
+        bytes memory quorumNumbers
     ) public virtual onlyRegistryCoordinator returns (bytes32) {
-        //calculate hash of the operator's pubkey
-        bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
+        // Get the operator's pubkey from the compendium. Reverts if they have not registered a key
+        BN254.G1Point memory pubkey = pubkeyCompendium.getRegisteredPubkey(operator);
 
-        require(pubkeyHash != ZERO_PK_HASH, "BLSPubkeyRegistry.registerOperator: cannot register zero pubkey");
-        //ensure that the operator owns their public key by referencing the BLSPubkeyCompendium
-        require(
-            getOperatorFromPubkeyHash(pubkeyHash) == operator,
-            "BLSPubkeyRegistry.registerOperator: operator does not own pubkey"
-        );
-        // update each quorum's aggregate pubkey
+        // Update each quorum's aggregate pubkey
         _processQuorumApkUpdate(quorumNumbers, pubkey);
 
-        // emit event so offchain actors can update their state
+        // Return pubkeyHash, which will become the operator's unique id
         emit OperatorAddedToQuorums(operator, quorumNumbers);
-        return pubkeyHash;
+        return BN254.hashG1Point(pubkey);
     }
 
     /**
      * @notice Deregisters the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to deregister.
      * @param quorumNumbers The quorum numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
-     * @param pubkey The public key of the operator.
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
@@ -74,23 +65,16 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
      *         3) `quorumNumbers` is ordered in ascending order
      *         4) the operator is not already deregistered
      *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
-     *         6) `pubkey` is the same as the parameter used when registering
      */
     function deregisterOperator(
         address operator,
-        bytes memory quorumNumbers,
-        BN254.G1Point memory pubkey
+        bytes memory quorumNumbers
     ) public virtual onlyRegistryCoordinator {
-        bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
+        // Get the operator's pubkey from the compendium. Reverts if they have not registered a key
+        BN254.G1Point memory pubkey = pubkeyCompendium.getRegisteredPubkey(operator);
 
-        require(
-            getOperatorFromPubkeyHash(pubkeyHash) == operator,
-            "BLSPubkeyRegistry.registerOperator: operator does not own pubkey"
-        );
-
-        // update each quorum's aggregate pubkey
+        // Update each quorum's aggregate pubkey
         _processQuorumApkUpdate(quorumNumbers, pubkey.negate());
-
         emit OperatorRemovedFromQuorums(operator, quorumNumbers);
     }
 

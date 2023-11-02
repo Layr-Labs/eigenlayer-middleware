@@ -13,10 +13,15 @@ import "./libraries/BN254.sol";
 contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
     using BN254 for BN254.G1Point;
 
-    /// @notice mapping from operator address to pubkey hash
+    /// @notice the hash of the zero pubkey aka BN254.G1Point(0,0)
+    bytes32 internal constant ZERO_PK_HASH = hex"ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5";
+
+    /// @notice maps operator address to pubkey hash
     mapping(address => bytes32) public operatorToPubkeyHash;
-    /// @notice mapping from pubkey hash to operator address
+    /// @notice maps pubkey hash to operator address
     mapping(bytes32 => address) public pubkeyHashToOperator;
+    /// @notice maps operator address to pubkeyG1
+    mapping(address => BN254.G1Point) public operatorToPubkey;
 
     /*******************************************************************************
                             EXTERNAL FUNCTIONS 
@@ -34,6 +39,9 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
         BN254.G2Point memory pubkeyG2
     ) external {
         bytes32 pubkeyHash = BN254.hashG1Point(pubkeyG1);
+        require(
+            pubkeyHash != ZERO_PK_HASH, "BLSPublicKeyCompendium.registerBLSPublicKey: cannot register zero pubkey"
+        );
         require(
             operatorToPubkeyHash[msg.sender] == bytes32(0),
             "BLSPublicKeyCompendium.registerBLSPublicKey: operator already registered pubkey"
@@ -66,6 +74,7 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
             pubkeyG2
         ), "BLSPublicKeyCompendium.registerBLSPublicKey: either the G1 signature is wrong, or G1 and G2 private key do not match");
 
+        operatorToPubkey[msg.sender] = pubkeyG1;
         operatorToPubkeyHash[msg.sender] = pubkeyHash;
         pubkeyHashToOperator[pubkeyHash] = msg.sender;
 
@@ -75,6 +84,24 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
     /*******************************************************************************
                             VIEW FUNCTIONS
     *******************************************************************************/
+
+    /**
+     * @notice Returns the pubkey of an operator, verifying that the pubkey and its hash are valid
+     * @dev Reverts if the operator has not registered a valid pubkey
+     */
+    function getRegisteredPubkey(address operator) public view returns (BN254.G1Point memory) {
+        BN254.G1Point memory pubkey = operatorToPubkey[operator];
+        bytes32 pubkeyHash = operatorToPubkeyHash[operator];
+
+        require(
+            pubkeyHash != bytes32(0) && BN254.hashG1Point(pubkey) == pubkeyHash, 
+            "BLSPublicKeyCompendium.getRegisteredPubkey: operator is not registered"
+        );
+
+        require(pubkeyHash != ZERO_PK_HASH, "BLSPublicKeyCompendium.getRegisteredPubkey: invalid pubkey");
+        
+        return pubkey;
+    }
 
     /**
      * @notice Returns the message hash that an operator must sign to register their BLS public key.

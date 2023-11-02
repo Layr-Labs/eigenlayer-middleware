@@ -32,7 +32,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
 
     /// @notice The EIP-712 typehash for the `DelegationApproval` struct used by the contract
     bytes32 public constant OPERATOR_CHURN_APPROVAL_TYPEHASH =
-        keccak256("OperatorChurnApproval(bytes32 registeringOperatorId,OperatorKickParam[] operatorKickParams)OperatorKickParam(address operator,BN254.G1Point pubkey,bytes32[] operatorIdsToSwap)BN254.G1Point(uint256 x,uint256 y)");
+        keccak256("OperatorChurnApproval(bytes32 registeringOperatorId,OperatorKickParam[] operatorKickParams)OperatorKickParam(address operator,bytes32[] operatorIdsToSwap)");
     /// @notice The maximum value of a quorum bitmap
     uint256 internal constant MAX_QUORUM_BITMAP = type(uint192).max;
     /// @notice The basis point denominator
@@ -142,18 +142,15 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     /**
      * @notice Registers msg.sender as an operator with the middleware
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
-     * @param pubkey is the BLS public key of the operator
      * @param socket is the socket of the operator
      */
     function registerOperator(
         bytes calldata quorumNumbers,
-        BN254.G1Point memory pubkey,
         string calldata socket
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        uint32[] memory numOperatorsPerQuorum = _registerOperator({
+        (uint32[] memory numOperatorsPerQuorum, ) = _registerOperator({
             operator: msg.sender, 
             quorumNumbers: quorumNumbers, 
-            pubkey: pubkey, 
             socket: socket
         });
 
@@ -169,30 +166,27 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
      * @notice Registers msg.sender as an operator with the middleware when the quorum operator limit is full. To register 
      * while maintaining the limit, the operator chooses another registered operator with lower stake to kick.
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
-     * @param pubkey is the BLS public key of the operator
      * @param operatorKickParams are the parameters for the deregistration of the operator that is being kicked from each 
-     * quorum that will be filled after the operator registers. These parameters should include an operator, their pubkey, 
+     * quorum that will be filled after the operator registers. These parameters should include an operator 
      * and ids of the operators to swap with the kicked operator. 
      * @param churnApproverSignature is the signature of the churnApprover on the operator kick params
      */
     function registerOperatorWithChurn(
         bytes calldata quorumNumbers, 
-        BN254.G1Point memory pubkey,
         string calldata socket,
         OperatorKickParam[] calldata operatorKickParams,
         SignatureWithSaltAndExpiry memory churnApproverSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         // register the operator
-        uint32[] memory numOperatorsPerQuorum = _registerOperator({
+        (uint32[] memory numOperatorsPerQuorum, bytes32 operatorId) = _registerOperator({
             operator: msg.sender,
             quorumNumbers: quorumNumbers,
-            pubkey: pubkey,
             socket: socket
         });
 
         // get the registering operator's operatorId and set the operatorIdsToSwap to it because the registering operator is the one with the greatest index
         bytes32[] memory operatorIdsToSwap = new bytes32[](1);
-        operatorIdsToSwap[0] = pubkey.hashG1Point();
+        operatorIdsToSwap[0] = operatorId;
 
         // verify the churnApprover's signature
         _verifyChurnApproverSignature({
@@ -244,8 +238,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
             // kick the operator
             _deregisterOperator({
                 operator: operatorKickParams[i].operator,
-                quorumNumbers: quorumNumbers[i:i+1],
-                pubkey: operatorKickParams[i].pubkey 
+                quorumNumbers: quorumNumbers[i:i+1]
             });
         }
     }
@@ -253,16 +246,13 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     /**
      * @notice Deregisters the msg.sender as an operator from the middleware
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registered for
-     * @param pubkey is the BLS public key of the operator
      */
     function deregisterOperator(
-        bytes calldata quorumNumbers,
-        BN254.G1Point memory pubkey
+        bytes calldata quorumNumbers
     ) external onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
         _deregisterOperator({
             operator: msg.sender, 
-            quorumNumbers: quorumNumbers, 
-            pubkey: pubkey
+            quorumNumbers: quorumNumbers
         });
     }
 
@@ -283,17 +273,14 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
      * @notice Ejects the provided operator from the provided quorums from the AVS
      * @param operator is the operator to eject
      * @param quorumNumbers are the quorum numbers to eject the operator from
-     * @param pubkey is the BLS public key of the operator
      */
     function ejectOperator(
         address operator, 
-        bytes calldata quorumNumbers, 
-        BN254.G1Point memory pubkey
+        bytes calldata quorumNumbers
     ) external onlyEjector {
         _deregisterOperator({
             operator: operator, 
-            quorumNumbers: quorumNumbers, 
-            pubkey: pubkey
+            quorumNumbers: quorumNumbers
         });
     }
 
@@ -350,10 +337,9 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     /// @return numOperatorsPerQuorum is the list of number of operators per quorum in quorumNumberss
     function _registerOperator(
         address operator, 
-        bytes calldata quorumNumbers, 
-        BN254.G1Point memory pubkey, 
+        bytes calldata quorumNumbers,
         string memory socket
-    ) internal virtual returns(uint32[] memory) {        
+    ) internal virtual returns(uint32[] memory, bytes32) {        
         // Create and validate bitmap from quorumNumbers
         uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
         require(quorumBitmap <= MAX_QUORUM_BITMAP, "BLSRegistryCoordinatorWithIndices._registerOperator: bitmap exceeds max bitmap size");
@@ -361,10 +347,10 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         
         /**
          * Register the operator with the BLSPubkeyRegistry, StakeRegistry, and IndexRegistry. Retrieves:
-         * - operatorId: hash of the operator's pubkey, unique to the operator
+         * - operatorId: hash of the operator's public key, unique to the operator
          * - numOperatorsPerQuorum: list of # operators for each quorum in `quorumNumbers`
          */
-        bytes32 operatorId = blsPubkeyRegistry.registerOperator(operator, quorumNumbers, pubkey);
+        bytes32 operatorId = blsPubkeyRegistry.registerOperator(operator, quorumNumbers);
         stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
         uint32[] memory numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
 
@@ -401,28 +387,18 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
             emit OperatorRegistered(operator, operatorId);
         }
 
-        // record a stake update not bonding the operator at all (unbonded at 0), because they haven't served anything yet
-        // serviceManager.recordFirstStakeUpdate(operator, 0);
-
         emit OperatorSocketUpdate(operatorId, socket);
-
-        return numOperatorsPerQuorum;
+        return (numOperatorsPerQuorum, operatorId);
     }
 
     function _deregisterOperator(
         address operator, 
-        bytes calldata quorumNumbers, 
-        BN254.G1Point memory pubkey
+        bytes calldata quorumNumbers
     ) internal virtual {
-        /**
-         * Fetch the operator's id and status. Check that:
-         * - the operator is currently registered
-         * - the operatorId matches the provided pubkey hash
-         */
+        // Fetch the operator's info and ensure they are registered
         Operator storage operatorInfo = _operatorInfo[operator];
         bytes32 operatorId = operatorInfo.operatorId;
         require(operatorInfo.status == OperatorStatus.REGISTERED, "BLSRegistryCoordinatorWithIndices._deregisterOperator: operator is not registered");
-        require(operatorId == pubkey.hashG1Point(), "BLSRegistryCoordinatorWithIndices._deregisterOperator: operatorId does not match pubkey hash");
         
         // Create and validate bitmap of quorums to remove
         uint256 quorumsToRemoveBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
@@ -444,7 +420,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         bool completeDeregistration = previousBitmap == quorumsToRemoveBitmap;
 
         // Deregister operator with each of the registry contracts:
-        blsPubkeyRegistry.deregisterOperator(operator, quorumNumbersToRemove, pubkey);
+        blsPubkeyRegistry.deregisterOperator(operator, quorumNumbersToRemove);
         stakeRegistry.deregisterOperator(operatorId, quorumNumbersToRemove);
         indexRegistry.deregisterOperator(operatorId, quorumNumbersToRemove);
         

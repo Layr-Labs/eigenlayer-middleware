@@ -322,7 +322,7 @@ contract MockAVSDeployer is Test {
         }
 
         cheats.prank(operator);
-        registryCoordinator.registerOperator(quorumNumbers, pubKey, defaultSocket);
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket);
     }
 
     /**
@@ -340,7 +340,7 @@ contract MockAVSDeployer is Test {
         }
 
         cheats.prank(operator);
-        registryCoordinator.registerOperator(quorumNumbers, pubKey, defaultSocket);
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket);
     }
 
     function _registerRandomOperators(uint256 pseudoRandomNumber) internal returns(OperatorMetadata[] memory, uint256[][] memory) {

@@ -36,7 +36,6 @@ interface IBLSPubkeyRegistry is IRegistry {
      * @notice Registers the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to register.
      * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
-     * @param pubkey The operator's BLS public key.
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
@@ -44,13 +43,12 @@ interface IBLSPubkeyRegistry is IRegistry {
      *         3) `quorumNumbers` is ordered in ascending order
      *         4) the operator is not already registered
      */
-    function registerOperator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey) external returns(bytes32);
+    function registerOperator(address operator, bytes calldata quorumNumbers) external returns(bytes32);
 
     /**
      * @notice Deregisters the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to deregister.
      * @param quorumNumbers The quorum numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
-     * @param pubkey The public key of the operator.
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
@@ -58,9 +56,8 @@ interface IBLSPubkeyRegistry is IRegistry {
      *         3) `quorumNumbers` is ordered in ascending order
      *         4) the operator is not already deregistered
      *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
-     *         6) `pubkey` is the same as the parameter used when registering
      */ 
-    function deregisterOperator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey) external;
+    function deregisterOperator(address operator, bytes calldata quorumNumbers) external;
     
     /**
      * @notice Initializes a new quorum by pushing its first apk update
