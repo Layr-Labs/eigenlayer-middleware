@@ -76,7 +76,7 @@ contract BLSOperatorStateRetriever {
                 bytes32 operatorId = bytes32(operatorIds[j]);
                 operators[i][j] = Operator({
                     operatorId: operatorId,
-                    stake: stakeRegistry.getStakeForOperatorIdForQuorumAtBlockNumber(operatorId, quorumNumber, blockNumber)
+                    stake: stakeRegistry.getOperatorStakeAtBlockNumber(operatorId, quorumNumber, blockNumber)
                 });
             }
         }
@@ -110,7 +110,7 @@ contract BLSOperatorStateRetriever {
         // get the indices of the quorumBitmap updates for each of the operators in the nonSignerOperatorIds array
         checkSignaturesIndices.nonSignerQuorumBitmapIndices = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(referenceBlockNumber, nonSignerOperatorIds);
         // get the indices of the totalStake updates for each of the quorums in the quorumNumbers array
-        checkSignaturesIndices.totalStakeIndices = stakeRegistry.getTotalStakeIndicesByQuorumNumbersAtBlockNumber(referenceBlockNumber, quorumNumbers);
+        checkSignaturesIndices.totalStakeIndices = stakeRegistry.getTotalStakeIndicesAtBlockNumber(referenceBlockNumber, quorumNumbers);
         
         checkSignaturesIndices.nonSignerStakeIndices = new uint32[][](quorumNumbers.length);
         for (uint8 quorumNumberIndex = 0; quorumNumberIndex < quorumNumbers.length; quorumNumberIndex++) {
@@ -130,7 +130,7 @@ contract BLSOperatorStateRetriever {
                 // if the operator was a part of the quorum and the quorum is a part of the provided quorumNumbers
                 if ((nonSignerQuorumBitmap >> uint8(quorumNumbers[quorumNumberIndex])) & 1 == 1) {
                     // get the index of the stake update for the operator at the given blocknumber and quorum number
-                    checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex][numNonSignersForQuorum] = stakeRegistry.getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber(
+                    checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex][numNonSignersForQuorum] = stakeRegistry.getStakeUpdateIndexForOperatorAtBlockNumber(
                         nonSignerOperatorIds[i],
                         uint8(quorumNumbers[quorumNumberIndex]),
                         referenceBlockNumber

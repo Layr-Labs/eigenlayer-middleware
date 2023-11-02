@@ -65,7 +65,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
             0/*initialPausedStatus*/, 
             operatorSetParams, 
             new uint96[](0), 
-            new IStakeRegistry.StrategyAndWeightingMultiplier[][](0)
+            new IStakeRegistry.StrategyParams[][](0)
         );
     }
 

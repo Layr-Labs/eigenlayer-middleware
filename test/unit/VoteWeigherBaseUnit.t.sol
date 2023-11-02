@@ -92,7 +92,7 @@ contract VoteWeigherBaseUnitTests is Test {
     }
 
     /// TODO - migrate tests to registry coordinator
-    // function testCreateQuorum_Valid(IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers) public {
+    // function testCreateQuorum_Valid(IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers) public {
     //     strategiesAndWeightingMultipliers = _convertToValidStrategiesAndWeightingMultipliers(strategiesAndWeightingMultipliers);
     //     // create a quorum from the serviceManagerOwner
     //     // get the quorum count before the quorum is created
@@ -111,7 +111,7 @@ contract VoteWeigherBaseUnitTests is Test {
     //     assertEq(voteWeigher.quorumCount(), quorumCountBefore + 1);
     //     // check that all of the weights are correct
     //     for (uint i = 0; i < strategiesAndWeightingMultipliers.length; i++) {
-    //         IStakeRegistry.StrategyAndWeightingMultiplier memory strategyAndWeightingMultiplier = voteWeigher.strategyAndWeightingMultiplierForQuorumByIndex(quorumCountBefore, i);
+    //         IStakeRegistry.StrategyParams memory strategyAndWeightingMultiplier = voteWeigher.strategyAndWeightingMultiplierForQuorumByIndex(quorumCountBefore, i);
     //         assertEq(address(strategyAndWeightingMultiplier.strategy), address(strategiesAndWeightingMultipliers[i].strategy));
     //         assertEq(strategyAndWeightingMultiplier.multiplier, strategiesAndWeightingMultipliers[i].multiplier);
     //     }
@@ -119,7 +119,7 @@ contract VoteWeigherBaseUnitTests is Test {
 
     // function testCreateQuorum_FromNotServiceManagerOwner_Reverts(
     //     address notServiceManagerOwner,
-    //     IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers
+    //     IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers
     // ) public fuzzedAddress(notServiceManagerOwner) {
     //     cheats.assume(notServiceManagerOwner != serviceManagerOwner);
     //     cheats.prank(notServiceManagerOwner);
@@ -128,7 +128,7 @@ contract VoteWeigherBaseUnitTests is Test {
     // }
 
     // function testCreateQuorum_StrategiesAndWeightingMultipliers_LengthGreaterThanMaxAllowed_Reverts(
-    //     IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers
+    //     IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers
     // ) public {
     //     strategiesAndWeightingMultipliers = _removeDuplicates(strategiesAndWeightingMultipliers);
     //     strategiesAndWeightingMultipliers = _replaceZeroWeights(strategiesAndWeightingMultipliers);
@@ -140,7 +140,7 @@ contract VoteWeigherBaseUnitTests is Test {
     // }
 
     // function testCreateQuorum_StrategiesAndWeightingMultipliers_WithDuplicateStrategies_Reverts(
-    //     IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers,
+    //     IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers,
     //     uint256 indexFromDuplicate,
     //     uint256 indexToDuplicate
     // ) public {
@@ -160,14 +160,14 @@ contract VoteWeigherBaseUnitTests is Test {
     // }
 
     // function testCreateQuorum_EmptyStrategiesAndWeightingMultipliers_Reverts() public {
-    //     IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers;
+    //     IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers;
     //     cheats.prank(serviceManagerOwner);
     //     cheats.expectRevert("VoteWeigherBase._addStrategiesConsideredAndMultipliers: no strategies provided");
     //     voteWeigher.createQuorum(strategiesAndWeightingMultipliers);
     // }
 
     // function testCreateQuorum_StrategiesAndWeightingMultipliers_WithZeroWeight(
-    //     IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers,
+    //     IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers,
     //     uint256 indexForZeroMultiplier
     // ) public {
     //     strategiesAndWeightingMultipliers = _removeDuplicates(strategiesAndWeightingMultipliers);
@@ -182,7 +182,7 @@ contract VoteWeigherBaseUnitTests is Test {
     // }
 
     // function testCreateQuorum_MoreThanMaxQuorums_Reverts() public {
-    //     IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
+    //     IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
     //     uint256 maxQuorums = voteWeigher.MAX_QUORUM_COUNT();
             
     //     cheats.startPrank(serviceManagerOwner);
@@ -197,7 +197,7 @@ contract VoteWeigherBaseUnitTests is Test {
 
     // function testAddStrategiesConsideredAndMultipliers_Valid(
     //     uint256 randomSplit,
-    //     IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers
+    //     IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers
     // ) public {
     //     strategiesAndWeightingMultipliers = _convertToValidStrategiesAndWeightingMultipliers(strategiesAndWeightingMultipliers);
     //     // make sure there is at least 2 strategies
@@ -205,8 +205,8 @@ contract VoteWeigherBaseUnitTests is Test {
     //     // we need at least 1 strategy in each side of the split
     //     randomSplit = randomSplit % (strategiesAndWeightingMultipliers.length - 1) + 1;
     //     // create 2 arrays, 1 with the first randomSplit elements and 1 with the rest
-    //     IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers1 = new IStakeRegistry.StrategyAndWeightingMultiplier[](randomSplit);
-    //     IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers2 = new IStakeRegistry.StrategyAndWeightingMultiplier[](strategiesAndWeightingMultipliers.length - randomSplit);
+    //     IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers1 = new IStakeRegistry.StrategyParams[](randomSplit);
+    //     IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers2 = new IStakeRegistry.StrategyParams[](strategiesAndWeightingMultipliers.length - randomSplit);
     //     for (uint256 i = 0; i < strategiesAndWeightingMultipliers.length; i++) {
     //         if (i < randomSplit) {
     //             strategiesAndWeightingMultipliers1[i] = strategiesAndWeightingMultipliers[i];
@@ -228,7 +228,7 @@ contract VoteWeigherBaseUnitTests is Test {
 
     //     // check that the quorum was created and strategies were added correctly
     //     for (uint i = 0; i < strategiesAndWeightingMultipliers.length; i++) {
-    //         IStakeRegistry.StrategyAndWeightingMultiplier memory strategyAndWeightingMultiplier = voteWeigher.strategyAndWeightingMultiplierForQuorumByIndex(quorumNumber, i);
+    //         IStakeRegistry.StrategyParams memory strategyAndWeightingMultiplier = voteWeigher.strategyAndWeightingMultiplierForQuorumByIndex(quorumNumber, i);
     //         assertEq(address(strategyAndWeightingMultiplier.strategy), address(strategiesAndWeightingMultipliers[i].strategy));
     //         assertEq(strategyAndWeightingMultiplier.multiplier, strategiesAndWeightingMultipliers[i].multiplier);
     //     }
@@ -238,7 +238,7 @@ contract VoteWeigherBaseUnitTests is Test {
     //     address notServiceManagerOwner
     // ) public fuzzedAddress(notServiceManagerOwner) {
     //     cheats.assume(notServiceManagerOwner != serviceManagerOwner);
-    //     IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
+    //     IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
 
     //     // create quorum with all but the last element
     //     uint8 quorumNumber = uint8(voteWeigher.quorumCount());
@@ -252,7 +252,7 @@ contract VoteWeigherBaseUnitTests is Test {
     // }
 
     // function testAddStrategiesConsideredAndMultipliers_ForNonexistentQuorum_Reverts() public {
-    //     IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
+    //     IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
 
     //     // create quorum with all but the last element
     //     uint8 quorumNumber = uint8(voteWeigher.quorumCount());
@@ -268,7 +268,7 @@ contract VoteWeigherBaseUnitTests is Test {
     // // removes them, and checks that the strategies were removed correctly by computing
     // // a local copy of the strategies when the removal algorithm is applied and comparing
     // function testRemoveStrategiesConsideredAndMultipliers_Valid(
-    //     IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers,
+    //     IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers,
     //     uint256 randomness
     // ) public {
     //     strategiesAndWeightingMultipliers = _convertToValidStrategiesAndWeightingMultipliers(strategiesAndWeightingMultipliers);
@@ -290,13 +290,13 @@ contract VoteWeigherBaseUnitTests is Test {
         
     //     // check that the strategies that were not removed are still there
     //     // get all strategies and multipliers form the contracts
-    //     IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliersFromContract = new IStakeRegistry.StrategyAndWeightingMultiplier[](voteWeigher.strategiesConsideredAndMultipliersLength(quorumNumber));
+    //     IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliersFromContract = new IStakeRegistry.StrategyParams[](voteWeigher.strategiesConsideredAndMultipliersLength(quorumNumber));
     //     for (uint256 i = 0; i < strategiesAndWeightingMultipliersFromContract.length; i++) {
     //         strategiesAndWeightingMultipliersFromContract[i] = voteWeigher.strategyAndWeightingMultiplierForQuorumByIndex(quorumNumber, i);
     //     }
 
     //     // remove indicesToRemove from local strategiesAndWeightingMultipliers
-    //     IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliersLocal = new IStakeRegistry.StrategyAndWeightingMultiplier[](strategiesAndWeightingMultipliers.length - indicesToRemove.length);
+    //     IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliersLocal = new IStakeRegistry.StrategyParams[](strategiesAndWeightingMultipliers.length - indicesToRemove.length);
         
     //     // run the removal algorithm locally
     //     uint256 endIndex = strategiesAndWeightingMultipliers.length - 1;
@@ -323,7 +323,7 @@ contract VoteWeigherBaseUnitTests is Test {
     //     address notServiceManagerOwner
     // ) public fuzzedAddress(notServiceManagerOwner) {
     //     cheats.assume(notServiceManagerOwner != serviceManagerOwner);
-    //     IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
+    //     IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
 
     //     uint256[] memory indicesToRemove = new uint256[](1);
 
@@ -339,7 +339,7 @@ contract VoteWeigherBaseUnitTests is Test {
     // }
 
     // function testRemoveStrategiesConsideredAndMultipliers_ForNonexistentQuorum_Reverts() public {
-    //     IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
+    //     IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
 
     //     uint256[] memory indicesToRemove = new uint256[](1);
 
@@ -354,7 +354,7 @@ contract VoteWeigherBaseUnitTests is Test {
     // }
 
     // function testRemoveStrategiesConsideredAndMultipliers_EmptyIndicesToRemove_Reverts() public {
-    //     IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
+    //     IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
 
     //     // create a valid quorum
     //     uint8 quorumNumber = uint8(voteWeigher.quorumCount());
@@ -370,7 +370,7 @@ contract VoteWeigherBaseUnitTests is Test {
     //     address notServiceManagerOwner
     // ) public fuzzedAddress(notServiceManagerOwner) {
     //     cheats.assume(notServiceManagerOwner != serviceManagerOwner);
-    //     IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
+    //     IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
 
     //     uint256[] memory strategyIndices = new uint256[](1);
     //     uint96[] memory newWeights = new uint96[](1);
@@ -387,7 +387,7 @@ contract VoteWeigherBaseUnitTests is Test {
     // }
 
     // function testModifyStrategyWeights_Valid(
-    //     IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers,
+    //     IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers,
     //     uint96[] memory newWeights,
     //     uint256 randomness
     // ) public {
@@ -423,14 +423,14 @@ contract VoteWeigherBaseUnitTests is Test {
     //     }
     //     // make sure the quorum strategies and weights have changed
     //     for (uint i = 0; i < strategiesAndWeightingMultipliers.length; i++) {
-    //         IStakeRegistry.StrategyAndWeightingMultiplier memory strategyAndWeightingMultiplier = voteWeigher.strategyAndWeightingMultiplierForQuorumByIndex(quorumNumber, i);
+    //         IStakeRegistry.StrategyParams memory strategyAndWeightingMultiplier = voteWeigher.strategyAndWeightingMultiplierForQuorumByIndex(quorumNumber, i);
     //         assertEq(address(strategyAndWeightingMultiplier.strategy), address(strategiesAndWeightingMultipliers[i].strategy));
     //         assertEq(strategyAndWeightingMultiplier.multiplier, strategiesAndWeightingMultipliers[i].multiplier);
     //     }
     // }
 
     // function testModifyStrategyWeights_ForNonexistentQuorum_Reverts() public {
-    //     IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
+    //     IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
 
     //     uint256[] memory strategyIndices = new uint256[](1);
     //     uint96[] memory newWeights = new uint96[](1);
@@ -449,7 +449,7 @@ contract VoteWeigherBaseUnitTests is Test {
     //     uint256[] memory strategyIndices,
     //     uint96[] memory newWeights
     // ) public {
-    //     IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
+    //     IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
 
     //     // make sure the arrays are of different lengths
     //     cheats.assume(strategyIndices.length != newWeights.length);
@@ -466,7 +466,7 @@ contract VoteWeigherBaseUnitTests is Test {
     // }
 
     // function testModifyStrategyWeights_EmptyStrategyIndicesAndWeights_Reverts() public {
-    //     IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
+    //     IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
 
     //     // create a valid quorum
     //     uint8 quorumNumber = uint8(voteWeigher.quorumCount());
@@ -480,7 +480,7 @@ contract VoteWeigherBaseUnitTests is Test {
 
     // function testWeightOfOperatorForQuorum(
     //     address operator,
-    //     IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndMultipliers,
+    //     IStakeRegistry.StrategyParams[] memory strategiesAndMultipliers,
     //     uint96[] memory shares
     // ) public {
     //     strategiesAndMultipliers = _convertToValidStrategiesAndWeightingMultipliers(strategiesAndMultipliers);
@@ -510,11 +510,11 @@ contract VoteWeigherBaseUnitTests is Test {
     //     assertEq(voteWeigher.weightOfOperatorForQuorum(quorumNumber, operator), expectedWeight);
     // }
 
-    function _removeDuplicates(IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers) 
+    function _removeDuplicates(IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers) 
         internal 
-        returns(IStakeRegistry.StrategyAndWeightingMultiplier[] memory)
+        returns(IStakeRegistry.StrategyParams[] memory)
     {
-        IStakeRegistry.StrategyAndWeightingMultiplier[] memory deduplicatedStrategiesAndWeightingMultipliers = new IStakeRegistry.StrategyAndWeightingMultiplier[](strategiesAndWeightingMultipliers.length);
+        IStakeRegistry.StrategyParams[] memory deduplicatedStrategiesAndWeightingMultipliers = new IStakeRegistry.StrategyParams[](strategiesAndWeightingMultipliers.length);
         uint256 numUniqueStrategies = 0;
         // check for duplicates
         for (uint i = 0; i < strategiesAndWeightingMultipliers.length; i++) {
@@ -531,14 +531,14 @@ contract VoteWeigherBaseUnitTests is Test {
             strategyInCurrentArray[strategiesAndWeightingMultipliers[i].strategy] = false;
         }
 
-        IStakeRegistry.StrategyAndWeightingMultiplier[] memory trimmedStrategiesAndWeightingMultipliers = new IStakeRegistry.StrategyAndWeightingMultiplier[](numUniqueStrategies);
+        IStakeRegistry.StrategyParams[] memory trimmedStrategiesAndWeightingMultipliers = new IStakeRegistry.StrategyParams[](numUniqueStrategies);
         for (uint i = 0; i < numUniqueStrategies; i++) {
             trimmedStrategiesAndWeightingMultipliers[i] = deduplicatedStrategiesAndWeightingMultipliers[i];
         }
         return trimmedStrategiesAndWeightingMultipliers;
     }
 
-    function _replaceZeroWeights(IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers) internal pure returns(IStakeRegistry.StrategyAndWeightingMultiplier[] memory) {
+    function _replaceZeroWeights(IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers) internal pure returns(IStakeRegistry.StrategyParams[] memory) {
         for (uint256 i = 0; i < strategiesAndWeightingMultipliers.length; i++) {
             if (strategiesAndWeightingMultipliers[i].multiplier == 0) {
                 strategiesAndWeightingMultipliers[i].multiplier = 1;
@@ -572,20 +572,20 @@ contract VoteWeigherBaseUnitTests is Test {
         return trimmedRandomIndices;
     }
 
-    function _convertToValidStrategiesAndWeightingMultipliers(IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers) internal returns (IStakeRegistry.StrategyAndWeightingMultiplier[] memory) {
+    function _convertToValidStrategiesAndWeightingMultipliers(IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers) internal returns (IStakeRegistry.StrategyParams[] memory) {
         strategiesAndWeightingMultipliers = _removeDuplicates(strategiesAndWeightingMultipliers);
         cheats.assume(strategiesAndWeightingMultipliers.length <= voteWeigher.MAX_WEIGHING_FUNCTION_LENGTH());
         cheats.assume(strategiesAndWeightingMultipliers.length > 0);
         return _replaceZeroWeights(strategiesAndWeightingMultipliers);
     }
 
-    function _defaultStrategiesAndWeightingMultipliers() internal pure returns (IStakeRegistry.StrategyAndWeightingMultiplier[] memory) {
-        IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers = new IStakeRegistry.StrategyAndWeightingMultiplier[](2);
-        strategiesAndWeightingMultipliers[0] = IStakeRegistry.StrategyAndWeightingMultiplier({
+    function _defaultStrategiesAndWeightingMultipliers() internal pure returns (IStakeRegistry.StrategyParams[] memory) {
+        IStakeRegistry.StrategyParams[] memory strategiesAndWeightingMultipliers = new IStakeRegistry.StrategyParams[](2);
+        strategiesAndWeightingMultipliers[0] = IStakeRegistry.StrategyParams({
             strategy: IStrategy(address(uint160(uint256(keccak256("strategy1"))))),
             multiplier: 1.04 ether
         });
-        strategiesAndWeightingMultipliers[1] = IStakeRegistry.StrategyAndWeightingMultiplier({
+        strategiesAndWeightingMultipliers[1] = IStakeRegistry.StrategyParams({
             strategy: IStrategy(address(uint160(uint256(keccak256("strategy2"))))),
             multiplier: 1.69 ether
         });

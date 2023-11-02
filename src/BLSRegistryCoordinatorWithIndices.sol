@@ -112,7 +112,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         uint256 _initialPausedStatus,
         OperatorSetParam[] memory _operatorSetParams,
         uint96[] memory _minimumStakes,
-        IStakeRegistry.StrategyAndWeightingMultiplier[][] memory _strategyParams
+        IStakeRegistry.StrategyParams[][] memory _strategyParams
     ) external initializer {
         require(
             _operatorSetParams.length == _minimumStakes.length && _minimumStakes.length == _strategyParams.length,
@@ -307,7 +307,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     function createQuorum(
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
-        IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategyParams
+        IStakeRegistry.StrategyParams[] memory strategyParams
     ) external virtual onlyServiceManagerOwner {
         _createQuorum(operatorSetParams, minimumStake, strategyParams);
     }
@@ -490,7 +490,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     function _createQuorum(
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
-        IStakeRegistry.StrategyAndWeightingMultiplier[] memory strategyParams
+        IStakeRegistry.StrategyParams[] memory strategyParams
     ) internal {
         // Increment the total quorum count. Fails if we're already at the max
         uint8 prevQuorumCount = quorumCount;
