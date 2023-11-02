@@ -14,10 +14,10 @@ abstract contract BLSPubkeyRegistryStorage is Initializable, IBLSPubkeyRegistry 
     /// @notice the BLSPublicKeyCompendium contract against which pubkey ownership is checked
     IBLSPublicKeyCompendium public immutable pubkeyCompendium;
 
-    /// @notice mapping of quorumNumber => ApkUpdate[], tracking the aggregate pubkey updates of every quorum
-    mapping(uint8 => ApkUpdate[]) public quorumApkUpdates;
-    /// @notice mapping of quorumNumber => current aggregate pubkey of quorum
-    mapping(uint8 => BN254.G1Point) public quorumApk;
+    /// @notice maps quorumNumber => historical aggregate pubkey updates
+    mapping(uint8 => ApkUpdate[]) public apkHistory;
+    /// @notice maps quorumNumber => current aggregate pubkey of quorum
+    mapping(uint8 => BN254.G1Point) public currentApk;
 
     constructor(IRegistryCoordinator _registryCoordinator, IBLSPublicKeyCompendium _pubkeyCompendium) {
         registryCoordinator = _registryCoordinator;

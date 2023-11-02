@@ -82,9 +82,9 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
      * @param quorumNumber The number of the new quorum
      */
     function initializeQuorum(uint8 quorumNumber) public virtual onlyRegistryCoordinator {
-        require(quorumApkUpdates[quorumNumber].length == 0, "BLSPubkeyRegistry.createQuorum: quorum already exists");
+        require(apkHistory[quorumNumber].length == 0, "BLSPubkeyRegistry.initializeQuorum: quorum already exists");
 
-        quorumApkUpdates[quorumNumber].push(ApkUpdate({
+        apkHistory[quorumNumber].push(ApkUpdate({
             apkHash: bytes24(0),
             updateBlockNumber: uint32(block.number),
             nextUpdateBlockNumber: 0
@@ -101,22 +101,22 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             // Validate quorum exists and get history length
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            uint256 historyLength = quorumApkUpdates[quorumNumber].length;
+            uint256 historyLength = apkHistory[quorumNumber].length;
             require(historyLength != 0, "BLSPubkeyRegistry._processQuorumApkUpdate: quorum does not exist");
 
             // Update aggregate public key for this quorum
-            newApk = quorumApk[quorumNumber].plus(point);
-            quorumApk[quorumNumber] = newApk;
+            newApk = currentApk[quorumNumber].plus(point);
+            currentApk[quorumNumber] = newApk;
             bytes24 newApkHash = bytes24(BN254.hashG1Point(newApk));
 
             // Update apk history. If the last update was made in this block, update the entry
             // Otherwise, push a new historical entry and update the prev->next pointer
-            ApkUpdate storage lastUpdate = quorumApkUpdates[quorumNumber][historyLength - 1];
+            ApkUpdate storage lastUpdate = apkHistory[quorumNumber][historyLength - 1];
             if (lastUpdate.updateBlockNumber == uint32(block.number)) {
                 lastUpdate.apkHash = newApkHash;
             } else {
                 lastUpdate.nextUpdateBlockNumber = uint32(block.number);
-                quorumApkUpdates[quorumNumber].push(ApkUpdate({
+                apkHistory[quorumNumber].push(ApkUpdate({
                     apkHash: newApkHash,
                     updateBlockNumber: uint32(block.number),
                     nextUpdateBlockNumber: 0
@@ -126,10 +126,10 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
     }
 
     // TODO - should this fail if apkUpdate.apkHash == 0? This will be the case for the first entry in each quorum
-    function _validateApkHashForQuorumAtBlockNumber(ApkUpdate memory apkUpdate, uint32 blockNumber) internal pure {
+    function _validateApkHashAtBlockNumber(ApkUpdate memory apkUpdate, uint32 blockNumber) internal pure {
         require(
             blockNumber >= apkUpdate.updateBlockNumber,
-            "BLSPubkeyRegistry._validateApkHashForQuorumAtBlockNumber: index too recent"
+            "BLSPubkeyRegistry._validateApkHashAtBlockNumber: index too recent"
         );
         /**
          * if there is a next update, check that the blockNumber is before the next update or if
@@ -137,7 +137,7 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
          */
         require(
             apkUpdate.nextUpdateBlockNumber == 0 || blockNumber < apkUpdate.nextUpdateBlockNumber,
-            "BLSPubkeyRegistry._validateApkHashForQuorumAtBlockNumber: not latest apk update"
+            "BLSPubkeyRegistry._validateApkHashAtBlockNumber: not latest apk update"
         );
     }
 
@@ -149,23 +149,23 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
      * @notice Returns the indices of the quorumApks index at `blockNumber` for the provided `quorumNumbers`
      * @dev Returns the current indices if `blockNumber >= block.number`
      */
-     function getApkIndicesForQuorumsAtBlockNumber(
+     function getApkIndicesAtBlockNumber(
         bytes calldata quorumNumbers,
         uint256 blockNumber
     ) external view returns (uint32[] memory) {
         uint32[] memory indices = new uint32[](quorumNumbers.length);
         for (uint i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            uint32 quorumApkUpdatesLength = uint32(quorumApkUpdates[quorumNumber].length);
+            uint32 quorumApkUpdatesLength = uint32(apkHistory[quorumNumber].length);
 
-            if (quorumApkUpdatesLength == 0 || blockNumber < quorumApkUpdates[quorumNumber][0].updateBlockNumber) {
+            if (quorumApkUpdatesLength == 0 || blockNumber < apkHistory[quorumNumber][0].updateBlockNumber) {
                 revert(
-                    "BLSPubkeyRegistry.getApkIndicesForQuorumsAtBlockNumber: blockNumber is before the first update"
+                    "BLSPubkeyRegistry.getApkIndicesAtBlockNumber: blockNumber is before the first update"
                 );
             }
 
             for (uint32 j = 0; j < quorumApkUpdatesLength; j++) {
-                if (quorumApkUpdates[quorumNumber][quorumApkUpdatesLength - j - 1].updateBlockNumber <= blockNumber) {
+                if (apkHistory[quorumNumber][quorumApkUpdatesLength - j - 1].updateBlockNumber <= blockNumber) {
                     indices[i] = quorumApkUpdatesLength - j - 1;
                     break;
                 }
@@ -175,13 +175,13 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
     }
 
     /// @notice Returns the current APK for the provided `quorumNumber `
-    function getApkForQuorum(uint8 quorumNumber) external view returns (BN254.G1Point memory) {
-        return quorumApk[quorumNumber];
+    function getApk(uint8 quorumNumber) external view returns (BN254.G1Point memory) {
+        return currentApk[quorumNumber];
     }
 
     /// @notice Returns the `ApkUpdate` struct at `index` in the list of APK updates for the `quorumNumber`
-    function getApkUpdateForQuorumByIndex(uint8 quorumNumber, uint256 index) external view returns (ApkUpdate memory) {
-        return quorumApkUpdates[quorumNumber][index];
+    function getApkUpdateAtIndex(uint8 quorumNumber, uint256 index) external view returns (ApkUpdate memory) {
+        return apkHistory[quorumNumber][index];
     }
 
     /**
@@ -191,19 +191,19 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
      * @param blockNumber is the number of the block for which the latest ApkHash will be retrieved
      * @param index is the index of the apkUpdate being retrieved from the list of quorum apkUpdates in storage
      */
-    function getApkHashForQuorumAtBlockNumberFromIndex(
+    function getApkHashAtBlockNumberAndIndex(
         uint8 quorumNumber,
         uint32 blockNumber,
         uint256 index
     ) external view returns (bytes24) {
-        ApkUpdate memory quorumApkUpdate = quorumApkUpdates[quorumNumber][index];
-        _validateApkHashForQuorumAtBlockNumber(quorumApkUpdate, blockNumber);
+        ApkUpdate memory quorumApkUpdate = apkHistory[quorumNumber][index];
+        _validateApkHashAtBlockNumber(quorumApkUpdate, blockNumber);
         return quorumApkUpdate.apkHash;
     }
 
     /// @notice Returns the length of ApkUpdates for the provided `quorumNumber`
-    function getQuorumApkHistoryLength(uint8 quorumNumber) external view returns (uint32) {
-        return uint32(quorumApkUpdates[quorumNumber].length);
+    function getApkHistoryLength(uint8 quorumNumber) external view returns (uint32) {
+        return uint32(apkHistory[quorumNumber].length);
     }
 
     /// @notice Returns the operator address for the given `pubkeyHash`

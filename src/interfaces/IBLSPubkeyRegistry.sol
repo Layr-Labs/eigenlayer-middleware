@@ -66,13 +66,13 @@ interface IBLSPubkeyRegistry is IRegistry {
     function initializeQuorum(uint8 quorumNumber) external;
 
     /// @notice Returns the current APK for the provided `quorumNumber `
-    function getApkForQuorum(uint8 quorumNumber) external view returns (BN254.G1Point memory);
+    function getApk(uint8 quorumNumber) external view returns (BN254.G1Point memory);
 
     /// @notice Returns the index of the quorumApk index at `blockNumber` for the provided `quorumNumber`
-    function getApkIndicesForQuorumsAtBlockNumber(bytes calldata quorumNumbers, uint256 blockNumber) external view returns(uint32[] memory);
+    function getApkIndicesAtBlockNumber(bytes calldata quorumNumbers, uint256 blockNumber) external view returns(uint32[] memory);
 
     /// @notice Returns the `ApkUpdate` struct at `index` in the list of APK updates for the `quorumNumber`
-    function getApkUpdateForQuorumByIndex(uint8 quorumNumber, uint256 index) external view returns (ApkUpdate memory);
+    function getApkUpdateAtIndex(uint8 quorumNumber, uint256 index) external view returns (ApkUpdate memory);
 
     /// @notice Returns the operator address for the given `pubkeyHash`
     function getOperatorFromPubkeyHash(bytes32 pubkeyHash) external view returns (address);
@@ -84,5 +84,5 @@ interface IBLSPubkeyRegistry is IRegistry {
      * @param blockNumber is the number of the block for which the latest ApkHash will be retrieved
      * @param index is the index of the apkUpdate being retrieved from the list of quorum apkUpdates in storage
      */
-    function getApkHashForQuorumAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes24);
+    function getApkHashAtBlockNumberAndIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes24);
 }
