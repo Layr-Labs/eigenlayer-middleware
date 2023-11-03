@@ -1,5 +1,5 @@
-[middleware-folder-link]: https://github.com/Layr-Labs/eigenlayer-contracts/tree/master/src/contracts/middleware
-[middleware-guide-link]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/master/docs/AVS-Guide.md#quick-start-guide-to-build-avs-contracts
+[eigenlayer-repo-link]: https://github.com/Layr-Labs/eigenlayer-contracts
+[middleware-guide-link]: #quick-start-guide-to-build-avs-contracts
 # Purpose
 This document aims to describe and summarize how actively validated services (AVSs) building on EigenLayer interact with the core EigenLayer protocol. Currently, this doc explains how AVS developers can use the APIs for: 
 - enabling operators to opt-in to the AVS,
@@ -13,7 +13,7 @@ The following figure summarizes scope of this document:
 ![Doc Outline](./images/middleware_outline_doc.png)
 
 # Introduction
-In designing EigenLayer, the EigenLabs team aspired to make minimal assumptions about the structure of AVSs built on top of it. If you are getting started looking at EigenLayer's codebase, the `Slasher.sol` contains most of the logic that actually mediates the interactions between EigenLayer and AVSs. Additionally, there is a general-purpose [/middleware/ folder][middleware-folder-link], which contains code that can be extended, used directly, or consulted as a reference in building an AVS on top of EigenLayer. Note that there will be a single, EigenLayer-owned, `Slasher.sol` contract, but all the `middleware` contracts are AVS-specific and need to be deployed separately by AVS teams.
+In designing EigenLayer, the EigenLabs team aspired to make minimal assumptions about the structure of AVSs built on top of it. If you are getting started looking at [EigenLayer][eigenlayer-repo-link]'s codebase, the `Slasher.sol` contains most of the logic that actually mediates the interactions between EigenLayer and AVSs. This repo contains code that can be extended, used directly, or consulted as a reference in building an AVS on top of EigenLayer. Note that there will be a single, EigenLayer-owned, `Slasher.sol` contract, but all the `middleware` contracts are AVS-specific and need to be deployed separately by AVS teams.
 
 ## Important Terminology
 - **Tasks** - A task in EigenLayer is the smallest unit of work that operators commit to perform when serving an AVS. These tasks may be associated with one or more slashing conditions applicable to the AVS. 
@@ -74,7 +74,7 @@ The following figure illustrates the above flow:
 
 
 ## Quick Start Guide to Build AVS Contracts:
-The EigenLayer team has built a set of reusable and extensible contracts for use in AVSs built on top of EigenLayer. These are contained in the general-purpose [/middleware/ folder][middleware-folder-link], which contains code that can be extended, used directly, or consulted as a reference in building AVS on top of EigenLayer. There are several basic contracts that all AVS-specific contracts can be built on:
+The EigenLayer team has built this repo as a set of reusable and extensible contracts for use in AVSs built on top of EigenLayer, which comprises code that can be extended, used directly, or consulted as a reference in building AVS on top of EigenLayer. There are several basic contracts that all AVS-specific contracts can be built on:
 - The *VoteWeigherBase contract* tracks an operator’s “weight” in a given quorum, across all strategies that are associated with that quorum.  This contract also manages which strategies are in each quorum - this includes functionalities for both adding and removing strategies, as well as changing strategy weights.  
 - The *RegistryBase contract* is a basic registry contract that can be used to track operators opted-into running an AVS.  Importantly, this base registry contract assumes a maximum of two quorums, where each quorum represents an aggregation of a certain type of stake. 
 
