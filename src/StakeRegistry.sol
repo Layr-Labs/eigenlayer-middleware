@@ -178,7 +178,7 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
 
             require(
                 numOperatorsUpdatedInQuorum == indexRegistry.totalOperatorsForQuorum(quorumNumber),
-                "StakeRegistry.updateStakesAllOperators: number of updated operators doesn't match quorum total"
+                "StakeRegistry.updateStakesAllOperators: number of updated operators does not match quorum total"
             );
 
             // if the total stake for this quorum was updated, record it in storage
