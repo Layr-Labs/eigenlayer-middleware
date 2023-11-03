@@ -114,14 +114,6 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
                 ++quorumNumber;
             }
         }
-
-        // TODO after slashing enabled: record stake updates in the EigenLayer Slasher
-        // for (uint i = 0; i < operators.length;) {
-        //     serviceManager.recordStakeUpdate(operators[i], uint32(block.number), serviceManager.latestServeUntilBlock(), prevElements[i]);
-        //     unchecked {
-        //         ++i;
-        //     }
-        // }
     }
 
     /*******************************************************************************

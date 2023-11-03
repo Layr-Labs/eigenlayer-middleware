@@ -363,11 +363,6 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         BN254.G1Point memory pubkey, 
         string memory socket
     ) internal virtual returns(uint32[] memory) {
-        // require(
-        //     slasher.contractCanSlashOperatorUntilBlock(operator, address(serviceManager)) == type(uint32).max,
-        //     "StakeRegistry._registerOperator: operator must be opted into slashing by the serviceManager"
-        // );
-        
         // get the quorum bitmap from the quorum numbers
         uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
         require(quorumBitmap <= MAX_QUORUM_BITMAP, "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: quorumBitmap exceeds of max bitmap size");
