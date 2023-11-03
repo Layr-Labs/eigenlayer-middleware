@@ -192,6 +192,63 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
         }
     }
 
+    /**
+     * @notice By having quorum inclusion checks and ensuring no duplicates, we can do array length checks
+     * to ensure all the operators passed in is equal to the total number of operators in the quorum.
+     * @param operatorsPerQuorum is an array of quorums where each quorum is an array of operators
+     * operators in the nested array must be sorted in ascending operatorId order.
+     */
+    function updateStakesAllOperators(address[][] calldata operatorsPerQuorum) external {
+        for (uint8 quorumNumber = 0; quorumNumber < operatorsPerQuorum.length; quorumNumber) {
+            OperatorStakeUpdate memory totalStakeUpdate = _totalStakeHistory[quorumNumber][
+                _totalStakeHistory[quorumNumber].length - 1
+            ];
+            address[] memory currQuorumOperators = operatorsPerQuorum[quorumNumber];
+            // Check that number of operators matches quorum total
+            require(
+                currQuorumOperators.length == indexRegistry.totalOperatorsForQuorum(quorumNumber),
+                "StakeRegistry.updateStakesAllOperators: number of updated operators doesn't match quorum total"
+            );
+
+            bytes32 prevOperatorId = bytes32(0);
+            // Update stakes for each operator in the quorum
+            // If the operator is not part of the quorum then revert. Checks this via quorum bitmap
+            for (uint8 i = 0; i < currQuorumOperators.length; ++i) {
+                bytes32 operatorId = registryCoordinator.getOperatorId(currQuorumOperators[i]);
+                uint192 quorumBitmap = registryCoordinator.getCurrentQuorumBitmapByOperatorId(operatorId);
+
+                // Assuming the operatorId cannot be 0, for the first operatorId, prevOperatorId will be 0
+                // Require check is to prevent duplicate operators and that all quorum operators are updated
+                require(
+                    operatorId > prevOperatorId,
+                    "StakeRegistry.updateStakesAllOperators: operators array must be sorted in ascending operatorId order"
+                );
+                require(
+                    BitmapUtils.numberIsInBitmap(quorumBitmap, quorumNumber),
+                    "StakeRegistry.updateStakesAllOperators: operator not in quorum"
+                );
+
+                // Update Operator stake
+                (uint96 stakeBeforeUpdate, uint96 stakeAfterUpdate) = _updateOperatorStake({
+                    operator: currQuorumOperators[i],
+                    operatorId: operatorId,
+                    quorumNumber: quorumNumber
+                });
+                // calculate the new total stake for the quorum
+                totalStakeUpdate.stake = totalStakeUpdate.stake - stakeBeforeUpdate + stakeAfterUpdate;
+
+                unchecked {
+                    ++i;
+                }
+            }
+            // update the total stake history for the quorum
+            _recordTotalStakeUpdate(quorumNumber, totalStakeUpdate);
+            unchecked {
+                ++quorumNumber;
+            }
+        }
+    }
+
     /*******************************************************************************
                       EXTERNAL FUNCTIONS - REGISTRY COORDINATOR
     *******************************************************************************/
