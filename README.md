@@ -84,6 +84,15 @@ At the core of many AVSs on EigenLayer (almost all except those that affect Ethe
 
 The current implementation of this contract is the [BLSSignatureChecker](./docs/BLSSignatureChecker.md).
 
+## Deployments
+
+### M2 Testnet (Current Goerli Deployment)
+
+| Name                      | Solidity                      | Contract                                                                                          | Notes |
+| ------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------- | ----- |
+| BLSOperatorStateRetriever | BLSOperatorStateRetriever.sol | [`0xf60a...7251`](https://goerli.etherscan.io/address/0xf60a330F8c1A0C0ecf3Eab1D54b00F3a8FE37251) |       |
+| BLSPubkeyCompendium       | BLSPubkeyCompendium.sol       | [`0xdd53...B9Bb`](https://goerli.etherscan.io/address/0xdd53D44257d5F4EB0ca60F60d88827C1b433B9Bb) |       |
+
 ## Further reading
 
 More detailed functional docs have been written on the AVS architecture implemented in the middleware contracts. The recommended order for reading the other docs in this folder is
