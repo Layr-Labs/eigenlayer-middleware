@@ -135,7 +135,7 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
      *      we aren't updating duplicate operators. This is because we want to check at the end that we updated all registered
      *      operators in the quorum and we verify this with indexRegistry.totalOperatorsForQuorum(quorumNumber)
      */
-    function updateStakesAllOperators(address[] calldata operators) external {
+    function updateStakesAllOperators(address[] memory operators) external {
         // for each quorum, loop through operators and see if they are a part of the quorum
         // if they are, get their new weight and update their individual stake history and the
         // quorum's total stake history accordingly
@@ -198,7 +198,7 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
      * @param operatorsPerQuorum is an array of quorums where each quorum is an array of operators
      * operators in the nested array must be sorted in ascending operatorId order.
      */
-    function updateStakesAllOperators(address[][] calldata operatorsPerQuorum) external {
+    function updateStakesAllOperators(address[][] memory operatorsPerQuorum) external {
         for (uint8 quorumNumber = 0; quorumNumber < operatorsPerQuorum.length; quorumNumber) {
             OperatorStakeUpdate memory totalStakeUpdate = _totalStakeHistory[quorumNumber][
                 _totalStakeHistory[quorumNumber].length - 1
@@ -213,7 +213,7 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
             bytes32 prevOperatorId = bytes32(0);
             // Update stakes for each operator in the quorum
             // If the operator is not part of the quorum then revert. Checks this via quorum bitmap
-            for (uint8 i = 0; i < currQuorumOperators.length; ++i) {
+            for (uint256 i = 0; i < currQuorumOperators.length; ++i) {
                 bytes32 operatorId = registryCoordinator.getOperatorId(currQuorumOperators[i]);
                 uint192 quorumBitmap = registryCoordinator.getCurrentQuorumBitmapByOperatorId(operatorId);
 
@@ -237,6 +237,7 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
                 // calculate the new total stake for the quorum
                 totalStakeUpdate.stake = totalStakeUpdate.stake - stakeBeforeUpdate + stakeAfterUpdate;
 
+                prevOperatorId = operatorId;
                 unchecked {
                     ++i;
                 }

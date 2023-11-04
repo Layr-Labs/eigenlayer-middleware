@@ -30,6 +30,7 @@ import {IndexRegistryMock} from "test/mocks/IndexRegistryMock.sol";
 import {StakeRegistryHarness} from "test/harnesses/StakeRegistryHarness.sol";
 import {StakeRegistry} from "src/StakeRegistry.sol";
 import {BLSRegistryCoordinatorWithIndicesHarness} from "test/harnesses/BLSRegistryCoordinatorWithIndicesHarness.sol";
+import {StrategyBase} from "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 
 import "forge-std/Test.sol";
 
@@ -601,6 +602,78 @@ contract StakeRegistryUnitTests is Test {
         }
     }
 
+    /**
+     * @notice Testing gas estimations for 10 quorums, quorum0 has 10 strategies and quorum1-9 have 1 strategy each
+     * 200 operators all staked into quorum 0
+     * 50 operators are also staked into each of the quorums 1-9
+     */
+    /// forge-config: default.fuzz.runs = 5
+    function testUpdateStakes_200OperatorsQuorum0_50OperatorsAllOtherQuorums(
+        address[200] memory operators
+    ) public {
+        // Add 9 additional stratgies to quorum 0 which already has 1 strategy
+        uint256 numStratsToAdd = 9;
+        IVoteWeigher.StrategyAndWeightingMultiplier[] memory quorumStrategiesConsideredAndMultipliers = new IVoteWeigher.StrategyAndWeightingMultiplier[](numStratsToAdd);
+        for (uint256 i = 0; i < numStratsToAdd; ++i) {
+            quorumStrategiesConsideredAndMultipliers[i] = IVoteWeigher.StrategyAndWeightingMultiplier(
+                new StrategyBase(strategyManagerMock),
+                uint96(i+1)
+            );
+        }
+        cheats.prank(serviceManagerOwner);
+        stakeRegistry.addStrategiesConsideredAndMultipliers(0, quorumStrategiesConsideredAndMultipliers);
+        // address[] memory updateOperators = new address[](operators.length);
+        // OperatorsPerQuorum input param
+        address[][] memory updateOperators = new address[][](maxQuorumsToRegisterFor);
+
+        // Register 200 operators for quorum0
+        updateOperators[0] = new address[](200);
+        indexRegistryMock.setTotalOperatorsForQuorum(0, 200);
+        for (uint256 i = 0; i < operators.length; ++i) {
+            cheats.assume(operators[i] != address(0));
+            defaultOperator = operators[i];
+            bytes32 operatorId = bytes32(i + 1);
+
+            (uint256 quorumBitmap, uint96[] memory stakesForQuorum) = _registerOperatorSpecificQuorum(defaultOperator, operatorId, /*quorumNumber*/ 0);
+            require(quorumBitmap == 1, "quorumBitmap should be 1");
+            registryCoordinator.setOperatorId(defaultOperator, operatorId);
+            registryCoordinator.recordOperatorQuorumBitmapUpdate(operatorId, uint192(quorumBitmap));
+
+            bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
+            for (uint j = 0; j < stakesForQuorum.length; j++) {
+                stakeRegistry.setOperatorWeight(uint8(quorumNumbers[j]), defaultOperator, stakesForQuorum[j] + 1);
+            }
+            updateOperators[0][i] = operators[i];
+        }
+        // For each of the quorums 1-9, register 50 operators
+        for (uint256 i = 0; i < 50; ++i) {
+            defaultOperator = operators[i];
+            bytes32 operatorId = bytes32(i + 1);
+            // Register operator for each quorum 1-9
+            uint256 newBitmap;
+            for (uint256 j = 1; j < 10; j++) {
+                // stakesForQuorum has 1 element for quorum j
+                (uint256 quorumBitmap, uint96[] memory stakesForQuorum) = _registerOperatorSpecificQuorum(defaultOperator, operatorId, /*quorumNumber*/ j);
+                uint256 currentOperatorBitmap = registryCoordinator.getCurrentQuorumBitmapByOperatorId(operatorId);
+                newBitmap = currentOperatorBitmap | quorumBitmap;
+                registryCoordinator.recordOperatorQuorumBitmapUpdate(operatorId, uint192(newBitmap));
+                stakeRegistry.setOperatorWeight(/* quorumNumber */ uint8(j), defaultOperator, stakesForQuorum[0] + 1);
+            }
+            require(newBitmap == (1<<maxQuorumsToRegisterFor)-1, "Should be registered all quorums");
+        }
+
+        for (uint256 i = 1; i < maxQuorumsToRegisterFor; i++) {
+            updateOperators[i] = new address[](50);
+            indexRegistryMock.setTotalOperatorsForQuorum(i, 50);
+            for (uint256 j = 0; j < 50; j++) {
+                updateOperators[i][j] = operators[j];
+            }
+        }
+
+
+        stakeRegistry.updateStakesAllOperators(updateOperators);
+    }
+
     function testUpdateStakesAllOperators_Reverts_DuplicateAddress(uint256[10] memory psuedoRandomNumbers) external {}
 
     function testUpdateStakesAllOperators_Reverts_NonIncreasingOperatorIds(uint256[10] memory psuedoRandomNumbers) external {}
@@ -659,6 +732,24 @@ contract StakeRegistryUnitTests is Test {
         gasUsed = gasleftBefore - gasleft();
         
         return paddedStakesForQuorum;
+    }
+
+    // utility function for registering an operator with a valid quorumBitmap and stakesForQuorum using provided randomness
+    function _registerOperatorSpecificQuorum(
+        address operator,
+        bytes32 operatorId,
+        uint256 quorumNumber
+    ) internal returns(uint256, uint96[] memory) {
+        // Register for quorumNumber
+        uint256 quorumBitmap = 1 << quorumNumber;
+        // uint256 quorumBitmap = bound(psuedoRandomNumber, 0, (1<<maxQuorumsToRegisterFor)-1) | 1;
+        // generate uint80[] stakesForQuorum from psuedoRandomNumber
+        uint80[] memory stakesForQuorum = new uint80[](BitmapUtils.countNumOnes(quorumBitmap));
+        for(uint i = 0; i < stakesForQuorum.length; i++) {
+            stakesForQuorum[i] = uint80(uint256(keccak256(abi.encodePacked(quorumNumber, i, "stakesForQuorum"))));
+        }
+
+        return (quorumBitmap, _registerOperatorValid(operator, operatorId, quorumBitmap, stakesForQuorum));
     }
 
     // utility function for deregistering an operator
