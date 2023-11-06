@@ -150,13 +150,15 @@ contract StakeRegistryMock is IStakeRegistry {
      * @notice Used for updating information on deposits of all registered nodes.
      * @param operators are the addresses of the operators whose stake information is getting updated
      */
-    function updateStakesAllOperators(address[] memory operators) external {
-        for (uint256 i = 0; i < operators.length; i++) {
-            emit StakeUpdate(
-                bytes32(uint256(keccak256(abi.encodePacked(operators[i], "operatorId")))),
-                uint8(uint256(keccak256(abi.encodePacked(operators[i], i, "quorumNumber")))),
-                uint96(uint256(keccak256(abi.encodePacked(operators[i], i, "stake"))))
-            );
+    function updateStakesAllOperators(address[][] memory operators) external {
+        for (uint256 quorumNum = 0; quorumNum < operators.length; ++quorumNum) {
+            for (uint256 i = 0; i < operators.length; i++) {
+                emit StakeUpdate(
+                    bytes32(uint256(keccak256(abi.encodePacked(operators[i], "operatorId")))),
+                    uint8(uint256(keccak256(abi.encodePacked(operators[i], i, "quorumNumber")))),
+                    uint96(uint256(keccak256(abi.encodePacked(operators[i], i, "stake"))))
+                );
+            }
         }
     }
 
