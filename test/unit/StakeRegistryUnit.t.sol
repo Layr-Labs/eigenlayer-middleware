@@ -825,6 +825,91 @@ contract StakeRegistryUnitTests_updateStakesAllOperators is Test {
         }
     }
 
+    /**
+     * @notice Testing gas estimations for 10 quorums, quorum0 has 10 strategies and quorum1-9 have 1 strategy each
+     * 200 operators all staked into quorum 0
+     * 30 operators are also staked into each of the quorums 1-9
+     */
+    function testUpdateStakesAllOperators_200OperatorsValid30MaxOperators() public {
+        // Add 9 additional strategies to quorum 0 which already has 1 strategy
+        uint256 numStratsToAdd = 9;
+        IVoteWeigher.StrategyAndWeightingMultiplier[] memory quorumStrategiesConsideredAndMultipliers = new IVoteWeigher.StrategyAndWeightingMultiplier[](numStratsToAdd);
+        for (uint256 i = 0; i < numStratsToAdd; ++i) {
+            quorumStrategiesConsideredAndMultipliers[i] = IVoteWeigher.StrategyAndWeightingMultiplier(
+                new StrategyBase(strategyManagerMock),
+                uint96(i+1)
+            );
+        }
+        // Set 200 operator addresses
+        address[] memory operators = new address[](200);
+        for (uint256 i = 0; i < 200; ++i) {
+            operators[i] = address(uint160(i + 1000));
+        }
+        cheats.prank(serviceManagerOwner);
+        stakeRegistry.addStrategiesConsideredAndMultipliers(0, quorumStrategiesConsideredAndMultipliers);
+        // OperatorsPerQuorum input param
+        address[][] memory updateOperators = new address[][](maxQuorumsToRegisterFor);
+
+        // Register 200 operators for quorum0
+        updateOperators[0] = new address[](200);
+        indexRegistryMock.setTotalOperatorsForQuorum(0, 200);
+        for (uint256 i = 0; i < operators.length; ++i) {
+            defaultOperator = operators[i];
+            bytes32 operatorId = bytes32(i + 1);
+
+            (uint256 quorumBitmap, uint96[] memory stakesForQuorum) = _registerOperatorSpecificQuorum(defaultOperator, operatorId, /*quorumNumber*/ 0);
+            require(quorumBitmap == 1, "quorumBitmap should be 1");
+            registryCoordinator.setOperatorId(defaultOperator, operatorId);
+            registryCoordinator.recordOperatorQuorumBitmapUpdate(operatorId, uint192(quorumBitmap));
+
+            bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
+            _setOperatorQuorumWeight(uint8(quorumNumbers[0]), defaultOperator, stakesForQuorum[0] + 1);
+            updateOperators[0][i] = operators[i];
+        }
+        // For each of the quorums 1-9, register 30 operators
+        for (uint256 i = 0; i < 30; ++i) {
+            defaultOperator = operators[i];
+            bytes32 operatorId = bytes32(i + 1);
+            // Register operator for each quorum 1-9
+            uint256 newBitmap;
+            for (uint256 j = 1; j < 10; j++) {
+                // stakesForQuorum has 1 element for quorum j
+                (uint256 quorumBitmap, uint96[] memory stakesForQuorum) = _registerOperatorSpecificQuorum(defaultOperator, operatorId, /*quorumNumber*/ j);
+                uint256 currentOperatorBitmap = registryCoordinator.getCurrentQuorumBitmapByOperatorId(operatorId);
+                newBitmap = currentOperatorBitmap | quorumBitmap;
+                registryCoordinator.recordOperatorQuorumBitmapUpdate(operatorId, uint192(newBitmap));
+                _setOperatorQuorumWeight(uint8(j), defaultOperator, stakesForQuorum[0] + 1);
+            }
+            require(newBitmap == (1<<maxQuorumsToRegisterFor)-1, "Should be registered all quorums");
+        }
+        // Mocking indexRegistry to set total number of operators per quorum
+        for (uint256 i = 1; i < maxQuorumsToRegisterFor; i++) {
+            updateOperators[i] = new address[](30);
+            indexRegistryMock.setTotalOperatorsForQuorum(i, 30);
+            for (uint256 j = 0; j < 30; j++) {
+                updateOperators[i][j] = operators[j];
+            }
+        }
+
+        // Check operators' stakehistory length, should be 1 if they registered
+        for (uint256 i = 0; i < updateOperators.length; ++i) {
+            uint8 quorumNumber = uint8(i);
+            for (uint256 j = 0; j < updateOperators[i].length; ++j) {
+                bytes32 operatorId = registryCoordinator.getOperatorId(updateOperators[i][j]);
+                assertEq(stakeRegistry.getLengthOfOperatorIdStakeHistoryForQuorum(operatorId, quorumNumber), 1);    
+            }
+        }
+        stakeRegistry.updateStakesAllOperators(updateOperators);
+        // Check operators' stakehistory length, should be 1 if they registered, 2 if they updated stakes again
+        for (uint256 i = 0; i < updateOperators.length; ++i) {
+            uint8 quorumNumber = uint8(i);
+            for (uint256 j = 0; j < updateOperators[i].length; ++j) {
+                bytes32 operatorId = registryCoordinator.getOperatorId(updateOperators[i][j]);
+                assertLe(stakeRegistry.getLengthOfOperatorIdStakeHistoryForQuorum(operatorId, quorumNumber), 2);    
+            }
+        }
+    }
+
     function testUpdateStakesAllOperators_SomeEmptyQuorums(uint256[10] memory psuedoRandomNumbers) external {}
 
     function testUpdateStakesAllOperators_Reverts_DuplicateAddress() external {
