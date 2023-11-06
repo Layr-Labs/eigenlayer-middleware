@@ -149,7 +149,7 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
             bytes32 prevOperatorId = bytes32(0);
             // Update stakes for each operator in the quorum
             // If the operator is not part of the quorum then revert. Checks this via quorum bitmap
-            for (uint256 i = 0; i < currQuorumOperators.length; ++i) {
+            for (uint256 i = 0; i < currQuorumOperators.length;) {
                 bytes32 operatorId = registryCoordinator.getOperatorId(currQuorumOperators[i]);
                 uint192 quorumBitmap = registryCoordinator.getCurrentQuorumBitmapByOperatorId(operatorId);
 
