@@ -66,23 +66,15 @@ interface IIndexRegistry is IRegistry {
      */
     function initializeQuorum(uint8 quorumNumber) external;
 
-    /// @notice Returns the _indexToOperatorIdHistory entry for the specified `operatorIndex` and `quorumNumber` at the specified `index`
-    function getOperatorIndexUpdateOfIndexForQuorumAtIndex(uint32 operatorIndex, uint8 quorumNumber, uint32 index) external view returns (OperatorUpdate memory);
+    /// @notice Returns the _indexHistory entry for the specified `operatorIndex` and `quorumNumber` at the specified `index`
+    function getOperatorUpdateAtIndex(uint8 quorumNumber, uint32 operatorIndex, uint32 index) external view returns (OperatorUpdate memory);
 
-    /// @notice Returns the _totalOperatorsHistory entry for the specified `quorumNumber` at the specified `index`
+    /// @notice Returns the _operatorCountHistory entry for the specified `quorumNumber` at the specified `index`
     function getQuorumUpdateAtIndex(uint8 quorumNumber, uint32 index) external view returns (QuorumUpdate memory);
-
-    /**
-     * @notice Looks up the number of total operators for `quorumNumber` at the specified `blockNumber`.
-     * @param quorumNumber is the quorum number for which the total number of operators is desired
-     * @param blockNumber is the block number at which the total number of operators is desired
-     * @param index is the index of the entry in the dynamic array `totalOperatorsHistory[quorumNumber]` to read data from
-     */
-    function getTotalOperatorsForQuorumAtBlockNumberByIndex(uint8 quorumNumber, uint32 blockNumber, uint32 index) external view returns (uint32);
 
     /// @notice Returns the current number of operators of this service for `quorumNumber`.
     function totalOperatorsForQuorum(uint8 quorumNumber) external view returns (uint32);
 
     /// @notice Returns an ordered list of operators of the services for the given `quorumNumber` at the given `blockNumber`
-    function getOperatorListForQuorumAtBlockNumber(uint8 quorumNumber, uint32 blockNumber) external view returns (bytes32[] memory);
+    function getOperatorListAtBlockNumber(uint8 quorumNumber, uint32 blockNumber) external view returns (bytes32[] memory);
 }

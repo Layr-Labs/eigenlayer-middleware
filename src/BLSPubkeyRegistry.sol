@@ -112,32 +112,31 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
     *******************************************************************************/
 
     function _processQuorumApkUpdate(bytes memory quorumNumbers, BN254.G1Point memory point) internal {
-        BN254.G1Point memory apkAfterUpdate;
+        BN254.G1Point memory newApk;
 
-        for (uint i = 0; i < quorumNumbers.length; ) {
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            // Validate quorum exists and get history length
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-
-            // Validate quorumNumber
             uint256 historyLength = quorumApkUpdates[quorumNumber].length;
             require(historyLength != 0, "BLSPubkeyRegistry._processQuorumApkUpdate: quorum does not exist");
 
-            // Update the last entry to point at the current block
-            // TODO - if the last entry was made in this block, update the entry instead
-            quorumApkUpdates[quorumNumber][historyLength - 1].nextUpdateBlockNumber = uint32(block.number);
-
             // Update aggregate public key for this quorum
-            apkAfterUpdate = quorumApk[quorumNumber].plus(point);
-            quorumApk[quorumNumber] = apkAfterUpdate;
+            newApk = quorumApk[quorumNumber].plus(point);
+            quorumApk[quorumNumber] = newApk;
+            bytes24 newApkHash = bytes24(BN254.hashG1Point(newApk));
 
-            // Push update to history
-            quorumApkUpdates[quorumNumber].push(ApkUpdate({
-                apkHash: bytes24(BN254.hashG1Point(apkAfterUpdate)),
-                updateBlockNumber: uint32(block.number),
-                nextUpdateBlockNumber: 0
-            }));
-
-            unchecked {
-                ++i;
+            // Update apk history. If the last update was made in this block, update the entry
+            // Otherwise, push a new historical entry and update the prev->next pointer
+            ApkUpdate storage lastUpdate = quorumApkUpdates[quorumNumber][historyLength - 1];
+            if (lastUpdate.updateBlockNumber == uint32(block.number)) {
+                lastUpdate.apkHash = newApkHash;
+            } else {
+                lastUpdate.nextUpdateBlockNumber = uint32(block.number);
+                quorumApkUpdates[quorumNumber].push(ApkUpdate({
+                    apkHash: newApkHash,
+                    updateBlockNumber: uint32(block.number),
+                    nextUpdateBlockNumber: 0
+                }));
             }
         }
     }

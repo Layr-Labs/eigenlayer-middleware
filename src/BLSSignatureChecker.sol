@@ -106,7 +106,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                     }
 
                     nonSignerQuorumBitmaps[i] = 
-                        registryCoordinator.getQuorumBitmapByOperatorIdAtBlockNumberByIndex(
+                        registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(
                             nonSignerPubkeyHashes[i], 
                             referenceBlockNumber, 
                             nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices[i]
@@ -139,7 +139,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                     // if the nonSigner is a part of the quorum, subtract their stake from the running total
                     if (BitmapUtils.numberIsInBitmap(nonSignerQuorumBitmaps[i], quorumNumber)) {
                         quorumStakeTotals.signedStakeForQuorum[quorumNumberIndex] -=
-                            stakeRegistry.getStakeForQuorumAtBlockNumberFromOperatorIdAndIndex(
+                            stakeRegistry.getOperatorStakeAtBlockNumberAndIndex(
                                 quorumNumber,
                                 referenceBlockNumber,
                                 nonSignerPubkeyHashes[i],

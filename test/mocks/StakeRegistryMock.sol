@@ -43,12 +43,12 @@ contract StakeRegistryMock is IStakeRegistry {
     /**
      * @notice Initialize a new quorum created by the registry coordinator by setting strategies, weights, and minimum stake
      */
-    function initializeQuorum(uint8 quorumNumber, uint96 minimumStake, StrategyAndWeightingMultiplier[] memory strategyParams) external {}
+    function initializeQuorum(uint8 quorumNumber, uint96 minimumStake, StrategyParams[] memory strategyParams) external {}
 
     /// @notice Adds new strategies and the associated multipliers to the @param quorumNumber.
     function addStrategies(
         uint8 quorumNumber,
-        StrategyAndWeightingMultiplier[] memory strategyParams
+        StrategyParams[] memory strategyParams
     ) external {}
 
     /**
@@ -77,16 +77,16 @@ contract StakeRegistryMock is IStakeRegistry {
 
     function WEIGHTING_DIVISOR() external pure returns (uint256) {}
 
-    function strategiesConsideredAndMultipliersLength(uint8 quorumNumber) external view returns (uint256) {}
+    function strategyParamsLength(uint8 quorumNumber) external view returns (uint256) {}
 
     /// @notice In order to register for a quorum i, an operator must have at least `minimumStakeForQuorum[i]`
     function minimumStakeForQuorum(uint256 quorumNumber) external view returns (uint96) {}
 
     /// @notice Returns the strategy and weight multiplier for the `index`'th strategy in the quorum `quorumNumber`
-    function strategyAndWeightingMultiplierForQuorumByIndex(
+    function strategyParamsByIndex(
         uint8 quorumNumber,
         uint256 index
-    ) external view returns (StrategyAndWeightingMultiplier memory) {}
+    ) external view returns (StrategyParams memory) {}
 
     /**
      * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
@@ -99,25 +99,25 @@ contract StakeRegistryMock is IStakeRegistry {
      * @param operatorId The id of the operator of interest.
      * @param quorumNumber The quorum number to get the stake for.
      */
-    function getOperatorIdToStakeHistory(bytes32 operatorId, uint8 quorumNumber) external view returns (OperatorStakeUpdate[] memory) {}
+    function getOperatorStakeHistory(bytes32 operatorId, uint8 quorumNumber) external view returns (OperatorStakeUpdate[] memory) {}
 
-    function getLengthOfTotalStakeHistoryForQuorum(uint8 quorumNumber) external view returns (uint256) {}
+    function getTotalStakeHistoryLength(uint8 quorumNumber) external view returns (uint256) {}
 
     /**
      * @notice Returns the `index`-th entry in the dynamic array of total stake, `totalStakeHistory` for quorum `quorumNumber`.
      * @param quorumNumber The quorum number to get the stake for.
      * @param index Array index for lookup, within the dynamic array `totalStakeHistory[quorumNumber]`.
      */
-    function getTotalStakeUpdateForQuorumFromIndex(uint8 quorumNumber, uint256 index) external view returns (OperatorStakeUpdate memory) {}
+    function getTotalStakeUpdateAtIndex(uint8 quorumNumber, uint256 index) external view returns (OperatorStakeUpdate memory) {}
 
     /// @notice Returns the indices of the operator stakes for the provided `quorumNumber` at the given `blockNumber`
-    function getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber)
+    function getStakeUpdateIndexForOperatorAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber)
         external
         view
         returns (uint32) {}
 
     /// @notice Returns the indices of the total stakes for the provided `quorumNumbers` at the given `blockNumber`
-    function getTotalStakeIndicesByQuorumNumbersAtBlockNumber(uint32 blockNumber, bytes calldata quorumNumbers) external view returns(uint32[] memory) {}
+    function getTotalStakeIndicesAtBlockNumber(uint32 blockNumber, bytes calldata quorumNumbers) external view returns(uint32[] memory) {}
 
     /**
      * @notice Returns the `index`-th entry in the `operatorIdToStakeHistory[operatorId][quorumNumber]` array.
@@ -126,7 +126,7 @@ contract StakeRegistryMock is IStakeRegistry {
      * @param index Array index for lookup, within the dynamic array `operatorIdToStakeHistory[operatorId][quorumNumber]`.
      * @dev Function will revert if `index` is out-of-bounds.
      */
-    function getStakeUpdateForQuorumFromOperatorIdAndIndex(uint8 quorumNumber, bytes32 operatorId, uint256 index)
+    function getStakeUpdateForOperatorAtIndex(uint8 quorumNumber, bytes32 operatorId, uint256 index)
         external
         view
         returns (OperatorStakeUpdate memory) {}
@@ -148,7 +148,7 @@ contract StakeRegistryMock is IStakeRegistry {
      * @dev Function will revert if `index` is out-of-bounds.
      * @dev used the BLSSignatureChecker to get past stakes of signing operators
      */
-    function getStakeForQuorumAtBlockNumberFromOperatorIdAndIndex(uint8 quorumNumber, uint32 blockNumber, bytes32 operatorId, uint256 index)
+    function getOperatorStakeAtBlockNumberAndIndex(uint8 quorumNumber, uint32 blockNumber, bytes32 operatorId, uint256 index)
         external
         view
         returns (uint96) {}
@@ -172,7 +172,7 @@ contract StakeRegistryMock is IStakeRegistry {
     function getCurrentOperatorStakeForQuorum(bytes32 operatorId, uint8 quorumNumber) external view returns (uint96) {}
 
     /// @notice Returns the stake of the operator for the provided `quorumNumber` at the given `blockNumber`
-    function getStakeForOperatorIdForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber)
+    function getOperatorStakeAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber)
         external
         view
         returns (uint96){}
