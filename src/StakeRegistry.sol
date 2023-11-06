@@ -207,7 +207,7 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
             // Check that number of operators matches quorum total
             require(
                 currQuorumOperators.length == indexRegistry.totalOperatorsForQuorum(quorumNumber),
-                "StakeRegistry.updateStakesAllOperators: number of updated operators doesn't match quorum total"
+                "StakeRegistry.updateStakesAllOperators: number of updated operators does not match quorum total"
             );
 
             bytes32 prevOperatorId = bytes32(0);
