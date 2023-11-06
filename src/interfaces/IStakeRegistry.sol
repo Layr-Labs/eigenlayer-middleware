@@ -1,20 +1,17 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
+import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+
 import {IRegistry} from "./IRegistry.sol";
+import {IServiceManager} from "./IServiceManager.sol";
 
 /**
  * @title Interface for a `Registry` that keeps track of stakes of operators for up to 256 quorums.
  * @author Layr Labs, Inc.
  */
 interface IStakeRegistry is IRegistry {
-    // EVENTS
-    /// @notice emitted whenever the stake of `operator` is updated
-    event StakeUpdate(
-        bytes32 indexed operatorId,
-        uint8 quorumNumber,
-        uint96 stake
-    );
     
     // DATA STRUCTURES
 
@@ -29,8 +26,33 @@ interface IStakeRegistry is IRegistry {
         uint96 stake;
     }
 
+    /**
+     * @notice In weighing a particular strategy, the amount of underlying asset for that strategy is
+     * multiplied by its multiplier, then divided by WEIGHTING_DIVISOR
+     */
+    struct StrategyParams {
+        IStrategy strategy;
+        uint96 multiplier;
+    }
+
     // EVENTS
+
+    /// @notice emitted whenever the stake of `operator` is updated
+    event StakeUpdate(
+        bytes32 indexed operatorId,
+        uint8 quorumNumber,
+        uint96 stake
+    );
+    /// @notice emitted when the minimum stake for a quorum is updated
     event MinimumStakeForQuorumUpdated(uint8 indexed quorumNumber, uint96 minimumStake);
+    /// @notice emitted when a new quorum is created
+    event QuorumCreated(uint8 indexed quorumNumber);
+    /// @notice emitted when `strategy` has been added to the array at `strategyParams[quorumNumber]`
+    event StrategyAddedToQuorum(uint8 indexed quorumNumber, IStrategy strategy);
+    /// @notice emitted when `strategy` has removed from the array at `strategyParams[quorumNumber]`
+    event StrategyRemovedFromQuorum(uint8 indexed quorumNumber, IStrategy strategy);
+    /// @notice emitted when `strategy` has its `multiplier` updated in the array at `strategyParams[quorumNumber]`
+    event StrategyMultiplierUpdated(uint8 indexed quorumNumber, IStrategy strategy, uint256 multiplier);
 
     /**
      * @notice Registers the `operator` with `operatorId` for the specified `quorumNumbers`.
@@ -60,33 +82,89 @@ interface IStakeRegistry is IRegistry {
      */
     function deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) external;
 
+    /**
+     * @notice Initialize a new quorum created by the registry coordinator by setting strategies, weights, and minimum stake
+     */
+    function initializeQuorum(uint8 quorumNumber, uint96 minimumStake, StrategyParams[] memory strategyParams) external;
+
+    /// @notice Adds new strategies and the associated multipliers to the @param quorumNumber.
+    function addStrategies(
+        uint8 quorumNumber,
+        StrategyParams[] memory strategyParams
+    ) external;
+
+    /**
+     * @notice This function is used for removing strategies and their associated weights from the
+     * mapping strategyParams for a specific @param quorumNumber.
+     * @dev higher indices should be *first* in the list of @param indicesToRemove, since otherwise
+     * the removal of lower index entries will cause a shift in the indices of the other strategiesToRemove
+     */
+    function removeStrategies(uint8 quorumNumber, uint256[] calldata indicesToRemove) external;
+
+    /**
+     * @notice This function is used for modifying the weights of strategies that are already in the
+     * mapping strategyParams for a specific
+     * @param quorumNumber is the quorum number to change the strategy for
+     * @param strategyIndices are the indices of the strategies to change
+     * @param newMultipliers are the new multipliers for the strategies
+     */
+    function modifyStrategyParams(
+        uint8 quorumNumber,
+        uint256[] calldata strategyIndices,
+        uint96[] calldata newMultipliers
+    ) external;
+
+    /// @notice Constant used as a divisor in calculating weights.
+    function WEIGHTING_DIVISOR() external pure returns (uint256);
+
+    /// @notice Returns the EigenLayer delegation manager contract.
+    function delegation() external view returns (IDelegationManager);
+
+    /// @notice Returns the AVS service manager contract.
+    function serviceManager() external view returns (IServiceManager);
+
     /// @notice In order to register for a quorum i, an operator must have at least `minimumStakeForQuorum[i]`
     function minimumStakeForQuorum(uint256 quorumNumber) external view returns (uint96);
+
+    /// @notice Returns the length of the dynamic array stored in `strategyParams[quorumNumber]`.
+    function strategyParamsLength(uint8 quorumNumber) external view returns (uint256);
+
+    /// @notice Returns the strategy and weight multiplier for the `index`'th strategy in the quorum `quorumNumber`
+    function strategyParamsByIndex(
+        uint8 quorumNumber,
+        uint256 index
+    ) external view returns (StrategyParams memory);
+
+    /**
+     * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
+     * @dev reverts in the case that `quorumNumber` is greater than or equal to `quorumCount`
+     */
+    function weightOfOperatorForQuorum(uint8 quorumNumber, address operator) external view returns (uint96);
 
     /**
      * @notice Returns the entire `operatorIdToStakeHistory[operatorId][quorumNumber]` array.
      * @param operatorId The id of the operator of interest.
      * @param quorumNumber The quorum number to get the stake for.
      */
-    function getOperatorIdToStakeHistory(bytes32 operatorId, uint8 quorumNumber) external view returns (OperatorStakeUpdate[] memory);
+    function getOperatorStakeHistory(bytes32 operatorId, uint8 quorumNumber) external view returns (OperatorStakeUpdate[] memory);
 
-    function getLengthOfTotalStakeHistoryForQuorum(uint8 quorumNumber) external view returns (uint256);
+    function getTotalStakeHistoryLength(uint8 quorumNumber) external view returns (uint256);
 
     /**
      * @notice Returns the `index`-th entry in the dynamic array of total stake, `totalStakeHistory` for quorum `quorumNumber`.
      * @param quorumNumber The quorum number to get the stake for.
      * @param index Array index for lookup, within the dynamic array `totalStakeHistory[quorumNumber]`.
      */
-    function getTotalStakeUpdateForQuorumFromIndex(uint8 quorumNumber, uint256 index) external view returns (OperatorStakeUpdate memory);
+    function getTotalStakeUpdateAtIndex(uint8 quorumNumber, uint256 index) external view returns (OperatorStakeUpdate memory);
 
     /// @notice Returns the indices of the operator stakes for the provided `quorumNumber` at the given `blockNumber`
-    function getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber)
+    function getStakeUpdateIndexForOperatorAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber)
         external
         view
         returns (uint32);
 
     /// @notice Returns the indices of the total stakes for the provided `quorumNumbers` at the given `blockNumber`
-    function getTotalStakeIndicesByQuorumNumbersAtBlockNumber(uint32 blockNumber, bytes calldata quorumNumbers) external view returns(uint32[] memory) ;
+    function getTotalStakeIndicesAtBlockNumber(uint32 blockNumber, bytes calldata quorumNumbers) external view returns(uint32[] memory) ;
 
     /**
      * @notice Returns the `index`-th entry in the `operatorIdToStakeHistory[operatorId][quorumNumber]` array.
@@ -95,7 +173,7 @@ interface IStakeRegistry is IRegistry {
      * @param index Array index for lookup, within the dynamic array `operatorIdToStakeHistory[operatorId][quorumNumber]`.
      * @dev Function will revert if `index` is out-of-bounds.
      */
-    function getStakeUpdateForQuorumFromOperatorIdAndIndex(uint8 quorumNumber, bytes32 operatorId, uint256 index)
+    function getStakeUpdateForOperatorAtIndex(uint8 quorumNumber, bytes32 operatorId, uint256 index)
         external
         view
         returns (OperatorStakeUpdate memory);
@@ -117,7 +195,7 @@ interface IStakeRegistry is IRegistry {
      * @dev Function will revert if `index` is out-of-bounds.
      * @dev used the BLSSignatureChecker to get past stakes of signing operators
      */
-    function getStakeForQuorumAtBlockNumberFromOperatorIdAndIndex(uint8 quorumNumber, uint32 blockNumber, bytes32 operatorId, uint256 index)
+    function getOperatorStakeAtBlockNumberAndIndex(uint8 quorumNumber, uint32 blockNumber, bytes32 operatorId, uint256 index)
         external
         view
         returns (uint96);
@@ -141,7 +219,7 @@ interface IStakeRegistry is IRegistry {
     function getCurrentOperatorStakeForQuorum(bytes32 operatorId, uint8 quorumNumber) external view returns (uint96);
 
     /// @notice Returns the stake of the operator for the provided `quorumNumber` at the given `blockNumber`
-    function getStakeForOperatorIdForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber)
+    function getOperatorStakeAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber)
         external
         view
         returns (uint96);

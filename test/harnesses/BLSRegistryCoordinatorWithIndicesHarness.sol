@@ -14,17 +14,21 @@ contract BLSRegistryCoordinatorWithIndicesHarness is BLSRegistryCoordinatorWithI
     ) BLSRegistryCoordinatorWithIndices(_slasher, _serviceManager, _stakeRegistry, _blsPubkeyRegistry, _indexRegistry) {
     }
 
+    function setQuorumCount(uint8 count) external {
+        quorumCount = count;
+    }
+
     function setOperatorId(address operator, bytes32 operatorId) external {
-        _operators[operator].operatorId = operatorId;
+        _operatorInfo[operator].operatorId = operatorId;
     }
 
     function recordOperatorQuorumBitmapUpdate(bytes32 operatorId, uint192 quorumBitmap) external {
-        uint256 operatorQuorumBitmapHistoryLength = _operatorIdToQuorumBitmapHistory[operatorId].length;
+        uint256 operatorQuorumBitmapHistoryLength = _operatorBitmapHistory[operatorId].length;
         if (operatorQuorumBitmapHistoryLength != 0) {
-            _operatorIdToQuorumBitmapHistory[operatorId][operatorQuorumBitmapHistoryLength - 1].nextUpdateBlockNumber = uint32(block.number);
+            _operatorBitmapHistory[operatorId][operatorQuorumBitmapHistoryLength - 1].nextUpdateBlockNumber = uint32(block.number);
         }
 
-        _operatorIdToQuorumBitmapHistory[operatorId].push(QuorumBitmapUpdate({
+        _operatorBitmapHistory[operatorId].push(QuorumBitmapUpdate({
             updateBlockNumber: uint32(block.number),
             nextUpdateBlockNumber: 0,
             quorumBitmap: quorumBitmap

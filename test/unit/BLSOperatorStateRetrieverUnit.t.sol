@@ -47,7 +47,7 @@ contract BLSOperatorStateRetrieverUnitTests is MockAVSDeployer {
         cheats.roll(deregistrationBlockNumber);
 
         cheats.prank(_incrementAddress(defaultOperator, operatorIndexToDeregister));
-        registryCoordinator.deregisterOperatorWithCoordinator(quorumNumbersToDeregister, operatorMetadatas[operatorIndexToDeregister].pubkey);
+        registryCoordinator.deregisterOperator(quorumNumbersToDeregister);
         // modify expectedOperatorOverallIndices by moving th operatorIdsToSwap to the index where the operatorIndexToDeregister was
         for (uint i = 0; i < quorumNumbersToDeregister.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbersToDeregister[i]);
@@ -108,8 +108,8 @@ contract BLSOperatorStateRetrieverUnitTests is MockAVSDeployer {
         // assert the indices are the number of registered operators for the quorum minus 1
         for (uint8 i = 0; i < allInclusiveQuorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(allInclusiveQuorumNumbers[i]);
-            assertEq(checkSignaturesIndices.quorumApkIndices[i], expectedOperatorOverallIndices[quorumNumber].length - 1, "quorumApkIndex should be the number of registered operators for the quorum minus 1");
-            assertEq(checkSignaturesIndices.totalStakeIndices[i], expectedOperatorOverallIndices[quorumNumber].length - 1, "totalStakeIndex should be the number of registered operators for the quorum minus 1");
+            assertEq(checkSignaturesIndices.quorumApkIndices[i], expectedOperatorOverallIndices[quorumNumber].length, "quorumApkIndex should be the number of registered operators for the quorum");
+            assertEq(checkSignaturesIndices.totalStakeIndices[i], expectedOperatorOverallIndices[quorumNumber].length, "totalStakeIndex should be the number of registered operators for the quorum");
         }
     }
 
@@ -151,8 +151,8 @@ contract BLSOperatorStateRetrieverUnitTests is MockAVSDeployer {
         // assert the indices are the number of registered operators for the quorum minus 1
         for (uint8 i = 0; i < allInclusiveQuorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(allInclusiveQuorumNumbers[i]);
-            assertEq(checkSignaturesIndices.quorumApkIndices[i], expectedOperatorOverallIndices[quorumNumber].length - 1, "quorumApkIndex should be the number of registered operators for the quorum minus 1");
-            assertEq(checkSignaturesIndices.totalStakeIndices[i], expectedOperatorOverallIndices[quorumNumber].length - 1, "totalStakeIndex should be the number of registered operators for the quorum minus 1");
+            assertEq(checkSignaturesIndices.quorumApkIndices[i], expectedOperatorOverallIndices[quorumNumber].length, "quorumApkIndex should be the number of registered operators for the quorum");
+            assertEq(checkSignaturesIndices.totalStakeIndices[i], expectedOperatorOverallIndices[quorumNumber].length, "totalStakeIndex should be the number of registered operators for the quorum");
         }
 
         // assert the quorum bitmap and stake indices are zero because there have been no kicks or stake updates

@@ -29,12 +29,11 @@ interface IBLSRegistryCoordinatorWithIndices is ISignatureUtils, IRegistryCoordi
 
     /**
      * @notice Data structure for the parameters needed to kick an operator from a quorum with number `quorumNumber`, used during registration churn.
-     * Specifically the `operator` is the address of the operator to kick, `pubkey` is the BLS public key of the operator,
+     * `operator` is the address of the operator to kick
      */
     struct OperatorKickParam {
         uint8 quorumNumber;
         address operator;
-        BN254.G1Point pubkey; 
     }
 
     // EVENTS
@@ -58,11 +57,9 @@ interface IBLSRegistryCoordinatorWithIndices is ISignatureUtils, IRegistryCoordi
      * @notice Ejects the provided operator from the provided quorums from the AVS
      * @param operator is the operator to eject
      * @param quorumNumbers are the quorum numbers to eject the operator from
-     * @param pubkey is the BLS public key of the operator
      */
-    function ejectOperatorFromCoordinator(
+    function ejectOperator(
         address operator, 
-        bytes calldata quorumNumbers, 
-        BN254.G1Point memory pubkey 
+        bytes calldata quorumNumbers
     ) external;
 }

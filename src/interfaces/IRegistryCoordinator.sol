@@ -45,6 +45,9 @@ interface IRegistryCoordinator {
         uint192 quorumBitmap;
     }
 
+    /// @notice Returns the number of quorums the registry coordinator has created
+    function quorumCount() external view returns (uint8);
+
     /// @notice Returns the operator struct for the given `operator`
     function getOperator(address operator) external view returns (Operator memory);
 
@@ -58,40 +61,26 @@ interface IRegistryCoordinator {
     function getOperatorStatus(address operator) external view returns (IRegistryCoordinator.OperatorStatus);
 
     /// @notice Returns the indices of the quorumBitmaps for the provided `operatorIds` at the given `blockNumber`
-    function getQuorumBitmapIndicesByOperatorIdsAtBlockNumber(uint32 blockNumber, bytes32[] memory operatorIds) external view returns (uint32[] memory);
+    function getQuorumBitmapIndicesAtBlockNumber(uint32 blockNumber, bytes32[] memory operatorIds) external view returns (uint32[] memory);
 
     /**
      * @notice Returns the quorum bitmap for the given `operatorId` at the given `blockNumber` via the `index`
      * @dev reverts if `index` is incorrect 
      */ 
-    function getQuorumBitmapByOperatorIdAtBlockNumberByIndex(bytes32 operatorId, uint32 blockNumber, uint256 index) external view returns (uint192);
+    function getQuorumBitmapAtBlockNumberByIndex(bytes32 operatorId, uint32 blockNumber, uint256 index) external view returns (uint192);
 
     /// @notice Returns the `index`th entry in the operator with `operatorId`'s bitmap history
-    function getQuorumBitmapUpdateByOperatorIdByIndex(bytes32 operatorId, uint256 index) external view returns (QuorumBitmapUpdate memory);
+    function getQuorumBitmapUpdateByIndex(bytes32 operatorId, uint256 index) external view returns (QuorumBitmapUpdate memory);
 
     /// @notice Returns the current quorum bitmap for the given `operatorId`
-    function getCurrentQuorumBitmapByOperatorId(bytes32 operatorId) external view returns (uint192);
+    function getCurrentQuorumBitmap(bytes32 operatorId) external view returns (uint192);
 
     /// @notice Returns the length of the quorum bitmap history for the given `operatorId`
-    function getQuorumBitmapUpdateByOperatorIdLength(bytes32 operatorId) external view returns (uint256);
+    function getQuorumBitmapHistoryLength(bytes32 operatorId) external view returns (uint256);
 
     /// @notice Returns the registry at the desired index
     function registries(uint256) external view returns (address);
 
     /// @notice Returns the number of registries
     function numRegistries() external view returns (uint256);
-
-    /**
-     * @notice Registers msg.sender as an operator with the middleware
-     * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
-     * @param registrationData is the data that is decoded to get the operator's registration information
-     */
-    function registerOperatorWithCoordinator(bytes memory quorumNumbers, bytes calldata registrationData) external;
-
-    /**
-     * @notice Deregisters the msg.sender as an operator from the middleware
-     * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registered for
-     * @param deregistrationData is the the data that is decoded to get the operator's deregistration information
-     */
-    function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, bytes calldata deregistrationData) external;
 }

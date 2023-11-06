@@ -10,7 +10,6 @@ import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import {StakeRegistry} from "src/StakeRegistry.sol";
-import {IVoteWeigher} from "src/interfaces/IVoteWeigher.sol";
 
 import {IETHPOSDeposit} from "eigenlayer-contracts/src/contracts/interfaces/IETHPOSDeposit.sol";
 import {IBeaconChainOracle} from "eigenlayer-contracts/src/contracts/interfaces/IBeaconChainOracle.sol";

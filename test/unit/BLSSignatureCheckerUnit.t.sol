@@ -88,7 +88,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         // set the nonSignerQuorumBitmapIndices to a different value
         nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices[0] = 1;
 
-        cheats.expectRevert("BLSRegistryCoordinatorWithIndices.getQuorumBitmapByOperatorIdAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber");
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber");
         blsSignatureChecker.checkSignatures(
             msgHash, 
             quorumNumbers,
@@ -161,7 +161,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         // set the quorumApkIndices to a different value
         nonSignerStakesAndSignature.quorumApkIndices[0] = 0;
 
-        cheats.expectRevert("BLSPubkeyRegistry._validateApkHashForQuorumAtBlockNumber: not latest apk update");
+        cheats.expectRevert("BLSPubkeyRegistry._validateApkHashAtBlockNumber: not latest apk update");
         blsSignatureChecker.checkSignatures(
             msgHash, 
             quorumNumbers,
