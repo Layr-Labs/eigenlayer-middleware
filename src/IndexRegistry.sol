@@ -253,10 +253,6 @@ contract IndexRegistry is IndexRegistryStorage {
     ) internal view returns (uint32){
         uint256 historyLength = _operatorCountHistory[quorumNumber].length;
         require(historyLength != 0, "IndexRegistry._operatorCountAtBlockNumber: quorum does not exist");
-        require(
-            blockNumber >= _operatorCountHistory[quorumNumber][0].fromBlockNumber, 
-            "IndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number"
-        );
 
         // Loop backwards through the total operator history
         for (uint256 i = 0; i < historyLength; i++) {
@@ -268,7 +264,6 @@ contract IndexRegistry is IndexRegistryStorage {
             }
         }
         
-        // Shouldn't be able to reach this point
         revert("IndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number");
     }
     
@@ -277,8 +272,8 @@ contract IndexRegistry is IndexRegistryStorage {
      * Precondition: requires that the index was used active at the given block number for quorum
      */
     function _operatorIdForIndexAtBlockNumber(
-        uint32 index, 
         uint8 quorumNumber, 
+        uint32 index, 
         uint32 blockNumber
     ) internal view returns(bytes32) {
         uint256 historyLength = _indexHistory[quorumNumber][index].length;
@@ -302,7 +297,7 @@ contract IndexRegistry is IndexRegistryStorage {
     *******************************************************************************/
 
     /// @notice Returns the _indexHistory entry for the specified `operatorIndex` and `quorumNumber` at the specified `index`
-    function getOperatorUpdateAtIndex(uint32 operatorIndex, uint8 quorumNumber, uint32 index) external view returns (OperatorUpdate memory) {
+    function getOperatorUpdateAtIndex(uint8 quorumNumber, uint32 operatorIndex, uint32 index) external view returns (OperatorUpdate memory) {
         return _indexHistory[quorumNumber][operatorIndex][index];
     }
 
@@ -331,7 +326,7 @@ contract IndexRegistry is IndexRegistryStorage {
         uint32 operatorCount = _operatorCountAtBlockNumber(quorumNumber, blockNumber);
         bytes32[] memory operatorList = new bytes32[](operatorCount);
         for (uint256 i = 0; i < operatorCount; i++) {
-            operatorList[i] = _operatorIdForIndexAtBlockNumber(uint32(i), quorumNumber, blockNumber);
+            operatorList[i] = _operatorIdForIndexAtBlockNumber(quorumNumber, uint32(i), blockNumber);
             require(
                 operatorList[i] != OPERATOR_DOES_NOT_EXIST_ID, 
                 "IndexRegistry.getOperatorListAtBlockNumber: operator does not exist at the given block number"

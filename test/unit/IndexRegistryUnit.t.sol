@@ -74,7 +74,7 @@ contract IndexRegistryUnitTests is Test {
 
         // Check _operatorIdToIndexHistory updates
         IIndexRegistry.OperatorUpdate memory operatorUpdate = indexRegistry
-            .getOperatorUpdateAtIndex({operatorIndex: 0, quorumNumber: defaultQuorumNumber, index: 0});
+            .getOperatorUpdateAtIndex({quorumNumber: defaultQuorumNumber, operatorIndex: 0, index: 0});
         require(operatorUpdate.operatorId == operatorId1, "IndexRegistry.registerOperator: operatorId not operatorId1");
         require(
             operatorUpdate.fromBlockNumber == block.number,
@@ -120,7 +120,7 @@ contract IndexRegistryUnitTests is Test {
 
         // Check _operatorIdToIndexHistory updates
         IIndexRegistry.OperatorUpdate memory operatorUpdate = indexRegistry
-            .getOperatorUpdateAtIndex({operatorIndex: 0, quorumNumber: defaultQuorumNumber + 1, index: 0});
+            .getOperatorUpdateAtIndex({quorumNumber: defaultQuorumNumber + 1, operatorIndex: 0, index: 0});
         require(operatorUpdate.operatorId == operatorId1, "IndexRegistry.registerOperator: operatorId not operatorId1");
         require(
             operatorUpdate.fromBlockNumber == block.number,
@@ -163,7 +163,7 @@ contract IndexRegistryUnitTests is Test {
 
         // Check _operatorIdToIndexHistory updates for quorum 1
         IIndexRegistry.OperatorUpdate memory operatorUpdate = indexRegistry
-            .getOperatorUpdateAtIndex({operatorIndex: 0, quorumNumber: defaultQuorumNumber, index: 0});
+            .getOperatorUpdateAtIndex({quorumNumber: defaultQuorumNumber, operatorIndex: 0, index: 0});
         require(operatorUpdate.operatorId == operatorId1, "IndexRegistry.registerOperator: operatorId not 1operatorId1");
         require(
             operatorUpdate.fromBlockNumber == block.number,
@@ -187,7 +187,7 @@ contract IndexRegistryUnitTests is Test {
         );
 
         // Check _operatorIdToIndexHistory updates for quorum 2
-        operatorUpdate = indexRegistry.getOperatorUpdateAtIndex({operatorIndex: 0 , quorumNumber: defaultQuorumNumber + 1, index: 0});
+        operatorUpdate = indexRegistry.getOperatorUpdateAtIndex({quorumNumber: defaultQuorumNumber + 1, operatorIndex: 0, index: 0});
         require(operatorUpdate.operatorId == operatorId1, "IndexRegistry.registerOperator: operatorId not operatorId1");
         require(
             operatorUpdate.fromBlockNumber == block.number,
