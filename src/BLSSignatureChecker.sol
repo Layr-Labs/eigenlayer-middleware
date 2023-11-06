@@ -74,7 +74,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         for (uint i = 0; i < quorumNumbers.length; i++) {
             require(
                 bytes24(nonSignerStakesAndSignature.quorumApks[i].hashG1Point()) == 
-                    IBLSPubkeyRegistry(blsPubkeyRegistry).getApkHashForQuorumAtBlockNumberFromIndex(
+                    IBLSPubkeyRegistry(blsPubkeyRegistry).getApkHashAtBlockNumberAndIndex(
                         uint8(quorumNumbers[i]), 
                         referenceBlockNumber, 
                         nonSignerStakesAndSignature.quorumApkIndices[i]

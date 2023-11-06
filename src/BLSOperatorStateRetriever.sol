@@ -149,7 +149,7 @@ contract BLSOperatorStateRetriever {
 
         IBLSPubkeyRegistry blsPubkeyRegistry = registryCoordinator.blsPubkeyRegistry();
         // get the indices of the quorum apks for each of the provided quorums at the given blocknumber
-        checkSignaturesIndices.quorumApkIndices = blsPubkeyRegistry.getApkIndicesForQuorumsAtBlockNumber(quorumNumbers, referenceBlockNumber);
+        checkSignaturesIndices.quorumApkIndices = blsPubkeyRegistry.getApkIndicesAtBlockNumber(quorumNumbers, referenceBlockNumber);
 
         return checkSignaturesIndices;
     }
