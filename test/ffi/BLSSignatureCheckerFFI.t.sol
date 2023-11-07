@@ -4,9 +4,9 @@ pragma solidity =0.8.12;
 import {G2Operations} from "test/ffi/util/G2Operations.sol";
 import {MockAVSDeployer} from "test/utils/MockAVSDeployer.sol";
 import {BLSSignatureChecker} from "src/BLSSignatureChecker.sol";
-import {BN254} from "eigenlayer-contracts/src/contracts/libraries/BN254.sol";
 import {BLSOperatorStateRetriever} from "src/BLSOperatorStateRetriever.sol";
-import {BitmapUtils} from "eigenlayer-contracts/src/contracts/libraries/BitmapUtils.sol";
+import {BN254} from "src/libraries/BN254.sol";
+import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
 
 
 contract BLSSignatureCheckerFFITests is MockAVSDeployer, G2Operations {

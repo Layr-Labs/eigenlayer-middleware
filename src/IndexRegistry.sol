@@ -2,7 +2,6 @@
 pragma solidity =0.8.12;
 
 import "src/IndexRegistryStorage.sol";
-import "eigenlayer-contracts/src/contracts/libraries/BN254.sol";
 
 /**
  * @title A `Registry` that keeps track of an ordered list of operators for each quorum
