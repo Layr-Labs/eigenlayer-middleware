@@ -18,10 +18,6 @@ contract StakeRegistryHarness is StakeRegistry {
         return _recordOperatorStakeUpdate(operatorId, quorumNumber, newStake);
     }
 
-    function updateOperatorStake(address operator, bytes32 operatorId, uint8 quorumNumber) external returns (int256, bool) {
-        return _updateOperatorStake(operator, operatorId, quorumNumber);
-    }
-
     function recordTotalStakeUpdate(uint8 quorumNumber, int256 stakeDelta) external {
         _recordTotalStakeUpdate(quorumNumber, stakeDelta);
     }
@@ -31,8 +27,8 @@ contract StakeRegistryHarness is StakeRegistry {
         return __weightOfOperatorForQuorum[quorumNumber][operator];
     }
 
-    function _weightOfOperatorForQuorum(uint8 quorumNumber, address operator) internal override view returns(uint96) {
-        return __weightOfOperatorForQuorum[quorumNumber][operator];
+    function _weightOfOperatorForQuorum(uint8 quorumNumber, address operator) internal override view returns(uint96, bool) {
+        return (__weightOfOperatorForQuorum[quorumNumber][operator], true);
     }
 
     // mocked function so we can set this arbitrarily without having to mock other elements
@@ -42,33 +38,34 @@ contract StakeRegistryHarness is StakeRegistry {
 
     // mocked function to register an operator without having to mock other elements
     // This is just a copy/paste from `registerOperator`, since that no longer uses an internal method
-    function registerOperatorNonCoordinator(address operator, bytes32 operatorId, bytes calldata quorumNumbers) external {
-        for (uint256 i = 0; i < quorumNumbers.length; ) {            
+    function registerOperatorNonCoordinator(address operator, bytes32 operatorId, bytes calldata quorumNumbers) external returns (uint96[] memory, uint96[] memory) {
+        uint96[] memory currentStakes = new uint96[](quorumNumbers.length);
+        uint96[] memory totalStakes = new uint96[](quorumNumbers.length);
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {            
             
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            require(_totalStakeHistory[quorumNumber].length != 0, "StakeRegistry.registerOperator: quorum does not exist");
-            
-            /**
-             * Update the operator's stake for the quorum and retrieve their current stake
-             * as well as the change in stake.
-             * - If this method returns `hasMinimumStake == false`, the operator has not met 
-             *   the minimum stake requirement for this quorum
-             */
-            (int256 stakeDelta, bool hasMinimumStake) = _updateOperatorStake({
-                operator: operator, 
-                operatorId: operatorId, 
-                quorumNumber: quorumNumber
-            });
+            require(_quorumExists(quorumNumber), "StakeRegistry.registerOperator: quorum does not exist");
+
+            // Retrieve the operator's current weighted stake for the quorum, reverting if they have not met
+            // the minimum.
+            (uint96 currentStake, bool hasMinimumStake) = _weightOfOperatorForQuorum(quorumNumber, operator);
             require(
                 hasMinimumStake,
                 "StakeRegistry.registerOperator: Operator does not meet minimum stake requirement for quorum"
             );
 
-            // Update this quorum's total stake
-            _recordTotalStakeUpdate(quorumNumber, stakeDelta);
-            unchecked {
-                ++i;
-            }
+            // Update the operator's stake
+            int256 stakeDelta = _recordOperatorStakeUpdate({
+                operatorId: operatorId, 
+                quorumNumber: quorumNumber,
+                newStake: currentStake
+            });
+
+            // Update this quorum's total stake by applying the operator's delta
+            currentStakes[i] = currentStake;
+            totalStakes[i] = _recordTotalStakeUpdate(quorumNumber, stakeDelta);
         }
+
+        return (currentStakes, totalStakes);
     }
 }

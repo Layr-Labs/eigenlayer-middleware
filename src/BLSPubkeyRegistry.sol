@@ -44,14 +44,14 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
         bytes memory quorumNumbers
     ) public virtual onlyRegistryCoordinator returns (bytes32) {
         // Get the operator's pubkey from the compendium. Reverts if they have not registered a key
-        BN254.G1Point memory pubkey = pubkeyCompendium.getRegisteredPubkey(operator);
+        (BN254.G1Point memory pubkey, bytes32 pubkeyHash) = pubkeyCompendium.getRegisteredPubkey(operator);
 
         // Update each quorum's aggregate pubkey
         _processQuorumApkUpdate(quorumNumbers, pubkey);
 
         // Return pubkeyHash, which will become the operator's unique id
         emit OperatorAddedToQuorums(operator, quorumNumbers);
-        return BN254.hashG1Point(pubkey);
+        return pubkeyHash;
     }
 
     /**
@@ -71,7 +71,7 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
         bytes memory quorumNumbers
     ) public virtual onlyRegistryCoordinator {
         // Get the operator's pubkey from the compendium. Reverts if they have not registered a key
-        BN254.G1Point memory pubkey = pubkeyCompendium.getRegisteredPubkey(operator);
+        (BN254.G1Point memory pubkey, ) = pubkeyCompendium.getRegisteredPubkey(operator);
 
         // Update each quorum's aggregate pubkey
         _processQuorumApkUpdate(quorumNumbers, pubkey.negate());

@@ -407,28 +407,46 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
             if (exceedsOperatorCapacity) {
                 require(performChurn, "BLSRegistryCoordinatorWithIndices._registerOperator: churn required for overfilled quorum");
                 
-                // Validate that we specified the right operator to kick
-                address operatorToKick = operatorKickParams[kickIndex].operator;
-                bytes32 idToKick = _operatorInfo[operatorToKick].operatorId;
-                require(idToRegister != idToKick, "BLSRegistryCoordinatorWithIndices._registerOperator: cannot churn self");
-                require(operatorKickParams[kickIndex].quorumNumber == quorumNumber, "BLSRegistryCoordinatorWithIndices._registerOperator: quorumNumber not the same as signed");
+                // Validate that `operatorToRegister` can replace the operator specified in the kick params
+                _validateChurn({
+                    quorumNumber: quorumNumber,
+                    totalQuorumStake: totalStakes[i],
+                    newOperator: operatorToRegister,
+                    newOperatorStake: registeredStakes[i],
+                    kickParams: operatorKickParams[i],
+                    setParams: operatorSetParams
+                });
 
-                // Get the target operator's stake and check that it is below the kick thresholds
-                uint96 operatorToKickStake = stakeRegistry.getCurrentOperatorStakeForQuorum(idToKick, quorumNumber);
-                require(
-                    registeredStakes[i] > _individualKickThreshold(operatorToKickStake, operatorSetParams),
-                    "BLSRegistryCoordinatorWithIndices._registerOperator: incoming operator has insufficient stake for churn"
-                );
-                require(
-                    operatorToKickStake < _totalKickThreshold(totalStakes[i], operatorSetParams),
-                    "BLSRegistryCoordinatorWithIndices._registerOperator: cannot kick operator with more than kickBIPsOfTotalStake"
-                );
-
-                // Deregister the operator
-                _deregisterOperator(operatorToKick, quorumNumbers[i:i+1]);
+                _deregisterOperator(operatorKickParams[i].operator, quorumNumbers[i:i+1]);
                 kickIndex++;
             }
         }
+    }
+
+    function _validateChurn(
+        uint8 quorumNumber, 
+        uint96 totalQuorumStake,
+        address newOperator, 
+        uint96 newOperatorStake,
+        OperatorKickParam memory kickParams, 
+        OperatorSetParam memory setParams
+    ) internal view {
+        address operatorToKick = kickParams.operator;
+        bytes32 idToKick = _operatorInfo[operatorToKick].operatorId;
+        require(_operatorInfo[operatorToKick].status == OperatorStatus.REGISTERED, "BLSRegistryCoordinatorWithIndices._validateChurn: cannot remove unregistered operator");
+        require(newOperator != operatorToKick, "BLSRegistryCoordinatorWithIndices._validateChurn: cannot churn self");
+        require(kickParams.quorumNumber == quorumNumber, "BLSRegistryCoordinatorWithIndices._validateChurn: quorumNumber not the same as signed");
+
+        // Get the target operator's stake and check that it is below the kick thresholds
+        uint96 operatorToKickStake = stakeRegistry.getCurrentOperatorStakeForQuorum(idToKick, quorumNumber);
+        require(
+            newOperatorStake > _individualKickThreshold(operatorToKickStake, setParams),
+            "BLSRegistryCoordinatorWithIndices._validateChurn: incoming operator has insufficient stake for churn"
+        );
+        require(
+            operatorToKickStake < _totalKickThreshold(totalQuorumStake, setParams),
+            "BLSRegistryCoordinatorWithIndices._validateChurn: cannot kick operator with more than kickBIPsOfTotalStake"
+        );
     }
 
     /**
@@ -438,7 +456,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
      */
     function _deregisterOperator(
         address operator, 
-        bytes calldata quorumNumbers
+        bytes memory quorumNumbers
     ) internal virtual {
         // Fetch the operator's info and ensure they are registered
         Operator storage operatorInfo = _operatorInfo[operator];
