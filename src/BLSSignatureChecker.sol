@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "src/interfaces/IBLSSignatureChecker.sol";
-import "eigenlayer-contracts/src/contracts/libraries/BitmapUtils.sol";
-import "eigenlayer-contracts/src/contracts/libraries/BN254.sol";
 import "src/interfaces/IRegistryCoordinator.sol";
 import "src/interfaces/IStakeRegistry.sol";
 import "src/interfaces/IBLSPubkeyRegistry.sol";
 import "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
+import "src/interfaces/IBLSSignatureChecker.sol";
+
+import "src/libraries/BitmapUtils.sol";
+import "src/libraries/BN254.sol";
 
 /**
  * @title Used for checking BLS aggregate signatures from the operators of a `BLSRegistry`.

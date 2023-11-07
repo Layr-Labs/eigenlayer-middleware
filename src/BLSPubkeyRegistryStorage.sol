@@ -4,7 +4,8 @@ pragma solidity =0.8.12;
 import "src/interfaces/IBLSPubkeyRegistry.sol";
 import "src/interfaces/IRegistryCoordinator.sol";
 import "src/interfaces/IBLSPublicKeyCompendium.sol";
-import "eigenlayer-contracts/src/contracts/libraries/BN254.sol";
+
+import "src/libraries/BN254.sol";
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
