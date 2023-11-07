@@ -151,7 +151,8 @@ contract EigenLayerDeploy is Script, Test {
 
         // START RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.startBroadcast();
-
+        console.log(address(this));
+        console.log(address(this).balance);
         // deploy proxy admin for ability to upgrade proxy contracts
         eigenLayerProxyAdmin = new ProxyAdmin();
 
