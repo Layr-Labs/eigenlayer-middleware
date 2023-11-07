@@ -47,18 +47,16 @@ contract BLSPublicKeyCompendiumMock is IBLSPublicKeyCompendium{
         operatorToPubkey[account] = pk;
     }
 
-    function getRegisteredPubkey(address operator) public view returns (BN254.G1Point memory) {
+    function getRegisteredPubkey(address operator) public view returns (BN254.G1Point memory, bytes32) {
         BN254.G1Point memory pubkey = operatorToPubkey[operator];
         bytes32 pubkeyHash = operatorToPubkeyHash[operator];
 
         require(
-            pubkeyHash != bytes32(0) && BN254.hashG1Point(pubkey) == pubkeyHash, 
+            pubkeyHash != bytes32(0),
             "BLSPublicKeyCompendium.getRegisteredPubkey: operator is not registered"
         );
-
-        require(pubkeyHash != ZERO_PK_HASH, "BLSPublicKeyCompendium.getRegisteredPubkey: invalid pubkey");
         
-        return pubkey;
+        return (pubkey, pubkeyHash);
     }
 
     function getMessageHash(address operator) external view returns (BN254.G1Point memory) {}

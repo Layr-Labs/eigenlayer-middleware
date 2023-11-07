@@ -59,6 +59,7 @@ interface IStakeRegistry is IRegistry {
      * @param operator The address of the operator to register.
      * @param operatorId The id of the operator to register.
      * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
+     * @return The operator's current stake for each quorum, and the total stake for each quorum
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
@@ -66,7 +67,11 @@ interface IStakeRegistry is IRegistry {
      *         3) `quorumNumbers` is ordered in ascending order
      *         4) the operator is not already registered
      */
-    function registerOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) external;
+    function registerOperator(
+        address operator, 
+        bytes32 operatorId, 
+        bytes memory quorumNumbers
+    ) external returns (uint96[] memory, uint96[] memory);
 
     /**
      * @notice Deregisters the operator with `operatorId` for the specified `quorumNumbers`.
@@ -231,8 +236,15 @@ interface IStakeRegistry is IRegistry {
     function getCurrentTotalStakeForQuorum(uint8 quorumNumber) external view returns (uint96);
 
     /**
-     * @notice Used for updating information on deposits of nodes.
-     * @param operators are the addresses of the operators whose stake information is getting updated
+     * @notice Called by the registry coordinator to update an operator's stake for one
+     * or more quorums.
+     *
+     * If the operator no longer has the minimum stake required for a quorum, they are
+     * added to the
      */
-    function updateStakes(address[] memory operators) external;
+    function updateOperatorStake(
+        address operator, 
+        bytes32 operatorId, 
+        bytes calldata quorumNumbers
+    ) external returns (uint192);
 }

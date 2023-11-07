@@ -52,6 +52,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param operator The address of the operator to register.
      * @param operatorId The id of the operator to register.
      * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
+     * @return The operator's current stake for each quorum, and the total stake for each quorum
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
@@ -63,9 +64,10 @@ contract StakeRegistry is StakeRegistryStorage {
         address operator,
         bytes32 operatorId,
         bytes calldata quorumNumbers
-    ) public virtual onlyRegistryCoordinator returns (uint96[] memory) {
+    ) public virtual onlyRegistryCoordinator returns (uint96[] memory, uint96[] memory) {
 
         uint96[] memory currentStakes = new uint96[](quorumNumbers.length);
+        uint96[] memory totalStakes = new uint96[](quorumNumbers.length);
         for (uint256 i = 0; i < quorumNumbers.length; i++) {            
             
             uint8 quorumNumber = uint8(quorumNumbers[i]);
@@ -78,7 +80,6 @@ contract StakeRegistry is StakeRegistryStorage {
                 hasMinimumStake,
                 "StakeRegistry.registerOperator: Operator does not meet minimum stake requirement for quorum"
             );
-            currentStakes[i] = currentStake;
 
             // Update the operator's stake
             int256 stakeDelta = _recordOperatorStakeUpdate({
@@ -88,10 +89,11 @@ contract StakeRegistry is StakeRegistryStorage {
             });
 
             // Update this quorum's total stake by applying the operator's delta
-            _recordTotalStakeUpdate(quorumNumber, stakeDelta);
+            currentStakes[i] = currentStake;
+            totalStakes[i] = _recordTotalStakeUpdate(quorumNumber, stakeDelta);
         }
 
-        return currentStakes;
+        return (currentStakes, totalStakes);
     }
 
     /**
@@ -134,33 +136,40 @@ contract StakeRegistry is StakeRegistryStorage {
         }
     }
 
+    /**
+     * @notice Called by the registry coordinator to update an operator's stake for one
+     * or more quorums.
+     *
+     * If the operator no longer has the minimum stake required for a quorum, they are
+     * added to the
+     */
     function updateOperatorStake(
         address operator, 
         bytes32 operatorId, 
-        bytes calldata currentQuorums
+        bytes calldata quorumNumbers
     ) external onlyRegistryCoordinator returns (uint192) {
-        uint192 deregisteredBitmap;
+        uint192 quorumsToRemove;
 
         /**
          * For each quorum, update the operator's stake and record the delta
          * in the quorum's total stake.
          *
          * If the operator no longer has the minimum stake required to be registered
-         * in the quorum, the quorum number is added to `deregisteredBitmap`, which
+         * in the quorum, the quorum number is added to `quorumsToRemove`, which
          * is returned to the registry coordinator.
          */
-        for (uint256 i = 0; i < currentQuorums.length; i++) {
-            uint8 quorumNumber = currentQuorums[i];
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
             require(_quorumExists(quorumNumber), "StakeRegistry.updateOperatorStake: quorum does not exist");
 
             // Fetch the operator's current stake, applying weighting parameters and checking
             // against the minimum stake requirements for the quorum.
             (uint96 stakeWeight, bool hasMinimumStake) = _weightOfOperatorForQuorum(quorumNumber, operator);
 
-            // If the operator no longer meets the minimum stake, deregister them from the quorum
+            // If the operator no longer meets the minimum stake, set their stake to zero and mark them for removal
             if (!hasMinimumStake) {
                 stakeWeight = 0;
-                deregisteredBitmap |= quorumNumber;
+                quorumsToRemove |= quorumNumber;
             }
 
             // Update the operator's stake and retrieve the delta
@@ -175,7 +184,7 @@ contract StakeRegistry is StakeRegistryStorage {
             _recordTotalStakeUpdate(quorumNumber, stakeDelta);
         }
 
-        return deregisteredBitmap;
+        return quorumsToRemove;
     }
 
     /// @notice Initialize a new quorum and push its first history update
@@ -346,15 +355,16 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     /// @notice Applies a delta to the total stake recorded for `quorumNumber`
-    function _recordTotalStakeUpdate(uint8 quorumNumber, int256 stakeDelta) internal {
-        // Return early if no update is needed
-        if (stakeDelta == 0) {
-            return;
-        }
-
+    /// @return Returns the new total stake for the quorum
+    function _recordTotalStakeUpdate(uint8 quorumNumber, int256 stakeDelta) internal returns (uint96) {
         // Get our last-recorded stake update
         uint256 historyLength = _totalStakeHistory[quorumNumber].length;
         OperatorStakeUpdate storage lastStakeUpdate = _totalStakeHistory[quorumNumber][historyLength - 1];
+
+        // Return early if no update is needed
+        if (stakeDelta == 0) {
+            return lastStakeUpdate.stake;
+        }
         
         // Calculate the new total stake by applying the delta to our previous stake
         uint96 newStake = _applyDelta(lastStakeUpdate.stake, stakeDelta);
@@ -373,6 +383,8 @@ contract StakeRegistry is StakeRegistryStorage {
                 stake: newStake
             }));
         }
+
+        return newStake;
     }
 
     /** 
