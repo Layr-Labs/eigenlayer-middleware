@@ -3,13 +3,15 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import "src/BLSSignatureChecker.sol";
+
+import "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
+import "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
+import "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
+
 import "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
 import "src/interfaces/IServiceManager.sol";
 
-import "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
-import "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
-import "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
+import "src/BLSSignatureChecker.sol";
 
 /**
  * @title Base implementation of `IServiceManager` interface, designed to be inherited from by more complex ServiceManagers.

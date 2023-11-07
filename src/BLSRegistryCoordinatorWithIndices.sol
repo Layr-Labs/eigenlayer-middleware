@@ -6,9 +6,7 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
 import "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
-import "eigenlayer-contracts/src/contracts/libraries/BN254.sol";
 import "eigenlayer-contracts/src/contracts/libraries/EIP1271SignatureUtils.sol";
-import "eigenlayer-contracts/src/contracts/libraries/BitmapUtils.sol";
 import "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
 
 import "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
@@ -18,6 +16,11 @@ import "src/interfaces/IBLSPubkeyRegistry.sol";
 import "src/interfaces/IStakeRegistry.sol";
 import "src/interfaces/IIndexRegistry.sol";
 import "src/interfaces/IRegistryCoordinator.sol";
+
+import "src/libraries/BitmapUtils.sol";
+import "src/libraries/BN254.sol";
+
+
 
 /**
  * @title A `RegistryCoordinator` that has three registries:
@@ -215,7 +218,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
 
                 // get the total stake for the quorum
                 uint96 totalStakeForQuorum = stakeRegistry.getCurrentTotalStakeForQuorum(quorumNumber);
-                bytes32 operatorToKickId = _operatorInfo[operatorKickParams[i].operator].operatorId;
+                bytes32 operatorToKickId = _operators[operatorKickParams[operatorToKickParamsIndex].operator].operatorId;
                 uint96 operatorToKickStake = stakeRegistry.getCurrentOperatorStakeForQuorum(operatorToKickId, quorumNumber);
                 uint96 registeringOperatorStake = stakeRegistry.getCurrentOperatorStakeForQuorum(operatorIdsToSwap[0], quorumNumber);
 

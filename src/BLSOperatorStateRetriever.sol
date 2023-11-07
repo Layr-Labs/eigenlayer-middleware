@@ -5,7 +5,8 @@ import "src/interfaces/IStakeRegistry.sol";
 import "src/interfaces/IBLSPubkeyRegistry.sol";
 import "src/interfaces/IIndexRegistry.sol";
 import "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
-import "eigenlayer-contracts/src/contracts/libraries/BitmapUtils.sol";
+
+import "src/libraries/BitmapUtils.sol";
 
 /**
  * @title BLSOperatorStateRetriever with view functions that allow to retrieve the state of an AVSs registry system.

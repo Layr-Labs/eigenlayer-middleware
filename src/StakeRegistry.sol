@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "eigenlayer-contracts/src/contracts/libraries/BitmapUtils.sol";
 import "src/interfaces/IServiceManager.sol";
 import "src/interfaces/IStakeRegistry.sol";
 import "src/interfaces/IRegistryCoordinator.sol";
+
+import "src/libraries/BitmapUtils.sol";
+
 import "src/StakeRegistryStorage.sol";
 
 /**
