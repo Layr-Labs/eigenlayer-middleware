@@ -86,10 +86,10 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
     *******************************************************************************/
 
     /**
-     * @notice Returns the pubkey of an operator, verifying that the pubkey and its hash are valid
+     * @notice Returns the pubkey and pubkey hash of an operator
      * @dev Reverts if the operator has not registered a valid pubkey
      */
-    function getRegisteredPubkey(address operator) public view returns (BN254.G1Point memory) {
+    function getRegisteredPubkey(address operator) public view returns (BN254.G1Point memory, bytes32) {
         BN254.G1Point memory pubkey = operatorToPubkey[operator];
         bytes32 pubkeyHash = operatorToPubkeyHash[operator];
 
@@ -98,7 +98,7 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
             "BLSPublicKeyCompendium.getRegisteredPubkey: operator is not registered"
         );
         
-        return pubkey;
+        return (pubkey, pubkeyHash);
     }
 
     /**
