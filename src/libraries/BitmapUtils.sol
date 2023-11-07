@@ -92,6 +92,25 @@ library BitmapUtils {
     }
 
     /**
+     * @notice Converts an ordered byte array to a bitmap, validating that all bits are less than `maxSetBit`
+     * @param orderedBytesArray The array to convert to a bitmap; must be in strictly ascending order
+     * @param maxSetBit The bitmap may not contain a bit greater than or equal to this value
+     * @dev Reverts if bitmap contains a bit greater than or equal to `maxSetBit`
+     */
+    function orderedBytesArrayToBitmap(bytes memory orderedBytesArray, uint8 maxSetBit) internal pure returns (uint256) {
+        uint256 bitmap = orderedBytesArrayToBitmap(orderedBytesArray);
+
+        if (bitmap != 0) {
+            require(
+                uint8(orderedBytesArray[orderedBytesArray.length - 1]) < maxSetBit, 
+                "BitmapUtils.orderedBytesArrayToBitmap: bitmap exceeds max value"
+            );
+        }
+
+        return bitmap;
+    }
+
+    /**
      * @notice Converts an ordered array of bytes into a bitmap. Optimized, Yul-heavy version of `orderedBytesArrayToBitmap`.
      * @param orderedBytesArray The array of bytes to convert/compress into a bitmap. Must be in strictly ascending order.
      * @return bitmap The resulting bitmap.
@@ -276,8 +295,43 @@ library BitmapUtils {
         return count;
     }
 
-    // @notice returns 'true' if `numberToCheckForInclusion` is in `bitmap` and 'false' otherwise.
+    /// @notice returns 'true' if `numberToCheckForInclusion` is in `bitmap` and 'false' otherwise.
     function numberIsInBitmap(uint256 bitmap, uint8 numberToCheckForInclusion) internal pure returns (bool) {
         return (((bitmap >> numberToCheckForInclusion) & 1) == 1);
+    }
+
+    /**
+     * @notice Returns true if `bitmap` has no set bits
+     */
+    function isEmpty(uint256 bitmap) internal pure returns (bool) {
+        return bitmap == 0;
+    }
+
+    /**
+     * @notice Returns true if `a` and `b` have no common set bits
+     */
+    function noBitsInCommon(uint256 a, uint256 b) internal pure returns (bool) {
+        return a & b == 0;
+    }
+
+    /**
+     * @notice Returns true if `a` is a subset of `b`: ALL of the bits in `a` are also in `b`
+     */
+    function isSubsetOf(uint256 a, uint256 b) internal pure returns (bool) {
+        return a & b == a;
+    }
+
+    /**
+     * @notice Adds `a` and `b` using bitwise-or
+     */
+    function plus(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a | b;
+    }
+
+    /**
+     * @notice Subtracts `b` from `a` by negating `b` and using bitwise-and
+     */
+    function minus(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a & ~b;
     }
 }
