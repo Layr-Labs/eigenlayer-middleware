@@ -5,7 +5,7 @@ import {IBLSRegistryCoordinatorWithIndices} from "src/interfaces/IBLSRegistryCoo
 import {IBLSPubkeyRegistry} from "src/interfaces/IBLSPubkeyRegistry.sol";
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
-import {BN254} from "eigenlayer-contracts/src/contracts/libraries/BN254.sol";
+import {BN254} from "src/libraries/BN254.sol";
 
 /**
  * @title Used for checking BLS aggregate signatures from the operators of a EigenLayer AVS with the RegistryCoordinator/BLSPubkeyRegistry/StakeRegistry architechture.

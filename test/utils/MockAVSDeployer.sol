@@ -10,8 +10,8 @@ import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/Pau
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {BitmapUtils} from "eigenlayer-contracts/src/contracts/libraries/BitmapUtils.sol";
-import {BN254} from "eigenlayer-contracts/src/contracts/libraries/BN254.sol";
+import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
+import {BN254} from "src/libraries/BN254.sol";
 
 import {BLSPublicKeyCompendium} from "src/BLSPublicKeyCompendium.sol";
 import {BLSOperatorStateRetriever} from "src/BLSOperatorStateRetriever.sol";
