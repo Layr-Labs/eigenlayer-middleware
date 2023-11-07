@@ -218,7 +218,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
 
                 // get the total stake for the quorum
                 uint96 totalStakeForQuorum = stakeRegistry.getCurrentTotalStakeForQuorum(quorumNumber);
-                bytes32 operatorToKickId = _operators[operatorKickParams[operatorToKickParamsIndex].operator].operatorId;
+                bytes32 operatorToKickId = _operatorInfo[operatorKickParams[operatorToKickParamsIndex].operator].operatorId;
                 uint96 operatorToKickStake = stakeRegistry.getCurrentOperatorStakeForQuorum(operatorToKickId, quorumNumber);
                 uint96 registeringOperatorStake = stakeRegistry.getCurrentOperatorStakeForQuorum(operatorIdsToSwap[0], quorumNumber);
 
