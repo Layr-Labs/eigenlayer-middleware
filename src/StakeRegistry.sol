@@ -488,7 +488,7 @@ contract StakeRegistry is StakeRegistryStorage {
         }
 
         // Return the weight, and `true` if the operator meets the quorum's minimum stake
-        bool hasMinimumStake = weight > minimumStakeForQuorum[quorumNumber];
+        bool hasMinimumStake = weight >= minimumStakeForQuorum[quorumNumber];
         return (weight, hasMinimumStake);
     }
 
