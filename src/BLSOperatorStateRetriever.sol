@@ -77,7 +77,7 @@ contract BLSOperatorStateRetriever {
                 bytes32 operatorId = bytes32(operatorIds[j]);
                 operators[i][j] = Operator({
                     operatorId: operatorId,
-                    stake: stakeRegistry.getOperatorStakeAtBlockNumber(operatorId, quorumNumber, blockNumber)
+                    stake: stakeRegistry.getStakeAtBlockNumber(operatorId, quorumNumber, blockNumber)
                 });
             }
         }
@@ -131,7 +131,7 @@ contract BLSOperatorStateRetriever {
                 // if the operator was a part of the quorum and the quorum is a part of the provided quorumNumbers
                 if ((nonSignerQuorumBitmap >> uint8(quorumNumbers[quorumNumberIndex])) & 1 == 1) {
                     // get the index of the stake update for the operator at the given blocknumber and quorum number
-                    checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex][numNonSignersForQuorum] = stakeRegistry.getStakeUpdateIndexForOperatorAtBlockNumber(
+                    checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex][numNonSignersForQuorum] = stakeRegistry.getStakeUpdateIndexAtBlockNumber(
                         nonSignerOperatorIds[i],
                         uint8(quorumNumbers[quorumNumberIndex]),
                         referenceBlockNumber

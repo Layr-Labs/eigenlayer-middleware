@@ -27,7 +27,7 @@ interface IRegistryCoordinator {
     /**
      * @notice Data structure for storing info on operators
      */
-    struct Operator {
+    struct OperatorInfo {
         // the id of the operator, which is likely the keccak256 hash of the operator's public key if using BLSRegsitry
         bytes32 operatorId;
         // indicates whether the operator is actively registered for serving the middleware or not
@@ -49,7 +49,7 @@ interface IRegistryCoordinator {
     function quorumCount() external view returns (uint8);
 
     /// @notice Returns the operator struct for the given `operator`
-    function getOperator(address operator) external view returns (Operator memory);
+    function getOperator(address operator) external view returns (OperatorInfo memory);
 
     /// @notice Returns the operatorId for the given `operator`
     function getOperatorId(address operator) external view returns (bytes32);

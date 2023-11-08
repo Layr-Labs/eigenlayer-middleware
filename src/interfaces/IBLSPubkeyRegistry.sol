@@ -85,4 +85,6 @@ interface IBLSPubkeyRegistry is IRegistry {
      * @param index is the index of the apkUpdate being retrieved from the list of quorum apkUpdates in storage
      */
     function getApkHashAtBlockNumberAndIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes24);
+
+    function getOperatorId(address operator) external view returns (bytes32);
 }

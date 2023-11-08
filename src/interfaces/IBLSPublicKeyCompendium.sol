@@ -36,10 +36,10 @@ interface IBLSPublicKeyCompendium {
     function registerBLSPublicKey(BN254.G1Point memory signedMessageHash, BN254.G1Point memory pubkeyG1, BN254.G2Point memory pubkeyG2) external;
 
     /**
-     * @notice Returns the pubkey of an operator, verifying that the pubkey and its hash are valid
+     * @notice Returns the pubkey and pubkey hash of an operator
      * @dev Reverts if the operator has not registered a valid pubkey
      */
-    function getRegisteredPubkey(address operator) external view returns (BN254.G1Point memory);
+    function getRegisteredPubkey(address operator) external view returns (BN254.G1Point memory, bytes32);
 
     /**
      * @notice Returns the message hash that an operator must sign to register their BLS public key.

@@ -134,7 +134,8 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
     function testRegisterOperatorWithCoordinator_QuorumNumbersTooLarge_Reverts() public {
         bytes memory quorumNumbersTooLarge = new bytes(1);
         quorumNumbersTooLarge[0] = 0xC0;
-        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._registerOperator: bitmap exceeds max bitmap size");
+        cheats.expectRevert("BitmapUtils.orderedBytesArrayToBitmap: bitmap exceeds max value");
+        cheats.prank(defaultOperator);
         registryCoordinator.registerOperator(quorumNumbersTooLarge, defaultSocket);
     }
 
@@ -143,7 +144,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         bytes memory quorumNumbersNotCreated = new bytes(1);
         quorumNumbersNotCreated[0] = 0x0B;
         cheats.prank(defaultOperator);
-        cheats.expectRevert("BLSPubkeyRegistry._processQuorumApkUpdate: quorum does not exist");
+        cheats.expectRevert("BitmapUtils.orderedBytesArrayToBitmap: bitmap exceeds max value");
         registryCoordinator.registerOperator(quorumNumbersNotCreated, defaultSocket);
     }
 
@@ -153,17 +154,17 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
 
         stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
 
-        cheats.prank(defaultOperator);
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit OperatorSocketUpdate(defaultOperatorId, defaultSocket);
         cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
         emit OperatorAddedToQuorums(defaultOperator, quorumNumbers);
         cheats.expectEmit(true, true, true, true, address(stakeRegistry));
         emit StakeUpdate(defaultOperatorId, defaultQuorumNumber, defaultStake);
         cheats.expectEmit(true, true, true, true, address(indexRegistry));
         emit QuorumIndexUpdate(defaultOperatorId, defaultQuorumNumber, 0);
-        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
-        emit OperatorSocketUpdate(defaultOperatorId, defaultSocket);
 
         uint256 gasBefore = gasleft();
+        cheats.prank(defaultOperator);
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket);
         uint256 gasAfter = gasleft();
         emit log_named_uint("gasUsed", gasBefore - gasAfter);
@@ -173,7 +174,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         assertEq(registryCoordinator.getOperatorId(defaultOperator), defaultOperatorId);
         assertEq(
             keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))), 
-            keccak256(abi.encode(IRegistryCoordinator.Operator({
+            keccak256(abi.encode(IRegistryCoordinator.OperatorInfo({
                 operatorId: defaultOperatorId,
                 status: IRegistryCoordinator.OperatorStatus.REGISTERED
             })))
@@ -198,7 +199,9 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
             stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), defaultOperator, defaultStake);
         }
 
-        cheats.prank(defaultOperator);
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit OperatorSocketUpdate(defaultOperatorId, defaultSocket);
+
         cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
         emit OperatorAddedToQuorums(defaultOperator, quorumNumbers);
 
@@ -211,10 +214,9 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
             cheats.expectEmit(true, true, true, true, address(indexRegistry));
             emit QuorumIndexUpdate(defaultOperatorId, uint8(quorumNumbers[i]), 0);
         }    
-        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
-        emit OperatorSocketUpdate(defaultOperatorId, defaultSocket);
-
+        
         uint256 gasBefore = gasleft();
+        cheats.prank(defaultOperator);
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket);
         uint256 gasAfter = gasleft();
         emit log_named_uint("gasUsed", gasBefore - gasAfter);
@@ -223,7 +225,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         assertEq(registryCoordinator.getOperatorId(defaultOperator), defaultOperatorId);
         assertEq(
             keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))), 
-            keccak256(abi.encode(IRegistryCoordinator.Operator({
+            keccak256(abi.encode(IRegistryCoordinator.OperatorInfo({
                 operatorId: defaultOperatorId,
                 status: IRegistryCoordinator.OperatorStatus.REGISTERED
             })))
@@ -255,16 +257,16 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         newQuorumNumbers[0] = bytes1(defaultQuorumNumber+1);
 
         stakeRegistry.setOperatorWeight(uint8(newQuorumNumbers[0]), defaultOperator, defaultStake);
-        cheats.prank(defaultOperator);
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit OperatorSocketUpdate(defaultOperatorId, defaultSocket);
         cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
         emit OperatorAddedToQuorums(defaultOperator, newQuorumNumbers);
         cheats.expectEmit(true, true, true, true, address(stakeRegistry));
         emit StakeUpdate(defaultOperatorId, uint8(newQuorumNumbers[0]), defaultStake);
         cheats.expectEmit(true, true, true, true, address(indexRegistry));
         emit QuorumIndexUpdate(defaultOperatorId, uint8(newQuorumNumbers[0]), 0);
-        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
-        emit OperatorSocketUpdate(defaultOperatorId, defaultSocket);
         cheats.roll(nextRegistrationBlockNumber);
+        cheats.prank(defaultOperator);
         registryCoordinator.registerOperator(newQuorumNumbers, defaultSocket);
 
         uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers) | BitmapUtils.orderedBytesArrayToBitmap(newQuorumNumbers);
@@ -272,7 +274,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         assertEq(registryCoordinator.getOperatorId(defaultOperator), defaultOperatorId);
         assertEq(
             keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))), 
-            keccak256(abi.encode(IRegistryCoordinator.Operator({
+            keccak256(abi.encode(IRegistryCoordinator.OperatorInfo({
                 operatorId: defaultOperatorId,
                 status: IRegistryCoordinator.OperatorStatus.REGISTERED
             })))
@@ -322,7 +324,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, defaultStake);
 
         cheats.prank(operatorToRegister);
-        cheats.expectRevert("BLSRegistryCoordinatorWithIndices.registerOperator: quorum is overfilled");
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices.registerOperator: operator count exceeds maximum");
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket);
     }
 
@@ -380,7 +382,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         quorumNumbers[0] = bytes1(defaultQuorumNumber + 1);
         quorumNumbers[1] = bytes1(defaultQuorumNumber + 2);
 
-        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._deregisterOperator: operator is not registered for any of the provided quorums");
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._deregisterOperator: operator is not registered for specified quorums");
         cheats.prank(defaultOperator);
         registryCoordinator.deregisterOperator(quorumNumbers);
     }
@@ -416,7 +418,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
 
         assertEq(
             keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))), 
-            keccak256(abi.encode(IRegistryCoordinator.Operator({
+            keccak256(abi.encode(IRegistryCoordinator.OperatorInfo({
                 operatorId: defaultOperatorId,
                 status: IRegistryCoordinator.OperatorStatus.DEREGISTERED
             })))
@@ -467,7 +469,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
 
         assertEq(
             keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))), 
-            keccak256(abi.encode(IRegistryCoordinator.Operator({
+            keccak256(abi.encode(IRegistryCoordinator.OperatorInfo({
                 operatorId: defaultOperatorId,
                 status: IRegistryCoordinator.OperatorStatus.DEREGISTERED
             })))
@@ -541,7 +543,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
 
         assertEq(
             keccak256(abi.encode(registryCoordinator.getOperator(operatorToDerigister))), 
-            keccak256(abi.encode(IRegistryCoordinator.Operator({
+            keccak256(abi.encode(IRegistryCoordinator.OperatorInfo({
                 operatorId: operatorToDerigisterId,
                 status: IRegistryCoordinator.OperatorStatus.DEREGISTERED
             })))
@@ -579,28 +581,32 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
 
         // check success of registration
         uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
-        assertEq(registryCoordinator.getOperatorId(defaultOperator), defaultOperatorId);
+        assertEq(registryCoordinator.getOperatorId(defaultOperator), defaultOperatorId, "1");
         assertEq(
             keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))), 
-            keccak256(abi.encode(IRegistryCoordinator.Operator({
+            keccak256(abi.encode(IRegistryCoordinator.OperatorInfo({
                 operatorId: defaultOperatorId,
                 status: IRegistryCoordinator.OperatorStatus.REGISTERED
-            })))
+            }))),
+            "2"
         );
-        assertEq(registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), quorumBitmap);
+        assertEq(registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), quorumBitmap, "3");
         // check that previous entry in bitmap history was not changed
         assertEq(
             keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))), 
-            keccak256(abi.encode(previousQuorumBitmapUpdate))
+            keccak256(abi.encode(previousQuorumBitmapUpdate)),
+            "4"
         );
         // check that new entry in bitmap history is as expected
+        uint historyLength = registryCoordinator.getQuorumBitmapHistoryLength(defaultOperatorId);
         assertEq(
-            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 1))), 
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, historyLength - 1))), 
             keccak256(abi.encode(IRegistryCoordinator.QuorumBitmapUpdate({
                 quorumBitmap: uint192(quorumBitmap),
                 updateBlockNumber: uint32(reregistrationBlockNumber),
                 nextUpdateBlockNumber: 0
-            })))
+            }))),
+            "5"
         );
     }
 
@@ -684,14 +690,14 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
 
         assertEq(
             keccak256(abi.encode(registryCoordinator.getOperator(operatorToRegister))), 
-            keccak256(abi.encode(IRegistryCoordinator.Operator({
+            keccak256(abi.encode(IRegistryCoordinator.OperatorInfo({
                 operatorId: operatorToRegisterId,
                 status: IRegistryCoordinator.OperatorStatus.REGISTERED
             })))
         );
         assertEq(
             keccak256(abi.encode(registryCoordinator.getOperator(operatorToKick))), 
-            keccak256(abi.encode(IRegistryCoordinator.Operator({
+            keccak256(abi.encode(IRegistryCoordinator.OperatorInfo({
                 operatorId: operatorToKickId,
                 status: IRegistryCoordinator.OperatorStatus.DEREGISTERED
             })))
@@ -722,7 +728,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         cheats.roll(registrationBlockNumber);
         ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry = _signOperatorChurnApproval(operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp + 10);
         cheats.prank(operatorToRegister);
-        cheats.expectRevert("BLSRegistryCoordinatorWithIndices.registerOperatorWithChurn: registering operator has less than kickBIPsOfOperatorStake");
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._validateChurn: incoming operator has insufficient stake for churn");
         registryCoordinator.registerOperatorWithChurn(quorumNumbers, defaultSocket, operatorKickParams, signatureWithExpiry);
     }
 
@@ -745,7 +751,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         cheats.roll(registrationBlockNumber);
         ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry = _signOperatorChurnApproval(operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp + 10);
         cheats.prank(operatorToRegister);
-        cheats.expectRevert("BLSRegistryCoordinatorWithIndices.registerOperatorWithChurn: operator to kick has more than kickBIPSOfTotalStake");
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._validateChurn: cannot kick operator with more than kickBIPsOfTotalStake");
         registryCoordinator.registerOperatorWithChurn(quorumNumbers, defaultSocket, operatorKickParams, signatureWithExpiry);
     }
 
@@ -816,7 +822,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         // make sure the operator is deregistered
         assertEq(
             keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))), 
-            keccak256(abi.encode(IRegistryCoordinator.Operator({
+            keccak256(abi.encode(IRegistryCoordinator.OperatorInfo({
                 operatorId: defaultOperatorId,
                 status: IRegistryCoordinator.OperatorStatus.DEREGISTERED
             })))
@@ -854,7 +860,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         // make sure the operator is registered
         assertEq(
             keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))), 
-            keccak256(abi.encode(IRegistryCoordinator.Operator({
+            keccak256(abi.encode(IRegistryCoordinator.OperatorInfo({
                 operatorId: defaultOperatorId,
                 status: IRegistryCoordinator.OperatorStatus.REGISTERED
             })))
