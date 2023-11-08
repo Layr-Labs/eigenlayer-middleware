@@ -151,7 +151,7 @@ interface IStakeRegistry is IRegistry {
      * @param operatorId The id of the operator of interest.
      * @param quorumNumber The quorum number to get the stake for.
      */
-    function getOperatorStakeHistory(bytes32 operatorId, uint8 quorumNumber) external view returns (OperatorStakeUpdate[] memory);
+    function getStakeHistory(bytes32 operatorId, uint8 quorumNumber) external view returns (OperatorStakeUpdate[] memory);
 
     function getTotalStakeHistoryLength(uint8 quorumNumber) external view returns (uint256);
 
@@ -163,7 +163,7 @@ interface IStakeRegistry is IRegistry {
     function getTotalStakeUpdateAtIndex(uint8 quorumNumber, uint256 index) external view returns (OperatorStakeUpdate memory);
 
     /// @notice Returns the indices of the operator stakes for the provided `quorumNumber` at the given `blockNumber`
-    function getStakeUpdateIndexForOperatorAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber)
+    function getStakeUpdateIndexAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber)
         external
         view
         returns (uint32);
@@ -178,7 +178,7 @@ interface IStakeRegistry is IRegistry {
      * @param index Array index for lookup, within the dynamic array `operatorIdToStakeHistory[operatorId][quorumNumber]`.
      * @dev Function will revert if `index` is out-of-bounds.
      */
-    function getStakeUpdateForOperatorAtIndex(uint8 quorumNumber, bytes32 operatorId, uint256 index)
+    function getStakeUpdateAtIndex(uint8 quorumNumber, bytes32 operatorId, uint256 index)
         external
         view
         returns (OperatorStakeUpdate memory);
@@ -187,7 +187,7 @@ interface IStakeRegistry is IRegistry {
      * @notice Returns the most recent stake weight for the `operatorId` for a certain quorum
      * @dev Function returns an OperatorStakeUpdate struct with **every entry equal to 0** in the event that the operator has no stake history
      */
-    function getMostRecentStakeUpdateByOperatorId(bytes32 operatorId, uint8 quorumNumber) external view returns (OperatorStakeUpdate memory);
+    function getLatestStakeUpdate(bytes32 operatorId, uint8 quorumNumber) external view returns (OperatorStakeUpdate memory);
 
     /**
      * @notice Returns the stake weight corresponding to `operatorId` for quorum `quorumNumber`, at the
@@ -200,7 +200,7 @@ interface IStakeRegistry is IRegistry {
      * @dev Function will revert if `index` is out-of-bounds.
      * @dev used the BLSSignatureChecker to get past stakes of signing operators
      */
-    function getOperatorStakeAtBlockNumberAndIndex(uint8 quorumNumber, uint32 blockNumber, bytes32 operatorId, uint256 index)
+    function getStakeAtBlockNumberAndIndex(uint8 quorumNumber, uint32 blockNumber, bytes32 operatorId, uint256 index)
         external
         view
         returns (uint96);
@@ -221,10 +221,10 @@ interface IStakeRegistry is IRegistry {
      * @notice Returns the most recent stake weight for the `operatorId` for quorum `quorumNumber`
      * @dev Function returns weight of **0** in the event that the operator has no stake history
      */
-    function getCurrentOperatorStakeForQuorum(bytes32 operatorId, uint8 quorumNumber) external view returns (uint96);
+    function getCurrentStake(bytes32 operatorId, uint8 quorumNumber) external view returns (uint96);
 
     /// @notice Returns the stake of the operator for the provided `quorumNumber` at the given `blockNumber`
-    function getOperatorStakeAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber)
+    function getStakeAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber)
         external
         view
         returns (uint96);
@@ -233,7 +233,7 @@ interface IStakeRegistry is IRegistry {
      * @notice Returns the stake weight from the latest entry in `_totalStakeHistory` for quorum `quorumNumber`.
      * @dev Will revert if `_totalStakeHistory[quorumNumber]` is empty.
      */
-    function getCurrentTotalStakeForQuorum(uint8 quorumNumber) external view returns (uint96);
+    function getCurrentTotalStake(uint8 quorumNumber) external view returns (uint96);
 
     /**
      * @notice Called by the registry coordinator to update an operator's stake for one
