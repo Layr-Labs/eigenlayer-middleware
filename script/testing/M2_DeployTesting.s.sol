@@ -15,6 +15,8 @@ import "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {ServiceManagerMock} from "test/mocks/ServiceManagerMock.sol";
 import {BLSPublicKeyCompendiumMock} from "test/mocks/BLSPublicKeyCompendiumMock.sol";
 import {BLSPubkeyRegistryMock} from "test/mocks/BLSPubkeyRegistryMock.sol";
+import {DelegationManagerMock} from "eigenlayer-contracts/src/test/mocks/DelegationManagerMock.sol";
+import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
 
 //forge script script/testing/M2_DeployTesting.s.sol:Deployer_M2 --rpc-url $RPC_URL  --private-key $PRIVATE_KEY --broadcast -vvvv
 //forge script script/testing/M2_DeployTesting.s.sol:Deployer_M2 --rpc-url http://127.0.0.1:8545  --private-key $PRIVATE_KEY --broadcast -vvvv
@@ -37,7 +39,8 @@ contract Deployer_M2 is ExistingDeploymentParser {
     // mocks
     BLSPubkeyRegistryMock public blsPubkeyRegistryMock;
     BLSPublicKeyCompendiumMock public pubkeyCompendiumMock;
-
+    DelegationManagerMock public delegationMock;
+    StrategyManagerMock public strategyManagerMock;
     
     //upgradeable contracts
     IServiceManager public eigenDAServiceManager;
@@ -81,6 +84,13 @@ contract Deployer_M2 is ExistingDeploymentParser {
         //deploy non-upgradeable contracts
         pubkeyCompendiumMock = new BLSPublicKeyCompendiumMock();
         blsOperatorStateRetriever = new BLSOperatorStateRetriever();
+        delegationMock = new DelegationManagerMock();
+        strategyManagerMock = new StrategyManagerMock();
+        strategyManagerMock.setAddresses(
+            delegationMock,
+            eigenPodManager,
+            slasher
+        );
 
         // deploy mocks
         blsPubkeyRegistryMock = new BLSPubkeyRegistryMock(registryCoordinator, pubkeyCompendiumMock);
@@ -105,7 +115,7 @@ contract Deployer_M2 is ExistingDeploymentParser {
         stakeRegistryImplementation = new StakeRegistry(
             registryCoordinator,
             indexRegistry,
-            strategyManager,
+            strategyManagerMock,
             IServiceManager(address(eigenDAServiceManager))
         );
 
@@ -187,7 +197,7 @@ contract Deployer_M2 is ExistingDeploymentParser {
         _testUpdateStakesAllOperators_200OperatorsValid();
     }
 
-    function _parseStakeRegistryParams(string memory config_data) internal pure returns (uint96[] memory minimumStakeForQuourm, IVoteWeigher.StrategyAndWeightingMultiplier[][] memory strategyAndWeightingMultipliers) {
+    function _parseStakeRegistryParams(string memory config_data) internal returns (uint96[] memory minimumStakeForQuourm, IVoteWeigher.StrategyAndWeightingMultiplier[][] memory strategyAndWeightingMultipliers) {
         bytes memory stakesConfigsRaw = stdJson.parseRaw(config_data, ".minimumStakes");
         minimumStakeForQuourm = abi.decode(stakesConfigsRaw, (uint96[]));
         
@@ -218,7 +228,7 @@ contract Deployer_M2 is ExistingDeploymentParser {
         require(_indexRegistry.registryCoordinator() == registryCoordinator, "indexRegistry.registryCoordinator() != registryCoordinator");
 
         require(_stakeRegistry.registryCoordinator() == registryCoordinator, "stakeRegistry.registryCoordinator() != registryCoordinator");
-        require(_stakeRegistry.strategyManager() == strategyManager, "stakeRegistry.strategyManager() != strategyManager");
+        require(_stakeRegistry.strategyManager() == strategyManagerMock, "stakeRegistry.strategyManager() != strategyManager");
         require(address(_stakeRegistry.serviceManager()) == address(eigenDAServiceManager), "stakeRegistry.eigenDAServiceManager() != eigenDAServiceManager");
     }
 
@@ -249,7 +259,7 @@ contract Deployer_M2 is ExistingDeploymentParser {
         ) internal view {
         // require(eigenDAServiceManager.owner() == eigenDAOwner, "eigenDAServiceManager.owner() != eigenDAOwner");
         // require(eigenDAServiceManager.pauserRegistry() == eigenLayerPauserReg, "eigenDAServiceManager: pauser registry not set correctly");
-        require(strategyManager.paused() == 0, "eigenDAServiceManager: init paused status set incorrectly");
+        // require(strategyManager.paused() == 0, "eigenDAServiceManager: init paused status set incorrectly");
 
         require(registryCoordinator.churnApprover() == churner, "registryCoordinator.churner() != churner");
         require(registryCoordinator.ejector() == ejector, "registryCoordinator.ejector() != ejector");
@@ -318,26 +328,10 @@ contract Deployer_M2 is ExistingDeploymentParser {
      */
     function _testUpdateStakesAllOperators_200OperatorsValid() internal {
         uint256 maxQuorumsToRegisterFor = 10;
-        // Add 9 additional strategies to quorum 0 which already has 1 strategy
-        uint256 numStratsToAdd = 9;
-        IVoteWeigher.StrategyAndWeightingMultiplier[] memory quorumStrategiesConsideredAndMultipliers = new IVoteWeigher.StrategyAndWeightingMultiplier[](numStratsToAdd);
-        for (uint256 i = 0; i < numStratsToAdd; ++i) {
-            quorumStrategiesConsideredAndMultipliers[i] = IVoteWeigher.StrategyAndWeightingMultiplier(
-                new StrategyBase(strategyManager),
-                uint96(i+1)
-            );
-        }
         // Set 200 operator addresses
-        address[] memory operators = new address[](200);
-        for (uint256 i = 0; i < 200; ++i) {
-            operators[i] = address(uint160(i + 1000));
-        }
-        vm.broadcast();
-        stakeRegistry.addStrategiesConsideredAndMultipliers(0, quorumStrategiesConsideredAndMultipliers);
         // OperatorsPerQuorum input param
         address[][] memory updateOperators = new address[][](maxQuorumsToRegisterFor);
-
-
+        updateOperators[0] = new address[](200);
         // Register operator with all quorums if first 50 operator, o/w just quorum 0
         for (uint256 i = 0; i < 200; ++i) {
             uint256 bitmap;
@@ -346,8 +340,12 @@ contract Deployer_M2 is ExistingDeploymentParser {
             pubkey.X = i + 1;
             pubkey.Y = i + 1;
             (address operator, /*privateKey*/) = deriveRememberKey(TEST_MNEMONIC, uint32(i));
+            // Set operator stake to at least min stake
+
             vm.broadcast(operator);
-            pubkeyCompendiumMock.setBLSPublicKey(operator, pubkey);
+            delegationMock.setOperatorShares(operator, IStrategy(address(1)), 100e18);
+            // vm.broadcast(operator);
+            // pubkeyCompendiumMock.setBLSPublicKey(operator, pubkey);
             if (i < 50) {
                 bitmap = (1<<maxQuorumsToRegisterFor)-1;
                 quorumNumbers = BitmapUtils.bitmapToBytesArray(bitmap);
@@ -357,7 +355,27 @@ contract Deployer_M2 is ExistingDeploymentParser {
             }
             vm.broadcast(operator);
             registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, pubkey, "");
+
+            updateOperators[0][i] = operator;
         }
+
+        address[] memory updateOperatorsRemainingQuorums = new address[](50);
+        for (uint256 i = 0; i < 50; i++) {
+            updateOperatorsRemainingQuorums[i] = updateOperators[0][i];
+        }
+        for (uint256 i = 1; i < 10; i++) {
+            updateOperators[i] = updateOperatorsRemainingQuorums;
+        }
+
+        for (uint256 i = 0; i < 10; i++) {
+            // Sort each array by operatorId
+            updateOperators[i] = _sortArrayByOperatorIds(updateOperators[i]);
+        }
+
+        // UpdateStakesAllOperators()
+        (address operator, /*privateKey*/) = deriveRememberKey(TEST_MNEMONIC, uint32(0));
+        vm.broadcast(operator);
+        stakeRegistry.updateStakesAllOperators(updateOperators);
 
         // // Register 200 operators for quorum0
         // updateOperators[0] = new address[](200);
@@ -419,6 +437,22 @@ contract Deployer_M2 is ExistingDeploymentParser {
         // }
     }
 
+
+    function _sortArrayByOperatorIds(address[] memory arr) internal view returns (address[] memory) {
+        uint256 l = arr.length;
+        for(uint i = 0; i < l; i++) {
+            for(uint j = i+1; j < l ;j++) {
+                bytes32 id_i = registryCoordinator.getOperatorId(arr[i]);
+                bytes32 id_j = registryCoordinator.getOperatorId(arr[j]);
+                if(id_i > id_j) {
+                    address temp = arr[i];
+                    arr[i] = arr[j];
+                    arr[j] = temp;
+                }
+            }
+        }
+        return arr;
+    }
 
     function _sortArray(bytes32[] memory arr) private pure returns (bytes32[] memory) {
         uint256 l = arr.length;

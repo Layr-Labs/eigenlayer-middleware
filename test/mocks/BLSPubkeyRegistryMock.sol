@@ -33,7 +33,7 @@ contract BLSPubkeyRegistryMock is BLSPubkeyRegistryStorage {
         bytes memory quorumNumbers,
         BN254.G1Point memory pubkey
     ) public virtual returns (bytes32) {
-        return bytes32(abi.encode(msg.sender));
+        return bytes32(abi.encode(operator));
     }
 
     /**
