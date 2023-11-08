@@ -156,7 +156,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         bytes32 operatorId = blsPubkeyRegistry.getOperatorId(msg.sender);
 
-        // Register the operator, failing if churn is needed
+        // Register the operator in each of the registry contracts
         RegisterResults memory results = _registerOperator({
             operatorToRegister: msg.sender, 
             idToRegister: operatorId,
@@ -205,7 +205,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
             churnApproverSignature: churnApproverSignature
         });
 
-        // Register the operator and perform churn if needed
+        // Register the operator in each of the registry contracts
         RegisterResults memory results = _registerOperator({
             operatorToRegister: msg.sender,
             idToRegister: idToRegister,
@@ -441,7 +441,6 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     ) internal view {
         address operatorToKick = kickParams.operator;
         bytes32 idToKick = _operatorInfo[operatorToKick].operatorId;
-        require(_operatorInfo[operatorToKick].status == OperatorStatus.REGISTERED, "BLSRegistryCoordinatorWithIndices._validateChurn: cannot remove unregistered operator");
         require(newOperator != operatorToKick, "BLSRegistryCoordinatorWithIndices._validateChurn: cannot churn self");
         require(kickParams.quorumNumber == quorumNumber, "BLSRegistryCoordinatorWithIndices._validateChurn: quorumNumber not the same as signed");
 
