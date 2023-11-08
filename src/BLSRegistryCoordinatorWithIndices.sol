@@ -158,8 +158,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
 
         // Register the operator in each of the registry contracts
         RegisterResults memory results = _registerOperator({
-            operatorToRegister: msg.sender, 
-            idToRegister: operatorId,
+            operator: msg.sender, 
+            operatorId: operatorId,
             quorumNumbers: quorumNumbers, 
             socket: socket
         });
@@ -196,19 +196,19 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         require(operatorKickParams.length == quorumNumbers.length, "BLSRegistryCoordinatorWithIndices.registerOperatorWithChurn: input length mismatch");
 
-        bytes32 idToRegister = blsPubkeyRegistry.getOperatorId(msg.sender);
+        bytes32 operatorId = blsPubkeyRegistry.getOperatorId(msg.sender);
 
         // Verify the churn approver's signature for the registering operator and kick params
         _verifyChurnApproverSignature({
-            registeringOperatorId: idToRegister,
+            registeringOperatorId: operatorId,
             operatorKickParams: operatorKickParams,
             churnApproverSignature: churnApproverSignature
         });
 
         // Register the operator in each of the registry contracts
         RegisterResults memory results = _registerOperator({
-            operatorToRegister: msg.sender,
-            idToRegister: idToRegister,
+            operator: msg.sender,
+            operatorId: operatorId,
             quorumNumbers: quorumNumbers,
             socket: socket
         });
@@ -278,7 +278,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
              * Update the operator's stake for their active quorums. The stakeRegistry returns a bitmap
              * of quorums where the operator no longer meets the minimum stake, and should be deregistered.
              */
-            (uint192 quorumsToRemove) = stakeRegistry.updateOperatorStake(operator, operatorId, currentQuorums);
+            uint192 quorumsToRemove = stakeRegistry.updateOperatorStake(operator, operatorId, currentQuorums);
 
             if (!quorumsToRemove.isEmpty()) {
                 _deregisterOperator({
@@ -378,8 +378,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
      * operator's quorum bitmap, socket, and status, then registers them with each registry.
      */
     function _registerOperator(
-        address operatorToRegister, 
-        bytes32 idToRegister,
+        address operator, 
+        bytes32 operatorId,
         bytes calldata quorumNumbers,
         string memory socket
     ) internal virtual returns (RegisterResults memory) {
@@ -390,7 +390,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
          * Then, calculate the operator's new bitmap after registration
          */
         uint192 quorumsToAdd = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
-        uint192 currentBitmap = _currentOperatorBitmap(idToRegister);
+        uint192 currentBitmap = _currentOperatorBitmap(operatorId);
         require(!quorumsToAdd.isEmpty(), "BLSRegistryCoordinatorWithIndices._registerOperator: bitmap cannot be 0");
         require(quorumsToAdd.noBitsInCommon(currentBitmap), "BLSRegistryCoordinatorWithIndices._registerOperator: operator already registered for some quorums being registered for");
         uint192 newBitmap = uint192(currentBitmap.plus(quorumsToAdd));
@@ -400,29 +400,29 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
          * if we're `REGISTERED`, the operatorId and status are already correct.
          */
         _updateOperatorBitmap({
-            operatorId: idToRegister,
+            operatorId: operatorId,
             newBitmap: newBitmap
         });
 
-        emit OperatorSocketUpdate(idToRegister, socket);
+        emit OperatorSocketUpdate(operatorId, socket);
 
-        if (_operatorInfo[operatorToRegister].status != OperatorStatus.REGISTERED) {
-            _operatorInfo[operatorToRegister] = OperatorInfo({
-                operatorId: idToRegister,
+        if (_operatorInfo[operator].status != OperatorStatus.REGISTERED) {
+            _operatorInfo[operator] = OperatorInfo({
+                operatorId: operatorId,
                 status: OperatorStatus.REGISTERED
             });
 
-            emit OperatorRegistered(operatorToRegister, idToRegister);
+            emit OperatorRegistered(operator, operatorId);
         }
 
         /**
          * Register the operator with the BLSPubkeyRegistry, StakeRegistry, and IndexRegistry
          */
-        bytes32 registeredId = blsPubkeyRegistry.registerOperator(operatorToRegister, quorumNumbers);
-        require(registeredId == idToRegister, "BLSRegistryCoordinatorWithIndices._registerOperator: operatorId mismatch");
+        bytes32 registeredId = blsPubkeyRegistry.registerOperator(operator, quorumNumbers);
+        require(registeredId == operatorId, "BLSRegistryCoordinatorWithIndices._registerOperator: operatorId mismatch");
         (uint96[] memory operatorStakes, uint96[] memory totalStakes) = 
-            stakeRegistry.registerOperator(operatorToRegister, idToRegister, quorumNumbers);
-        uint32[] memory numOperatorsPerQuorum = indexRegistry.registerOperator(idToRegister, quorumNumbers);
+            stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
+        uint32[] memory numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
 
         return RegisterResults({
             numOperatorsPerQuorum: numOperatorsPerQuorum,
