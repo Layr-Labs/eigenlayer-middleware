@@ -158,14 +158,27 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         bytes32 operatorId = blsPubkeyRegistry.getOperatorId(msg.sender);
 
         // Register the operator, failing if churn is needed
-        _registerOperator({
+        RegisterResults memory results = _registerOperator({
             operatorToRegister: msg.sender, 
             idToRegister: operatorId,
             quorumNumbers: quorumNumbers, 
-            socket: socket,
-            performChurn: false,
-            operatorKickParams: new OperatorKickParam[](0)
+            socket: socket
         });
+
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+            
+            OperatorSetParam memory operatorSetParams = _quorumParams[quorumNumber];
+            
+            /**
+             * The new operator count for each quorum may not exceed the configured maximum
+             * If it does, use `registerOperatorWithChurn` instead.
+             */
+            require(
+                results.numOperatorsPerQuorum[i] <= operatorSetParams.maxOperatorCount,
+                "BLSRegistryCoordinatorWithIndices.registerOperator: operator count exceeds maximum"
+            );
+        }
     }
 
     /**
@@ -194,14 +207,37 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         });
 
         // Register the operator and perform churn if needed
-        _registerOperator({
+        RegisterResults memory results = _registerOperator({
             operatorToRegister: msg.sender,
             idToRegister: idToRegister,
             quorumNumbers: quorumNumbers,
-            socket: socket,
-            performChurn: true,
-            operatorKickParams: operatorKickParams
+            socket: socket
         });
+
+        uint256 kickIndex = 0;
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+            
+            OperatorSetParam memory operatorSetParams = _quorumParams[quorumNumber];
+            
+            /**
+             * If the new operator count for any quorum exceeds the maximum, validate
+             * that churn can be performed, then deregister the specified operator
+             */
+            if (results.numOperatorsPerQuorum[i] > operatorSetParams.maxOperatorCount) {
+                _validateChurn({
+                    quorumNumber: quorumNumber,
+                    totalQuorumStake: results.totalStakes[i],
+                    newOperator: msg.sender,
+                    newOperatorStake: results.operatorStakes[i],
+                    kickParams: operatorKickParams[i],
+                    setParams: operatorSetParams
+                });
+
+                _deregisterOperator(operatorKickParams[i].operator, quorumNumbers[i:i+1]);
+                kickIndex++;
+            }
+        }
     }
 
     /**
@@ -332,6 +368,12 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
                             INTERNAL FUNCTIONS
     *******************************************************************************/
 
+    struct RegisterResults {
+        uint32[] numOperatorsPerQuorum;
+        uint96[] operatorStakes;
+        uint96[] totalStakes;
+    }
+
     /** 
      * @notice Register the operator for one or more quorums. This method updates the
      * operator's quorum bitmap, socket, and status, then registers them with each registry.
@@ -340,10 +382,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         address operatorToRegister, 
         bytes32 idToRegister,
         bytes calldata quorumNumbers,
-        string memory socket,
-        bool performChurn,
-        OperatorKickParam[] memory operatorKickParams
-    ) internal virtual {
+        string memory socket
+    ) internal virtual returns (RegisterResults memory) {
         /**
          * Get bitmap of quorums to register for and operator's current bitmap. Validate that:
          * - we're trying to register for at least 1 quorum
@@ -381,46 +421,15 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
          */
         bytes32 registeredId = blsPubkeyRegistry.registerOperator(operatorToRegister, quorumNumbers);
         require(registeredId == idToRegister, "BLSRegistryCoordinatorWithIndices._registerOperator: operatorId mismatch");
-        (uint96[] memory registeredStakes, uint96[] memory totalStakes) = 
+        (uint96[] memory operatorStakes, uint96[] memory totalStakes) = 
             stakeRegistry.registerOperator(operatorToRegister, idToRegister, quorumNumbers);
         uint32[] memory numOperatorsPerQuorum = indexRegistry.registerOperator(idToRegister, quorumNumbers);
 
-        /**
-         * Now that we've registered the operator, validate that the new total operators
-         * in each quorum do not exceed the maximum. 
-         * 
-         * If they do and we're performing churn, we deregister the corresponding operator 
-         * specified in `operatorKickParams`
-         */
-
-        uint256 kickIndex = 0;
-        for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            uint8 quorumNumber = uint8(quorumNumbers[i]);
-            
-            OperatorSetParam memory operatorSetParams = _quorumParams[quorumNumber];
-            bool exceedsOperatorCapacity = numOperatorsPerQuorum[i] > operatorSetParams.maxOperatorCount;
-
-            /**
-             * If we exceed the max operator count for this quorum, we need to replace an existing operator
-             * with a new one.
-             */
-            if (exceedsOperatorCapacity) {
-                require(performChurn, "BLSRegistryCoordinatorWithIndices._registerOperator: churn required for overfilled quorum");
-                
-                // Validate that `operatorToRegister` can replace the operator specified in the kick params
-                _validateChurn({
-                    quorumNumber: quorumNumber,
-                    totalQuorumStake: totalStakes[i],
-                    newOperator: operatorToRegister,
-                    newOperatorStake: registeredStakes[i],
-                    kickParams: operatorKickParams[i],
-                    setParams: operatorSetParams
-                });
-
-                _deregisterOperator(operatorKickParams[i].operator, quorumNumbers[i:i+1]);
-                kickIndex++;
-            }
-        }
+        return RegisterResults({
+            numOperatorsPerQuorum: numOperatorsPerQuorum,
+            operatorStakes: operatorStakes,
+            totalStakes: totalStakes
+        });
     }
 
     function _validateChurn(

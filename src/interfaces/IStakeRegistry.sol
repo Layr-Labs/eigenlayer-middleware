@@ -241,6 +241,8 @@ interface IStakeRegistry is IRegistry {
      *
      * If the operator no longer has the minimum stake required for a quorum, they are
      * added to the
+     * @return A bitmap of quorums where the operator no longer meets the minimum stake
+     * and should be deregistered.
      */
     function updateOperatorStake(
         address operator, 

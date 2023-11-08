@@ -486,11 +486,8 @@ contract StakeRegistry is StakeRegistryStorage {
         }
 
         // Return the weight, and `true` if the operator meets the quorum's minimum stake
-        if (weight < minimumStakeForQuorum[quorumNumber]) {
-            return (weight, true);
-        } else {
-            return (weight, false);
-        }
+        bool hasMinimumStake = weight > minimumStakeForQuorum[quorumNumber];
+        return (weight, hasMinimumStake);
     }
 
     /// @notice Returns `true` if the quorum has been initialized
