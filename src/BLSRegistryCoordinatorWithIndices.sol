@@ -447,7 +447,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         require(kickParams.quorumNumber == quorumNumber, "BLSRegistryCoordinatorWithIndices._validateChurn: quorumNumber not the same as signed");
 
         // Get the target operator's stake and check that it is below the kick thresholds
-        uint96 operatorToKickStake = stakeRegistry.getCurrentOperatorStakeForQuorum(idToKick, quorumNumber);
+        uint96 operatorToKickStake = stakeRegistry.getCurrentStake(idToKick, quorumNumber);
         require(
             newOperatorStake > _individualKickThreshold(operatorToKickStake, setParams),
             "BLSRegistryCoordinatorWithIndices._validateChurn: incoming operator has insufficient stake for churn"

@@ -526,6 +526,20 @@ contract StakeRegistry is StakeRegistryStorage {
     ) public view returns (StrategyParams memory)
     {
         return strategyParams[quorumNumber][index];
+    } 
+
+    /*******************************************************************************
+                      VIEW FUNCTIONS - Operator Stake History
+    *******************************************************************************/
+
+    /**
+     * @notice Returns the length of an operator's stake history for the given quorum
+     */
+    function getStakeHistoryLength(
+        bytes32 operatorId,
+        uint8 quorumNumber
+    ) external view returns (uint256) {
+        return operatorStakeHistory[operatorId][quorumNumber].length;
     }
 
     /**
@@ -533,11 +547,38 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param operatorId The id of the operator of interest.
      * @param quorumNumber The quorum number to get the stake for.
      */
-     function getOperatorStakeHistory(
+     function getStakeHistory(
         bytes32 operatorId, 
         uint8 quorumNumber
     ) external view returns (OperatorStakeUpdate[] memory) {
         return operatorStakeHistory[operatorId][quorumNumber];
+    }
+
+    /**
+     * @notice Returns the most recent stake weight for the `operatorId` for quorum `quorumNumber`
+     * @dev Function returns weight of **0** in the event that the operator has no stake history
+     */
+     function getCurrentStake(bytes32 operatorId, uint8 quorumNumber) external view returns (uint96) {
+        OperatorStakeUpdate memory operatorStakeUpdate = getLatestStakeUpdate(operatorId, quorumNumber);
+        return operatorStakeUpdate.stake;
+    }
+
+    /**
+     * @notice Returns the most recent stake weight for the `operatorId` for a certain quorum
+     * @dev Function returns an OperatorStakeUpdate struct with **every entry equal to 0** in the event that the operator has no stake history
+     */
+    function getLatestStakeUpdate(
+        bytes32 operatorId,
+        uint8 quorumNumber
+    ) public view returns (OperatorStakeUpdate memory) {
+        uint256 historyLength = operatorStakeHistory[operatorId][quorumNumber].length;
+        OperatorStakeUpdate memory operatorStakeUpdate;
+        if (historyLength == 0) {
+            return operatorStakeUpdate;
+        } else {
+            operatorStakeUpdate = operatorStakeHistory[operatorId][quorumNumber][historyLength - 1];
+            return operatorStakeUpdate;
+        }
     }
 
     /**
@@ -547,7 +588,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param index Array index for lookup, within the dynamic array `operatorStakeHistory[operatorId][quorumNumber]`.
      * @dev Function will revert if `index` is out-of-bounds.
      */
-    function getStakeUpdateForOperatorAtIndex(
+     function getStakeUpdateAtIndex(
         uint8 quorumNumber,
         bytes32 operatorId,
         uint256 index
@@ -555,20 +596,20 @@ contract StakeRegistry is StakeRegistryStorage {
         return operatorStakeHistory[operatorId][quorumNumber][index];
     }
 
-    /**
-     * @notice Returns the `index`-th entry in the dynamic array of total stake, `_totalStakeHistory` for quorum `quorumNumber`.
-     * @param quorumNumber The quorum number to get the stake for.
-     * @param index Array index for lookup, within the dynamic array `_totalStakeHistory[quorumNumber]`.
-     */
-    function getTotalStakeUpdateAtIndex(
+    /// @notice Returns the stake of the operator for the provided `quorumNumber` at the given `blockNumber`
+    function getStakeAtBlockNumber(
+        bytes32 operatorId,
         uint8 quorumNumber,
-        uint256 index
-    ) external view returns (OperatorStakeUpdate memory) {
-        return _totalStakeHistory[quorumNumber][index];
+        uint32 blockNumber
+    ) external view returns (uint96) {
+        return
+            operatorStakeHistory[operatorId][quorumNumber][
+                _getStakeUpdateIndexForOperatorAtBlockNumber(operatorId, quorumNumber, blockNumber)
+            ].stake;
     }
 
     /// @notice Returns the indices of the operator stakes for the provided `quorumNumber` at the given `blockNumber`
-    function getStakeUpdateIndexForOperatorAtBlockNumber(
+    function getStakeUpdateIndexAtBlockNumber(
         bytes32 operatorId,
         uint8 quorumNumber,
         uint32 blockNumber
@@ -577,12 +618,82 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     /**
+     * @notice Returns the stake weight corresponding to `operatorId` for quorum `quorumNumber`, at the
+     * `index`-th entry in the `operatorStakeHistory[operatorId][quorumNumber]` array if it was the operator's
+     * stake at `blockNumber`. Reverts otherwise.
+     * @param quorumNumber The quorum number to get the stake for.
+     * @param operatorId The id of the operator of interest.
+     * @param index Array index for lookup, within the dynamic array `operatorStakeHistory[operatorId][quorumNumber]`.
+     * @param blockNumber Block number to make sure the stake is from.
+     * @dev Function will revert if `index` is out-of-bounds.
+     */
+     function getStakeAtBlockNumberAndIndex(
+        uint8 quorumNumber,
+        uint32 blockNumber,
+        bytes32 operatorId,
+        uint256 index
+    ) external view returns (uint96) {
+        OperatorStakeUpdate memory operatorStakeUpdate = operatorStakeHistory[operatorId][quorumNumber][index];
+        _validateOperatorStakeUpdateAtBlockNumber(operatorStakeUpdate, blockNumber);
+        return operatorStakeUpdate.stake;
+    }
+
+    /*******************************************************************************
+                        VIEW FUNCTIONS - Total Stake History
+    *******************************************************************************/
+
+    /**
+     * @notice Returns the length of the total stake history for the given quorum
+     */
+    function getTotalStakeHistoryLength(uint8 quorumNumber) external view returns (uint256) {
+        return _totalStakeHistory[quorumNumber].length;
+    }
+
+    /**
+     * @notice Returns the stake weight from the latest entry in `_totalStakeHistory` for quorum `quorumNumber`.
+     * @dev Will revert if `_totalStakeHistory[quorumNumber]` is empty.
+     */
+    function getCurrentTotalStake(uint8 quorumNumber) external view returns (uint96) {
+        return _totalStakeHistory[quorumNumber][_totalStakeHistory[quorumNumber].length - 1].stake;
+    }
+
+    /**
+     * @notice Returns the `index`-th entry in the dynamic array of total stake, `_totalStakeHistory` for quorum `quorumNumber`.
+     * @param quorumNumber The quorum number to get the stake for.
+     * @param index Array index for lookup, within the dynamic array `_totalStakeHistory[quorumNumber]`.
+     */
+     function getTotalStakeUpdateAtIndex(
+        uint8 quorumNumber,
+        uint256 index
+    ) external view returns (OperatorStakeUpdate memory) {
+        return _totalStakeHistory[quorumNumber][index];
+    } 
+
+    /**
+     * @notice Returns the total stake weight for quorum `quorumNumber`, at the `index`-th entry in the
+     * `_totalStakeHistory[quorumNumber]` array if it was the stake at `blockNumber`. Reverts otherwise.
+     * @param quorumNumber The quorum number to get the stake for.
+     * @param index Array index for lookup, within the dynamic array `_totalStakeHistory[quorumNumber]`.
+     * @param blockNumber Block number to make sure the stake is from.
+     * @dev Function will revert if `index` is out-of-bounds.
+     */
+     function getTotalStakeAtBlockNumberFromIndex(
+        uint8 quorumNumber,
+        uint32 blockNumber,
+        uint256 index
+    ) external view returns (uint96) {
+        OperatorStakeUpdate memory totalStakeUpdate = _totalStakeHistory[quorumNumber][index];
+        _validateOperatorStakeUpdateAtBlockNumber(totalStakeUpdate, blockNumber);
+        return totalStakeUpdate.stake;
+    }
+
+    /**
      * @notice Returns the indices of the total stakes for the provided `quorumNumbers` at the given `blockNumber`
      * @param blockNumber Block number to retrieve the stake indices from.
      * @param quorumNumbers The quorum numbers to get the stake indices for.
      * @dev Function will revert if there are no indices for the given `blockNumber`
      */
-    function getTotalStakeIndicesAtBlockNumber(
+     function getTotalStakeIndicesAtBlockNumber(
         uint32 blockNumber,
         bytes calldata quorumNumbers
     ) external view returns (uint32[] memory) {
@@ -602,102 +713,5 @@ contract StakeRegistry is StakeRegistryStorage {
             }
         }
         return indices;
-    }
-
-    /**
-     * @notice Returns the stake weight corresponding to `operatorId` for quorum `quorumNumber`, at the
-     * `index`-th entry in the `operatorStakeHistory[operatorId][quorumNumber]` array if it was the operator's
-     * stake at `blockNumber`. Reverts otherwise.
-     * @param quorumNumber The quorum number to get the stake for.
-     * @param operatorId The id of the operator of interest.
-     * @param index Array index for lookup, within the dynamic array `operatorStakeHistory[operatorId][quorumNumber]`.
-     * @param blockNumber Block number to make sure the stake is from.
-     * @dev Function will revert if `index` is out-of-bounds.
-     */
-    function getOperatorStakeAtBlockNumberAndIndex(
-        uint8 quorumNumber,
-        uint32 blockNumber,
-        bytes32 operatorId,
-        uint256 index
-    ) external view returns (uint96) {
-        OperatorStakeUpdate memory operatorStakeUpdate = operatorStakeHistory[operatorId][quorumNumber][index];
-        _validateOperatorStakeUpdateAtBlockNumber(operatorStakeUpdate, blockNumber);
-        return operatorStakeUpdate.stake;
-    }
-
-    /**
-     * @notice Returns the total stake weight for quorum `quorumNumber`, at the `index`-th entry in the
-     * `_totalStakeHistory[quorumNumber]` array if it was the stake at `blockNumber`. Reverts otherwise.
-     * @param quorumNumber The quorum number to get the stake for.
-     * @param index Array index for lookup, within the dynamic array `_totalStakeHistory[quorumNumber]`.
-     * @param blockNumber Block number to make sure the stake is from.
-     * @dev Function will revert if `index` is out-of-bounds.
-     */
-    function getTotalStakeAtBlockNumberFromIndex(
-        uint8 quorumNumber,
-        uint32 blockNumber,
-        uint256 index
-    ) external view returns (uint96) {
-        OperatorStakeUpdate memory totalStakeUpdate = _totalStakeHistory[quorumNumber][index];
-        _validateOperatorStakeUpdateAtBlockNumber(totalStakeUpdate, blockNumber);
-        return totalStakeUpdate.stake;
-    }
-
-    /**
-     * @notice Returns the most recent stake weight for the `operatorId` for a certain quorum
-     * @dev Function returns an OperatorStakeUpdate struct with **every entry equal to 0** in the event that the operator has no stake history
-     */
-    function getMostRecentStakeUpdateByOperatorId(
-        bytes32 operatorId,
-        uint8 quorumNumber
-    ) public view returns (OperatorStakeUpdate memory) {
-        uint256 historyLength = operatorStakeHistory[operatorId][quorumNumber].length;
-        OperatorStakeUpdate memory operatorStakeUpdate;
-        if (historyLength == 0) {
-            return operatorStakeUpdate;
-        } else {
-            operatorStakeUpdate = operatorStakeHistory[operatorId][quorumNumber][historyLength - 1];
-            return operatorStakeUpdate;
-        }
-    }
-
-    /**
-     * @notice Returns the most recent stake weight for the `operatorId` for quorum `quorumNumber`
-     * @dev Function returns weight of **0** in the event that the operator has no stake history
-     */
-    function getCurrentOperatorStakeForQuorum(bytes32 operatorId, uint8 quorumNumber) external view returns (uint96) {
-        OperatorStakeUpdate memory operatorStakeUpdate = getMostRecentStakeUpdateByOperatorId(operatorId, quorumNumber);
-        return operatorStakeUpdate.stake;
-    }
-
-    /// @notice Returns the stake of the operator for the provided `quorumNumber` at the given `blockNumber`
-    function getOperatorStakeAtBlockNumber(
-        bytes32 operatorId,
-        uint8 quorumNumber,
-        uint32 blockNumber
-    ) external view returns (uint96) {
-        return
-            operatorStakeHistory[operatorId][quorumNumber][
-                _getStakeUpdateIndexForOperatorAtBlockNumber(operatorId, quorumNumber, blockNumber)
-            ].stake;
-    }
-
-    /**
-     * @notice Returns the stake weight from the latest entry in `_totalStakeHistory` for quorum `quorumNumber`.
-     * @dev Will revert if `_totalStakeHistory[quorumNumber]` is empty.
-     */
-    function getCurrentTotalStakeForQuorum(uint8 quorumNumber) external view returns (uint96) {
-        return _totalStakeHistory[quorumNumber][_totalStakeHistory[quorumNumber].length - 1].stake;
-    }
-
-    function getOperatorStakeHistoryLength(
-        bytes32 operatorId,
-        uint8 quorumNumber
-    ) external view returns (uint256) {
-        return operatorStakeHistory[operatorId][quorumNumber].length;
-    }
-
-    function getTotalStakeHistoryLength(uint8 quorumNumber) external view returns (uint256) {
-        return _totalStakeHistory[quorumNumber].length;
     }
 }
