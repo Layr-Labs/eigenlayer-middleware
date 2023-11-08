@@ -92,17 +92,17 @@ library BitmapUtils {
     }
 
     /**
-     * @notice Converts an ordered byte array to a bitmap, validating that all bits are less than `maxSetBit`
+     * @notice Converts an ordered byte array to a bitmap, validating that all bits are less than `bitUpperBound`
      * @param orderedBytesArray The array to convert to a bitmap; must be in strictly ascending order
-     * @param maxSetBit The bitmap may not contain a bit greater than or equal to this value
-     * @dev Reverts if bitmap contains a bit greater than or equal to `maxSetBit`
+     * @param bitUpperBound The exclusive largest bit. Each bit must be strictly less than this value.
+     * @dev Reverts if bitmap contains a bit greater than or equal to `bitUpperBound`
      */
-    function orderedBytesArrayToBitmap(bytes memory orderedBytesArray, uint8 maxSetBit) internal pure returns (uint256) {
+    function orderedBytesArrayToBitmap(bytes memory orderedBytesArray, uint8 bitUpperBound) internal pure returns (uint256) {
         uint256 bitmap = orderedBytesArrayToBitmap(orderedBytesArray);
 
         if (bitmap != 0) {
             require(
-                uint8(orderedBytesArray[orderedBytesArray.length - 1]) < maxSetBit, 
+                uint8(orderedBytesArray[orderedBytesArray.length - 1]) < bitUpperBound, 
                 "BitmapUtils.orderedBytesArrayToBitmap: bitmap exceeds max value"
             );
         }

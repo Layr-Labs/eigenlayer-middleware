@@ -68,8 +68,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     /// @notice maps operator id => historical quorums they registered for
     mapping(bytes32 => QuorumBitmapUpdate[]) internal _operatorBitmapHistory;
     /// @notice maps operator address => operator id and status
-    // TODO rename struct to OperatorInfo
-    mapping(address => Operator) internal _operatorInfo;
+    mapping(address => OperatorInfo) internal _operatorInfo;
     /// @notice whether the salt has been used for an operator churn approval
     mapping(bytes32 => bool) public isChurnApproverSaltUsed;
 
@@ -264,7 +263,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         for (uint256 i = 0; i < operators.length; i++) {
 
             address operator = operators[i];
-            Operator storage operatorInfo = _operatorInfo[operator];
+            OperatorInfo storage operatorInfo = _operatorInfo[operator];
             bytes32 operatorId = operatorInfo.operatorId;
 
             // Only update operators currently registered for at least one quorum
@@ -408,7 +407,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         emit OperatorSocketUpdate(idToRegister, socket);
 
         if (_operatorInfo[operatorToRegister].status != OperatorStatus.REGISTERED) {
-            _operatorInfo[operatorToRegister] = Operator({
+            _operatorInfo[operatorToRegister] = OperatorInfo({
                 operatorId: idToRegister,
                 status: OperatorStatus.REGISTERED
             });
@@ -468,7 +467,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         bytes memory quorumNumbers
     ) internal virtual {
         // Fetch the operator's info and ensure they are registered
-        Operator storage operatorInfo = _operatorInfo[operator];
+        OperatorInfo storage operatorInfo = _operatorInfo[operator];
         bytes32 operatorId = operatorInfo.operatorId;
         require(operatorInfo.status == OperatorStatus.REGISTERED, "BLSRegistryCoordinatorWithIndices._deregisterOperator: operator is not registered");
         
@@ -636,7 +635,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     }
 
     /// @notice Returns the operator struct for the given `operator`
-    function getOperator(address operator) external view returns (Operator memory) {
+    function getOperator(address operator) external view returns (OperatorInfo memory) {
         return _operatorInfo[operator];
     }
 
