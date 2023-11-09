@@ -42,10 +42,10 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
     uint96[256] public minimumStakeForQuorum;
 
     /// @notice array of the history of the total stakes for each quorum -- marked as internal since getTotalStakeFromIndex is a getter for this
-    OperatorStakeUpdate[][256] internal _totalStakeHistory;
+    StakeUpdate[][256] internal _totalStakeHistory;
 
     /// @notice mapping from operator's operatorId to the history of their stake updates
-    mapping(bytes32 => mapping(uint8 => OperatorStakeUpdate[])) internal operatorStakeHistory;
+    mapping(bytes32 => mapping(uint8 => StakeUpdate[])) internal operatorStakeHistory;
 
     /**
      * @notice mapping from quorum number to the list of strategies considered and their
