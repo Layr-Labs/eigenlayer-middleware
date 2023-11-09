@@ -286,7 +286,8 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
     }
 
     /**
-     * @notice Updates the stakes of all operators for each of the specified quorums in the StakeRegistry
+     * @notice Updates the stakes of all operators for each of the specified quorums in the StakeRegistry. Each quorum also
+     * has their StakeRegistry.quorumTimestamp updated. which is meant to keep track of when operators were last all updated at once. 
      * @param operatorsPerQuorum is an array of arrays of operators to update for each quorum. Note that each nested array
      * of operators must be sorted in ascending operatorId order to ensure that all operators in the quorum are updated
      * @param quorumNumbers is an array of quorum numbers to update
@@ -330,10 +331,7 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
                  * Update the operator's stake for their active quorums. The stakeRegistry returns a bitmap
                  * of quorums where the operator no longer meets the minimum stake, and should be deregistered.
                  */
-                uint192 quorumsToRemove = stakeRegistry.updateOperatorStake(operator, operatorId, BitmapUtils.bitmapToBytesArray(currentBitmap));
-
-                // TODO update StakeRegistry timestamp for quorum
-                
+                uint192 quorumsToRemove = stakeRegistry.updateOperatorStake(operator, operatorId, BitmapUtils.bitmapToBytesArray(currentBitmap));                
 
                 if (!quorumsToRemove.isEmpty()) {
                     _deregisterOperator({
@@ -342,6 +340,8 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
                     });    
                 }
             }
+
+            stakeRegistry.updateQuorumTimestamp(quorumNumber);
         }
     }
 
