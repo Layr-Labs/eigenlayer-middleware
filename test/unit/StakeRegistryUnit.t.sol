@@ -10,7 +10,6 @@ import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/Pau
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 import {IServiceManager} from "src/interfaces/IServiceManager.sol";
 import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
@@ -27,12 +26,16 @@ import {DelegationManagerMock} from "eigenlayer-contracts/src/test/mocks/Delegat
 import {SlasherMock} from "eigenlayer-contracts/src/test/mocks/SlasherMock.sol";
 
 import {StakeRegistryHarness} from "test/harnesses/StakeRegistryHarness.sol";
-import {StakeRegistry} from "src/StakeRegistry.sol";
 import {BLSRegistryCoordinatorWithIndicesHarness} from "test/harnesses/BLSRegistryCoordinatorWithIndicesHarness.sol";
+
+import {StakeRegistry} from "src/StakeRegistry.sol";
+import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 
 import "forge-std/Test.sol";
 
 contract StakeRegistryUnitTests is Test {
+    using BitmapUtils for *;
+
     Vm cheats = Vm(HEVM_ADDRESS);
 
     ProxyAdmin public proxyAdmin;
@@ -66,8 +69,14 @@ contract StakeRegistryUnitTests is Test {
     uint8 numQuorums = 192;
     uint8 maxQuorumsToRegisterFor = 4;
 
-    // Track initialized quorums so we can filter these out when fuzzing
+    address nextOperator = address(1000);
+    bytes32 nextOperatorId = bytes32(uint256(1000));
+
+    /**
+     * Fuzz input filters:
+     */
     mapping(uint8 => bool) initializedQuorums;
+    uint192 initializedQuorumBitmap;
 
     uint256 gasUsed;
 
@@ -77,6 +86,11 @@ contract StakeRegistryUnitTests is Test {
         uint8 quorumNumber,
         uint96 stake
     );
+
+    modifier fuzz_onlyInitializedQuorums(uint8 quorumNumber) {
+        cheats.assume(initializedQuorums[quorumNumber]);
+        _;
+    }
 
     function setUp() virtual public {
         proxyAdmin = new ProxyAdmin();
@@ -150,174 +164,505 @@ contract StakeRegistryUnitTests is Test {
         registryCoordinator.setQuorumCount(maxQuorumsToRegisterFor);
     }
 
-    function testSetMinimumStakeForQuorum_NotFromServiceManager_Reverts() public {
-        cheats.expectRevert("StakeRegistry.onlyServiceManagerOwner: caller is not the owner of the serviceManager");
-        stakeRegistry.setMinimumStakeForQuorum(defaultQuorumNumber, 0);
+    function _initializeQuorum(
+        uint8 quorumNumber, 
+        uint96 minimumStake, 
+        IStakeRegistry.StrategyParams[] memory strategyParams
+    ) internal {
+        cheats.prank(address(registryCoordinator));
+
+        stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
+        initializedQuorums[quorumNumber] = true;
+        initializedQuorumBitmap |= uint192(1 << quorumNumber);
     }
 
-    function testSetMinimumStakeForQuorum_Valid(uint8 quorumNumber, uint96 minimumStakeForQuorum) public {
-        // filter out non-initialized quorums
-        cheats.assume(initializedQuorums[quorumNumber]);
+    // utility function for registering an operator with a valid quorumBitmap and stakesForQuorum using provided randomness
+    function _registerOperatorRandomValid(
+        address operator,
+        bytes32 operatorId,
+        uint256 psuedoRandomNumber
+    ) internal returns(uint256, uint96[] memory){
+        // generate uint256 quorumBitmap from psuedoRandomNumber and limit to maxQuorumsToRegisterFor quorums and register for quorum 0
+        uint256 quorumBitmap = uint256(keccak256(abi.encodePacked(psuedoRandomNumber, "quorumBitmap"))) & (1 << maxQuorumsToRegisterFor - 1) | 1;
+        // generate uint80[] stakesForQuorum from psuedoRandomNumber
+        uint80[] memory stakesForQuorum = new uint80[](BitmapUtils.countNumOnes(quorumBitmap));
+        for(uint i = 0; i < stakesForQuorum.length; i++) {
+            stakesForQuorum[i] = uint80(uint256(keccak256(abi.encodePacked(psuedoRandomNumber, i, "stakesForQuorum"))));
+        }
+
+        return (quorumBitmap, _registerOperatorValid(operator, operatorId, quorumBitmap, stakesForQuorum));
+    }
+
+    // utility function for registering an operator
+    function _registerOperatorValid(
+        address operator,
+        bytes32 operatorId,
+        uint256 quorumBitmap,
+        uint80[] memory stakesForQuorum
+    ) internal returns(uint96[] memory){
+        cheats.assume(quorumBitmap != 0);
+
+        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
+
+        // pad the stakesForQuorum array with the minimum stake for the quorums 
+        uint96[] memory paddedStakesForQuorum = new uint96[](BitmapUtils.countNumOnes(quorumBitmap));
+        for(uint i = 0; i < paddedStakesForQuorum.length; i++) {
+            uint96 minimumStakeForQuorum = stakeRegistry.minimumStakeForQuorum(uint8(quorumNumbers[i]));
+            // make sure the operator has at least the mininmum stake in each quorum it is registering for
+            if (i >= stakesForQuorum.length || stakesForQuorum[i] < minimumStakeForQuorum) {
+                paddedStakesForQuorum[i] = minimumStakeForQuorum;
+            } else {
+                paddedStakesForQuorum[i] = stakesForQuorum[i];
+            }
+        }
+
+        // set the weights of the operator
+        for(uint i = 0; i < paddedStakesForQuorum.length; i++) {
+            stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), operator, paddedStakesForQuorum[i]);
+        }
+
+        // register operator
+        uint256 gasleftBefore = gasleft();
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
+        gasUsed = gasleftBefore - gasleft();
         
-        // set the minimum stake for quorum
+        return paddedStakesForQuorum;
+    }
+
+    // utility function for deregistering an operator
+    function _deregisterOperatorValid(
+        bytes32 operatorId,
+        uint256 quorumBitmap
+    ) internal {
+        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
+
+        // deregister operator
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.deregisterOperator(operatorId, quorumNumbers);
+    }
+
+    function _getInitializedQuorums() internal view returns (bytes memory) {
+        return BitmapUtils.bitmapToBytesArray(initializedQuorumBitmap);
+    }
+
+    function _getMinimumStakes(bytes memory quorumNumbers) internal view returns (uint96[] memory) {
+        uint96[] memory minimumStakes = new uint96[](quorumNumbers.length);
+        
+        for (uint i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+            minimumStakes[i] = stakeRegistry.minimumStakeForQuorum(quorumNumber);
+        }
+
+        return minimumStakes;
+    }
+
+    function _getLatestStakeUpdates(
+        bytes32 operatorId, 
+        bytes memory quorumNumbers
+    ) internal view returns (IStakeRegistry.StakeUpdate[] memory) {
+        IStakeRegistry.StakeUpdate[] memory stakeUpdates = 
+            new IStakeRegistry.StakeUpdate[](quorumNumbers.length);
+        
+        for (uint i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+            stakeUpdates[i] = stakeRegistry.getLatestStakeUpdate(operatorId, quorumNumber);
+        }
+
+        return stakeUpdates;
+    }
+
+    function _getLatestTotalStakeUpdates(
+        bytes memory quorumNumbers
+    ) internal view returns (IStakeRegistry.StakeUpdate[] memory) {
+        IStakeRegistry.StakeUpdate[] memory stakeUpdates = 
+            new IStakeRegistry.StakeUpdate[](quorumNumbers.length);
+        
+        for (uint i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+
+            uint historyLength = stakeRegistry.getTotalStakeHistoryLength(quorumNumber);
+            stakeUpdates[i] = stakeRegistry.getTotalStakeUpdateAtIndex(quorumNumber, historyLength - 1);
+        }
+
+        return stakeUpdates;
+    }
+
+    function _getLatestTotalStakeHistoryLengths(
+        bytes memory quorumNumbers
+    ) internal view returns (uint[] memory) {
+        uint[] memory historyLengths = new uint[](quorumNumbers.length);
+
+        for (uint i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+
+            historyLengths[i] = stakeRegistry.getTotalStakeHistoryLength(quorumNumber);
+        }
+
+        return historyLengths;
+    }
+
+    /// @dev Return a new, unique operator/operatorId pair
+    function _selectNewOperator() internal returns (address, bytes32) {
+        address operator = nextOperator;
+        bytes32 operatorId = nextOperatorId;
+        nextOperator = _incrementAddress(nextOperator, 1);
+        nextOperatorId = _incrementBytes32(nextOperatorId, 1);
+        return (operator, operatorId);
+    }
+
+    struct RegisterSetup {
+        address operator;
+        bytes32 operatorId;
+        bytes quorumNumbers;
+        uint96[] operatorWeights;
+        uint96[] minimumStakes;
+        IStakeRegistry.StakeUpdate[] prevOperatorStakes;
+        IStakeRegistry.StakeUpdate[] prevTotalStakes;
+    }
+
+    /// @dev Multi-operator version of the function below
+    function _fuzz_setupRegisterOperators(uint192 fuzzy_Bitmap, uint16 fuzzy_addtlStake, uint numOperators) internal returns (RegisterSetup[] memory) {
+        RegisterSetup[] memory setups = new RegisterSetup[](numOperators);
+
+        for (uint i = 0; i < numOperators; i++) {
+            setups[i] = _fuzz_setupRegisterOperator(fuzzy_Bitmap, fuzzy_addtlStake);
+        }
+
+        return setups;
+    }
+
+    /// @dev Utility function set up a new operator to be registered for some quorums
+    /// The operator's weight is set to the quorum's minimum, plus fuzzy_addtlStake (overflows are skipped)
+    /// This function guarantees at least one quorum, and any quorums returned are initialized
+    function _fuzz_setupRegisterOperator(uint192 fuzzy_Bitmap, uint16 fuzzy_addtlStake) internal returns (RegisterSetup memory) {
+        // Select an unused operator to register
+        (address operator, bytes32 operatorId) = _selectNewOperator();
+        
+        // Pick quorums to register for and get each quorum's minimum stake
+        bytes memory quorumNumbers = _fuzz_getQuorums(fuzzy_Bitmap);
+        uint96[] memory minimumStakes = _getMinimumStakes(quorumNumbers);
+
+        // For each quorum, set the operator's weight as the minimum + addtlStake
+        uint96[] memory operatorWeights = new uint96[](quorumNumbers.length);
+        for (uint i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+
+            unchecked { operatorWeights[i] = minimumStakes[i] + fuzzy_addtlStake; }
+            cheats.assume(operatorWeights[i] >= minimumStakes[i]);
+            cheats.assume(operatorWeights[i] >= fuzzy_addtlStake);
+
+            stakeRegistry.setOperatorWeight(quorumNumber, operator, operatorWeights[i]);
+        }
+
+        /// Get starting state
+        IStakeRegistry.StakeUpdate[] memory prevOperatorStakes = _getLatestStakeUpdates(operatorId, quorumNumbers);
+        IStakeRegistry.StakeUpdate[] memory prevTotalStakes = _getLatestTotalStakeUpdates(quorumNumbers);
+
+        // Ensure that the operator has not previously registered
+        for (uint i = 0; i < quorumNumbers.length; i++) {
+            assertTrue(prevOperatorStakes[i].updateBlockNumber == 0, "operator already registered");
+            assertTrue(prevOperatorStakes[i].stake == 0, "operator already has stake");
+        }
+
+        return RegisterSetup({
+            operator: operator,
+            operatorId: operatorId,
+            quorumNumbers: quorumNumbers,
+            operatorWeights: operatorWeights,
+            minimumStakes: minimumStakes,
+            prevOperatorStakes: prevOperatorStakes,
+            prevTotalStakes: prevTotalStakes
+        });
+    }
+
+    /// @notice Given a fuzzed bitmap input, returns an array of quorum numbers that
+    /// are guaranteed to be initialized
+    function _fuzz_getQuorums(uint192 fuzzy_Bitmap) internal view returns (bytes memory) {
+        fuzzy_Bitmap &= initializedQuorumBitmap;
+        cheats.assume(!fuzzy_Bitmap.isEmpty());
+
+        return fuzzy_Bitmap.bitmapToBytesArray();
+    }
+
+    function _incrementAddress(address start, uint256 inc) internal pure returns(address) {
+        return address(uint160(uint256(uint160(start) + inc)));
+    }
+
+    function _incrementBytes32(bytes32 start, uint256 inc) internal pure returns(bytes32) {
+        return bytes32(uint256(start) + inc);
+    }
+
+    function _calculateDelta(uint96 prev, uint96 cur) internal pure returns (int256) {
+        return int256(uint256(cur)) - int256(uint256(prev));
+    }
+}
+
+/// @notice Tests for any non-registry coordinator permissioned methods
+contract StakeRegistryUnitTests_Admin is StakeRegistryUnitTests {
+
+    /*******************************************************************************
+                            setMinimumStakeForQuorum
+    *******************************************************************************/
+
+    function testFuzz_setMinimumStakeForQuorum(uint8 quorumNumber, uint96 minimumStakeForQuorum) public fuzz_onlyInitializedQuorums(quorumNumber) {
         cheats.prank(serviceManagerOwner);
         stakeRegistry.setMinimumStakeForQuorum(quorumNumber, minimumStakeForQuorum);
 
-        // make sure the minimum stake for quorum is as expected
-        assertEq(stakeRegistry.minimumStakeForQuorum(quorumNumber), minimumStakeForQuorum);
+        assertEq(stakeRegistry.minimumStakeForQuorum(quorumNumber), minimumStakeForQuorum, "invalid minimum stake");
     }
 
-    function testRegisterOperator_NotFromRegistryCoordinator_Reverts() public {
-        bytes memory quorumNumbers = new bytes(1);
-        quorumNumbers[0] = bytes1(defaultQuorumNumber);
-        cheats.expectRevert("StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator");
-        stakeRegistry.registerOperator(defaultOperator, defaultOperatorId, quorumNumbers);
+    function testFuzz_setMinimumStakeForQuorum_revert_notServiceManager(uint8 quorumNumber, uint96 minimumStakeForQuorum) public fuzz_onlyInitializedQuorums(quorumNumber) {
+        cheats.expectRevert("StakeRegistry.onlyServiceManagerOwner: caller is not the owner of the serviceManager");
+        
+        stakeRegistry.setMinimumStakeForQuorum(quorumNumber, minimumStakeForQuorum);
     }
+}
 
-    function testRegisterOperator_LessThanMinimumStakeForQuorum_Reverts(
-        uint96[] memory stakesForQuorum
+/// @notice Tests for StakeRegistry.registerOperator
+contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
+
+    /*******************************************************************************
+                              registerOperator
+    *******************************************************************************/
+
+    /**
+     * @dev Registers an operator for each initialized quorum, adding `additionalStake`
+     * to the minimum stake for each quorum.
+     *
+     * Checks the end result of stake updates rather than the entire history
+     */
+    function testFuzz_registerOperator_singleOperator_singleBlock(
+        uint192 quorumBitmap,
+        uint16 additionalStake
     ) public {
-        cheats.assume(stakesForQuorum.length > 0);
+        /// Setup - select a new operator and set their weight to each quorum's minimum plus some additional
+        RegisterSetup memory setup = _fuzz_setupRegisterOperator(quorumBitmap, additionalStake);
 
-        // set the weights of the operator
-        // stakeRegistry.setOperatorWeight()
+        /// registerOperator
+        cheats.prank(address(registryCoordinator));
+        (uint96[] memory resultingStakes, uint96[] memory totalStakes) = 
+            stakeRegistry.registerOperator(setup.operator, setup.operatorId, setup.quorumNumbers);
 
-        bytes memory quorumNumbers = new bytes(stakesForQuorum.length > maxQuorumsToRegisterFor ? maxQuorumsToRegisterFor : stakesForQuorum.length);
-        for (uint i = 0; i < quorumNumbers.length; i++) {
-            quorumNumbers[i] = bytes1(uint8(i));
+        /// Read ending state
+        IStakeRegistry.StakeUpdate[] memory newOperatorStakes = _getLatestStakeUpdates(setup.operatorId, setup.quorumNumbers);
+        IStakeRegistry.StakeUpdate[] memory newTotalStakes = _getLatestTotalStakeUpdates(setup.quorumNumbers);
+
+        /// Check results
+        assertTrue(resultingStakes.length == setup.quorumNumbers.length, "invalid return length for operator stakes");
+        assertTrue(totalStakes.length == setup.quorumNumbers.length, "invalid return length for total stakes");
+
+        for (uint i = 0; i < setup.quorumNumbers.length; i++) {
+            // Check result against weights and latest state read
+            assertEq(resultingStakes[i], setup.operatorWeights[i], "stake registry did not return correct stake");
+            assertEq(resultingStakes[i], newOperatorStakes[i].stake, "invalid latest operator stake update");
+            assertTrue(resultingStakes[i] != 0, "registered operator with zero stake");
+
+            // Check result against minimum stake
+            assertTrue(resultingStakes[i] >= setup.minimumStakes[i], "stake registry did not return correct stake");
+            
+            // Check stake increase from fuzzed input
+            assertEq(resultingStakes[i], newOperatorStakes[i].stake, "did not add additional stake to operator correctly");
+            assertEq(resultingStakes[i], newTotalStakes[i].stake, "did not add additional stake to total correctly");
+        }
+    }
+
+    // Track total stake added for each quorum as we register operators
+    mapping(uint8 => uint96) _totalStakeAdded;
+
+    /**
+     * @dev Register multiple unique operators for the same quorums during a single block,
+     * each with a weight of minimumStake + additionalStake.
+     *
+     * Checks the end result of stake updates rather than the entire history
+     */
+    function testFuzz_registerOperators_multipleOperators_singleBlock(
+        uint8 numOperators,
+        uint192 quorumBitmap,
+        uint16 additionalStake
+    ) public {
+        cheats.assume(numOperators > 1 && numOperators < 20);
+
+        RegisterSetup[] memory setups = new RegisterSetup[](numOperators);
+        for (uint i = 0; i < numOperators; i++) {
+            setups[i] = _fuzz_setupRegisterOperator(quorumBitmap, additionalStake);
         }
 
-        stakesForQuorum[stakesForQuorum.length - 1] = stakeRegistry.minimumStakeForQuorum(uint8(quorumNumbers.length - 1)) - 1;
+        // Register each operator one at a time, and check results:
+        for (uint i = 0; i < numOperators; i++) {
+            RegisterSetup memory setup = setups[i];
 
-        // expect that it reverts when you register
+            cheats.prank(address(registryCoordinator));
+            (uint96[] memory resultingStakes, uint96[] memory totalStakes) = 
+                stakeRegistry.registerOperator(setup.operator, setup.operatorId, setup.quorumNumbers);
+            
+            /// Read ending state
+            IStakeRegistry.StakeUpdate[] memory newOperatorStakes = _getLatestStakeUpdates(setup.operatorId, setup.quorumNumbers);
+
+            /// Check results
+            assertTrue(resultingStakes.length == setup.quorumNumbers.length, "invalid return length for operator stakes");
+            assertTrue(totalStakes.length == setup.quorumNumbers.length, "invalid return length for total stakes");
+
+            for (uint j = 0; j < setup.quorumNumbers.length; j++) {
+                // Check result against weights and latest state read
+                assertEq(resultingStakes[j], setup.operatorWeights[j], "stake registry did not return correct stake");
+                assertEq(resultingStakes[j], newOperatorStakes[j].stake, "invalid latest operator stake update");
+                assertTrue(resultingStakes[j] != 0, "registered operator with zero stake");
+
+                // Check result against minimum stake
+                assertTrue(resultingStakes[j] >= setup.minimumStakes[j], "stake registry did not return correct stake");
+            
+                // Check stake increase from fuzzed input
+                assertEq(resultingStakes[j], newOperatorStakes[j].stake, "did not add additional stake to operator correctly");
+                
+                // Track stake added to each quorum
+                uint8 quorumNumber = uint8(setup.quorumNumbers[j]);
+                uint96 stakeAdded = resultingStakes[j];
+                _totalStakeAdded[quorumNumber] += stakeAdded;
+            }
+        }
+
+        // Check total stake results
+        bytes memory quorumNumbers = _getInitializedQuorums();
+        IStakeRegistry.StakeUpdate[] memory newTotalStakes = _getLatestTotalStakeUpdates(quorumNumbers);
+        for (uint i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+            assertEq(newTotalStakes[i].stake, _totalStakeAdded[quorumNumber], "incorrect latest total stake");
+            assertEq(newTotalStakes[i].nextUpdateBlockNumber, 0, "incorrect total stake next update block");
+            assertEq(newTotalStakes[i].updateBlockNumber, uint32(block.number), "incorrect total stake next update block");
+        }
+    }
+
+    /**
+     * @dev Register multiple unique operators all initialized quorums over multiple blocks,
+     * each with a weight equal to the minimum + additionalStake.
+     *
+     * Since these updates occur over multiple blocks, this is primarily to test
+     * that the total stake history is updated correctly over time.
+     * @param operatorsPerBlock The number of unique operators registering during a single block
+     * @param totalBlocks The number of times we'll register `operatorsPerBlock` (we only move 1 block each time)
+     */
+    function testFuzz_registerOperators_multipleOperators_multiBlock(
+        uint8 operatorsPerBlock,
+        uint8 totalBlocks,
+        uint16 additionalStake
+    ) public {
+        /// We want between [1, 4] unique operators to register for all quorums each block,
+        /// and we want to test this for [2, 5] blocks
+        cheats.assume(operatorsPerBlock >= 1 && operatorsPerBlock <= 4);
+        cheats.assume(totalBlocks >= 2 && totalBlocks <= 5);
+
+        uint numOperators = operatorsPerBlock * totalBlocks;
+
+        uint startBlock = block.number;
+        for (uint i = 1; i <= totalBlocks; i++) {
+            // Move to current block number
+            uint curBlock = startBlock + i;
+            cheats.roll(curBlock);
+
+            RegisterSetup[] memory setups = 
+                _fuzz_setupRegisterOperators(initializedQuorumBitmap, additionalStake, operatorsPerBlock);
+
+            // Get prior total stake updates
+            bytes memory quorumNumbers = setups[0].quorumNumbers;
+            uint[] memory prevHistoryLengths = _getLatestTotalStakeHistoryLengths(quorumNumbers);
+            
+            for (uint j = 0; j < operatorsPerBlock; j++) {
+                RegisterSetup memory setup = setups[j];
+
+                cheats.prank(address(registryCoordinator));
+                (uint96[] memory resultingStakes, uint96[] memory totalStakes) = 
+                    stakeRegistry.registerOperator(setup.operator, setup.operatorId, setup.quorumNumbers);
+                
+                // Track overall stake added for each quorum
+                for (uint k = 0; k < setup.quorumNumbers.length; k++) {
+                    uint8 quorumNumber = uint8(setup.quorumNumbers[k]);
+                    uint96 stakeAdded = resultingStakes[k];
+                    _totalStakeAdded[quorumNumber] += stakeAdded;
+                }
+            }
+
+            // Get new total stake updates
+            uint[] memory newHistoryLengths = _getLatestTotalStakeHistoryLengths(quorumNumbers);
+            IStakeRegistry.StakeUpdate[] memory newTotalStakes = _getLatestTotalStakeUpdates(quorumNumbers);
+
+            for (uint j = 0; j < quorumNumbers.length; j++) {
+                uint8 quorumNumber = uint8(quorumNumbers[j]);
+
+                // Check that we've added 1 to total stake history length
+                assertEq(prevHistoryLengths[j] + 1, newHistoryLengths[j], "total history should have a new entry");
+                // Validate latest entry correctness
+                assertEq(newTotalStakes[j].stake, _totalStakeAdded[quorumNumber], "latest update should match total stake added");
+                assertEq(newTotalStakes[j].updateBlockNumber, curBlock, "latest update should be from current block");
+                assertEq(newTotalStakes[j].nextUpdateBlockNumber, 0, "latest update should not have next update block");
+
+                // Validate previous entry was updated correctly
+                IStakeRegistry.StakeUpdate memory prevUpdate = 
+                    stakeRegistry.getTotalStakeUpdateAtIndex(quorumNumber, prevHistoryLengths[j]-1);
+                assertTrue(prevUpdate.stake < newTotalStakes[j].stake, "previous update should have lower stake than latest");
+                assertEq(prevUpdate.updateBlockNumber + 1, newTotalStakes[j].updateBlockNumber, "prev entry should be from last block");
+                assertEq(prevUpdate.nextUpdateBlockNumber, newTotalStakes[j].updateBlockNumber, "prev entry.next should be latest.cur");
+            }
+        }
+    }
+
+    function test_registerOperator_revert_notRegistryCoordinator() public {
+        (address operator, bytes32 operatorId) = _selectNewOperator();
+        bytes memory quorumNumbers = _getInitializedQuorums();
+
+        cheats.expectRevert("StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator");
+        stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
+    }
+
+    function test_registerOperator_revert_quorumDoesNotExist() public {
+        (address operator, bytes32 operatorId) = _selectNewOperator();
+        
+        // Create an invalid quorum by incrementing the last initialized quorum
+        bytes memory quorumNumbers = _getInitializedQuorums();
+        uint8 invalidQuorum = uint8(quorumNumbers[quorumNumbers.length-1]) + 1;
+        quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(invalidQuorum);
+
+        cheats.expectRevert("StakeRegistry.registerOperator: quorum does not exist");
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
+    }
+
+    /// @dev Attempt to register for all quorums, selecting one quorum to attempt with
+    /// insufficient stake
+    function testFuzz_registerOperator_revert_insufficientStake(uint8 failingQuorum) public fuzz_onlyInitializedQuorums(failingQuorum) {
+        (address operator, bytes32 operatorId) = _selectNewOperator();
+        bytes memory quorumNumbers = _getInitializedQuorums();
+        uint96[] memory minimumStakes = _getMinimumStakes(quorumNumbers);
+
+        // Set the operator's weight to the minimum stake for each quorum
+        // ... except the failing quorum, which gets minimum stake - 1
+        for (uint i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+            uint96 operatorWeight;
+
+            if (quorumNumber == failingQuorum) {
+                unchecked { operatorWeight = minimumStakes[i] - 1; }
+                assertTrue(operatorWeight < minimumStakes[i], "minimum stake underflow");
+            } else {
+                operatorWeight = minimumStakes[i];
+            }
+
+            stakeRegistry.setOperatorWeight(quorumNumber, operator, operatorWeight);
+        }
+
+        // Attempt to register
         cheats.expectRevert("StakeRegistry.registerOperator: Operator does not meet minimum stake requirement for quorum");
         cheats.prank(address(registryCoordinator));
-        stakeRegistry.registerOperator(defaultOperator, defaultOperatorId, quorumNumbers);
+        stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
     }
+}
 
-    function testRegisterFirstOperator_Valid(
-        uint256 quorumBitmap,
-        uint80[] memory stakesForQuorum
-    ) public {
-        // limit to maxQuorumsToRegisterFor quorums and register for quorum 0
-        quorumBitmap = quorumBitmap & (1 << maxQuorumsToRegisterFor - 1) | 1;
-        uint96[] memory paddedStakesForQuorum = _registerOperatorValid(defaultOperator, defaultOperatorId, quorumBitmap, stakesForQuorum);
+contract StakeRegistryUnitTests_Deregister is StakeRegistryUnitTests {
 
-        uint8 quorumNumberIndex = 0;
-        for (uint8 i = 0; i < maxQuorumsToRegisterFor; i++) {
-            if (quorumBitmap >> i & 1 == 1) {
-                // check that the operator has 1 stake update in the quorum numbers they registered for
-                assertEq(stakeRegistry.getStakeHistoryLength(defaultOperatorId, i), 1);
-                // make sure that the stake update is as expected
-                IStakeRegistry.StakeUpdate memory stakeUpdate =
-                    stakeRegistry.getStakeUpdateAtIndex(i, defaultOperatorId, 0);
-                emit log_named_uint("length  of paddedStakesForQuorum", paddedStakesForQuorum.length);
-                assertEq(stakeUpdate.stake, paddedStakesForQuorum[quorumNumberIndex]);
-                assertEq(stakeUpdate.updateBlockNumber, uint32(block.number));
-                assertEq(stakeUpdate.nextUpdateBlockNumber, 0);
-
-                // make the analogous check for total stake history
-                assertEq(stakeRegistry.getTotalStakeHistoryLength(i), 1);
-                // make sure that the stake update is as expected
-                stakeUpdate = stakeRegistry.getTotalStakeUpdateAtIndex(i, 0);
-                assertEq(stakeUpdate.stake, paddedStakesForQuorum[quorumNumberIndex]);
-                assertEq(stakeUpdate.updateBlockNumber, uint32(block.number));
-                assertEq(stakeUpdate.nextUpdateBlockNumber, 0);
-
-                quorumNumberIndex++;
-            } else {
-                // check that the operator has 0 stake updates in the quorum numbers they did not register for
-                assertEq(stakeRegistry.getStakeHistoryLength(defaultOperatorId, i), 0);
-                // make the analogous check for total stake history
-                assertEq(stakeRegistry.getTotalStakeHistoryLength(i), 1);
-            }
-        }
-    }
-
-    function testRegisterManyOperators_Valid(
-        uint256 pseudoRandomNumber,
-        uint8 numOperators,
-        uint24[] memory blocksPassed
-    ) public {
-        cheats.assume(numOperators > 0 && numOperators <= 15);
-        // modulo so no overflow
-        pseudoRandomNumber = pseudoRandomNumber % type(uint128).max;
-
-        uint256[] memory quorumBitmaps = new uint256[](numOperators);
-
-        // append to blocksPassed as needed
-        uint24[] memory appendedBlocksPassed = new uint24[](quorumBitmaps.length);
-        for (uint256 i = blocksPassed.length; i < quorumBitmaps.length; i++) {
-            appendedBlocksPassed[i] = 0;
-        }
-        blocksPassed = appendedBlocksPassed;
-        
-        uint32 initialBlockNumber = 100;
-        cheats.roll(initialBlockNumber);
-        uint32 cumulativeBlockNumber = initialBlockNumber;
-
-        uint96[][] memory paddedStakesForQuorums = new uint96[][](quorumBitmaps.length);
-        for (uint256 i = 0; i < quorumBitmaps.length; i++) {
-            (quorumBitmaps[i], paddedStakesForQuorums[i]) = _registerOperatorRandomValid(_incrementAddress(defaultOperator, i), _incrementBytes32(defaultOperatorId, i), pseudoRandomNumber + i);
-
-            cumulativeBlockNumber += blocksPassed[i];
-            cheats.roll(cumulativeBlockNumber);
-        }
-        
-        // for each bit in each quorumBitmap, increment the number of operators in that quorum
-        uint32[] memory numOperatorsInQuorum = new uint32[](maxQuorumsToRegisterFor);
-        for (uint256 i = 0; i < quorumBitmaps.length; i++) {
-            for (uint256 j = 0; j < maxQuorumsToRegisterFor; j++) {
-                if (quorumBitmaps[i] >> j & 1 == 1) {
-                    numOperatorsInQuorum[j]++;
-                }
-            }
-        }
-
-        // operatorQuorumIndices is an array of iindices within the quorum numbers that each operator registered for
-        // used for accounting in the next loops
-        uint32[] memory operatorQuorumIndices = new uint32[](quorumBitmaps.length);
-
-        // for each quorum
-        for (uint8 i = 0; i < maxQuorumsToRegisterFor; i++) {
-            uint32 operatorCount = 0;
-            // reset the cumulative block number
-            cumulativeBlockNumber = initialBlockNumber;
-
-            uint96 cumulativeStake = 0;
-            // for each operator
-            for (uint256 j = 0; j < quorumBitmaps.length; j++) {
-                // if the operator is in the quorum
-                if (quorumBitmaps[j] >> i & 1 == 1) {
-                    cumulativeStake += paddedStakesForQuorums[j][operatorQuorumIndices[j]];
-
-                    operatorQuorumIndices[j]++;
-                    operatorCount++;
-                }
-                cumulativeBlockNumber += blocksPassed[j];
-            }
-
-            uint historyLength = stakeRegistry.getTotalStakeHistoryLength(i);
-
-            // If we don't have stake history, it should be because there is no stake
-            if (historyLength == 0) {
-                assertEq(cumulativeStake, 0);
-                continue;
-            }
-
-            // make sure that the stake update is as expected
-            IStakeRegistry.StakeUpdate memory totalStakeUpdate =
-                stakeRegistry.getTotalStakeUpdateAtIndex(i, historyLength-1);
-
-            assertEq(totalStakeUpdate.stake, cumulativeStake);
-            // make sure that the next update block number of the previous stake update is as expected
-            if (historyLength >= 2) {
-                IStakeRegistry.StakeUpdate memory prevTotalStakeUpdate =
-                    stakeRegistry.getTotalStakeUpdateAtIndex(i, historyLength-2);
-                assertEq(prevTotalStakeUpdate.nextUpdateBlockNumber, cumulativeBlockNumber);
-            }
-        }
-    }
+    /*******************************************************************************
+                              deregisterOperator
+    *******************************************************************************/
 
     function testDeregisterOperator_Valid(
         uint256 pseudoRandomNumber,
@@ -413,7 +758,10 @@ contract StakeRegistryUnitTests is Test {
             }
         }
     }
-    
+}
+
+contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
+
     function testUpdateOperatorStake_Valid(
         uint24[] memory blocksPassed,
         uint96[] memory stakes
@@ -483,94 +831,5 @@ contract StakeRegistryUnitTests is Test {
             cumulativeBlockNumber += blocksPassed;
             cheats.roll(cumulativeBlockNumber);
         }
-    }
-
-    function _initializeQuorum(
-        uint8 quorumNumber, 
-        uint96 minimumStake, 
-        IStakeRegistry.StrategyParams[] memory strategyParams
-    ) internal {
-        cheats.prank(address(registryCoordinator));
-
-        stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
-        initializedQuorums[quorumNumber] = true;
-    }
-
-    // utility function for registering an operator with a valid quorumBitmap and stakesForQuorum using provided randomness
-    function _registerOperatorRandomValid(
-        address operator,
-        bytes32 operatorId,
-        uint256 psuedoRandomNumber
-    ) internal returns(uint256, uint96[] memory){
-        // generate uint256 quorumBitmap from psuedoRandomNumber and limit to maxQuorumsToRegisterFor quorums and register for quorum 0
-        uint256 quorumBitmap = uint256(keccak256(abi.encodePacked(psuedoRandomNumber, "quorumBitmap"))) & (1 << maxQuorumsToRegisterFor - 1) | 1;
-        // generate uint80[] stakesForQuorum from psuedoRandomNumber
-        uint80[] memory stakesForQuorum = new uint80[](BitmapUtils.countNumOnes(quorumBitmap));
-        for(uint i = 0; i < stakesForQuorum.length; i++) {
-            stakesForQuorum[i] = uint80(uint256(keccak256(abi.encodePacked(psuedoRandomNumber, i, "stakesForQuorum"))));
-        }
-
-        return (quorumBitmap, _registerOperatorValid(operator, operatorId, quorumBitmap, stakesForQuorum));
-    }
-
-    // utility function for registering an operator
-    function _registerOperatorValid(
-        address operator,
-        bytes32 operatorId,
-        uint256 quorumBitmap,
-        uint80[] memory stakesForQuorum
-    ) internal returns(uint96[] memory){
-        cheats.assume(quorumBitmap != 0);
-
-        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
-
-        // pad the stakesForQuorum array with the minimum stake for the quorums 
-        uint96[] memory paddedStakesForQuorum = new uint96[](BitmapUtils.countNumOnes(quorumBitmap));
-        for(uint i = 0; i < paddedStakesForQuorum.length; i++) {
-            uint96 minimumStakeForQuorum = stakeRegistry.minimumStakeForQuorum(uint8(quorumNumbers[i]));
-            // make sure the operator has at least the mininmum stake in each quorum it is registering for
-            if (i >= stakesForQuorum.length || stakesForQuorum[i] < minimumStakeForQuorum) {
-                paddedStakesForQuorum[i] = minimumStakeForQuorum;
-            } else {
-                paddedStakesForQuorum[i] = stakesForQuorum[i];
-            }
-        }
-
-        // set the weights of the operator
-        for(uint i = 0; i < paddedStakesForQuorum.length; i++) {
-            stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), operator, paddedStakesForQuorum[i]);
-        }
-
-        // register operator
-        uint256 gasleftBefore = gasleft();
-        cheats.prank(address(registryCoordinator));
-        stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
-        gasUsed = gasleftBefore - gasleft();
-        
-        return paddedStakesForQuorum;
-    }
-
-    // utility function for deregistering an operator
-    function _deregisterOperatorValid(
-        bytes32 operatorId,
-        uint256 quorumBitmap
-    ) internal {
-        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
-
-        // deregister operator
-        cheats.prank(address(registryCoordinator));
-        stakeRegistry.deregisterOperator(operatorId, quorumNumbers);
-    }
-
-    function _incrementAddress(address start, uint256 inc) internal pure returns(address) {
-        return address(uint160(uint256(uint160(start) + inc)));
-    }
-
-    function _incrementBytes32(bytes32 start, uint256 inc) internal pure returns(bytes32) {
-        return bytes32(uint256(start) + inc);
-    }
-
-    function _calculateDelta(uint96 prev, uint96 cur) internal pure returns (int256) {
-        return int256(uint256(cur)) - int256(uint256(prev));
     }
 }
