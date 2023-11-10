@@ -204,8 +204,4 @@ contract StakeRegistryMock is IStakeRegistry {
     function getMockOperatorId(address operator) external returns(bytes32) {
         return bytes32(uint256(keccak256(abi.encodePacked(operator, "operatorId"))));
     }
-
-    function quorumUpdateTimestamp(uint8 quorumNumber) external view returns (uint256) {}
-
-    function updateQuorumTimestamp(uint8 quorumNumber) external {}
 }
