@@ -58,4 +58,6 @@ contract RegistryCoordinatorMock is IRegistryCoordinator {
     function registerOperator(bytes memory quorumNumbers, bytes calldata) external {}
 
     function deregisterOperator(bytes calldata quorumNumbers, bytes calldata) external {}
+
+    function quorumUpdateTimestamp(uint8 quorumNumber) external view returns (uint256) {}
 }

@@ -67,6 +67,9 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
     mapping(address => OperatorInfo) internal _operatorInfo;
     /// @notice whether the salt has been used for an operator churn approval
     mapping(bytes32 => bool) public isChurnApproverSaltUsed;
+    /// @notice mapping from quorum number to the latest timestamp that all quorums were updated all at once
+    mapping(uint8 => uint256) public quorumUpdateTimestamp;
+
 
     /// @notice the dynamic-length array of the registries this coordinator is coordinating
     address[] public registries;
@@ -590,7 +593,8 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
                 }
             }
 
-            stakeRegistry.updateQuorumTimestamp(quorumNumber);
+            quorumUpdateTimestamp[quorumNumber] = block.timestamp;
+            emit QuorumTimestampUpdated(quorumNumber, block.timestamp);
         }
     }
 

@@ -73,7 +73,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         BN254.G1Point memory apk = BN254.G1Point(0, 0);
         for (uint i = 0; i < quorumNumbers.length; i++) {
             require(
-                stakeRegistry.quorumUpdateTimestamp(uint8(quorumNumbers[i])) + 1 weeks <= block.timestamp,
+                registryCoordinator.quorumUpdateTimestamp(uint8(quorumNumbers[i])) + 1 weeks <= block.timestamp,
                 "BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within a week"
             );
             require(

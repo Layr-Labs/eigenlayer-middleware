@@ -53,8 +53,6 @@ interface IStakeRegistry is IRegistry {
     event StrategyRemovedFromQuorum(uint8 indexed quorumNumber, IStrategy strategy);
     /// @notice emitted when `strategy` has its `multiplier` updated in the array at `strategyParams[quorumNumber]`
     event StrategyMultiplierUpdated(uint8 indexed quorumNumber, IStrategy strategy, uint256 multiplier);
-    /// @notice emitted when all the operators for a quorum are updated at once
-    event QuorumTimestampUpdated(uint8 indexed quorumNumber, uint256 timestamp);
 
     /**
      * @notice Registers the `operator` with `operatorId` for the specified `quorumNumbers`.
@@ -251,14 +249,4 @@ interface IStakeRegistry is IRegistry {
         bytes32 operatorId, 
         bytes calldata quorumNumbers
     ) external returns (uint192);
-
-    /// @notice returns the timestamp the quorum was last updated all at once for all operators
-    function quorumUpdateTimestamp(uint8 quorumNumber) external view returns (uint256);
-
-    /**
-     * @notice Called by the registry coordinator when all operators for a quorum have been updated
-     * all at once. Updates to the current block timestamp
-     * @param quorumNumber the specific quorum that has been updated
-     */
-    function updateQuorumTimestamp(uint8 quorumNumber) external;
 }
