@@ -190,16 +190,6 @@ contract StakeRegistry is StakeRegistryStorage {
         return quorumsToRemove;
     }
 
-    /**
-     * @notice Called by the registry coordinator when all operators for a quorum have been updated
-     * all at once. Updates to the current block timestamp
-     * @param quorumNumber the specific quorum that has been updated
-     */
-    function updateQuorumTimestamp(uint8 quorumNumber) external onlyRegistryCoordinator {
-        quorumUpdateTimestamp[quorumNumber] = block.timestamp;
-        emit QuorumTimestampUpdated(quorumNumber, block.timestamp);
-    }
-
     /// @notice Initialize a new quorum and push its first history update
     function initializeQuorum(
         uint8 quorumNumber,

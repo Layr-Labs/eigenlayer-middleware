@@ -12,6 +12,9 @@ interface IRegistryCoordinator {
 
     /// Emits when an operator is deregistered
     event OperatorDeregistered(address indexed operator, bytes32 indexed operatorId);
+
+    /// @notice emitted when all the operators for a quorum are updated at once
+    event QuorumTimestampUpdated(uint8 indexed quorumNumber, uint256 timestamp);
     
     // DATA STRUCTURES
     enum OperatorStatus
@@ -83,4 +86,7 @@ interface IRegistryCoordinator {
 
     /// @notice Returns the number of registries
     function numRegistries() external view returns (uint256);
+
+    /// @notice returns the timestamp the quorum was last updated all at once for all operators
+    function quorumUpdateTimestamp(uint8 quorumNumber) external view returns (uint256);
 }
