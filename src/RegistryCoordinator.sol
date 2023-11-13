@@ -695,7 +695,7 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
      * @notice Returns true iff all of the bits in `quorumBitmap` belong to initialized quorums
      */
      function _quorumsAllExist(uint192 quorumBitmap) internal view returns (bool) {
-        uint192 initializedQuorumBitmap = uint192(1 << quorumCount - 2);
+        uint192 initializedQuorumBitmap = uint192(1 << quorumCount - 1);
         return quorumBitmap.isSubsetOf(initializedQuorumBitmap);
     }
 
