@@ -96,16 +96,6 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
         _;
     }
 
-    modifier quorumsAllExist(bytes calldata quorumNumbers) {
-        uint256 quorumNumbersBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
-        uint256 initializedQuorumBitmap = 1 << quorumCount - 2;
-        require(
-            quorumNumbersBitmap.isSubsetOf(initializedQuorumBitmap),
-            "BLSRegistryCoordinatorWithIndices.quorumsAllExist: one or more quorums do not exist"
-        );
-        _;
-    }
-
     constructor(
         ISlasher _slasher,
         IServiceManager _serviceManager,
@@ -282,6 +272,7 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
 
             uint192 currentBitmap = _currentOperatorBitmap(operatorId);
             bytes memory currentQuorums = BitmapUtils.bitmapToBytesArray(currentBitmap);
+            require(_quorumsAllExist(currentBitmap), "BLSRegistryCoordinatorWithIndices.updateOperators: some quorums do not exist");
 
             /**
              * Update the operator's stake for their active quorums. The stakeRegistry returns a bitmap
@@ -311,11 +302,15 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
     function updateOperatorsForQuorum(
         address[][] calldata operatorsPerQuorum,
         bytes calldata quorumNumbers
-    ) external onlyWhenNotPaused(PAUSED_UPDATE_OPERATOR) quorumsAllExist(quorumNumbers) {
+    ) external onlyWhenNotPaused(PAUSED_UPDATE_OPERATOR) {
         require(
             operatorsPerQuorum.length == quorumNumbers.length,
             "BLSRegistryCoordinatorWithIndices.updateOperatorsForQuorum: input length mismatch"
         );
+
+        uint192 quorumBitmap = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers));
+        require(_quorumsAllExist(quorumBitmap), "BLSRegistryCoordinatorWithIndices.updateOperatorsForQuorum: some quorums do not exist");
+
         _updateOperatorsForQuorum(operatorsPerQuorum, quorumNumbers);
     }
 
@@ -422,6 +417,7 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
         uint192 quorumsToAdd = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         uint192 currentBitmap = _currentOperatorBitmap(operatorId);
         require(!quorumsToAdd.isEmpty(), "RegistryCoordinator._registerOperator: bitmap cannot be 0");
+        require(_quorumsAllExist(quorumsToAdd), "RegistryCoordinator._registerOperator: some quorums do not exist");
         require(quorumsToAdd.noBitsInCommon(currentBitmap), "RegistryCoordinator._registerOperator: operator already registered for some quorums being registered for");
         uint192 newBitmap = uint192(currentBitmap.plus(quorumsToAdd));
 
@@ -509,6 +505,7 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
         uint192 quorumsToRemove = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         uint192 currentBitmap = _currentOperatorBitmap(operatorId);
         require(!quorumsToRemove.isEmpty(), "RegistryCoordinator._deregisterOperator: bitmap cannot be 0");
+        require(_quorumsAllExist(quorumsToRemove), "RegistryCoordinator._deregisterOperator: some quorums do not exist");
         require(quorumsToRemove.isSubsetOf(currentBitmap), "RegistryCoordinator._deregisterOperator: operator is not registered for specified quorums");
         uint192 newBitmap = uint192(currentBitmap.minus(quorumsToRemove));
 
@@ -692,6 +689,14 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
                 }));
             }
         }
+    }
+
+    /**
+     * @notice Returns true iff all of the bits in `quorumBitmap` belong to initialized quorums
+     */
+     function _quorumsAllExist(uint192 quorumBitmap) internal view returns (bool) {
+        uint192 initializedQuorumBitmap = uint192(1 << quorumCount - 2);
+        return quorumBitmap.isSubsetOf(initializedQuorumBitmap);
     }
 
     /// @notice Get the most recent bitmap for the operator, returning an empty bitmap if
