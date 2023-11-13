@@ -1,35 +1,53 @@
 .
-├── .
-├── StakeRegistry tree (*** denotes that integration tests are needed to validate path)
-├── when initializeQuorum is called
-│   └── TODO
-├── when registerOperator is called
-│   ├── given caller is not the registry coordinator
-│   │   └── it should revert
-│   ├── given quorum does not exist
-│   │   └── it should revert
-│   ├── given the operator does not meet the minimum stake for a quorum
-│   │   └── it should revert
-│   └── given that the above conditions are satisfied
-│       ├── given the operator's stake is unchanged ***
-│       │   └── it should not update the operator's stake
-│       ├── given the operator does not have a stake update from the current block
-│       │   └── it should push a new stake update for the operator
-│       ├── given the operator does have a stake update for the current block ***
-│       │   └── it should update the operator's last stake update with the new stake
-│       ├── given the total stake history was not updated in the current block
-│       │   └── it should push a new stake update for the total stake
-│       └── given the total stake history was updated in the current block
-│           └── it should update the last total stake update with the new stake
-├── when deregisterOperator is called
-│   └── TODO
-├── when updateOperatorStake is called
-│   └── TODO
-├── when setMinimumStakeForQuorum is called ***
-│   └── TODO
-├── when addStrategies is called ***
-│   └── TODO
-├── when removeStrategies is called ***
-│   └── TODO
-└── when modifyStrategyParams is called ***
-    └── TODO
+# .
+# .
+# StakeRegistry tree (*** denotes that integration tests are needed to validate path)
+# when any function is called (invariants)
+## when parameters contain uninitialized quorumNumbers
+### it should revert
+# when initializeQuorum is called
+## TODO
+# when registerOperator is called
+## given caller is not the registry coordinator
+### it should revert
+## given quorum does not exist
+### it should revert
+## given the operator does not meet the minimum stake for a quorum
+### it should revert
+## given that the above conditions are satisfied
+### given the operator's stake is unchanged ***
+#### it should not update the operator's stake
+### given the operator does not have a stake update from the current block
+#### it should push a new stake update for the operator
+### given the operator does have a stake update for the current block ***
+#### it should update the operator's last stake update with the new stake
+### given the total stake history was not updated in the current block
+#### it should push a new stake update for the total stake
+### given the total stake history was updated in the current block
+#### it should update the last total stake update with the new stake
+# when deregisterOperator is called
+## given caller is not the registry coordinator
+### it should revert
+## given quorum does not exist
+### it should revert
+## given that the above conditions are satisfied
+### given the operator's stake history is empty
+#### it should push a single entry with 0 stake
+### given the operator's current stake is 0 and their history is nonempty
+#### it should not update the operator's stake history or total history
+### given the operator's current stake is nonzero
+#### it should update or push an entry with zero stake to the operator's stake history
+### given the total stake history was not updated in the current block
+#### it should push a new stake update for the total stake
+### given the total stake history was updated in the current block
+#### it should update the last total stake update with the new stake
+# when updateOperatorStake is called
+## TODO
+# when setMinimumStakeForQuorum is called ***
+## TODO
+# when addStrategies is called ***
+## TODO
+# when removeStrategies is called ***
+## TODO
+# when modifyStrategyParams is called ***
+## TODO

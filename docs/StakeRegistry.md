@@ -6,33 +6,48 @@
 
 <!-- This contract is deployed for every AVS and keeps track of the AVS's operators' stakes over time and the total stakes for each quorum. In addition, this contract also handles the adding and modification of quorum. -->
 
-The StakeRegistry manages
+TODO
+
+The StakeRegistry manages the historical stake of operators for each quorum.
 
 <!-- ## Upstream Dependencies
 
 The main integration with the StakeRegistry is used by the AVSs [BLSSignatureChecker](./BLSSignatureChecker.md). An offchain actor provides an operator id, a quorum id, and an index in the array of the operator's stake updates to verify the stake of an operator at a particular block number. They also provide a quorum id and an index in the array of total stake updates to verify the stake of the entire quorum at a particular block number. -->
 
-(TODO) high-level description
-
 #### High-level Concepts
 
 This document organizes methods according to the following themes (click each to be taken to the relevant section):
 * [`Operator Lifecycle`](#operator-lifecycle)
-* [`Quorums and Configuration`]()
+* [`Quorums and Configuration`](#quorums-and-configuration)
 
 #### Important State Variables
 
-* `StateVar`: description
+* `uint96[256] public minimumStakeForQuorum`: TODO
+* `StakeUpdate[][256] internal _totalStakeHistory`: TODO
+* `mapping(bytes32 => mapping(uint8 => StakeUpdate[])) internal operatorStakeHistory`: TODO
 
 #### Helpful Definitions
 
-<!-- A **quorum** is defined by list of the following structs:
+TODO
+
+```solidity
+struct StakeUpdate {
+    // the block number at which the stake amounts were updated and stored
+    uint32 updateBlockNumber;
+    // the block number at which the *next update* occurred.
+    /// @notice This entry has the value **0** until another update takes place.
+    uint32 nextUpdateBlockNumber;
+    // stake weight for the quorum
+    uint96 stake;
+}
 ```
-struct StrategyAndWeightingMultiplier {
+
+```solidity
+struct StrategyParams {
     IStrategy strategy;
     uint96 multiplier;
 }
-``` -->
+```
 
 ---
 
