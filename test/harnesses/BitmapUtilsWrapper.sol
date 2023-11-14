@@ -33,7 +33,7 @@ contract BitmapUtilsWrapper {
         return BitmapUtils.countNumOnes(n);
     }
 
-    function numberIsInBitmap(uint256 bitmap, uint8 numberToCheckForInclusion) external pure returns (bool) {
-        return BitmapUtils.numberIsInBitmap(bitmap, numberToCheckForInclusion);
+    function isSet(uint256 bitmap, uint8 numberToCheckForInclusion) external pure returns (bool) {
+        return BitmapUtils.isSet(bitmap, numberToCheckForInclusion);
     }
 }

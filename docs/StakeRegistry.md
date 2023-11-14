@@ -22,9 +22,9 @@ This document organizes methods according to the following themes (click each to
 
 #### Important State Variables
 
+* `StakeUpdate[][256] internal _totalStakeHistory`: TODO - explain history update pattern
+* `mapping(bytes32 => mapping(uint8 => StakeUpdate[])) internal operatorStakeHistory`: TODO - explain history update pattern
 * `uint96[256] public minimumStakeForQuorum`: TODO
-* `StakeUpdate[][256] internal _totalStakeHistory`: TODO
-* `mapping(bytes32 => mapping(uint8 => StakeUpdate[])) internal operatorStakeHistory`: TODO
 
 #### Helpful Definitions
 
@@ -49,15 +49,21 @@ struct StrategyParams {
 }
 ```
 
+* `_weightOfOperatorForQuorum(uint8 quorumNumber, address operator) -> (uint96 weight, bool hasMinimumStake)`: Uses the quorum's configured `StrategyParams` to calculate the weight of an `operator` across each strategy they have shares in. 
+    * For each `strategy` and `multiplier` configured for the quorum, the `operator's` raw share count is queried from the core `DelegationManager` contract (see [`eigenlayer-contracts/docs`](https://github.com/Layr-Labs/eigenlayer-contracts/tree/master/docs)) and multiplied with the corresponding `multiplier`. These results are summed to determine the total weight of the `operator` for the quorum.
+    * If the sum is less than the `minimumStakeForQuorum`, `hasMinimumStake` will be false.
+
 ---
 
 ### Operator Lifecycle
 
-(TODO) Brief description, here are the functions:
+These methods are callable ONLY by the `BLSRegistryCoordinatorWithIndices`, and are used when operators register, deregister, or are updated:
 
 * [`StakeRegistry.registerOperator`](#registeroperator)
 * [`StakeRegistry.deregisterOperator`](#deregisteroperator)
 * [`StakeRegistry.updateOperatorStake`](#updateoperatorstake)
+
+See [`BLSRegistryCoordinatorWithIndices.md`](./BLSRegistryCoordinatorWithIndices.md) for more context on how these methods are used.
 
 #### `registerOperator`
 
@@ -70,35 +76,35 @@ function registerOperator(
     public 
     virtual 
     onlyRegistryCoordinator 
-    returns (uint96[] memory, uint96[] memory)
+    returns (uint96[] memory currentStakes, uint96[] memory totalStakes)
 ```
 
-<!-- The RegistryCoordinator for the AVS makes a call to the StakeRegistry to register an operator for a certain set of quorums. For each of the quorums being registered for, the StakeRegistry calculates a linear combination of the operator's delegated shares of each `strategy` in the quorum and their corresponding `multiplier` to get a `stake`. The contract then stores the stake in the following struct:
-```
-/// @notice struct used to store the stakes of an individual operator or the sum of all operators' stakes, for storage
-struct OperatorStakeUpdate {
-    // the block number at which the stake amounts were updated and stored
-    uint32 updateBlockNumber;
-    // the block number at which the *next update* occurred.
-    /// @notice This entry has the value **0** until another update takes place.
-    uint32 nextUpdateBlockNumber;
-    // stake weight for the quorum
-    uint96 stake;
-}
-```
-For each quorum the operator is a part of. -->
+The `BLSRegistryCoordinatorWithIndices` calls this method when an operator registers for one or more quorums. 
 
-(TODO) description
+For each quorum, the `operator's` weight is calculating according to that quorum's `StrategyParams` (see `_weightOfOperatorForQuorum` in [Helpful Definitions](#helpful-definitions)). If the `operator's` weight is below the minimum stake for the quorum, the method fails.
+
+Otherwise, the `operator's` stake history is updated with the new stake. See `operatorStakeHistory` in [Important State Variables](#important-state-variables) for specifics.
+
+The quorum's total stake history is also updated, adding the `operator's` new stake to the quorum's current stake. See `_totalStakeHistory` in [Important State Variables](#important-state-variables) for specifics.
+
+This method returns two things to the `BLSRegistryCoordinatorWithIndices`:
+* `uint96[] memory currentStakes`: A list of the `operator's` current stake for each of the passed-in `quorumNumbers`
+* `uint96[] memory totalStakes`: A list of the current total stakes for each quorum in the passed-in `quorumNumbers`
 
 *Entry Points*:
 * `BLSRegistryCoordinatorWithIndices.registerOperator`
 * `BLSRegistryCoordinatorWithIndices.registerOperatorWithChurn`
 
 *Effects*:
-* 
+* For each quorum in `quorumNumbers`:
+    * Updates the `operator's` current stake for the quorum given by that quorum's `StrategyParams` and the `operator's` shares in the core `DelegationManager` contract.
+    * Updates the quorum's total stake to account for the `operator's` change in stake.
 
 *Requirements*:
-* 
+* Caller MUST be the `BLSRegistryCoordinatorWithIndices`
+* For each quorum in `quorumNumbers`:
+    * The quorum MUST exist
+    * `operator` MUST have at least the minimum weight required for the quorum
 
 #### `deregisterOperator`
 

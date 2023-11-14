@@ -42,7 +42,20 @@
 ### given the total stake history was updated in the current block
 #### it should update the last total stake update with the new stake
 # when updateOperatorStake is called
-## TODO
+## given caller is not the registry coordinator
+### it should revert
+## given quorum does not exist
+### it should revert
+## given the operator currently meets the minimum stake for the quorum
+### given they still do after updating
+#### it should update their history and apply the change to the total history
+### given they no longer meet the minimum
+#### it should set their stake to zero, remove it from the total stake, and add the quorum to the return bitmap
+## given the operator does not currently meet the minimum stake for the quorum
+### given they still do not meet the minimum
+#### it should not perform any updates, and it should add the quorum to the return bitmap
+### given they meet the minimum after the update
+#### it should update the operator and total history with the stake
 # when setMinimumStakeForQuorum is called ***
 ## TODO
 # when addStrategies is called ***
