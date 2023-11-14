@@ -295,9 +295,19 @@ library BitmapUtils {
         return count;
     }
 
-    /// @notice returns 'true' if `numberToCheckForInclusion` is in `bitmap` and 'false' otherwise.
-    function numberIsInBitmap(uint256 bitmap, uint8 numberToCheckForInclusion) internal pure returns (bool) {
-        return (((bitmap >> numberToCheckForInclusion) & 1) == 1);
+    /// @notice Returns `true` if `bit` is in `bitmap`. Returns `false` otherwise.
+    function isSet(uint256 bitmap, uint8 bit) internal pure returns (bool) {
+        return 1 == ((bitmap >> bit) & 1);
+    }
+
+    /**
+     * @notice Returns a copy of `bitmap` with `bit` set. 
+     * @dev IMPORTANT: we're dealing with stack values here, so this doesn't modify
+     * the original bitmap. Using this correctly requires an assignment statement:
+     * `bitmap = bitmap.setBit(bit);`
+     */
+    function setBit(uint256 bitmap, uint8 bit) internal pure returns (uint256) {
+        return bitmap | (1 << bit);
     }
 
     /**
