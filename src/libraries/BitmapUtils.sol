@@ -285,6 +285,16 @@ library BitmapUtils {
         return bytesArray;
     }
 
+    /**
+     * @notice Returns a copy of `bitmap` with `bit` set. 
+     * @dev IMPORTANT: we're dealing with stack values here, so this doesn't modify
+     * the original bitmap. Using this correctly requires an assignment statement:
+     * `bitmap = bitmap.setBit(bit);`
+     */
+    function setBit(uint256 bitmap, uint8 bit) internal pure returns (uint256) {
+        return bitmap | (1 << bit);
+    }
+
     /// @return count number of ones in binary representation of `n`
     function countNumOnes(uint256 n) internal pure returns (uint16) {
         uint16 count = 0;

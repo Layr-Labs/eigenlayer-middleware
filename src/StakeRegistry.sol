@@ -19,6 +19,7 @@ import "src/StakeRegistryStorage.sol";
  * @author Layr Labs, Inc.
  */
 contract StakeRegistry is StakeRegistryStorage {
+    using BitmapUtils for *;
     
     modifier onlyRegistryCoordinator() {
         require(
@@ -172,7 +173,9 @@ contract StakeRegistry is StakeRegistryStorage {
             // If the operator no longer meets the minimum stake, set their stake to zero and mark them for removal
             if (!hasMinimumStake) {
                 stakeWeight = 0;
-                quorumsToRemove |= quorumNumber;
+                // quorumsToRemove |= quorumNumber;
+                quorumsToRemove = uint192(quorumsToRemove.setBit(quorumNumber));
+
             }
 
             // Update the operator's stake and retrieve the delta
@@ -487,7 +490,6 @@ contract StakeRegistry is StakeRegistryStorage {
                 weight += uint96(sharesAmount * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR);
             }
         }
-
         // Return the weight, and `true` if the operator meets the quorum's minimum stake
         bool hasMinimumStake = weight >= minimumStakeForQuorum[quorumNumber];
         return (weight, hasMinimumStake);

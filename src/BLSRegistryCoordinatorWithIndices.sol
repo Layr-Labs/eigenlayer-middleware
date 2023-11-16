@@ -21,7 +21,6 @@ import "src/libraries/BitmapUtils.sol";
 import "src/libraries/BN254.sol";
 
 
-
 /**
  * @title A `RegistryCoordinator` that has three registries:
  *      1) a `StakeRegistry` that keeps track of operators' stakes
