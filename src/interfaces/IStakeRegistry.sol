@@ -74,18 +74,15 @@ interface IStakeRegistry is IRegistry {
     ) external returns (uint96[] memory, uint96[] memory);
 
     /**
-     * @notice Deregisters the operator with `operatorId` for the specified `quorumNumbers`.
+     * @notice Deregisters the operator with `operatorId` for the specified `quorumNumber`.
      * @param operatorId The id of the operator to deregister.
-     * @param quorumNumbers The quorum numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
+     * @param quorumNumber The quorum number the operator is deregistering from
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
-     *         1) `quorumNumbers` has no duplicates
-     *         2) `quorumNumbers.length` != 0
-     *         3) `quorumNumbers` is ordered in ascending order
-     *         4) the operator is not already deregistered
-     *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
+     *         1) the operator is not already deregistered
+     *         2) `quorumNumber` is a subset of the quorumNumbers that the operator is registered for
      */
-    function deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) external;
+    function deregisterOperator(bytes32 operatorId, uint8 quorumNumber) external;
 
     /**
      * @notice Initialize a new quorum created by the registry coordinator by setting strategies, weights, and minimum stake
@@ -236,17 +233,16 @@ interface IStakeRegistry is IRegistry {
     function getCurrentTotalStake(uint8 quorumNumber) external view returns (uint96);
 
     /**
-     * @notice Called by the registry coordinator to update an operator's stake for one
-     * or more quorums.
-     *
-     * If the operator no longer has the minimum stake required for a quorum, they are
-     * added to the
-     * @return A bitmap of quorums where the operator no longer meets the minimum stake
-     * and should be deregistered.
+     * @notice Called by the registry coordinator to update an operator's stake for a single quorum
+     * @param operator address of operator
+     * @param operatorId id of operator
+     * @param quorumNumber quorum number to update stake for. Operator stake could be set to 0 if below min stake
+     * @return return false to flag for deregistering the operator, if the operator no longer has the minimum stake
+     * required for a quorum, otherwise return true if they have at least the minimum stake.
      */
     function updateOperatorStake(
         address operator, 
         bytes32 operatorId, 
-        bytes calldata quorumNumbers
-    ) external returns (uint192);
+        uint8 quorumNumber
+    ) external returns (bool);
 }

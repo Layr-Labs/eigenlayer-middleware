@@ -47,18 +47,15 @@ interface IIndexRegistry is IRegistry {
     function registerOperator(bytes32 operatorId, bytes calldata quorumNumbers) external returns(uint32[] memory);
 
     /**
-     * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumNumbers`.
+     * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumNumber`.
      * @param operatorId is the id of the operator that is being deregistered
-     * @param quorumNumbers is the quorum numbers the operator is deregistered for
+     * @param quorumNumber is the quorum number the operator is deregistered for
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
-     *         1) `quorumNumbers` has no duplicates
-     *         2) `quorumNumbers.length` != 0
-     *         3) `quorumNumbers` is ordered in ascending order
-     *         4) the operator is not already deregistered
-     *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
+     *         1) the operator is not already deregistered
+     *         2) `quorumNumber` is a subset of the quorumNumbers that the operator is registered for
      */
-    function deregisterOperator(bytes32 operatorId, bytes calldata quorumNumbers) external;
+    function deregisterOperator(bytes32 operatorId, uint8 quorumNumber) external;
 
     /**
      * @notice Initialize a quorum by pushing its first quorum update

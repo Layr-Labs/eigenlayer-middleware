@@ -98,96 +98,63 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     /**
-     * @notice Deregisters the operator with `operatorId` for the specified `quorumNumbers`.
+     * @notice Deregisters the operator with `operatorId` for the specified `quorumNumber`.
      * @param operatorId The id of the operator to deregister.
-     * @param quorumNumbers The quorum numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
+     * @param quorumNumber The quorum number the operator is deregistering from
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
-     *         1) `quorumNumbers` has no duplicates
-     *         2) `quorumNumbers.length` != 0
-     *         3) `quorumNumbers` is ordered in ascending order
-     *         4) the operator is not already deregistered
-     *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
+     *         1) the operator is not already deregistered
+     *         2) `quorumNumber` is a subset of the quorumNumbers that the operator is registered for
      */
     function deregisterOperator(
         bytes32 operatorId,
-        bytes calldata quorumNumbers
+        uint8 quorumNumber
     ) public virtual onlyRegistryCoordinator {
-        /**
-         * For each quorum, remove the operator's stake for the quorum and update
-         * the quorum's total stake to account for the removal
-         */
-        for (uint256 i = 0; i < quorumNumbers.length; ) {
-            uint8 quorumNumber = uint8(quorumNumbers[i]);
-            require(_quorumExists(quorumNumber), "StakeRegistry.deregisterOperator: quorum does not exist");
+        require(_quorumExists(quorumNumber), "StakeRegistry.deregisterOperator: quorum does not exist");
 
-            // Update the operator's stake for the quorum and retrieve the shares removed
-            int256 stakeDelta = _recordOperatorStakeUpdate({
-                operatorId: operatorId, 
-                quorumNumber: quorumNumber, 
-                newStake: 0
-            });
+        // Update the operator's stake for the quorum and retrieve the shares removed
+        int256 stakeDelta = _recordOperatorStakeUpdate({
+            operatorId: operatorId, 
+            quorumNumber: quorumNumber, 
+            newStake: 0
+        });
 
-            // Apply the operator's stake delta to the total stake for this quorum
-            _recordTotalStakeUpdate(quorumNumber, stakeDelta);
-
-            unchecked {
-                ++i;
-            }
-        }
+        // Apply the operator's stake delta to the total stake for this quorum
+        _recordTotalStakeUpdate(quorumNumber, stakeDelta);
     }
 
     /**
-     * @notice Called by the registry coordinator to update an operator's stake for one
-     * or more quorums.
-     *
-     * If the operator no longer has the minimum stake required for a quorum, they are
-     * added to the
-     * @return A bitmap of quorums where the operator no longer meets the minimum stake
-     * and should be deregistered.
+     * @notice Called by the registry coordinator to update an operator's stake for a single quorum
+     * @param operator address of operator
+     * @param operatorId id of operator
+     * @param quorumNumber quorum number to update stake for. Operator stake could be set to 0 if below min stake
+     * @return return false to flag for deregistering the operator, if the operator no longer has the minimum stake
+     * required for a quorum, otherwise return true if they have at least the minimum stake.
      */
     function updateOperatorStake(
         address operator, 
         bytes32 operatorId, 
-        bytes calldata quorumNumbers
-    ) external onlyRegistryCoordinator returns (uint192) {
-        uint192 quorumsToRemove;
+        uint8 quorumNumber
+    ) external onlyRegistryCoordinator returns (bool) {
+        require(_quorumExists(quorumNumber), "StakeRegistry.updateOperatorStake: quorum does not exist");
 
-        /**
-         * For each quorum, update the operator's stake and record the delta
-         * in the quorum's total stake.
-         *
-         * If the operator no longer has the minimum stake required to be registered
-         * in the quorum, the quorum number is added to `quorumsToRemove`, which
-         * is returned to the registry coordinator.
-         */
-        for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            uint8 quorumNumber = uint8(quorumNumbers[i]);
-            require(_quorumExists(quorumNumber), "StakeRegistry.updateOperatorStake: quorum does not exist");
+        // Fetch the operator's current stake, applying weighting parameters and checking
+        // against the minimum stake requirements for the quorum.
+        (uint96 stakeWeight, bool hasMinimumStake) = _weightOfOperatorForQuorum(quorumNumber, operator);
 
-            // Fetch the operator's current stake, applying weighting parameters and checking
-            // against the minimum stake requirements for the quorum.
-            (uint96 stakeWeight, bool hasMinimumStake) = _weightOfOperatorForQuorum(quorumNumber, operator);
+        // Update the operator's stake and retrieve the delta
+        // If operator no longer meets the minimum stake, set their stake to zero and return value is false
+        int256 stakeDelta = _recordOperatorStakeUpdate({
+            operatorId: operatorId,
+            quorumNumber: quorumNumber,
+            newStake: hasMinimumStake ? stakeWeight : 0
+        });
 
-            // If the operator no longer meets the minimum stake, set their stake to zero and mark them for removal
-            if (!hasMinimumStake) {
-                stakeWeight = 0;
-                quorumsToRemove |= quorumNumber;
-            }
+        // Apply the delta to the quorum's total stake
+        _recordTotalStakeUpdate(quorumNumber, stakeDelta);
 
-            // Update the operator's stake and retrieve the delta
-            // If we're deregistering them, their weight is set to 0
-            int256 stakeDelta = _recordOperatorStakeUpdate({
-                operatorId: operatorId,
-                quorumNumber: quorumNumber,
-                newStake: stakeWeight
-            });
 
-            // Apply the delta to the quorum's total stake
-            _recordTotalStakeUpdate(quorumNumber, stakeDelta);
-        }
-
-        return quorumsToRemove;
+        return hasMinimumStake;
     }
 
     /// @notice Initialize a new quorum and push its first history update

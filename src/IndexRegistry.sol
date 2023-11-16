@@ -67,43 +67,37 @@ contract IndexRegistry is IndexRegistryStorage {
     }
 
     /**
-     * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumNumbers`.
+     * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumNumber`.
      * @param operatorId is the id of the operator that is being deregistered
-     * @param quorumNumbers is the quorum numbers the operator is deregistered for
+     * @param quorumNumber is the quorum number the operator is deregistered for
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
-     *         1) `quorumNumbers` has no duplicates
-     *         2) `quorumNumbers.length` != 0
-     *         3) `quorumNumbers` is ordered in ascending order
-     *         4) the operator is not already deregistered
-     *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
+     *         1) the operator is not already deregistered
+     *         2) `quorumNumber` is a subset of the quorumNumbers that the operator is registered for
      */
     function deregisterOperator(
         bytes32 operatorId, 
-        bytes calldata quorumNumbers
+        uint8 quorumNumber
     ) public virtual onlyRegistryCoordinator {
-        for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            // Validate quorum exists and get the index of the operator being deregistered
-            uint8 quorumNumber = uint8(quorumNumbers[i]);
-            uint256 historyLength = _operatorCountHistory[quorumNumber].length;
-            require(historyLength != 0, "IndexRegistry.registerOperator: quorum does not exist");
-            uint32 indexOfOperatorToRemove = currentOperatorIndex[quorumNumber][operatorId];
+        // Validate quorum exists and get the index of the operator being deregistered
+        uint256 historyLength = _operatorCountHistory[quorumNumber].length;
+        require(historyLength != 0, "IndexRegistry.registerOperator: quorum does not exist");
+        uint32 indexOfOperatorToRemove = currentOperatorIndex[quorumNumber][operatorId];
 
-            /**
-             * "Pop" the operator from the registry:
-             * 1. Decrease the operator count for the quorum
-             * 2. Remove the last operator associated with the count
-             * 3. Place the last operator in the deregistered operator's old position
-             */
-            uint32 newOperatorCount = _decreaseOperatorCount(quorumNumber);
-            bytes32 lastOperatorId = _popLastOperator(quorumNumber, newOperatorCount);
-            if (operatorId != lastOperatorId) {
-                _assignOperatorToIndex({
-                    operatorId: lastOperatorId,
-                    quorumNumber: quorumNumber,
-                    index: indexOfOperatorToRemove
-                });
-            }
+        /**
+         * "Pop" the operator from the registry:
+         * 1. Decrease the operator count for the quorum
+         * 2. Remove the last operator associated with the count
+         * 3. Place the last operator in the deregistered operator's old position
+         */
+        uint32 newOperatorCount = _decreaseOperatorCount(quorumNumber);
+        bytes32 lastOperatorId = _popLastOperator(quorumNumber, newOperatorCount);
+        if (operatorId != lastOperatorId) {
+            _assignOperatorToIndex({
+                operatorId: lastOperatorId,
+                quorumNumber: quorumNumber,
+                index: indexOfOperatorToRemove
+            });
         }
     }
 

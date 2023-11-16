@@ -30,17 +30,15 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
     /**
      * @notice Registers the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to register.
-     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
+     * @param quorumNumbers The quorum number the operator is registering for
      * @return pubkeyHash of the operator's pubkey
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
-     *         1) `quorumNumbers` has no duplicates
-     *         2) `quorumNumbers.length` != 0
-     *         3) `quorumNumbers` is ordered in ascending order
-     *         4) the operator is not already registered
+     *         1) the operator is not already registered
      */
     function registerOperator(
         address operator,
+        // uint8 quorumNumber
         bytes memory quorumNumbers
     ) public virtual onlyRegistryCoordinator returns (bytes32) {
         // Get the operator's pubkey from the compendium. Reverts if they have not registered a key
@@ -55,27 +53,24 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
     }
 
     /**
-     * @notice Deregisters the `operator`'s pubkey for the specified `quorumNumbers`.
+     * @notice Deregisters the `operator`'s pubkey for the specified `quorumNumber`.
      * @param operator The address of the operator to deregister.
-     * @param quorumNumbers The quorum numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
+     * @param quorumNumber The quorum number the operator is deregistering from
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
-     *         1) `quorumNumbers` has no duplicates
-     *         2) `quorumNumbers.length` != 0
-     *         3) `quorumNumbers` is ordered in ascending order
-     *         4) the operator is not already deregistered
-     *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
+     *         1) the operator is not already deregistered
+     *         2) `quorumNumber` is a subset of the quorumNumbers that the operator is registered for
      */
     function deregisterOperator(
         address operator,
-        bytes memory quorumNumbers
+        uint8 quorumNumber
     ) public virtual onlyRegistryCoordinator {
         // Get the operator's pubkey from the compendium. Reverts if they have not registered a key
         (BN254.G1Point memory pubkey, ) = pubkeyCompendium.getRegisteredPubkey(operator);
 
-        // Update each quorum's aggregate pubkey
-        _processQuorumApkUpdate(quorumNumbers, pubkey.negate());
-        emit OperatorRemovedFromQuorums(operator, quorumNumbers);
+        // Update the quorum's aggregate pubkey
+        _processSingleQuorumApkUpdate(quorumNumber, pubkey.negate());
+        emit OperatorRemovedFromQuorum(operator, quorumNumber);
     }
 
     /**
@@ -123,6 +118,30 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
                     nextUpdateBlockNumber: 0
                 }));
             }
+        }
+    }
+
+    function _processSingleQuorumApkUpdate(uint8 quorumNumber, BN254.G1Point memory point) internal {
+        uint256 historyLength = apkHistory[quorumNumber].length;
+        require(historyLength != 0, "BLSPubkeyRegistry._processQuorumApkUpdate: quorum does not exist");
+
+        // Update aggregate public key for this quorum
+        BN254.G1Point memory newApk = currentApk[quorumNumber].plus(point);
+        currentApk[quorumNumber] = newApk;
+        bytes24 newApkHash = bytes24(BN254.hashG1Point(newApk));
+
+        // Update apk history. If the last update was made in this block, update the entry
+        // Otherwise, push a new historical entry and update the prev->next pointer
+        ApkUpdate storage lastUpdate = apkHistory[quorumNumber][historyLength - 1];
+        if (lastUpdate.updateBlockNumber == uint32(block.number)) {
+            lastUpdate.apkHash = newApkHash;
+        } else {
+            lastUpdate.nextUpdateBlockNumber = uint32(block.number);
+            apkHistory[quorumNumber].push(ApkUpdate({
+                apkHash: newApkHash,
+                updateBlockNumber: uint32(block.number),
+                nextUpdateBlockNumber: 0
+            }));
         }
     }
 

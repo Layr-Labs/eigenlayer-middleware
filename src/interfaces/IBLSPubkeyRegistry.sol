@@ -22,6 +22,12 @@ interface IBLSPubkeyRegistry is IRegistry {
         bytes quorumNumbers
     );
 
+    // Emitted when an operator pubkey is removed from a single quorum
+    event OperatorRemovedFromQuorum(
+        address operator, 
+        uint8 quorumNumber
+    );
+
     /// @notice Data structure used to track the history of the Aggregate Public Key of all operators
     struct ApkUpdate {
         // first 24 bytes of keccak256(apk_x0, apk_x1, apk_y0, apk_y1)
@@ -46,18 +52,15 @@ interface IBLSPubkeyRegistry is IRegistry {
     function registerOperator(address operator, bytes calldata quorumNumbers) external returns(bytes32);
 
     /**
-     * @notice Deregisters the `operator`'s pubkey for the specified `quorumNumbers`.
+     * @notice Deregisters the `operator`'s pubkey for the specified `quorumNumber`.
      * @param operator The address of the operator to deregister.
-     * @param quorumNumbers The quorum numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
+     * @param quorumNumber The quorum number the operator is deregistering from
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
-     *         1) `quorumNumbers` has no duplicates
-     *         2) `quorumNumbers.length` != 0
-     *         3) `quorumNumbers` is ordered in ascending order
-     *         4) the operator is not already deregistered
-     *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
-     */ 
-    function deregisterOperator(address operator, bytes calldata quorumNumbers) external;
+     *         1) the operator is not already deregistered
+     *         2) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
+     */
+    function deregisterOperator(address operator, uint8 quorumNumber) external;
     
     /**
      * @notice Initializes a new quorum by pushing its first apk update

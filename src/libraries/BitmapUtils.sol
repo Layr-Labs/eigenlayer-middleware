@@ -301,6 +301,13 @@ library BitmapUtils {
     }
 
     /**
+     * @notice clear the `bitToClear` in `bitmap`
+     */
+    function clearBit(uint256 bitmap, uint8 bitToClear) internal pure returns (uint256) {
+        return bitmap & ~(1 << bitToClear);
+    }
+
+    /**
      * @notice Returns true if `bitmap` has no set bits
      */
     function isEmpty(uint256 bitmap) internal pure returns (bool) {
