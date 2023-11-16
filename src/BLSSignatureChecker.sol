@@ -76,7 +76,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         for (uint i = 0; i < quorumNumbers.length; i++) {
             require(
                 registryCoordinator.quorumUpdateTimestamp(uint8(quorumNumbers[i])) + QUORUM_STAKES_UPDATE_WINDOW <= block.timestamp,
-                "BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within a week"
+                "BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within QUORUM_STAKES_UPDATE_WINDOW"
             );
             require(
                 bytes24(nonSignerStakesAndSignature.quorumApks[i].hashG1Point()) == 
