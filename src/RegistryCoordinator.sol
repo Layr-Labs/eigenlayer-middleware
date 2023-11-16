@@ -695,7 +695,7 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
      * @notice Returns true iff all of the bits in `quorumBitmap` belong to initialized quorums
      */
      function _quorumsAllExist(uint192 quorumBitmap) internal view returns (bool) {
-        uint192 initializedQuorumBitmap = uint192(1 << quorumCount - 1);
+        uint192 initializedQuorumBitmap = uint192((1 << quorumCount) - 1);
         return quorumBitmap.isSubsetOf(initializedQuorumBitmap);
     }
 
@@ -811,13 +811,7 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
 
     /// @notice Returns the current quorum bitmap for the given `operatorId` or 0 if the operator is not registered for any quorum
     function getCurrentQuorumBitmap(bytes32 operatorId) external view returns (uint192) {
-        uint256 quorumBitmapHistoryLength = _operatorBitmapHistory[operatorId].length;
-        // the first part of this if statement is met if the operator has never registered. 
-        // the second part is met if the operator has previously registered, but is currently deregistered
-        if (quorumBitmapHistoryLength == 0 || _operatorBitmapHistory[operatorId][quorumBitmapHistoryLength - 1].nextUpdateBlockNumber != 0) {
-            return 0;
-        }
-        return _operatorBitmapHistory[operatorId][quorumBitmapHistoryLength - 1].quorumBitmap;
+        return _currentOperatorBitmap(operatorId);
     }
 
     /// @notice Returns the length of the quorum bitmap history for the given `operatorId`
