@@ -264,32 +264,17 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
      */
     function updateOperators(address[] calldata operators) external onlyWhenNotPaused(PAUSED_UPDATE_OPERATOR) {
         for (uint256 i = 0; i < operators.length; i++) {
-
             address operator = operators[i];
             OperatorInfo storage operatorInfo = _operatorInfo[operator];
             bytes32 operatorId = operatorInfo.operatorId;
-
-            // Only update operators currently registered for at least one quorum
             if (operatorInfo.status != OperatorStatus.REGISTERED) {
                 continue;
             }
 
+            // Update the operator's stake for their active quorums
             uint192 currentBitmap = _currentOperatorBitmap(operatorId);
-            bytes memory currentQuorums = BitmapUtils.bitmapToBytesArray(currentBitmap);
-            require(_quorumsAllExist(currentBitmap), "BLSRegistryCoordinatorWithIndices.updateOperators: some quorums do not exist");
-
-            /**
-             * Update the operator's stake for their active quorums. The stakeRegistry returns a bitmap
-             * of quorums where the operator no longer meets the minimum stake, and should be deregistered.
-             */
-            uint192 quorumsToRemove = stakeRegistry.updateOperatorStake(operator, operatorId, currentQuorums);
-
-            if (!quorumsToRemove.isEmpty()) {
-                _deregisterOperator({
-                    operator: operator,
-                    quorumNumbers: BitmapUtils.bitmapToBytesArray(quorumsToRemove)
-                });    
-            }
+            bytes memory quorumsToUpdate = BitmapUtils.bitmapToBytesArray(currentBitmap);
+            _updateOperator(operator, operatorId, quorumsToUpdate);
         }
     }
 
@@ -315,7 +300,40 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         uint192 quorumBitmap = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers));
         require(_quorumsAllExist(quorumBitmap), "BLSRegistryCoordinatorWithIndices.updateOperatorsForQuorum: some quorums do not exist");
 
-        _updateOperatorsForQuorum(operatorsPerQuorum, quorumNumbers);
+        for (uint256 i = 0; i < quorumNumbers.length; ++i) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+            address[] calldata currQuorumOperators = operatorsPerQuorum[i];
+            require(
+                currQuorumOperators.length == indexRegistry.totalOperatorsForQuorum(quorumNumber),
+                "BLSRegistryCoordinatorWithIndices.updateOperatorsForQuorum: number of updated operators does not match quorum total"
+            );
+            address prevOperatorAddress = address(0);
+            // Update stakes for each operator in this quorum
+            for (uint256 j = 0; j < currQuorumOperators.length; ++j) {
+                address operator = currQuorumOperators[j];
+                OperatorInfo storage operatorInfo = _operatorInfo[operator];
+                bytes32 operatorId = operatorInfo.operatorId;
+                {
+                    uint192 currentBitmap = _currentOperatorBitmap(operatorId);
+                    require(
+                        operatorInfo.status == OperatorStatus.REGISTERED,
+                        "BLSRegistryCoordinatorWithIndices.updateOperatorsForQuorum: operator is not registered");
+                    require(
+                        BitmapUtils.numberIsInBitmap(currentBitmap, quorumNumber),
+                        "BLSRegistryCoordinatorWithIndices.updateOperatorsForQuorum: operator not in quorum"
+                    );
+                    // Require check is to prevent duplicate operators and that all quorum operators are updated
+                    require(
+                        operator > prevOperatorAddress,
+                        "BLSRegistryCoordinatorWithIndices.updateOperatorsForQuorum: operators array must be sorted in ascending address order"
+                    );
+                }
+                _updateOperator(operator, operatorId, quorumNumbers[i:i+1]);
+            }
+
+            quorumUpdateTimestamp[quorumNumber] = block.timestamp;
+            emit QuorumTimestampUpdated(quorumNumber, block.timestamp);
+        }
     }
 
     /**
@@ -534,68 +552,20 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     }
 
     /**
-     * @dev perform the actual updates of the operators for each quorumNumber. This will revert if any of the operators
-     * are not registered for the quorum or if the number of operators does not match the total number of operators. By requiring
-     * ascending order of the operator addresses, there are no duplicate addresses and we can ensure that all operators are updated.
+     * @notice update operator stake for specified quorumsToUpdate, and deregister if necessary
      */
-    function _updateOperatorsForQuorum(
-        address[][] calldata operatorsPerQuorum,
-        bytes calldata quorumNumbers
+    function _updateOperator(
+        address operator,
+        bytes32 operatorId,
+        bytes memory quorumsToUpdate
     ) internal {
-        for (uint256 i = 0; i < quorumNumbers.length; ++i) {
-            uint8 quorumNumber = uint8(quorumNumbers[i]);
-            address[] memory currQuorumOperators = operatorsPerQuorum[i];
-            require(
-                currQuorumOperators.length == indexRegistry.totalOperatorsForQuorum(quorumNumber),
-                "BLSRegistryCoordinatorWithIndices.updateOperatorsForQuorum: number of updated operators does not match quorum total"
-            );
-            address prevOperatorAddress = address(0);
-            // Update stakes for each operator in this quorum
-            for (uint256 j = 0; j < currQuorumOperators.length; ++j) {
-                address operator = currQuorumOperators[j];
-                OperatorInfo storage operatorInfo = _operatorInfo[operator];
-                bytes32 operatorId = operatorInfo.operatorId;
-                require(
-                    operatorInfo.status == OperatorStatus.REGISTERED,
-                    "BLSRegistryCoordinatorWithIndices.updateOperatorsForQuorum: Operator not registered"
-                );
+        uint192 quorumsToRemove = stakeRegistry.updateOperatorStake(operator, operatorId, quorumsToUpdate);
 
-                {
-                    uint192 currentBitmap = _currentOperatorBitmap(operatorId);
-                    /**
-                     * Assuming the operator address cannot be 0, for the first operator, prevOperatorAddress will be 0
-                     * Require check is to prevent duplicate operators and that all quorum operators are updated
-                     */
-                    require(
-                        operator > prevOperatorAddress,
-                        "BLSRegistryCoordinatorWithIndices.updateOperatorsForQuorum: operators array must be sorted in ascending address order"
-                    );
-                    require(
-                        BitmapUtils.numberIsInBitmap(currentBitmap, quorumNumber),
-                        "BLSRegistryCoordinatorWithIndices.updateOperatorsForQuorum: operator not in quorum"
-                    );    
-                }
-            
-                /**
-                 * Update the operator's stake for their active quorums. The stakeRegistry returns a bitmap
-                 * of quorums where the operator no longer meets the minimum stake, and should be deregistered.
-                 */
-                uint192 quorumsToRemove = stakeRegistry.updateOperatorStake(operator, operatorId, quorumNumbers[i:i+1]);
-
-                /**
-                 * Since this is only updating one quorum at a time, quorumsToRemove will either be 0 or have the bit
-                 * for quorumNumber toggled to 1. 
-                 */
-                if (!quorumsToRemove.isEmpty()) {
-                    _deregisterOperator({
-                        operator: operator,
-                        quorumNumbers: quorumNumbers[i:i+1]
-                    });    
-                }
-            }
-
-            quorumUpdateTimestamp[quorumNumber] = block.timestamp;
-            emit QuorumTimestampUpdated(quorumNumber, block.timestamp);
+        if (!quorumsToRemove.isEmpty()) {
+            _deregisterOperator({
+                operator: operator,
+                quorumNumbers: BitmapUtils.bitmapToBytesArray(quorumsToRemove)
+            });    
         }
     }
 
