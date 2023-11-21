@@ -5,6 +5,7 @@ import "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import "src/interfaces/IServiceManager.sol";
 import "src/interfaces/IVoteWeigher.sol";
+import "src/interfaces/IAVSDirectory.sol";
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
@@ -36,6 +37,9 @@ abstract contract VoteWeigherBaseStorage is Initializable, IVoteWeigher {
     /// @notice The ServiceManager contract for this middleware, where tasks are created / initiated.
     IServiceManager public immutable serviceManager;
 
+    /// @notice The AVSDirectory contract, where AVSs are registered.
+    IAVSDirectory public immutable avsDirectory;
+
     /// @notice The number of quorums that the VoteWeigher is considering.
     uint16 public quorumCount;
 
@@ -47,12 +51,14 @@ abstract contract VoteWeigherBaseStorage is Initializable, IVoteWeigher {
 
     constructor(
         IStrategyManager _strategyManager,
-        IServiceManager _serviceManager
+        IServiceManager _serviceManager,
+        IAVSDirectory _avsDirectory
     ) {
         strategyManager = _strategyManager;
         delegation = _strategyManager.delegation();
         slasher = _strategyManager.slasher();
         serviceManager = _serviceManager;
+        avsDirectory = _avsDirectory;
         // disable initializers so that the implementation contract cannot be initialized
         _disableInitializers();
     }

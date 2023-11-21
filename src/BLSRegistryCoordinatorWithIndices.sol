@@ -17,6 +17,7 @@ import "src/interfaces/IVoteWeigher.sol";
 import "src/interfaces/IStakeRegistry.sol";
 import "src/interfaces/IIndexRegistry.sol";
 import "src/interfaces/IRegistryCoordinator.sol";
+import "src/interfaces/IAVSDirectory.sol";
 
 import "src/libraries/BitmapUtils.sol";
 import "src/libraries/BN254.sol";
@@ -56,6 +57,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     IStakeRegistry public immutable stakeRegistry;
     /// @notice the Index Registry contract that will keep track of operators' indexes
     IIndexRegistry public immutable indexRegistry;
+    /// @notice AVSDirectory contract that will keep track of all AVSs
+    IAVSDirectory public immutable avsDirectory;
 
     /// @notice the mapping from quorum number to a quorums operator cap and kick parameters
     mapping(uint8 => OperatorSetParam) internal _quorumOperatorSetParams;
@@ -88,13 +91,15 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         IServiceManager _serviceManager,
         IStakeRegistry _stakeRegistry,
         IBLSPubkeyRegistry _blsPubkeyRegistry,
-        IIndexRegistry _indexRegistry
+        IIndexRegistry _indexRegistry,
+        IAVSDirectory _avsDirectory
     ) EIP712("AVSRegistryCoordinator", "v0.0.1") {
         slasher = _slasher;
         serviceManager = _serviceManager;
         stakeRegistry = _stakeRegistry;
         blsPubkeyRegistry = _blsPubkeyRegistry;
         indexRegistry = _indexRegistry;
+        avsDirectory = _avsDirectory;
     }
 
     function initialize(
@@ -353,6 +358,10 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         _setEjector(_ejector);
     }
 
+    function updateAVSMetadataURI(string calldata metadataURI) external onlyServiceManagerOwner {
+        avsDirectory.updateAVSMetadataURI(metadataURI);
+    }
+
     /*******************************************************************************
                             INTERNAL FUNCTIONS
     *******************************************************************************/
@@ -415,6 +424,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         // serviceManager.recordFirstStakeUpdate(operator, 0);
 
         emit OperatorSocketUpdate(operatorId, socket);
+
+        avsDirectory.registerOperatorWithAVS(operator);
 
         return numOperatorsPerQuorum;
     }
@@ -497,6 +508,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
             _operators[operator].status = OperatorStatus.DEREGISTERED;
 
             emit OperatorDeregistered(operator, operatorId);
+
+            avsDirectory.deregisterOperatorFromAVS(operator);
         }
     }
 

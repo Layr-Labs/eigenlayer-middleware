@@ -4,6 +4,7 @@ pragma solidity =0.8.12;
 import "src/interfaces/IServiceManager.sol";
 import "src/interfaces/IStakeRegistry.sol";
 import "src/interfaces/IRegistryCoordinator.sol";
+import "src/interfaces/IAVSDirectory.sol";
 
 import "src/libraries/BitmapUtils.sol";
 
@@ -32,8 +33,9 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
     constructor(
         IRegistryCoordinator _registryCoordinator,
         IStrategyManager _strategyManager,
-        IServiceManager _serviceManager
-    ) VoteWeigherBase(_strategyManager, _serviceManager) StakeRegistryStorage(_registryCoordinator) {}
+        IServiceManager _serviceManager,
+        IAVSDirectory _avsDirectory
+    ) VoteWeigherBase(_strategyManager, _serviceManager, _avsDirectory) StakeRegistryStorage(_registryCoordinator) {}
 
     /**
      * @notice Sets the minimum stake for each quorum and adds `_quorumStrategiesConsideredAndMultipliers` for each
@@ -179,6 +181,8 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
                 ++quorumNumbersIndex;
             }
         }
+        
+        avsDirectory.addOperatorToAVSQuorums(operator, quorumNumbers);
     }
 
     /**
@@ -230,6 +234,8 @@ contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
                 ++quorumNumbersIndex;
             }
         }
+
+        avsDirectory.removeOperatorFromAVSQuorums(registryCoordinator.getOperatorFromId(operatorId), quorumNumbers);
     }
 
     /*******************************************************************************

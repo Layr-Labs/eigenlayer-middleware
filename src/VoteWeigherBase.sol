@@ -31,8 +31,9 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
     /// @notice Sets the (immutable) `strategyManager` and `serviceManager` addresses
     constructor(
         IStrategyManager _strategyManager,
-        IServiceManager _serviceManager
-    ) VoteWeigherBaseStorage(_strategyManager, _serviceManager) {}
+        IServiceManager _serviceManager,
+        IAVSDirectory _avsDirectory
+    ) VoteWeigherBaseStorage(_strategyManager, _serviceManager, _avsDirectory) {}
 
     /*******************************************************************************
                     EXTERNAL FUNCTIONS - SERVICE MANAGER OWNER
@@ -65,9 +66,13 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
     ) external virtual onlyServiceManagerOwner validQuorumNumber(quorumNumber) {
         uint256 indicesToRemoveLength = indicesToRemove.length;
         require(indicesToRemoveLength > 0, "VoteWeigherBase.removeStrategiesConsideredAndMultipliers: no indices to remove provided");
+
+        StrategyAndWeightingMultiplier[] memory strategiesToRemove = new StrategyAndWeightingMultiplier[](indicesToRemoveLength);
+
         for (uint256 i = 0; i < indicesToRemoveLength;) {
             emit StrategyRemovedFromQuorum(quorumNumber, strategiesConsideredAndMultipliers[quorumNumber][indicesToRemove[i]].strategy);
             emit StrategyMultiplierUpdated(quorumNumber, strategiesConsideredAndMultipliers[quorumNumber][indicesToRemove[i]].strategy, 0);
+            strategiesToRemove[i] = strategiesConsideredAndMultipliers[quorumNumber][indicesToRemove[i]];
             // remove strategy and its associated multiplier
             strategiesConsideredAndMultipliers[quorumNumber][indicesToRemove[i]] = strategiesConsideredAndMultipliers[
                 quorumNumber
@@ -78,6 +83,8 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
                 ++i;
             }
         }
+
+        avsDirectory.removeStrategiesFromAVS(strategiesToRemove, quorumNumber);
     }
 
     /**
@@ -172,6 +179,7 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
                 ++i;
             }
         }
+        avsDirectory.addStrategiesToAVS(_newStrategiesConsideredAndMultipliers, quorumNumber);
     }
 
     /*******************************************************************************
