@@ -29,11 +29,13 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
     IRegistryCoordinator public immutable registryCoordinator;
     IStakeRegistry public immutable stakeRegistry;
     IBLSPubkeyRegistry public immutable blsPubkeyRegistry;
+    IDelegationManager public immutable delegation;
 
     constructor(IBLSRegistryCoordinatorWithIndices _registryCoordinator) {
         registryCoordinator = IRegistryCoordinator(_registryCoordinator);
         stakeRegistry = _registryCoordinator.stakeRegistry();
         blsPubkeyRegistry = _registryCoordinator.blsPubkeyRegistry();
+        delegation = stakeRegistry.delegation();
     }
 
     /**
@@ -76,7 +78,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         BN254.G1Point memory apk = BN254.G1Point(0, 0);
         for (uint i = 0; i < quorumNumbers.length; i++) {
             require(
-                registryCoordinator.quorumUpdateTimestamp(uint8(quorumNumbers[i])) + QUORUM_STAKES_UPDATE_WINDOW <= block.timestamp,
+                registryCoordinator.quorumUpdateTimestamp(uint8(quorumNumbers[i])) + delegation.withdrawalDelayBlocks() <= block.timestamp,
                 "BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within QUORUM_STAKES_UPDATE_WINDOW"
             );
             require(
