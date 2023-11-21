@@ -23,8 +23,6 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
 
     // gas cost of multiplying 2 pairings
     uint256 internal constant PAIRING_EQUALITY_CHECK_GAS = 120000;
-    /// @notice the duration window that the stake registry must be updated within for a specific quorum
-    uint256 internal constant QUORUM_STAKES_UPDATE_WINDOW = 1 weeks;
 
     IRegistryCoordinator public immutable registryCoordinator;
     IStakeRegistry public immutable stakeRegistry;
@@ -79,7 +77,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         for (uint i = 0; i < quorumNumbers.length; i++) {
             require(
                 registryCoordinator.quorumUpdateBlocknumber(uint8(quorumNumbers[i])) + delegation.withdrawalDelayBlocks() <= block.number,
-                "BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within QUORUM_STAKES_UPDATE_WINDOW"
+                "BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within withdrawalDelayBlocks window"
             );
             require(
                 bytes24(nonSignerStakesAndSignature.quorumApks[i].hashG1Point()) == 
