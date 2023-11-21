@@ -71,8 +71,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     mapping(address => OperatorInfo) internal _operatorInfo;
     /// @notice whether the salt has been used for an operator churn approval
     mapping(bytes32 => bool) public isChurnApproverSaltUsed;
-    /// @notice mapping from quorum number to the latest timestamp that all quorums were updated all at once
-    mapping(uint8 => uint256) public quorumUpdateTimestamp;
+    /// @notice mapping from quorum number to the latest block that all quorums were updated all at once
+    mapping(uint8 => uint256) public quorumUpdateBlocknumber;
 
 
     /// @notice the dynamic-length array of the registries this coordinator is coordinating
@@ -325,8 +325,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
             }
 
             // Update timestamp that all operators in quorum have been updated all at once
-            quorumUpdateTimestamp[quorumNumber] = block.timestamp;
-            emit QuorumTimestampUpdated(quorumNumber, block.timestamp);
+            quorumUpdateBlocknumber[quorumNumber] = block.number;
+            emit QuorumBlocknumberUpdated(quorumNumber, block.number);
         }
     }
 

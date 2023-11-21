@@ -78,7 +78,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         BN254.G1Point memory apk = BN254.G1Point(0, 0);
         for (uint i = 0; i < quorumNumbers.length; i++) {
             require(
-                registryCoordinator.quorumUpdateTimestamp(uint8(quorumNumbers[i])) + delegation.withdrawalDelayBlocks() <= block.timestamp,
+                registryCoordinator.quorumUpdateBlocknumber(uint8(quorumNumbers[i])) + delegation.withdrawalDelayBlocks() <= block.number,
                 "BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within QUORUM_STAKES_UPDATE_WINDOW"
             );
             require(
