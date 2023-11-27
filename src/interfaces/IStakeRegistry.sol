@@ -5,11 +5,8 @@ import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
 import {IRegistry} from "./IRegistry.sol";
-<<<<<<< HEAD
 import {IServiceManager} from "./IServiceManager.sol";
-=======
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
->>>>>>> 3e28473 (Feat: Add avs registration & operator/strategy accounting)
 
 /**
  * @title Interface for a `Registry` that keeps track of stakes of operators for up to 256 quorums.

@@ -714,37 +714,6 @@ contract StakeRegistry is StakeRegistryStorage {
         return operatorStakeUpdate.stake;
     }
 
-    /// @notice Returns the stake of the operator for the provided `quorumNumber` at the given `blockNumber`
-    function getStakeForOperatorIdForQuorumAtBlockNumber(
-        bytes32 operatorId,
-        uint8 quorumNumber,
-        uint32 blockNumber
-    ) external view returns (uint96) {
-        return
-            operatorIdToStakeHistory[operatorId][quorumNumber][
-                _getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber(operatorId, quorumNumber, blockNumber)
-            ].stake;
-    }
-
-    /**
-     * @notice Returns the stake weight from the latest entry in `_totalStakeHistory` for quorum `quorumNumber`.
-     * @dev Will revert if `_totalStakeHistory[quorumNumber]` is empty.
-     */
-    function getCurrentTotalStakeForQuorum(uint8 quorumNumber) external view returns (uint96) {
-        return _totalStakeHistory[quorumNumber][_totalStakeHistory[quorumNumber].length - 1].stake;
-    }
-
-    function getLengthOfOperatorIdStakeHistoryForQuorum(
-        bytes32 operatorId,
-        uint8 quorumNumber
-    ) external view returns (uint256) {
-        return operatorIdToStakeHistory[operatorId][quorumNumber].length;
-    }
-
-    function getLengthOfTotalStakeHistoryForQuorum(uint8 quorumNumber) external view returns (uint256) {
-        return _totalStakeHistory[quorumNumber].length;
-    }
-
     /**
      * @notice Returns a list of all strategies that are restakeable for the middleware
      * @dev This function is used by an offchain actor to determine which strategies are restakeable
