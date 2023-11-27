@@ -19,7 +19,8 @@ import "src/StakeRegistryStorage.sol";
  * @author Layr Labs, Inc.
  */
 contract StakeRegistry is StakeRegistryStorage {
-    
+    using BitmapUtils for *;
+
     modifier onlyRegistryCoordinator() {
         require(
             msg.sender == address(registryCoordinator),
@@ -201,6 +202,8 @@ contract StakeRegistry is StakeRegistryStorage {
             nextUpdateBlockNumber: 0,
             stake: 0
         }));
+
+        quorumBitmap = uint192(quorumBitmap.plus(uint192(1) << quorumNumber));
     }
 
     function setMinimumStakeForQuorum(
@@ -244,6 +247,11 @@ contract StakeRegistry is StakeRegistryStorage {
             // Replace index to remove with the last item in the list, then pop the last item
             _strategyParams[indicesToRemove[i]] = _strategyParams[_strategyParams.length - 1];
             _strategyParams.pop();
+        }
+
+        // If no strategies exist in quorum, turn bit off 
+        if (_strategyParams.length == 0) {
+            quorumBitmap = uint192(quorumBitmap.minus(uint192(1) << quorumNumber));
         }
     }
 
@@ -705,14 +713,9 @@ contract StakeRegistry is StakeRegistryStorage {
         return indices;
     }
 
-    /**
-     * @notice Returns the most recent stake weight for the `operatorId` for quorum `quorumNumber`
-     * @dev Function returns weight of **0** in the event that the operator has no stake history
-     */
-    function getCurrentOperatorStakeForQuorum(bytes32 operatorId, uint8 quorumNumber) public view returns (uint96) {
-        OperatorStakeUpdate memory operatorStakeUpdate = getMostRecentStakeUpdateByOperatorId(operatorId, quorumNumber);
-        return operatorStakeUpdate.stake;
-    }
+    /*******************************************************************************
+                        VIEW FUNCTIONS - Operator & AVS Stakes
+    *******************************************************************************/
 
     /**
      * @notice Returns a list of all strategies that are restakeable for the middleware
@@ -727,9 +730,9 @@ contract StakeRegistry is StakeRegistryStorage {
         IStrategy[] memory strategies = new IStrategy[](_getNumStrategiesInBitmap(quorumNumbers));
         uint256 index = 0;
         for(uint256 i = 0; i < quorumNumbers.length; i++){
-            StrategyAndWeightingMultiplier[] memory strategiesAndMultipliers = strategiesConsideredAndMultipliers[uint8(quorumNumbers[i])];
-            for(uint256 j = 0; j < strategiesAndMultipliers.length; j++){
-                strategies[index] = strategiesAndMultipliers[j].strategy;
+            StrategyParams[] memory strategyParams = strategyParams[uint8(quorumNumbers[i])];
+            for(uint256 j = 0; j < strategyParams.length; j++){
+                strategies[index] = strategyParams[j].strategy;
                 index++;
             }
         }
@@ -742,26 +745,26 @@ contract StakeRegistry is StakeRegistryStorage {
      * @dev There may strategies for which the operator has restaked on the quorum but has no shares. In this case,
      *      the strategy is included in the returned array but the share amount is 0
      */
-    function getOperatorRestakedStrategies(address operator) external view returns (IStrategy[] memory, uint96[] memory){
+    function getOperatorRestakedStrategies(address operator) external view returns (IStrategy[] memory, uint256[] memory){
         bytes32 operatorId = registryCoordinator.getOperatorId(operator);
-        uint192 operatorBitmap = registryCoordinator.getCurrentQuorumBitmapByOperatorId(operatorId);
+        uint192 operatorBitmap = registryCoordinator.getCurrentQuorumBitmap(operatorId);
 
         // Return empty arrays if operator does not have any shares at stake OR no strategies can be restaked
         if (operatorBitmap == 0 || quorumBitmap == 0) {
-            return (new IStrategy[](0), new uint96[](0));
+            return (new IStrategy[](0), new uint256[](0));
         }
 
         uint192 operatorRestakedQuorumsBitmap = operatorBitmap & quorumBitmap; // get all strategies that are considered restaked
         bytes memory restakedQuorums = BitmapUtils.bitmapToBytesArray(operatorRestakedQuorumsBitmap);
         IStrategy[] memory strategies = new IStrategy[](_getNumStrategiesInBitmap(restakedQuorums));
-        uint96[] memory shares = new uint96[](strategies.length);
+        uint256[] memory shares = new uint256[](strategies.length);
 
         uint256 index = 0;
         for(uint256 i = 0; i < restakedQuorums.length; i++) {
-            StrategyAndWeightingMultiplier[] memory strategiesAndMultipliers = strategiesConsideredAndMultipliers[uint8(restakedQuorums[i])];
-            for (uint256 j = 0; j < strategiesAndMultipliers.length; j++) {
-                strategies[index] = strategiesAndMultipliers[j].strategy;
-                shares[index] = getCurrentOperatorStakeForQuorum(operatorId, uint8(restakedQuorums[i]));
+            StrategyParams[] memory strategyParams = strategyParams[uint8(restakedQuorums[i])];
+            for (uint256 j = 0; j < strategyParams.length; j++) {
+                strategies[index] = strategyParams[j].strategy;
+                shares[index] = delegation.operatorShares(operator, strategyParams[j].strategy);
                 index++;
             }
         }
@@ -772,7 +775,7 @@ contract StakeRegistry is StakeRegistryStorage {
     function _getNumStrategiesInBitmap(bytes memory quorums) internal view returns (uint256) {
         uint256 strategyCount;
         for(uint256 i = 0; i < quorums.length; i++) {
-            strategyCount += strategiesConsideredAndMultipliersLength(uint8(quorums[i]));
+            strategyCount += strategyParams[uint8(quorums[i])].length;
         }
         return strategyCount;
     }

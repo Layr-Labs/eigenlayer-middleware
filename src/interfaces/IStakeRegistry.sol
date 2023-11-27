@@ -255,7 +255,7 @@ interface IStakeRegistry is IRegistry {
      * @notice Returns a list of strategies that an operator has restaked into the AVS
      * @param operator is the address of the operator whose restaked strategies are being queried
      */
-    function getOperatorRestakedStrategies(address operator) external view returns (IStrategy[] memory, uint96[] memory);
+    function getOperatorRestakedStrategies(address operator) external view returns (IStrategy[] memory, uint256[] memory);
 
     /**
      * @notice Returns the strategies that this AVS supports restaking for

@@ -47,6 +47,9 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
      */
     mapping(uint8 => StrategyParams[]) public strategyParams;
 
+    /// @notice Bitmap of quorums that have been initialized and more than 1 strategy set
+    uint192 quorumBitmap;
+
     constructor(
         IRegistryCoordinator _registryCoordinator, 
         IDelegationManager _delegationManager,

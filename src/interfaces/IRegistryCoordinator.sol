@@ -85,8 +85,6 @@ interface IRegistryCoordinator is ISignatureUtils {
 
     /// @notice Returns the number of registries
     function numRegistries() external view returns (uint256);
-<<<<<<< HEAD
-=======
 
     /**
      * @notice Registers msg.sender as an operator with the middleware
@@ -102,5 +100,4 @@ interface IRegistryCoordinator is ISignatureUtils {
      * @param deregistrationData is the the data that is decoded to get the operator's deregistration information
      */
     function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, bytes calldata deregistrationData) external;
->>>>>>> 3e28473 (Feat: Add avs registration & operator/strategy accounting)
 }
