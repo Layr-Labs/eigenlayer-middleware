@@ -10,8 +10,9 @@ contract BLSRegistryCoordinatorWithIndicesHarness is BLSRegistryCoordinatorWithI
         IServiceManager _serviceManager,
         IStakeRegistry _stakeRegistry,
         IBLSPubkeyRegistry _blsPubkeyRegistry,
-        IIndexRegistry _indexRegistry
-    ) BLSRegistryCoordinatorWithIndices(_slasher, _serviceManager, _stakeRegistry, _blsPubkeyRegistry, _indexRegistry) {
+        IIndexRegistry _indexRegistry,
+        IDelegationManager _delegationManager
+    ) BLSRegistryCoordinatorWithIndices(_slasher, _serviceManager, _stakeRegistry, _blsPubkeyRegistry, _indexRegistry, _delegationManager) {
     }
 
     function setQuorumCount(uint8 count) external {

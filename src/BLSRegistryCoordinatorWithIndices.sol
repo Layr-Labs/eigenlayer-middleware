@@ -8,6 +8,7 @@ import "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 import "eigenlayer-contracts/src/contracts/libraries/EIP1271SignatureUtils.sol";
 import "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
+import "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
 import "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
 import "src/interfaces/ISocketUpdater.sol";
@@ -60,6 +61,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     IStakeRegistry public immutable stakeRegistry;
     /// @notice the Index Registry contract that will keep track of operators' indexes
     IIndexRegistry public immutable indexRegistry;
+    /// @notice The Delegation Manager contract to record operator avs relationships
+    IDelegationManager public immutable delegationManager;
 
     /// @notice the current number of quorums supported by the registry coordinator
     uint8 public quorumCount;
@@ -102,13 +105,15 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         IServiceManager _serviceManager,
         IStakeRegistry _stakeRegistry,
         IBLSPubkeyRegistry _blsPubkeyRegistry,
-        IIndexRegistry _indexRegistry
+        IIndexRegistry _indexRegistry,
+        IDelegationManager _delegationManager
     ) EIP712("AVSRegistryCoordinator", "v0.0.1") {
         slasher = _slasher;
         serviceManager = _serviceManager;
         stakeRegistry = _stakeRegistry;
         blsPubkeyRegistry = _blsPubkeyRegistry;
         indexRegistry = _indexRegistry;
+        delegationManager = _delegationManager;
     }
 
     function initialize(
@@ -148,11 +153,40 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     /**
      * @notice Registers msg.sender as an operator for one or more quorums. If any quorum reaches its maximum
      * operator capacity, this method will fail.
-     * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for
+     * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
+     * @param registrationData is the data that is decoded to get the operator's registration information
+     * @param signatureWithSaltAndExpiry is the signature of the operator used by the avs to register the operator in the delegation manager
+     * @dev `registrationData` should be a G1 point representing the operator's BLS public key and their socket
      */
     function registerOperator(
         bytes calldata quorumNumbers,
-        string calldata socket
+        bytes calldata registrationData,
+        SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry
+    ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
+        // get the operator's BLS public key
+        (BN254.G1Point memory pubkey, string memory socket) = abi.decode(registrationData, (BN254.G1Point, string));
+        // call internal function to register the operator
+        _registerOperatorWithCoordinatorAndNoOverfilledQuorums({
+            operator: msg.sender, 
+            quorumNumbers: quorumNumbers, 
+            pubkey: pubkey, 
+            socket: socket,
+            signatureWithSaltAndExpiry: signatureWithSaltAndExpiry
+        });
+    }
+
+    /**
+     * @notice Registers msg.sender as an operator with the middleware
+     * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
+     * @param pubkey is the BLS public key of the operator
+     * @param socket is the socket of the operator
+     * @param signatureWithSaltAndExpiry is the signature of the operator used by the avs to register the operator in the delegation manager
+     */
+    function registerOperatorWithCoordinator(
+        bytes calldata quorumNumbers,
+        BN254.G1Point memory pubkey,
+        string calldata socket,
+        SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         bytes32 operatorId = blsPubkeyRegistry.getOperatorId(msg.sender);
 
@@ -161,9 +195,52 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
             operator: msg.sender, 
             operatorId: operatorId,
             quorumNumbers: quorumNumbers, 
-            socket: socket
+            socket: socket,
+            signatureWithSaltAndExpiry: signatureWithSaltAndExpiry
+        });
+    }
+
+    /**
+     * @notice Registers msg.sender as an operator with the middleware when the quorum operator limit is full. To register 
+     * while maintaining the limit, the operator chooses another registered operator with lower stake to kick.
+     * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
+     * @param pubkey is the BLS public key of the operator
+     * @param operatorKickParams are the parameters for the deregistration of the operator that is being kicked from each 
+     * quorum that will be filled after the operator registers. These parameters should include an operator, their pubkey, 
+     * and ids of the operators to swap with the kicked operator. 
+     * @param operatorSignature is the signature of the operator used by the avs to register the operator in the delegation manager
+     * @param churnApproverSignature is the signature of the churnApprover on the operator kick params with a salt and expiry
+     */
+    function registerOperatorWithCoordinator(
+        bytes calldata quorumNumbers, 
+        BN254.G1Point memory pubkey,
+        string calldata socket,
+        OperatorKickParam[] calldata operatorKickParams,
+        SignatureWithSaltAndExpiry memory operatorSignature,
+        SignatureWithSaltAndExpiry memory churnApproverSignature
+    ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
+        // register the operator
+        uint32[] memory numOperatorsPerQuorum = _registerOperatorWithCoordinator({
+            operator: msg.sender,
+            quorumNumbers: quorumNumbers,
+            pubkey: pubkey,
+            socket: socket,
+            signatureWithSaltAndExpiry: operatorSignature
         });
 
+        // get the registering operator's operatorId and set the operatorIdsToSwap to it because the registering operator is the one with the greatest index
+        bytes32[] memory operatorIdsToSwap = new bytes32[](1);
+        operatorIdsToSwap[0] = pubkey.hashG1Point();
+
+        // verify the churnApprover's signature
+        _verifyChurnApproverSignatureOnOperatorChurnApproval({
+            registeringOperatorId: operatorIdsToSwap[0],
+            operatorKickParams: operatorKickParams,
+            signatureWithSaltAndExpiry: churnApproverSignature
+        });
+
+        uint256 operatorToKickParamsIndex = 0;
+        // kick the operators
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             
@@ -363,6 +440,15 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         _setEjector(_ejector);
     }
 
+    /**
+     * @notice Sets the metadata URI for the AVS
+     * @param _metadataURI is the metadata URI for the AVS
+     * @dev only callable by the service manager owner
+     */
+    function setMetadataURI(string memory _metadataURI) external onlyServiceManagerOwner {
+        delegationManager.updateAVSMetadataURI(_metadataURI);
+    }
+
     /*******************************************************************************
                             INTERNAL FUNCTIONS
     *******************************************************************************/
@@ -381,8 +467,9 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         address operator, 
         bytes32 operatorId,
         bytes calldata quorumNumbers,
-        string memory socket
-    ) internal virtual returns (RegisterResults memory) {
+        string memory socket,
+        SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry
+    ) internal virtual returns (RegisterResults memory) {        
         /**
          * Get bitmap of quorums to register for and operator's current bitmap. Validate that:
          * - we're trying to register for at least 1 quorum
@@ -412,6 +499,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
                 status: OperatorStatus.REGISTERED
             });
 
+            delegationManager.registerOperatorWithAVS(operator, signatureWithSaltAndExpiry);
+
             emit OperatorRegistered(operator, operatorId);
         }
 
@@ -428,6 +517,22 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
             numOperatorsPerQuorum: numOperatorsPerQuorum,
             operatorStakes: operatorStakes,
             totalStakes: totalStakes
+        });
+    }
+
+    function _registerOperatorWithCoordinatorAndNoOverfilledQuorums(
+        address operator, 
+        bytes calldata quorumNumbers, 
+        BN254.G1Point memory pubkey, 
+        string memory socket,
+        SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry
+    ) internal {
+        uint32[] memory numOperatorsPerQuorum = _registerOperatorWithCoordinator({
+            operator: operator, 
+            quorumNumbers: quorumNumbers, 
+            pubkey: pubkey, 
+            socket: socket,
+            signatureWithSaltAndExpiry: signatureWithSaltAndExpiry
         });
     }
 
@@ -493,6 +598,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         // If the operator is no longer registered for any quorums, update their status
         if (newBitmap.isEmpty()) {
             operatorInfo.status = OperatorStatus.DEREGISTERED;
+            delegationManager.deregisterOperatorFromAVS(operator);
+
             emit OperatorDeregistered(operator, operatorId);
         }
 

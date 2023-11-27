@@ -5,7 +5,11 @@ import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
 import {IRegistry} from "./IRegistry.sol";
+<<<<<<< HEAD
 import {IServiceManager} from "./IServiceManager.sol";
+=======
+import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+>>>>>>> 3e28473 (Feat: Add avs registration & operator/strategy accounting)
 
 /**
  * @title Interface for a `Registry` that keeps track of stakes of operators for up to 256 quorums.
@@ -249,4 +253,15 @@ interface IStakeRegistry is IRegistry {
         bytes32 operatorId, 
         bytes calldata quorumNumbers
     ) external returns (uint192);
+
+    /**
+     * @notice Returns a list of strategies that an operator has restaked into the AVS
+     * @param operator is the address of the operator whose restaked strategies are being queried
+     */
+    function getOperatorRestakedStrategies(address operator) external view returns (IStrategy[] memory, uint96[] memory);
+
+    /**
+     * @notice Returns the strategies that this AVS supports restaking for
+     */
+    function getRestakeableStrategies() external view returns (IStrategy[] memory);
 }

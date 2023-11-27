@@ -704,4 +704,107 @@ contract StakeRegistry is StakeRegistryStorage {
         }
         return indices;
     }
+
+    /**
+     * @notice Returns the most recent stake weight for the `operatorId` for quorum `quorumNumber`
+     * @dev Function returns weight of **0** in the event that the operator has no stake history
+     */
+    function getCurrentOperatorStakeForQuorum(bytes32 operatorId, uint8 quorumNumber) public view returns (uint96) {
+        OperatorStakeUpdate memory operatorStakeUpdate = getMostRecentStakeUpdateByOperatorId(operatorId, quorumNumber);
+        return operatorStakeUpdate.stake;
+    }
+
+    /// @notice Returns the stake of the operator for the provided `quorumNumber` at the given `blockNumber`
+    function getStakeForOperatorIdForQuorumAtBlockNumber(
+        bytes32 operatorId,
+        uint8 quorumNumber,
+        uint32 blockNumber
+    ) external view returns (uint96) {
+        return
+            operatorIdToStakeHistory[operatorId][quorumNumber][
+                _getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber(operatorId, quorumNumber, blockNumber)
+            ].stake;
+    }
+
+    /**
+     * @notice Returns the stake weight from the latest entry in `_totalStakeHistory` for quorum `quorumNumber`.
+     * @dev Will revert if `_totalStakeHistory[quorumNumber]` is empty.
+     */
+    function getCurrentTotalStakeForQuorum(uint8 quorumNumber) external view returns (uint96) {
+        return _totalStakeHistory[quorumNumber][_totalStakeHistory[quorumNumber].length - 1].stake;
+    }
+
+    function getLengthOfOperatorIdStakeHistoryForQuorum(
+        bytes32 operatorId,
+        uint8 quorumNumber
+    ) external view returns (uint256) {
+        return operatorIdToStakeHistory[operatorId][quorumNumber].length;
+    }
+
+    function getLengthOfTotalStakeHistoryForQuorum(uint8 quorumNumber) external view returns (uint256) {
+        return _totalStakeHistory[quorumNumber].length;
+    }
+
+    /**
+     * @notice Returns a list of all strategies that are restakeable for the middleware
+     * @dev This function is used by an offchain actor to determine which strategies are restakeable
+     */
+    function getRestakeableStrategies() external view returns (IStrategy[] memory){
+        if(quorumBitmap == 0) {
+            return new IStrategy[](0);
+        }
+
+        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
+        IStrategy[] memory strategies = new IStrategy[](_getNumStrategiesInBitmap(quorumNumbers));
+        uint256 index = 0;
+        for(uint256 i = 0; i < quorumNumbers.length; i++){
+            StrategyAndWeightingMultiplier[] memory strategiesAndMultipliers = strategiesConsideredAndMultipliers[uint8(quorumNumbers[i])];
+            for(uint256 j = 0; j < strategiesAndMultipliers.length; j++){
+                strategies[index] = strategiesAndMultipliers[j].strategy;
+                index++;
+            }
+        }
+
+        return strategies;
+    }
+
+    /**
+     * @notice Return a list of all strategies and corresponding share amounts for which the operator has restaked
+     * @dev There may strategies for which the operator has restaked on the quorum but has no shares. In this case,
+     *      the strategy is included in the returned array but the share amount is 0
+     */
+    function getOperatorRestakedStrategies(address operator) external view returns (IStrategy[] memory, uint96[] memory){
+        bytes32 operatorId = registryCoordinator.getOperatorId(operator);
+        uint192 operatorBitmap = registryCoordinator.getCurrentQuorumBitmapByOperatorId(operatorId);
+
+        // Return empty arrays if operator does not have any shares at stake OR no strategies can be restaked
+        if (operatorBitmap == 0 || quorumBitmap == 0) {
+            return (new IStrategy[](0), new uint96[](0));
+        }
+
+        uint192 operatorRestakedQuorumsBitmap = operatorBitmap & quorumBitmap; // get all strategies that are considered restaked
+        bytes memory restakedQuorums = BitmapUtils.bitmapToBytesArray(operatorRestakedQuorumsBitmap);
+        IStrategy[] memory strategies = new IStrategy[](_getNumStrategiesInBitmap(restakedQuorums));
+        uint96[] memory shares = new uint96[](strategies.length);
+
+        uint256 index = 0;
+        for(uint256 i = 0; i < restakedQuorums.length; i++) {
+            StrategyAndWeightingMultiplier[] memory strategiesAndMultipliers = strategiesConsideredAndMultipliers[uint8(restakedQuorums[i])];
+            for (uint256 j = 0; j < strategiesAndMultipliers.length; j++) {
+                strategies[index] = strategiesAndMultipliers[j].strategy;
+                shares[index] = getCurrentOperatorStakeForQuorum(operatorId, uint8(restakedQuorums[i]));
+                index++;
+            }
+        }
+
+        return (strategies, shares);
+    }
+
+    function _getNumStrategiesInBitmap(bytes memory quorums) internal view returns (uint256) {
+        uint256 strategyCount;
+        for(uint256 i = 0; i < quorums.length; i++) {
+            strategyCount += strategiesConsideredAndMultipliersLength(uint8(quorums[i]));
+        }
+        return strategyCount;
+    }
 }

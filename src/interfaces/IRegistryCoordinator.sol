@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
+import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+
 /**
  * @title Interface for a contract that coordinates between various registries for an AVS.
  * @author Layr Labs, Inc.
  */
-interface IRegistryCoordinator {
+interface IRegistryCoordinator is ISignatureUtils {
     // EVENTS
     /// Emits when an operator is registered
     event OperatorRegistered(address indexed operator, bytes32 indexed operatorId);
@@ -83,4 +85,22 @@ interface IRegistryCoordinator {
 
     /// @notice Returns the number of registries
     function numRegistries() external view returns (uint256);
+<<<<<<< HEAD
+=======
+
+    /**
+     * @notice Registers msg.sender as an operator with the middleware
+     * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
+     * @param registrationData is the data that is decoded to get the operator's registration information
+     * @param signatureWithSaltAndExpiry is the signature of the operator used by the avs to register the operator in the delegation manager
+     */
+    function registerOperatorWithCoordinator(bytes memory quorumNumbers, bytes calldata registrationData, SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry) external;
+
+    /**
+     * @notice Deregisters the msg.sender as an operator from the middleware
+     * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registered for
+     * @param deregistrationData is the the data that is decoded to get the operator's deregistration information
+     */
+    function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, bytes calldata deregistrationData) external;
+>>>>>>> 3e28473 (Feat: Add avs registration & operator/strategy accounting)
 }
