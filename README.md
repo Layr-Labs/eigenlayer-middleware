@@ -23,7 +23,7 @@ There are two things that matter in terms of operators’ onchain interaction wi
 - What qualities of operators need to be kept track of onchain? (e.g. stake, BLS pubkeys, etc.)
 - Registration/Deregistration conditions
 
-These two points have been addressed through the Registry Coordinator/Registry Architecture.
+These two points have been addressed through the architecture of Registry Coordinator and Registry.
 
 ### Definitions
 
