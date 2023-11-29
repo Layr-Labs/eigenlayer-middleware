@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
-import "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
-import "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
-import "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
+import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
+import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
+import {Pausable} from "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
 
-import "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
-import "src/interfaces/IServiceManager.sol";
+import {BLSSignatureChecker} from "src/BLSSignatureChecker.sol";
 
-import "src/BLSSignatureChecker.sol";
+import {IBLSRegistryCoordinatorWithIndices} from "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
+import {IServiceManager} from "src/interfaces/IServiceManager.sol";
 
 /**
  * @title Base implementation of `IServiceManager` interface, designed to be inherited from by more complex ServiceManagers.
