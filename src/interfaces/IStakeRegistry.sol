@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
-import {IRegistry} from "./IRegistry.sol";
 import {IServiceManager} from "./IServiceManager.sol";
+import {IRegistry} from "./IRegistry.sol";
 
 /**
  * @title Interface for a `Registry` that keeps track of stakes of operators for up to 256 quorums.
