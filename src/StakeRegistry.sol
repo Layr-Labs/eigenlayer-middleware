@@ -720,6 +720,7 @@ contract StakeRegistry is StakeRegistryStorage {
     /**
      * @notice Returns a list of all strategies that are restakeable for the middleware
      * @dev This function is used by an offchain actor to determine which strategies are restakeable
+     * @dev Strategies may be duplicated in the returned array if the same strategy exists in multiple quorums
      */
     function getRestakeableStrategies() external view returns (IStrategy[] memory){
         if(quorumBitmap == 0) {
@@ -744,6 +745,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @notice Return a list of all strategies and corresponding share amounts for which the operator has restaked
      * @dev There may strategies for which the operator has restaked on the quorum but has no shares. In this case,
      *      the strategy is included in the returned array but the share amount is 0
+     * @dev Strategies and share amounts may be duplicated in the returned arrays if the same strategy exists in multiple quorums
      */
     function getOperatorRestakedStrategies(address operator) external view returns (IStrategy[] memory, uint256[] memory){
         bytes32 operatorId = registryCoordinator.getOperatorId(operator);
