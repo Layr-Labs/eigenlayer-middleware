@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "src/interfaces/IServiceManager.sol";
-import "src/interfaces/IStakeRegistry.sol";
-import "src/interfaces/IRegistryCoordinator.sol";
+import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
-import "src/libraries/BitmapUtils.sol";
+import {StakeRegistryStorage} from "src/StakeRegistryStorage.sol";
 
-import "src/StakeRegistryStorage.sol";
+import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
+import {IServiceManager} from "src/interfaces/IServiceManager.sol";
+import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
+
+import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
 
 /**
  * @title A `Registry` that keeps track of stakes of operators for up to 256 quorums.
