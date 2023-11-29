@@ -87,4 +87,6 @@ interface IBLSPubkeyRegistry is IRegistry {
     function getApkHashAtBlockNumberAndIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes24);
 
     function getOperatorId(address operator) external view returns (bytes32);
+
+    function getOperatorPubkey(address operator) external view returns (BN254.G1Point memory);
 }

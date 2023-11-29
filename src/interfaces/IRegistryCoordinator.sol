@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
+import {BN254} from "src/libraries/BN254.sol";
+
 /**
  * @title Interface for a contract that coordinates between various registries for an AVS.
  * @author Layr Labs, Inc.
@@ -77,6 +79,9 @@ interface IRegistryCoordinator {
 
     /// @notice Returns the length of the quorum bitmap history for the given `operatorId`
     function getQuorumBitmapHistoryLength(bytes32 operatorId) external view returns (uint256);
+
+    /// @notice Returns the operator's negative APK for the given `operatorId`
+    function getOperatorNegativeAPK(bytes32 operatorId) external view returns (BN254.G1Point memory);
 
     /// @notice Returns the registry at the desired index
     function registries(uint256) external view returns (address);

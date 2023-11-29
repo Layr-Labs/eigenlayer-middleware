@@ -212,8 +212,13 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
         return pubkeyCompendium.pubkeyHashToOperator(pubkeyHash);
     }
 
-    function getOperatorId(address operator) public view returns (bytes32) {
-        (, bytes32 pubkeyHash) = pubkeyCompendium.getRegisteredPubkey(operator);
-        return pubkeyHash;
+    /// @notice Returns the pubkeyHash for the given `operator` address
+    function getOperatorId(address operator) public view returns (bytes32 pubkeyHash) {
+        (,pubkeyHash) = pubkeyCompendium.getRegisteredPubkey(operator);
+    }
+
+    /// @notice Returns the pubkey for the given `operator` address
+    function getOperatorPubkey(address operator) public view returns (BN254.G1Point memory pubkey) {
+        (pubkey,) = pubkeyCompendium.getRegisteredPubkey(operator);
     }
 }

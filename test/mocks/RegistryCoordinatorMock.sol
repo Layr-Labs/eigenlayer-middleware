@@ -38,6 +38,8 @@ contract RegistryCoordinatorMock is IRegistryCoordinator {
     /// @notice Returns the length of the quorum bitmap history for the given `operatorId`
     function getQuorumBitmapHistoryLength(bytes32 operatorId) external view returns (uint256) {}
 
+    function getOperatorNegativeAPK(bytes32 operatorId) external view returns (BN254.G1Point memory) {}
+
     function numRegistries() external view returns (uint256){}
 
     function registries(uint256) external view returns (address){}
