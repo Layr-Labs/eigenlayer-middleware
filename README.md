@@ -40,7 +40,8 @@ The Registry Coordinator is a contract that is deployed by each AVS. It handles
 - Keeping track of what quorums operators are a part of
 - Handling operator churn (registration/deregistration)
 - Communicating to registries
-  The current implementation of this contract is the [BLSRegistryCoordinatorWithIndices](./docs/BLSRegistryCoordinatorWithIndices.md).
+
+The current implementation of this contract is the [BLSRegistryCoordinatorWithIndices](./docs/BLSRegistryCoordinatorWithIndices.md).
 
 ### Registries
 
