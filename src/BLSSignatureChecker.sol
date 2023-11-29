@@ -69,13 +69,14 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
             bytes32
         )
     {   
-        // verify the provided apk was the apk at referenceBlockNumber
-        // loop through every quorumNumber and keep track of the apk
+        QuorumStakeTotals memory quorumStakeTotals;
+        quorumStakeTotals.totalStakeForQuorum = new uint96[](quorumNumbers.length);
+        quorumStakeTotals.signedStakeForQuorum = new uint96[](quorumNumbers.length);
         BN254.G1Point memory apk = BN254.G1Point(0, 0);
         for (uint i = 0; i < quorumNumbers.length; i++) {
             require(
                 bytes24(nonSignerStakesAndSignature.quorumApks[i].hashG1Point()) == 
-                    IBLSPubkeyRegistry(blsPubkeyRegistry).getApkHashAtBlockNumberAndIndex(
+                    blsPubkeyRegistry.getApkHashAtBlockNumberAndIndex(
                         uint8(quorumNumbers[i]), 
                         referenceBlockNumber, 
                         nonSignerStakesAndSignature.quorumApkIndices[i]
@@ -83,82 +84,59 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                 "BLSSignatureChecker.checkSignatures: quorumApk hash in storage does not match provided quorum apk"
             );
             apk = apk.plus(nonSignerStakesAndSignature.quorumApks[i]);
+
+            quorumStakeTotals.totalStakeForQuorum[i] = 
+                    stakeRegistry.getTotalStakeAtBlockNumberFromIndex(uint8(quorumNumbers[i]), referenceBlockNumber, nonSignerStakesAndSignature.totalStakeIndices[i]);
+            quorumStakeTotals.signedStakeForQuorum[i] = quorumStakeTotals.totalStakeForQuorum[i];
         }
         
-        // initialize memory for the quorumStakeTotals
-        QuorumStakeTotals memory quorumStakeTotals;
-        quorumStakeTotals.totalStakeForQuorum = new uint96[](quorumNumbers.length);
-        quorumStakeTotals.signedStakeForQuorum = new uint96[](quorumNumbers.length);
-        // the pubkeyHashes of the nonSigners
         bytes32[] memory nonSignerPubkeyHashes = new bytes32[](nonSignerStakesAndSignature.nonSignerPubkeys.length);
         {
-            // the quorumBitmaps of the nonSigners
-            uint256[] memory nonSignerQuorumBitmaps = new uint256[](nonSignerStakesAndSignature.nonSignerPubkeys.length);
-            {
-                // the bitmap of the quorumNumbers
-                uint256 signingQuorumBitmap = BitmapUtils.bytesArrayToBitmap(quorumNumbers);
+            uint32[] memory nonSignerForQuorumIndices = new uint32[](quorumNumbers.length);
+            uint256 signingQuorumBitmap = BitmapUtils.bytesArrayToBitmap(quorumNumbers);
 
-                for (uint i = 0; i < nonSignerStakesAndSignature.nonSignerPubkeys.length; i++) {
-                    nonSignerPubkeyHashes[i] = nonSignerStakesAndSignature.nonSignerPubkeys[i].hashG1Point();
-                    
-                    // check that the nonSignerPubkeys are sorted and free of duplicates
-                    if (i != 0) {
-                        require(uint256(nonSignerPubkeyHashes[i]) > uint256(nonSignerPubkeyHashes[i - 1]), "BLSSignatureChecker.checkSignatures: nonSignerPubkeys not sorted");
-                    }
-
-                    nonSignerQuorumBitmaps[i] = 
-                        registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(
-                            nonSignerPubkeyHashes[i], 
-                            referenceBlockNumber, 
-                            nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices[i]
-                        );
-                    
-                    // subtract the nonSignerPubkey from the running apk to get the apk of all signers
-                    apk = apk.plus(
-                        nonSignerStakesAndSignature.nonSignerPubkeys[i]
-                            .negate()
-                            .scalar_mul_tiny(
-                                BitmapUtils.countNumOnes(nonSignerQuorumBitmaps[i] & signingQuorumBitmap) 
-                            )
-                    );
+            for (uint i = 0; i < nonSignerStakesAndSignature.nonSignerPubkeys.length; i++) {
+                nonSignerPubkeyHashes[i] = nonSignerStakesAndSignature.nonSignerPubkeys[i].hashG1Point();
+                
+                if (i != 0) {
+                    require(uint256(nonSignerPubkeyHashes[i]) > uint256(nonSignerPubkeyHashes[i - 1]), "BLSSignatureChecker.checkSignatures: nonSignerPubkeys not sorted");
                 }
-            }
-            // loop through each quorum number
-            for (uint8 quorumNumberIndex = 0; quorumNumberIndex < quorumNumbers.length;) {
-                // get the quorum number
-                uint8 quorumNumber = uint8(quorumNumbers[quorumNumberIndex]);
-                // get the totalStake for the quorum at the referenceBlockNumber
-                quorumStakeTotals.totalStakeForQuorum[quorumNumberIndex] = 
-                    stakeRegistry.getTotalStakeAtBlockNumberFromIndex(quorumNumber, referenceBlockNumber, nonSignerStakesAndSignature.totalStakeIndices[quorumNumberIndex]);
-                // copy total stake to signed stake
-                quorumStakeTotals.signedStakeForQuorum[quorumNumberIndex] = quorumStakeTotals.totalStakeForQuorum[quorumNumberIndex];
-                // loop through all nonSigners, checking that they are a part of the quorum via their quorumBitmap
-                // if so, load their stake at referenceBlockNumber and subtract it from running stake signed
-                for (uint32 i = 0; i < nonSignerStakesAndSignature.nonSignerPubkeys.length; i++) {
-                    // keep track of the nonSigners index in the quorum
-                    uint32 nonSignerForQuorumIndex = 0;
-                    // if the nonSigner is a part of the quorum, subtract their stake from the running total
-                    if (BitmapUtils.numberIsInBitmap(nonSignerQuorumBitmaps[i], quorumNumber)) {
+
+                uint256 nonSignerQuorumBitmap = 
+                    registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(
+                        nonSignerPubkeyHashes[i], 
+                        referenceBlockNumber, 
+                        nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices[i]
+                    );
+                
+                apk = apk.plus(
+                    nonSignerStakesAndSignature.nonSignerPubkeys[i]
+                        .negate()
+                        .scalar_mul_tiny(
+                            BitmapUtils.countNumOnes(nonSignerQuorumBitmap & signingQuorumBitmap) 
+                        )
+                );
+                
+                for (uint8 quorumNumberIndex = 0; quorumNumberIndex < quorumNumbers.length;) {                
+                    if (BitmapUtils.numberIsInBitmap(nonSignerQuorumBitmap, uint8(quorumNumbers[quorumNumberIndex]))) {
                         quorumStakeTotals.signedStakeForQuorum[quorumNumberIndex] -=
                             stakeRegistry.getStakeAtBlockNumberAndIndex(
-                                quorumNumber,
+                                uint8(quorumNumbers[quorumNumberIndex]),
                                 referenceBlockNumber,
                                 nonSignerPubkeyHashes[i],
-                                nonSignerStakesAndSignature.nonSignerStakeIndices[quorumNumberIndex][nonSignerForQuorumIndex]
+                                nonSignerStakesAndSignature.nonSignerStakeIndices[quorumNumberIndex][nonSignerForQuorumIndices[quorumNumberIndex]]
                             );
                         unchecked {
-                            ++nonSignerForQuorumIndex;
+                            ++nonSignerForQuorumIndices[quorumNumberIndex];
                         }
                     }
-                }
-
-                unchecked {
-                    ++quorumNumberIndex;
+                    unchecked {
+                        ++quorumNumberIndex;
+                    }
                 }
             }
         }
         {
-            // verify the signature
             (bool pairingSuccessful, bool signatureIsValid) = trySignatureAndApkVerification(
                 msgHash, 
                 apk, 
@@ -168,10 +146,8 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
             require(pairingSuccessful, "BLSSignatureChecker.checkSignatures: pairing precompile call failed");
             require(signatureIsValid, "BLSSignatureChecker.checkSignatures: signature is invalid");
         }
-        // set signatoryRecordHash variable used for fraudproofs
         bytes32 signatoryRecordHash = keccak256(abi.encodePacked(referenceBlockNumber, nonSignerPubkeyHashes));
 
-        // return the total stakes that signed for each quorum, and a hash of the information required to prove the exact signers and stake
         return (quorumStakeTotals, signatoryRecordHash);
     }
 
