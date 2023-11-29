@@ -4,7 +4,6 @@ pragma solidity >=0.5.0;
 import {IQuorumRegistry} from "./IQuorumRegistry.sol";
 import {BN254} from "../libraries/BN254.sol";
 
-
 /**
  * @title Minimal interface extension to `IQuorumRegistry`.
  * @author Layr Labs, Inc.

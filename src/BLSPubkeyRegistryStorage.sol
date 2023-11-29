@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "./interfaces/IBLSPubkeyRegistry.sol";
-import "./interfaces/IRegistryCoordinator.sol";
-import "./interfaces/IBLSPublicKeyCompendium.sol";
-
-import "./libraries/BN254.sol";
-
-import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import {IBLSPubkeyRegistry} from "src/interfaces/IBLSPubkeyRegistry.sol";
+import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
+import {IBLSPublicKeyCompendium} from "src/interfaces/IBLSPublicKeyCompendium.sol";
+import {BN254} from "src/libraries/BN254.sol";
+import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
 abstract contract BLSPubkeyRegistryStorage is Initializable, IBLSPubkeyRegistry {
     /// @notice the registry coordinator contract

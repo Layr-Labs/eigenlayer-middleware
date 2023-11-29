@@ -1,18 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
-<<<<<<< HEAD
-import {IServiceManager} from "./interfaces/IServiceManager.sol";
-import {IStakeRegistry} from  "./interfaces/IStakeRegistry.sol";
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
-=======
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 
+import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 import {IServiceManager} from "src/interfaces/IServiceManager.sol";
 import {IStakeRegistry} from  "src/interfaces/IStakeRegistry.sol";
-import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
->>>>>>> 12b09de (fix: fix compilation issues and tests)
 
 /**
  * @title Storage variables for the `StakeRegistry` contract.

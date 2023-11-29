@@ -2,11 +2,13 @@
 pragma solidity =0.8.12;
 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {IRegistryCoordinator} from "./IRegistryCoordinator.sol";
-import {IStakeRegistry} from "./IStakeRegistry.sol";
-import {IBLSPubkeyRegistry} from "./IBLSPubkeyRegistry.sol";
-import {IIndexRegistry} from "./IIndexRegistry.sol";
-import {BN254} from "../libraries/BN254.sol";
+
+import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
+import {IBLSPubkeyRegistry} from "src/interfaces/IBLSPubkeyRegistry.sol";
+import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
+import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
+
+import {BN254} from "src/libraries/BN254.sol";
 
 /**
  * @title Minimal interface for the `IBLSStakeRegistryCoordinator` contract.
