@@ -27,12 +27,22 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
     IStakeRegistry public immutable stakeRegistry;
     IBLSApkRegistry public immutable blsApkRegistry;
     IDelegationManager public immutable delegation;
+    IServiceManager public immutable serviceManager;
+    /// @notice If true, check that the signature timestamp is within the delegation withdrawalDelayBlocks window.
+    bool public isTimestampChecked;
+
+    modifier onlyServiceManagerOwner {
+        require(msg.sender == serviceManager.owner(), "BLSSignatureChecker.onlyServiceManagerOwner: caller is not the service manager owner");
+        _;
+    }
 
     constructor(IRegistryCoordinator _registryCoordinator) {
         registryCoordinator = IRegistryCoordinator(_registryCoordinator);
         stakeRegistry = _registryCoordinator.stakeRegistry();
         blsApkRegistry = _registryCoordinator.blsApkRegistry();
         delegation = stakeRegistry.delegation();
+        serviceManager = _registryCoordinator.serviceManager();
+        isTimestampChecked = true;
     }
 
     /**
@@ -74,10 +84,12 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         // loop through every quorumNumber and keep track of the apk
         BN254.G1Point memory apk = BN254.G1Point(0, 0);
         for (uint i = 0; i < quorumNumbers.length; i++) {
-            require(
-                registryCoordinator.quorumUpdateBlocknumber(uint8(quorumNumbers[i])) + delegation.withdrawalDelayBlocks() <= block.number,
-                "BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within withdrawalDelayBlocks window"
-            );
+            if (isTimestampChecked) {
+                require(
+                    registryCoordinator.quorumUpdateBlocknumber(uint8(quorumNumbers[i])) + delegation.withdrawalDelayBlocks() <= block.number,
+                    "BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within withdrawalDelayBlocks window"
+                );
+            }
             require(
                 bytes24(nonSignerStakesAndSignature.quorumApks[i].hashG1Point()) == 
                     blsApkRegistry.getApkHashAtBlockNumberAndIndex(
@@ -207,5 +219,14 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                 apkG2,
                 PAIRING_EQUALITY_CHECK_GAS
             );
+    }
+
+    /**
+     * ServiceManager owner can either enforce or not require that the signature timestamp is checked
+     * within the delegation.withdrawalDelayBlocks() window.
+     * @param value to toggle checkSignatureTimestamp on or off
+     */
+    function setSignatureTimestampCheck(bool value) external onlyServiceManagerOwner {
+        isTimestampChecked = value;
     }
 }
