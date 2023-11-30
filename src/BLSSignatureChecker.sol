@@ -109,20 +109,13 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                         nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices[i]
                     );
                 
-                {
-                    BN254.G1Point memory operatorNegativeAPK = registryCoordinator.getOperatorNegativeAPK(nonSignerPubkeyHashes[i]);
-                    apk = apk.plus(operatorNegativeAPK);
-                }
-                {
-                    uint16 nonSignerQuorumCount = BitmapUtils.countNumOnes(nonSignerQuorumBitmap);
-                    if(nonSignerQuorumCount > quorumNumbers.length) {
-                        apk = apk.plus(
-                            nonSignerStakesAndSignature.nonSignerPubkeys[i].scalar_mul_tiny(
-                                nonSignerQuorumCount - uint16(quorumNumbers.length)
-                            )
-                        );
-                    }
-                }
+                apk = apk.plus(
+                    nonSignerStakesAndSignature.nonSignerPubkeys[i]
+                        .negate()
+                        .scalar_mul_tiny(
+                            BitmapUtils.countNumOnes(nonSignerQuorumBitmap & signingQuorumBitmap) 
+                        )
+                );
                 
                 for (uint8 quorumNumberIndex = 0; quorumNumberIndex < quorumNumbers.length;) {                
                     if (BitmapUtils.numberIsInBitmap(nonSignerQuorumBitmap, uint8(quorumNumbers[quorumNumberIndex]))) {

@@ -77,9 +77,6 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     /// @notice the address of the entity allowed to eject operators from the AVS
     address public ejector;
 
-    /// @notice maps operator id => negative pubkey times quorums registered for
-    mapping(bytes32 => BN254.G1Point) public operatorNegativeAPKs;
-
     modifier onlyServiceManagerOwner {
         require(msg.sender == serviceManager.owner(), "BLSRegistryCoordinatorWithIndices.onlyServiceManagerOwner: caller is not the service manager owner");
         _;
@@ -405,16 +402,6 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
             newBitmap: newBitmap
         });
 
-        //Update the operator contribution to aggregate public key across all quorums
-        BN254.G1Point memory operatorPubkey = blsPubkeyRegistry.getOperatorPubkey(operator);
-        operatorNegativeAPKs[operatorId] = operatorNegativeAPKs[operatorId].plus(
-            operatorPubkey
-            .negate()
-            .scalar_mul_tiny(
-                uint16(quorumNumbers.length)
-            )
-        );
-
         emit OperatorSocketUpdate(operatorId, socket);
 
         if (_operatorInfo[operator].status != OperatorStatus.REGISTERED) {
@@ -500,15 +487,6 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
             operatorId: operatorId,
             newBitmap: newBitmap
         });
-
-        //Update the operator contribution to aggregate public key across all quorums
-        BN254.G1Point memory operatorPubkey = blsPubkeyRegistry.getOperatorPubkey(operator);
-        operatorNegativeAPKs[operatorId] = operatorNegativeAPKs[operatorId].plus(
-            operatorPubkey
-            .scalar_mul_tiny(
-                uint16(quorumNumbers.length)
-            )
-        );
 
         // If the operator is no longer registered for any quorums, update their status
         if (newBitmap.isEmpty()) {
@@ -742,11 +720,6 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     /// @notice Returns the length of the quorum bitmap history for the given `operatorId`
     function getQuorumBitmapHistoryLength(bytes32 operatorId) external view returns (uint256) {
         return _operatorBitmapHistory[operatorId].length;
-    }
-
-    /// @notice Returns the operator's negative APK for the given `operatorId`
-    function getOperatorNegativeAPK(bytes32 operatorId) external view returns (BN254.G1Point memory) {
-        return operatorNegativeAPKs[operatorId];
     }
 
     /// @notice Returns the number of registries
