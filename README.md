@@ -1,7 +1,7 @@
 # AVS Smart Contract Architecture
 
 <p align="center"><b><font size="+1">
-🚧 The Slasher contract is under active development and its interface expected to change. We recommend writing slashing logic without integrating with the Slasher at this point in time. 🚧
+🚧 The Slasher contract is under active development and its interface is expected to change. We recommend writing slashing logic without integrating with the Slasher at this point in time. 🚧
 </font></b><p>
 
 ## Introduction
