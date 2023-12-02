@@ -1,6 +1,6 @@
 # StakeRegistry
 
-This contract is deployed for every AVS and keeps track of the AVS's operators' stakes over time and the total stakes for each quorum. In addition, this contract also handles the adding and modification of quorum.
+This contract is deployed for every AVS and keeps track of the AVS's operators' stakes over time and the total stakes for each quorum. In addition, this contract also handles the addition and modification of quorum.
 
 # Definitions
 
