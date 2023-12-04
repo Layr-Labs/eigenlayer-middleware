@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "src/interfaces/IServiceManager.sol";
+import "../../src/interfaces/IServiceManager.sol";
 import "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 
 contract ServiceManagerMock is IServiceManager{
@@ -19,11 +19,6 @@ contract ServiceManagerMock is IServiceManager{
         slasher.freezeOperator(operator);
     }
     
-    /// @notice Token used for placing guarantee on challenges & payment commits
-    function paymentChallengeToken() external pure returns (IERC20) {
-        return IERC20(address(0));
-    }
-
     /// @notice Returns the `latestServeUntilBlock` until which operators must serve.
     function latestServeUntilBlock() external pure returns (uint32) {
         return type(uint32).max;

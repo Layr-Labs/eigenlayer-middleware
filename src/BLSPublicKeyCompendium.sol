@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "src/interfaces/IBLSPublicKeyCompendium.sol";
+import "./interfaces/IBLSPublicKeyCompendium.sol";
 
-import "src/libraries/BN254.sol";
+import "./libraries/BN254.sol";
 
 /**
  * @title A shared contract for EigenLayer operators to register their BLS public keys.

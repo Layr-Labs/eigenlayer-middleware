@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
-import {BN254} from "src/libraries/BN254.sol";
+import {BN254} from "../libraries/BN254.sol";
 
 /**
  * @title Minimal interface for the `BLSPublicKeyCompendium` contract.
