@@ -7,6 +7,7 @@ import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 import {IBLSPubkeyRegistry} from "src/interfaces/IBLSPubkeyRegistry.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
+import {IServiceManager} from "src/interfaces/IServiceManager.sol";
 
 import {BN254} from "src/libraries/BN254.sol";
 
@@ -54,6 +55,8 @@ interface IBLSRegistryCoordinatorWithIndices is ISignatureUtils, IRegistryCoordi
     function blsPubkeyRegistry() external view returns (IBLSPubkeyRegistry);
     /// @notice the index Registry contract that will keep track of operators' indexes
     function indexRegistry() external view returns (IIndexRegistry);
+
+    function serviceManager() external view returns (IServiceManager);
 
     /**
      * @notice Ejects the provided operator from the provided quorums from the AVS

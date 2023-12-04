@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
+import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IBLSRegistryCoordinatorWithIndices} from "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
 import {IBLSSignatureChecker} from "src/interfaces/IBLSSignatureChecker.sol";
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 import {IBLSPubkeyRegistry} from "src/interfaces/IBLSPubkeyRegistry.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
+import {IServiceManager} from "src/interfaces/IServiceManager.sol";
 
 import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
 import {BN254} from "src/libraries/BN254.sol";

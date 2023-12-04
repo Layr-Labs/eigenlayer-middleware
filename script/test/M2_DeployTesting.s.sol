@@ -191,7 +191,7 @@ contract Deployer_M2 is ExistingDeploymentParser {
 
         // testing for gas estimations
         // 10 quorums, 50 operators per quorum for quorums1-9
-        _testUpdateOperatorsForQuorums(10, 50, false);
+        _testUpdateOperatorsForQuorums(10, 60, false);
         // 10 quorums, 50 operators per quorum for quorums1-9 w/ all operators being below minimum stake
         // _testUpdateOperatorsForQuorums(10, 50, true);
 
