@@ -5,8 +5,8 @@ pragma solidity =0.8.12;
 import "forge-std/Test.sol";
 import "../../src/BLSPubkeyRegistry.sol";
 import "../../src/interfaces/IRegistryCoordinator.sol";
-import "test/mocks/BLSPublicKeyCompendiumMock.sol";
-import "test/mocks/RegistryCoordinatorMock.sol";
+import "../mocks/BLSPublicKeyCompendiumMock.sol";
+import "../mocks/RegistryCoordinatorMock.sol";
 
 
 contract BLSPubkeyRegistryUnitTests is Test {
