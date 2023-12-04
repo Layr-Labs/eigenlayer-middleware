@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "../../../src/StakeRegistry.sol";
+import "../../src/StakeRegistry.sol";
 
 // wrapper around the StakeRegistry contract that exposes the internal functions for unit testing.
 contract StakeRegistryHarness is StakeRegistry {

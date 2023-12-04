@@ -19,6 +19,10 @@ contract ServiceManagerMock is IServiceManager{
         slasher.freezeOperator(operator);
     }
     
+    function paymentChallengeToken() external pure returns (IERC20) {
+        return IERC20(address(0));
+    }
+
     /// @notice Returns the `latestServeUntilBlock` until which operators must serve.
     function latestServeUntilBlock() external pure returns (uint32) {
         return type(uint32).max;

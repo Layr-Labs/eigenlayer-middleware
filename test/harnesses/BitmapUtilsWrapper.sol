@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "../../../src/libraries/BitmapUtils.sol";
+import "../../src/libraries/BitmapUtils.sol";
 
 // wrapper around the BitmapUtils library that exposes the internal functions
 contract BitmapUtilsWrapper {
