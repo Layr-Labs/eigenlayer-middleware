@@ -28,7 +28,7 @@ import {SlasherMock} from "eigenlayer-contracts/src/test/mocks/SlasherMock.sol";
 
 import {StakeRegistryHarness} from "../harnesses/StakeRegistryHarness.sol";
 import {StakeRegistry} from "../../src/StakeRegistry.sol";
-import {BLSRegistryCoordinatorWithIndicesHarness} from "test/harnesses/BLSRegistryCoordinatorWithIndicesHarness.sol";
+import {BLSRegistryCoordinatorWithIndicesHarness} from "../harnesses/BLSRegistryCoordinatorWithIndicesHarness.sol";
 
 import "forge-std/Test.sol";
 

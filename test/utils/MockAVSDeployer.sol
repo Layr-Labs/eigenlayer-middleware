@@ -16,7 +16,7 @@ import {BN254} from "../../src/libraries/BN254.sol";
 import {BLSPublicKeyCompendium} from "../../src/BLSPublicKeyCompendium.sol";
 import {BLSOperatorStateRetriever} from "../../src/BLSOperatorStateRetriever.sol";
 import {BLSRegistryCoordinatorWithIndices} from "../../src/BLSRegistryCoordinatorWithIndices.sol";
-import {BLSRegistryCoordinatorWithIndicesHarness} from "test/harnesses/BLSRegistryCoordinatorWithIndicesHarness.sol";
+import {BLSRegistryCoordinatorWithIndicesHarness} from "../harnesses/BLSRegistryCoordinatorWithIndicesHarness.sol";
 import {BLSPubkeyRegistry} from "../../src/BLSPubkeyRegistry.sol";
 import {StakeRegistry} from "../../src/StakeRegistry.sol";
 import {IndexRegistry} from "../../src/IndexRegistry.sol";

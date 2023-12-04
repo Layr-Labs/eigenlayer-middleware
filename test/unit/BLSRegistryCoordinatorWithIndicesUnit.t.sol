@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "test/utils/MockAVSDeployer.sol";
+import "../utils/MockAVSDeployer.sol";
 
 contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
     using BN254 for BN254.G1Point;
