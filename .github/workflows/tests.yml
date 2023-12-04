@@ -8,6 +8,7 @@ on:
   push:
     branches:
       - master
+      - m2-mainnet
   pull_request:
 
 env:
