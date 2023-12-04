@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
-import {IRegistry} from "./IRegistry.sol";
 import {IServiceManager} from "./IServiceManager.sol";
+import {IRegistry} from "./IRegistry.sol";
 
 /**
  * @title Interface for a `Registry` that keeps track of stakes of operators for up to 256 quorums.
@@ -16,7 +16,7 @@ interface IStakeRegistry is IRegistry {
     // DATA STRUCTURES
 
     /// @notice struct used to store the stakes of an individual operator or the sum of all operators' stakes, for storage
-    struct OperatorStakeUpdate {
+    struct StakeUpdate {
         // the block number at which the stake amounts were updated and stored
         uint32 updateBlockNumber;
         // the block number at which the *next update* occurred.
@@ -38,7 +38,7 @@ interface IStakeRegistry is IRegistry {
     // EVENTS
 
     /// @notice emitted whenever the stake of `operator` is updated
-    event StakeUpdate(
+    event OperatorStakeUpdate(
         bytes32 indexed operatorId,
         uint8 quorumNumber,
         uint96 stake
@@ -151,7 +151,7 @@ interface IStakeRegistry is IRegistry {
      * @param operatorId The id of the operator of interest.
      * @param quorumNumber The quorum number to get the stake for.
      */
-    function getStakeHistory(bytes32 operatorId, uint8 quorumNumber) external view returns (OperatorStakeUpdate[] memory);
+    function getStakeHistory(bytes32 operatorId, uint8 quorumNumber) external view returns (StakeUpdate[] memory);
 
     function getTotalStakeHistoryLength(uint8 quorumNumber) external view returns (uint256);
 
@@ -160,7 +160,7 @@ interface IStakeRegistry is IRegistry {
      * @param quorumNumber The quorum number to get the stake for.
      * @param index Array index for lookup, within the dynamic array `totalStakeHistory[quorumNumber]`.
      */
-    function getTotalStakeUpdateAtIndex(uint8 quorumNumber, uint256 index) external view returns (OperatorStakeUpdate memory);
+    function getTotalStakeUpdateAtIndex(uint8 quorumNumber, uint256 index) external view returns (StakeUpdate memory);
 
     /// @notice Returns the indices of the operator stakes for the provided `quorumNumber` at the given `blockNumber`
     function getStakeUpdateIndexAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber)
@@ -181,13 +181,13 @@ interface IStakeRegistry is IRegistry {
     function getStakeUpdateAtIndex(uint8 quorumNumber, bytes32 operatorId, uint256 index)
         external
         view
-        returns (OperatorStakeUpdate memory);
+        returns (StakeUpdate memory);
 
     /**
      * @notice Returns the most recent stake weight for the `operatorId` for a certain quorum
-     * @dev Function returns an OperatorStakeUpdate struct with **every entry equal to 0** in the event that the operator has no stake history
+     * @dev Function returns an StakeUpdate struct with **every entry equal to 0** in the event that the operator has no stake history
      */
-    function getLatestStakeUpdate(bytes32 operatorId, uint8 quorumNumber) external view returns (OperatorStakeUpdate memory);
+    function getLatestStakeUpdate(bytes32 operatorId, uint8 quorumNumber) external view returns (StakeUpdate memory);
 
     /**
      * @notice Returns the stake weight corresponding to `operatorId` for quorum `quorumNumber`, at the

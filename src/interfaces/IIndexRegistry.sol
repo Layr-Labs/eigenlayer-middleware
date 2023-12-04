@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "./IRegistry.sol";
+import {IRegistry} from "./IRegistry.sol";
 
 /**
  * @title Interface for a `Registry`-type contract that keeps track of an ordered list of operators for up to 256 quorums.

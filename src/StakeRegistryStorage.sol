@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 
+import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 import {IServiceManager} from "src/interfaces/IServiceManager.sol";
 import {IStakeRegistry} from  "src/interfaces/IStakeRegistry.sol";
-import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 
 /**
  * @title Storage variables for the `StakeRegistry` contract.
@@ -36,10 +36,10 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
     uint96[256] public minimumStakeForQuorum;
 
     /// @notice array of the history of the total stakes for each quorum -- marked as internal since getTotalStakeFromIndex is a getter for this
-    OperatorStakeUpdate[][256] internal _totalStakeHistory;
+    StakeUpdate[][256] internal _totalStakeHistory;
 
     /// @notice mapping from operator's operatorId to the history of their stake updates
-    mapping(bytes32 => mapping(uint8 => OperatorStakeUpdate[])) internal operatorStakeHistory;
+    mapping(bytes32 => mapping(uint8 => StakeUpdate[])) internal operatorStakeHistory;
 
     /**
      * @notice mapping from quorum number to the list of strategies considered and their

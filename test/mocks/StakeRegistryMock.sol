@@ -104,7 +104,7 @@ contract StakeRegistryMock is IStakeRegistry {
      * @param operatorId The id of the operator of interest.
      * @param quorumNumber The quorum number to get the stake for.
      */
-    function getStakeHistory(bytes32 operatorId, uint8 quorumNumber) external view returns (OperatorStakeUpdate[] memory) {}
+    function getStakeHistory(bytes32 operatorId, uint8 quorumNumber) external view returns (StakeUpdate[] memory) {}
 
     function getTotalStakeHistoryLength(uint8 quorumNumber) external view returns (uint256) {}
 
@@ -113,7 +113,7 @@ contract StakeRegistryMock is IStakeRegistry {
      * @param quorumNumber The quorum number to get the stake for.
      * @param index Array index for lookup, within the dynamic array `totalStakeHistory[quorumNumber]`.
      */
-    function getTotalStakeUpdateAtIndex(uint8 quorumNumber, uint256 index) external view returns (OperatorStakeUpdate memory) {}
+    function getTotalStakeUpdateAtIndex(uint8 quorumNumber, uint256 index) external view returns (StakeUpdate memory) {}
 
     /// @notice Returns the indices of the operator stakes for the provided `quorumNumber` at the given `blockNumber`
     function getStakeUpdateIndexAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber)
@@ -134,13 +134,13 @@ contract StakeRegistryMock is IStakeRegistry {
     function getStakeUpdateAtIndex(uint8 quorumNumber, bytes32 operatorId, uint256 index)
         external
         view
-        returns (OperatorStakeUpdate memory) {}
+        returns (StakeUpdate memory) {}
 
     /**
      * @notice Returns the most recent stake weight for the `operatorId` for a certain quorum
-     * @dev Function returns an OperatorStakeUpdate struct with **every entry equal to 0** in the event that the operator has no stake history
+     * @dev Function returns an StakeUpdate struct with **every entry equal to 0** in the event that the operator has no stake history
      */
-    function getLatestStakeUpdate(bytes32 operatorId, uint8 quorumNumber) external view returns (OperatorStakeUpdate memory) {}
+    function getLatestStakeUpdate(bytes32 operatorId, uint8 quorumNumber) external view returns (StakeUpdate memory) {}
 
     /**
      * @notice Returns the stake weight corresponding to `operatorId` for quorum `quorumNumber`, at the

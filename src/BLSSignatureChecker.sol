@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "src/interfaces/IRegistryCoordinator.sol";
-import "src/interfaces/IStakeRegistry.sol";
-import "src/interfaces/IBLSPubkeyRegistry.sol";
-import "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
-import "src/interfaces/IBLSSignatureChecker.sol";
+import {IBLSRegistryCoordinatorWithIndices} from "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
+import {IBLSSignatureChecker} from "src/interfaces/IBLSSignatureChecker.sol";
+import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
+import {IBLSPubkeyRegistry} from "src/interfaces/IBLSPubkeyRegistry.sol";
+import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 
-import "src/libraries/BitmapUtils.sol";
-import "src/libraries/BN254.sol";
+import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
+import {BN254} from "src/libraries/BN254.sol";
 
 /**
  * @title Used for checking BLS aggregate signatures from the operators of a `BLSRegistry`.
@@ -150,11 +150,13 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                     stakeRegistry.getTotalStakeAtBlockNumberFromIndex(quorumNumber, referenceBlockNumber, nonSignerStakesAndSignature.totalStakeIndices[quorumNumberIndex]);
                 // copy total stake to signed stake
                 quorumStakeTotals.signedStakeForQuorum[quorumNumberIndex] = quorumStakeTotals.totalStakeForQuorum[quorumNumberIndex];
+                
+                // keep track of the nonSigners index in the quorum
+                uint32 nonSignerForQuorumIndex = 0;
+                
                 // loop through all nonSigners, checking that they are a part of the quorum via their quorumBitmap
                 // if so, load their stake at referenceBlockNumber and subtract it from running stake signed
                 for (uint32 i = 0; i < nonSignerStakesAndSignature.nonSignerPubkeys.length; i++) {
-                    // keep track of the nonSigners index in the quorum
-                    uint32 nonSignerForQuorumIndex = 0;
                     // if the nonSigner is a part of the quorum, subtract their stake from the running total
                     if (BitmapUtils.numberIsInBitmap(nonSignerQuorumBitmaps[i], quorumNumber)) {
                         quorumStakeTotals.signedStakeForQuorum[quorumNumberIndex] -=

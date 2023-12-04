@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "src/interfaces/IIndexRegistry.sol";
-import "src/interfaces/IRegistryCoordinator.sol";
+import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
-import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
+import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
 
 /**
  * @title Storage variables for the `IndexRegistry` contract.

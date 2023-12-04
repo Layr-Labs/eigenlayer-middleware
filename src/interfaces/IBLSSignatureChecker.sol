@@ -2,9 +2,10 @@
 pragma solidity =0.8.12;
 
 import {IBLSRegistryCoordinatorWithIndices} from "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
-import {IBLSPubkeyRegistry} from "src/interfaces/IBLSPubkeyRegistry.sol";
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
+import {IBLSPubkeyRegistry} from "src/interfaces/IBLSPubkeyRegistry.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
+
 import {BN254} from "src/libraries/BN254.sol";
 
 /**
