@@ -3,7 +3,7 @@ pragma solidity =0.8.12;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
-import "src/VoteWeigherBaseStorage.sol";
+import "./VoteWeigherBaseStorage.sol";
 
 /**
  * @title A simple implementation of the `IVoteWeigher` interface.

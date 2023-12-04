@@ -10,36 +10,36 @@ import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/Pau
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
-import {BN254} from "src/libraries/BN254.sol";
+import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
+import {BN254} from "../../src/libraries/BN254.sol";
 
-import {BLSPublicKeyCompendium} from "src/BLSPublicKeyCompendium.sol";
-import {BLSOperatorStateRetriever} from "src/BLSOperatorStateRetriever.sol";
-import {BLSRegistryCoordinatorWithIndices} from "src/BLSRegistryCoordinatorWithIndices.sol";
-import {BLSRegistryCoordinatorWithIndicesHarness} from "test/harnesses/BLSRegistryCoordinatorWithIndicesHarness.sol";
-import {BLSPubkeyRegistry} from "src/BLSPubkeyRegistry.sol";
-import {StakeRegistry} from "src/StakeRegistry.sol";
-import {IndexRegistry} from "src/IndexRegistry.sol";
-import {IServiceManager} from "src/interfaces/IServiceManager.sol";
-import {IBLSPubkeyRegistry} from "src/interfaces/IBLSPubkeyRegistry.sol";
-import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
-import {IVoteWeigher} from "src/interfaces/IVoteWeigher.sol";
-import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
-import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
-import {IBLSRegistryCoordinatorWithIndices} from "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
+import {BLSPublicKeyCompendium} from "../../src/BLSPublicKeyCompendium.sol";
+import {BLSOperatorStateRetriever} from "../../src/BLSOperatorStateRetriever.sol";
+import {BLSRegistryCoordinatorWithIndices} from "../../src/BLSRegistryCoordinatorWithIndices.sol";
+import {BLSRegistryCoordinatorWithIndicesHarness} from "../harnesses/BLSRegistryCoordinatorWithIndicesHarness.sol";
+import {BLSPubkeyRegistry} from "../../src/BLSPubkeyRegistry.sol";
+import {StakeRegistry} from "../../src/StakeRegistry.sol";
+import {IndexRegistry} from "../../src/IndexRegistry.sol";
+import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
+import {IBLSPubkeyRegistry} from "../../src/interfaces/IBLSPubkeyRegistry.sol";
+import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
+import {IVoteWeigher} from "../../src/interfaces/IVoteWeigher.sol";
+import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
+import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
+import {IBLSRegistryCoordinatorWithIndices} from "../../src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
 
 
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
 import {EigenPodManagerMock} from "eigenlayer-contracts/src/test/mocks/EigenPodManagerMock.sol";
-import {ServiceManagerMock} from "test/mocks/ServiceManagerMock.sol";
+import {ServiceManagerMock} from "../mocks/ServiceManagerMock.sol";
 import {OwnableMock} from "eigenlayer-contracts/src/test/mocks/OwnableMock.sol";
 import {DelegationManagerMock} from "eigenlayer-contracts/src/test/mocks/DelegationManagerMock.sol";
 import {SlasherMock} from "eigenlayer-contracts/src/test/mocks/SlasherMock.sol";
-import {BLSPublicKeyCompendiumMock} from "test/mocks/BLSPublicKeyCompendiumMock.sol";
+import {BLSPublicKeyCompendiumMock} from "../mocks/BLSPublicKeyCompendiumMock.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 
-import {StakeRegistryHarness} from "test/harnesses/StakeRegistryHarness.sol";
-import {BLSRegistryCoordinatorWithIndices} from "test/harnesses/BLSRegistryCoordinatorWithIndicesHarness.sol";
+import {StakeRegistryHarness} from "../harnesses/StakeRegistryHarness.sol";
+import {BLSRegistryCoordinatorWithIndices} from "../harnesses/BLSRegistryCoordinatorWithIndicesHarness.sol";
 
 import "forge-std/Test.sol";
 

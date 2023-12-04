@@ -9,9 +9,9 @@ import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IS
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IEigenPodManager} from "eigenlayer-contracts/src/contracts/interfaces/IEigenPodManager.sol";
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
-import {IServiceManager} from "src/interfaces/IServiceManager.sol";
-import {IVoteWeigher} from "src/interfaces/IVoteWeigher.sol";
-import {VoteWeigherBase} from "src/VoteWeigherBase.sol";
+import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
+import {IVoteWeigher} from "../../src/interfaces/IVoteWeigher.sol";
+import {VoteWeigherBase} from "../../src/VoteWeigherBase.sol";
 
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
 import {OwnableMock} from "eigenlayer-contracts/src/test/mocks/OwnableMock.sol";

@@ -2,7 +2,7 @@
 pragma solidity >=0.5.0;
 
 import {IQuorumRegistry} from "./IQuorumRegistry.sol";
-import {BN254} from "src/libraries/BN254.sol";
+import {BN254} from "../libraries/BN254.sol";
 
 
 /**

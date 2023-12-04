@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "src/interfaces/IServiceManager.sol";
+import "../../src/interfaces/IServiceManager.sol";
 import "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 

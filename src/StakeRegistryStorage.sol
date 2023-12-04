@@ -2,9 +2,9 @@
 pragma solidity =0.8.12;
 
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
-import {IServiceManager} from "src/interfaces/IServiceManager.sol";
-import {IStakeRegistry} from  "src/interfaces/IStakeRegistry.sol";
-import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
+import {IServiceManager} from "./interfaces/IServiceManager.sol";
+import {IStakeRegistry} from  "./interfaces/IStakeRegistry.sol";
+import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 
 /**
  * @title Storage variables for the `StakeRegistry` contract.

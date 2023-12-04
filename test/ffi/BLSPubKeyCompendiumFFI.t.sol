@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "src/BLSPublicKeyCompendium.sol";
-import "test/ffi/util/G2Operations.sol";
+import "../../src/BLSPublicKeyCompendium.sol";
+import "./util/G2Operations.sol";
 
 contract BLSPublicKeyCompendiumFFITests is G2Operations {
     using BN254 for BN254.G1Point;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "src/BLSRegistryCoordinatorWithIndices.sol";
+import "../../src/BLSRegistryCoordinatorWithIndices.sol";
 
 // wrapper around the BLSRegistryCoordinatorWithIndices contract that exposes the internal functions for unit testing.
 contract BLSRegistryCoordinatorWithIndicesHarness is BLSRegistryCoordinatorWithIndices {

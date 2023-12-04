@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "src/interfaces/IServiceManager.sol";
-import "src/interfaces/IStakeRegistry.sol";
-import "src/interfaces/IRegistryCoordinator.sol";
+import "./interfaces/IServiceManager.sol";
+import "./interfaces/IStakeRegistry.sol";
+import "./interfaces/IRegistryCoordinator.sol";
 
-import "src/libraries/BitmapUtils.sol";
+import "./libraries/BitmapUtils.sol";
 
-import "src/StakeRegistryStorage.sol";
-import {VoteWeigherBase} from "src/VoteWeigherBase.sol";
+import "./StakeRegistryStorage.sol";
+import {VoteWeigherBase} from "./VoteWeigherBase.sol";
 
 /**
  * @title A `Registry` that keeps track of stakes of operators for up to 256 quorums.

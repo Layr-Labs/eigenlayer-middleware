@@ -3,8 +3,8 @@ pragma solidity =0.8.12;
 
 import "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
-import "src/interfaces/IServiceManager.sol";
-import "src/interfaces/IVoteWeigher.sol";
+import "./interfaces/IServiceManager.sol";
+import "./interfaces/IVoteWeigher.sol";
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 

@@ -2,7 +2,7 @@
 pragma solidity =0.8.12;
 
 
-import "src/interfaces/IRegistryCoordinator.sol";
+import "../../src/interfaces/IRegistryCoordinator.sol";
 
 
 contract RegistryCoordinatorMock is IRegistryCoordinator {

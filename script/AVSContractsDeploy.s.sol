@@ -19,7 +19,7 @@ import "eigenlayer-contracts/src/contracts/pods/EigenPodManager.sol";
 import "eigenlayer-contracts/src/contracts/pods/DelayedWithdrawalRouter.sol";
 
 import "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
-import "src/BLSPublicKeyCompendium.sol";
+import "../src/BLSPublicKeyCompendium.sol";
 
 import "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 import "eigenlayer-contracts/src/test/mocks/ETHDepositMock.sol";
