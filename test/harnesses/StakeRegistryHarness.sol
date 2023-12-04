@@ -23,8 +23,8 @@ contract StakeRegistryHarness is StakeRegistry {
     }
 
     // mocked function so we can set this arbitrarily without having to mock other elements
-    function weightOfOperatorForQuorum(uint8 quorumNumber, address operator) public override view returns(uint96) {
-        return __weightOfOperatorForQuorum[quorumNumber][operator];
+    function weightOfOperator(address operator, bytes32 quorumId) public override view returns (uint256) {
+        return __weightOfOperatorForQuorum[uint8(uint256(quorumId))][operator];
     }
 
     function _weightOfOperatorForQuorum(uint8 quorumNumber, address operator) internal override view returns(uint96, bool) {

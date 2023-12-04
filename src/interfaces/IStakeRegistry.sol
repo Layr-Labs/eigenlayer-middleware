@@ -140,11 +140,8 @@ interface IStakeRegistry is IRegistry {
         uint256 index
     ) external view returns (StrategyParams memory);
 
-    /**
-     * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
-     * @dev reverts in the case that `quorumNumber` is greater than or equal to `quorumCount`
-     */
-    function weightOfOperatorForQuorum(uint8 quorumNumber, address operator) external view returns (uint96);
+    // @notice This function computes the weight of the @param operator in the quorum @param quorumId.
+    function weightOfOperator(address operator, bytes32 quorumId) external view returns (uint256);
 
     /**
      * @notice Returns the entire `operatorIdToStakeHistory[operatorId][quorumNumber]` array.

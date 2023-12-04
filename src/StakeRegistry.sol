@@ -495,14 +495,14 @@ contract StakeRegistry is StakeRegistryStorage {
     *******************************************************************************/
 
     /**
-     * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
+     * @notice This function computes the total weight of the @param operator in the quorum @param quorumId.
      * @dev reverts if the quorum does not exist
      */
-    function weightOfOperatorForQuorum(
-        uint8 quorumNumber, 
-        address operator
-    ) public virtual view quorumExists(quorumNumber) returns (uint96) {
-        (uint96 stake, ) = _weightOfOperatorForQuorum(quorumNumber, operator);
+    function weightOfOperator(
+        address operator,
+        bytes32 quorumId
+    ) public virtual view quorumExists(uint8(uint256(quorumId))) returns (uint256) {
+        (uint96 stake, ) = _weightOfOperatorForQuorum(uint8(uint256(quorumId)), operator);
         return stake;
     }
 
