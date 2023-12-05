@@ -90,8 +90,8 @@ The current implementation of this contract is the [BLSSignatureChecker](./docs/
 
 | Name                      | Solidity                      | Contract                                                                                          | Notes |
 | ------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------- | ----- |
-| BLSOperatorStateRetriever | BLSOperatorStateRetriever.sol | [`0xf60a...7251`](https://goerli.etherscan.io/address/0xf60a330F8c1A0C0ecf3Eab1D54b00F3a8FE37251) |       |
-| BLSPubkeyCompendium       | BLSPubkeyCompendium.sol       | [`0xdd53...B9Bb`](https://goerli.etherscan.io/address/0xdd53D44257d5F4EB0ca60F60d88827C1b433B9Bb) |       |
+| BLSOperatorStateRetriever | BLSOperatorStateRetriever.sol | [`0x737D...A3a3`](https://goerli.etherscan.io/address/0x737Dd62816a9392e84Fa21C531aF77C00816A3a3) |       |
+| BLSPubkeyCompendium       | BLSPubkeyCompendium.sol       | [`0xc81d...1b19`](https://goerli.etherscan.io/address/0xc81d3963087Fe09316cd1E032457989C7aC91b19) |       |
 
 ## Further reading
 
