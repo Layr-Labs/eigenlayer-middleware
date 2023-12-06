@@ -68,7 +68,7 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
     /// @notice whether the salt has been used for an operator churn approval
     mapping(bytes32 => bool) public isChurnApproverSaltUsed;
     /// @notice mapping from quorum number to the latest block that all quorums were updated all at once
-    mapping(uint8 => uint256) public quorumUpdateBlocknumber;
+    mapping(uint8 => uint256) public quorumUpdateBlockNumber;
 
 
     /// @notice the dynamic-length array of the registries this coordinator is coordinating
@@ -321,8 +321,8 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
             }
 
             // Update timestamp that all operators in quorum have been updated all at once
-            quorumUpdateBlocknumber[quorumNumber] = block.number;
-            emit QuorumBlocknumberUpdated(quorumNumber, block.number);
+            quorumUpdateBlockNumber[quorumNumber] = block.number;
+            emit QuorumBlockNumberUpdated(quorumNumber, block.number);
         }
     }
 
