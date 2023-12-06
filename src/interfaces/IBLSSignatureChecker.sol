@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
+import {IRegistryCoordinator, IServiceManager} from "src/interfaces/IRegistryCoordinator.sol";
 import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
-import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
+import {IStakeRegistry, IDelegationManager} from "src/interfaces/IStakeRegistry.sol";
 
 import {BN254} from "src/libraries/BN254.sol";
 
@@ -44,6 +44,8 @@ interface IBLSSignatureChecker {
     function registryCoordinator() external view returns (IRegistryCoordinator);
     function stakeRegistry() external view returns (IStakeRegistry);
     function blsApkRegistry() external view returns (IBLSApkRegistry);
+    function delegation() external view returns (IDelegationManager);
+    function serviceManager() external view returns (IServiceManager);
 
     /**
      * @notice This function is called by disperser when it has aggregated all the signatures of the operators

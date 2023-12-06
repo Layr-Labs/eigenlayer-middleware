@@ -28,8 +28,8 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
     IBLSApkRegistry public immutable blsApkRegistry;
     IDelegationManager public immutable delegation;
     IServiceManager public immutable serviceManager;
-    /// @notice If true, check that the signature timestamp is within the delegation withdrawalDelayBlocks window.
-    bool public isTimestampChecked;
+    /// @notice If true, check the staleness of the operator stakes and that its within the delegation withdrawalDelayBlocks window.
+    bool public staleStakesForbidden;
 
     modifier onlyServiceManagerOwner {
         require(msg.sender == serviceManager.owner(), "BLSSignatureChecker.onlyServiceManagerOwner: caller is not the service manager owner");
@@ -42,7 +42,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         blsApkRegistry = _registryCoordinator.blsApkRegistry();
         delegation = stakeRegistry.delegation();
         serviceManager = _registryCoordinator.serviceManager();
-        isTimestampChecked = true;
+        staleStakesForbidden = true;
     }
 
     /**
@@ -84,7 +84,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         // loop through every quorumNumber and keep track of the apk
         BN254.G1Point memory apk = BN254.G1Point(0, 0);
         for (uint i = 0; i < quorumNumbers.length; i++) {
-            if (isTimestampChecked) {
+            if (staleStakesForbidden) {
                 require(
                     registryCoordinator.quorumUpdateBlocknumber(uint8(quorumNumbers[i])) + delegation.withdrawalDelayBlocks() <= block.number,
                     "BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within withdrawalDelayBlocks window"
@@ -222,11 +222,11 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
     }
 
     /**
-     * ServiceManager owner can either enforce or not require that the signature timestamp is checked
-     * within the delegation.withdrawalDelayBlocks() window.
-     * @param value to toggle checkSignatureTimestamp on or off
+     * ServiceManager owner can either enforce or not that operator stakes are staler
+     * than the delegation.withdrawalDelayBlocks() window.
+     * @param value to toggle staleStakesForbidden
      */
-    function setSignatureTimestampCheck(bool value) external onlyServiceManagerOwner {
-        isTimestampChecked = value;
+    function setStaleStakesForbidden(bool value) external onlyServiceManagerOwner {
+        staleStakesForbidden = value;
     }
 }
