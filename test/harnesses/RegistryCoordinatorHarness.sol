@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "src/BLSRegistryCoordinatorWithIndices.sol";
+import "src/RegistryCoordinator.sol";
 
-// wrapper around the BLSRegistryCoordinatorWithIndices contract that exposes the internal functions for unit testing.
-contract BLSRegistryCoordinatorWithIndicesHarness is BLSRegistryCoordinatorWithIndices {
+// wrapper around the RegistryCoordinator contract that exposes the internal functions for unit testing.
+contract RegistryCoordinatorHarness is RegistryCoordinator {
     constructor(
         ISlasher _slasher,
         IServiceManager _serviceManager,
         IStakeRegistry _stakeRegistry,
-        IBLSPubkeyRegistry _blsPubkeyRegistry,
+        IBLSApkRegistry _blsApkRegistry,
         IIndexRegistry _indexRegistry
-    ) BLSRegistryCoordinatorWithIndices(_slasher, _serviceManager, _stakeRegistry, _blsPubkeyRegistry, _indexRegistry) {
+    ) RegistryCoordinator(_slasher, _serviceManager, _stakeRegistry, _blsApkRegistry, _indexRegistry) {
     }
 
     function setQuorumCount(uint8 count) external {

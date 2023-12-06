@@ -14,8 +14,7 @@ import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 import {IServiceManager} from "src/interfaces/IServiceManager.sol";
 import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
-import {IBLSPubkeyRegistry} from "src/interfaces/IBLSPubkeyRegistry.sol";
-import {IBLSRegistryCoordinatorWithIndices} from "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
+import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
 
 import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
 
@@ -28,7 +27,7 @@ import {SlasherMock} from "eigenlayer-contracts/src/test/mocks/SlasherMock.sol";
 
 import {StakeRegistryHarness} from "test/harnesses/StakeRegistryHarness.sol";
 import {StakeRegistry} from "src/StakeRegistry.sol";
-import {BLSRegistryCoordinatorWithIndicesHarness} from "test/harnesses/BLSRegistryCoordinatorWithIndicesHarness.sol";
+import {RegistryCoordinatorHarness} from "test/harnesses/RegistryCoordinatorHarness.sol";
 
 import "forge-std/Test.sol";
 
@@ -43,7 +42,7 @@ contract StakeRegistryUnitTests is Test {
     Slasher public slasherImplementation;
     StakeRegistryHarness public stakeRegistryImplementation;
     StakeRegistryHarness public stakeRegistry;
-    BLSRegistryCoordinatorWithIndicesHarness public registryCoordinator;
+    RegistryCoordinatorHarness public registryCoordinator;
 
     ServiceManagerMock public serviceManagerMock;
     StrategyManagerMock public strategyManagerMock;
@@ -53,7 +52,7 @@ contract StakeRegistryUnitTests is Test {
     address public serviceManagerOwner = address(uint160(uint256(keccak256("serviceManagerOwner"))));
     address public pauser = address(uint160(uint256(keccak256("pauser"))));
     address public unpauser = address(uint160(uint256(keccak256("unpauser"))));
-    address public pubkeyRegistry = address(uint160(uint256(keccak256("pubkeyRegistry"))));
+    address public apkRegistry = address(uint160(uint256(keccak256("apkRegistry"))));
     address public indexRegistry = address(uint160(uint256(keccak256("indexRegistry"))));
 
     uint256 churnApproverPrivateKey = uint256(keccak256("churnApproverPrivateKey"));
@@ -105,11 +104,11 @@ contract StakeRegistryUnitTests is Test {
             slasher
         );
 
-        registryCoordinator = new BLSRegistryCoordinatorWithIndicesHarness(
+        registryCoordinator = new RegistryCoordinatorHarness(
             slasher,
             serviceManagerMock,
             stakeRegistry,
-            IBLSPubkeyRegistry(pubkeyRegistry),
+            IBLSApkRegistry(apkRegistry),
             IIndexRegistry(indexRegistry)
         );
 
