@@ -9,27 +9,25 @@ import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPa
 import {Pausable} from "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 
-import {IBLSRegistryCoordinatorWithIndices} from "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
-import {IBLSPubkeyRegistry} from "src/interfaces/IBLSPubkeyRegistry.sol";
+import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
 import {IServiceManager} from "src/interfaces/IServiceManager.sol";
 import {ISocketUpdater} from "src/interfaces/ISocketUpdater.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
 
 import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
-import {BN254} from "src/libraries/BN254.sol";
 
 /**
  * @title A `RegistryCoordinator` that has three registries:
  *      1) a `StakeRegistry` that keeps track of operators' stakes
- *      2) a `BLSPubkeyRegistry` that keeps track of operators' BLS public keys and aggregate BLS public keys for each quorum
+ *      2) a `BLSApkRegistry` that keeps track of operators' BLS public keys and aggregate BLS public keys for each quorum
  *      3) an `IndexRegistry` that keeps track of an ordered list of operators for each quorum
  * 
  * @author Layr Labs, Inc.
  */
-contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistryCoordinatorWithIndices, ISocketUpdater, Pausable {
-    using BN254 for BN254.G1Point;
+contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISocketUpdater, ISignatureUtils, Pausable {
     using BitmapUtils for *;
 
     /// @notice The EIP-712 typehash for the `DelegationApproval` struct used by the contract
@@ -52,8 +50,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     ISlasher public immutable slasher;
     /// @notice the Service Manager for the service that this contract is coordinating
     IServiceManager public immutable serviceManager;
-    /// @notice the BLS Pubkey Registry contract that will keep track of operators' BLS public keys
-    IBLSPubkeyRegistry public immutable blsPubkeyRegistry;
+    /// @notice the BLS Aggregate Pubkey Registry contract that will keep track of operators' aggregate BLS public keys per quorum
+    IBLSApkRegistry public immutable blsApkRegistry;
     /// @notice the Stake Registry contract that will keep track of operators' stakes
     IStakeRegistry public immutable stakeRegistry;
     /// @notice the Index Registry contract that will keep track of operators' indexes
@@ -78,19 +76,19 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     address public ejector;
 
     modifier onlyServiceManagerOwner {
-        require(msg.sender == serviceManager.owner(), "BLSRegistryCoordinatorWithIndices.onlyServiceManagerOwner: caller is not the service manager owner");
+        require(msg.sender == serviceManager.owner(), "RegistryCoordinator.onlyServiceManagerOwner: caller is not the service manager owner");
         _;
     }
 
     modifier onlyEjector {
-        require(msg.sender == ejector, "BLSRegistryCoordinatorWithIndices.onlyEjector: caller is not the ejector");
+        require(msg.sender == ejector, "RegistryCoordinator.onlyEjector: caller is not the ejector");
         _;
     }
 
     modifier quorumExists(uint8 quorumNumber) {
         require(
             quorumNumber < quorumCount, 
-            "BLSRegistryCoordinatorWithIndices.quorumExists: quorum does not exist"
+            "RegistryCoordinator.quorumExists: quorum does not exist"
         );
         _;
     }
@@ -99,13 +97,13 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         ISlasher _slasher,
         IServiceManager _serviceManager,
         IStakeRegistry _stakeRegistry,
-        IBLSPubkeyRegistry _blsPubkeyRegistry,
+        IBLSApkRegistry _blsApkRegistry,
         IIndexRegistry _indexRegistry
     ) EIP712("AVSRegistryCoordinator", "v0.0.1") {
         slasher = _slasher;
         serviceManager = _serviceManager;
         stakeRegistry = _stakeRegistry;
-        blsPubkeyRegistry = _blsPubkeyRegistry;
+        blsApkRegistry = _blsApkRegistry;
         indexRegistry = _indexRegistry;
     }
 
@@ -120,7 +118,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     ) external initializer {
         require(
             _operatorSetParams.length == _minimumStakes.length && _minimumStakes.length == _strategyParams.length,
-            "BLSRegistryCoordinatorWithIndices.initialize: input length mismatch"
+            "RegistryCoordinator.initialize: input length mismatch"
         );
         
         // Initialize roles
@@ -130,7 +128,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
 
         // Add registry contracts to the registries array
         registries.push(address(stakeRegistry));
-        registries.push(address(blsPubkeyRegistry));
+        registries.push(address(blsApkRegistry));
         registries.push(address(indexRegistry));
 
         // Create quorums
@@ -152,7 +150,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         bytes calldata quorumNumbers,
         string calldata socket
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        bytes32 operatorId = blsPubkeyRegistry.getOperatorId(msg.sender);
+        bytes32 operatorId = blsApkRegistry.getOperatorId(msg.sender);
 
         // Register the operator in each of the registry contracts
         RegisterResults memory results = _registerOperator({
@@ -173,7 +171,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
              */
             require(
                 results.numOperatorsPerQuorum[i] <= operatorSetParams.maxOperatorCount,
-                "BLSRegistryCoordinatorWithIndices.registerOperator: operator count exceeds maximum"
+                "RegistryCoordinator.registerOperator: operator count exceeds maximum"
             );
         }
     }
@@ -192,9 +190,9 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         OperatorKickParam[] calldata operatorKickParams,
         SignatureWithSaltAndExpiry memory churnApproverSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        require(operatorKickParams.length == quorumNumbers.length, "BLSRegistryCoordinatorWithIndices.registerOperatorWithChurn: input length mismatch");
+        require(operatorKickParams.length == quorumNumbers.length, "RegistryCoordinator.registerOperatorWithChurn: input length mismatch");
 
-        bytes32 operatorId = blsPubkeyRegistry.getOperatorId(msg.sender);
+        bytes32 operatorId = blsApkRegistry.getOperatorId(msg.sender);
 
         // Verify the churn approver's signature for the registering operator and kick params
         _verifyChurnApproverSignature({
@@ -292,7 +290,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
      * @param socket is the new socket of the operator
      */
     function updateSocket(string memory socket) external {
-        require(_operatorInfo[msg.sender].status == OperatorStatus.REGISTERED, "BLSRegistryCoordinatorWithIndices.updateSocket: operator is not registered");
+        require(_operatorInfo[msg.sender].status == OperatorStatus.REGISTERED, "RegistryCoordinator.updateSocket: operator is not registered");
         emit OperatorSocketUpdate(_operatorInfo[msg.sender].operatorId, socket);
     }
 
@@ -389,8 +387,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
          */
         uint192 quorumsToAdd = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         uint192 currentBitmap = _currentOperatorBitmap(operatorId);
-        require(!quorumsToAdd.isEmpty(), "BLSRegistryCoordinatorWithIndices._registerOperator: bitmap cannot be 0");
-        require(quorumsToAdd.noBitsInCommon(currentBitmap), "BLSRegistryCoordinatorWithIndices._registerOperator: operator already registered for some quorums being registered for");
+        require(!quorumsToAdd.isEmpty(), "RegistryCoordinator._registerOperator: bitmap cannot be 0");
+        require(quorumsToAdd.noBitsInCommon(currentBitmap), "RegistryCoordinator._registerOperator: operator already registered for some quorums being registered for");
         uint192 newBitmap = uint192(currentBitmap.plus(quorumsToAdd));
 
         /**
@@ -414,10 +412,10 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         }
 
         /**
-         * Register the operator with the BLSPubkeyRegistry, StakeRegistry, and IndexRegistry
+         * Register the operator with the BLSApkRegistry, StakeRegistry, and IndexRegistry
          */
-        bytes32 registeredId = blsPubkeyRegistry.registerOperator(operator, quorumNumbers);
-        require(registeredId == operatorId, "BLSRegistryCoordinatorWithIndices._registerOperator: operatorId mismatch");
+        bytes32 registeredId = blsApkRegistry.registerOperator(operator, quorumNumbers);
+        require(registeredId == operatorId, "RegistryCoordinator._registerOperator: operatorId mismatch");
         (uint96[] memory operatorStakes, uint96[] memory totalStakes) = 
             stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
         uint32[] memory numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
@@ -439,25 +437,25 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     ) internal view {
         address operatorToKick = kickParams.operator;
         bytes32 idToKick = _operatorInfo[operatorToKick].operatorId;
-        require(newOperator != operatorToKick, "BLSRegistryCoordinatorWithIndices._validateChurn: cannot churn self");
-        require(kickParams.quorumNumber == quorumNumber, "BLSRegistryCoordinatorWithIndices._validateChurn: quorumNumber not the same as signed");
+        require(newOperator != operatorToKick, "RegistryCoordinator._validateChurn: cannot churn self");
+        require(kickParams.quorumNumber == quorumNumber, "RegistryCoordinator._validateChurn: quorumNumber not the same as signed");
 
         // Get the target operator's stake and check that it is below the kick thresholds
         uint96 operatorToKickStake = stakeRegistry.getCurrentStake(idToKick, quorumNumber);
         require(
             newOperatorStake > _individualKickThreshold(operatorToKickStake, setParams),
-            "BLSRegistryCoordinatorWithIndices._validateChurn: incoming operator has insufficient stake for churn"
+            "RegistryCoordinator._validateChurn: incoming operator has insufficient stake for churn"
         );
         require(
             operatorToKickStake < _totalKickThreshold(totalQuorumStake, setParams),
-            "BLSRegistryCoordinatorWithIndices._validateChurn: cannot kick operator with more than kickBIPsOfTotalStake"
+            "RegistryCoordinator._validateChurn: cannot kick operator with more than kickBIPsOfTotalStake"
         );
     }
 
     /**
      * @dev Deregister the operator from one or more quorums
      * This method updates the operator's quorum bitmap and status, then deregisters
-     * the operator with the BLSPubkeyRegistry, IndexRegistry, and StakeRegistry
+     * the operator with the BLSApkRegistry, IndexRegistry, and StakeRegistry
      */
     function _deregisterOperator(
         address operator, 
@@ -466,7 +464,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         // Fetch the operator's info and ensure they are registered
         OperatorInfo storage operatorInfo = _operatorInfo[operator];
         bytes32 operatorId = operatorInfo.operatorId;
-        require(operatorInfo.status == OperatorStatus.REGISTERED, "BLSRegistryCoordinatorWithIndices._deregisterOperator: operator is not registered");
+        require(operatorInfo.status == OperatorStatus.REGISTERED, "RegistryCoordinator._deregisterOperator: operator is not registered");
         
         /**
          * Get bitmap of quorums to deregister from and operator's current bitmap. Validate that:
@@ -476,8 +474,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
          */
         uint192 quorumsToRemove = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         uint192 currentBitmap = _currentOperatorBitmap(operatorId);
-        require(!quorumsToRemove.isEmpty(), "BLSRegistryCoordinatorWithIndices._deregisterOperator: bitmap cannot be 0");
-        require(quorumsToRemove.isSubsetOf(currentBitmap), "BLSRegistryCoordinatorWithIndices._deregisterOperator: operator is not registered for specified quorums");
+        require(!quorumsToRemove.isEmpty(), "RegistryCoordinator._deregisterOperator: bitmap cannot be 0");
+        require(quorumsToRemove.isSubsetOf(currentBitmap), "RegistryCoordinator._deregisterOperator: operator is not registered for specified quorums");
         uint192 newBitmap = uint192(currentBitmap.minus(quorumsToRemove));
 
         /**
@@ -495,7 +493,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         }
 
         // Deregister operator with each of the registry contracts:
-        blsPubkeyRegistry.deregisterOperator(operator, quorumNumbers);
+        blsApkRegistry.deregisterOperator(operator, quorumNumbers);
         stakeRegistry.deregisterOperator(operatorId, quorumNumbers);
         indexRegistry.deregisterOperator(operatorId, quorumNumbers);
     }
@@ -523,8 +521,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         SignatureWithSaltAndExpiry memory churnApproverSignature
     ) internal {
         // make sure the salt hasn't been used already
-        require(!isChurnApproverSaltUsed[churnApproverSignature.salt], "BLSRegistryCoordinatorWithIndices._verifyChurnApproverSignature: churnApprover salt already used");
-        require(churnApproverSignature.expiry >= block.timestamp, "BLSRegistryCoordinatorWithIndices._verifyChurnApproverSignature: churnApprover signature expired");   
+        require(!isChurnApproverSaltUsed[churnApproverSignature.salt], "RegistryCoordinator._verifyChurnApproverSignature: churnApprover salt already used");
+        require(churnApproverSignature.expiry >= block.timestamp, "RegistryCoordinator._verifyChurnApproverSignature: churnApprover signature expired");   
 
         // set salt used to true
         isChurnApproverSaltUsed[churnApproverSignature.salt] = true;    
@@ -547,7 +545,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     ) internal {
         // Increment the total quorum count. Fails if we're already at the max
         uint8 prevQuorumCount = quorumCount;
-        require(prevQuorumCount < MAX_QUORUM_COUNT, "BLSRegistryCoordinatorWithIndices.createQuorum: max quorums reached");
+        require(prevQuorumCount < MAX_QUORUM_COUNT, "RegistryCoordinator.createQuorum: max quorums reached");
         quorumCount = prevQuorumCount + 1;
         
         // The previous count is the new quorum's number
@@ -557,7 +555,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         _setOperatorSetParams(quorumNumber, operatorSetParams);
         stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
         indexRegistry.initializeQuorum(quorumNumber);
-        blsPubkeyRegistry.initializeQuorum(quorumNumber);
+        blsApkRegistry.initializeQuorum(quorumNumber);
     }
 
     /**
@@ -643,7 +641,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
 
     /// @notice Returns the operator address for the given `operatorId`
     function getOperatorFromId(bytes32 operatorId) external view returns (address) {
-        return blsPubkeyRegistry.getOperatorFromPubkeyHash(operatorId);
+        return blsApkRegistry.getOperatorFromPubkeyHash(operatorId);
     }
 
     /// @notice Returns the status for the given `operator`
@@ -665,7 +663,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
                         _operatorBitmapHistory[operatorIds[i]][length - j - 1].nextUpdateBlockNumber;
                     require(
                         nextUpdateBlockNumber == 0 || nextUpdateBlockNumber > blockNumber,
-                        "BLSRegistryCoordinatorWithIndices.getQuorumBitmapIndicesAtBlockNumber: operatorId has no quorumBitmaps at blockNumber"
+                        "RegistryCoordinator.getQuorumBitmapIndicesAtBlockNumber: operatorId has no quorumBitmaps at blockNumber"
                     );
                     indices[i] = uint32(length - j - 1);
                     break;
@@ -687,13 +685,13 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         QuorumBitmapUpdate memory quorumBitmapUpdate = _operatorBitmapHistory[operatorId][index];
         require(
             quorumBitmapUpdate.updateBlockNumber <= blockNumber, 
-            "BLSRegistryCoordinatorWithIndices.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber"
+            "RegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber"
         );
         // if the next update is at or before the block number, then the quorum provided index is too early
         // if the nex update  block number is 0, then this is the latest update
         require(
             quorumBitmapUpdate.nextUpdateBlockNumber > blockNumber || quorumBitmapUpdate.nextUpdateBlockNumber == 0, 
-            "BLSRegistryCoordinatorWithIndices.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from before blockNumber"
+            "RegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from before blockNumber"
         );
         return quorumBitmapUpdate.quorumBitmap;
     }

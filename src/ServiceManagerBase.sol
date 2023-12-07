@@ -10,7 +10,7 @@ import {Pausable} from "eigenlayer-contracts/src/contracts/permissions/Pausable.
 
 import {BLSSignatureChecker} from "src/BLSSignatureChecker.sol";
 
-import {IBLSRegistryCoordinatorWithIndices} from "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
+import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 import {IServiceManager} from "src/interfaces/IServiceManager.sol";
 
 /**
@@ -52,7 +52,7 @@ abstract contract ServiceManagerBase is
             (msg.sender == address(registryCoordinator)) ||
                 (msg.sender ==
                     address(
-                        IBLSRegistryCoordinatorWithIndices(
+                        IRegistryCoordinator(
                             address(registryCoordinator)
                         ).stakeRegistry()
                     )),
@@ -62,7 +62,7 @@ abstract contract ServiceManagerBase is
     }
 
     constructor(
-        IBLSRegistryCoordinatorWithIndices _registryCoordinator,
+        IRegistryCoordinator _registryCoordinator,
         ISlasher _slasher
     ) BLSSignatureChecker(_registryCoordinator) {
         slasher = _slasher;
