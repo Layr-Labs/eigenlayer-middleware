@@ -3,7 +3,6 @@ pragma solidity =0.8.12;
 
 import {BLSApkRegistryStorage} from "src/BLSApkRegistryStorage.sol";
 
-import {IBLSPublicKeyCompendium} from "src/interfaces/IBLSPublicKeyCompendium.sol";
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 
 import {BN254} from "src/libraries/BN254.sol";
@@ -20,11 +19,10 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         _;
     }
 
-    /// @notice Sets the (immutable) `registryCoordinator` and `pubkeyCompendium` addresses
+    /// @notice Sets the (immutable) `registryCoordinator` address
     constructor(
-        IRegistryCoordinator _registryCoordinator, 
-        IBLSPublicKeyCompendium _pubkeyCompendium
-    ) BLSApkRegistryStorage(_registryCoordinator, _pubkeyCompendium) {}
+        IRegistryCoordinator _registryCoordinator
+    ) BLSApkRegistryStorage(_registryCoordinator) {}
 
     /*******************************************************************************
                       EXTERNAL FUNCTIONS - REGISTRY COORDINATOR
@@ -46,8 +44,8 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         address operator,
         bytes memory quorumNumbers
     ) public virtual onlyRegistryCoordinator returns (bytes32) {
-        // Get the operator's pubkey from the compendium. Reverts if they have not registered a key
-        (BN254.G1Point memory pubkey, bytes32 pubkeyHash) = pubkeyCompendium.getRegisteredPubkey(operator);
+        // Get the operator's pubkey. Reverts if they have not registered a key
+        (BN254.G1Point memory pubkey, bytes32 pubkeyHash) = getRegisteredPubkey(operator);
 
         // Update each quorum's aggregate pubkey
         _processQuorumApkUpdate(quorumNumbers, pubkey);
@@ -73,8 +71,8 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         address operator,
         bytes memory quorumNumbers
     ) public virtual onlyRegistryCoordinator {
-        // Get the operator's pubkey from the compendium. Reverts if they have not registered a key
-        (BN254.G1Point memory pubkey, ) = pubkeyCompendium.getRegisteredPubkey(operator);
+        // Get the operator's pubkey. Reverts if they have not registered a key
+        (BN254.G1Point memory pubkey, ) = getRegisteredPubkey(operator);
 
         // Update each quorum's aggregate pubkey
         _processQuorumApkUpdate(quorumNumbers, pubkey.negate());
@@ -108,15 +106,15 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     ) external {
         bytes32 pubkeyHash = BN254.hashG1Point(pubkeyG1);
         require(
-            pubkeyHash != ZERO_PK_HASH, "BLSPublicKeyCompendium.registerBLSPublicKey: cannot register zero pubkey"
+            pubkeyHash != ZERO_PK_HASH, "BLSApkRegistry.registerBLSPublicKey: cannot register zero pubkey"
         );
         require(
             operatorToPubkeyHash[msg.sender] == bytes32(0),
-            "BLSPublicKeyCompendium.registerBLSPublicKey: operator already registered pubkey"
+            "BLSApkRegistry.registerBLSPublicKey: operator already registered pubkey"
         );
         require(
             pubkeyHashToOperator[pubkeyHash] == address(0),
-            "BLSPublicKeyCompendium.registerBLSPublicKey: public key already registered"
+            "BLSApkRegistry.registerBLSPublicKey: public key already registered"
         );
 
         // H(m) 
@@ -140,7 +138,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
             BN254.negGeneratorG2(),
             messageHash.plus(BN254.generatorG1().scalar_mul(gamma)),
             pubkeyG2
-        ), "BLSPublicKeyCompendium.registerBLSPublicKey: either the G1 signature is wrong, or G1 and G2 private key do not match");
+        ), "BLSApkRegistry.registerBLSPublicKey: either the G1 signature is wrong, or G1 and G2 private key do not match");
 
         operatorToPubkey[msg.sender] = pubkeyG1;
         operatorToPubkeyHash[msg.sender] = pubkeyHash;
@@ -294,11 +292,10 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
 
     /// @notice Returns the operator address for the given `pubkeyHash`
     function getOperatorFromPubkeyHash(bytes32 pubkeyHash) public view returns (address) {
-        return pubkeyCompendium.pubkeyHashToOperator(pubkeyHash);
+        return pubkeyHashToOperator[pubkeyHash];
     }
 
     function getOperatorId(address operator) public view returns (bytes32) {
-        (, bytes32 pubkeyHash) = pubkeyCompendium.getRegisteredPubkey(operator);
-        return pubkeyHash;
+        return operatorToPubkeyHash[operator];
     }
 }

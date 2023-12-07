@@ -35,7 +35,7 @@ interface IBLSApkRegistry is IRegistry {
         // block number at which the next update occurred
         uint32 nextUpdateBlockNumber;
     }
-    
+
     /**
      * @notice Registers the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to register.
