@@ -6,7 +6,7 @@ Reference Links:
 
 ## EigenLayer Middleware Docs
 
-EigenLayer AVSs ("actively validated services") are protocols that make use of EigenLayer's restaking primitives. AVSs are validated by EigenLayer operators, who are backed by delegated restaked assets via the [EigenLayer core contracts][core-contracts-repo]. AVSs deploy or modify instances of the contracts in this repo to hook into the core contracts and ensure their service has an up-to-date view of its currently-registered operators.
+EigenLayer AVSs ("actively validated services") are protocols that make use of EigenLayer's restaking primitives. AVSs are validated by EigenLayer operators, who are backed by delegated restaked assets via the [EigenLayer core contracts][core-contracts-repo]. Each AVS will deploy or modify instances of the contracts in this repo to hook into the EigenLayer core contracts and ensure their service has an up-to-date view of its currently-registered operators.
 
 **Currently, each AVS needs to implement one thing on-chain:** registration/deregistration conditions that define how an operator registers for/deregisters from the AVS. This repo provides building blocks to support these functions.
 
@@ -37,7 +37,7 @@ A quorum is a grouping and configuration of specific kinds of stake that an AVS 
 
 As an example, an AVS might want to support primarily native ETH stakers. It would do so by configuring a quorum to only weigh operators that control shares belonging to the native eth strategy (defined in the core contracts).
 
-The Service Manager Owner initializes quorums in `BLSRegistryCoordinatorWithIndices`, and may configure them further in both the `BLSRegistryCoordinatorWithIndices` and `StakeRegistry` contracts.
+The Service Manager Owner initializes quorums in the `RegistryCoordinator`, and may configure them further in both the `RegistryCoordinator` and `StakeRegistry` contracts.
 
 ##### Strategies and Stake
 
@@ -55,7 +55,7 @@ For more information on the `DelegationManager`, see the [EigenLayer core docs][
 
 Quorums define a maximum operator count as well as parameters that determine when a new operator can replace an existing operator when this max count is reached. The process of replacing an existing operator when the max count is reached is called "churn," and requires a signature from the Churn Approver.
 
-These definitions are contained in a quorum's `OperatorSetParam`, which the Service Manager Owner can configure via the `BLSRegistryCoordinatorWithIndices`. A quorum's `OperatorSetParam` defines both a max operator count, as well as stake thresholds that the incoming and existing operators need to meet to qualify for churn.
+These definitions are contained in a quorum's `OperatorSetParam`, which the Service Manager Owner can configure via the `RegistryCoordinator`. A quorum's `OperatorSetParam` defines both a max operator count, as well as stake thresholds that the incoming and existing operators need to meet to qualify for churn.
 
 ### System Components
 
@@ -63,16 +63,16 @@ These definitions are contained in a quorum's `OperatorSetParam`, which the Serv
 
 | File | Type | Proxy |
 | -------- | -------- | -------- |
-| [`BLSRegistryCoordinatorWithIndices.sol`](../src/BLSRegistryCoordinatorWithIndices.sol) | Singleton | Transparent proxy |
-| [`BLSPubkeyRegistry.sol`](../src/BLSPubkeyRegistry.sol) | Singleton | Transparent proxy |
+| [`RegistryCoordinator.sol`](../src/RegistryCoordinator.sol) | Singleton | Transparent proxy |
+| [`BLSApkRegistry.sol`](../src/BLSApkRegistry.sol) | Singleton | Transparent proxy |
 | [`StakeRegistry.sol`](../src/StakeRegistry.sol) | Singleton | Transparent proxy |
 | [`IndexRegistry.sol`](../src/IndexRegistry.sol) | Singleton | Transparent proxy |
 
-The `BLSRegistryCoordinatorWithIndices` is the primary entry point for operators as they register for and deregister from an AVS's quorums. When operators register or deregister, the registry coordinator updates that operator's currently-registered quorums, and pushes the registration/deregistration to each of the three registries it controls:
-* `BLSPubkeyRegistry`: tracks the aggregate BLS pubkey hash for the operators registered to each quorum. Also maintains a history of these aggregate pubkey hashes.
+The `RegistryCoordinator` is the primary entry point for operators as they register for and deregister from an AVS's quorums. When operators register or deregister, the registry coordinator updates that operator's currently-registered quorums, and pushes the registration/deregistration to each of the three registries it controls:
+* `BLSApkRegistry`: tracks the aggregate BLS pubkey hash for the operators registered to each quorum. Also maintains a history of these aggregate pubkey hashes.
 * `StakeRegistry`: interfaces with the EigenLayer core contracts to track historical state of operators per quorum.
 * `IndexRegistry`: assigns indices to operators within each quorum, and tracks historical indices and operators per quorum. Used primarily by offchain infrastructure to fetch ordered lists of operators in quorums.
 
 Both the registry coordinator and each of the registries maintain historical state for the specific information they track. This historical state tracking can be used to query state at a particular block, which is primarily used in offchain infrastructure.
 
-See full documentation for the registry coordinator in [`BLSRegistryCoordinatorWithIndices.md`](./BLSRegistryCoordinatorWithIndices.md), and for each registry in [`registries/`](./registries/).
+See full documentation for the registry coordinator in [`RegistryCoordinator.md`](./RegistryCoordinator.md), and for each registry in [`registries/`](./registries/).

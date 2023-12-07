@@ -29,15 +29,6 @@ TODO
         * In some cases, a beacon chain balance update may cause a Staker's balance to drop below zero. This is because when queueing for a withdrawal in the `DelegationManager`, the Staker's current shares are fully removed. If the Staker's beacon chain balance drops after this occurs, their `podOwnerShares` may go negative. This is a temporary change to account for the drop in balance, and is ultimately corrected when the withdrawal is finally processed.
         * Since balances on the consensus layer are stored only in Gwei amounts, the EigenPodManager enforces the invariant that `podOwnerShares` is always a whole Gwei amount for every staker, i.e. `podOwnerShares[staker] % 1e9 == 0` always. -->
 
-#### Important Definitions
-
-* Churn: TODO
-
-<!-- * "Pod Owner": A Staker who has deployed an `EigenPod` is a Pod Owner. The terms are used interchangeably in this document.
-    * Pod Owners can only deploy a single `EigenPod`, but can restake any number of beacon chain validators from the same `EigenPod`.
-    * Pod Owners can delegate their `EigenPodManager` shares to Operators (via `DelegationManager`).
-    * These shares correspond to the amount of provably-restaked beacon chain ETH held by the Pod Owner via their `EigenPod`. -->
-
 ---    
 
 ### Theme
@@ -52,7 +43,7 @@ TODO
 To complete the deposit process, the Staker needs to prove that the validator's withdrawal credentials are pointed at the `EigenPod`:
 * [`EigenPod.verifyWithdrawalCredentials`](#eigenpodverifywithdrawalcredentials) -->
 
-#### `methodName`
+#### `registerOperator`
 
 ```solidity
 
@@ -66,7 +57,91 @@ TODO
 *Requirements*:
 * 
 
-#### `methodName`
+#### `deregisterOperator`
+
+```solidity
+
+```
+
+TODO
+
+*Effects*:
+*
+
+*Requirements*:
+* 
+
+#### `updateOperatorStake`
+
+```solidity
+
+```
+
+TODO
+
+*Effects*:
+*
+
+*Requirements*:
+* 
+
+#### `initializeQuorum`
+
+```solidity
+
+```
+
+TODO
+
+*Effects*:
+*
+
+*Requirements*:
+* 
+
+#### `setMinimumStakeForQuorum`
+
+```solidity
+
+```
+
+TODO
+
+*Effects*:
+*
+
+*Requirements*:
+* 
+
+#### `addStrategies`
+
+```solidity
+
+```
+
+TODO
+
+*Effects*:
+*
+
+*Requirements*:
+* 
+
+#### `removeStrategies`
+
+```solidity
+
+```
+
+TODO
+
+*Effects*:
+*
+
+*Requirements*:
+* 
+
+#### `modifyStrategyParams`
 
 ```solidity
 
