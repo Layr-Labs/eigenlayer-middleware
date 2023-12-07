@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {IBLSRegistryCoordinatorWithIndices} from "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
-import {IBLSPubkeyRegistry} from "src/interfaces/IBLSPubkeyRegistry.sol";
+import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
+import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
 
 import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
 
 /**
- * @title BLSOperatorStateRetriever with view functions that allow to retrieve the state of an AVSs registry system.
+ * @title OperatorStateRetriever with view functions that allow to retrieve the state of an AVSs registry system.
  * @author Layr Labs Inc.
  */
-contract BLSOperatorStateRetriever {
+contract OperatorStateRetriever {
     struct Operator {
         bytes32 operatorId;
         uint96 stake;
@@ -37,7 +37,7 @@ contract BLSOperatorStateRetriever {
      *            was a part of at `blockNumber`, an ordered list of operators.
      */
     function getOperatorState(
-        IBLSRegistryCoordinatorWithIndices registryCoordinator, 
+        IRegistryCoordinator registryCoordinator, 
         bytes32 operatorId, 
         uint32 blockNumber
     ) external view returns (uint256, Operator[][] memory) {
@@ -61,7 +61,7 @@ contract BLSOperatorStateRetriever {
      * @return 2d array of operators. For each quorum, an ordered list of operators
      */
     function getOperatorState(
-        IBLSRegistryCoordinatorWithIndices registryCoordinator, 
+        IRegistryCoordinator registryCoordinator, 
         bytes memory quorumNumbers, 
         uint32 blockNumber
     ) public view returns(Operator[][] memory) {
@@ -100,7 +100,7 @@ contract BLSOperatorStateRetriever {
      *         4) the indices of the quorum apks for each of the provided quorums at the given blocknumber
      */
     function getCheckSignaturesIndices(
-        IBLSRegistryCoordinatorWithIndices registryCoordinator,
+        IRegistryCoordinator registryCoordinator,
         uint32 referenceBlockNumber, 
         bytes calldata quorumNumbers, 
         bytes32[] calldata nonSignerOperatorIds
@@ -148,9 +148,9 @@ contract BLSOperatorStateRetriever {
             checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex] = nonSignerStakeIndicesForQuorum;
         }
 
-        IBLSPubkeyRegistry blsPubkeyRegistry = registryCoordinator.blsPubkeyRegistry();
+        IBLSApkRegistry blsApkRegistry = registryCoordinator.blsApkRegistry();
         // get the indices of the quorum apks for each of the provided quorums at the given blocknumber
-        checkSignaturesIndices.quorumApkIndices = blsPubkeyRegistry.getApkIndicesAtBlockNumber(quorumNumbers, referenceBlockNumber);
+        checkSignaturesIndices.quorumApkIndices = blsApkRegistry.getApkIndicesAtBlockNumber(quorumNumbers, referenceBlockNumber);
 
         return checkSignaturesIndices;
     }

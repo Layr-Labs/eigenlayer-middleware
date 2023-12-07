@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {BLSSignatureChecker} from "../../src/BLSSignatureChecker.sol";
-import {MockAVSDeployer} from "./MockAVSDeployer.sol";
-import {BN254} from "../../src/libraries/BN254.sol";
-import {BLSOperatorStateRetriever} from "../../src/BLSOperatorStateRetriever.sol";
-import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
+import {BLSSignatureChecker} from "src/BLSSignatureChecker.sol";
+import {MockAVSDeployer} from "test/utils/MockAVSDeployer.sol";
+import {BN254} from "src/libraries/BN254.sol";
+import {OperatorStateRetriever} from "src/OperatorStateRetriever.sol";
+import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
 
 contract BLSMockAVSDeployer is MockAVSDeployer {
     using BN254 for BN254.G1Point;
@@ -114,7 +114,7 @@ contract BLSMockAVSDeployer is MockAVSDeployer {
         uint32 referenceBlockNumber = registrationBlockNumber + blocksBetweenRegistrations * uint32(maxOperatorsToRegister) + 1;
         cheats.roll(referenceBlockNumber + 100);
 
-        BLSOperatorStateRetriever.CheckSignaturesIndices memory checkSignaturesIndices = operatorStateRetriever.getCheckSignaturesIndices(
+        OperatorStateRetriever.CheckSignaturesIndices memory checkSignaturesIndices = operatorStateRetriever.getCheckSignaturesIndices(
             registryCoordinator,
             referenceBlockNumber, 
             quorumNumbers, 

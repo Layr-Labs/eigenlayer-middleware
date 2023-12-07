@@ -6,6 +6,19 @@ import "../../src/interfaces/IRegistryCoordinator.sol";
 
 
 contract RegistryCoordinatorMock is IRegistryCoordinator {
+    function blsApkRegistry() external view returns (IBLSApkRegistry) {}
+
+    function ejectOperator(
+        address operator, 
+        bytes calldata quorumNumbers
+    ) external {}
+
+    function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory) {}
+
+    function indexRegistry() external view returns (IIndexRegistry) {}
+
+    function stakeRegistry() external view returns (IStakeRegistry) {}
+
     function quorumCount() external view returns (uint8) {}
     /// @notice Returns the bitmap of the quorums the operator is registered for.
     function operatorIdToQuorumBitmap(bytes32 pubkeyHash) external view returns (uint256){}

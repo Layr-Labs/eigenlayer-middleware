@@ -2,7 +2,7 @@
 pragma solidity =0.8.12;
 
 import "../src/BLSPublicKeyCompendium.sol";
-import "../src/BLSOperatorStateRetriever.sol";
+import "../src/OperatorStateRetriever.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
@@ -16,12 +16,12 @@ contract DeploySharedContracts is Script, Test {
     Vm cheats = Vm(HEVM_ADDRESS);
 
     BLSPublicKeyCompendium public blsPublicKeyCompendium;
-    BLSOperatorStateRetriever public blsOperatorStateRetriever;
+    OperatorStateRetriever public blsOperatorStateRetriever;
 
     function run() external {
         vm.startBroadcast();
         blsPublicKeyCompendium = new BLSPublicKeyCompendium();
-        blsOperatorStateRetriever = new BLSOperatorStateRetriever();
+        blsOperatorStateRetriever = new OperatorStateRetriever();
         vm.stopBroadcast();
 
         string memory deployed_addresses = "addresses";

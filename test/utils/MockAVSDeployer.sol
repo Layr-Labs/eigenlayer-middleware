@@ -10,52 +10,33 @@ import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/Pau
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
-import {BN254} from "../../src/libraries/BN254.sol";
+import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
+import {BN254} from "src/libraries/BN254.sol";
 
-<<<<<<< HEAD
-import {BLSPublicKeyCompendium} from "../../src/BLSPublicKeyCompendium.sol";
-import {BLSOperatorStateRetriever} from "../../src/BLSOperatorStateRetriever.sol";
-import {BLSRegistryCoordinatorWithIndices} from "../../src/BLSRegistryCoordinatorWithIndices.sol";
-import {BLSRegistryCoordinatorWithIndicesHarness} from "../harnesses/BLSRegistryCoordinatorWithIndicesHarness.sol";
-import {BLSPubkeyRegistry} from "../../src/BLSPubkeyRegistry.sol";
-import {StakeRegistry} from "../../src/StakeRegistry.sol";
-import {IndexRegistry} from "../../src/IndexRegistry.sol";
-import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
-import {IBLSPubkeyRegistry} from "../../src/interfaces/IBLSPubkeyRegistry.sol";
-import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
-import {IVoteWeigher} from "../../src/interfaces/IVoteWeigher.sol";
-import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
-import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
-import {IBLSRegistryCoordinatorWithIndices} from "../../src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
-=======
 import {BLSPublicKeyCompendium} from "src/BLSPublicKeyCompendium.sol";
-import {BLSOperatorStateRetriever} from "src/BLSOperatorStateRetriever.sol";
-import {BLSRegistryCoordinatorWithIndices} from "src/BLSRegistryCoordinatorWithIndices.sol";
-import {BLSRegistryCoordinatorWithIndicesHarness} from "test/harnesses/BLSRegistryCoordinatorWithIndicesHarness.sol";
-import {BLSPubkeyRegistry} from "src/BLSPubkeyRegistry.sol";
+import {OperatorStateRetriever} from "src/OperatorStateRetriever.sol";
+import {RegistryCoordinator} from "src/RegistryCoordinator.sol";
+import {RegistryCoordinatorHarness} from "test/harnesses/RegistryCoordinatorHarness.sol";
+import {BLSApkRegistry} from "src/BLSApkRegistry.sol";
 import {StakeRegistry} from "src/StakeRegistry.sol";
 import {IndexRegistry} from "src/IndexRegistry.sol";
 import {IServiceManager} from "src/interfaces/IServiceManager.sol";
-import {IBLSPubkeyRegistry} from "src/interfaces/IBLSPubkeyRegistry.sol";
-import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
+import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
-import {IBLSRegistryCoordinatorWithIndices} from "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
->>>>>>> 12b09de (fix: fix compilation issues and tests)
+import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 
 
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
 import {EigenPodManagerMock} from "eigenlayer-contracts/src/test/mocks/EigenPodManagerMock.sol";
-import {ServiceManagerMock} from "../mocks/ServiceManagerMock.sol";
+import {ServiceManagerMock} from "test/mocks/ServiceManagerMock.sol";
 import {OwnableMock} from "eigenlayer-contracts/src/test/mocks/OwnableMock.sol";
 import {DelegationManagerMock} from "eigenlayer-contracts/src/test/mocks/DelegationManagerMock.sol";
 import {SlasherMock} from "eigenlayer-contracts/src/test/mocks/SlasherMock.sol";
-import {BLSPublicKeyCompendiumMock} from "../mocks/BLSPublicKeyCompendiumMock.sol";
+import {BLSPublicKeyCompendiumMock} from "test/mocks/BLSPublicKeyCompendiumMock.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 
-import {StakeRegistryHarness} from "../harnesses/StakeRegistryHarness.sol";
-import {BLSRegistryCoordinatorWithIndices} from "../harnesses/BLSRegistryCoordinatorWithIndicesHarness.sol";
+import {StakeRegistryHarness} from "test/harnesses/StakeRegistryHarness.sol";
 
 import "forge-std/Test.sol";
 
@@ -73,15 +54,15 @@ contract MockAVSDeployer is Test {
     EmptyContract public emptyContract;
     BLSPublicKeyCompendiumMock public pubkeyCompendium;
 
-    BLSRegistryCoordinatorWithIndicesHarness public registryCoordinatorImplementation;
+    RegistryCoordinatorHarness public registryCoordinatorImplementation;
     StakeRegistryHarness public stakeRegistryImplementation;
-    IBLSPubkeyRegistry public blsPubkeyRegistryImplementation;
+    IBLSApkRegistry public blsApkRegistryImplementation;
     IIndexRegistry public indexRegistryImplementation;
 
-    BLSOperatorStateRetriever public operatorStateRetriever;
-    BLSRegistryCoordinatorWithIndicesHarness public registryCoordinator;
+    OperatorStateRetriever public operatorStateRetriever;
+    RegistryCoordinatorHarness public registryCoordinator;
     StakeRegistryHarness public stakeRegistry;
-    IBLSPubkeyRegistry public blsPubkeyRegistry;
+    IBLSApkRegistry public blsApkRegistry;
     IIndexRegistry public indexRegistry;
 
     ServiceManagerMock public serviceManagerMock;
@@ -112,7 +93,7 @@ contract MockAVSDeployer is Test {
     uint16 defaultKickBIPsOfTotalStake = 150;
     uint8 numQuorums = 192;
 
-    IBLSRegistryCoordinatorWithIndices.OperatorSetParam[] operatorSetParams;
+    IRegistryCoordinator.OperatorSetParam[] operatorSetParams;
 
     uint8 maxQuorumsToRegisterFor = 4;
     uint256 maxOperatorsToRegister = 4;
@@ -173,7 +154,7 @@ contract MockAVSDeployer is Test {
         cheats.startPrank(serviceManagerOwner);
         // make the serviceManagerOwner the owner of the serviceManager contract
         serviceManagerMock = new ServiceManagerMock(slasher);
-        registryCoordinator = BLSRegistryCoordinatorWithIndicesHarness(address(
+        registryCoordinator = RegistryCoordinatorHarness(address(
             new TransparentUpgradeableProxy(
                 address(emptyContract),
                 address(proxyAdmin),
@@ -201,7 +182,7 @@ contract MockAVSDeployer is Test {
             )
         );
 
-        blsPubkeyRegistry = BLSPubkeyRegistry(
+        blsApkRegistry = BLSApkRegistry(
             address(
                 new TransparentUpgradeableProxy(
                     address(emptyContract),
@@ -225,14 +206,14 @@ contract MockAVSDeployer is Test {
             address(stakeRegistryImplementation)
         );
 
-        blsPubkeyRegistryImplementation = new BLSPubkeyRegistry(
+        blsApkRegistryImplementation = new BLSApkRegistry(
             registryCoordinator,
             BLSPublicKeyCompendium(address(pubkeyCompendium))
         );
 
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(blsPubkeyRegistry))),
-            address(blsPubkeyRegistryImplementation)
+            TransparentUpgradeableProxy(payable(address(blsApkRegistry))),
+            address(blsApkRegistryImplementation)
         );
 
         indexRegistryImplementation = new IndexRegistry(
@@ -261,18 +242,18 @@ contract MockAVSDeployer is Test {
             );
         }
 
-        registryCoordinatorImplementation = new BLSRegistryCoordinatorWithIndicesHarness(
+        registryCoordinatorImplementation = new RegistryCoordinatorHarness(
             slasher,
             serviceManagerMock,
             stakeRegistry,
-            blsPubkeyRegistry,
+            blsApkRegistry,
             indexRegistry
         );
         {
             delete operatorSetParams;
             for (uint i = 0; i < numQuorumsToAdd; i++) {
                 // hard code these for now
-                operatorSetParams.push(IBLSRegistryCoordinatorWithIndices.OperatorSetParam({
+                operatorSetParams.push(IRegistryCoordinator.OperatorSetParam({
                     maxOperatorCount: defaultMaxOperatorCount,
                     kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
                     kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
@@ -283,7 +264,7 @@ contract MockAVSDeployer is Test {
                 TransparentUpgradeableProxy(payable(address(registryCoordinator))),
                 address(registryCoordinatorImplementation),
                 abi.encodeWithSelector(
-                    BLSRegistryCoordinatorWithIndices.initialize.selector,
+                    RegistryCoordinator.initialize.selector,
                     churnApprover,
                     ejector,
                     pauserRegistry,
@@ -295,7 +276,7 @@ contract MockAVSDeployer is Test {
             );
         }
 
-        operatorStateRetriever = new BLSOperatorStateRetriever();
+        operatorStateRetriever = new OperatorStateRetriever();
 
         cheats.stopPrank();
     }
@@ -395,7 +376,7 @@ contract MockAVSDeployer is Test {
         return bytes32(uint256(start) + inc);
     }
 
-    function _signOperatorChurnApproval(bytes32 registeringOperatorId, IBLSRegistryCoordinatorWithIndices.OperatorKickParam[] memory operatorKickParams, bytes32 salt,  uint256 expiry) internal view returns(ISignatureUtils.SignatureWithSaltAndExpiry memory) {
+    function _signOperatorChurnApproval(bytes32 registeringOperatorId, IRegistryCoordinator.OperatorKickParam[] memory operatorKickParams, bytes32 salt,  uint256 expiry) internal view returns(ISignatureUtils.SignatureWithSaltAndExpiry memory) {
         bytes32 digestHash = registryCoordinator.calculateOperatorChurnApprovalDigestHash(
             registeringOperatorId,
             operatorKickParams,

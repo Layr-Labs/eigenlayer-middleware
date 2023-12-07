@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {IBLSRegistryCoordinatorWithIndices} from "src/interfaces/IBLSRegistryCoordinatorWithIndices.sol";
 import {IBLSSignatureChecker} from "src/interfaces/IBLSSignatureChecker.sol";
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
-import {IBLSPubkeyRegistry} from "src/interfaces/IBLSPubkeyRegistry.sol";
+import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 
 import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
@@ -26,12 +25,12 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
 
     IRegistryCoordinator public immutable registryCoordinator;
     IStakeRegistry public immutable stakeRegistry;
-    IBLSPubkeyRegistry public immutable blsPubkeyRegistry;
+    IBLSApkRegistry public immutable blsApkRegistry;
 
-    constructor(IBLSRegistryCoordinatorWithIndices _registryCoordinator) {
+    constructor(IRegistryCoordinator _registryCoordinator) {
         registryCoordinator = IRegistryCoordinator(_registryCoordinator);
         stakeRegistry = _registryCoordinator.stakeRegistry();
-        blsPubkeyRegistry = _registryCoordinator.blsPubkeyRegistry();
+        blsApkRegistry = _registryCoordinator.blsApkRegistry();
     }
 
     /**
@@ -75,7 +74,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         for (uint i = 0; i < quorumNumbers.length; i++) {
             require(
                 bytes24(nonSignerStakesAndSignature.quorumApks[i].hashG1Point()) == 
-                    IBLSPubkeyRegistry(blsPubkeyRegistry).getApkHashAtBlockNumberAndIndex(
+                    blsApkRegistry.getApkHashAtBlockNumberAndIndex(
                         uint8(quorumNumbers[i]), 
                         referenceBlockNumber, 
                         nonSignerStakesAndSignature.quorumApkIndices[i]
