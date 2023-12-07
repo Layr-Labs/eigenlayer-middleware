@@ -7,13 +7,11 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import {Slasher} from "eigenlayer-contracts/src/contracts/core/Slasher.sol";
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
-import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
 import {BN254} from "src/libraries/BN254.sol";
 
-import {BLSPublicKeyCompendium} from "src/BLSPublicKeyCompendium.sol";
 import {OperatorStateRetriever} from "src/OperatorStateRetriever.sol";
 import {RegistryCoordinator} from "src/RegistryCoordinator.sol";
 import {RegistryCoordinatorHarness} from "test/harnesses/RegistryCoordinatorHarness.sol";
@@ -30,10 +28,8 @@ import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
 import {EigenPodManagerMock} from "eigenlayer-contracts/src/test/mocks/EigenPodManagerMock.sol";
 import {ServiceManagerMock} from "test/mocks/ServiceManagerMock.sol";
-import {OwnableMock} from "eigenlayer-contracts/src/test/mocks/OwnableMock.sol";
 import {DelegationManagerMock} from "eigenlayer-contracts/src/test/mocks/DelegationManagerMock.sol";
-import {SlasherMock} from "eigenlayer-contracts/src/test/mocks/SlasherMock.sol";
-import {BLSPublicKeyCompendiumMock} from "test/mocks/BLSPublicKeyCompendiumMock.sol";
+import {BLSApkRegistryMock} from "test/mocks/BLSApkRegistryMock.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 
 import {StakeRegistryHarness} from "test/harnesses/StakeRegistryHarness.sol";
@@ -52,7 +48,6 @@ contract MockAVSDeployer is Test {
     Slasher public slasherImplementation;
 
     EmptyContract public emptyContract;
-    BLSPublicKeyCompendiumMock public pubkeyCompendium;
 
     RegistryCoordinatorHarness public registryCoordinatorImplementation;
     StakeRegistryHarness public stakeRegistryImplementation;
@@ -62,7 +57,7 @@ contract MockAVSDeployer is Test {
     OperatorStateRetriever public operatorStateRetriever;
     RegistryCoordinatorHarness public registryCoordinator;
     StakeRegistryHarness public stakeRegistry;
-    IBLSApkRegistry public blsApkRegistry;
+    BLSApkRegistryMock public blsApkRegistry;
     IIndexRegistry public indexRegistry;
 
     ServiceManagerMock public serviceManagerMock;
@@ -146,8 +141,8 @@ contract MockAVSDeployer is Test {
             slasher
         );
 
-        pubkeyCompendium = new BLSPublicKeyCompendiumMock();
-        pubkeyCompendium.setBLSPublicKey(defaultOperator, defaultPubKey);
+        blsApkRegistry = new BLSApkRegistryMock();
+        blsApkRegistry.setBLSPublicKey(defaultOperator, defaultPubKey);
 
         cheats.stopPrank();
 
@@ -182,7 +177,7 @@ contract MockAVSDeployer is Test {
             )
         );
 
-        blsApkRegistry = BLSApkRegistry(
+        blsApkRegistry = BLSApkRegistryMock(
             address(
                 new TransparentUpgradeableProxy(
                     address(emptyContract),
@@ -207,8 +202,7 @@ contract MockAVSDeployer is Test {
         );
 
         blsApkRegistryImplementation = new BLSApkRegistry(
-            registryCoordinator,
-            BLSPublicKeyCompendium(address(pubkeyCompendium))
+            registryCoordinator
         );
 
         proxyAdmin.upgrade(
@@ -295,7 +289,7 @@ contract MockAVSDeployer is Test {
         // quorumBitmap can only have 192 least significant bits
         quorumBitmap &= MAX_QUORUM_BITMAP;
 
-        pubkeyCompendium.setBLSPublicKey(operator, pubKey);
+        blsApkRegistry.setBLSPublicKey(operator, pubKey);
 
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
         for (uint i = 0; i < quorumNumbers.length; i++) {
@@ -313,7 +307,7 @@ contract MockAVSDeployer is Test {
         // quorumBitmap can only have 192 least significant bits
         quorumBitmap &= MAX_QUORUM_BITMAP;
 
-        pubkeyCompendium.setBLSPublicKey(operator, pubKey);
+        blsApkRegistry.setBLSPublicKey(operator, pubKey);
 
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
         for (uint i = 0; i < quorumNumbers.length; i++) {

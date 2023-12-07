@@ -319,7 +319,7 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
         address operatorToRegister = _incrementAddress(defaultOperator, numOperators);
         BN254.G1Point memory operatorToRegisterPubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, numOperators)));
     
-        pubkeyCompendium.setBLSPublicKey(operatorToRegister, operatorToRegisterPubKey);
+        blsApkRegistry.setBLSPublicKey(operatorToRegister, operatorToRegisterPubKey);
 
         stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, defaultStake);
 
@@ -654,7 +654,7 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
             });
         }
 
-        pubkeyCompendium.setBLSPublicKey(operatorToRegister, operatorToRegisterPubKey);
+        blsApkRegistry.setBLSPublicKey(operatorToRegister, operatorToRegisterPubKey);
 
         uint96 registeringStake = defaultKickBIPsOfOperatorStake * defaultStake;
         stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, registeringStake);
@@ -946,6 +946,6 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
             });
         }
 
-        pubkeyCompendium.setBLSPublicKey(operatorToRegister, operatorToRegisterPubKey);
+        blsApkRegistry.setBLSPublicKey(operatorToRegister, operatorToRegisterPubKey);
     }
 }

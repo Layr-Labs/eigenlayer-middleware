@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "src/BLSPublicKeyCompendium.sol";
+import "src/BLSApkRegistry.sol";
 import "test/ffi/util/G2Operations.sol";
 
-contract BLSPublicKeyCompendiumFFITests is G2Operations {
+contract BLSApkRegistryFFITests is G2Operations {
     using BN254 for BN254.G1Point;
     using Strings for uint256;
 
     Vm cheats = Vm(HEVM_ADDRESS);
 
-    BLSPublicKeyCompendium compendium;
+    BLSApkRegistry blsApkRegistry;
 
     uint256 privKey;
     BN254.G1Point pubKeyG1;
@@ -20,7 +20,8 @@ contract BLSPublicKeyCompendiumFFITests is G2Operations {
     address alice = address(0x69);
 
     function setUp() public {
-        compendium = new BLSPublicKeyCompendium();
+        IRegistryCoordinator registryCoordinator;
+        blsApkRegistry = new BLSApkRegistry(registryCoordinator);
     }
 
     function testRegisterBLSPublicKey(uint256 _privKey) public {
@@ -30,10 +31,10 @@ contract BLSPublicKeyCompendiumFFITests is G2Operations {
         signedMessageHash = _signMessage(alice);
 
         vm.prank(alice);
-        compendium.registerBLSPublicKey(signedMessageHash, pubKeyG1, pubKeyG2);
+        blsApkRegistry.registerBLSPublicKey(signedMessageHash, pubKeyG1, pubKeyG2);
 
-        assertEq(compendium.operatorToPubkeyHash(alice), BN254.hashG1Point(pubKeyG1), "pubkey hash not stored correctly");
-        assertEq(compendium.pubkeyHashToOperator(BN254.hashG1Point(pubKeyG1)), alice, "operator address not stored correctly");
+        assertEq(blsApkRegistry.operatorToPubkeyHash(alice), BN254.hashG1Point(pubKeyG1), "pubkey hash not stored correctly");
+        assertEq(blsApkRegistry.pubkeyHashToOperator(BN254.hashG1Point(pubKeyG1)), alice, "operator address not stored correctly");
     }
 
     function _setKeys(uint256 _privKey) internal {
@@ -43,7 +44,7 @@ contract BLSPublicKeyCompendiumFFITests is G2Operations {
     }
 
     function _signMessage(address signer) internal view returns(BN254.G1Point memory) {
-        BN254.G1Point memory messageHash = compendium.getMessageHash(signer);
+        BN254.G1Point memory messageHash = blsApkRegistry.getMessageHash(signer);
         return BN254.scalar_mul(messageHash, privKey);
     }
 }

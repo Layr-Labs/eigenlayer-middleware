@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "../src/BLSPublicKeyCompendium.sol";
 import "../src/OperatorStateRetriever.sol";
 
 import "forge-std/Script.sol";
@@ -15,25 +14,23 @@ import "forge-std/Test.sol";
 contract DeploySharedContracts is Script, Test {
     Vm cheats = Vm(HEVM_ADDRESS);
 
-    BLSPublicKeyCompendium public blsPublicKeyCompendium;
     OperatorStateRetriever public blsOperatorStateRetriever;
 
     function run() external {
         vm.startBroadcast();
-        blsPublicKeyCompendium = new BLSPublicKeyCompendium();
         blsOperatorStateRetriever = new OperatorStateRetriever();
         vm.stopBroadcast();
 
         string memory deployed_addresses = "addresses";
-        vm.serializeAddress(
+        // vm.serializeAddress(
+        //     deployed_addresses,
+        //     "blsOperatorStateRetriever",
+        //     address(blsOperatorStateRetriever)
+        // );
+        string memory finalJson = vm.serializeAddress(
             deployed_addresses,
             "blsOperatorStateRetriever",
             address(blsOperatorStateRetriever)
-        );
-        string memory finalJson = vm.serializeAddress(
-            deployed_addresses,
-            "blsPublicKeyCompendium",
-            address(blsPublicKeyCompendium)
         );
         vm.writeJson(finalJson, outputFileName());
     }
