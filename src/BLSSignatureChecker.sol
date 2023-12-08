@@ -228,5 +228,6 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
      */
     function setStaleStakesForbidden(bool value) external onlyServiceManagerOwner {
         staleStakesForbidden = value;
+        emit StaleStakesForbiddenUpdate(value);
     }
 }

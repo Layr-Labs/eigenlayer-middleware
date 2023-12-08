@@ -38,6 +38,11 @@ interface IBLSSignatureChecker {
         // total amount staked by all operators in each quorum
         uint96[] totalStakeForQuorum;
     }
+
+    // EVENTS
+
+    /// @notice Emitted when `staleStakesForbiddenUpdate` is set. Value only set by serviceManagerOwner.
+    event StaleStakesForbiddenUpdate(bool value);   
     
     // CONSTANTS & IMMUTABLES
 
