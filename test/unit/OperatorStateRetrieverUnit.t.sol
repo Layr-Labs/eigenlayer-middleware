@@ -3,7 +3,7 @@ pragma solidity =0.8.12;
 
 import "../utils/MockAVSDeployer.sol";
 
-contract BLSOperatorStateRetrieverUnitTests is MockAVSDeployer {
+contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
     using BN254 for BN254.G1Point;
 
     function setUp() virtual public {
@@ -22,7 +22,7 @@ contract BLSOperatorStateRetrieverUnitTests is MockAVSDeployer {
 
             uint256 gasBefore = gasleft();
             // retrieve the ordered list of operators for each quorum along with their id and stake
-            (uint256 quorumBitmap, BLSOperatorStateRetriever.Operator[][] memory operators) = 
+            (uint256 quorumBitmap, OperatorStateRetriever.Operator[][] memory operators) = 
                 operatorStateRetriever.getOperatorState(registryCoordinator, operatorMetadatas[i].operatorId, blockNumber);
             uint256 gasAfter = gasleft();
             emit log_named_uint("gasUsed", gasBefore - gasAfter);
@@ -92,7 +92,7 @@ contract BLSOperatorStateRetrieverUnitTests is MockAVSDeployer {
 
         bytes32[] memory nonSignerOperatorIds = new bytes32[](0);
 
-        BLSOperatorStateRetriever.CheckSignaturesIndices memory checkSignaturesIndices =
+        OperatorStateRetriever.CheckSignaturesIndices memory checkSignaturesIndices =
             operatorStateRetriever.getCheckSignaturesIndices(
                 registryCoordinator,
                 cumulativeBlockNumber, 
@@ -135,7 +135,7 @@ contract BLSOperatorStateRetrieverUnitTests is MockAVSDeployer {
             nonSignerOperatorIds[i] = operatorMetadatas[(randomIndex + i) % operatorMetadatas.length].operatorId;
         }
 
-        BLSOperatorStateRetriever.CheckSignaturesIndices memory checkSignaturesIndices =
+        OperatorStateRetriever.CheckSignaturesIndices memory checkSignaturesIndices =
             operatorStateRetriever.getCheckSignaturesIndices(
                 registryCoordinator,
                 cumulativeBlockNumber, 
@@ -168,7 +168,7 @@ contract BLSOperatorStateRetrieverUnitTests is MockAVSDeployer {
 
     function _assertExpectedOperators(
         bytes memory quorumNumbers,
-        BLSOperatorStateRetriever.Operator[][] memory operators,
+        OperatorStateRetriever.Operator[][] memory operators,
         uint256[][] memory expectedOperatorOverallIndices,
         OperatorMetadata[] memory operatorMetadatas
     ) internal {

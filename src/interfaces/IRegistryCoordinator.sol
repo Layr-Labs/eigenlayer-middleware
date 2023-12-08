@@ -1,18 +1,29 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
+import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
+import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
+import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
+
 /**
  * @title Interface for a contract that coordinates between various registries for an AVS.
  * @author Layr Labs, Inc.
  */
 interface IRegistryCoordinator {
     // EVENTS
+
     /// Emits when an operator is registered
     event OperatorRegistered(address indexed operator, bytes32 indexed operatorId);
 
     /// Emits when an operator is deregistered
     event OperatorDeregistered(address indexed operator, bytes32 indexed operatorId);
-    
+
+    event OperatorSetParamsUpdated(uint8 indexed quorumNumber, OperatorSetParam operatorSetParams);
+
+    event ChurnApproverUpdated(address prevChurnApprover, address newChurnApprover);
+
+    event EjectorUpdated(address prevEjector, address newEjector);
+
     // DATA STRUCTURES
     enum OperatorStatus
     {
@@ -44,6 +55,46 @@ interface IRegistryCoordinator {
         uint32 nextUpdateBlockNumber;
         uint192 quorumBitmap;
     }
+
+    /**
+     * @notice Data structure for storing operator set params for a given quorum. Specifically the 
+     * `maxOperatorCount` is the maximum number of operators that can be registered for the quorum,
+     * `kickBIPsOfOperatorStake` is the basis points of a new operator needs to have of an operator they are trying to kick from the quorum,
+     * and `kickBIPsOfTotalStake` is the basis points of the total stake of the quorum that an operator needs to be below to be kicked.
+     */ 
+     struct OperatorSetParam {
+        uint32 maxOperatorCount;
+        uint16 kickBIPsOfOperatorStake;
+        uint16 kickBIPsOfTotalStake;
+    }
+
+    /**
+     * @notice Data structure for the parameters needed to kick an operator from a quorum with number `quorumNumber`, used during registration churn.
+     * `operator` is the address of the operator to kick
+     */
+    struct OperatorKickParam {
+        uint8 quorumNumber;
+        address operator;
+    }
+
+    /// @notice Returns the operator set params for the given `quorumNumber`
+    function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory);
+    /// @notice the Stake registry contract that will keep track of operators' stakes
+    function stakeRegistry() external view returns (IStakeRegistry);
+    /// @notice the BLS Aggregate Pubkey Registry contract that will keep track of operators' BLS aggregate pubkeys per quorum
+    function blsApkRegistry() external view returns (IBLSApkRegistry);
+    /// @notice the index Registry contract that will keep track of operators' indexes
+    function indexRegistry() external view returns (IIndexRegistry);
+
+    /**
+     * @notice Ejects the provided operator from the provided quorums from the AVS
+     * @param operator is the operator to eject
+     * @param quorumNumbers are the quorum numbers to eject the operator from
+     */
+    function ejectOperator(
+        address operator, 
+        bytes calldata quorumNumbers
+    ) external;
 
     /// @notice Returns the number of quorums the registry coordinator has created
     function quorumCount() external view returns (uint8);
