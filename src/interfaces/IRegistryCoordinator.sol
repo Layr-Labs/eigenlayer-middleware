@@ -24,6 +24,9 @@ interface IRegistryCoordinator {
 
     event EjectorUpdated(address prevEjector, address newEjector);
 
+    /// @notice emitted when all the operators for a quorum are updated at once
+    event QuorumBlockNumberUpdated(uint8 indexed quorumNumber, uint256 blocknumber);
+    
     // DATA STRUCTURES
     enum OperatorStatus
     {
@@ -134,4 +137,7 @@ interface IRegistryCoordinator {
 
     /// @notice Returns the number of registries
     function numRegistries() external view returns (uint256);
+
+    /// @notice returns the blocknumber the quorum was last updated all at once for all operators
+    function quorumUpdateBlockNumber(uint8 quorumNumber) external view returns (uint256);
 }
