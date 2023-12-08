@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {IRegistryCoordinator, IServiceManager} from "src/interfaces/IRegistryCoordinator.sol";
+import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
-import {IStakeRegistry, IDelegationManager} from "src/interfaces/IStakeRegistry.sol";
+import {IStakeRegistry, IDelegationManager, IServiceManager} from "src/interfaces/IStakeRegistry.sol";
 
 import {BN254} from "src/libraries/BN254.sol";
 

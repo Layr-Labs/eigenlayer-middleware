@@ -2,9 +2,9 @@
 pragma solidity =0.8.12;
 
 import {IBLSSignatureChecker} from "src/interfaces/IBLSSignatureChecker.sol";
-import {IRegistryCoordinator, IServiceManager} from "src/interfaces/IRegistryCoordinator.sol";
+import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
-import {IStakeRegistry, IDelegationManager} from "src/interfaces/IStakeRegistry.sol";
+import {IStakeRegistry, IDelegationManager, IServiceManager} from "src/interfaces/IStakeRegistry.sol";
 
 import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
 import {BN254} from "src/libraries/BN254.sol";
@@ -37,11 +37,11 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
     }
 
     constructor(IRegistryCoordinator _registryCoordinator) {
-        registryCoordinator = IRegistryCoordinator(_registryCoordinator);
+        registryCoordinator = _registryCoordinator;
         stakeRegistry = _registryCoordinator.stakeRegistry();
         blsApkRegistry = _registryCoordinator.blsApkRegistry();
         delegation = stakeRegistry.delegation();
-        serviceManager = _registryCoordinator.serviceManager();
+        serviceManager = stakeRegistry.serviceManager();
         staleStakesForbidden = true;
     }
 
