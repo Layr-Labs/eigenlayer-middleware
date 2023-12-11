@@ -7,7 +7,7 @@ import {IRegistry} from "./IRegistry.sol";
  * @title Interface for a `Registry`-type contract that keeps track of an ordered list of operators for up to 256 quorums.
  * @author Layr Labs, Inc.
  */
-interface IIndexRegistry is IIndexRegistry {
+interface IIndexRegistry is IRegistry {
     // EVENTS
     
     // emitted when an operator's index in the orderd operator list for the quorum with number `quorumNumber` is updated
