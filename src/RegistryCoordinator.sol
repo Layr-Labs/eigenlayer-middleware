@@ -559,7 +559,7 @@ contract RegistryCoordinator is
         // If the operator is no longer registered for any quorums, update their status and deregister from delegationManager
         if (newBitmap.isEmpty()) {
             operatorInfo.status = OperatorStatus.DEREGISTERED;
-            // delegationManager.deregisterOperatorFromAVS(operator);
+            delegationManager.deregisterOperatorFromAVS(operator);
             emit OperatorDeregistered(operator, operatorId);
         }
 

@@ -10,7 +10,7 @@ import {IRegistry} from "./IRegistry.sol";
  * @title Interface for a `Registry` that keeps track of stakes of operators for up to 256 quorums.
  * @author Layr Labs, Inc.
  */
-interface IStakeRegistry is IRegistry {
+interface IStakeRegistry {
     
     // DATA STRUCTURES
 
