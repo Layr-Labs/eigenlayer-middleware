@@ -36,4 +36,24 @@ contract BitmapUtilsWrapper {
     function isSet(uint256 bitmap, uint8 numberToCheckForInclusion) external pure returns (bool) {
         return BitmapUtils.isSet(bitmap, numberToCheckForInclusion);
     }
+
+    function isEmpty(uint256 bitmap) external pure returns (bool) {
+        return BitmapUtils.isEmpty(bitmap);
+    }
+
+    function noBitsInCommon(uint256 a, uint256 b) external pure returns (bool) {
+        return BitmapUtils.noBitsInCommon(a, b);
+    }
+
+    function isSubsetOf(uint256 a, uint256 b) external pure returns (bool) {
+        return BitmapUtils.isSubsetOf(a, b);
+    }
+
+    function plus(uint256 a, uint256 b) external pure returns (uint256) {
+        return BitmapUtils.plus(a, b);
+    }
+
+    function minus(uint256 a, uint256 b) external pure returns (uint256) {
+        return BitmapUtils.minus(a, b);
+    }
 }
