@@ -29,7 +29,7 @@ import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyM
 import {EigenPodManagerMock} from "eigenlayer-contracts/src/test/mocks/EigenPodManagerMock.sol";
 import {ServiceManagerMock} from "test/mocks/ServiceManagerMock.sol";
 import {DelegationManagerMock} from "eigenlayer-contracts/src/test/mocks/DelegationManagerMock.sol";
-import {BLSApkRegistryMock} from "test/mocks/BLSApkRegistryMock.sol";
+import {BLSApkRegistryHarness} from "test/harnesses/BLSApkRegistryHarness.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 
 import {StakeRegistryHarness} from "test/harnesses/StakeRegistryHarness.sol";
@@ -57,7 +57,7 @@ contract MockAVSDeployer is Test {
     OperatorStateRetriever public operatorStateRetriever;
     RegistryCoordinatorHarness public registryCoordinator;
     StakeRegistryHarness public stakeRegistry;
-    BLSApkRegistryMock public blsApkRegistry;
+    BLSApkRegistryHarness public blsApkRegistry;
     IIndexRegistry public indexRegistry;
 
     ServiceManagerMock public serviceManagerMock;
@@ -140,10 +140,6 @@ contract MockAVSDeployer is Test {
             eigenPodManagerMock,
             slasher
         );
-
-        blsApkRegistry = new BLSApkRegistryMock();
-        blsApkRegistry.setBLSPublicKey(defaultOperator, defaultPubKey);
-
         cheats.stopPrank();
 
         cheats.startPrank(serviceManagerOwner);
@@ -177,7 +173,7 @@ contract MockAVSDeployer is Test {
             )
         );
 
-        blsApkRegistry = BLSApkRegistryMock(
+        blsApkRegistry = BLSApkRegistryHarness(
             address(
                 new TransparentUpgradeableProxy(
                     address(emptyContract),
@@ -188,6 +184,7 @@ contract MockAVSDeployer is Test {
         );
 
         cheats.stopPrank();
+
         cheats.startPrank(proxyAdminOwner);
 
         stakeRegistryImplementation = new StakeRegistryHarness(
@@ -201,7 +198,7 @@ contract MockAVSDeployer is Test {
             address(stakeRegistryImplementation)
         );
 
-        blsApkRegistryImplementation = new BLSApkRegistry(
+        blsApkRegistryImplementation = new BLSApkRegistryHarness(
             registryCoordinator
         );
 
@@ -218,6 +215,9 @@ contract MockAVSDeployer is Test {
             TransparentUpgradeableProxy(payable(address(indexRegistry))),
             address(indexRegistryImplementation)
         );
+
+        // set the public key for an operator, using harnessed function to bypass checks
+        blsApkRegistry.setBLSPublicKey(defaultOperator, defaultPubKey);
 
         // setup the dummy minimum stake for quorum
         uint96[] memory minimumStakeForQuorum = new uint96[](numQuorumsToAdd);
