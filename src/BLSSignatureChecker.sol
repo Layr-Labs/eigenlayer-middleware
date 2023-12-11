@@ -4,7 +4,7 @@ pragma solidity =0.8.12;
 import {IBLSSignatureChecker} from "src/interfaces/IBLSSignatureChecker.sol";
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
-import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
+import {IStakeRegistry, IDelegationManager, IServiceManager} from "src/interfaces/IStakeRegistry.sol";
 
 import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
 import {BN254} from "src/libraries/BN254.sol";
@@ -26,11 +26,23 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
     IRegistryCoordinator public immutable registryCoordinator;
     IStakeRegistry public immutable stakeRegistry;
     IBLSApkRegistry public immutable blsApkRegistry;
+    IDelegationManager public immutable delegation;
+    IServiceManager public immutable serviceManager;
+    /// @notice If true, check the staleness of the operator stakes and that its within the delegation withdrawalDelayBlocks window.
+    bool public staleStakesForbidden;
+
+    modifier onlyServiceManagerOwner {
+        require(msg.sender == serviceManager.owner(), "BLSSignatureChecker.onlyServiceManagerOwner: caller is not the service manager owner");
+        _;
+    }
 
     constructor(IRegistryCoordinator _registryCoordinator) {
-        registryCoordinator = IRegistryCoordinator(_registryCoordinator);
+        registryCoordinator = _registryCoordinator;
         stakeRegistry = _registryCoordinator.stakeRegistry();
         blsApkRegistry = _registryCoordinator.blsApkRegistry();
+        delegation = stakeRegistry.delegation();
+        serviceManager = stakeRegistry.serviceManager();
+        staleStakesForbidden = true;
     }
 
     /**
@@ -72,6 +84,12 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         // loop through every quorumNumber and keep track of the apk
         BN254.G1Point memory apk = BN254.G1Point(0, 0);
         for (uint i = 0; i < quorumNumbers.length; i++) {
+            if (staleStakesForbidden) {
+                require(
+                    registryCoordinator.quorumUpdateBlockNumber(uint8(quorumNumbers[i])) + delegation.withdrawalDelayBlocks() <= block.number,
+                    "BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within withdrawalDelayBlocks window"
+                );
+            }
             require(
                 bytes24(nonSignerStakesAndSignature.quorumApks[i].hashG1Point()) == 
                     blsApkRegistry.getApkHashAtBlockNumberAndIndex(
@@ -201,5 +219,15 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                 apkG2,
                 PAIRING_EQUALITY_CHECK_GAS
             );
+    }
+
+    /**
+     * ServiceManager owner can either enforce or not that operator stakes are staler
+     * than the delegation.withdrawalDelayBlocks() window.
+     * @param value to toggle staleStakesForbidden
+     */
+    function setStaleStakesForbidden(bool value) external onlyServiceManagerOwner {
+        staleStakesForbidden = value;
+        emit StaleStakesForbiddenUpdate(value);
     }
 }
