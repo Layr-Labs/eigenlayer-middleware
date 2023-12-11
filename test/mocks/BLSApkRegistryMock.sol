@@ -90,7 +90,16 @@ contract BLSApkRegistryMock is IBLSApkRegistry {
      * @param blockNumber is the number of the block for which the latest ApkHash will be retrieved
      * @param index is the index of the apkUpdate being retrieved from the list of quorum apkUpdates in storage
      */
-    function getApkHashAtBlockNumberAndIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes24) {}
+    function getApkHashAtBlockNumberAndIndex(
+        uint8 quorumNumber,
+        uint32 blockNumber,
+        uint256 index
+    ) external view returns (bytes24) {
+        // ApkUpdate memory quorumApkUpdate = apkHistory[quorumNumber][index];
+        // _validateApkHashAtBlockNumber(quorumApkUpdate, blockNumber);
+        ApkUpdate memory quorumApkUpdate;
+        return quorumApkUpdate.apkHash;
+    }
 
     function getOperatorId(address operator) external view returns (bytes32) {}
 

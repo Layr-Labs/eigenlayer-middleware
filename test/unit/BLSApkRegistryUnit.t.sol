@@ -3,7 +3,7 @@ pragma solidity =0.8.12;
 
 
 import "forge-std/Test.sol";
-import "src/BLSApkRegistry.sol";
+import "test/harnesses/BLSApkRegistryHarness.sol";
 import "test/mocks/RegistryCoordinatorMock.sol";
 
 
@@ -16,7 +16,7 @@ contract BLSApkRegistryUnitTests is Test {
 
     bytes32 internal constant ZERO_PK_HASH = hex"ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5";
 
-    BLSApkRegistry public blsApkRegistry;
+    BLSApkRegistryHarness public blsApkRegistry;
     RegistryCoordinatorMock public registryCoordinator;
 
     BN254.G1Point internal defaultPubKey =  BN254.G1Point(18260007818883133054078754218619977578772505796600400998181738095793040006897,3432351341799135763167709827653955074218841517684851694584291831827675065899);
@@ -28,7 +28,7 @@ contract BLSApkRegistryUnitTests is Test {
     address alice = address(1);
     address bob = address(2);
 
-    uint256 privKey = 9001;
+    uint256 privKey = 69;
 
     uint8 internal defaultQuorumNumber = 0;
 
@@ -37,7 +37,7 @@ contract BLSApkRegistryUnitTests is Test {
 
     function setUp() external {
         registryCoordinator = new RegistryCoordinatorMock();
-        blsApkRegistry = new BLSApkRegistry(registryCoordinator);
+        blsApkRegistry = new BLSApkRegistryHarness(registryCoordinator);
 
         pubKeyG1 = BN254.generatorG1().scalar_mul(privKey);
         
@@ -86,9 +86,8 @@ contract BLSApkRegistryUnitTests is Test {
         BN254.G1Point memory pubkey = BN254.hashToG1(x);
         bytes32 pkHash = BN254.hashG1Point(pubkey);
 
-        cheats.startPrank(operator);
-        // TODO: fix this. it was using a mock contract but is now internal to this contract
-        // blsApkRegistry.registerBLSPublicKey(pubkey);
+        // use harnessed function to directly set the pubkey, bypassing the ordinary checks
+        blsApkRegistry.setBLSPublicKey(operator, pubkey);
         cheats.stopPrank();
 
         //register for one quorum
@@ -124,9 +123,8 @@ contract BLSApkRegistryUnitTests is Test {
             quorumApksBefore[i] = blsApkRegistry.getApk(uint8(quorumNumbers[i]));
         }
 
-        cheats.prank(defaultOperator);
-        // TODO: fix this. it was using a mock contract but is now internal to this contract
-        // blsApkRegistry.registerBLSPublicKey(defaultPubKey);
+        // use harnessed function to directly set the pubkey, bypassing the ordinary checks
+        blsApkRegistry.setBLSPublicKey(defaultOperator, defaultPubKey);
         
         cheats.prank(address(registryCoordinator));
         blsApkRegistry.registerOperator(defaultOperator, quorumNumbers);
@@ -150,9 +148,8 @@ contract BLSApkRegistryUnitTests is Test {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
-        cheats.startPrank(operator);
-        // TODO: fix this. it was using a mock contract but is now internal to this contract
-        // blsApkRegistry.registerBLSPublicKey(negatedQuorumApk);
+        // use harnessed function to directly set the pubkey, bypassing the ordinary checks
+        blsApkRegistry.setBLSPublicKey(operator, negatedQuorumApk);
         cheats.stopPrank();
 
         cheats.startPrank(address(registryCoordinator));
@@ -198,9 +195,8 @@ contract BLSApkRegistryUnitTests is Test {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
-        cheats.startPrank(defaultOperator);
-        // TODO: fix this. it was using a mock contract but is now internal to this contract
-        // blsApkRegistry.registerBLSPublicKey(quorumApksBefore);
+        // use harnessed function to directly set the pubkey, bypassing the ordinary checks
+        blsApkRegistry.setBLSPublicKey(defaultOperator, quorumApksBefore);
         cheats.stopPrank();
 
         cheats.prank(address(registryCoordinator));
