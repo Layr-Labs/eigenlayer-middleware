@@ -11,6 +11,7 @@ contract BLSApkRegistryFFITests is G2Operations {
     Vm cheats = Vm(HEVM_ADDRESS);
 
     BLSApkRegistry blsApkRegistry;
+    IRegistryCoordinator registryCoordinator;
 
     uint256 privKey;
     BN254.G1Point pubKeyG1;
@@ -20,7 +21,6 @@ contract BLSApkRegistryFFITests is G2Operations {
     address alice = address(0x69);
 
     function setUp() public {
-        IRegistryCoordinator registryCoordinator;
         blsApkRegistry = new BLSApkRegistry(registryCoordinator);
     }
 
@@ -30,8 +30,8 @@ contract BLSApkRegistryFFITests is G2Operations {
 
         signedMessageHash = _signMessage(alice);
 
-        vm.prank(alice);
-        blsApkRegistry.registerBLSPublicKey(signedMessageHash, pubKeyG1, pubKeyG2);
+        vm.prank(address(registryCoordinator));
+        blsApkRegistry.registerBLSPublicKey(alice, signedMessageHash, pubKeyG1, pubKeyG2);
 
         assertEq(blsApkRegistry.operatorToPubkeyHash(alice), BN254.hashG1Point(pubKeyG1), "pubkey hash not stored correctly");
         assertEq(blsApkRegistry.pubkeyHashToOperator(BN254.hashG1Point(pubKeyG1)), alice, "operator address not stored correctly");

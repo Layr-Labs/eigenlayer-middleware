@@ -83,12 +83,18 @@ interface IBLSApkRegistry is IRegistry {
     function pubkeyHashToOperator(bytes32 pubkeyHash) external view returns (address);
 
     /**
-     * @notice Called by an operator to register themselves as the owner of a BLS public key and reveal their G1 and G2 public key.
+     * @notice Called by the RegistryCoordinator register an operator as the owner of a BLS public key.
+     * @param operator is the operator for whom the key is being registered
      * @param signedMessageHash is the registration message hash signed by the private key of the operator
      * @param pubkeyG1 is the corresponding G1 public key of the operator 
      * @param pubkeyG2 is the corresponding G2 public key of the operator
      */
-    function registerBLSPublicKey(BN254.G1Point memory signedMessageHash, BN254.G1Point memory pubkeyG1, BN254.G2Point memory pubkeyG2) external;
+    function registerBLSPublicKey(
+        address operator,
+        BN254.G1Point memory signedMessageHash, 
+        BN254.G1Point memory pubkeyG1, 
+        BN254.G2Point memory pubkeyG2
+    ) external;
 
     /**
      * @notice Returns the pubkey and pubkey hash of an operator
