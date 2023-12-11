@@ -289,10 +289,10 @@ library BitmapUtils {
     function countNumOnes(uint256 n) internal pure returns (uint16) {
         uint16 count = 0;
         while (n > 0) {
-            n &= (n - 1);
-            count++;
+            n &= (n - 1); // Clear the least significant bit (turn off the rightmost set bit).
+            count++; // Increment the count for each cleared bit (each one encountered).
         }
-        return count;
+        return count; // Return the total count of ones in the binary representation of n.
     }
 
     /// @notice returns 'true' if `numberToCheckForInclusion` is in `bitmap` and 'false' otherwise.
