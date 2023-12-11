@@ -9,6 +9,7 @@ import {EIP1271SignatureUtils} from "eigenlayer-contracts/src/contracts/librarie
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {Pausable} from "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
+import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
@@ -62,6 +63,8 @@ contract RegistryCoordinator is
     IStakeRegistry public immutable stakeRegistry;
     /// @notice the Index Registry contract that will keep track of operators' indexes
     IIndexRegistry public immutable indexRegistry;
+    /// @notice The Delegation Manager contract to record operator avs relationships
+    IDelegationManager public immutable delegationManager;
 
     /// @notice the current number of quorums supported by the registry coordinator
     uint8 public quorumCount;
@@ -98,11 +101,13 @@ contract RegistryCoordinator is
     }
 
     constructor(
+        IDelegationManager _delegationManager,
         ISlasher _slasher,
         IStakeRegistry _stakeRegistry,
         IBLSApkRegistry _blsApkRegistry,
         IIndexRegistry _indexRegistry
     ) EIP712("AVSRegistryCoordinator", "v0.0.1") {
+        delegationManager = _delegationManager;
         slasher = _slasher;
         stakeRegistry = _stakeRegistry;
         blsApkRegistry = _blsApkRegistry;
@@ -151,10 +156,13 @@ contract RegistryCoordinator is
      * @notice Registers msg.sender as an operator for one or more quorums. If any quorum reaches its maximum
      * operator capacity, this method will fail.
      * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for
+     * @param socket is the socket of the operator
+     * @param operatorSignature is the signature of the operator used by the AVS to register the operator in the delegation manager
      */
     function registerOperator(
         bytes calldata quorumNumbers,
-        string calldata socket
+        string calldata socket,
+        SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         bytes32 operatorId = blsApkRegistry.getOperatorId(msg.sender);
 
@@ -163,7 +171,8 @@ contract RegistryCoordinator is
             operator: msg.sender, 
             operatorId: operatorId,
             quorumNumbers: quorumNumbers, 
-            socket: socket
+            socket: socket,
+            operatorSignature: operatorSignature
         });
 
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
@@ -189,12 +198,14 @@ contract RegistryCoordinator is
      * @param operatorKickParams are used to determine which operator is removed to maintain quorum capacity as the
      * operator registers for quorums.
      * @param churnApproverSignature is the signature of the churnApprover on the operator kick params
+     * @param operatorSignature is the signature of the operator used by the AVS to register the operator in the delegation manager
      */
     function registerOperatorWithChurn(
         bytes calldata quorumNumbers, 
         string calldata socket,
         OperatorKickParam[] calldata operatorKickParams,
-        SignatureWithSaltAndExpiry memory churnApproverSignature
+        SignatureWithSaltAndExpiry memory churnApproverSignature,
+        SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         require(operatorKickParams.length == quorumNumbers.length, "RegistryCoordinator.registerOperatorWithChurn: input length mismatch");
 
@@ -212,10 +223,10 @@ contract RegistryCoordinator is
             operator: msg.sender,
             operatorId: operatorId,
             quorumNumbers: quorumNumbers,
-            socket: socket
+            socket: socket,
+            operatorSignature: operatorSignature
         });
 
-        uint256 kickIndex = 0;
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             
@@ -236,7 +247,6 @@ contract RegistryCoordinator is
                 });
 
                 _deregisterOperator(operatorKickParams[i].operator, quorumNumbers[i:i+1]);
-                kickIndex++;
             }
         }
     }
@@ -404,6 +414,15 @@ contract RegistryCoordinator is
         _setEjector(_ejector);
     }
 
+    /**
+     * @notice Sets the metadata URI for the AVS
+     * @param _metadataURI is the metadata URI for the AVS
+     * @dev only callable by the service manager owner
+     */
+    function setMetadataURI(string memory _metadataURI) external onlyServiceManagerOwner {
+        delegationManager.updateAVSMetadataURI(_metadataURI);
+    }
+
     /*******************************************************************************
                             INTERNAL FUNCTIONS
     *******************************************************************************/
@@ -422,7 +441,8 @@ contract RegistryCoordinator is
         address operator, 
         bytes32 operatorId,
         bytes calldata quorumNumbers,
-        string memory socket
+        string memory socket,
+        SignatureWithSaltAndExpiry memory operatorSignature
     ) internal virtual returns (RegisterResults memory) {
         /**
          * Get bitmap of quorums to register for and operator's current bitmap. Validate that:
@@ -453,6 +473,9 @@ contract RegistryCoordinator is
                 operatorId: operatorId,
                 status: OperatorStatus.REGISTERED
             });
+
+            // Register the operator with the delegation manager
+            delegationManager.registerOperatorToAVS(operator, operatorSignature);
 
             emit OperatorRegistered(operator, operatorId);
         }
@@ -533,9 +556,10 @@ contract RegistryCoordinator is
             newBitmap: newBitmap
         });
 
-        // If the operator is no longer registered for any quorums, update their status
+        // If the operator is no longer registered for any quorums, update their status and deregister from delegationManager
         if (newBitmap.isEmpty()) {
             operatorInfo.status = OperatorStatus.DEREGISTERED;
+            // delegationManager.deregisterOperatorFromAVS(operator);
             emit OperatorDeregistered(operator, operatorId);
         }
 
