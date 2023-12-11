@@ -15,15 +15,42 @@ contract BitmapUtilsUnitTests is Test {
         bitmapUtilsWrapper = new BitmapUtilsWrapper();
     }
 
-    // ensure that the bitmap encoding of an emtpy bytes array is an emtpy bitmap (function doesn't revert and approriately returns uint256(0))
-    function testEmptyArrayEncoding() public view {
+    // @notice check for consistency of `countNumOnes` function
+    function testCountNumOnes(uint256 input) public view {
+        uint16 libraryOutput = bitmapUtilsWrapper.countNumOnes(input);
+        // run dumb routine
+        uint16 numOnes = 0;
+        for (uint256 i = 0; i < 256; ++i) {
+            if ((input >> i) & 1 == 1) {
+                ++numOnes; 
+            }
+        }
+        require(libraryOutput == numOnes, "inconsistency in countNumOnes function");
+    }
+
+    // @notice some simple sanity checks on the `numberIsInBitmap` function
+    function testNumberIsInBitmap() public view {
+        require(bitmapUtilsWrapper.numberIsInBitmap(2 ** 6, 6), "numberIsInBitmap function is broken 0");
+        require(bitmapUtilsWrapper.numberIsInBitmap(1, 0), "numberIsInBitmap function is broken 1");
+        require(bitmapUtilsWrapper.numberIsInBitmap(255, 7), "numberIsInBitmap function is broken 2");
+        require(bitmapUtilsWrapper.numberIsInBitmap(1024, 10), "numberIsInBitmap function is broken 3");
+        for (uint256 i = 0; i < 256; ++i) {
+            require(bitmapUtilsWrapper.numberIsInBitmap(type(uint256).max, uint8(i)), "numberIsInBitmap function is broken 4");
+            require(!bitmapUtilsWrapper.numberIsInBitmap(0, uint8(i)), "numberIsInBitmap function is broken 5");
+        }
+    }
+}
+
+contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
+    // ensure that the bitmap encoding of an empty bytes array is an empty bitmap (function doesn't revert and approriately returns uint256(0))
+    function test_EmptyArrayEncoding() public view {
         bytes memory emptyBytesArray;
         uint256 returnedBitMap = bitmapUtilsWrapper.bytesArrayToBitmap(emptyBytesArray);
         require(returnedBitMap == 0, "BitmapUtilsUnitTests.testEmptyArrayEncoding: empty array not encoded to empty bitmap");
     }
 
     // ensure that the bitmap encoding of a single uint8 (i.e. a single byte) matches the expected output
-    function testSingleByteEncoding(uint8 fuzzedNumber) public view {
+    function testFuzz_SingleByteEncoding(uint8 fuzzedNumber) public view {
         bytes1 singleByte = bytes1(fuzzedNumber);
         bytes memory bytesArray = abi.encodePacked(singleByte);
         uint256 returnedBitMap = bitmapUtilsWrapper.bytesArrayToBitmap(bytesArray);
@@ -32,7 +59,7 @@ contract BitmapUtilsUnitTests is Test {
     }
 
     // ensure that the bitmap encoding of a two uint8's (i.e. a two byte array) matches the expected output
-    function testTwoByteEncoding(uint8 firstFuzzedNumber, uint8 secondFuzzedNumber) public {
+    function testFuzz_TwoByteEncoding(uint8 firstFuzzedNumber, uint8 secondFuzzedNumber) public {
         bytes1 firstSingleByte = bytes1(firstFuzzedNumber);
         bytes1 secondSingleByte = bytes1(secondFuzzedNumber);
         bytes memory bytesArray = abi.encodePacked(firstSingleByte, secondSingleByte);
@@ -48,9 +75,9 @@ contract BitmapUtilsUnitTests is Test {
         }
     }
 
-    // ensure that converting bytes array => bitmap => bytes array is returns the original bytes array (i.e. is lossless and artifactless)
+    // ensure that converting bytes array => bitmap => bytes array returns the original bytes array (i.e. is lossless and artifactless)
     // note that this only works on ordered arrays, because unordered arrays will be returned ordered
-    function testBytesArrayToBitmapToBytesArray(bytes memory originalBytesArray) public view {
+    function testFuzz_BytesArrayToBitmapToBytesArray(bytes memory originalBytesArray) public view {
         // filter down to only ordered inputs
         cheats.assume(bitmapUtilsWrapper.isArrayStrictlyAscendingOrdered(originalBytesArray));
         uint256 bitmap = bitmapUtilsWrapper.bytesArrayToBitmap(originalBytesArray);
@@ -96,13 +123,6 @@ contract BitmapUtilsUnitTests is Test {
         bytes memory returnedBytesArray = bitmapUtilsWrapper.bitmapToBytesArray(bitmap);
         require(keccak256(abi.encodePacked(originalBytesArray)) == keccak256(abi.encodePacked(returnedBytesArray)),
             "BitmapUtilsUnitTests.testBytesArrayToBitmapToBytesArray: output doesn't match input");
-    }
-
-    // ensure that converting bitmap => bytes array => bitmap is returns the original bitmap (i.e. is lossless and artifactless)
-    function testBitMapToBytesArrayToBitmap(uint256 originalBitmap) public view {
-        bytes memory bytesArray = bitmapUtilsWrapper.bitmapToBytesArray(originalBitmap);
-        uint256 returnedBitMap = bitmapUtilsWrapper.bytesArrayToBitmap(bytesArray);
-        require(returnedBitMap == originalBitmap, "BitmapUtilsUnitTests.testBitMapToArrayToBitmap: output doesn't match input");
     }
 
     // testing one function for a specific input. used for comparing gas costs
@@ -152,29 +172,37 @@ contract BitmapUtilsUnitTests is Test {
         uint256 gasSpent = gasLeftBefore - gasLeftAfter;
         emit log_named_uint("gasSpent", gasSpent);
     }
+}
 
-    // @notice check for consistency of `countNumOnes` function
-    function testCountNumOnes(uint256 input) public view {
-        uint16 libraryOutput = bitmapUtilsWrapper.countNumOnes(input);
-        // run dumb routine
-        uint16 numOnes = 0;
-        for (uint256 i = 0; i < 256; ++i) {
-            if ((input >> i) & 1 == 1) {
-                ++numOnes; 
-            }
-        }
-        require(libraryOutput == numOnes, "inconsistency in countNumOnes function");
+contract BitmapUtilsUnitTests_bitmapToBytesArray is BitmapUtilsUnitTests {
+    // ensure that converting bitmap => bytes array => bitmap is returns the original bitmap (i.e. is lossless and artifactless)
+    function testBitMapToBytesArrayToBitmap(uint256 originalBitmap) public view {
+        bytes memory bytesArray = bitmapUtilsWrapper.bitmapToBytesArray(originalBitmap);
+        uint256 returnedBitMap = bitmapUtilsWrapper.bytesArrayToBitmap(bytesArray);
+        require(returnedBitMap == originalBitmap, "BitmapUtilsUnitTests.testBitMapToArrayToBitmap: output doesn't match input");
     }
+}
 
-    // @notice some simple sanity checks on the `numberIsInBitmap` function
-    function testNumberIsInBitmap() public view {
-        require(bitmapUtilsWrapper.numberIsInBitmap(2 ** 6, 6), "numberIsInBitmap function is broken 0");
-        require(bitmapUtilsWrapper.numberIsInBitmap(1, 0), "numberIsInBitmap function is broken 1");
-        require(bitmapUtilsWrapper.numberIsInBitmap(255, 7), "numberIsInBitmap function is broken 2");
-        require(bitmapUtilsWrapper.numberIsInBitmap(1024, 10), "numberIsInBitmap function is broken 3");
-        for (uint256 i = 0; i < 256; ++i) {
-            require(bitmapUtilsWrapper.numberIsInBitmap(type(uint256).max, uint8(i)), "numberIsInBitmap function is broken 4");
-            require(!bitmapUtilsWrapper.numberIsInBitmap(0, uint8(i)), "numberIsInBitmap function is broken 5");
-        }
+contract BitmapUtilsUnitTests_isArrayStrictlyAscendingOrdered is BitmapUtilsUnitTests {
+    function test_DifferentBytesArrayOrdering() public {
+        // Descending order and duplicate element bytes arrays should return false
+        bytes memory descendingBytesArray = abi.encodePacked(
+            bytes1(uint8(12)), bytes1(uint8(11)), bytes1(uint8(10)), bytes1(uint8(9)), bytes1(uint8(8)), bytes1(uint8(7)), bytes1(uint8(6)), bytes1(uint8(5))
+        );
+        assertFalse(bitmapUtilsWrapper.isArrayStrictlyAscendingOrdered(descendingBytesArray));
+        bytes memory duplicateBytesArray = abi.encodePacked(
+            bytes1(uint8(5)), bytes1(uint8(5)), bytes1(uint8(5)), bytes1(uint8(5)), bytes1(uint8(5)), bytes1(uint8(5)), bytes1(uint8(5)), bytes1(uint8(5))
+        );
+        assertFalse(bitmapUtilsWrapper.isArrayStrictlyAscendingOrdered(duplicateBytesArray));
+        // Strictly ascending returns true
+        bytes memory ascendingBytesArray = abi.encodePacked(
+            bytes1(uint8(5)), bytes1(uint8(6)), bytes1(uint8(7)), bytes1(uint8(8)), bytes1(uint8(9)), bytes1(uint8(10)), bytes1(uint8(11)), bytes1(uint8(12))
+        );
+        assertTrue(bitmapUtilsWrapper.isArrayStrictlyAscendingOrdered(ascendingBytesArray));
+        // Empty bytes array and single element bytes array returns true
+        bytes memory emptyBytesArray;
+        assertTrue(bitmapUtilsWrapper.isArrayStrictlyAscendingOrdered(emptyBytesArray));
+        bytes memory singleBytesArray = abi.encodePacked(bytes1(uint8(1)));
+        assertTrue(bitmapUtilsWrapper.isArrayStrictlyAscendingOrdered(singleBytesArray));
     }
 }
