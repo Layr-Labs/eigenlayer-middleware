@@ -6,7 +6,6 @@ import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/
 import {StakeRegistryStorage} from "src/StakeRegistryStorage.sol";
 
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
-import {IServiceManager} from "src/interfaces/IServiceManager.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 
 import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
@@ -30,8 +29,8 @@ contract StakeRegistry is StakeRegistryStorage {
         _;
     }
 
-    modifier onlyServiceManagerOwner() {
-        require(msg.sender == serviceManager.owner(), "StakeRegistry.onlyServiceManagerOwner: caller is not the owner of the serviceManager");
+    modifier onlyCoordinatorOwner() {
+        require(msg.sender == registryCoordinator.owner(), "StakeRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator");
         _;
     }
 
@@ -42,9 +41,8 @@ contract StakeRegistry is StakeRegistryStorage {
 
     constructor(
         IRegistryCoordinator _registryCoordinator,
-        IDelegationManager _delegationManager,
-        IServiceManager _serviceManager
-    ) StakeRegistryStorage(_registryCoordinator, _delegationManager, _serviceManager) {}
+        IDelegationManager _delegationManager
+    ) StakeRegistryStorage(_registryCoordinator, _delegationManager) {}
 
     /*******************************************************************************
                       EXTERNAL FUNCTIONS - REGISTRY COORDINATOR
@@ -208,7 +206,7 @@ contract StakeRegistry is StakeRegistryStorage {
     function setMinimumStakeForQuorum(
         uint8 quorumNumber, 
         uint96 minimumStake
-    ) public virtual onlyServiceManagerOwner quorumExists(quorumNumber) {
+    ) public virtual onlyCoordinatorOwner quorumExists(quorumNumber) {
         _setMinimumStakeForQuorum(quorumNumber, minimumStake);
     }
 
@@ -221,7 +219,7 @@ contract StakeRegistry is StakeRegistryStorage {
     function addStrategies(
         uint8 quorumNumber, 
         StrategyParams[] memory _strategyParams
-    ) public virtual onlyServiceManagerOwner quorumExists(quorumNumber) {
+    ) public virtual onlyCoordinatorOwner quorumExists(quorumNumber) {
         _addStrategyParams(quorumNumber, _strategyParams);
     }
 
@@ -233,7 +231,7 @@ contract StakeRegistry is StakeRegistryStorage {
     function removeStrategies(
         uint8 quorumNumber,
         uint256[] memory indicesToRemove
-    ) public virtual onlyServiceManagerOwner quorumExists(quorumNumber) {
+    ) public virtual onlyCoordinatorOwner quorumExists(quorumNumber) {
         uint256 toRemoveLength = indicesToRemove.length;
         require(toRemoveLength > 0, "StakeRegistry.removeStrategies: no indices to remove provided");
 
@@ -259,7 +257,7 @@ contract StakeRegistry is StakeRegistryStorage {
         uint8 quorumNumber,
         uint256[] calldata strategyIndices,
         uint96[] calldata newMultipliers
-    ) public virtual onlyServiceManagerOwner quorumExists(quorumNumber) {
+    ) public virtual onlyCoordinatorOwner quorumExists(quorumNumber) {
         uint256 numStrats = strategyIndices.length;
         require(numStrats > 0, "StakeRegistry.modifyStrategyParams: no strategy indices provided");
         require(newMultipliers.length == numStrats, "StakeRegistry.modifyStrategyParams: input length mismatch");

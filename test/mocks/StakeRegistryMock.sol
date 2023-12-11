@@ -78,7 +78,6 @@ contract StakeRegistryMock is IStakeRegistry {
     ) external {}
 
     function delegation() external view returns (IDelegationManager) {}
-    function serviceManager() external view returns (IServiceManager) {}
 
     function WEIGHTING_DIVISOR() external pure returns (uint256) {}
 

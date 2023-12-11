@@ -4,7 +4,7 @@ pragma solidity =0.8.12;
 import {IBLSSignatureChecker} from "src/interfaces/IBLSSignatureChecker.sol";
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
-import {IStakeRegistry, IDelegationManager, IServiceManager} from "src/interfaces/IStakeRegistry.sol";
+import {IStakeRegistry, IDelegationManager} from "src/interfaces/IStakeRegistry.sol";
 
 import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
 import {BN254} from "src/libraries/BN254.sol";
@@ -27,12 +27,11 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
     IStakeRegistry public immutable stakeRegistry;
     IBLSApkRegistry public immutable blsApkRegistry;
     IDelegationManager public immutable delegation;
-    IServiceManager public immutable serviceManager;
     /// @notice If true, check the staleness of the operator stakes and that its within the delegation withdrawalDelayBlocks window.
     bool public staleStakesForbidden;
 
-    modifier onlyServiceManagerOwner {
-        require(msg.sender == serviceManager.owner(), "BLSSignatureChecker.onlyServiceManagerOwner: caller is not the service manager owner");
+    modifier onlyCoordinatorOwner() {
+        require(msg.sender == registryCoordinator.owner(), "BLSSignatureChecker.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator");
         _;
     }
 
@@ -41,8 +40,18 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         stakeRegistry = _registryCoordinator.stakeRegistry();
         blsApkRegistry = _registryCoordinator.blsApkRegistry();
         delegation = stakeRegistry.delegation();
-        serviceManager = stakeRegistry.serviceManager();
+        
         staleStakesForbidden = true;
+    }
+
+    /**
+     * RegistryCoordinator owner can either enforce or not that operator stakes are staler
+     * than the delegation.withdrawalDelayBlocks() window.
+     * @param value to toggle staleStakesForbidden
+     */
+    function setStaleStakesForbidden(bool value) external onlyCoordinatorOwner {
+        staleStakesForbidden = value;
+        emit StaleStakesForbiddenUpdate(value);
     }
 
     /**
@@ -219,15 +228,5 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                 apkG2,
                 PAIRING_EQUALITY_CHECK_GAS
             );
-    }
-
-    /**
-     * ServiceManager owner can either enforce or not that operator stakes are staler
-     * than the delegation.withdrawalDelayBlocks() window.
-     * @param value to toggle staleStakesForbidden
-     */
-    function setStaleStakesForbidden(bool value) external onlyServiceManagerOwner {
-        staleStakesForbidden = value;
-        emit StaleStakesForbiddenUpdate(value);
     }
 }

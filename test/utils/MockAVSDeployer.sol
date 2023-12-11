@@ -20,7 +20,6 @@ import {RegistryCoordinatorHarness} from "test/harnesses/RegistryCoordinatorHarn
 import {BLSApkRegistry} from "src/BLSApkRegistry.sol";
 import {StakeRegistry} from "src/StakeRegistry.sol";
 import {IndexRegistry} from "src/IndexRegistry.sol";
-import {IServiceManager} from "src/interfaces/IServiceManager.sol";
 import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
@@ -29,7 +28,6 @@ import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
 import {EigenPodManagerMock} from "eigenlayer-contracts/src/test/mocks/EigenPodManagerMock.sol";
-import {ServiceManagerMock} from "test/mocks/ServiceManagerMock.sol";
 import {OwnableMock} from "eigenlayer-contracts/src/test/mocks/OwnableMock.sol";
 import {DelegationManagerMock} from "eigenlayer-contracts/src/test/mocks/DelegationManagerMock.sol";
 import {SlasherMock} from "eigenlayer-contracts/src/test/mocks/SlasherMock.sol";
@@ -65,13 +63,12 @@ contract MockAVSDeployer is Test {
     IBLSApkRegistry public blsApkRegistry;
     IIndexRegistry public indexRegistry;
 
-    ServiceManagerMock public serviceManagerMock;
     StrategyManagerMock public strategyManagerMock;
     DelegationManagerMock public delegationMock;
     EigenPodManagerMock public eigenPodManagerMock;
 
     address public proxyAdminOwner = address(uint160(uint256(keccak256("proxyAdminOwner"))));
-    address public serviceManagerOwner = address(uint160(uint256(keccak256("serviceManagerOwner"))));
+    address public registryCoordinatorOwner = address(uint160(uint256(keccak256("registryCoordinatorOwner"))));
     address public pauser = address(uint160(uint256(keccak256("pauser"))));
     address public unpauser = address(uint160(uint256(keccak256("unpauser"))));
 
@@ -151,9 +148,7 @@ contract MockAVSDeployer is Test {
 
         cheats.stopPrank();
 
-        cheats.startPrank(serviceManagerOwner);
-        // make the serviceManagerOwner the owner of the serviceManager contract
-        serviceManagerMock = new ServiceManagerMock(slasher);
+        cheats.startPrank(registryCoordinatorOwner);
         registryCoordinator = RegistryCoordinatorHarness(address(
             new TransparentUpgradeableProxy(
                 address(emptyContract),
@@ -197,8 +192,7 @@ contract MockAVSDeployer is Test {
 
         stakeRegistryImplementation = new StakeRegistryHarness(
             IRegistryCoordinator(registryCoordinator),
-            delegationMock,
-            IServiceManager(address(serviceManagerMock))
+            delegationMock
         );
 
         proxyAdmin.upgrade(
@@ -244,7 +238,6 @@ contract MockAVSDeployer is Test {
 
         registryCoordinatorImplementation = new RegistryCoordinatorHarness(
             slasher,
-            serviceManagerMock,
             stakeRegistry,
             blsApkRegistry,
             indexRegistry
@@ -265,6 +258,7 @@ contract MockAVSDeployer is Test {
                 address(registryCoordinatorImplementation),
                 abi.encodeWithSelector(
                     RegistryCoordinator.initialize.selector,
+                    registryCoordinatorOwner,
                     churnApprover,
                     ejector,
                     pauserRegistry,

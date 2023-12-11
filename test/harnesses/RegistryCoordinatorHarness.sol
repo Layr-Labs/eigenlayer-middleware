@@ -7,11 +7,11 @@ import "src/RegistryCoordinator.sol";
 contract RegistryCoordinatorHarness is RegistryCoordinator {
     constructor(
         ISlasher _slasher,
-        IServiceManager _serviceManager,
         IStakeRegistry _stakeRegistry,
         IBLSApkRegistry _blsApkRegistry,
         IIndexRegistry _indexRegistry
-    ) RegistryCoordinator(_slasher, _serviceManager, _stakeRegistry, _blsApkRegistry, _indexRegistry) {
+    ) RegistryCoordinator(_slasher, _stakeRegistry, _blsApkRegistry, _indexRegistry) {
+        _transferOwnership(msg.sender);
     }
 
     function setQuorumCount(uint8 count) external {
