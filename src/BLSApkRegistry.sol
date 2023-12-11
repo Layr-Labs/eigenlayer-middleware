@@ -94,22 +94,24 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     }
 
     /**
-     * @notice Called by an operator to register themselves as the owner of a BLS public key and reveal their G1 and G2 public key.
+     * @notice Called by the RegistryCoordinator register an operator as the owner of a BLS public key.
+     * @param operator is the operator for whom the key is being registered
      * @param signedMessageHash is the registration message hash signed by the private key of the operator
      * @param pubkeyG1 is the corresponding G1 public key of the operator 
      * @param pubkeyG2 is the corresponding G2 public key of the operator
      */
     function registerBLSPublicKey(
+        address operator,
         BN254.G1Point memory signedMessageHash, 
         BN254.G1Point memory pubkeyG1, 
         BN254.G2Point memory pubkeyG2
-    ) external {
+    ) external onlyRegistryCoordinator {
         bytes32 pubkeyHash = BN254.hashG1Point(pubkeyG1);
         require(
             pubkeyHash != ZERO_PK_HASH, "BLSApkRegistry.registerBLSPublicKey: cannot register zero pubkey"
         );
         require(
-            operatorToPubkeyHash[msg.sender] == bytes32(0),
+            operatorToPubkeyHash[operator] == bytes32(0),
             "BLSApkRegistry.registerBLSPublicKey: operator already registered pubkey"
         );
         require(
@@ -118,7 +120,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         );
 
         // H(m) 
-        BN254.G1Point memory messageHash = getMessageHash(msg.sender);
+        BN254.G1Point memory messageHash = getMessageHash(operator);
 
         // gamma = h(sigma, P, P', H(m))
         uint256 gamma = uint256(keccak256(abi.encodePacked(
@@ -140,11 +142,11 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
             pubkeyG2
         ), "BLSApkRegistry.registerBLSPublicKey: either the G1 signature is wrong, or G1 and G2 private key do not match");
 
-        operatorToPubkey[msg.sender] = pubkeyG1;
-        operatorToPubkeyHash[msg.sender] = pubkeyHash;
-        pubkeyHashToOperator[pubkeyHash] = msg.sender;
+        operatorToPubkey[operator] = pubkeyG1;
+        operatorToPubkeyHash[operator] = pubkeyHash;
+        pubkeyHashToOperator[pubkeyHash] = operator;
 
-        emit NewPubkeyRegistration(msg.sender, pubkeyG1, pubkeyG2);
+        emit NewPubkeyRegistration(operator, pubkeyG1, pubkeyG2);
     }
 
     /*******************************************************************************
