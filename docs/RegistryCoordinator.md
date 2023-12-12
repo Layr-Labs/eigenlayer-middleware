@@ -1,3 +1,7 @@
+[core-dmgr-docs]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/m2-mainnet/docs/core/DelegationManager.md
+[core-dmgr-register]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/m2-mainnet/docs/core/DelegationManager.md#registeroperatortoavs
+[core-dmgr-deregister]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/m2-mainnet/docs/core/DelegationManager.md#deregisteroperatorfromavs
+
 ## RegistryCoordinator
 
 | File | Type | Proxy? |
@@ -18,11 +22,9 @@ This document organizes methods according to the following themes (click each to
 
 #### Roles
 
-TODO
-
-* Owner
-* Ejector
-* Churn Approver
+* Owner: a permissioned role that can create and configure quorums as well as manage other roles
+* Ejector: a permissioned role that can forcibly eject an operator from a quorum via `RegistryCoordinator.ejectOperator`
+* Churn Approver: a permissioned role that signs off on operation churn in `RegistryCoordinator.registerOperatorWithChurn`
 
 ---    
 
@@ -39,7 +41,8 @@ These methods allow operators to register for/deregister from one or more quorum
 ```solidity
 function registerOperator(
     bytes calldata quorumNumbers,
-    string calldata socket
+    string calldata socket,
+    SignatureWithSaltAndExpiry memory operatorSignature
 ) 
     external 
     onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR)
@@ -50,8 +53,12 @@ Registers the caller as an Operator for one or more quorums, as long as registra
 * `StakeRegistry.registerOperator`
 * `IndexRegistry.registerOperator`
 
+If the Operator was not currently registered for any quorums, this method will register the Operator to the AVS in the EigenLayer core contracts (`DelegationManager.registerOperatorToAVS`), passing in the provided `operatorSignature`. See the [`DelegationManager` docs][core-dmgr-docs] for more details.
+
 *Effects*:
-* If the Operator was not currently registered for any quorums, updates their status to `REGISTERED`
+* If the Operator was not currently registered for any quorums: 
+    * Updates their status to `REGISTERED`
+    * Registers them in the core contracts (see [`DelegationManager.registerOperatorToAVS`][core-dmgr-register])
 * Adds the new quorums to the Operator's current registered quorums, and updates the Operator's bitmap history
 * See [`BLSApkRegistry.registerOperator`](./registries/BLSApkRegistry.md#registeroperator)
 * See [`StakeRegistry.registerOperator`](./registries/StakeRegistry.md#registeroperator)
@@ -63,6 +70,8 @@ Registers the caller as an Operator for one or more quorums, as long as registra
 * `quorumNumbers` MUST be an ordered array of quorum numbers, with no entry exceeding the current `quorumCount`
 * `quorumNumbers` MUST contain at least one valid quorum
 * `quorumNumbers` MUST NOT contain any quorums the Operator is already registered for
+* If the Operator was not currently registered for any quorums:
+    * See [`DelegationManager.registerOperatorToAVS`][core-dmgr-register]
 * See [`BLSApkRegistry.registerOperator`](./registries/BLSApkRegistry.md#registeroperator)
 * See [`StakeRegistry.registerOperator`](./registries/StakeRegistry.md#registeroperator)
 * See [`IndexRegistry.registerOperator`](./registries/IndexRegistry.md#registeroperator)
@@ -75,7 +84,8 @@ function registerOperatorWithChurn(
     bytes calldata quorumNumbers, 
     string calldata socket,
     OperatorKickParam[] calldata operatorKickParams,
-    SignatureWithSaltAndExpiry memory churnApproverSignature
+    SignatureWithSaltAndExpiry memory churnApproverSignature,
+    SignatureWithSaltAndExpiry memory operatorSignature
 ) 
     external 
     onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR)
@@ -153,6 +163,7 @@ Allows the Ejector to forcibly deregister an Operator from one or more quorums.
 
 These methods concern Operators that are currently registered for at least one quorum:
 * [`updateOperators`](#updateoperators)
+* [`updateOperatorsForQuorum`](#updateoperatorsforquorum)
 * [`updateSocket`](#updatesocket)
 
 #### `updateOperators`
@@ -175,6 +186,35 @@ The `StakeRegistry` returns a bitmap of quorums where the Operator no longer mee
 
 *Requirements*:
 * Pause status MUST NOT be set: `PAUSED_UPDATE_OPERATOR`
+* See [`StakeRegistry.updateOperatorStake`](./registries/StakeRegistry.md#updateoperatorstake)
+
+#### `updateOperatorsForQuorum`
+
+```solidity
+function updateOperatorsForQuorum(
+    address[][] calldata operatorsPerQuorum,
+    bytes calldata quorumNumbers
+) 
+    external 
+    onlyWhenNotPaused(PAUSED_UPDATE_OPERATOR)
+```
+
+Can be called by anyone to update the stake of ALL Operators in one or more quorums simultaneously. This method works similarly to `updateOperators` above, but with the requirement that, for each quorum being updated, the respective `operatorsPerQuorum` passed in is the complete set of Operators currently registered for that quorum.
+
+This method also updates each quorum's `quorumUpdateBlockNumber`, signifying that the quorum's entire Operator set was updated at the current block number. (This is used by the `BLSSignatureChecker` to ensure that signature and stake validation is performed on up-to-date stake.)
+
+*Effects*:
+* See `updateOperators` above
+* Updates each quorum's `quorumUpdateBlockNumber` to the current block
+* For any quorums where the Operator no longer meets the minimum stake, they are deregistered (see `deregisterOperator` above).
+
+*Requirements*:
+* Pause status MUST NOT be set: `PAUSED_UPDATE_OPERATOR`
+* See `updateOperators` above
+* `quorumNumbers` MUST be an ordered array of quorum numbers, with no entry exceeding the current `quorumCount`
+* All `quorumNumbers` MUST correspond to valid, initialized quorums
+* `operatorsPerQuorum` and `quorumNumbers` MUST have the same lengths
+* Each entry in `operatorsPerQuorum` MUST contain an order list of the currently-registered Operator addresses in the corresponding quorum
 * See [`StakeRegistry.updateOperatorStake`](./registries/StakeRegistry.md#updateoperatorstake)
 
 #### `updateSocket`

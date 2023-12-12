@@ -78,6 +78,8 @@ The main thing that links an AVS to the EigenLayer core contracts is that when E
 
 These methods ensure that the operator registering with the AVS is also registered as an operator in EigenLayer core. In this repo, these methods are called by the `RegistryCoordinator`.
 
+Eventually, operator slashing and payment for services will be part of the middleware/core relationship, but these features aren't implemented yet and their design is a work in progress.
+
 ### System Components
 
 #### Registries
