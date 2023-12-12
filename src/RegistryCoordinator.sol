@@ -231,10 +231,9 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
             socket: socket
         });
 
-        uint256 kickIndex = 0;
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            // reference: uint8 quorumNumber = uint8(quorumNumbers[i]);
-            OperatorSetParam memory operatorSetParams = _quorumParams[uint8(quorumNumbers[i])];
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+            OperatorSetParam memory operatorSetParams = _quorumParams[quorumNumber];
             
             /**
              * If the new operator count for any quorum exceeds the maximum, validate
@@ -242,7 +241,7 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
              */
             if (results.numOperatorsPerQuorum[i] > operatorSetParams.maxOperatorCount) {
                 _validateChurn({
-                    quorumNumber: uint8(quorumNumbers[i]),
+                    quorumNumber: quorumNumber,
                     totalQuorumStake: results.totalStakes[i],
                     newOperator: msg.sender,
                     newOperatorStake: results.operatorStakes[i],
@@ -251,7 +250,6 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
                 });
 
                 _deregisterOperator(operatorKickParams[i].operator, quorumNumbers[i:i+1]);
-                kickIndex++;
             }
         }
     }
