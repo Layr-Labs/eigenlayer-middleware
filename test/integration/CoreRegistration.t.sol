@@ -43,7 +43,6 @@ contract Test_CoreRegistration is MockAVSDeployer {
         registryCoordinatorImplementation = new RegistryCoordinatorHarness(
             delegationManager,
             slasher,
-            serviceManagerMock,
             stakeRegistry,
             blsApkRegistry,
             indexRegistry
@@ -129,14 +128,14 @@ contract Test_CoreRegistration is MockAVSDeployer {
         assertEq(uint8(operatorStatus), uint8(IDelegationManager.OperatorAVSRegistrationStatus.REGISTERED));
     }
 
-    function test_setMetadataURI_fail_notServiceManagerOwner(address invalidCaller) public {
+    function test_setMetadataURI_fail_notServiceManagerOwner() public {
         cheats.prank(operator);
-        cheats.expectRevert("RegistryCoordinator.onlyServiceManagerOwner: caller is not the service manager owner");
+        cheats.expectRevert("Ownable: caller is not the owner");
         registryCoordinator.setMetadataURI("Test MetadataURI");
     }
 
     function test_setMetadataURI() public {        
-        cheats.prank(serviceManagerOwner);
+        cheats.prank(registryCoordinatorOwner);
         registryCoordinator.setMetadataURI("Test MetadataURI");
     }
 
@@ -158,7 +157,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
 
     function _getOperatorSignature(
         uint256 _operatorPrivateKey,
-        address operator,
+        address operatorToSign,
         address avs,
         bytes32 salt,
         uint256 expiry
@@ -166,7 +165,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         operatorSignature.salt = salt;
         operatorSignature.expiry = expiry;
         {
-            bytes32 digestHash = delegationManager.calculateOperatorAVSRegistrationDigestHash(operator, avs, salt, expiry);
+            bytes32 digestHash = delegationManager.calculateOperatorAVSRegistrationDigestHash(operatorToSign, avs, salt, expiry);
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(_operatorPrivateKey, digestHash);
             operatorSignature.signature = abi.encodePacked(r, s, v);
         }
