@@ -140,4 +140,7 @@ interface IRegistryCoordinator {
 
     /// @notice returns the blocknumber the quorum was last updated all at once for all operators
     function quorumUpdateBlockNumber(uint8 quorumNumber) external view returns (uint256);
+
+    /// @notice The owner of the registry coordinator
+    function owner() external view returns (address);
 }
