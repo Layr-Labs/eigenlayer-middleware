@@ -9,6 +9,7 @@ import {EIP1271SignatureUtils} from "eigenlayer-contracts/src/contracts/librarie
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {Pausable} from "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
+import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
@@ -18,7 +19,6 @@ import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
 
 import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
-import {BN254} from "src/libraries/BN254.sol";
 
 /**
  * @title A `RegistryCoordinator` that has three registries:
@@ -38,13 +38,10 @@ contract RegistryCoordinator is
     ISignatureUtils
 {
     using BitmapUtils for *;
-    using BN254 for BN254.G1Point;
 
     /// @notice The EIP-712 typehash for the `DelegationApproval` struct used by the contract
     bytes32 public constant OPERATOR_CHURN_APPROVAL_TYPEHASH =
         keccak256("OperatorChurnApproval(bytes32 registeringOperatorId,OperatorKickParam[] operatorKickParams)OperatorKickParam(address operator,bytes32[] operatorIdsToSwap)");
-    /// @notice The EIP-712 typehash used for registering BLS public keys
-    bytes32 public constant PUBKEY_REGISTRATION_TYPEHASH = keccak256("BN254PubkeyRegistration(address operator)");
     /// @notice The maximum value of a quorum bitmap
     uint256 internal constant MAX_QUORUM_BITMAP = type(uint192).max;
     /// @notice The basis point denominator
@@ -66,6 +63,8 @@ contract RegistryCoordinator is
     IStakeRegistry public immutable stakeRegistry;
     /// @notice the Index Registry contract that will keep track of operators' indexes
     IIndexRegistry public immutable indexRegistry;
+    /// @notice The Delegation Manager contract to record operator avs relationships
+    IDelegationManager public immutable delegationManager;
 
     /// @notice the current number of quorums supported by the registry coordinator
     uint8 public quorumCount;
@@ -102,11 +101,13 @@ contract RegistryCoordinator is
     }
 
     constructor(
+        IDelegationManager _delegationManager,
         ISlasher _slasher,
         IStakeRegistry _stakeRegistry,
         IBLSApkRegistry _blsApkRegistry,
         IIndexRegistry _indexRegistry
     ) EIP712("AVSRegistryCoordinator", "v0.0.1") {
+        delegationManager = _delegationManager;
         slasher = _slasher;
         stakeRegistry = _stakeRegistry;
         blsApkRegistry = _blsApkRegistry;
@@ -155,29 +156,23 @@ contract RegistryCoordinator is
      * @notice Registers msg.sender as an operator for one or more quorums. If any quorum reaches its maximum
      * operator capacity, this method will fail.
      * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for
-     * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership
-     * @dev the `params` input param is ignored if the caller has previously registered a public key
+     * @param socket is the socket of the operator
+     * @param operatorSignature is the signature of the operator used by the AVS to register the operator in the delegation manager
      */
     function registerOperator(
         bytes calldata quorumNumbers,
         string calldata socket,
-        IBLSApkRegistry.PubkeyRegistrationParams calldata params
+        SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        /**
-         * IF the operator has never registered a pubkey before, THEN register their pubkey
-         * OTHERWISE, simply ignore the provided `params`
-         */
         bytes32 operatorId = blsApkRegistry.getOperatorId(msg.sender);
-        if (operatorId == 0) {
-            operatorId = blsApkRegistry.registerBLSPublicKey(msg.sender, params, pubkeyRegistrationMessageHash(msg.sender));
-        }
 
         // Register the operator in each of the registry contracts
         RegisterResults memory results = _registerOperator({
             operator: msg.sender, 
             operatorId: operatorId,
             quorumNumbers: quorumNumbers, 
-            socket: socket
+            socket: socket,
+            operatorSignature: operatorSignature
         });
 
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
@@ -200,29 +195,21 @@ contract RegistryCoordinator is
      * @notice Registers msg.sender as an operator for one or more quorums. If any quorum reaches its maximum operator
      * capacity, `operatorKickParams` is used to replace an old operator with the new one.
      * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for
-     * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership
      * @param operatorKickParams are used to determine which operator is removed to maintain quorum capacity as the
      * operator registers for quorums.
      * @param churnApproverSignature is the signature of the churnApprover on the operator kick params
-     * @dev the `params` input param is ignored if the caller has previously registered a public key
+     * @param operatorSignature is the signature of the operator used by the AVS to register the operator in the delegation manager
      */
     function registerOperatorWithChurn(
         bytes calldata quorumNumbers, 
         string calldata socket,
-        IBLSApkRegistry.PubkeyRegistrationParams calldata params,
         OperatorKickParam[] calldata operatorKickParams,
-        SignatureWithSaltAndExpiry memory churnApproverSignature
+        SignatureWithSaltAndExpiry memory churnApproverSignature,
+        SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         require(operatorKickParams.length == quorumNumbers.length, "RegistryCoordinator.registerOperatorWithChurn: input length mismatch");
 
-        /**
-         * IF the operator has never registered a pubkey before, THEN register their pubkey
-         * OTHERWISE, simply ignore the `pubkeyRegistrationSignature`, `pubkeyG1`, and `pubkeyG2` inputs
-         */
         bytes32 operatorId = blsApkRegistry.getOperatorId(msg.sender);
-        if (operatorId == 0) {
-            operatorId = blsApkRegistry.registerBLSPublicKey(msg.sender, params, pubkeyRegistrationMessageHash(msg.sender));
-        }
 
         // Verify the churn approver's signature for the registering operator and kick params
         _verifyChurnApproverSignature({
@@ -236,11 +223,13 @@ contract RegistryCoordinator is
             operator: msg.sender,
             operatorId: operatorId,
             quorumNumbers: quorumNumbers,
-            socket: socket
+            socket: socket,
+            operatorSignature: operatorSignature
         });
 
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
+            
             OperatorSetParam memory operatorSetParams = _quorumParams[quorumNumber];
             
             /**
@@ -425,6 +414,15 @@ contract RegistryCoordinator is
         _setEjector(_ejector);
     }
 
+    /**
+     * @notice Sets the metadata URI for the AVS
+     * @param _metadataURI is the metadata URI for the AVS
+     * @dev only callable by the service manager owner
+     */
+    function setMetadataURI(string memory _metadataURI) external onlyOwner {
+        delegationManager.updateAVSMetadataURI(_metadataURI);
+    }
+
     /*******************************************************************************
                             INTERNAL FUNCTIONS
     *******************************************************************************/
@@ -443,7 +441,8 @@ contract RegistryCoordinator is
         address operator, 
         bytes32 operatorId,
         bytes calldata quorumNumbers,
-        string memory socket
+        string memory socket,
+        SignatureWithSaltAndExpiry memory operatorSignature
     ) internal virtual returns (RegisterResults memory) {
         /**
          * Get bitmap of quorums to register for and operator's current bitmap. Validate that:
@@ -474,6 +473,9 @@ contract RegistryCoordinator is
                 operatorId: operatorId,
                 status: OperatorStatus.REGISTERED
             });
+
+            // Register the operator with the delegation manager
+            delegationManager.registerOperatorToAVS(operator, operatorSignature);
 
             emit OperatorRegistered(operator, operatorId);
         }
@@ -554,9 +556,10 @@ contract RegistryCoordinator is
             newBitmap: newBitmap
         });
 
-        // If the operator is no longer registered for any quorums, update their status
+        // If the operator is no longer registered for any quorums, update their status and deregister from delegationManager
         if (newBitmap.isEmpty()) {
             operatorInfo.status = OperatorStatus.DEREGISTERED;
+            delegationManager.deregisterOperatorFromAVS(operator);
             emit OperatorDeregistered(operator, operatorId);
         }
 
@@ -835,18 +838,6 @@ contract RegistryCoordinator is
         return _hashTypedDataV4(keccak256(abi.encode(OPERATOR_CHURN_APPROVAL_TYPEHASH, registeringOperatorId, operatorKickParams, salt, expiry)));
     }
 
-<<<<<<< HEAD
-    /**
-     * @notice Returns the message hash that an operator must sign to register their BLS public key.
-     * @param operator is the address of the operator registering their BLS public key
-     */
-    function pubkeyRegistrationMessageHash(address operator) public view returns (BN254.G1Point memory) {
-        return BN254.hashToG1(
-            _hashTypedDataV4(
-                keccak256(abi.encode(PUBKEY_REGISTRATION_TYPEHASH, operator))
-            )
-        );
-=======
     /// @dev need to override function here since its defined in both these contracts
     function owner()
         public
@@ -855,6 +846,5 @@ contract RegistryCoordinator is
         returns (address)
     {
         return OwnableUpgradeable.owner();
->>>>>>> ecf7849 (chore: remove ServiceManagerBase and add RegistryCoordinator owner (#98))
     }
 }

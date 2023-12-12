@@ -103,6 +103,7 @@ contract StakeRegistryUnitTests is Test {
 
         cheats.startPrank(registryCoordinatorOwner);
         registryCoordinator = new RegistryCoordinatorHarness(
+            delegationMock,
             slasher,
             stakeRegistry,
             IBLSApkRegistry(apkRegistry),
