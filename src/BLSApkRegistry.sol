@@ -280,6 +280,8 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         return pubkeyHashToOperator[pubkeyHash];
     }
 
+    /// @notice returns the ID used to identify the `operator` within this AVS
+    /// @dev Returns zero in the event that the `operator` has never registered for the AVS
     function getOperatorId(address operator) public view returns (bytes32) {
         return operatorToPubkeyHash[operator];
     }
