@@ -31,7 +31,7 @@ contract BitmapUtilsUnitTests_bitwiseOperations is BitmapUtilsUnitTests {
     }
 
     /// @notice some simple sanity checks on the `numberIsInBitmap` function
-    function test_NumberIsInBitmap() public {
+    function test_numberIsInBitmap() public {
         assertTrue(bitmapUtilsWrapper.numberIsInBitmap(2 ** 6, 6), "numberIsInBitmap function is broken 0");
         assertTrue(bitmapUtilsWrapper.numberIsInBitmap(1, 0), "numberIsInBitmap function is broken 1");
         assertTrue(bitmapUtilsWrapper.numberIsInBitmap(255, 7), "numberIsInBitmap function is broken 2");
@@ -40,6 +40,15 @@ contract BitmapUtilsUnitTests_bitwiseOperations is BitmapUtilsUnitTests {
             assertTrue(bitmapUtilsWrapper.numberIsInBitmap(type(uint256).max, uint8(i)), "numberIsInBitmap function is broken 4");
             assertFalse(bitmapUtilsWrapper.numberIsInBitmap(0, uint8(i)), "numberIsInBitmap function is broken 5");
         }
+    }
+
+    function test_addNumberToBitmap(uint256 bitmap, uint8 numberToAdd) public {
+        // Ensure that numberToAdd isn't already in the bitmap
+        cheats.assume(bitmap | (1 << numberToAdd) != bitmap);
+        uint256 updatedBitmap = bitmapUtilsWrapper.addNumberToBitmap(bitmap, numberToAdd);
+        assertTrue(
+            bitmapUtilsWrapper.numberIsInBitmap(updatedBitmap, numberToAdd), "addNumberToBitmap function is broken"
+        );
     }
 
     function testFuzz_isEmpty(uint256 input) public {
