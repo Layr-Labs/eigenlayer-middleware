@@ -101,7 +101,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     function registerBLSPublicKey(
         address operator,
         PubkeyRegistrationParams calldata pubkeyRegistrationParams
-    ) external onlyRegistryCoordinator {
+    ) external onlyRegistryCoordinator returns (bytes32 operatorId) {
         bytes32 pubkeyHash = BN254.hashG1Point(pubkeyRegistrationParams.pubkeyG1);
         require(
             pubkeyHash != ZERO_PK_HASH, "BLSApkRegistry.registerBLSPublicKey: cannot register zero pubkey"
@@ -143,6 +143,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         pubkeyHashToOperator[pubkeyHash] = operator;
 
         emit NewPubkeyRegistration(operator, pubkeyRegistrationParams.pubkeyG1, pubkeyRegistrationParams.pubkeyG2);
+        return pubkeyHash;
     }
 
     /*******************************************************************************

@@ -159,10 +159,10 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
          * IF the operator has never registered a pubkey before, THEN register their pubkey
          * OTHERWISE, simply ignore the provided `pubkeyRegistrationParams`
          */
-        if (blsApkRegistry.operatorToPubkeyHash(msg.sender) == 0) {
-            blsApkRegistry.registerBLSPublicKey(msg.sender, pubkeyRegistrationParams);
-        }
         bytes32 operatorId = blsApkRegistry.getOperatorId(msg.sender);
+        if (operatorId == 0) {
+            operatorId = blsApkRegistry.registerBLSPublicKey(msg.sender, pubkeyRegistrationParams);
+        }
 
         // Register the operator in each of the registry contracts
         RegisterResults memory results = _registerOperator({
@@ -211,10 +211,10 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
          * IF the operator has never registered a pubkey before, THEN register their pubkey
          * OTHERWISE, simply ignore the `pubkeyRegistrationSignature`, `pubkeyG1`, and `pubkeyG2` inputs
          */
-        if (blsApkRegistry.operatorToPubkeyHash(msg.sender) == 0) {
-            blsApkRegistry.registerBLSPublicKey(msg.sender, pubkeyRegistrationParams);
-        }
         bytes32 operatorId = blsApkRegistry.getOperatorId(msg.sender);
+        if (operatorId == 0) {
+            operatorId = blsApkRegistry.registerBLSPublicKey(msg.sender, pubkeyRegistrationParams);
+        }
 
         // Verify the churn approver's signature for the registering operator and kick params
         _verifyChurnApproverSignature({
