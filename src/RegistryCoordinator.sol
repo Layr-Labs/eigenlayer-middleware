@@ -35,6 +35,8 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
     /// @notice The EIP-712 typehash for the `DelegationApproval` struct used by the contract
     bytes32 public constant OPERATOR_CHURN_APPROVAL_TYPEHASH =
         keccak256("OperatorChurnApproval(bytes32 registeringOperatorId,OperatorKickParam[] operatorKickParams)OperatorKickParam(address operator,bytes32[] operatorIdsToSwap)");
+    /// @notice The EIP-712 typehash used for registering BLS public keys
+    bytes32 public constant PUBKEY_REGISTRATION_TYPEHASH = keccak256("BN254PubkeyRegistration(address operator)");
     /// @notice The maximum value of a quorum bitmap
     uint256 internal constant MAX_QUORUM_BITMAP = type(uint192).max;
     /// @notice The basis point denominator
@@ -161,7 +163,7 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
          */
         bytes32 operatorId = blsApkRegistry.getOperatorId(msg.sender);
         if (operatorId == 0) {
-            operatorId = blsApkRegistry.registerBLSPublicKey(msg.sender, params);
+            operatorId = blsApkRegistry.registerBLSPublicKey(msg.sender, params, pubkeyRegistrationMessageHash(msg.sender));
         }
 
         // Register the operator in each of the registry contracts
@@ -213,7 +215,7 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
          */
         bytes32 operatorId = blsApkRegistry.getOperatorId(msg.sender);
         if (operatorId == 0) {
-            operatorId = blsApkRegistry.registerBLSPublicKey(msg.sender, params);
+            operatorId = blsApkRegistry.registerBLSPublicKey(msg.sender, params, pubkeyRegistrationMessageHash(msg.sender));
         }
 
         // Verify the churn approver's signature for the registering operator and kick params
@@ -759,5 +761,17 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
     ) public view returns (bytes32) {
         // calculate the digest hash
         return _hashTypedDataV4(keccak256(abi.encode(OPERATOR_CHURN_APPROVAL_TYPEHASH, registeringOperatorId, operatorKickParams, salt, expiry)));
+    }
+
+    /**
+     * @notice Returns the message hash that an operator must sign to register their BLS public key.
+     * @param operator is the address of the operator registering their BLS public key
+     */
+    function pubkeyRegistrationMessageHash(address operator) public view returns (BN254.G1Point memory) {
+        return BN254.hashToG1(
+            _hashTypedDataV4(
+                keccak256(abi.encode(PUBKEY_REGISTRATION_TYPEHASH, operator))
+            )
+        );
     }
 }

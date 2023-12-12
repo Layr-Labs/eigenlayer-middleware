@@ -292,8 +292,9 @@ contract BLSApkRegistryUnitTests is Test {
     // TODO: better organize / integrate tests migrated from `BLSPublicKeyCompendium` unit tests
     function testRegisterBLSPublicKey() public {
         pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(alice);
+        BN254.G1Point memory messageHash = registryCoordinator.pubkeyRegistrationMessageHash(alice);
         vm.prank(address(registryCoordinator));
-        blsApkRegistry.registerBLSPublicKey(alice, pubkeyRegistrationParams);
+        blsApkRegistry.registerBLSPublicKey(alice, pubkeyRegistrationParams, messageHash);
 
         assertEq(blsApkRegistry.operatorToPubkeyHash(alice), BN254.hashG1Point(pubkeyRegistrationParams.pubkeyG1),
             "pubkey hash not stored correctly");
@@ -307,38 +308,42 @@ contract BLSApkRegistryUnitTests is Test {
 
         pubkeyRegistrationParams.pubkeyG1 = badPubkeyG1;
 
+        BN254.G1Point memory messageHash = registryCoordinator.pubkeyRegistrationMessageHash(alice);
         vm.prank(address(registryCoordinator));
         vm.expectRevert(bytes("BLSApkRegistry.registerBLSPublicKey: either the G1 signature is wrong, or G1 and G2 private key do not match"));
-        blsApkRegistry.registerBLSPublicKey(alice, pubkeyRegistrationParams);
+        blsApkRegistry.registerBLSPublicKey(alice, pubkeyRegistrationParams, messageHash);
     }
 
     function testRegisterBLSPublicKey_BadSig_Reverts() public {
         pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(bob); // sign with wrong private key
 
+        BN254.G1Point memory messageHash = registryCoordinator.pubkeyRegistrationMessageHash(alice);
         vm.prank(address(registryCoordinator));
         vm.expectRevert(bytes("BLSApkRegistry.registerBLSPublicKey: either the G1 signature is wrong, or G1 and G2 private key do not match"));
-        blsApkRegistry.registerBLSPublicKey(alice, pubkeyRegistrationParams);
+        blsApkRegistry.registerBLSPublicKey(alice, pubkeyRegistrationParams, messageHash);
     }
 
     function testRegisterBLSPublicKey_OpRegistered_Reverts() public {
         testRegisterBLSPublicKey(); // register alice
 
+        BN254.G1Point memory messageHash = registryCoordinator.pubkeyRegistrationMessageHash(alice);
         vm.prank(address(registryCoordinator));
         vm.expectRevert(bytes("BLSApkRegistry.registerBLSPublicKey: operator already registered pubkey"));
-        blsApkRegistry.registerBLSPublicKey(alice, pubkeyRegistrationParams);
+        blsApkRegistry.registerBLSPublicKey(alice, pubkeyRegistrationParams, messageHash);
     }
 
     function testRegisterBLSPublicKey_PkRegistered_Reverts() public {
         testRegisterBLSPublicKey(); 
         pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(bob); // same private key different operator
 
+        BN254.G1Point memory messageHash = registryCoordinator.pubkeyRegistrationMessageHash(bob);
         vm.prank(address(registryCoordinator));
         vm.expectRevert(bytes("BLSApkRegistry.registerBLSPublicKey: public key already registered"));
-        blsApkRegistry.registerBLSPublicKey(bob, pubkeyRegistrationParams);
+        blsApkRegistry.registerBLSPublicKey(bob, pubkeyRegistrationParams, messageHash);
     }
 
     function _signMessage(address signer) internal view returns(BN254.G1Point memory) {
-        BN254.G1Point memory messageHash = blsApkRegistry.getMessageHash(signer);
+        BN254.G1Point memory messageHash = registryCoordinator.pubkeyRegistrationMessageHash(signer);
         return BN254.scalar_mul(messageHash, privKey);
     }
 
