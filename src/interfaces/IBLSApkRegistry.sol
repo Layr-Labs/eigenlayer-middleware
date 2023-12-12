@@ -134,5 +134,7 @@ interface IBLSApkRegistry is IRegistry {
      */
     function getApkHashAtBlockNumberAndIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes24);
 
+    /// @notice returns the ID used to identify the `operator` within this AVS.
+    /// @dev Returns zero in the event that the `operator` has never registered for the AVS
     function getOperatorId(address operator) external view returns (bytes32);
 }
