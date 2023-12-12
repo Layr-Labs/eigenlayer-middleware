@@ -153,7 +153,7 @@ contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
         assertEq(
             keccak256(abi.encodePacked(originalBytesArray)),
             keccak256(abi.encodePacked(returnedBytesArray)),
-            "BitmapUtilsUnitTests.testBytesArrayToBitmapToBytesArray: output doesn't match input"
+            "BitmapUtilsUnitTests.testBytesArrayToBitmapToBytesArray: output does not match input"
         );
     }
 
@@ -167,7 +167,7 @@ contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
         assertEq(
             keccak256(abi.encodePacked(originalBytesArray)),
             keccak256(abi.encodePacked(returnedBytesArray)),
-            "BitmapUtilsUnitTests.testBytesArrayToBitmapToBytesArray_Yul: output doesn't match input"
+            "BitmapUtilsUnitTests.testBytesArrayToBitmapToBytesArray_Yul: output does not match input"
         );
     }
 
@@ -181,7 +181,7 @@ contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
         assertEq(
             keccak256(abi.encodePacked(originalBytesArray)),
             keccak256(abi.encodePacked(returnedBytesArray)),
-            "BitmapUtilsUnitTests.testBytesArrayToBitmapToBytesArray: output doesn't match input"
+            "BitmapUtilsUnitTests.testBytesArrayToBitmapToBytesArray: output does not match input"
         );
     }
 
@@ -203,7 +203,7 @@ contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
         assertEq(
             keccak256(abi.encodePacked(originalBytesArray)),
             keccak256(abi.encodePacked(returnedBytesArray)),
-            "BitmapUtilsUnitTests.testBytesArrayToBitmapToBytesArray: output doesn't match input"
+            "BitmapUtilsUnitTests.testBytesArrayToBitmapToBytesArray: output does not match input"
         );
     }
 
@@ -265,7 +265,7 @@ contract BitmapUtilsUnitTests_bitmapToBytesArray is BitmapUtilsUnitTests {
     function testFuzz_BitMapToBytesArrayToBitmap(uint256 originalBitmap) public {
         bytes memory bytesArray = bitmapUtilsWrapper.bitmapToBytesArray(originalBitmap);
         uint256 returnedBitMap = bitmapUtilsWrapper.bytesArrayToBitmap(bytesArray);
-        assertEq(returnedBitMap, originalBitmap, "BitmapUtilsUnitTests.testBitMapToArrayToBitmap: output doesn't match input");
+        assertEq(returnedBitMap, originalBitmap, "BitmapUtilsUnitTests.testBitMapToArrayToBitmap: output does not match input");
     }
 }
 
