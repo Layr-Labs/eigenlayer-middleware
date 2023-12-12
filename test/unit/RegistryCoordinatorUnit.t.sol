@@ -679,9 +679,6 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
         emit QuorumIndexUpdate(operatorToRegisterId, defaultQuorumNumber, numOperators - 1);
 
         {
-            BN254.G1Point memory pubkeyRegistrationSignature;
-            BN254.G1Point memory pubkeyG1;
-            BN254.G2Point memory pubkeyG2;
             ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry = _signOperatorChurnApproval(operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp + 10);
             cheats.prank(operatorToRegister);
             uint256 gasBefore = gasleft();

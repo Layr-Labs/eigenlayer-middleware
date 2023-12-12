@@ -233,9 +233,8 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
 
         uint256 kickIndex = 0;
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            uint8 quorumNumber = uint8(quorumNumbers[i]);
-            
-            OperatorSetParam memory operatorSetParams = _quorumParams[quorumNumber];
+            // reference: uint8 quorumNumber = uint8(quorumNumbers[i]);
+            OperatorSetParam memory operatorSetParams = _quorumParams[uint8(quorumNumbers[i])];
             
             /**
              * If the new operator count for any quorum exceeds the maximum, validate
@@ -243,7 +242,7 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
              */
             if (results.numOperatorsPerQuorum[i] > operatorSetParams.maxOperatorCount) {
                 _validateChurn({
-                    quorumNumber: quorumNumber,
+                    quorumNumber: uint8(quorumNumbers[i]),
                     totalQuorumStake: results.totalStakes[i],
                     newOperator: msg.sender,
                     newOperatorStake: results.operatorStakes[i],
