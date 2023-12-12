@@ -98,11 +98,11 @@ interface IBLSApkRegistry is IRegistry {
     /**
      * @notice Called by the RegistryCoordinator register an operator as the owner of a BLS public key.
      * @param operator is the operator for whom the key is being registered
-     * @param pubkeyRegistrationParams contains the G1 & G2 public keys of the operator, and a signature proving their ownership
+     * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership
      */
     function registerBLSPublicKey(
         address operator,
-        PubkeyRegistrationParams calldata pubkeyRegistrationParams
+        PubkeyRegistrationParams calldata params
     ) external returns (bytes32 operatorId);
 
     /**
