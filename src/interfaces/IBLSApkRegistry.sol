@@ -10,6 +10,29 @@ import {BN254} from "src/libraries/BN254.sol";
  * @author Layr Labs, Inc.
  */
 interface IBLSApkRegistry is IRegistry {
+    // STRUCTS
+    /// @notice Data structure used to track the history of the Aggregate Public Key of all operators
+    struct ApkUpdate {
+        // first 24 bytes of keccak256(apk_x0, apk_x1, apk_y0, apk_y1)
+        bytes24 apkHash;
+        // block number at which the update occurred
+        uint32 updateBlockNumber;
+        // block number at which the next update occurred
+        uint32 nextUpdateBlockNumber;
+    }
+
+    /**
+     * @notice Struct used when registering a new public key
+     * @param signedMessageHash is the registration message hash signed by the private key of the operator
+     * @param pubkeyG1 is the corresponding G1 public key of the operator 
+     * @param pubkeyG2 is the corresponding G2 public key of the operator
+     */     
+    struct PubkeyRegistrationParams {
+        BN254.G1Point pubkeyRegistrationSignature;
+        BN254.G1Point pubkeyG1;
+        BN254.G2Point pubkeyG2;
+    }
+
     // EVENTS
     /// @notice Emitted when `operator` registers with the public keys `pubkeyG1` and `pubkeyG2`.
     event NewPubkeyRegistration(address indexed operator, BN254.G1Point pubkeyG1, BN254.G2Point pubkeyG2);
@@ -25,16 +48,6 @@ interface IBLSApkRegistry is IRegistry {
         address operator, 
         bytes quorumNumbers
     );
-
-    /// @notice Data structure used to track the history of the Aggregate Public Key of all operators
-    struct ApkUpdate {
-        // first 24 bytes of keccak256(apk_x0, apk_x1, apk_y0, apk_y1)
-        bytes24 apkHash;
-        // block number at which the update occurred
-        uint32 updateBlockNumber;
-        // block number at which the next update occurred
-        uint32 nextUpdateBlockNumber;
-    }
 
     /**
      * @notice Registers the `operator`'s pubkey for the specified `quorumNumbers`.
@@ -85,15 +98,11 @@ interface IBLSApkRegistry is IRegistry {
     /**
      * @notice Called by the RegistryCoordinator register an operator as the owner of a BLS public key.
      * @param operator is the operator for whom the key is being registered
-     * @param signedMessageHash is the registration message hash signed by the private key of the operator
-     * @param pubkeyG1 is the corresponding G1 public key of the operator 
-     * @param pubkeyG2 is the corresponding G2 public key of the operator
+     * @param pubkeyRegistrationParams contains the G1 & G2 public keys of the operator, and a signature proving their ownership
      */
     function registerBLSPublicKey(
         address operator,
-        BN254.G1Point memory signedMessageHash, 
-        BN254.G1Point memory pubkeyG1, 
-        BN254.G2Point memory pubkeyG2
+        PubkeyRegistrationParams calldata pubkeyRegistrationParams
     ) external;
 
     /**
