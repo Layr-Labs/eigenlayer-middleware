@@ -4,7 +4,6 @@ pragma solidity =0.8.12;
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
-import {IServiceManager} from "./IServiceManager.sol";
 import {IRegistry} from "./IRegistry.sol";
 
 /**
@@ -124,9 +123,6 @@ interface IStakeRegistry is IRegistry {
 
     /// @notice Returns the EigenLayer delegation manager contract.
     function delegation() external view returns (IDelegationManager);
-
-    /// @notice Returns the AVS service manager contract.
-    function serviceManager() external view returns (IServiceManager);
 
     /// @notice In order to register for a quorum i, an operator must have at least `minimumStakeForQuorum[i]`
     function minimumStakeForQuorum(uint256 quorumNumber) external view returns (uint96);

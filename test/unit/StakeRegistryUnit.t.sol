@@ -11,7 +11,6 @@ import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IS
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
-import {IServiceManager} from "src/interfaces/IServiceManager.sol";
 import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
@@ -20,7 +19,6 @@ import {BitmapUtils} from "eigenlayer-contracts/src/contracts/libraries/BitmapUt
 
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
 import {EigenPodManagerMock} from "eigenlayer-contracts/src/test/mocks/EigenPodManagerMock.sol";
-import {ServiceManagerMock} from "test/mocks/ServiceManagerMock.sol";
 import {OwnableMock} from "eigenlayer-contracts/src/test/mocks/OwnableMock.sol";
 import {DelegationManagerMock} from "eigenlayer-contracts/src/test/mocks/DelegationManagerMock.sol";
 import {SlasherMock} from "eigenlayer-contracts/src/test/mocks/SlasherMock.sol";
@@ -44,12 +42,11 @@ contract StakeRegistryUnitTests is Test {
     StakeRegistryHarness public stakeRegistry;
     RegistryCoordinatorHarness public registryCoordinator;
 
-    ServiceManagerMock public serviceManagerMock;
     StrategyManagerMock public strategyManagerMock;
     DelegationManagerMock public delegationMock;
     EigenPodManagerMock public eigenPodManagerMock;
 
-    address public serviceManagerOwner = address(uint160(uint256(keccak256("serviceManagerOwner"))));
+    address public registryCoordinatorOwner = address(uint160(uint256(keccak256("registryCoordinatorOwner"))));
     address public pauser = address(uint160(uint256(keccak256("pauser"))));
     address public unpauser = address(uint160(uint256(keccak256("unpauser"))));
     address public apkRegistry = address(uint160(uint256(keccak256("apkRegistry"))));
@@ -104,21 +101,17 @@ contract StakeRegistryUnitTests is Test {
             slasher
         );
 
+        cheats.startPrank(registryCoordinatorOwner);
         registryCoordinator = new RegistryCoordinatorHarness(
             slasher,
-            serviceManagerMock,
             stakeRegistry,
             IBLSApkRegistry(apkRegistry),
             IIndexRegistry(indexRegistry)
         );
 
-        cheats.startPrank(serviceManagerOwner);
-        // make the serviceManagerOwner the owner of the serviceManager contract
-        serviceManagerMock = new ServiceManagerMock(slasher);
         stakeRegistryImplementation = new StakeRegistryHarness(
             IRegistryCoordinator(address(registryCoordinator)),
-            delegationMock,
-            IServiceManager(address(serviceManagerMock))
+            delegationMock
         );
 
         stakeRegistry = StakeRegistryHarness(
@@ -149,8 +142,8 @@ contract StakeRegistryUnitTests is Test {
         registryCoordinator.setQuorumCount(maxQuorumsToRegisterFor);
     }
 
-    function testSetMinimumStakeForQuorum_NotFromServiceManager_Reverts() public {
-        cheats.expectRevert("StakeRegistry.onlyServiceManagerOwner: caller is not the owner of the serviceManager");
+    function testSetMinimumStakeForQuorum_NotFromCoordinatorOwner_Reverts() public {
+        cheats.expectRevert("StakeRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator");
         stakeRegistry.setMinimumStakeForQuorum(defaultQuorumNumber, 0);
     }
 
@@ -159,7 +152,7 @@ contract StakeRegistryUnitTests is Test {
         cheats.assume(initializedQuorums[quorumNumber]);
         
         // set the minimum stake for quorum
-        cheats.prank(serviceManagerOwner);
+        cheats.prank(registryCoordinatorOwner);
         stakeRegistry.setMinimumStakeForQuorum(quorumNumber, minimumStakeForQuorum);
 
         // make sure the minimum stake for quorum is as expected

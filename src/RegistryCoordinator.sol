@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
+import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 
@@ -12,7 +13,6 @@ import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.s
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
-import {IServiceManager} from "src/interfaces/IServiceManager.sol";
 import {ISocketUpdater} from "src/interfaces/ISocketUpdater.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
@@ -28,7 +28,15 @@ import {BN254} from "src/libraries/BN254.sol";
  * 
  * @author Layr Labs, Inc.
  */
-contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISocketUpdater, ISignatureUtils, Pausable {
+contract RegistryCoordinator is 
+    EIP712, 
+    Initializable, 
+    Pausable,
+    OwnableUpgradeable,
+    IRegistryCoordinator, 
+    ISocketUpdater, 
+    ISignatureUtils
+{
     using BitmapUtils for *;
     using BN254 for BN254.G1Point;
 
@@ -52,8 +60,6 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
 
     /// @notice the EigenLayer Slasher
     ISlasher public immutable slasher;
-    /// @notice the Service Manager for the service that this contract is coordinating
-    IServiceManager public immutable serviceManager;
     /// @notice the BLS Aggregate Pubkey Registry contract that will keep track of operators' aggregate BLS public keys per quorum
     IBLSApkRegistry public immutable blsApkRegistry;
     /// @notice the Stake Registry contract that will keep track of operators' stakes
@@ -82,11 +88,6 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
     /// @notice the address of the entity allowed to eject operators from the AVS
     address public ejector;
 
-    modifier onlyServiceManagerOwner {
-        require(msg.sender == serviceManager.owner(), "RegistryCoordinator.onlyServiceManagerOwner: caller is not the service manager owner");
-        _;
-    }
-
     modifier onlyEjector {
         require(msg.sender == ejector, "RegistryCoordinator.onlyEjector: caller is not the ejector");
         _;
@@ -102,19 +103,20 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
 
     constructor(
         ISlasher _slasher,
-        IServiceManager _serviceManager,
         IStakeRegistry _stakeRegistry,
         IBLSApkRegistry _blsApkRegistry,
         IIndexRegistry _indexRegistry
     ) EIP712("AVSRegistryCoordinator", "v0.0.1") {
         slasher = _slasher;
-        serviceManager = _serviceManager;
         stakeRegistry = _stakeRegistry;
         blsApkRegistry = _blsApkRegistry;
         indexRegistry = _indexRegistry;
+
+        _disableInitializers();
     }
 
     function initialize(
+        address _initialOwner,
         address _churnApprover,
         address _ejector,
         IPauserRegistry _pauserRegistry,
@@ -129,6 +131,7 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
         );
         
         // Initialize roles
+        _transferOwnership(_initialOwner);
         _initializePauser(_pauserRegistry, _initialPausedStatus);
         _setChurnApprover(_churnApprover);
         _setEjector(_ejector);
@@ -377,7 +380,7 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
     }
 
     /*******************************************************************************
-                    EXTERNAL FUNCTIONS - SERVICE MANAGER OWNER
+                            EXTERNAL FUNCTIONS - OWNER
     *******************************************************************************/
 
     /**
@@ -387,7 +390,7 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
         IStakeRegistry.StrategyParams[] memory strategyParams
-    ) external virtual onlyServiceManagerOwner {
+    ) external virtual onlyOwner {
         _createQuorum(operatorSetParams, minimumStake, strategyParams);
     }
 
@@ -395,30 +398,30 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
      * @notice Updates a quorum's OperatorSetParams
      * @param quorumNumber is the quorum number to set the maximum number of operators for
      * @param operatorSetParams is the parameters of the operator set for the `quorumNumber`
-     * @dev only callable by the service manager owner
+     * @dev only callable by the owner
      */
     function setOperatorSetParams(
         uint8 quorumNumber, 
         OperatorSetParam memory operatorSetParams
-    ) external onlyServiceManagerOwner quorumExists(quorumNumber) {
+    ) external onlyOwner quorumExists(quorumNumber) {
         _setOperatorSetParams(quorumNumber, operatorSetParams);
     }
 
     /**
      * @notice Sets the churnApprover
      * @param _churnApprover is the address of the churnApprover
-     * @dev only callable by the service manager owner
+     * @dev only callable by the owner
      */
-    function setChurnApprover(address _churnApprover) external onlyServiceManagerOwner {
+    function setChurnApprover(address _churnApprover) external onlyOwner {
         _setChurnApprover(_churnApprover);
     }
 
     /**
      * @notice Sets the ejector
      * @param _ejector is the address of the ejector
-     * @dev only callable by the service manager owner
+     * @dev only callable by the owner
      */
-    function setEjector(address _ejector) external onlyServiceManagerOwner {
+    function setEjector(address _ejector) external onlyOwner {
         _setEjector(_ejector);
     }
 
@@ -832,6 +835,7 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
         return _hashTypedDataV4(keccak256(abi.encode(OPERATOR_CHURN_APPROVAL_TYPEHASH, registeringOperatorId, operatorKickParams, salt, expiry)));
     }
 
+<<<<<<< HEAD
     /**
      * @notice Returns the message hash that an operator must sign to register their BLS public key.
      * @param operator is the address of the operator registering their BLS public key
@@ -842,5 +846,15 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
                 keccak256(abi.encode(PUBKEY_REGISTRATION_TYPEHASH, operator))
             )
         );
+=======
+    /// @dev need to override function here since its defined in both these contracts
+    function owner()
+        public
+        view
+        override(OwnableUpgradeable, IRegistryCoordinator)
+        returns (address)
+    {
+        return OwnableUpgradeable.owner();
+>>>>>>> ecf7849 (chore: remove ServiceManagerBase and add RegistryCoordinator owner (#98))
     }
 }

@@ -5,7 +5,6 @@ import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
-import {IServiceManager} from "src/interfaces/IServiceManager.sol";
 import {IStakeRegistry} from  "src/interfaces/IStakeRegistry.sol";
 
 /**
@@ -24,9 +23,6 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
 
     /// @notice The address of the Delegation contract for EigenLayer.
     IDelegationManager public immutable delegation;
-
-    /// @notice The ServiceManager contract for this middleware, where tasks are created / initiated.
-    IServiceManager public immutable serviceManager;
 
     /// @notice the coordinator contract that this registry is associated with
     IRegistryCoordinator public immutable registryCoordinator;
@@ -49,12 +45,10 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
 
     constructor(
         IRegistryCoordinator _registryCoordinator, 
-        IDelegationManager _delegationManager,
-        IServiceManager _serviceManager
+        IDelegationManager _delegationManager
     ) {
         registryCoordinator = _registryCoordinator;
         delegation = _delegationManager;
-        serviceManager = _serviceManager;
     }
 
     // storage gap for upgradeability

@@ -59,6 +59,7 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
         // make sure the contract intializers are disabled
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         registryCoordinator.initialize(
+            registryCoordinatorOwner,
             churnApprover, 
             ejector, 
             pauserRegistry, 
@@ -69,44 +70,44 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
         );
     }
 
-    function testSetOperatorSetParams_NotServiceManagerOwner_Reverts() public {
-        cheats.expectRevert("RegistryCoordinator.onlyServiceManagerOwner: caller is not the service manager owner");
+    function testSetOperatorSetParams_NotOwner_Reverts() public {
+        cheats.expectRevert("Ownable: caller is not the owner");
         cheats.prank(defaultOperator);
         registryCoordinator.setOperatorSetParams(0, operatorSetParams[0]);
     }
 
     function testSetOperatorSetParams_Valid() public {
-        cheats.prank(serviceManagerOwner);
+        cheats.prank(registryCoordinatorOwner);
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
         emit OperatorSetParamsUpdated(0, operatorSetParams[1]);
         registryCoordinator.setOperatorSetParams(0, operatorSetParams[1]);
     }
 
-    function testSetChurnApprover_NotServiceManagerOwner_Reverts() public {
+    function testSetChurnApprover_NotOwner_Reverts() public {
         address newChurnApprover = address(uint160(uint256(keccak256("newChurnApprover"))));
-        cheats.expectRevert("RegistryCoordinator.onlyServiceManagerOwner: caller is not the service manager owner");
+        cheats.expectRevert("Ownable: caller is not the owner");
         cheats.prank(defaultOperator);
         registryCoordinator.setChurnApprover(newChurnApprover);
     }
 
     function testSetChurnApprover_Valid() public {
         address newChurnApprover = address(uint160(uint256(keccak256("newChurnApprover"))));
-        cheats.prank(serviceManagerOwner);
+        cheats.prank(registryCoordinatorOwner);
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
         emit ChurnApproverUpdated(churnApprover, newChurnApprover);
         registryCoordinator.setChurnApprover(newChurnApprover);
     }
 
-    function testSetEjector_NotServiceManagerOwner_Reverts() public {
+    function testSetEjector_NotOwner_Reverts() public {
         address newEjector = address(uint160(uint256(keccak256("newEjector"))));
-        cheats.expectRevert("RegistryCoordinator.onlyServiceManagerOwner: caller is not the service manager owner");
+        cheats.expectRevert("Ownable: caller is not the owner");
         cheats.prank(defaultOperator);
         registryCoordinator.setEjector(newEjector);
     }
 
     function testSetEjector_Valid() public {
         address newEjector = address(uint160(uint256(keccak256("newEjector"))));
-        cheats.prank(serviceManagerOwner);
+        cheats.prank(registryCoordinatorOwner);
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
         emit EjectorUpdated(ejector, newEjector);
         registryCoordinator.setEjector(newEjector);
