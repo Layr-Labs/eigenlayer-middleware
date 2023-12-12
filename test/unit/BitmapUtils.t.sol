@@ -42,6 +42,15 @@ contract BitmapUtilsUnitTests_bitwiseOperations is BitmapUtilsUnitTests {
         }
     }
 
+    function test_setBit(uint256 bitmap, uint8 numberToAdd) public {
+        // Ensure that numberToAdd isn't already in the bitmap
+        cheats.assume(bitmap | (1 << numberToAdd) != bitmap);
+        uint256 updatedBitmap = bitmapUtilsWrapper.setBit(bitmap, numberToAdd);
+        assertTrue(
+            bitmapUtilsWrapper.isSet(updatedBitmap, numberToAdd), "setBit function is broken"
+        );
+    }
+
     function testFuzz_isEmpty(uint256 input) public {
         if (input == 0) {
             // assertTrue(bitmapUtilsWrapper.isEmpty(input), "isEmpty function is broken");

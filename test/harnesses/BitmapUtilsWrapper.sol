@@ -37,6 +37,10 @@ contract BitmapUtilsWrapper {
         return BitmapUtils.isSet(bitmap, numberToCheckForInclusion);
     }
 
+    function setBit(uint256 bitmap, uint8 numberToAdd) external pure returns (uint256) {
+        return BitmapUtils.setBit(bitmap, numberToAdd);
+    }
+
     function isEmpty(uint256 bitmap) external pure returns (bool) {
         return BitmapUtils.isEmpty(bitmap);
     }
