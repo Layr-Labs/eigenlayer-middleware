@@ -41,7 +41,7 @@ interface IBLSSignatureChecker {
 
     // EVENTS
 
-    /// @notice Emitted when `staleStakesForbiddenUpdate` is set. Value only set by serviceManagerOwner.
+    /// @notice Emitted when `staleStakesForbiddenUpdate` is set
     event StaleStakesForbiddenUpdate(bool value);   
     
     // CONSTANTS & IMMUTABLES
