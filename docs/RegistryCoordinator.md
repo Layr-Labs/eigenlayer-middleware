@@ -5,9 +5,9 @@
 | [`RegistryCoordinator.sol`](../src/RegistryCoordinator.sol) | Singleton | Transparent proxy |
 
 The `RegistryCoordinator` has three primary functions:
-1. It is the primary entry and exit point for operators as they register for and deregister from quorums, and manages registration and deregistration in the `BLSApkRegistry`, `StakeRegistry`, and `IndexRegistry`
+1. It is the primary entry and exit point for operators as they register for and deregister from quorums, and manages registration and deregistration in the `BLSApkRegistry`, `StakeRegistry`, and `IndexRegistry`. It also hooks into the EigenLayer core contracts, updating the core `DelegationManager` when an Operator registers/deregisters.
 2. It allows anyone to update the current stake of any registered operator
-3. It allows the Service Manager Owner to initialize and configure new quorums
+3. It allows the Owner to initialize and configure new quorums
 
 #### High-level Concepts
 
@@ -20,7 +20,7 @@ This document organizes methods according to the following themes (click each to
 
 TODO
 
-* Service Manager Owner
+* Owner
 * Ejector
 * Churn Approver
 
@@ -195,7 +195,7 @@ Allows a registered Operator to emit an event, updating their socket.
 
 ### System Configuration
 
-These methods are used by the Service Manager Owner to configure the `RegistryCoordinator`:
+These methods are used by the Owner to configure the `RegistryCoordinator`:
 * [`createQuorum`](#createquorum)
 * [`setOperatorSetParams`](#setoperatorsetparams)
 * [`setChurnApprover`](#setchurnapprover)
@@ -211,10 +211,10 @@ function createQuorum(
 ) 
     external
     virtual 
-    onlyServiceManagerOwner
+    onlyOwner
 ```
 
-Allows the Service Manager Owner to initialize a new quorum with the given configuration. The new quorum is assigned a sequential quorum number.
+Allows the Owner to initialize a new quorum with the given configuration. The new quorum is assigned a sequential quorum number.
 
 The new quorum is also initialized in each of the registry contracts.
 
@@ -226,7 +226,7 @@ The new quorum is also initialized in each of the registry contracts.
 * See [`IndexRegistry.initializeQuorum`](./registries/IndexRegistry.md#initializequorum)
 
 *Requirements*:
-* Caller MUST be the Service Manager Owner
+* Caller MUST be the Owner
 * Quorum count before creation MUST be less than `MAX_QUORUM_COUNT`
 * See [`BLSApkRegistry.initializeQuorum`](./registries/BLSApkRegistry.md#initializequorum)
 * See [`StakeRegistry.initializeQuorum`](./registries/StakeRegistry.md#initializequorum)
@@ -240,11 +240,11 @@ function setOperatorSetParams(
     OperatorSetParam memory operatorSetParams
 ) 
     external 
-    onlyServiceManagerOwner 
+    onlyOwner 
     quorumExists(quorumNumber)
 ```
 
-Allows the Service Manager Owner to update an existing quorum's `OperatorSetParams`, which determine:
+Allows the Owner to update an existing quorum's `OperatorSetParams`, which determine:
 * `maxOperatorCount`: The max number of operators that can be in this quorum
 * `kickBIPsOfOperatorStake`: The basis points a new Operator needs over an old Operator's stake to replace them in `registerOperatorWithChurn`
 * `kickBIPsOfTotalStake`: The basis points a replaced Operator needs under the quorum's total stake to be replaced in `registerOperatorWithChurn`
@@ -253,33 +253,33 @@ Allows the Service Manager Owner to update an existing quorum's `OperatorSetPara
 * Updates the quorum's `OperatorSetParams`
 
 *Requirements*:
-* Caller MUST be the Service Manager Owner
+* Caller MUST be the Owner
 * `quorumNumber` MUST correspond to an existing, initialized quorum
 
 #### `setChurnApprover`
 
 ```solidity
-function setChurnApprover(address _churnApprover) external onlyServiceManagerOwner
+function setChurnApprover(address _churnApprover) external onlyOwner
 ```
 
-Allows the Service Manager Owner to update the Churn Approver address.
+Allows the Owner to update the Churn Approver address.
 
 *Effects*:
 * Updates the Churn Approver address
 
 *Requirements*:
-* Caller MUST be the Service Manager Owner
+* Caller MUST be the Owner
 
 #### `setEjector`
 
 ```solidity
-function setEjector(address _ejector) external onlyServiceManagerOwner
+function setEjector(address _ejector) external onlyOwner
 ```
 
-Allows the Service Manager Owner to update the Ejector address.
+Allows the Owner to update the Ejector address.
 
 *Effects*:
 * Updates the Ejector address
 
 *Requirements*:
-* Caller MUST be the Service Manager Owner
+* Caller MUST be the Owner

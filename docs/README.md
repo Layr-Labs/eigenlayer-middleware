@@ -4,6 +4,9 @@ Reference Links:
 [core-contracts-repo]: https://github.com/Layr-Labs/eigenlayer-contracts
 [core-docs-m2]: https://github.com/Layr-Labs/eigenlayer-contracts/tree/m2-mainnet/docs
 
+[core-registerToAVS]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/m2-mainnet/docs/core/DelegationManager.md#registeroperatortoavs
+[core-deregisterFromAVS]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/m2-mainnet/docs/core/DelegationManager.md#deregisteroperatorfromavs
+
 ## EigenLayer Middleware Docs
 
 EigenLayer AVSs ("actively validated services") are protocols that make use of EigenLayer's restaking primitives. AVSs are validated by EigenLayer operators, who are backed by delegated restaked assets via the [EigenLayer core contracts][core-contracts-repo]. Each AVS will deploy or modify instances of the contracts in this repo to hook into the EigenLayer core contracts and ensure their service has an up-to-date view of its currently-registered operators.
@@ -16,7 +19,7 @@ EigenLayer AVSs ("actively validated services") are protocols that make use of E
 
 *... however, the design for these conditions is still in progress.*
 
-TODO - also missing the servicemanagerbase and maybe other contracts?
+**Additional Note**: Although the goal of this repo is to eventually provide general-purpose building blocks for all kinds of AVSs, many of the contracts and design considerations were made to support EigenDA. When these docs provide examples, they will often cite EigenDA.
 
 ### Contents
 
@@ -24,8 +27,10 @@ TODO - also missing the servicemanagerbase and maybe other contracts?
     * [Quorums](#quorums)
     * [Strategies and Stake](#strategies-and-stake)
     * [Operator Sets and Churn](#operator-sets-and-churn)
+    * [Hooking Into EigenLayer Core](#hooking-into-eigenlayer-core)
 * [System Components](#system-components)
     * [Registries](#registries)
+    * [BLSSignatureChecker](#blssignaturechecker)
 
 ---
 
@@ -33,15 +38,15 @@ TODO - also missing the servicemanagerbase and maybe other contracts?
 
 ##### Quorums
 
-A quorum is a grouping and configuration of specific kinds of stake that an AVS considers when interacting with operators. When operators register for an AVS, they select one or more quorums within the AVS to regsiter for. The purpose of having a quorum is that an AVS can customize the makeup of its security offering by choosing which kinds of stake/security it would like to utilize.
+A quorum is a grouping and configuration of specific kinds of stake that an AVS considers when interacting with operators. When operators register for an AVS, they select one or more quorums within the AVS to register for. The purpose of having a quorum is that an AVS can customize the makeup of its security offering by choosing which kinds of stake/security it would like to utilize.
 
 As an example, an AVS might want to support primarily native ETH stakers. It would do so by configuring a quorum to only weigh operators that control shares belonging to the native eth strategy (defined in the core contracts).
 
-The Service Manager Owner initializes quorums in the `RegistryCoordinator`, and may configure them further in both the `RegistryCoordinator` and `StakeRegistry` contracts.
+The Owner initializes quorums in the `RegistryCoordinator`, and may configure them further in both the `RegistryCoordinator` and `StakeRegistry` contracts.
 
 ##### Strategies and Stake
 
-Each quorum has an associated list of `StrategyParams`, which the Service Manager Owner can configure via the `StakeRegistry`.
+Each quorum has an associated list of `StrategyParams`, which the Owner can configure via the `StakeRegistry`.
 
 `StrategyParams` define pairs of strategies and multipliers for the quorum:
 * Strategies refer to the `DelegationManager` in the EigenLayer core contracts, which tracks shares delegated to each operator for each supported strategy. Basically, a strategy is a wrapper around an underlying token - either an LST or Native ETH.
@@ -55,13 +60,29 @@ For more information on the `DelegationManager`, see the [EigenLayer core docs][
 
 Quorums define a maximum operator count as well as parameters that determine when a new operator can replace an existing operator when this max count is reached. The process of replacing an existing operator when the max count is reached is called "churn," and requires a signature from the Churn Approver.
 
-These definitions are contained in a quorum's `OperatorSetParam`, which the Service Manager Owner can configure via the `RegistryCoordinator`. A quorum's `OperatorSetParam` defines both a max operator count, as well as stake thresholds that the incoming and existing operators need to meet to qualify for churn.
+These definitions are contained in a quorum's `OperatorSetParam`, which the Owner can configure via the `RegistryCoordinator`. A quorum's `OperatorSetParam` defines both a max operator count, as well as stake thresholds that the incoming and existing operators need to meet to qualify for churn.
+
+*Additional context*:
+
+Currently for EigenDA, the max operator count is 200. This maximum exists because EigenDA requires that completed "jobs" validate a signature by the aggregate BLS pubkey of the operator set over some job parameters. Although an aggregate BLS pubkey's signature should have a fixed cost no matter the number of operators, it may be the case that not all operators sign off on a job.
+
+When this happens, EigenDA needs to provide a list of the pubkeys of the non-signers to subtract them out from the quorum's aggregate pubkey ("Apk"). The limit of 200 operators keeps the gas costs reasonable in a worst case scenario. See `BLSSignatureChecker.checkSignatures` for this part of the implementation.
+
+In order to prevent the operator set from getting calcified, the churn mechanism was introduced to allow operators to be replaced in some cases. Future work is being done to increase the max operator count and refine the churn mechanism.
+
+##### Hooking Into EigenLayer Core
+
+The main thing that links an AVS to the EigenLayer core contracts is that when EigenLayer operators register/deregister with an AVS, the AVS calls these functions in EigenLayer core:
+* [`DelegationManager.registerOperatorToAVS`][core-registerToAVS]
+* [`DelegationManager.deregisterOperatorFromAVS`][core-deregisterFromAVS]
+
+These methods ensure that the operator registering with the AVS is also registered as an operator in EigenLayer core. In this repo, these methods are called by the `RegistryCoordinator`.
 
 ### System Components
 
 #### Registries
 
-| File | Type | Proxy |
+| Code | Type | Proxy |
 | -------- | -------- | -------- |
 | [`RegistryCoordinator.sol`](../src/RegistryCoordinator.sol) | Singleton | Transparent proxy |
 | [`BLSApkRegistry.sol`](../src/BLSApkRegistry.sol) | Singleton | Transparent proxy |
@@ -76,3 +97,16 @@ The `RegistryCoordinator` is the primary entry point for operators as they regis
 Both the registry coordinator and each of the registries maintain historical state for the specific information they track. This historical state tracking can be used to query state at a particular block, which is primarily used in offchain infrastructure.
 
 See full documentation for the registry coordinator in [`RegistryCoordinator.md`](./RegistryCoordinator.md), and for each registry in [`registries/`](./registries/).
+
+#### BLSSignatureChecker
+
+| Code | Type | Proxy |
+| -------- | -------- | -------- |
+| [`BLSSignatureChecker.sol`](../src/BLSSignatureChecker.sol) | Singleton | Transparent proxy |
+| [`OperatorStateRetriever.sol`](../src/OperatorStateRetriever.sol) | Singleton | Transparent proxy |
+
+The BLSSignatureChecker verifies signatures made by the aggregate pubkeys ("Apk") of operators in one or more quorums. The primary function, `checkSignatures`, is called by an AVS when confirming that a given message hash is signed by operators belonging to one or more quorums.
+
+The `OperatorStateRetriever` is used by offchain code to query the `RegistryCoordinator` (and its registries) for information that will ultimately be passed into `BLSSignatureChecker.checkSignatures`.
+
+See full documentation in [`BLSSignatureChecker.md`](./BLSSignatureChecker.md).
