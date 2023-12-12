@@ -103,7 +103,7 @@ interface IBLSApkRegistry is IRegistry {
     function registerBLSPublicKey(
         address operator,
         PubkeyRegistrationParams calldata pubkeyRegistrationParams
-    ) external;
+    ) external returns (bytes32 operatorId);
 
     /**
      * @notice Returns the pubkey and pubkey hash of an operator
