@@ -95,6 +95,8 @@ contract MockAVSDeployer is Test {
     uint32 registrationBlockNumber = 100;
     uint32 blocksBetweenRegistrations = 10;
 
+    IBLSApkRegistry.PubkeyRegistrationParams pubkeyRegistrationParams;
+
     struct OperatorMetadata {
         uint256 quorumBitmap;
         address operator;
@@ -291,17 +293,13 @@ contract MockAVSDeployer is Test {
 
         blsApkRegistry.setBLSPublicKey(operator, pubKey);
 
-        BN254.G1Point memory pubkeyRegistrationSignature;
-        BN254.G1Point memory pubkeyG1;
-        BN254.G2Point memory pubkeyG2;
-
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
         for (uint i = 0; i < quorumNumbers.length; i++) {
             stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), operator, stake);
         }
 
         cheats.prank(operator);
-        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationSignature, pubkeyG1, pubkeyG2);
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams);
     }
 
     /**
@@ -313,17 +311,13 @@ contract MockAVSDeployer is Test {
 
         blsApkRegistry.setBLSPublicKey(operator, pubKey);
 
-        BN254.G1Point memory pubkeyRegistrationSignature;
-        BN254.G1Point memory pubkeyG1;
-        BN254.G2Point memory pubkeyG2;
-
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
         for (uint i = 0; i < quorumNumbers.length; i++) {
             stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), operator, stakes[uint8(quorumNumbers[i])]);
         }
 
         cheats.prank(operator);
-        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationSignature, pubkeyG1, pubkeyG2);
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams);
     }
 
     function _registerRandomOperators(uint256 pseudoRandomNumber) internal returns(OperatorMetadata[] memory, uint256[][] memory) {

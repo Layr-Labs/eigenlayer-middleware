@@ -147,20 +147,20 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
      * @notice Registers msg.sender as an operator for one or more quorums. If any quorum reaches its maximum
      * operator capacity, this method will fail.
      * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for
+     * @param pubkeyRegistrationParams contains the G1 & G2 public keys of the operator, and a signature proving their ownership
+     * @dev the `pubkeyRegistrationParams` input param is ignored if the caller has previously registered a public key
      */
     function registerOperator(
         bytes calldata quorumNumbers,
         string calldata socket,
-        BN254.G1Point memory pubkeyRegistrationSignature, 
-        BN254.G1Point memory pubkeyG1, 
-        BN254.G2Point memory pubkeyG2
+        IBLSApkRegistry.PubkeyRegistrationParams calldata pubkeyRegistrationParams
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         /**
          * IF the operator has never registered a pubkey before, THEN register their pubkey
-         * OTHERWISE, simply ignore the `pubkeyRegistrationSignature`, `pubkeyG1`, and `pubkeyG2` inputs
+         * OTHERWISE, simply ignore the provided `pubkeyRegistrationParams`
          */
         if (blsApkRegistry.operatorToPubkeyHash(msg.sender) == 0) {
-            blsApkRegistry.registerBLSPublicKey(msg.sender, pubkeyRegistrationSignature, pubkeyG1, pubkeyG2);
+            blsApkRegistry.registerBLSPublicKey(msg.sender, pubkeyRegistrationParams);
         }
         bytes32 operatorId = blsApkRegistry.getOperatorId(msg.sender);
 
@@ -192,18 +192,28 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
      * @notice Registers msg.sender as an operator for one or more quorums. If any quorum reaches its maximum operator
      * capacity, `operatorKickParams` is used to replace an old operator with the new one.
      * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for
+     * @param pubkeyRegistrationParams contains the G1 & G2 public keys of the operator, and a signature proving their ownership
      * @param operatorKickParams are used to determine which operator is removed to maintain quorum capacity as the
      * operator registers for quorums.
      * @param churnApproverSignature is the signature of the churnApprover on the operator kick params
+     * @dev the `pubkeyRegistrationParams` input param is ignored if the caller has previously registered a public key
      */
     function registerOperatorWithChurn(
         bytes calldata quorumNumbers, 
         string calldata socket,
+        IBLSApkRegistry.PubkeyRegistrationParams calldata pubkeyRegistrationParams,
         OperatorKickParam[] calldata operatorKickParams,
         SignatureWithSaltAndExpiry memory churnApproverSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         require(operatorKickParams.length == quorumNumbers.length, "RegistryCoordinator.registerOperatorWithChurn: input length mismatch");
 
+        /**
+         * IF the operator has never registered a pubkey before, THEN register their pubkey
+         * OTHERWISE, simply ignore the `pubkeyRegistrationSignature`, `pubkeyG1`, and `pubkeyG2` inputs
+         */
+        if (blsApkRegistry.operatorToPubkeyHash(msg.sender) == 0) {
+            blsApkRegistry.registerBLSPublicKey(msg.sender, pubkeyRegistrationParams);
+        }
         bytes32 operatorId = blsApkRegistry.getOperatorId(msg.sender);
 
         // Verify the churn approver's signature for the registering operator and kick params
