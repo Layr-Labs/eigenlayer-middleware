@@ -77,7 +77,7 @@ contract MockAVSDeployer is Test {
     bytes32 defaultSalt = bytes32(uint256(keccak256("defaultSalt")));
 
     address ejector = address(uint160(uint256(keccak256("ejector"))));
-
+    
     address defaultOperator = address(uint160(uint256(keccak256("defaultOperator"))));
     bytes32 defaultOperatorId;
     BN254.G1Point internal defaultPubKey =  BN254.G1Point(18260007818883133054078754218619977578772505796600400998181738095793040006897,3432351341799135763167709827653955074218841517684851694584291831827675065899);
@@ -237,6 +237,7 @@ contract MockAVSDeployer is Test {
         }
 
         registryCoordinatorImplementation = new RegistryCoordinatorHarness(
+            delegationMock,
             slasher,
             stakeRegistry,
             blsApkRegistry,
@@ -296,8 +297,9 @@ contract MockAVSDeployer is Test {
             stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), operator, stake);
         }
 
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
         cheats.prank(operator);
-        registryCoordinator.registerOperator(quorumNumbers, defaultSocket);
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, emptySignatureAndExpiry);
     }
 
     /**
@@ -314,8 +316,9 @@ contract MockAVSDeployer is Test {
             stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), operator, stakes[uint8(quorumNumbers[i])]);
         }
 
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
         cheats.prank(operator);
-        registryCoordinator.registerOperator(quorumNumbers, defaultSocket);
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, emptySignatureAndExpiry);
     }
 
     function _registerRandomOperators(uint256 pseudoRandomNumber) internal returns(OperatorMetadata[] memory, uint256[][] memory) {
