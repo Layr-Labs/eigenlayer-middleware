@@ -42,12 +42,21 @@ contract BitmapUtilsUnitTests_bitwiseOperations is BitmapUtilsUnitTests {
         }
     }
 
+<<<<<<< HEAD
     function test_setBit(uint256 bitmap, uint8 bitToSet) public {
         // Ensure that numberToAdd isn't already in the bitmap
         cheats.assume(bitmap | (1 << bitToSet) != bitmap);
         uint256 updatedBitmap = bitmapUtilsWrapper.setBit(bitmap, bitToSet);
         assertTrue(
             bitmapUtilsWrapper.isSet(updatedBitmap, bitToSet), "setBit function is broken"
+=======
+    function test_setBit(uint256 bitmap, uint8 numberToAdd) public {
+        // Ensure that numberToAdd isn't already in the bitmap
+        cheats.assume(bitmap | (1 << numberToAdd) != bitmap);
+        uint256 updatedBitmap = bitmapUtilsWrapper.setBit(bitmap, numberToAdd);
+        assertTrue(
+            bitmapUtilsWrapper.isSet(updatedBitmap, numberToAdd), "setBit function is broken"
+>>>>>>> feat: addNumberToBitmap function
         );
     }
 
