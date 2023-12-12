@@ -30,7 +30,7 @@ contract BLSApkRegistryFFITests is G2Operations {
         pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(alice);
 
         vm.prank(address(registryCoordinator));
-        blsApkRegistry.registerBLSPublicKey(alice, pubkeyRegistrationParams);
+        blsApkRegistry.registerBLSPublicKey(alice, pubkeyRegistrationParams, registryCoordinator.pubkeyRegistrationMessageHash(alice));
 
         assertEq(blsApkRegistry.operatorToPubkeyHash(alice), BN254.hashG1Point(pubkeyRegistrationParams.pubkeyG1),
             "pubkey hash not stored correctly");
@@ -45,7 +45,7 @@ contract BLSApkRegistryFFITests is G2Operations {
     }
 
     function _signMessage(address signer) internal view returns(BN254.G1Point memory) {
-        BN254.G1Point memory messageHash = blsApkRegistry.getMessageHash(signer);
+        BN254.G1Point memory messageHash = registryCoordinator.pubkeyRegistrationMessageHash(signer);
         return BN254.scalar_mul(messageHash, privKey);
     }
 }
