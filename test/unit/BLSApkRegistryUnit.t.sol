@@ -21,9 +21,7 @@ contract BLSApkRegistryUnitTests is Test {
 
     BN254.G1Point internal defaultPubKey =  BN254.G1Point(18260007818883133054078754218619977578772505796600400998181738095793040006897,3432351341799135763167709827653955074218841517684851694584291831827675065899);
 
-    BN254.G1Point pubKeyG1;
-    BN254.G2Point pubKeyG2;
-    BN254.G1Point signedMessageHash;
+    IBLSApkRegistry.PubkeyRegistrationParams pubkeyRegistrationParams;
 
     address alice = address(1);
     address bob = address(2);
@@ -39,13 +37,13 @@ contract BLSApkRegistryUnitTests is Test {
         registryCoordinator = new RegistryCoordinatorMock();
         blsApkRegistry = new BLSApkRegistryHarness(registryCoordinator);
 
-        pubKeyG1 = BN254.generatorG1().scalar_mul(privKey);
+        pubkeyRegistrationParams.pubkeyG1 = BN254.generatorG1().scalar_mul(privKey);
         
         //privKey*G2
-        pubKeyG2.X[1] = 19101821850089705274637533855249918363070101489527618151493230256975900223847;
-        pubKeyG2.X[0] = 5334410886741819556325359147377682006012228123419628681352847439302316235957;
-        pubKeyG2.Y[1] = 354176189041917478648604979334478067325821134838555150300539079146482658331;
-        pubKeyG2.Y[0] = 4185483097059047421902184823581361466320657066600218863748375739772335928910;
+        pubkeyRegistrationParams.pubkeyG2.X[1] = 19101821850089705274637533855249918363070101489527618151493230256975900223847;
+        pubkeyRegistrationParams.pubkeyG2.X[0] = 5334410886741819556325359147377682006012228123419628681352847439302316235957;
+        pubkeyRegistrationParams.pubkeyG2.Y[1] = 354176189041917478648604979334478067325821134838555150300539079146482658331;
+        pubkeyRegistrationParams.pubkeyG2.Y[0] = 4185483097059047421902184823581361466320657066600218863748375739772335928910;
 
 
         // Initialize a quorum
@@ -293,46 +291,50 @@ contract BLSApkRegistryUnitTests is Test {
 
     // TODO: better organize / integrate tests migrated from `BLSPublicKeyCompendium` unit tests
     function testRegisterBLSPublicKey() public {
-        signedMessageHash = _signMessage(alice);
-        vm.prank(alice);
-        blsApkRegistry.registerBLSPublicKey(signedMessageHash, pubKeyG1, pubKeyG2);
+        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(alice);
+        vm.prank(address(registryCoordinator));
+        blsApkRegistry.registerBLSPublicKey(alice, pubkeyRegistrationParams);
 
-        assertEq(blsApkRegistry.operatorToPubkeyHash(alice), BN254.hashG1Point(pubKeyG1), "pubkey hash not stored correctly");
-        assertEq(blsApkRegistry.pubkeyHashToOperator(BN254.hashG1Point(pubKeyG1)), alice, "operator address not stored correctly");
+        assertEq(blsApkRegistry.operatorToPubkeyHash(alice), BN254.hashG1Point(pubkeyRegistrationParams.pubkeyG1),
+            "pubkey hash not stored correctly");
+        assertEq(blsApkRegistry.pubkeyHashToOperator(BN254.hashG1Point(pubkeyRegistrationParams.pubkeyG1)), alice,
+            "operator address not stored correctly");
     }
 
     function testRegisterBLSPublicKey_NoMatch_Reverts() public {
-        signedMessageHash = _signMessage(alice);
-        BN254.G1Point memory badPubKeyG1 = BN254.generatorG1().scalar_mul(420); // mismatch public keys
+        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(alice);
+        BN254.G1Point memory badPubkeyG1 = BN254.generatorG1().scalar_mul(420); // mismatch public keys
 
-        vm.prank(alice);
+        pubkeyRegistrationParams.pubkeyG1 = badPubkeyG1;
+
+        vm.prank(address(registryCoordinator));
         vm.expectRevert(bytes("BLSApkRegistry.registerBLSPublicKey: either the G1 signature is wrong, or G1 and G2 private key do not match"));
-        blsApkRegistry.registerBLSPublicKey(signedMessageHash, badPubKeyG1, pubKeyG2);
+        blsApkRegistry.registerBLSPublicKey(alice, pubkeyRegistrationParams);
     }
 
     function testRegisterBLSPublicKey_BadSig_Reverts() public {
-        signedMessageHash = _signMessage(bob); // sign with wrong private key
+        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(bob); // sign with wrong private key
 
-        vm.prank(alice); 
+        vm.prank(address(registryCoordinator));
         vm.expectRevert(bytes("BLSApkRegistry.registerBLSPublicKey: either the G1 signature is wrong, or G1 and G2 private key do not match"));
-        blsApkRegistry.registerBLSPublicKey(signedMessageHash, pubKeyG1, pubKeyG2);
+        blsApkRegistry.registerBLSPublicKey(alice, pubkeyRegistrationParams);
     }
 
     function testRegisterBLSPublicKey_OpRegistered_Reverts() public {
         testRegisterBLSPublicKey(); // register alice
 
-        vm.prank(alice); 
+        vm.prank(address(registryCoordinator));
         vm.expectRevert(bytes("BLSApkRegistry.registerBLSPublicKey: operator already registered pubkey"));
-        blsApkRegistry.registerBLSPublicKey(signedMessageHash, pubKeyG1, pubKeyG2);
+        blsApkRegistry.registerBLSPublicKey(alice, pubkeyRegistrationParams);
     }
 
     function testRegisterBLSPublicKey_PkRegistered_Reverts() public {
         testRegisterBLSPublicKey(); 
-        signedMessageHash = _signMessage(bob); // same private key different operator
+        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(bob); // same private key different operator
 
-        vm.prank(bob); 
+        vm.prank(address(registryCoordinator));
         vm.expectRevert(bytes("BLSApkRegistry.registerBLSPublicKey: public key already registered"));
-        blsApkRegistry.registerBLSPublicKey(signedMessageHash, pubKeyG1, pubKeyG2);
+        blsApkRegistry.registerBLSPublicKey(bob, pubkeyRegistrationParams);
     }
 
     function _signMessage(address signer) internal view returns(BN254.G1Point memory) {

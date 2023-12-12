@@ -95,6 +95,8 @@ contract MockAVSDeployer is Test {
     uint32 registrationBlockNumber = 100;
     uint32 blocksBetweenRegistrations = 10;
 
+    IBLSApkRegistry.PubkeyRegistrationParams pubkeyRegistrationParams;
+
     struct OperatorMetadata {
         uint256 quorumBitmap;
         address operator;
@@ -297,7 +299,7 @@ contract MockAVSDeployer is Test {
         }
 
         cheats.prank(operator);
-        registryCoordinator.registerOperator(quorumNumbers, defaultSocket);
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams);
     }
 
     /**
@@ -315,7 +317,7 @@ contract MockAVSDeployer is Test {
         }
 
         cheats.prank(operator);
-        registryCoordinator.registerOperator(quorumNumbers, defaultSocket);
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams);
     }
 
     function _registerRandomOperators(uint256 pseudoRandomNumber) internal returns(OperatorMetadata[] memory, uint256[][] memory) {

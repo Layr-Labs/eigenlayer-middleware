@@ -18,6 +18,7 @@ import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
 
 import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
+import {BN254} from "src/libraries/BN254.sol";
 
 /**
  * @title A `RegistryCoordinator` that has three registries:
@@ -29,6 +30,7 @@ import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
  */
 contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISocketUpdater, ISignatureUtils, Pausable {
     using BitmapUtils for *;
+    using BN254 for BN254.G1Point;
 
     /// @notice The EIP-712 typehash for the `DelegationApproval` struct used by the contract
     bytes32 public constant OPERATOR_CHURN_APPROVAL_TYPEHASH =
@@ -145,12 +147,22 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
      * @notice Registers msg.sender as an operator for one or more quorums. If any quorum reaches its maximum
      * operator capacity, this method will fail.
      * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for
+     * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership
+     * @dev the `params` input param is ignored if the caller has previously registered a public key
      */
     function registerOperator(
         bytes calldata quorumNumbers,
-        string calldata socket
+        string calldata socket,
+        IBLSApkRegistry.PubkeyRegistrationParams calldata params
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
+        /**
+         * IF the operator has never registered a pubkey before, THEN register their pubkey
+         * OTHERWISE, simply ignore the provided `params`
+         */
         bytes32 operatorId = blsApkRegistry.getOperatorId(msg.sender);
+        if (operatorId == 0) {
+            operatorId = blsApkRegistry.registerBLSPublicKey(msg.sender, params);
+        }
 
         // Register the operator in each of the registry contracts
         RegisterResults memory results = _registerOperator({
@@ -180,19 +192,29 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
      * @notice Registers msg.sender as an operator for one or more quorums. If any quorum reaches its maximum operator
      * capacity, `operatorKickParams` is used to replace an old operator with the new one.
      * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for
+     * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership
      * @param operatorKickParams are used to determine which operator is removed to maintain quorum capacity as the
      * operator registers for quorums.
      * @param churnApproverSignature is the signature of the churnApprover on the operator kick params
+     * @dev the `params` input param is ignored if the caller has previously registered a public key
      */
     function registerOperatorWithChurn(
         bytes calldata quorumNumbers, 
         string calldata socket,
+        IBLSApkRegistry.PubkeyRegistrationParams calldata params,
         OperatorKickParam[] calldata operatorKickParams,
         SignatureWithSaltAndExpiry memory churnApproverSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         require(operatorKickParams.length == quorumNumbers.length, "RegistryCoordinator.registerOperatorWithChurn: input length mismatch");
 
+        /**
+         * IF the operator has never registered a pubkey before, THEN register their pubkey
+         * OTHERWISE, simply ignore the `pubkeyRegistrationSignature`, `pubkeyG1`, and `pubkeyG2` inputs
+         */
         bytes32 operatorId = blsApkRegistry.getOperatorId(msg.sender);
+        if (operatorId == 0) {
+            operatorId = blsApkRegistry.registerBLSPublicKey(msg.sender, params);
+        }
 
         // Verify the churn approver's signature for the registering operator and kick params
         _verifyChurnApproverSignature({
@@ -209,10 +231,8 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
             socket: socket
         });
 
-        uint256 kickIndex = 0;
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            
             OperatorSetParam memory operatorSetParams = _quorumParams[quorumNumber];
             
             /**
@@ -230,7 +250,6 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
                 });
 
                 _deregisterOperator(operatorKickParams[i].operator, quorumNumbers[i:i+1]);
-                kickIndex++;
             }
         }
     }

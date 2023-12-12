@@ -94,22 +94,20 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     }
 
     /**
-     * @notice Called by an operator to register themselves as the owner of a BLS public key and reveal their G1 and G2 public key.
-     * @param signedMessageHash is the registration message hash signed by the private key of the operator
-     * @param pubkeyG1 is the corresponding G1 public key of the operator 
-     * @param pubkeyG2 is the corresponding G2 public key of the operator
+     * @notice Called by the RegistryCoordinator register an operator as the owner of a BLS public key.
+     * @param operator is the operator for whom the key is being registered
+     * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership
      */
     function registerBLSPublicKey(
-        BN254.G1Point memory signedMessageHash, 
-        BN254.G1Point memory pubkeyG1, 
-        BN254.G2Point memory pubkeyG2
-    ) external {
-        bytes32 pubkeyHash = BN254.hashG1Point(pubkeyG1);
+        address operator,
+        PubkeyRegistrationParams calldata params
+    ) external onlyRegistryCoordinator returns (bytes32 operatorId) {
+        bytes32 pubkeyHash = BN254.hashG1Point(params.pubkeyG1);
         require(
             pubkeyHash != ZERO_PK_HASH, "BLSApkRegistry.registerBLSPublicKey: cannot register zero pubkey"
         );
         require(
-            operatorToPubkeyHash[msg.sender] == bytes32(0),
+            operatorToPubkeyHash[operator] == bytes32(0),
             "BLSApkRegistry.registerBLSPublicKey: operator already registered pubkey"
         );
         require(
@@ -118,33 +116,34 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         );
 
         // H(m) 
-        BN254.G1Point memory messageHash = getMessageHash(msg.sender);
+        BN254.G1Point memory messageHash = getMessageHash(operator);
 
         // gamma = h(sigma, P, P', H(m))
         uint256 gamma = uint256(keccak256(abi.encodePacked(
-            signedMessageHash.X, 
-            signedMessageHash.Y, 
-            pubkeyG1.X, 
-            pubkeyG1.Y, 
-            pubkeyG2.X, 
-            pubkeyG2.Y, 
+            params.pubkeyRegistrationSignature.X, 
+            params.pubkeyRegistrationSignature.Y, 
+            params.pubkeyG1.X, 
+            params.pubkeyG1.Y, 
+            params.pubkeyG2.X, 
+            params.pubkeyG2.Y, 
             messageHash.X, 
             messageHash.Y
         ))) % BN254.FR_MODULUS;
         
         // e(sigma + P * gamma, [-1]_2) = e(H(m) + [1]_1 * gamma, P') 
         require(BN254.pairing(
-            signedMessageHash.plus(pubkeyG1.scalar_mul(gamma)),
+            params.pubkeyRegistrationSignature.plus(params.pubkeyG1.scalar_mul(gamma)),
             BN254.negGeneratorG2(),
             messageHash.plus(BN254.generatorG1().scalar_mul(gamma)),
-            pubkeyG2
+            params.pubkeyG2
         ), "BLSApkRegistry.registerBLSPublicKey: either the G1 signature is wrong, or G1 and G2 private key do not match");
 
-        operatorToPubkey[msg.sender] = pubkeyG1;
-        operatorToPubkeyHash[msg.sender] = pubkeyHash;
-        pubkeyHashToOperator[pubkeyHash] = msg.sender;
+        operatorToPubkey[operator] = params.pubkeyG1;
+        operatorToPubkeyHash[operator] = pubkeyHash;
+        pubkeyHashToOperator[pubkeyHash] = operator;
 
-        emit NewPubkeyRegistration(msg.sender, pubkeyG1, pubkeyG2);
+        emit NewPubkeyRegistration(operator, params.pubkeyG1, params.pubkeyG2);
+        return pubkeyHash;
     }
 
     /*******************************************************************************
