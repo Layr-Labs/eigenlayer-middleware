@@ -189,41 +189,6 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
     }
 
     /**
-     * @notice Registers msg.sender as an operator for one or more quorums. If any quorum reaches its maximum
-     * operator capacity, this method will fail.
-     * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for
-     */
-    function registerOperator(
-        bytes calldata quorumNumbers,
-        string calldata socket
-    ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        bytes32 operatorId = blsApkRegistry.getOperatorId(msg.sender);
-
-        // Register the operator in each of the registry contracts
-        RegisterResults memory results = _registerOperator({
-            operator: msg.sender, 
-            operatorId: operatorId,
-            quorumNumbers: quorumNumbers, 
-            socket: socket
-        });
-
-        for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            uint8 quorumNumber = uint8(quorumNumbers[i]);
-            
-            OperatorSetParam memory operatorSetParams = _quorumParams[quorumNumber];
-            
-            /**
-             * The new operator count for each quorum may not exceed the configured maximum
-             * If it does, use `registerOperatorWithChurn` instead.
-             */
-            require(
-                results.numOperatorsPerQuorum[i] <= operatorSetParams.maxOperatorCount,
-                "RegistryCoordinator.registerOperator: operator count exceeds maximum"
-            );
-        }
-    }
-
-    /**
      * @notice Registers msg.sender as an operator for one or more quorums. If any quorum reaches its maximum operator
      * capacity, `operatorKickParams` is used to replace an old operator with the new one.
      * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for
