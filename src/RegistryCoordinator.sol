@@ -847,4 +847,31 @@ contract RegistryCoordinator is
     {
         return OwnableUpgradeable.owner();
     }
+
+    function getOperatorRestakedStrategies(address operator) external view returns (address[] memory) {
+        uint192 operatorBitmap = _currentOperatorBitmap(_operatorInfo[operator].operatorId);
+
+        if (operatorBitmap == 0 || quorumCount == 0) {
+            return new address[](0);
+        }
+
+        // Get number of strategies for each quorum in operator bitmap
+        bytes memory operatorRestakedQuorums = BitmapUtils.bitmapToBytesArray(operatorBitmap);
+        uint256 strategyCount;
+        for(uint256 i = 0; i < operatorRestakedQuorums.length; i++) {
+            strategyCount += stakeRegistry.strategyParamsLength(uint8(operatorRestakedQuorums[i]));
+        }
+
+        // Get strategies for each quorum in operator bitmap
+        address[] memory restakedStrategies = new address[](strategyCount);
+        uint256 index = 0;
+        for(uint256 i = 0; i < operatorRestakedQuorums.length; i++) {
+            IStakeRegistry.StrategyParams[] memory strategyParams = stakeRegistry.getStrategyParams(uint8(operatorRestakedQuorums[i]));
+            for (uint256 j = 0; j < strategyParams.length; j++) {
+                restakedStrategies[index] = address(strategyParams[j].strategy);
+                index++;
+            }
+        }
+        return restakedStrategies;        
+    }
 }

@@ -245,4 +245,10 @@ interface IStakeRegistry is IRegistry {
         bytes32 operatorId, 
         bytes calldata quorumNumbers
     ) external returns (uint192);
+
+    /**
+     * @notice Returns the dynamic array stored in the `strategyParams` mapping
+     * @param quorumNumber is the quorum number to get the StrategyParams for
+     */
+    function getStrategyParams(uint8 quorumNumber) external view returns (StrategyParams[] memory);
 }

@@ -493,6 +493,14 @@ contract StakeRegistry is StakeRegistryStorage {
     *******************************************************************************/
 
     /**
+     * @notice Returns the dynamic array stored in the `strategyParams` mapping
+     * @param quorumNumber is the quorum number to get the StrategyParams for
+     */
+    function getStrategyParams(uint8 quorumNumber) external view returns (StrategyParams[] memory) {
+        return strategyParams[quorumNumber];
+    }
+    
+    /**
      * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
      * @dev reverts if the quorum does not exist
      */
