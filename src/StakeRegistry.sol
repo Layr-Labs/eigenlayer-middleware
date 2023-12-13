@@ -20,7 +20,8 @@ import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
  * @author Layr Labs, Inc.
  */
 contract StakeRegistry is StakeRegistryStorage {
-    
+    using BitmapUtils for uint192;
+
     modifier onlyRegistryCoordinator() {
         require(
             msg.sender == address(registryCoordinator),
@@ -168,7 +169,7 @@ contract StakeRegistry is StakeRegistryStorage {
             // If the operator no longer meets the minimum stake, set their stake to zero and mark them for removal
             if (!hasMinimumStake) {
                 stakeWeight = 0;
-                quorumsToRemove |= quorumNumber;
+                quorumsToRemove = uint192(quorumsToRemove.addNumberToBitmap(quorumNumber));
             }
 
             // Update the operator's stake and retrieve the delta
@@ -183,7 +184,7 @@ contract StakeRegistry is StakeRegistryStorage {
             _recordTotalStakeUpdate(quorumNumber, stakeDelta);
         }
 
-        return quorumsToRemove;
+        return uint192(quorumsToRemove);
     }
 
     /// @notice Initialize a new quorum and push its first history update
