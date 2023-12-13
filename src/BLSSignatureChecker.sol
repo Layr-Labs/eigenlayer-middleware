@@ -95,7 +95,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         for (uint i = 0; i < quorumNumbers.length; i++) {
             if (staleStakesForbidden) {
                 require(
-                    registryCoordinator.quorumUpdateBlockNumber(uint8(quorumNumbers[i])) + delegation.withdrawalDelayBlocks() <= block.number,
+                    registryCoordinator.quorumUpdateBlockNumber(uint8(quorumNumbers[i])) + delegation.withdrawalDelayBlocks() >= block.number,
                     "BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within withdrawalDelayBlocks window"
                 );
             }
