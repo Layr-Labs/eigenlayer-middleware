@@ -185,7 +185,7 @@ contract StakeRegistry is StakeRegistryStorage {
             _recordTotalStakeUpdate(quorumNumber, stakeDelta);
         }
 
-        return quorumsToRemove;
+        return uint192(quorumsToRemove);
     }
 
     /// @notice Initialize a new quorum and push its first history update
