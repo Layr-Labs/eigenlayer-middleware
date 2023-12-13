@@ -139,7 +139,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * or more quorums.
      *
      * If the operator no longer has the minimum stake required for a quorum, they are
-     * added to the
+     * added to `quorumsToRemove`, which is returned to the registryCoordinator
      * @return A bitmap of quorums where the operator no longer meets the minimum stake
      * and should be deregistered.
      */
