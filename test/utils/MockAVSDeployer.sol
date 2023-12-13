@@ -26,7 +26,7 @@ import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
 import {EigenPodManagerMock} from "eigenlayer-contracts/src/test/mocks/EigenPodManagerMock.sol";
-import {DelegationManagerMock} from "eigenlayer-contracts/src/test/mocks/DelegationManagerMock.sol";
+import {DelegationMock} from "test/mocks/DelegationMock.sol";
 import {BLSApkRegistryHarness} from "test/harnesses/BLSApkRegistryHarness.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 
@@ -59,7 +59,7 @@ contract MockAVSDeployer is Test {
     IIndexRegistry public indexRegistry;
 
     StrategyManagerMock public strategyManagerMock;
-    DelegationManagerMock public delegationMock;
+    DelegationMock public delegationMock;
     EigenPodManagerMock public eigenPodManagerMock;
 
     address public proxyAdminOwner = address(uint160(uint256(keccak256("proxyAdminOwner"))));
@@ -120,7 +120,7 @@ contract MockAVSDeployer is Test {
         pausers[0] = pauser;
         pauserRegistry = new PauserRegistry(pausers, unpauser);
 
-        delegationMock = new DelegationManagerMock();
+        delegationMock = new DelegationMock();
         eigenPodManagerMock = new EigenPodManagerMock();
         strategyManagerMock = new StrategyManagerMock();
         slasherImplementation = new Slasher(strategyManagerMock, delegationMock);
