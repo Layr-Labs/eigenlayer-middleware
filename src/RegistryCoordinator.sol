@@ -432,7 +432,7 @@ contract RegistryCoordinator is
     /**
      * @notice Sets the metadata URI for the AVS
      * @param _metadataURI is the metadata URI for the AVS
-     * @dev only callable by the service manager owner
+     * @dev only callable by the owner
      */
     function setMetadataURI(string memory _metadataURI) external onlyOwner {
         delegationManager.updateAVSMetadataURI(_metadataURI);
