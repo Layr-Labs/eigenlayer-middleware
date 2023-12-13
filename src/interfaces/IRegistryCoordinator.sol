@@ -4,6 +4,7 @@ pragma solidity =0.8.12;
 import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
+import {BN254} from "src/libraries/BN254.sol";
 
 /**
  * @title Interface for a contract that coordinates between various registries for an AVS.
@@ -134,4 +135,10 @@ interface IRegistryCoordinator {
 
     /// @notice Returns the number of registries
     function numRegistries() external view returns (uint256);
+
+    /**
+     * @notice Returns the message hash that an operator must sign to register their BLS public key.
+     * @param operator is the address of the operator registering their BLS public key
+     */
+    function pubkeyRegistrationMessageHash(address operator) external view returns (BN254.G1Point memory);
 }
