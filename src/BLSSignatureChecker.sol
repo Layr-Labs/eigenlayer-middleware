@@ -107,6 +107,8 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
             "BLSSignatureChecker.checkSignatures: input nonsigner length mismatch"
         );
 
+        require(referenceBlockNumber <= uint32(block.number), "BLSSignatureChecker.checkSignatures: invalid reference block");
+
         // This method needs to calculate the aggregate pubkey for all signing operators across
         // all signing quorums. To do that, we can query the aggregate pubkey for each quorum
         // and subtract out the pubkey for each nonsigning operator registered to that quorum.
@@ -182,7 +184,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                 // is within withdrawalDelayBlocks
                 if (staleStakesForbidden) {
                     require(
-                        registryCoordinator.quorumUpdateBlockNumber(uint8(quorumNumbers[i])) + withdrawalDelayBlocks >= block.number,
+                        registryCoordinator.quorumUpdateBlockNumber(uint8(quorumNumbers[i])) + withdrawalDelayBlocks >= referenceBlockNumber,
                         "BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within withdrawalDelayBlocks window"
                     );
                 }
