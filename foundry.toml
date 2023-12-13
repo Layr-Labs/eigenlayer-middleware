@@ -6,7 +6,4 @@ fs_permissions = [{ access = "read-write", path = "./" }]
 
 ffi = true
 
-# The number of optimizer runs
-optimizer_runs = 100
-
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

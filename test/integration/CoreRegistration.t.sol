@@ -57,7 +57,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
 
         // Set operator address
         operator = cheats.addr(operatorPrivateKey);
-        blsApkRegistry.setBLSPublicKey(operator, defaultPubKey);
+        pubkeyCompendium.setBLSPublicKey(operator, defaultPubKey);
 
         // Register operator to EigenLayer
         cheats.prank(operator);
@@ -91,7 +91,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
 
         // Register operator
         cheats.prank(operator);
-        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, operatorSignature);
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, operatorSignature);
 
         // Check operator is registered
         IDelegationManager.OperatorAVSRegistrationStatus operatorStatus = delegationManager.avsOperatorStatus(address(registryCoordinator), operator);
@@ -152,7 +152,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
 
         // Register operator
         cheats.prank(operator);
-        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, operatorSignature);
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, operatorSignature);
     }
 
     function _getOperatorSignature(

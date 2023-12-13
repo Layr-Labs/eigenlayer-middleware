@@ -10,7 +10,19 @@ import {BN254} from "src/libraries/BN254.sol";
  * @author Layr Labs, Inc.
  */
 interface IBLSApkRegistry is IRegistry {
-    // STRUCTS
+    // EVENTS
+    // Emitted when a new operator pubkey is registered for a set of quorums
+    event OperatorAddedToQuorums(
+        address operator,
+        bytes quorumNumbers
+    );
+
+    // Emitted when an operator pubkey is removed from a set of quorums
+    event OperatorRemovedFromQuorums(
+        address operator, 
+        bytes quorumNumbers
+    );
+
     /// @notice Data structure used to track the history of the Aggregate Public Key of all operators
     struct ApkUpdate {
         // first 24 bytes of keccak256(apk_x0, apk_x1, apk_y0, apk_y1)
@@ -20,35 +32,7 @@ interface IBLSApkRegistry is IRegistry {
         // block number at which the next update occurred
         uint32 nextUpdateBlockNumber;
     }
-
-    /**
-     * @notice Struct used when registering a new public key
-     * @param signedMessageHash is the registration message hash signed by the private key of the operator
-     * @param pubkeyG1 is the corresponding G1 public key of the operator 
-     * @param pubkeyG2 is the corresponding G2 public key of the operator
-     */     
-    struct PubkeyRegistrationParams {
-        BN254.G1Point pubkeyRegistrationSignature;
-        BN254.G1Point pubkeyG1;
-        BN254.G2Point pubkeyG2;
-    }
-
-    // EVENTS
-    /// @notice Emitted when `operator` registers with the public keys `pubkeyG1` and `pubkeyG2`.
-    event NewPubkeyRegistration(address indexed operator, BN254.G1Point pubkeyG1, BN254.G2Point pubkeyG2);
-
-    // @notice Emitted when a new operator pubkey is registered for a set of quorums
-    event OperatorAddedToQuorums(
-        address operator,
-        bytes quorumNumbers
-    );
-
-    // @notice Emitted when an operator pubkey is removed from a set of quorums
-    event OperatorRemovedFromQuorums(
-        address operator, 
-        bytes quorumNumbers
-    );
-
+    
     /**
      * @notice Registers the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to register.
@@ -60,7 +44,7 @@ interface IBLSApkRegistry is IRegistry {
      *         3) `quorumNumbers` is ordered in ascending order
      *         4) the operator is not already registered
      */
-    function registerOperator(address operator, bytes calldata quorumNumbers) external;
+    function registerOperator(address operator, bytes calldata quorumNumbers) external returns(bytes32);
 
     /**
      * @notice Deregisters the `operator`'s pubkey for the specified `quorumNumbers`.
@@ -81,37 +65,6 @@ interface IBLSApkRegistry is IRegistry {
      * @param quorumNumber The number of the new quorum
      */
     function initializeQuorum(uint8 quorumNumber) external;
-
-    /**
-     * @notice mapping from operator address to pubkey hash.
-     * Returns *zero* if the `operator` has never registered, and otherwise returns the hash of the public key of the operator.
-     */
-    function operatorToPubkeyHash(address operator) external view returns (bytes32);
-
-    /**
-     * @notice mapping from pubkey hash to operator address.
-     * Returns *zero* if no operator has ever registered the public key corresponding to `pubkeyHash`,
-     * and otherwise returns the (unique) registered operator who owns the BLS public key that is the preimage of `pubkeyHash`.
-     */
-    function pubkeyHashToOperator(bytes32 pubkeyHash) external view returns (address);
-
-    /**
-     * @notice Called by the RegistryCoordinator register an operator as the owner of a BLS public key.
-     * @param operator is the operator for whom the key is being registered
-     * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership
-     * @param pubkeyRegistrationMessageHash is a hash that the operator must sign to prove key ownership
-     */
-    function registerBLSPublicKey(
-        address operator,
-        PubkeyRegistrationParams calldata params,
-        BN254.G1Point calldata pubkeyRegistrationMessageHash
-    ) external returns (bytes32 operatorId);
-
-    /**
-     * @notice Returns the pubkey and pubkey hash of an operator
-     * @dev Reverts if the operator has not registered a valid pubkey
-     */
-    function getRegisteredPubkey(address operator) external view returns (BN254.G1Point memory, bytes32);
 
     /// @notice Returns the current APK for the provided `quorumNumber `
     function getApk(uint8 quorumNumber) external view returns (BN254.G1Point memory);
@@ -134,7 +87,5 @@ interface IBLSApkRegistry is IRegistry {
      */
     function getApkHashAtBlockNumberAndIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes24);
 
-    /// @notice returns the ID used to identify the `operator` within this AVS.
-    /// @dev Returns zero in the event that the `operator` has never registered for the AVS
     function getOperatorId(address operator) external view returns (bytes32);
 }

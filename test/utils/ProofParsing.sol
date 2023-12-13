@@ -29,55 +29,55 @@ contract ProofParsing is Test{
         proofConfigJson = vm.readFile(path);
     }
 
-    function getSlot() public view returns(uint256) {
+    function getSlot() public returns(uint256) {
         return stdJson.readUint(proofConfigJson, ".slot");
     }
 
-    function getValidatorIndex() public view returns(uint256) {
+    function getValidatorIndex() public returns(uint256) {
         return stdJson.readUint(proofConfigJson, ".validatorIndex");
     }
 
-    function getValidatorPubkeyHash() public view returns(bytes32) {
+    function getValidatorPubkeyHash() public returns(bytes32) {
         return stdJson.readBytes32(proofConfigJson, ".ValidatorFields[0]");
     }
 
-    function getWithdrawalIndex() public view returns(uint256) {
+    function getWithdrawalIndex() public returns(uint256) {
         return stdJson.readUint(proofConfigJson, ".withdrawalIndex");
     }
 
-    function getBlockRootIndex() public view returns(uint256) {
+    function getBlockRootIndex() public returns(uint256) {
         return stdJson.readUint(proofConfigJson, ".blockHeaderRootIndex");
     }
 
-    function getHistoricalSummaryIndex() public view returns(uint256) {
+    function getHistoricalSummaryIndex() public returns(uint256) {
         return stdJson.readUint(proofConfigJson, ".historicalSummaryIndex");
     }
 
-    function getBeaconStateRoot() public view returns(bytes32) {
+    function getBeaconStateRoot() public returns(bytes32) {
         return stdJson.readBytes32(proofConfigJson, ".beaconStateRoot");
     }
 
-    function getBlockRoot() public view returns(bytes32) {
+    function getBlockRoot() public returns(bytes32) {
         return stdJson.readBytes32(proofConfigJson, ".blockHeaderRoot");
     }
 
-    function getSlotRoot() public view returns(bytes32) {
+    function getSlotRoot() public returns(bytes32) {
         return stdJson.readBytes32(proofConfigJson, ".slotRoot");
     }
 
-    function getBalanceRoot() public view returns(bytes32) {
+    function getBalanceRoot() public returns(bytes32) {
         return stdJson.readBytes32(proofConfigJson, ".balanceRoot");
     }
 
-    function getTimestampRoot() public view returns(bytes32) {
+    function getTimestampRoot() public returns(bytes32) {
         return stdJson.readBytes32(proofConfigJson, ".timestampRoot");
     }
 
-    function getExecutionPayloadRoot() public view returns(bytes32) {
+    function getExecutionPayloadRoot() public returns(bytes32) {
         return stdJson.readBytes32(proofConfigJson, ".executionPayloadRoot");
     }
 
-    function getLatestBlockRoot() public view returns(bytes32) {
+    function getLatestBlockRoot() public returns(bytes32) {
         return stdJson.readBytes32(proofConfigJson, ".latestBlockHeaderRoot");
     }
     function getExecutionPayloadProof () public returns(bytes32[7] memory) {

@@ -16,15 +16,15 @@ contract Operators is Test {
         return string.concat(".operators[", string.concat(vm.toString(index), "]."));
     }
 
-    function getNumOperators() public view returns(uint256) {
+    function getNumOperators() public returns(uint256) {
         return stdJson.readUint(operatorConfigJson, ".numOperators");
     }
 
-    function getOperatorAddress(uint256 index) public view returns(address) {
+    function getOperatorAddress(uint256 index) public returns(address) {
         return stdJson.readAddress(operatorConfigJson, string.concat(operatorPrefix(index), "Address"));
     }
 
-    function getOperatorSchnorrSignature(uint256 index) public view returns(uint256, BN254.G1Point memory) {
+    function getOperatorSchnorrSignature(uint256 index) public returns(uint256, BN254.G1Point memory) {
         uint256 s = readUint(operatorConfigJson, index, "SField");
         BN254.G1Point memory pubkey = BN254.G1Point({
             X: readUint(operatorConfigJson, index, "RPoint.X"),
@@ -33,11 +33,11 @@ contract Operators is Test {
         return (s, pubkey);
     }
 
-    function getOperatorSecretKey(uint256 index) public view returns(uint256) {
+    function getOperatorSecretKey(uint256 index) public returns(uint256) {
         return readUint(operatorConfigJson, index, "SecretKey");
     }
 
-    function getOperatorPubkeyG1(uint256 index) public view returns(BN254.G1Point memory) {
+    function getOperatorPubkeyG1(uint256 index) public returns(BN254.G1Point memory) {
         BN254.G1Point memory pubkey = BN254.G1Point({
             X: readUint(operatorConfigJson, index, "PubkeyG1.X"),
             Y: readUint(operatorConfigJson, index, "PubkeyG1.Y")
@@ -45,7 +45,7 @@ contract Operators is Test {
         return pubkey;
     }
 
-    function getOperatorPubkeyG2(uint256 index) public view returns(BN254.G2Point memory) {
+    function getOperatorPubkeyG2(uint256 index) public returns(BN254.G2Point memory) {
         BN254.G2Point memory pubkey = BN254.G2Point({
             X: [
                 readUint(operatorConfigJson, index, "PubkeyG2.X.A1"),
@@ -59,7 +59,7 @@ contract Operators is Test {
         return pubkey;
     }
 
-    function readUint(string memory json, uint256 index, string memory key) public pure returns (uint256) {
+    function readUint(string memory json, uint256 index, string memory key) public returns (uint256) {
         return stringToUint(stdJson.readString(json, string.concat(operatorPrefix(index), key)));
     }
 

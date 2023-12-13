@@ -1,51 +1,49 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "src/BLSApkRegistry.sol";
+import "src/BLSPublicKeyCompendium.sol";
 import "test/ffi/util/G2Operations.sol";
-import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
 
-contract BLSApkRegistryFFITests is G2Operations {
+contract BLSPublicKeyCompendiumFFITests is G2Operations {
     using BN254 for BN254.G1Point;
     using Strings for uint256;
 
     Vm cheats = Vm(HEVM_ADDRESS);
 
-    BLSApkRegistry blsApkRegistry;
-    IRegistryCoordinator registryCoordinator;
+    BLSPublicKeyCompendium compendium;
 
     uint256 privKey;
-    IBLSApkRegistry.PubkeyRegistrationParams pubkeyRegistrationParams;
+    BN254.G1Point pubKeyG1;
+    BN254.G2Point pubKeyG2;
+    BN254.G1Point signedMessageHash;
 
     address alice = address(0x69);
 
     function setUp() public {
-        blsApkRegistry = new BLSApkRegistry(registryCoordinator);
+        compendium = new BLSPublicKeyCompendium();
     }
 
     function testRegisterBLSPublicKey(uint256 _privKey) public {
         cheats.assume(_privKey != 0);
         _setKeys(_privKey);
 
-        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(alice);
+        signedMessageHash = _signMessage(alice);
 
-        vm.prank(address(registryCoordinator));
-        blsApkRegistry.registerBLSPublicKey(alice, pubkeyRegistrationParams, registryCoordinator.pubkeyRegistrationMessageHash(alice));
+        vm.prank(alice);
+        compendium.registerBLSPublicKey(signedMessageHash, pubKeyG1, pubKeyG2);
 
-        assertEq(blsApkRegistry.operatorToPubkeyHash(alice), BN254.hashG1Point(pubkeyRegistrationParams.pubkeyG1),
-            "pubkey hash not stored correctly");
-        assertEq(blsApkRegistry.pubkeyHashToOperator(BN254.hashG1Point(pubkeyRegistrationParams.pubkeyG1)), alice,
-            "operator address not stored correctly");
+        assertEq(compendium.operatorToPubkeyHash(alice), BN254.hashG1Point(pubKeyG1), "pubkey hash not stored correctly");
+        assertEq(compendium.pubkeyHashToOperator(BN254.hashG1Point(pubKeyG1)), alice, "operator address not stored correctly");
     }
 
     function _setKeys(uint256 _privKey) internal {
         privKey = _privKey;
-        pubkeyRegistrationParams.pubkeyG1 = BN254.generatorG1().scalar_mul(_privKey);
-        pubkeyRegistrationParams.pubkeyG2 = G2Operations.mul(_privKey);
+        pubKeyG1 = BN254.generatorG1().scalar_mul(_privKey);
+        pubKeyG2 = G2Operations.mul(_privKey);
     }
 
     function _signMessage(address signer) internal view returns(BN254.G1Point memory) {
-        BN254.G1Point memory messageHash = registryCoordinator.pubkeyRegistrationMessageHash(signer);
+        BN254.G1Point memory messageHash = compendium.getMessageHash(signer);
         return BN254.scalar_mul(messageHash, privKey);
     }
 }

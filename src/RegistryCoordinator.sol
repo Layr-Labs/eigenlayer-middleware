@@ -19,7 +19,6 @@ import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
 
 import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
-import {BN254} from "src/libraries/BN254.sol";
 
 /**
  * @title A `RegistryCoordinator` that has three registries:
@@ -39,13 +38,10 @@ contract RegistryCoordinator is
     ISignatureUtils
 {
     using BitmapUtils for *;
-    using BN254 for BN254.G1Point;
 
     /// @notice The EIP-712 typehash for the `DelegationApproval` struct used by the contract
     bytes32 public constant OPERATOR_CHURN_APPROVAL_TYPEHASH =
         keccak256("OperatorChurnApproval(bytes32 registeringOperatorId,OperatorKickParam[] operatorKickParams)OperatorKickParam(address operator,bytes32[] operatorIdsToSwap)");
-    /// @notice The EIP-712 typehash used for registering BLS public keys
-    bytes32 public constant PUBKEY_REGISTRATION_TYPEHASH = keccak256("BN254PubkeyRegistration(address operator)");
     /// @notice The maximum value of a quorum bitmap
     uint256 internal constant MAX_QUORUM_BITMAP = type(uint192).max;
     /// @notice The basis point denominator
@@ -161,40 +157,35 @@ contract RegistryCoordinator is
      * operator capacity, this method will fail.
      * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for
      * @param socket is the socket of the operator
-     * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership
-     * @dev the `params` input param is ignored if the caller has previously registered a public key
      * @param operatorSignature is the signature of the operator used by the AVS to register the operator in the delegation manager
      */
     function registerOperator(
         bytes calldata quorumNumbers,
         string calldata socket,
-        IBLSApkRegistry.PubkeyRegistrationParams calldata params,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        /**
-         * IF the operator has never registered a pubkey before, THEN register their pubkey
-         * OTHERWISE, simply ignore the provided `params` input
-         */
-        bytes32 operatorId = _getOrCreateOperatorId(msg.sender, params);
+        bytes32 operatorId = blsApkRegistry.getOperatorId(msg.sender);
 
         // Register the operator in each of the registry contracts
-        uint32[] memory numOperatorsPerQuorum = _registerOperator({
+        RegisterResults memory results = _registerOperator({
             operator: msg.sender, 
             operatorId: operatorId,
             quorumNumbers: quorumNumbers, 
             socket: socket,
             operatorSignature: operatorSignature
-        }).numOperatorsPerQuorum;
+        });
 
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-                        
+            
+            OperatorSetParam memory operatorSetParams = _quorumParams[quorumNumber];
+            
             /**
              * The new operator count for each quorum may not exceed the configured maximum
              * If it does, use `registerOperatorWithChurn` instead.
              */
             require(
-                numOperatorsPerQuorum[i] <= _quorumParams[quorumNumber].maxOperatorCount,
+                results.numOperatorsPerQuorum[i] <= operatorSetParams.maxOperatorCount,
                 "RegistryCoordinator.registerOperator: operator count exceeds maximum"
             );
         }
@@ -204,28 +195,21 @@ contract RegistryCoordinator is
      * @notice Registers msg.sender as an operator for one or more quorums. If any quorum reaches its maximum operator
      * capacity, `operatorKickParams` is used to replace an old operator with the new one.
      * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for
-     * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership
      * @param operatorKickParams are used to determine which operator is removed to maintain quorum capacity as the
      * operator registers for quorums.
      * @param churnApproverSignature is the signature of the churnApprover on the operator kick params
      * @param operatorSignature is the signature of the operator used by the AVS to register the operator in the delegation manager
-     * @dev the `params` input param is ignored if the caller has previously registered a public key
      */
     function registerOperatorWithChurn(
         bytes calldata quorumNumbers, 
         string calldata socket,
-        IBLSApkRegistry.PubkeyRegistrationParams calldata params,
         OperatorKickParam[] calldata operatorKickParams,
         SignatureWithSaltAndExpiry memory churnApproverSignature,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         require(operatorKickParams.length == quorumNumbers.length, "RegistryCoordinator.registerOperatorWithChurn: input length mismatch");
 
-        /**
-         * IF the operator has never registered a pubkey before, THEN register their pubkey
-         * OTHERWISE, simply ignore the provided `params` input
-         */
-        bytes32 operatorId = _getOrCreateOperatorId(msg.sender, params);
+        bytes32 operatorId = blsApkRegistry.getOperatorId(msg.sender);
 
         // Verify the churn approver's signature for the registering operator and kick params
         _verifyChurnApproverSignature({
@@ -244,8 +228,9 @@ contract RegistryCoordinator is
         });
 
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            // reference: uint8 quorumNumber = uint8(quorumNumbers[i]);
-            OperatorSetParam memory operatorSetParams = _quorumParams[uint8(quorumNumbers[i])];
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+            
+            OperatorSetParam memory operatorSetParams = _quorumParams[quorumNumber];
             
             /**
              * If the new operator count for any quorum exceeds the maximum, validate
@@ -253,7 +238,7 @@ contract RegistryCoordinator is
              */
             if (results.numOperatorsPerQuorum[i] > operatorSetParams.maxOperatorCount) {
                 _validateChurn({
-                    quorumNumber: uint8(quorumNumbers[i]),
+                    quorumNumber: quorumNumber,
                     totalQuorumStake: results.totalStakes[i],
                     newOperator: msg.sender,
                     newOperatorStake: results.operatorStakes[i],
@@ -432,7 +417,7 @@ contract RegistryCoordinator is
     /**
      * @notice Sets the metadata URI for the AVS
      * @param _metadataURI is the metadata URI for the AVS
-     * @dev only callable by the owner
+     * @dev only callable by the service manager owner
      */
     function setMetadataURI(string memory _metadataURI) external onlyOwner {
         delegationManager.updateAVSMetadataURI(_metadataURI);
@@ -458,7 +443,7 @@ contract RegistryCoordinator is
         bytes calldata quorumNumbers,
         string memory socket,
         SignatureWithSaltAndExpiry memory operatorSignature
-    ) internal virtual returns (RegisterResults memory results) {
+    ) internal virtual returns (RegisterResults memory) {
         /**
          * Get bitmap of quorums to register for and operator's current bitmap. Validate that:
          * - we're trying to register for at least 1 quorum
@@ -498,23 +483,17 @@ contract RegistryCoordinator is
         /**
          * Register the operator with the BLSApkRegistry, StakeRegistry, and IndexRegistry
          */
-        blsApkRegistry.registerOperator(operator, quorumNumbers);
-        (results.operatorStakes, results.totalStakes) = 
+        bytes32 registeredId = blsApkRegistry.registerOperator(operator, quorumNumbers);
+        require(registeredId == operatorId, "RegistryCoordinator._registerOperator: operatorId mismatch");
+        (uint96[] memory operatorStakes, uint96[] memory totalStakes) = 
             stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
-        results.numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
+        uint32[] memory numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
 
-        return results;
-    }
-
-    function _getOrCreateOperatorId(
-        address operator,
-        IBLSApkRegistry.PubkeyRegistrationParams calldata params
-    ) internal returns (bytes32 operatorId) {
-        operatorId = blsApkRegistry.getOperatorId(operator);
-        if (operatorId == 0) {
-            operatorId = blsApkRegistry.registerBLSPublicKey(operator, params, pubkeyRegistrationMessageHash(operator));
-        }
-        return operatorId;
+        return RegisterResults({
+            numOperatorsPerQuorum: numOperatorsPerQuorum,
+            operatorStakes: operatorStakes,
+            totalStakes: totalStakes
+        });
     }
 
     function _validateChurn(
@@ -857,18 +836,6 @@ contract RegistryCoordinator is
     ) public view returns (bytes32) {
         // calculate the digest hash
         return _hashTypedDataV4(keccak256(abi.encode(OPERATOR_CHURN_APPROVAL_TYPEHASH, registeringOperatorId, operatorKickParams, salt, expiry)));
-    }
-
-    /**
-     * @notice Returns the message hash that an operator must sign to register their BLS public key.
-     * @param operator is the address of the operator registering their BLS public key
-     */
-    function pubkeyRegistrationMessageHash(address operator) public view returns (BN254.G1Point memory) {
-        return BN254.hashToG1(
-            _hashTypedDataV4(
-                keccak256(abi.encode(PUBKEY_REGISTRATION_TYPEHASH, operator))
-            )
-        );
     }
 
     /// @dev need to override function here since its defined in both these contracts
