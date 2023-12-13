@@ -25,7 +25,7 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
     IDelegationManager public immutable delegation;
 
     /// @notice the coordinator contract that this registry is associated with
-    IRegistryCoordinator public immutable registryCoordinator;
+    address public immutable registryCoordinator;
 
     /// @notice In order to register for a quorum i, an operator must have at least `minimumStakeForQuorum[i]`
     /// evaluated by this contract's 'VoteWeigher' logic.
@@ -47,7 +47,7 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
         IRegistryCoordinator _registryCoordinator, 
         IDelegationManager _delegationManager
     ) {
-        registryCoordinator = _registryCoordinator;
+        registryCoordinator = address(_registryCoordinator);
         delegation = _delegationManager;
     }
 

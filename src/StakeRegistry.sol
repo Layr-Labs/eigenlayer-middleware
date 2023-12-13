@@ -30,7 +30,7 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     modifier onlyCoordinatorOwner() {
-        require(msg.sender == registryCoordinator.owner(), "StakeRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator");
+        require(msg.sender == IRegistryCoordinator(registryCoordinator).owner(), "StakeRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator");
         _;
     }
 

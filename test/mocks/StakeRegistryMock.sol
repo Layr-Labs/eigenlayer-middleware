@@ -10,7 +10,7 @@ import "../../src/interfaces/IRegistryCoordinator.sol";
  */
 contract StakeRegistryMock is IStakeRegistry {
 
-    function registryCoordinator() external view returns (IRegistryCoordinator) {}
+    function registryCoordinator() external view returns (address) {}
 
     /**
      * @notice Registers the `operator` with `operatorId` for the specified `quorumNumbers`.
