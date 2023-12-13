@@ -92,13 +92,11 @@ contract BLSApkRegistryUnitTests is Test {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
         
-        cheats.startPrank(address(registryCoordinator));
-        bytes32 registeredpkHash = blsApkRegistry.registerOperator(operator, quorumNumbers);
-        cheats.stopPrank();
+        cheats.prank(address(registryCoordinator));
+        blsApkRegistry.registerOperator(operator, quorumNumbers);
 
-
+        (, bytes32 registeredpkHash) = blsApkRegistry.getRegisteredPubkey(operator);
         require(registeredpkHash == pkHash, "registeredpkHash not set correctly");
-        emit log("ehey");
 
         return pkHash;
     }

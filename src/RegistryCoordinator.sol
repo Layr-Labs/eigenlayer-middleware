@@ -498,8 +498,7 @@ contract RegistryCoordinator is
         /**
          * Register the operator with the BLSApkRegistry, StakeRegistry, and IndexRegistry
          */
-        bytes32 registeredId = blsApkRegistry.registerOperator(operator, quorumNumbers);
-        require(registeredId == operatorId, "RegistryCoordinator._registerOperator: operatorId mismatch");
+        blsApkRegistry.registerOperator(operator, quorumNumbers);
         (uint96[] memory operatorStakes, uint96[] memory totalStakes) = 
             stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
         uint32[] memory numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
