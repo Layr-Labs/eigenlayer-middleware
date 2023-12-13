@@ -32,7 +32,6 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
      * @notice Registers the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to register.
      * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
-     * @return pubkeyHash of the operator's pubkey
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
@@ -43,7 +42,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     function registerOperator(
         address operator,
         bytes memory quorumNumbers
-    ) public virtual onlyRegistryCoordinator returns (bytes32) {
+    ) public virtual onlyRegistryCoordinator {
         // Get the operator's pubkey. Reverts if they have not registered a key
         (BN254.G1Point memory pubkey, bytes32 pubkeyHash) = getRegisteredPubkey(operator);
 
@@ -52,7 +51,6 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
 
         // Return pubkeyHash, which will become the operator's unique id
         emit OperatorAddedToQuorums(operator, quorumNumbers);
-        return pubkeyHash;
     }
 
     /**
