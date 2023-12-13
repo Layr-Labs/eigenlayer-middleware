@@ -178,25 +178,23 @@ contract RegistryCoordinator is
         bytes32 operatorId = _getOrCreateOperatorId(msg.sender, params);
 
         // Register the operator in each of the registry contracts
-        RegisterResults memory results = _registerOperator({
+        uint32[] memory numOperatorsPerQuorum = _registerOperator({
             operator: msg.sender, 
             operatorId: operatorId,
             quorumNumbers: quorumNumbers, 
             socket: socket,
             operatorSignature: operatorSignature
-        });
+        }).numOperatorsPerQuorum;
 
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            
-            OperatorSetParam memory operatorSetParams = _quorumParams[quorumNumber];
-            
+                        
             /**
              * The new operator count for each quorum may not exceed the configured maximum
              * If it does, use `registerOperatorWithChurn` instead.
              */
             require(
-                results.numOperatorsPerQuorum[i] <= operatorSetParams.maxOperatorCount,
+                numOperatorsPerQuorum[i] <= _quorumParams[quorumNumber].maxOperatorCount,
                 "RegistryCoordinator.registerOperator: operator count exceeds maximum"
             );
         }
@@ -517,9 +515,9 @@ contract RegistryCoordinator is
         address operator,
         IBLSApkRegistry.PubkeyRegistrationParams calldata params
     ) internal returns (bytes32 operatorId) {
-        operatorId = blsApkRegistry.getOperatorId(msg.sender);
+        operatorId = blsApkRegistry.getOperatorId(operator);
         if (operatorId == 0) {
-            operatorId = blsApkRegistry.registerBLSPublicKey(msg.sender, params, pubkeyRegistrationMessageHash(msg.sender));
+            operatorId = blsApkRegistry.registerBLSPublicKey(operator, params, pubkeyRegistrationMessageHash(operator));
         }
         return operatorId;
     }
