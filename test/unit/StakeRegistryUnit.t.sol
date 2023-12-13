@@ -82,6 +82,11 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
         _;
     }
 
+    modifier fuzz_onlyInitializedQuorums(uint8 quorumNumber) {
+        cheats.assume(initializedQuorumBitmap.numberIsInBitmap(quorumNumber));
+        _;
+    }
+
     function setUp() virtual public {
         // Deploy contracts but with 0 quorums initialized, will initializeQuorums afterwards
         _deployMockEigenLayerAndAVS(0);
@@ -1145,6 +1150,8 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
                 assertEq(prevUpdate.updateBlockNumber + 1, newTotalStakes[j].updateBlockNumber, "prev entry should be from last block");
                 assertEq(prevUpdate.nextUpdateBlockNumber, newTotalStakes[j].updateBlockNumber, "prev entry.next should be latest.cur");
             }
+
+            stakeRegistry.setOperatorWeight(quorumNumber, operator, operatorWeight);
         }
     }
 
