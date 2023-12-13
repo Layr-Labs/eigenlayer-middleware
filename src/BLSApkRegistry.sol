@@ -177,22 +177,6 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         }
     }
 
-    // TODO - should this fail if apkUpdate.apkHash == 0? This will be the case for the first entry in each quorum
-    function _validateApkHashAtBlockNumber(ApkUpdate memory apkUpdate, uint32 blockNumber) internal pure {
-        require(
-            blockNumber >= apkUpdate.updateBlockNumber,
-            "BLSApkRegistry._validateApkHashAtBlockNumber: index too recent"
-        );
-        /**
-         * if there is a next update, check that the blockNumber is before the next update or if
-         * there is no next update, then apkUpdate.nextUpdateBlockNumber is 0.
-         */
-        require(
-            apkUpdate.nextUpdateBlockNumber == 0 || blockNumber < apkUpdate.nextUpdateBlockNumber,
-            "BLSApkRegistry._validateApkHashAtBlockNumber: not latest apk update"
-        );
-    }
-
     /*******************************************************************************
                             VIEW FUNCTIONS
     *******************************************************************************/
@@ -264,7 +248,22 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         uint256 index
     ) external view returns (bytes24) {
         ApkUpdate memory quorumApkUpdate = apkHistory[quorumNumber][index];
-        _validateApkHashAtBlockNumber(quorumApkUpdate, blockNumber);
+
+        /**
+         * Validate that the update is valid for the given blockNumber:
+         * - blockNumber should be >= the update block number
+         * - the next update block number should be either 0 or strictly greater than blockNumber
+         */
+        // TODO - should this fail if quorumApkUpdate.apkHash == 0? This will be the case for the first entry in each quorum
+        require(
+            blockNumber >= quorumApkUpdate.updateBlockNumber,
+            "BLSApkRegistry._validateApkHashAtBlockNumber: index too recent"
+        );
+        require(
+            quorumApkUpdate.nextUpdateBlockNumber == 0 || blockNumber < quorumApkUpdate.nextUpdateBlockNumber,
+            "BLSApkRegistry._validateApkHashAtBlockNumber: not latest apk update"
+        );
+
         return quorumApkUpdate.apkHash;
     }
 

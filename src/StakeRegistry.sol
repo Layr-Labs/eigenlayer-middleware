@@ -444,12 +444,18 @@ contract StakeRegistry is StakeRegistryStorage {
         StakeUpdate memory operatorStakeUpdate,
         uint32 blockNumber
     ) internal pure {
+        /**
+         * Validate that the update is valid for the given blockNumber:
+         * - blockNumber should be >= the update block number
+         * - the next update block number should be either 0 or strictly greater than blockNumber
+         */
+        // TODO - should this fail if operatorStakeUpdate.stake == 0? This will be the case for the first entry in each quorum
         require(
-            operatorStakeUpdate.updateBlockNumber <= blockNumber,
+            blockNumber >= operatorStakeUpdate.updateBlockNumber,
             "StakeRegistry._validateOperatorStakeAtBlockNumber: operatorStakeUpdate is from after blockNumber"
         );
         require(
-            operatorStakeUpdate.nextUpdateBlockNumber == 0 || operatorStakeUpdate.nextUpdateBlockNumber > blockNumber,
+            operatorStakeUpdate.nextUpdateBlockNumber == 0 || blockNumber < operatorStakeUpdate.nextUpdateBlockNumber,
             "StakeRegistry._validateOperatorStakeAtBlockNumber: there is a newer operatorStakeUpdate available before blockNumber"
         );
     }
