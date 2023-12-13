@@ -13,7 +13,7 @@ abstract contract BLSApkRegistryStorage is Initializable, IBLSApkRegistry {
     bytes32 internal constant ZERO_PK_HASH = hex"ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5";
 
     /// @notice the registry coordinator contract
-    IRegistryCoordinator public immutable registryCoordinator;
+    address public immutable registryCoordinator;
 
     // storage for individual pubkeys
     /// @notice maps operator address to pubkey hash
@@ -30,7 +30,7 @@ abstract contract BLSApkRegistryStorage is Initializable, IBLSApkRegistry {
     mapping(uint8 => BN254.G1Point) public currentApk;
 
     constructor(IRegistryCoordinator _registryCoordinator) {
-        registryCoordinator = _registryCoordinator;
+        registryCoordinator = address(_registryCoordinator);
         // disable initializers so that the implementation contract cannot be initialized
         _disableInitializers();
     }

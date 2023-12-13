@@ -51,7 +51,7 @@ contract BLSApkRegistryUnitTests is Test {
     }
 
     function testConstructorArgs() public view {
-        require(blsApkRegistry.registryCoordinator() == registryCoordinator, "registryCoordinator not set correctly");
+        require(blsApkRegistry.registryCoordinator() == address(registryCoordinator), "registryCoordinator not set correctly");
     }
 
     function testCallRegisterOperatorFromNonCoordinatorAddress(address nonCoordinatorAddress) public {
