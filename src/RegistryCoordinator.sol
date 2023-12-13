@@ -458,7 +458,7 @@ contract RegistryCoordinator is
         bytes calldata quorumNumbers,
         string memory socket,
         SignatureWithSaltAndExpiry memory operatorSignature
-    ) internal virtual returns (RegisterResults memory) {
+    ) internal virtual returns (RegisterResults memory results) {
         /**
          * Get bitmap of quorums to register for and operator's current bitmap. Validate that:
          * - we're trying to register for at least 1 quorum
@@ -499,15 +499,11 @@ contract RegistryCoordinator is
          * Register the operator with the BLSApkRegistry, StakeRegistry, and IndexRegistry
          */
         blsApkRegistry.registerOperator(operator, quorumNumbers);
-        (uint96[] memory operatorStakes, uint96[] memory totalStakes) = 
+        (results.operatorStakes, results.totalStakes) = 
             stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
-        uint32[] memory numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
+        results.numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
 
-        return RegisterResults({
-            numOperatorsPerQuorum: numOperatorsPerQuorum,
-            operatorStakes: operatorStakes,
-            totalStakes: totalStakes
-        });
+        return results;
     }
 
     function _getOrCreateOperatorId(
