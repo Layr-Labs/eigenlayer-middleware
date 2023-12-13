@@ -14,7 +14,7 @@ import {BN254} from "src/libraries/BN254.sol";
 
 import {OperatorStateRetriever} from "src/OperatorStateRetriever.sol";
 import {RegistryCoordinator} from "src/RegistryCoordinator.sol";
-import {RegistryCoordinatorHarness} from "test/harnesses/RegistryCoordinatorHarness.sol";
+import {RegistryCoordinatorHarness} from "test/harnesses/RegistryCoordinatorHarness.t.sol";
 import {BLSApkRegistry} from "src/BLSApkRegistry.sol";
 import {StakeRegistry} from "src/StakeRegistry.sol";
 import {IndexRegistry} from "src/IndexRegistry.sol";

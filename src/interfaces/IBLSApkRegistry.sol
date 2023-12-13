@@ -60,7 +60,7 @@ interface IBLSApkRegistry is IRegistry {
      *         3) `quorumNumbers` is ordered in ascending order
      *         4) the operator is not already registered
      */
-    function registerOperator(address operator, bytes calldata quorumNumbers) external returns(bytes32);
+    function registerOperator(address operator, bytes calldata quorumNumbers) external;
 
     /**
      * @notice Deregisters the `operator`'s pubkey for the specified `quorumNumbers`.

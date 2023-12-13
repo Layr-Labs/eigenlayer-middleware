@@ -178,25 +178,23 @@ contract RegistryCoordinator is
         bytes32 operatorId = _getOrCreateOperatorId(msg.sender, params);
 
         // Register the operator in each of the registry contracts
-        RegisterResults memory results = _registerOperator({
+        uint32[] memory numOperatorsPerQuorum = _registerOperator({
             operator: msg.sender, 
             operatorId: operatorId,
             quorumNumbers: quorumNumbers, 
             socket: socket,
             operatorSignature: operatorSignature
-        });
+        }).numOperatorsPerQuorum;
 
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            
-            OperatorSetParam memory operatorSetParams = _quorumParams[quorumNumber];
-            
+                        
             /**
              * The new operator count for each quorum may not exceed the configured maximum
              * If it does, use `registerOperatorWithChurn` instead.
              */
             require(
-                results.numOperatorsPerQuorum[i] <= operatorSetParams.maxOperatorCount,
+                numOperatorsPerQuorum[i] <= _quorumParams[quorumNumber].maxOperatorCount,
                 "RegistryCoordinator.registerOperator: operator count exceeds maximum"
             );
         }
@@ -434,7 +432,7 @@ contract RegistryCoordinator is
     /**
      * @notice Sets the metadata URI for the AVS
      * @param _metadataURI is the metadata URI for the AVS
-     * @dev only callable by the service manager owner
+     * @dev only callable by the owner
      */
     function setMetadataURI(string memory _metadataURI) external onlyOwner {
         delegationManager.updateAVSMetadataURI(_metadataURI);
@@ -460,7 +458,7 @@ contract RegistryCoordinator is
         bytes calldata quorumNumbers,
         string memory socket,
         SignatureWithSaltAndExpiry memory operatorSignature
-    ) internal virtual returns (RegisterResults memory) {
+    ) internal virtual returns (RegisterResults memory results) {
         /**
          * Get bitmap of quorums to register for and operator's current bitmap. Validate that:
          * - we're trying to register for at least 1 quorum
@@ -500,26 +498,21 @@ contract RegistryCoordinator is
         /**
          * Register the operator with the BLSApkRegistry, StakeRegistry, and IndexRegistry
          */
-        bytes32 registeredId = blsApkRegistry.registerOperator(operator, quorumNumbers);
-        require(registeredId == operatorId, "RegistryCoordinator._registerOperator: operatorId mismatch");
-        (uint96[] memory operatorStakes, uint96[] memory totalStakes) = 
+        blsApkRegistry.registerOperator(operator, quorumNumbers);
+        (results.operatorStakes, results.totalStakes) = 
             stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
-        uint32[] memory numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
+        results.numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
 
-        return RegisterResults({
-            numOperatorsPerQuorum: numOperatorsPerQuorum,
-            operatorStakes: operatorStakes,
-            totalStakes: totalStakes
-        });
+        return results;
     }
 
     function _getOrCreateOperatorId(
         address operator,
         IBLSApkRegistry.PubkeyRegistrationParams calldata params
     ) internal returns (bytes32 operatorId) {
-        operatorId = blsApkRegistry.getOperatorId(msg.sender);
+        operatorId = blsApkRegistry.getOperatorId(operator);
         if (operatorId == 0) {
-            operatorId = blsApkRegistry.registerBLSPublicKey(msg.sender, params, pubkeyRegistrationMessageHash(msg.sender));
+            operatorId = blsApkRegistry.registerBLSPublicKey(operator, params, pubkeyRegistrationMessageHash(operator));
         }
         return operatorId;
     }
