@@ -173,12 +173,9 @@ contract RegistryCoordinator is
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         /**
          * IF the operator has never registered a pubkey before, THEN register their pubkey
-         * OTHERWISE, simply ignore the provided `params`
+         * OTHERWISE, simply ignore the provided `params` input
          */
-        bytes32 operatorId = blsApkRegistry.getOperatorId(msg.sender);
-        if (operatorId == 0) {
-            operatorId = blsApkRegistry.registerBLSPublicKey(msg.sender, params, pubkeyRegistrationMessageHash(msg.sender));
-        }
+        bytes32 operatorId = _getOrCreateOperatorId(msg.sender, params);
 
         // Register the operator in each of the registry contracts
         RegisterResults memory results = _registerOperator({
@@ -228,12 +225,9 @@ contract RegistryCoordinator is
 
         /**
          * IF the operator has never registered a pubkey before, THEN register their pubkey
-         * OTHERWISE, simply ignore the `pubkeyRegistrationSignature`, `pubkeyG1`, and `pubkeyG2` inputs
+         * OTHERWISE, simply ignore the provided `params` input
          */
-        bytes32 operatorId = blsApkRegistry.getOperatorId(msg.sender);
-        if (operatorId == 0) {
-            operatorId = blsApkRegistry.registerBLSPublicKey(msg.sender, params, pubkeyRegistrationMessageHash(msg.sender));
-        }
+        bytes32 operatorId = _getOrCreateOperatorId(msg.sender, params);
 
         // Verify the churn approver's signature for the registering operator and kick params
         _verifyChurnApproverSignature({
@@ -517,6 +511,17 @@ contract RegistryCoordinator is
             operatorStakes: operatorStakes,
             totalStakes: totalStakes
         });
+    }
+
+    function _getOrCreateOperatorId(
+        address operator,
+        IBLSApkRegistry.PubkeyRegistrationParams calldata params
+    ) internal returns (bytes32 operatorId) {
+        operatorId = blsApkRegistry.getOperatorId(msg.sender);
+        if (operatorId == 0) {
+            operatorId = blsApkRegistry.registerBLSPublicKey(msg.sender, params, pubkeyRegistrationMessageHash(msg.sender));
+        }
+        return operatorId;
     }
 
     function _validateChurn(
