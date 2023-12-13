@@ -64,4 +64,8 @@ contract RegistryCoordinatorMock is IRegistryCoordinator {
                 keccak256(abi.encode(operator))
         );
     }
+
+    function quorumUpdateBlockNumber(uint8 quorumNumber) external view returns (uint256) {}
+
+    function owner() external view returns (address) {}
 }

@@ -6,12 +6,13 @@ import "src/RegistryCoordinator.sol";
 // wrapper around the RegistryCoordinator contract that exposes the internal functions for unit testing.
 contract RegistryCoordinatorHarness is RegistryCoordinator {
     constructor(
+        IDelegationManager _delegationManager,
         ISlasher _slasher,
-        IServiceManager _serviceManager,
         IStakeRegistry _stakeRegistry,
         IBLSApkRegistry _blsApkRegistry,
         IIndexRegistry _indexRegistry
-    ) RegistryCoordinator(_slasher, _serviceManager, _stakeRegistry, _blsApkRegistry, _indexRegistry) {
+    ) RegistryCoordinator(_delegationManager, _slasher, _stakeRegistry, _blsApkRegistry, _indexRegistry) {
+        _transferOwnership(msg.sender);
     }
 
     function setQuorumCount(uint8 count) external {

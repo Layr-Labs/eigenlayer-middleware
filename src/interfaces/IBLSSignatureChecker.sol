@@ -3,7 +3,7 @@ pragma solidity =0.8.12;
 
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
-import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
+import {IStakeRegistry, IDelegationManager} from "src/interfaces/IStakeRegistry.sol";
 
 import {BN254} from "src/libraries/BN254.sol";
 
@@ -38,12 +38,18 @@ interface IBLSSignatureChecker {
         // total amount staked by all operators in each quorum
         uint96[] totalStakeForQuorum;
     }
+
+    // EVENTS
+
+    /// @notice Emitted when `staleStakesForbiddenUpdate` is set
+    event StaleStakesForbiddenUpdate(bool value);   
     
     // CONSTANTS & IMMUTABLES
 
     function registryCoordinator() external view returns (IRegistryCoordinator);
     function stakeRegistry() external view returns (IStakeRegistry);
     function blsApkRegistry() external view returns (IBLSApkRegistry);
+    function delegation() external view returns (IDelegationManager);
 
     /**
      * @notice This function is called by disperser when it has aggregated all the signatures of the operators

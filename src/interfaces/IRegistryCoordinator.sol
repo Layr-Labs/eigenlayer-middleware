@@ -25,6 +25,9 @@ interface IRegistryCoordinator {
 
     event EjectorUpdated(address prevEjector, address newEjector);
 
+    /// @notice emitted when all the operators for a quorum are updated at once
+    event QuorumBlockNumberUpdated(uint8 indexed quorumNumber, uint256 blocknumber);
+
     // DATA STRUCTURES
     enum OperatorStatus
     {
@@ -141,4 +144,10 @@ interface IRegistryCoordinator {
      * @param operator is the address of the operator registering their BLS public key
      */
     function pubkeyRegistrationMessageHash(address operator) external view returns (BN254.G1Point memory);
+
+    /// @notice returns the blocknumber the quorum was last updated all at once for all operators
+    function quorumUpdateBlockNumber(uint8 quorumNumber) external view returns (uint256);
+
+    /// @notice The owner of the registry coordinator
+    function owner() external view returns (address);
 }

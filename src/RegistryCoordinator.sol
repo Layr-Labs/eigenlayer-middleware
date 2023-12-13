@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
+import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 
@@ -8,11 +9,11 @@ import {EIP1271SignatureUtils} from "eigenlayer-contracts/src/contracts/librarie
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {Pausable} from "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
+import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
-import {IServiceManager} from "src/interfaces/IServiceManager.sol";
 import {ISocketUpdater} from "src/interfaces/ISocketUpdater.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
@@ -28,7 +29,15 @@ import {BN254} from "src/libraries/BN254.sol";
  * 
  * @author Layr Labs, Inc.
  */
-contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISocketUpdater, ISignatureUtils, Pausable {
+contract RegistryCoordinator is 
+    EIP712, 
+    Initializable, 
+    Pausable,
+    OwnableUpgradeable,
+    IRegistryCoordinator, 
+    ISocketUpdater, 
+    ISignatureUtils
+{
     using BitmapUtils for *;
     using BN254 for BN254.G1Point;
 
@@ -52,14 +61,14 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
 
     /// @notice the EigenLayer Slasher
     ISlasher public immutable slasher;
-    /// @notice the Service Manager for the service that this contract is coordinating
-    IServiceManager public immutable serviceManager;
     /// @notice the BLS Aggregate Pubkey Registry contract that will keep track of operators' aggregate BLS public keys per quorum
     IBLSApkRegistry public immutable blsApkRegistry;
     /// @notice the Stake Registry contract that will keep track of operators' stakes
     IStakeRegistry public immutable stakeRegistry;
     /// @notice the Index Registry contract that will keep track of operators' indexes
     IIndexRegistry public immutable indexRegistry;
+    /// @notice The Delegation Manager contract to record operator avs relationships
+    IDelegationManager public immutable delegationManager;
 
     /// @notice the current number of quorums supported by the registry coordinator
     uint8 public quorumCount;
@@ -71,6 +80,9 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
     mapping(address => OperatorInfo) internal _operatorInfo;
     /// @notice whether the salt has been used for an operator churn approval
     mapping(bytes32 => bool) public isChurnApproverSaltUsed;
+    /// @notice mapping from quorum number to the latest block that all quorums were updated all at once
+    mapping(uint8 => uint256) public quorumUpdateBlockNumber;
+
 
     /// @notice the dynamic-length array of the registries this coordinator is coordinating
     address[] public registries;
@@ -78,11 +90,6 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
     address public churnApprover;
     /// @notice the address of the entity allowed to eject operators from the AVS
     address public ejector;
-
-    modifier onlyServiceManagerOwner {
-        require(msg.sender == serviceManager.owner(), "RegistryCoordinator.onlyServiceManagerOwner: caller is not the service manager owner");
-        _;
-    }
 
     modifier onlyEjector {
         require(msg.sender == ejector, "RegistryCoordinator.onlyEjector: caller is not the ejector");
@@ -98,20 +105,23 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
     }
 
     constructor(
+        IDelegationManager _delegationManager,
         ISlasher _slasher,
-        IServiceManager _serviceManager,
         IStakeRegistry _stakeRegistry,
         IBLSApkRegistry _blsApkRegistry,
         IIndexRegistry _indexRegistry
     ) EIP712("AVSRegistryCoordinator", "v0.0.1") {
+        delegationManager = _delegationManager;
         slasher = _slasher;
-        serviceManager = _serviceManager;
         stakeRegistry = _stakeRegistry;
         blsApkRegistry = _blsApkRegistry;
         indexRegistry = _indexRegistry;
+
+        _disableInitializers();
     }
 
     function initialize(
+        address _initialOwner,
         address _churnApprover,
         address _ejector,
         IPauserRegistry _pauserRegistry,
@@ -126,6 +136,7 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
         );
         
         // Initialize roles
+        _transferOwnership(_initialOwner);
         _initializePauser(_pauserRegistry, _initialPausedStatus);
         _setChurnApprover(_churnApprover);
         _setEjector(_ejector);
@@ -149,13 +160,16 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
      * @notice Registers msg.sender as an operator for one or more quorums. If any quorum reaches its maximum
      * operator capacity, this method will fail.
      * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for
+     * @param socket is the socket of the operator
      * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership
      * @dev the `params` input param is ignored if the caller has previously registered a public key
+     * @param operatorSignature is the signature of the operator used by the AVS to register the operator in the delegation manager
      */
     function registerOperator(
         bytes calldata quorumNumbers,
         string calldata socket,
-        IBLSApkRegistry.PubkeyRegistrationParams calldata params
+        IBLSApkRegistry.PubkeyRegistrationParams calldata params,
+        SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         /**
          * IF the operator has never registered a pubkey before, THEN register their pubkey
@@ -171,7 +185,8 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
             operator: msg.sender, 
             operatorId: operatorId,
             quorumNumbers: quorumNumbers, 
-            socket: socket
+            socket: socket,
+            operatorSignature: operatorSignature
         });
 
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
@@ -198,6 +213,7 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
      * @param operatorKickParams are used to determine which operator is removed to maintain quorum capacity as the
      * operator registers for quorums.
      * @param churnApproverSignature is the signature of the churnApprover on the operator kick params
+     * @param operatorSignature is the signature of the operator used by the AVS to register the operator in the delegation manager
      * @dev the `params` input param is ignored if the caller has previously registered a public key
      */
     function registerOperatorWithChurn(
@@ -205,7 +221,8 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
         string calldata socket,
         IBLSApkRegistry.PubkeyRegistrationParams calldata params,
         OperatorKickParam[] calldata operatorKickParams,
-        SignatureWithSaltAndExpiry memory churnApproverSignature
+        SignatureWithSaltAndExpiry memory churnApproverSignature,
+        SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         require(operatorKickParams.length == quorumNumbers.length, "RegistryCoordinator.registerOperatorWithChurn: input length mismatch");
 
@@ -230,7 +247,8 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
             operator: msg.sender,
             operatorId: operatorId,
             quorumNumbers: quorumNumbers,
-            socket: socket
+            socket: socket,
+            operatorSignature: operatorSignature
         });
 
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
@@ -278,31 +296,70 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
      */
     function updateOperators(address[] calldata operators) external onlyWhenNotPaused(PAUSED_UPDATE_OPERATOR) {
         for (uint256 i = 0; i < operators.length; i++) {
-
             address operator = operators[i];
-            OperatorInfo storage operatorInfo = _operatorInfo[operator];
+            OperatorInfo memory operatorInfo = _operatorInfo[operator];
             bytes32 operatorId = operatorInfo.operatorId;
 
-            // Only update operators currently registered for at least one quorum
-            if (operatorInfo.status != OperatorStatus.REGISTERED) {
-                continue;
-            }
-
+            // Update the operator's stake for their active quorums
             uint192 currentBitmap = _currentOperatorBitmap(operatorId);
-            bytes memory currentQuorums = BitmapUtils.bitmapToBytesArray(currentBitmap);
+            bytes memory quorumsToUpdate = BitmapUtils.bitmapToBytesArray(currentBitmap);
+            _updateOperator(operator, operatorInfo, quorumsToUpdate);
+        }
+    }
 
-            /**
-             * Update the operator's stake for their active quorums. The stakeRegistry returns a bitmap
-             * of quorums where the operator no longer meets the minimum stake, and should be deregistered.
-             */
-            uint192 quorumsToRemove = stakeRegistry.updateOperatorStake(operator, operatorId, currentQuorums);
+    /**
+     * @notice Updates the stakes of all operators for each of the specified quorums in the StakeRegistry. Each quorum also
+     * has their StakeRegistry.quorumTimestamp updated. which is meant to keep track of when operators were last all updated at once.
+     * @param operatorsPerQuorum is an array of arrays of operators to update for each quorum. Note that each nested array
+     * of operators must be sorted in ascending address order to ensure that all operators in the quorum are updated
+     * @param quorumNumbers is an array of quorum numbers to update
+     * @dev This method is used to update the stakes of all operators in a quorum at once, rather than individually. Performs
+     * sanitization checks on the input array lengths, quorumNumbers existing, and that quorumNumbers are ordered. Function must
+     * also not be paused by the PAUSED_UPDATE_OPERATOR flag.
+     */
+    function updateOperatorsForQuorum(
+        address[][] calldata operatorsPerQuorum,
+        bytes calldata quorumNumbers
+    ) external onlyWhenNotPaused(PAUSED_UPDATE_OPERATOR) {
+        uint192 quorumBitmap = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers));
+        require(_quorumsAllExist(quorumBitmap), "RegistryCoordinator.updateOperatorsForQuorum: some quorums do not exist");
+        require(
+            operatorsPerQuorum.length == quorumNumbers.length,
+            "RegistryCoordinator.updateOperatorsForQuorum: input length mismatch"
+        );
 
-            if (!quorumsToRemove.isEmpty()) {
-                _deregisterOperator({
-                    operator: operator,
-                    quorumNumbers: BitmapUtils.bitmapToBytesArray(quorumsToRemove)
-                });    
+        for (uint256 i = 0; i < quorumNumbers.length; ++i) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+            address[] calldata currQuorumOperators = operatorsPerQuorum[i];
+            require(
+                currQuorumOperators.length == indexRegistry.totalOperatorsForQuorum(quorumNumber),
+                "RegistryCoordinator.updateOperatorsForQuorum: number of updated operators does not match quorum total"
+            );
+            address prevOperatorAddress = address(0);
+            // Update stakes for each operator in this quorum
+            for (uint256 j = 0; j < currQuorumOperators.length; ++j) {
+                address operator = currQuorumOperators[j];
+                OperatorInfo memory operatorInfo = _operatorInfo[operator];
+                bytes32 operatorId = operatorInfo.operatorId;
+                {
+                    uint192 currentBitmap = _currentOperatorBitmap(operatorId);
+                    require(
+                        BitmapUtils.numberIsInBitmap(currentBitmap, quorumNumber),
+                        "RegistryCoordinator.updateOperatorsForQuorum: operator not in quorum"
+                    );
+                    // Require check is to prevent duplicate operators and that all quorum operators are updated
+                    require(
+                        operator > prevOperatorAddress,
+                        "RegistryCoordinator.updateOperatorsForQuorum: operators array must be sorted in ascending address order"
+                    );
+                }
+                _updateOperator(operator, operatorInfo, quorumNumbers[i:i+1]);
+                prevOperatorAddress = operator;
             }
+
+            // Update timestamp that all operators in quorum have been updated all at once
+            quorumUpdateBlockNumber[quorumNumber] = block.number;
+            emit QuorumBlockNumberUpdated(quorumNumber, block.number);
         }
     }
 
@@ -335,7 +392,7 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
     }
 
     /*******************************************************************************
-                    EXTERNAL FUNCTIONS - SERVICE MANAGER OWNER
+                            EXTERNAL FUNCTIONS - OWNER
     *******************************************************************************/
 
     /**
@@ -345,7 +402,7 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
         IStakeRegistry.StrategyParams[] memory strategyParams
-    ) external virtual onlyServiceManagerOwner {
+    ) external virtual onlyOwner {
         _createQuorum(operatorSetParams, minimumStake, strategyParams);
     }
 
@@ -353,31 +410,40 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
      * @notice Updates a quorum's OperatorSetParams
      * @param quorumNumber is the quorum number to set the maximum number of operators for
      * @param operatorSetParams is the parameters of the operator set for the `quorumNumber`
-     * @dev only callable by the service manager owner
+     * @dev only callable by the owner
      */
     function setOperatorSetParams(
         uint8 quorumNumber, 
         OperatorSetParam memory operatorSetParams
-    ) external onlyServiceManagerOwner quorumExists(quorumNumber) {
+    ) external onlyOwner quorumExists(quorumNumber) {
         _setOperatorSetParams(quorumNumber, operatorSetParams);
     }
 
     /**
      * @notice Sets the churnApprover
      * @param _churnApprover is the address of the churnApprover
-     * @dev only callable by the service manager owner
+     * @dev only callable by the owner
      */
-    function setChurnApprover(address _churnApprover) external onlyServiceManagerOwner {
+    function setChurnApprover(address _churnApprover) external onlyOwner {
         _setChurnApprover(_churnApprover);
     }
 
     /**
      * @notice Sets the ejector
      * @param _ejector is the address of the ejector
+     * @dev only callable by the owner
+     */
+    function setEjector(address _ejector) external onlyOwner {
+        _setEjector(_ejector);
+    }
+
+    /**
+     * @notice Sets the metadata URI for the AVS
+     * @param _metadataURI is the metadata URI for the AVS
      * @dev only callable by the service manager owner
      */
-    function setEjector(address _ejector) external onlyServiceManagerOwner {
-        _setEjector(_ejector);
+    function setMetadataURI(string memory _metadataURI) external onlyOwner {
+        delegationManager.updateAVSMetadataURI(_metadataURI);
     }
 
     /*******************************************************************************
@@ -398,7 +464,8 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
         address operator, 
         bytes32 operatorId,
         bytes calldata quorumNumbers,
-        string memory socket
+        string memory socket,
+        SignatureWithSaltAndExpiry memory operatorSignature
     ) internal virtual returns (RegisterResults memory) {
         /**
          * Get bitmap of quorums to register for and operator's current bitmap. Validate that:
@@ -409,6 +476,7 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
         uint192 quorumsToAdd = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         uint192 currentBitmap = _currentOperatorBitmap(operatorId);
         require(!quorumsToAdd.isEmpty(), "RegistryCoordinator._registerOperator: bitmap cannot be 0");
+        require(_quorumsAllExist(quorumsToAdd), "RegistryCoordinator._registerOperator: some quorums do not exist");
         require(quorumsToAdd.noBitsInCommon(currentBitmap), "RegistryCoordinator._registerOperator: operator already registered for some quorums being registered for");
         uint192 newBitmap = uint192(currentBitmap.plus(quorumsToAdd));
 
@@ -428,6 +496,9 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
                 operatorId: operatorId,
                 status: OperatorStatus.REGISTERED
             });
+
+            // Register the operator with the delegation manager
+            delegationManager.registerOperatorToAVS(operator, operatorSignature);
 
             emit OperatorRegistered(operator, operatorId);
         }
@@ -496,6 +567,7 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
         uint192 quorumsToRemove = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         uint192 currentBitmap = _currentOperatorBitmap(operatorId);
         require(!quorumsToRemove.isEmpty(), "RegistryCoordinator._deregisterOperator: bitmap cannot be 0");
+        require(_quorumsAllExist(quorumsToRemove), "RegistryCoordinator._deregisterOperator: some quorums do not exist");
         require(quorumsToRemove.isSubsetOf(currentBitmap), "RegistryCoordinator._deregisterOperator: operator is not registered for specified quorums");
         uint192 newBitmap = uint192(currentBitmap.minus(quorumsToRemove));
 
@@ -507,9 +579,10 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
             newBitmap: newBitmap
         });
 
-        // If the operator is no longer registered for any quorums, update their status
+        // If the operator is no longer registered for any quorums, update their status and deregister from delegationManager
         if (newBitmap.isEmpty()) {
             operatorInfo.status = OperatorStatus.DEREGISTERED;
+            delegationManager.deregisterOperatorFromAVS(operator);
             emit OperatorDeregistered(operator, operatorId);
         }
 
@@ -517,6 +590,29 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
         blsApkRegistry.deregisterOperator(operator, quorumNumbers);
         stakeRegistry.deregisterOperator(operatorId, quorumNumbers);
         indexRegistry.deregisterOperator(operatorId, quorumNumbers);
+    }
+
+    /**
+     * @notice update operator stake for specified quorumsToUpdate, and deregister if necessary
+     * does nothing if operator is not registered for any quorums.
+     */
+    function _updateOperator(
+        address operator,
+        OperatorInfo memory operatorInfo,
+        bytes memory quorumsToUpdate
+    ) internal {
+        if (operatorInfo.status != OperatorStatus.REGISTERED) {
+            return;
+        }
+        bytes32 operatorId = operatorInfo.operatorId;
+        uint192 quorumsToRemove = stakeRegistry.updateOperatorStake(operator, operatorId, quorumsToUpdate);
+
+        if (!quorumsToRemove.isEmpty()) {
+            _deregisterOperator({
+                operator: operator,
+                quorumNumbers: BitmapUtils.bitmapToBytesArray(quorumsToRemove)
+            });    
+        }
     }
 
     /**
@@ -613,6 +709,14 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
                 }));
             }
         }
+    }
+
+    /**
+     * @notice Returns true iff all of the bits in `quorumBitmap` belong to initialized quorums
+     */
+     function _quorumsAllExist(uint192 quorumBitmap) internal view returns (bool) {
+        uint192 initializedQuorumBitmap = uint192((1 << quorumCount) - 1);
+        return quorumBitmap.isSubsetOf(initializedQuorumBitmap);
     }
 
     /// @notice Get the most recent bitmap for the operator, returning an empty bitmap if
@@ -727,13 +831,7 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
 
     /// @notice Returns the current quorum bitmap for the given `operatorId` or 0 if the operator is not registered for any quorum
     function getCurrentQuorumBitmap(bytes32 operatorId) external view returns (uint192) {
-        uint256 quorumBitmapHistoryLength = _operatorBitmapHistory[operatorId].length;
-        // the first part of this if statement is met if the operator has never registered. 
-        // the second part is met if the operator has previously registered, but is currently deregistered
-        if (quorumBitmapHistoryLength == 0 || _operatorBitmapHistory[operatorId][quorumBitmapHistoryLength - 1].nextUpdateBlockNumber != 0) {
-            return 0;
-        }
-        return _operatorBitmapHistory[operatorId][quorumBitmapHistoryLength - 1].quorumBitmap;
+        return _currentOperatorBitmap(operatorId);
     }
 
     /// @notice Returns the length of the quorum bitmap history for the given `operatorId`
@@ -773,5 +871,15 @@ contract RegistryCoordinator is EIP712, Initializable, IRegistryCoordinator, ISo
                 keccak256(abi.encode(PUBKEY_REGISTRATION_TYPEHASH, operator))
             )
         );
+    }
+
+    /// @dev need to override function here since its defined in both these contracts
+    function owner()
+        public
+        view
+        override(OwnableUpgradeable, IRegistryCoordinator)
+        returns (address)
+    {
+        return OwnableUpgradeable.owner();
     }
 }
