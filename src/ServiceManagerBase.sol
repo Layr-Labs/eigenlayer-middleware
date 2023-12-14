@@ -37,6 +37,9 @@ contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
         _disableInitializers();
     }
 
+    function initialize(address initialOwner) external initializer {
+        _transferOwnership(initialOwner);
+    }
 
     /**
      * @notice Sets the metadata URI for the AVS
@@ -55,7 +58,7 @@ contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
     function registerOperatorToAVS(
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) public virtual onlyOwner {
+    ) public virtual onlyRegistryCoordinator {
         delegationManager.registerOperatorToAVS(operator, operatorSignature);
     }
 
@@ -63,7 +66,7 @@ contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
      * @notice Forwards a call to EigenLayer's DelegationManager contract to confirm operator deregistration from the AVS
      * @param operator The address of the operator to deregister.
      */
-    function deregisterOperatorFromAVS(address operator) public virtual onlyOwner {
+    function deregisterOperatorFromAVS(address operator) public virtual onlyRegistryCoordinator {
         delegationManager.deregisterOperatorFromAVS(operator);
     }
 }

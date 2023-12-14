@@ -2,26 +2,23 @@
 pragma solidity =0.8.12;
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {Slasher} from "eigenlayer-contracts/src/contracts/core/Slasher.sol";
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
-import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
+import {IServiceManager} from "src/interfaces/IServiceManager.sol";
 
 import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
 
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
 import {EigenPodManagerMock} from "eigenlayer-contracts/src/test/mocks/EigenPodManagerMock.sol";
-import {OwnableMock} from "eigenlayer-contracts/src/test/mocks/OwnableMock.sol";
 import {DelegationManagerMock} from "eigenlayer-contracts/src/test/mocks/DelegationManagerMock.sol";
-import {SlasherMock} from "eigenlayer-contracts/src/test/mocks/SlasherMock.sol";
 
 import {StakeRegistryHarness} from "test/harnesses/StakeRegistryHarness.sol";
 import {StakeRegistry} from "src/StakeRegistry.sol";
@@ -41,6 +38,7 @@ contract StakeRegistryUnitTests is Test {
     StakeRegistryHarness public stakeRegistryImplementation;
     StakeRegistryHarness public stakeRegistry;
     RegistryCoordinatorHarness public registryCoordinator;
+    IServiceManager public serviceManager;
 
     StrategyManagerMock public strategyManagerMock;
     DelegationManagerMock public delegationMock;
@@ -103,8 +101,7 @@ contract StakeRegistryUnitTests is Test {
 
         cheats.startPrank(registryCoordinatorOwner);
         registryCoordinator = new RegistryCoordinatorHarness(
-            delegationMock,
-            slasher,
+            serviceManager,
             stakeRegistry,
             IBLSApkRegistry(apkRegistry),
             IIndexRegistry(indexRegistry)

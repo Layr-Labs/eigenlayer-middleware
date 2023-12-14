@@ -16,12 +16,14 @@ import {OperatorStateRetriever} from "src/OperatorStateRetriever.sol";
 import {RegistryCoordinator} from "src/RegistryCoordinator.sol";
 import {RegistryCoordinatorHarness} from "test/harnesses/RegistryCoordinatorHarness.t.sol";
 import {BLSApkRegistry} from "src/BLSApkRegistry.sol";
+import {ServiceManagerBase} from "src/ServiceManagerBase.sol";
 import {StakeRegistry} from "src/StakeRegistry.sol";
 import {IndexRegistry} from "src/IndexRegistry.sol";
 import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
+import {IServiceManager} from "src/interfaces/IServiceManager.sol";
 
 
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
@@ -51,12 +53,14 @@ contract MockAVSDeployer is Test {
     StakeRegistryHarness public stakeRegistryImplementation;
     IBLSApkRegistry public blsApkRegistryImplementation;
     IIndexRegistry public indexRegistryImplementation;
+    ServiceManagerBase public serviceManagerImplementation;
 
     OperatorStateRetriever public operatorStateRetriever;
     RegistryCoordinatorHarness public registryCoordinator;
     StakeRegistryHarness public stakeRegistry;
     BLSApkRegistryHarness public blsApkRegistry;
     IIndexRegistry public indexRegistry;
+    ServiceManagerBase public serviceManager;
 
     StrategyManagerMock public strategyManagerMock;
     DelegationManagerMock public delegationMock;
@@ -180,6 +184,16 @@ contract MockAVSDeployer is Test {
             )
         );
 
+        serviceManager = ServiceManagerBase(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(emptyContract),
+                    address(proxyAdmin),
+                    ""
+                )
+            )
+        );
+
         cheats.stopPrank();
 
         cheats.startPrank(proxyAdminOwner);
@@ -212,6 +226,18 @@ contract MockAVSDeployer is Test {
             address(indexRegistryImplementation)
         );
 
+        serviceManagerImplementation = new ServiceManagerBase(
+            delegationMock,
+            registryCoordinator
+        );
+
+        proxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(serviceManager))),
+            address(serviceManagerImplementation)
+        );
+
+        serviceManager.initialize({initialOwner: registryCoordinatorOwner});
+
         // set the public key for an operator, using harnessed function to bypass checks
         blsApkRegistry.setBLSPublicKey(defaultOperator, defaultPubKey);
 
@@ -233,8 +259,7 @@ contract MockAVSDeployer is Test {
         }
 
         registryCoordinatorImplementation = new RegistryCoordinatorHarness(
-            delegationMock,
-            slasher,
+            serviceManager,
             stakeRegistry,
             blsApkRegistry,
             indexRegistry

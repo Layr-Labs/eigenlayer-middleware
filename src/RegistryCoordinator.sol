@@ -8,8 +8,6 @@ import {EIP712} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.so
 import {EIP1271SignatureUtils} from "eigenlayer-contracts/src/contracts/libraries/EIP1271SignatureUtils.sol";
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {Pausable} from "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
-import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
-import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
@@ -17,6 +15,7 @@ import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
 import {ISocketUpdater} from "src/interfaces/ISocketUpdater.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
+import {IServiceManager} from "src/interfaces/IServiceManager.sol";
 
 import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
 import {BN254} from "src/libraries/BN254.sol";
@@ -59,16 +58,14 @@ contract RegistryCoordinator is
     /// @notice The maximum number of quorums this contract supports
     uint8 internal constant MAX_QUORUM_COUNT = 192;
 
-    /// @notice the EigenLayer Slasher
-    ISlasher public immutable slasher;
+    /// @notice the ServiceManager for this AVS, which forwards calls onto EigenLayer's core contracts
+    IServiceManager public immutable serviceManager;
     /// @notice the BLS Aggregate Pubkey Registry contract that will keep track of operators' aggregate BLS public keys per quorum
     IBLSApkRegistry public immutable blsApkRegistry;
     /// @notice the Stake Registry contract that will keep track of operators' stakes
     IStakeRegistry public immutable stakeRegistry;
     /// @notice the Index Registry contract that will keep track of operators' indexes
     IIndexRegistry public immutable indexRegistry;
-    /// @notice The Delegation Manager contract to record operator avs relationships
-    IDelegationManager public immutable delegationManager;
 
     /// @notice the current number of quorums supported by the registry coordinator
     uint8 public quorumCount;
@@ -105,14 +102,12 @@ contract RegistryCoordinator is
     }
 
     constructor(
-        IDelegationManager _delegationManager,
-        ISlasher _slasher,
+        IServiceManager _serviceManager,
         IStakeRegistry _stakeRegistry,
         IBLSApkRegistry _blsApkRegistry,
         IIndexRegistry _indexRegistry
     ) EIP712("AVSRegistryCoordinator", "v0.0.1") {
-        delegationManager = _delegationManager;
-        slasher = _slasher;
+        serviceManager = _serviceManager;
         stakeRegistry = _stakeRegistry;
         blsApkRegistry = _blsApkRegistry;
         indexRegistry = _indexRegistry;
@@ -429,15 +424,6 @@ contract RegistryCoordinator is
         _setEjector(_ejector);
     }
 
-    /**
-     * @notice Sets the metadata URI for the AVS
-     * @param _metadataURI is the metadata URI for the AVS
-     * @dev only callable by the owner
-     */
-    function setMetadataURI(string memory _metadataURI) external onlyOwner {
-        delegationManager.updateAVSMetadataURI(_metadataURI);
-    }
-
     /*******************************************************************************
                             INTERNAL FUNCTIONS
     *******************************************************************************/
@@ -489,8 +475,8 @@ contract RegistryCoordinator is
                 status: OperatorStatus.REGISTERED
             });
 
-            // Register the operator with the delegation manager
-            delegationManager.registerOperatorToAVS(operator, operatorSignature);
+            // Register the operator with the EigenLayer via this AVS's ServiceManager
+            serviceManager.registerOperatorToAVS(operator, operatorSignature);
 
             emit OperatorRegistered(operator, operatorId);
         }
@@ -577,10 +563,10 @@ contract RegistryCoordinator is
             newBitmap: newBitmap
         });
 
-        // If the operator is no longer registered for any quorums, update their status and deregister from delegationManager
+        // If the operator is no longer registered for any quorums, update their status and deregister from EigenLayer via this AVS's ServiceManager
         if (newBitmap.isEmpty()) {
             operatorInfo.status = OperatorStatus.DEREGISTERED;
-            delegationManager.deregisterOperatorFromAVS(operator);
+            serviceManager.deregisterOperatorFromAVS(operator);
             emit OperatorDeregistered(operator, operatorId);
         }
 
