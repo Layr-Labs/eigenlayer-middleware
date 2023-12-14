@@ -28,13 +28,17 @@ import {RegistryCoordinatorHarness} from "test/harnesses/RegistryCoordinatorHarn
 
 import {StakeRegistry} from "src/StakeRegistry.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
+import {IStakeRegistryEvents} from "test/events/IStakeRegistryEvents.sol";
 
 import "forge-std/Test.sol";
 
-contract StakeRegistryUnitTests is Test {
+contract StakeRegistryUnitTests is Test, IStakeRegistryEvents {
     using BitmapUtils for *;
 
     Vm cheats = Vm(HEVM_ADDRESS);
+
+    uint8 public constant MAX_WEIGHING_FUNCTION_LENGTH = 32;
+
 
     ProxyAdmin public proxyAdmin;
     PauserRegistry public pauserRegistry;
@@ -76,14 +80,7 @@ contract StakeRegistryUnitTests is Test {
 
     uint256 gasUsed;
 
-    /// @notice emitted whenever the stake of `operator` is updated
-    event OperatorStakeUpdate(
-        bytes32 indexed operatorId,
-        uint8 quorumNumber,
-        uint96 stake
-    );
-
-    modifier fuzz_onlyInitializedQuorums(uint8 quorumNumber) {
+    modifier fuzzOnlyInitializedQuorums(uint8 quorumNumber) {
         cheats.assume(initializedQuorumBitmap.numberIsInBitmap(quorumNumber));
         _;
     }
@@ -546,20 +543,155 @@ contract StakeRegistryUnitTests is Test {
 contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
 
     /*******************************************************************************
+                            initializeQuorum
+    *******************************************************************************/
+
+    function testFuzz_initializeQuorum_Revert_WhenNotRegistryCoordinator(
+        uint8 quorumNumber,
+        uint96 minimumStake,
+        IStakeRegistry.StrategyParams[] memory strategyParams
+    ) public {
+        cheats.expectRevert("StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator");
+        stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
+    }
+
+    function testFuzz_initializeQuorum_Revert_WhenQuorumAlreadyExists(
+        uint8 quorumNumber,
+        uint96 minimumStake,
+        IStakeRegistry.StrategyParams[] memory strategyParams
+    ) public fuzzOnlyInitializedQuorums(quorumNumber) {
+        cheats.expectRevert("StakeRegistry.initializeQuorum: quorum already exists");
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
+    }
+
+    /**
+     * @dev Initializes a quorum with StrategyParams with fuzzed multipliers inputs and corresponding
+     * strategy addresses. 
+     */
+    function testFuzz_initializeQuorum(
+        uint8 quorumNumber,
+        uint96 minimumStake,
+        uint96[] memory multipliers
+    ) public {
+        cheats.assume(quorumNumber >= nextQuorum);
+        cheats.assume(0 < multipliers.length && multipliers.length <= MAX_WEIGHING_FUNCTION_LENGTH);
+        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](multipliers.length);
+        for (uint256 i = 0; i < strategyParams.length; i++) {
+            cheats.assume(multipliers[i] > 0);
+            strategyParams[i] = IStakeRegistry.StrategyParams(
+                IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(i)))))),
+                multipliers[i]
+            );
+        }
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
+
+        IStakeRegistry.StakeUpdate memory initialStakeUpdate = stakeRegistry.getTotalStakeUpdateAtIndex(quorumNumber, 0);
+        assertEq(stakeRegistry.minimumStakeForQuorum(quorumNumber), minimumStake, "invalid minimum stake");
+        assertEq(stakeRegistry.getTotalStakeHistoryLength(quorumNumber), 1, "invalid total stake history length");
+        assertEq(initialStakeUpdate.stake, 0, "invalid stake update");
+        assertEq(initialStakeUpdate.updateBlockNumber, uint32(block.number), "invalid updateBlockNumber stake update");
+        assertEq(initialStakeUpdate.nextUpdateBlockNumber, 0, "invalid nextUpdateBlockNumber stake update");
+        assertEq(stakeRegistry.strategyParamsLength(quorumNumber), strategyParams.length, "invalid strategy params length");
+        for (uint256 i = 0; i < strategyParams.length; i++) {
+            (IStrategy strategy , uint96 multiplier) = stakeRegistry.strategyParams(quorumNumber, i);
+            assertEq(address(strategy), address(strategyParams[i].strategy), "invalid strategy");
+            assertEq(multiplier, strategyParams[i].multiplier, "invalid multiplier");
+        }
+    }
+
+    /*******************************************************************************
                             setMinimumStakeForQuorum
     *******************************************************************************/
 
-    function testFuzz_setMinimumStakeForQuorum(uint8 quorumNumber, uint96 minimumStakeForQuorum) public fuzz_onlyInitializedQuorums(quorumNumber) {
+    function testFuzz_setMinimumStakeForQuorum_Revert_WhenNotRegistryCoordinatorOwner(
+        uint8 quorumNumber,
+        uint96 minimumStakeForQuorum
+    ) public fuzzOnlyInitializedQuorums(quorumNumber) {
+        cheats.expectRevert("StakeRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator");
+        stakeRegistry.setMinimumStakeForQuorum(quorumNumber, minimumStakeForQuorum);
+    }
+
+    function testFuzz_setMinimumStakeForQuorum_Revert_WhenInvalidQuorum(
+        uint8 quorumNumber,
+        uint96 minimumStakeForQuorum
+    ) public {
+        // quorums [0,nextQuorum) are initialized, so use an invalid quorumNumber
+        cheats.assume(quorumNumber >= nextQuorum);
+        cheats.expectRevert("StakeRegistry.quorumExists: quorum does not exist");
         cheats.prank(registryCoordinatorOwner);
         stakeRegistry.setMinimumStakeForQuorum(quorumNumber, minimumStakeForQuorum);
-
+    }
+    
+    /// @dev Fuzzes initialized quorum numbers and minimum stakes to set to
+    function testFuzz_setMinimumStakeForQuorum(
+        uint8 quorumNumber,
+        uint96 minimumStakeForQuorum
+    ) public fuzzOnlyInitializedQuorums(quorumNumber) {
+        cheats.prank(registryCoordinatorOwner);
+        stakeRegistry.setMinimumStakeForQuorum(quorumNumber, minimumStakeForQuorum);
         assertEq(stakeRegistry.minimumStakeForQuorum(quorumNumber), minimumStakeForQuorum, "invalid minimum stake");
     }
 
-    function testFuzz_setMinimumStakeForQuorum_revert_notServiceManager(uint8 quorumNumber, uint96 minimumStakeForQuorum) public fuzz_onlyInitializedQuorums(quorumNumber) {
+    /*******************************************************************************
+                            addStrategies
+    *******************************************************************************/
+
+    function testFuzz_addStrategies_Revert_WhenNotRegistryCoordinatorOwner(
+        uint8 quorumNumber,
+        IStakeRegistry.StrategyParams[] memory strategyParams
+    ) public fuzzOnlyInitializedQuorums(quorumNumber) {
         cheats.expectRevert("StakeRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator");
-        
-        stakeRegistry.setMinimumStakeForQuorum(quorumNumber, minimumStakeForQuorum);
+        stakeRegistry.addStrategies(quorumNumber, strategyParams);
+    }
+
+    function testFuzz_addStrategies_Revert_WhenInvalidQuorum(
+        uint8 quorumNumber,
+        IStakeRegistry.StrategyParams[] memory strategyParams
+    ) public {
+        // quorums [0,nextQuorum) are initialized, so use an invalid quorumNumber
+        cheats.assume(quorumNumber >= nextQuorum);
+        cheats.expectRevert("StakeRegistry.quorumExists: quorum does not exist");
+        cheats.prank(registryCoordinatorOwner);
+        stakeRegistry.addStrategies(quorumNumber, strategyParams);
+    }
+
+    /**
+     * @dev Fuzzes initialized quorum numbers and using multipliers to create StrategyParams to add to
+     * quorumNumber.
+     */
+    function testFuzz_addStrategies(
+        uint8 quorumNumber,
+        uint96[] memory multipliers
+    ) public fuzzOnlyInitializedQuorums(quorumNumber) {
+        uint256 currNumStrategies = stakeRegistry.strategyParamsLength(quorumNumber);
+        cheats.assume(0 < multipliers.length && multipliers.length <= MAX_WEIGHING_FUNCTION_LENGTH - currNumStrategies);
+        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](multipliers.length);
+        for (uint256 i = 0; i < strategyParams.length; i++) {
+            cheats.assume(multipliers[i] > 0);
+            IStrategy strat = IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(i))))));
+            strategyParams[i] = IStakeRegistry.StrategyParams(
+                strat,
+                multipliers[i]
+            );
+
+            cheats.expectEmit(true, true, true, true, address(stakeRegistry));
+            emit StrategyAddedToQuorum(quorumNumber, strat);
+            cheats.expectEmit(true, true, true, true, address(stakeRegistry));
+            emit StrategyMultiplierUpdated(quorumNumber, strat, multipliers[i]);
+        }
+
+        cheats.prank(registryCoordinatorOwner);
+        stakeRegistry.addStrategies(quorumNumber, strategyParams);
+        // check for quorum strategy length and strategy params
+        assertEq(stakeRegistry.strategyParamsLength(quorumNumber), strategyParams.length + 1, "invalid strategy params length");
+        for (uint256 i = 0; i < strategyParams.length; i++) {
+            // offset by 1 since quorumNumber initialized with 1 strategy
+            (IStrategy strategy , uint96 multiplier) = stakeRegistry.strategyParams(quorumNumber, i + 1);
+            assertEq(address(strategy), address(strategyParams[i].strategy), "invalid strategy");
+            assertEq(multiplier, strategyParams[i].multiplier, "invalid multiplier");
+        }
     }
 }
 
@@ -773,7 +905,7 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
 
     /// @dev Attempt to register for all quorums, selecting one quorum to attempt with
     /// insufficient stake
-    function testFuzz_registerOperator_revert_insufficientStake(uint8 failingQuorum) public fuzz_onlyInitializedQuorums(failingQuorum) {
+    function testFuzz_registerOperator_revert_insufficientStake(uint8 failingQuorum) public fuzzOnlyInitializedQuorums(failingQuorum) {
         (address operator, bytes32 operatorId) = _selectNewOperator();
         bytes memory quorumNumbers = initializedQuorumBytes;
         uint96[] memory minimumStakes = _getMinimumStakes(quorumNumbers);
