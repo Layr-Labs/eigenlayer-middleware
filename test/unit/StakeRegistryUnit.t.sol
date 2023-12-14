@@ -27,13 +27,10 @@ import {RegistryCoordinatorHarness} from "../harnesses/RegistryCoordinatorHarnes
 import {StakeRegistry} from "src/StakeRegistry.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 import {IStakeRegistryEvents} from "test/events/IStakeRegistryEvents.sol";
+import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
 
-import "forge-std/Test.sol";
-
-contract StakeRegistryUnitTests is Test, IStakeRegistryEvents {
+contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
     using BitmapUtils for *;
-
-    Vm cheats = Vm(HEVM_ADDRESS);
 
     uint8 public constant MAX_WEIGHING_FUNCTION_LENGTH = 32;
 
@@ -85,38 +82,15 @@ contract StakeRegistryUnitTests is Test, IStakeRegistryEvents {
     }
 
     function setUp() virtual public {
-        proxyAdmin = new ProxyAdmin();
-
-        address[] memory pausers = new address[](1);
-        pausers[0] = pauser;
-        pauserRegistry = new PauserRegistry(pausers, unpauser);
-
-        delegationMock = new DelegationManagerMock();
-        eigenPodManagerMock = new EigenPodManagerMock();
-        strategyManagerMock = new StrategyManagerMock();
-        slasherImplementation = new Slasher(strategyManagerMock, delegationMock);
-        slasher = Slasher(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(slasherImplementation),
-                    address(proxyAdmin),
-                    abi.encodeWithSelector(Slasher.initialize.selector, msg.sender, pauserRegistry, 0/*initialPausedStatus*/)
-                )
-            )
-        );
-
-        strategyManagerMock.setAddresses(
-            delegationMock,
-            eigenPodManagerMock,
-            slasher
-        );
+        // Deploy contracts but with 0 quorums initialized, will initializeQuorums afterwards
+        _deployMockEigenLayerAndAVS(0);
 
         // Make registryCoordinatorOwner the owner of the registryCoordinator contract
         cheats.startPrank(registryCoordinatorOwner);
         registryCoordinator = new RegistryCoordinatorHarness(
             serviceManager,
             stakeRegistry,
-            IBLSApkRegistry(pubkeyRegistry),
+            IBLSApkRegistry(blsApkRegistry),
             IIndexRegistry(indexRegistry)
         );
 
@@ -483,14 +457,6 @@ contract StakeRegistryUnitTests is Test, IStakeRegistryEvents {
         }
 
         return historyLengths;
-    }
-
-    function _incrementAddress(address start, uint256 inc) internal pure returns(address) {
-        return address(uint160(uint256(uint160(start) + inc)));
-    }
-
-    function _incrementBytes32(bytes32 start, uint256 inc) internal pure returns(bytes32) {
-        return bytes32(uint256(start) + inc);
     }
 
     function _calculateDelta(uint96 prev, uint96 cur) internal view returns (int256) {
