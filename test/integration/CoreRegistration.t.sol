@@ -41,7 +41,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
 
         // Deploy New ServiceManager & RegistryCoordinator implementations
         serviceManagerImplementation = new ServiceManagerBase(
-            delegationMock,
+            delegationManager,
             registryCoordinator
         );
 
@@ -53,16 +53,16 @@ contract Test_CoreRegistration is MockAVSDeployer {
         );
 
         // Upgrade Registry Coordinator & ServiceManager
-        cheats.prank(proxyAdminOwner);
+        cheats.startPrank(proxyAdminOwner);
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(registryCoordinator))),
             address(registryCoordinatorImplementation)
         );
-
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(serviceManager))),
             address(serviceManagerImplementation)
         );
+        cheats.stopPrank();
 
         // Set operator address
         operator = cheats.addr(operatorPrivateKey);
@@ -93,7 +93,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
             operatorPrivateKey,
             operator,
-            address(registryCoordinator),
+            address(serviceManager),
             emptySalt,
             maxExpiry
         );
@@ -133,7 +133,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         registryCoordinator.deregisterOperator(quorumNumbers);
 
         // Check operator is still registered
-        IDelegationManager.OperatorAVSRegistrationStatus operatorStatus = delegationManager.avsOperatorStatus(address(registryCoordinator), operator);
+        IDelegationManager.OperatorAVSRegistrationStatus operatorStatus = delegationManager.avsOperatorStatus(address(serviceManager), operator);
         assertEq(uint8(operatorStatus), uint8(IDelegationManager.OperatorAVSRegistrationStatus.REGISTERED));
     }
 
@@ -157,7 +157,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
             operatorPrivateKey,
             operator,
-            address(registryCoordinator),
+            address(serviceManager),
             emptySalt,
             maxExpiry
         );
