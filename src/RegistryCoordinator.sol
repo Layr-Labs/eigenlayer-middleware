@@ -806,16 +806,21 @@ contract RegistryCoordinator is
         uint256 index
     ) external view returns (uint192) {
         QuorumBitmapUpdate memory quorumBitmapUpdate = _operatorBitmapHistory[operatorId][index];
+        
+        /**
+         * Validate that the update is valid for the given blockNumber:
+         * - blockNumber should be >= the update block number
+         * - the next update block number should be either 0 or strictly greater than blockNumber
+         */
         require(
-            quorumBitmapUpdate.updateBlockNumber <= blockNumber, 
+            blockNumber >= quorumBitmapUpdate.updateBlockNumber, 
             "RegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber"
         );
-        // if the next update is at or before the block number, then the quorum provided index is too early
-        // if the nex update  block number is 0, then this is the latest update
         require(
-            quorumBitmapUpdate.nextUpdateBlockNumber > blockNumber || quorumBitmapUpdate.nextUpdateBlockNumber == 0, 
+            quorumBitmapUpdate.nextUpdateBlockNumber == 0 || blockNumber < quorumBitmapUpdate.nextUpdateBlockNumber,
             "RegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from before blockNumber"
         );
+
         return quorumBitmapUpdate.quorumBitmap;
     }
 

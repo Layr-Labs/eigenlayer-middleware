@@ -141,7 +141,7 @@ library BN254 {
         uint8 i = 0;
 
         //loop until we reach the most significant bit
-        while(s > m){
+        while(s >= m){
             unchecked {
                 // if the  current bit is 1, add the 2^n*p to the accumulated product
                 if ((s >> i) & 1 == 1) {
@@ -268,10 +268,14 @@ library BN254 {
         return (success, out[0] != 0);
     }
 
-    /// @return the keccak256 hash of the G1 Point
+    /// @return hashedG1 the keccak256 hash of the G1 Point
     /// @dev used for BLS signatures
-    function hashG1Point(BN254.G1Point memory pk) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(pk.X, pk.Y));
+    function hashG1Point(BN254.G1Point memory pk) internal pure returns (bytes32 hashedG1) {
+        assembly {
+            mstore(0, mload(pk))
+            mstore(0x20, mload(add(0x20, pk)))
+            hashedG1 := keccak256(0, 0x40)
+        }
     }
 
     /// @return the keccak256 hash of the G2 Point
