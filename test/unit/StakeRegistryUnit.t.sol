@@ -35,7 +35,6 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
     /// @notice Maximum length of dynamic arrays in the `strategiesConsideredAndMultipliers` mapping.
     uint8 public constant MAX_WEIGHING_FUNCTION_LENGTH = 32;
 
-
     ProxyAdmin public proxyAdmin;
     PauserRegistry public pauserRegistry;
 
