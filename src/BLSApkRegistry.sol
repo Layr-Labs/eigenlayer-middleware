@@ -254,7 +254,6 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
          * - blockNumber should be >= the update block number
          * - the next update block number should be either 0 or strictly greater than blockNumber
          */
-        // TODO - should this fail if quorumApkUpdate.apkHash == 0? This will be the case for the first entry in each quorum
         require(
             blockNumber >= quorumApkUpdate.updateBlockNumber,
             "BLSApkRegistry._validateApkHashAtBlockNumber: index too recent"

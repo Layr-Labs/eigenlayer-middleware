@@ -812,7 +812,6 @@ contract RegistryCoordinator is
          * - blockNumber should be >= the update block number
          * - the next update block number should be either 0 or strictly greater than blockNumber
          */
-        // TODO - should this fail if quorumBitmapUpdate.quorumBitmap == 0? This will be the case for the first entry in each quorum
         require(
             blockNumber >= quorumBitmapUpdate.updateBlockNumber, 
             "RegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber"
