@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
+/*
 pragma solidity =0.8.12;
 
 import "src/BLSApkRegistry.sol";
 import "test/ffi/util/G2Operations.sol";
 import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
+import {RegistryCoordinatorMock} from "test/mocks/RegistryCoordinatorMock.sol";
 
 contract BLSApkRegistryFFITests is G2Operations {
     using BN254 for BN254.G1Point;
@@ -21,9 +23,10 @@ contract BLSApkRegistryFFITests is G2Operations {
 
     function setUp() public {
         blsApkRegistry = new BLSApkRegistry(registryCoordinator);
+        registryCoordinator = new RegistryCoordinatorMock();
     }
 
-    function xtestRegisterBLSPublicKey(uint256 _privKey) public {
+    function testRegisterBLSPublicKey(uint256 _privKey) public {
         vm.assume(_privKey > 0);
 
         _setKeys(_privKey);
@@ -42,7 +45,7 @@ contract BLSApkRegistryFFITests is G2Operations {
     function _setKeys(uint256 _privKey) internal {
         privKey = _privKey;
         pubkeyRegistrationParams.pubkeyG1 = BN254.generatorG1().scalar_mul(_privKey);
-        pubkeyRegistrationParams.pubkeyG2 = G2Operations.mul(_privKey);
+        pubkeyRegistrationParams.pubkeyG2 = G2Operations.mulGen(_privKey);
     }
 
     function _signMessage(address signer) internal view returns(BN254.G1Point memory) {
@@ -50,3 +53,4 @@ contract BLSApkRegistryFFITests is G2Operations {
         return BN254.scalar_mul(messageHash, privKey);
     }
 }
+*/

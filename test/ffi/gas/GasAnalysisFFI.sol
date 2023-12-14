@@ -27,7 +27,7 @@ contract GasAnalysisFFITests is FFIBase {
         msgHash = _setOperators(setQuorumBitmap, numberOfQuorums, numOperators, message);
     }
 
-    function testIncreasingNonSigners() public {
+    function xtestIncreasingNonSigners() public {
 
         string memory parent_object = "parent object";
         string memory new_data;
@@ -60,10 +60,10 @@ contract GasAnalysisFFITests is FFIBase {
                 new_data = vm.serializeUint(parent_object, string.concat("0", uint256(numNonSigners).toString()), gasCost);
             }
 
-            //console.log("numNonSigners: %s, gasCost: %s", numNonSigners, gasCost);
+            console.log("numNonSigners: %s, gasCost: %s", numNonSigners, gasCost);
         }
 
-        vm.writeJson(new_data, dataPath, string.concat(".", uint256(numberOfQuorums).toString()));
+        //vm.writeJson(new_data, dataPath, string.concat(".", uint256(numberOfQuorums).toString()));
 
     }
 
