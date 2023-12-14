@@ -4,65 +4,17 @@ pragma solidity =0.8.12;
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-
-import {Slasher} from "eigenlayer-contracts/src/contracts/core/Slasher.sol";
-import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
-import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
-import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
-import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
-import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
-import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
-import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
-
-import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
-
-import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
-import {EigenPodManagerMock} from "eigenlayer-contracts/src/test/mocks/EigenPodManagerMock.sol";
-import {OwnableMock} from "eigenlayer-contracts/src/test/mocks/OwnableMock.sol";
-import {DelegationManagerMock} from "eigenlayer-contracts/src/test/mocks/DelegationManagerMock.sol";
-import {SlasherMock} from "eigenlayer-contracts/src/test/mocks/SlasherMock.sol";
-
-import {StakeRegistryHarness} from "test/harnesses/StakeRegistryHarness.sol";
-import {RegistryCoordinatorHarness} from "test/harnesses/RegistryCoordinatorHarness.sol";
+import "test/utils/MockAVSDeployer.sol";
 
 import {StakeRegistry} from "src/StakeRegistry.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 import {IStakeRegistryEvents} from "test/events/IStakeRegistryEvents.sol";
+import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
 
-import "forge-std/Test.sol";
-
-contract StakeRegistryUnitTests is Test, IStakeRegistryEvents {
+contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
     using BitmapUtils for *;
 
-    Vm cheats = Vm(HEVM_ADDRESS);
-
     uint8 public constant MAX_WEIGHING_FUNCTION_LENGTH = 32;
-
-
-    ProxyAdmin public proxyAdmin;
-    PauserRegistry public pauserRegistry;
-
-    ISlasher public slasher = ISlasher(address(uint160(uint256(keccak256("slasher")))));
-
-    Slasher public slasherImplementation;
-    StakeRegistryHarness public stakeRegistryImplementation;
-    StakeRegistryHarness public stakeRegistry;
-    RegistryCoordinatorHarness public registryCoordinator;
-
-    StrategyManagerMock public strategyManagerMock;
-    DelegationManagerMock public delegationMock;
-    EigenPodManagerMock public eigenPodManagerMock;
-
-    address public registryCoordinatorOwner = address(uint160(uint256(keccak256("registryCoordinatorOwner"))));
-    address public pauser = address(uint160(uint256(keccak256("pauser"))));
-    address public unpauser = address(uint160(uint256(keccak256("unpauser"))));
-    address public pubkeyRegistry = address(uint160(uint256(keccak256("pubkeyRegistry"))));
-    address public indexRegistry = address(uint160(uint256(keccak256("indexRegistry"))));
-
-    uint256 churnApproverPrivateKey = uint256(keccak256("churnApproverPrivateKey"));
-    address churnApprover = cheats.addr(churnApproverPrivateKey);
-    address ejector = address(uint160(uint256(keccak256("ejector"))));
 
     /**
      * Tracker variables used as we initialize quorums and operators during tests
@@ -86,31 +38,8 @@ contract StakeRegistryUnitTests is Test, IStakeRegistryEvents {
     }
 
     function setUp() virtual public {
-        proxyAdmin = new ProxyAdmin();
-
-        address[] memory pausers = new address[](1);
-        pausers[0] = pauser;
-        pauserRegistry = new PauserRegistry(pausers, unpauser);
-
-        delegationMock = new DelegationManagerMock();
-        eigenPodManagerMock = new EigenPodManagerMock();
-        strategyManagerMock = new StrategyManagerMock();
-        slasherImplementation = new Slasher(strategyManagerMock, delegationMock);
-        slasher = Slasher(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(slasherImplementation),
-                    address(proxyAdmin),
-                    abi.encodeWithSelector(Slasher.initialize.selector, msg.sender, pauserRegistry, 0/*initialPausedStatus*/)
-                )
-            )
-        );
-
-        strategyManagerMock.setAddresses(
-            delegationMock,
-            eigenPodManagerMock,
-            slasher
-        );
+        // Deploy contracts but with 0 quorums initialized, will initializeQuorums afterwards
+        _deployMockEigenLayerAndAVS(0);
 
         // Make registryCoordinatorOwner the owner of the registryCoordinator contract
         cheats.startPrank(registryCoordinatorOwner);
@@ -118,7 +47,7 @@ contract StakeRegistryUnitTests is Test, IStakeRegistryEvents {
             delegationMock,
             slasher,
             stakeRegistry,
-            IBLSApkRegistry(pubkeyRegistry),
+            IBLSApkRegistry(blsApkRegistry),
             IIndexRegistry(indexRegistry)
         );
 
@@ -485,14 +414,6 @@ contract StakeRegistryUnitTests is Test, IStakeRegistryEvents {
         }
 
         return historyLengths;
-    }
-
-    function _incrementAddress(address start, uint256 inc) internal pure returns(address) {
-        return address(uint160(uint256(uint160(start) + inc)));
-    }
-
-    function _incrementBytes32(bytes32 start, uint256 inc) internal pure returns(bytes32) {
-        return bytes32(uint256(start) + inc);
     }
 
     function _calculateDelta(uint96 prev, uint96 cur) internal view returns (int256) {
