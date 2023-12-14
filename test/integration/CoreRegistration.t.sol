@@ -39,21 +39,31 @@ contract Test_CoreRegistration is MockAVSDeployer {
             )
         );
 
-        // Deploy New RegistryCoordinator
-        registryCoordinatorImplementation = new RegistryCoordinatorHarness(
+        // Deploy New ServiceManager & RegistryCoordinator implementations
+        serviceManagerImplementation = new ServiceManagerBase(
             delegationManager,
-            slasher,
+            registryCoordinator,
+            stakeRegistry
+        );
+
+        registryCoordinatorImplementation = new RegistryCoordinatorHarness(
+            serviceManager,
             stakeRegistry,
             blsApkRegistry,
             indexRegistry
         );
 
-        // Upgrade Registry Coordinator
-        cheats.prank(proxyAdminOwner);
+        // Upgrade Registry Coordinator & ServiceManager
+        cheats.startPrank(proxyAdminOwner);
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(registryCoordinator))),
             address(registryCoordinatorImplementation)
         );
+        proxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(serviceManager))),
+            address(serviceManagerImplementation)
+        );
+        cheats.stopPrank();
 
         // Set operator address
         operator = cheats.addr(operatorPrivateKey);
@@ -84,7 +94,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
             operatorPrivateKey,
             operator,
-            address(registryCoordinator),
+            address(serviceManager),
             emptySalt,
             maxExpiry
         );
@@ -94,7 +104,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, operatorSignature);
 
         // Check operator is registered
-        IDelegationManager.OperatorAVSRegistrationStatus operatorStatus = delegationManager.avsOperatorStatus(address(registryCoordinator), operator);
+        IDelegationManager.OperatorAVSRegistrationStatus operatorStatus = delegationManager.avsOperatorStatus(address(serviceManager), operator);
         assertEq(uint8(operatorStatus), uint8(IDelegationManager.OperatorAVSRegistrationStatus.REGISTERED));
     }
 
@@ -108,7 +118,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         registryCoordinator.deregisterOperator(quorumNumbers);
 
         // Check operator is deregistered
-        IDelegationManager.OperatorAVSRegistrationStatus operatorStatus = delegationManager.avsOperatorStatus(address(registryCoordinator), operator);
+        IDelegationManager.OperatorAVSRegistrationStatus operatorStatus = delegationManager.avsOperatorStatus(address(serviceManager), operator);
         assertEq(uint8(operatorStatus), uint8(IDelegationManager.OperatorAVSRegistrationStatus.UNREGISTERED));
     }
 
@@ -124,19 +134,22 @@ contract Test_CoreRegistration is MockAVSDeployer {
         registryCoordinator.deregisterOperator(quorumNumbers);
 
         // Check operator is still registered
-        IDelegationManager.OperatorAVSRegistrationStatus operatorStatus = delegationManager.avsOperatorStatus(address(registryCoordinator), operator);
+        IDelegationManager.OperatorAVSRegistrationStatus operatorStatus = delegationManager.avsOperatorStatus(address(serviceManager), operator);
         assertEq(uint8(operatorStatus), uint8(IDelegationManager.OperatorAVSRegistrationStatus.REGISTERED));
     }
 
     function test_setMetadataURI_fail_notServiceManagerOwner() public {
+        require(operator != serviceManager.owner(), "bad test setup");
         cheats.prank(operator);
         cheats.expectRevert("Ownable: caller is not the owner");
-        registryCoordinator.setMetadataURI("Test MetadataURI");
+        serviceManager.setMetadataURI("Test MetadataURI");
     }
 
-    function test_setMetadataURI() public {        
-        cheats.prank(registryCoordinatorOwner);
-        registryCoordinator.setMetadataURI("Test MetadataURI");
+    function test_setMetadataURI() public {  
+        address toPrankFrom = serviceManager.owner();      
+        cheats.prank(toPrankFrom);
+        serviceManager.setMetadataURI("Test MetadataURI");
+        // TODO: check effects here
     }
 
     // Utils
@@ -145,7 +158,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
             operatorPrivateKey,
             operator,
-            address(registryCoordinator),
+            address(serviceManager),
             emptySalt,
             maxExpiry
         );

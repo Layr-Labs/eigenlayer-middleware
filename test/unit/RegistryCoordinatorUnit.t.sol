@@ -47,7 +47,7 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
         assertEq(address(registryCoordinator.stakeRegistry()), address(stakeRegistry));
         assertEq(address(registryCoordinator.blsApkRegistry()), address(blsApkRegistry));
         assertEq(address(registryCoordinator.indexRegistry()), address(indexRegistry));
-        assertEq(address(registryCoordinator.slasher()), address(slasher));
+        assertEq(address(registryCoordinator.serviceManager()), address(serviceManager));
 
         for (uint i = 0; i < numQuorums; i++) {
             assertEq(
