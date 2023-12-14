@@ -10,7 +10,7 @@ import "src/interfaces/IRegistryCoordinator.sol";
  */
 contract StakeRegistryMock is IStakeRegistry {
 
-    function registryCoordinator() external view returns (IRegistryCoordinator) {}
+    function registryCoordinator() external view returns (address) {}
 
     /**
      * @notice Registers the `operator` with `operatorId` for the specified `quorumNumbers`.
@@ -200,7 +200,7 @@ contract StakeRegistryMock is IStakeRegistry {
         bytes calldata quorumNumbers
     ) external returns (uint192) {}
 
-    function getMockOperatorId(address operator) external returns(bytes32) {
+    function getMockOperatorId(address operator) external pure returns(bytes32) {
         return bytes32(uint256(keccak256(abi.encodePacked(operator, "operatorId"))));
     }
 }

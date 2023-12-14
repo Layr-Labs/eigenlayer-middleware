@@ -20,6 +20,8 @@ import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
  * @author Layr Labs, Inc.
  */
 contract StakeRegistry is StakeRegistryStorage {
+
+    using BitmapUtils for *;
     
     modifier onlyRegistryCoordinator() {
         require(
@@ -30,7 +32,7 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     modifier onlyCoordinatorOwner() {
-        require(msg.sender == registryCoordinator.owner(), "StakeRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator");
+        require(msg.sender == IRegistryCoordinator(registryCoordinator).owner(), "StakeRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator");
         _;
     }
 
@@ -138,7 +140,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * or more quorums.
      *
      * If the operator no longer has the minimum stake required for a quorum, they are
-     * added to the
+     * added to the `quorumsToRemove`, which is returned to the registry coordinator
      * @return A bitmap of quorums where the operator no longer meets the minimum stake
      * and should be deregistered.
      */
@@ -168,7 +170,7 @@ contract StakeRegistry is StakeRegistryStorage {
             // If the operator no longer meets the minimum stake, set their stake to zero and mark them for removal
             if (!hasMinimumStake) {
                 stakeWeight = 0;
-                quorumsToRemove |= quorumNumber;
+                quorumsToRemove = uint192(quorumsToRemove.setBit(quorumNumber));
             }
 
             // Update the operator's stake and retrieve the delta
@@ -449,7 +451,6 @@ contract StakeRegistry is StakeRegistryStorage {
          * - blockNumber should be >= the update block number
          * - the next update block number should be either 0 or strictly greater than blockNumber
          */
-        // TODO - should this fail if operatorStakeUpdate.stake == 0? This will be the case for the first entry in each quorum
         require(
             blockNumber >= operatorStakeUpdate.updateBlockNumber,
             "StakeRegistry._validateOperatorStakeAtBlockNumber: operatorStakeUpdate is from after blockNumber"
@@ -522,7 +523,7 @@ contract StakeRegistry is StakeRegistryStorage {
     ) public view returns (StrategyParams memory)
     {
         return strategyParams[quorumNumber][index];
-    } 
+    }
 
     /*******************************************************************************
                       VIEW FUNCTIONS - Operator Stake History

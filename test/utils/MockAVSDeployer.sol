@@ -7,31 +7,29 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import {Slasher} from "eigenlayer-contracts/src/contracts/core/Slasher.sol";
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
-import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
 import {BN254} from "src/libraries/BN254.sol";
 
-import {BLSPublicKeyCompendium} from "src/BLSPublicKeyCompendium.sol";
 import {OperatorStateRetriever} from "src/OperatorStateRetriever.sol";
 import {RegistryCoordinator} from "src/RegistryCoordinator.sol";
-import {RegistryCoordinatorHarness} from "test/harnesses/RegistryCoordinatorHarness.sol";
+import {RegistryCoordinatorHarness} from "test/harnesses/RegistryCoordinatorHarness.t.sol";
 import {BLSApkRegistry} from "src/BLSApkRegistry.sol";
+import {ServiceManagerBase} from "src/ServiceManagerBase.sol";
 import {StakeRegistry} from "src/StakeRegistry.sol";
 import {IndexRegistry} from "src/IndexRegistry.sol";
 import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
 import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
+import {IServiceManager} from "src/interfaces/IServiceManager.sol";
 
 
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
 import {EigenPodManagerMock} from "eigenlayer-contracts/src/test/mocks/EigenPodManagerMock.sol";
-import {OwnableMock} from "eigenlayer-contracts/src/test/mocks/OwnableMock.sol";
 import {DelegationMock} from "test/mocks/DelegationMock.sol";
-import {SlasherMock} from "eigenlayer-contracts/src/test/mocks/SlasherMock.sol";
-import {BLSPublicKeyCompendiumMock} from "test/mocks/BLSPublicKeyCompendiumMock.sol";
+import {BLSApkRegistryHarness} from "test/harnesses/BLSApkRegistryHarness.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 
 import {StakeRegistryHarness} from "test/harnesses/StakeRegistryHarness.sol";
@@ -50,18 +48,19 @@ contract MockAVSDeployer is Test {
     Slasher public slasherImplementation;
 
     EmptyContract public emptyContract;
-    BLSPublicKeyCompendiumMock public pubkeyCompendium;
 
     RegistryCoordinatorHarness public registryCoordinatorImplementation;
     StakeRegistryHarness public stakeRegistryImplementation;
     IBLSApkRegistry public blsApkRegistryImplementation;
     IIndexRegistry public indexRegistryImplementation;
+    ServiceManagerBase public serviceManagerImplementation;
 
     OperatorStateRetriever public operatorStateRetriever;
     RegistryCoordinatorHarness public registryCoordinator;
     StakeRegistryHarness public stakeRegistry;
-    IBLSApkRegistry public blsApkRegistry;
+    BLSApkRegistryHarness public blsApkRegistry;
     IIndexRegistry public indexRegistry;
+    ServiceManagerBase public serviceManager;
 
     StrategyManagerMock public strategyManagerMock;
     DelegationMock public delegationMock;
@@ -96,6 +95,8 @@ contract MockAVSDeployer is Test {
     uint256 maxOperatorsToRegister = 4;
     uint32 registrationBlockNumber = 100;
     uint32 blocksBetweenRegistrations = 10;
+
+    IBLSApkRegistry.PubkeyRegistrationParams pubkeyRegistrationParams;
 
     struct OperatorMetadata {
         uint256 quorumBitmap;
@@ -142,10 +143,6 @@ contract MockAVSDeployer is Test {
             eigenPodManagerMock,
             slasher
         );
-
-        pubkeyCompendium = new BLSPublicKeyCompendiumMock();
-        pubkeyCompendium.setBLSPublicKey(defaultOperator, defaultPubKey);
-
         cheats.stopPrank();
 
         cheats.startPrank(registryCoordinatorOwner);
@@ -177,7 +174,17 @@ contract MockAVSDeployer is Test {
             )
         );
 
-        blsApkRegistry = BLSApkRegistry(
+        blsApkRegistry = BLSApkRegistryHarness(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(emptyContract),
+                    address(proxyAdmin),
+                    ""
+                )
+            )
+        );
+
+        serviceManager = ServiceManagerBase(
             address(
                 new TransparentUpgradeableProxy(
                     address(emptyContract),
@@ -188,6 +195,7 @@ contract MockAVSDeployer is Test {
         );
 
         cheats.stopPrank();
+
         cheats.startPrank(proxyAdminOwner);
 
         stakeRegistryImplementation = new StakeRegistryHarness(
@@ -200,9 +208,8 @@ contract MockAVSDeployer is Test {
             address(stakeRegistryImplementation)
         );
 
-        blsApkRegistryImplementation = new BLSApkRegistry(
-            registryCoordinator,
-            BLSPublicKeyCompendium(address(pubkeyCompendium))
+        blsApkRegistryImplementation = new BLSApkRegistryHarness(
+            registryCoordinator
         );
 
         proxyAdmin.upgrade(
@@ -218,6 +225,22 @@ contract MockAVSDeployer is Test {
             TransparentUpgradeableProxy(payable(address(indexRegistry))),
             address(indexRegistryImplementation)
         );
+
+        serviceManagerImplementation = new ServiceManagerBase(
+            delegationMock,
+            registryCoordinator,
+            stakeRegistry
+        );
+
+        proxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(serviceManager))),
+            address(serviceManagerImplementation)
+        );
+
+        serviceManager.initialize({initialOwner: registryCoordinatorOwner});
+
+        // set the public key for an operator, using harnessed function to bypass checks
+        blsApkRegistry.setBLSPublicKey(defaultOperator, defaultPubKey);
 
         // setup the dummy minimum stake for quorum
         uint96[] memory minimumStakeForQuorum = new uint96[](numQuorumsToAdd);
@@ -237,8 +260,7 @@ contract MockAVSDeployer is Test {
         }
 
         registryCoordinatorImplementation = new RegistryCoordinatorHarness(
-            delegationMock,
-            slasher,
+            serviceManager,
             stakeRegistry,
             blsApkRegistry,
             indexRegistry
@@ -290,7 +312,7 @@ contract MockAVSDeployer is Test {
         // quorumBitmap can only have 192 least significant bits
         quorumBitmap &= MAX_QUORUM_BITMAP;
 
-        pubkeyCompendium.setBLSPublicKey(operator, pubKey);
+        blsApkRegistry.setBLSPublicKey(operator, pubKey);
 
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
         for (uint i = 0; i < quorumNumbers.length; i++) {
@@ -299,7 +321,7 @@ contract MockAVSDeployer is Test {
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
         cheats.prank(operator);
-        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, emptySignatureAndExpiry);
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySignatureAndExpiry);
     }
 
     /**
@@ -309,7 +331,7 @@ contract MockAVSDeployer is Test {
         // quorumBitmap can only have 192 least significant bits
         quorumBitmap &= MAX_QUORUM_BITMAP;
 
-        pubkeyCompendium.setBLSPublicKey(operator, pubKey);
+        blsApkRegistry.setBLSPublicKey(operator, pubKey);
 
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
         for (uint i = 0; i < quorumNumbers.length; i++) {
@@ -318,7 +340,7 @@ contract MockAVSDeployer is Test {
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
         cheats.prank(operator);
-        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, emptySignatureAndExpiry);
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySignatureAndExpiry);
     }
 
     function _registerRandomOperators(uint256 pseudoRandomNumber) internal returns(OperatorMetadata[] memory, uint256[][] memory) {

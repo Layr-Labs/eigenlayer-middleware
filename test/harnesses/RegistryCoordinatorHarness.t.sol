@@ -3,15 +3,16 @@ pragma solidity =0.8.12;
 
 import "src/RegistryCoordinator.sol";
 
+import "forge-std/Test.sol";
+
 // wrapper around the RegistryCoordinator contract that exposes the internal functions for unit testing.
-contract RegistryCoordinatorHarness is RegistryCoordinator {
+contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
     constructor(
-        IDelegationManager _delegationManager,
-        ISlasher _slasher,
+        IServiceManager _serviceManager,
         IStakeRegistry _stakeRegistry,
         IBLSApkRegistry _blsApkRegistry,
         IIndexRegistry _indexRegistry
-    ) RegistryCoordinator(_delegationManager, _slasher, _stakeRegistry, _blsApkRegistry, _indexRegistry) {
+    ) RegistryCoordinator(_serviceManager, _stakeRegistry, _blsApkRegistry, _indexRegistry) {
         _transferOwnership(msg.sender);
     }
 

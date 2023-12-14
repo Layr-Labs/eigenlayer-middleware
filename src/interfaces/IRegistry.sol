@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
-import {IRegistryCoordinator} from "./IRegistryCoordinator.sol";
-
 /**
  * @title Minimal interface for a `Registry`-type contract.
  * @author Layr Labs, Inc.
@@ -11,5 +9,5 @@ import {IRegistryCoordinator} from "./IRegistryCoordinator.sol";
  * because their function signatures may vary significantly.
  */
 interface IRegistry {
-    function registryCoordinator() external view returns (IRegistryCoordinator);
+    function registryCoordinator() external view returns (address);
 }

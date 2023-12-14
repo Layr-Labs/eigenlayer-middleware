@@ -17,7 +17,7 @@ abstract contract IndexRegistryStorage is Initializable, IIndexRegistry {
     bytes32 public constant OPERATOR_DOES_NOT_EXIST_ID = bytes32(0);
 
     /// @notice The RegistryCoordinator contract for this middleware
-    IRegistryCoordinator public immutable registryCoordinator;
+    address public immutable registryCoordinator;
 
     /// @notice maps quorumNumber => operator id => current index
     mapping(uint8 => mapping(bytes32 => uint32)) public currentOperatorIndex;
@@ -29,7 +29,7 @@ abstract contract IndexRegistryStorage is Initializable, IIndexRegistry {
     constructor(
         IRegistryCoordinator _registryCoordinator
     ){
-        registryCoordinator = _registryCoordinator;
+        registryCoordinator = address(_registryCoordinator);
         // disable initializers so that the implementation contract cannot be initialized
         _disableInitializers();
     }
