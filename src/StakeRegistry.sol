@@ -516,7 +516,7 @@ contract StakeRegistry is StakeRegistryStorage {
     ) public view returns (StrategyParams memory)
     {
         return strategyParams[quorumNumber][index];
-    } 
+    }
 
     /*******************************************************************************
                       VIEW FUNCTIONS - Operator Stake History

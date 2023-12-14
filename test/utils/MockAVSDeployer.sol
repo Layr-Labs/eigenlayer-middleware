@@ -228,7 +228,8 @@ contract MockAVSDeployer is Test {
 
         serviceManagerImplementation = new ServiceManagerBase(
             delegationMock,
-            registryCoordinator
+            registryCoordinator,
+            stakeRegistry
         );
 
         proxyAdmin.upgrade(
