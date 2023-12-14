@@ -331,7 +331,7 @@ contract RegistryCoordinator is
                 {
                     uint192 currentBitmap = _currentOperatorBitmap(operatorId);
                     require(
-                        BitmapUtils.numberIsInBitmap(currentBitmap, quorumNumber),
+                        BitmapUtils.isSet(currentBitmap, quorumNumber),
                         "RegistryCoordinator.updateOperatorsForQuorum: operator not in quorum"
                     );
                     // Require check is to prevent duplicate operators and that all quorum operators are updated
