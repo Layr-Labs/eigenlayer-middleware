@@ -35,31 +35,6 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
     /// @notice Maximum length of dynamic arrays in the `strategiesConsideredAndMultipliers` mapping.
     uint8 public constant MAX_WEIGHING_FUNCTION_LENGTH = 32;
 
-    ProxyAdmin public proxyAdmin;
-    PauserRegistry public pauserRegistry;
-
-    ISlasher public slasher = ISlasher(address(uint160(uint256(keccak256("slasher")))));
-
-    Slasher public slasherImplementation;
-    StakeRegistryHarness public stakeRegistryImplementation;
-    StakeRegistryHarness public stakeRegistry;
-    RegistryCoordinatorHarness public registryCoordinator;
-    IServiceManager public serviceManager;
-
-    StrategyManagerMock public strategyManagerMock;
-    DelegationManagerMock public delegationMock;
-    EigenPodManagerMock public eigenPodManagerMock;
-
-    address public registryCoordinatorOwner = address(uint160(uint256(keccak256("registryCoordinatorOwner"))));
-    address public pauser = address(uint160(uint256(keccak256("pauser"))));
-    address public unpauser = address(uint160(uint256(keccak256("unpauser"))));
-    address public pubkeyRegistry = address(uint160(uint256(keccak256("pubkeyRegistry"))));
-    address public indexRegistry = address(uint160(uint256(keccak256("indexRegistry"))));
-
-    uint256 churnApproverPrivateKey = uint256(keccak256("churnApproverPrivateKey"));
-    address churnApprover = cheats.addr(churnApproverPrivateKey);
-    address ejector = address(uint160(uint256(keccak256("ejector"))));
-
     /**
      * Tracker variables used as we initialize quorums and operators during tests
      * (see _initializeQuorum and _selectNewOperator)
@@ -77,11 +52,6 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
     uint256 gasUsed;
 
     modifier fuzzOnlyInitializedQuorums(uint8 quorumNumber) {
-        cheats.assume(initializedQuorumBitmap.numberIsInBitmap(quorumNumber));
-        _;
-    }
-
-    modifier fuzz_onlyInitializedQuorums(uint8 quorumNumber) {
         cheats.assume(initializedQuorumBitmap.numberIsInBitmap(quorumNumber));
         _;
     }
