@@ -10,7 +10,7 @@ This document aims to describe and summarize how actively validated services (AV
 We are currently in the process of implementing the API for payment flow from AVSs to operators in EigenLayer. Details of this API will be added to this document in the near future.
 
 The following figure summarizes scope of this document: 
-![Doc Outline](./images/middleware_outline_doc.png)
+![Doc Outline](../images/middleware_outline_doc.png)
 
 # Introduction
 In designing EigenLayer, the EigenLabs team aspired to make minimal assumptions about the structure of AVSs built on top of it. If you are getting started looking at [EigenLayer][eigenlayer-repo-link]'s codebase, the `Slasher.sol` contains most of the logic that actually mediates the interactions between EigenLayer and AVSs. This repo contains code that can be extended, used directly, or consulted as a reference in building an AVS on top of EigenLayer. Note that there will be a single, EigenLayer-owned, `Slasher.sol` contract, but all the `middleware` contracts are AVS-specific and need to be deployed separately by AVS teams.
@@ -47,7 +47,7 @@ In order for any EigenLayer operator to be able to opt-in to an AVS, EigenLayer 
 2. Next, the operator needs to register with the AVS on chain via an AVS-specific registry contract (see [this][middleware-guide-link] section for examples). To integrate with EigenLayer, the AVS's Registry contract provides a registration endpoint that calls on the AVS's `ServiceManager.recordFirstStakeUpdate(..)` which in turn calls `Slasher.recordFirstStakeUpdate(..)`. On successful execution of this function call, the event `MiddlewareTimesAdded(..)` is emitted and the operator has to start serving the tasks from the AVS.
 
 The following figure illustrates the above flow: 
-![Operator opting-in](./images/operator_opting.png)
+![Operator opting-in](../images/operator_opting.png)
 
 ### *Recording Stake Updates*
 EigenLayer is a dynamic system where stakers and operators are constantly adjusting amounts of stake delegated via the system. It is therefore imperative for an AVS to be aware of any changes to stake delegated to its operators. In order to facilitate this, EigenLayer offers the `Slasher.recordStakeUpdate(..)`.
@@ -58,13 +58,13 @@ Let us illustrate the usage of this facility with an example: A staker has deleg
 - The AVS provider now is aware of the change in stake, and the staker can eventually complete their withdrawal.  Refer [here](https://github.com/Layr-Labs/eigenlayer-contracts/blob/master/docs/EigenLayer-withdrawal-flow.md) for more details
 
 The following figure illustrates the above flow: 
-![Stake update](./images/staker_withdrawing.png)
+![Stake update](../images/staker_withdrawing.png)
 
 ### *Deregistering from AVS*
 In order for any EigenLayer operator to be able to de-register from an AVS, EigenLayer provides the interface `Slasher.recordLastStakeUpdateAndRevokeSlashingAbility(..)`. Essentially, in order for an operator to deregister from an AVS, the operator has to call `Slasher.recordLastStakeUpdateAndRevokeSlashingAbility(..)`  via the AVS's ServiceManager contract. It is important to note that the latest block number until which the operator is required to serve tasks for the service must be known by the service and included in the ServiceManager's call to `Slasher.recordLastStakeUpdateAndRevokeSlashingAbility`.
 
 The following figure illustrates the above flow in which the operator calls the `deregister(..)` function in a sample Registry contract.
-![Operator deregistering](./images/operator_deregister.png)
+![Operator deregistering](../images/operator_deregister.png)
 
 ### *Slashing*
 As mentioned above, EigenLayer is built to support slashing as a result of an on-chain-checkable, objectively attributable action. In order for an AVS to be able to slash an operator in an objective manner, the AVS needs to deploy a DisputeResolution contract which anyone can call to raise a challenge against an EigenLayer operator for its adversarial action. On successful challenge, the DisputeResolution contract calls `ServiceManager.freezeOperator(..)`; the ServiceManager in turn calls `Slasher.freezeOperator(..)` to freeze the operator in EigenLayer. EigenLayer's Slasher contract emits a `OperatorFrozen(..)` event whenever an operator is (successfully) frozen

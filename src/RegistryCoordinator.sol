@@ -301,7 +301,7 @@ contract RegistryCoordinator is
 
     /**
      * @notice Updates the stakes of all operators for each of the specified quorums in the StakeRegistry. Each quorum also
-     * has their StakeRegistry.quorumTimestamp updated. which is meant to keep track of when operators were last all updated at once.
+     * has their quorumUpdateBlockNumber updated. which is meant to keep track of when operators were last all updated at once.
      * @param operatorsPerQuorum is an array of arrays of operators to update for each quorum. Note that each nested array
      * of operators must be sorted in ascending address order to ensure that all operators in the quorum are updated
      * @param quorumNumbers is an array of quorum numbers to update
@@ -313,7 +313,7 @@ contract RegistryCoordinator is
         address[][] calldata operatorsPerQuorum,
         bytes calldata quorumNumbers
     ) external onlyWhenNotPaused(PAUSED_UPDATE_OPERATOR) {
-        uint192 quorumBitmap = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers));
+        uint192 quorumBitmap = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         require(_quorumsAllExist(quorumBitmap), "RegistryCoordinator.updateOperatorsForQuorum: some quorums do not exist");
         require(
             operatorsPerQuorum.length == quorumNumbers.length,
