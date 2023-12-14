@@ -1,105 +1,51 @@
-# AVS Smart Contract Architecture
+[core-docs-m2]: https://github.com/Layr-Labs/eigenlayer-contracts/tree/m2-mainnet/docs
+[core-repo]: https://github.com/Layr-Labs/eigenlayer-contracts
 
-<p align="center"><b><font size="+1">
-🚧 The Slasher contract is under active development and its interface is expected to change. We recommend writing slashing logic without integrating with the Slasher at this point in time. 🚧
-</font></b><p>
+# EigenLayer Middleware
 
-## Introduction
+EigenLayer is a set of smart contracts deployed on Ethereum that enable restaking of assets to secure new services called AVSs (actively validated services). The core contracts that enable these features can be found in the [`eigenlayer-contracts` repo][core-repo].
 
-EigenLayer AVSs are a new type of protocol that makes use of EigenLayer’s restaking primitive. AVSs are different from current chains and other smart contract protocols in that they are validated by EigenLayer operators. There are 3 specific types of conditions that AVSs implement in smart contracts onchain:
+This repo contains smart contracts used to create an AVS that interacts with the EigenLayer core contracts.
 
-- Registration/Deregistration conditions: What requirements do operators need to have in order to register for/deregister from the AVS?
-- Payment conditions: How much does a certain operator deserve to be paid for their validation? In what form are they paid?
-- Slashing conditions: What behavior is not allowed of operators by the AVS? What exact mechanism should be used to determine this behavior onchain?
+## Getting Started
 
-The EigenLabs dev team has been building out a smart contract architecture for AVSs to provide a base for AVSs to build on top of for their specific use case. They have been using it internally for the first AVS on EigenLayer: EigenDA.
+* [Documentation](#documentation)
+* [Building and Running Tests](#building-and-running-tests)
+* [Deployments](#deployments)
 
-## The Registry Coordinator and Registries
+## Documentation
 
-![Registry Architecture](./docs/images/registry_architecture.png)
+### Basics
 
-There are two things that matter in terms of operators’ onchain interaction with AVS contracts:
+To get a basic understanding of EigenLayer, check out [You Could've Invented EigenLayer](https://www.blog.eigenlayer.xyz/ycie/). Note that some of the document's content describes features that do not exist yet (like the Slasher). To understand more about how restakers and operators interact with EigenLayer, check out these guides:
+* [Restaking User Guide](https://docs.eigenlayer.xyz/restaking-guides/restaking-user-guide)
+* [Operator Guide](https://docs.eigenlayer.xyz/operator-guides/operator-introduction)
 
-- What qualities of operators need to be kept track of onchain? (e.g. stake, BLS pubkeys, etc.)
-- Registration/Deregistration conditions
+Most of this content is intro-level and describes user interactions with the EigenLayer core contracts, but it should give you a good enough starting point.
 
-These two points have been addressed through the Registry Coordinator/Registry Architecture.
+### Deep Dive
 
-### Definitions
+The most up-to-date and technical documentation can be found in [/docs](/docs). If you're a shadowy super coder, this is a great place to get an overview of the contracts before diving into the code.
 
-#### Quorums
+It might be helpful to explore the EigenLayer core technical documentation as well, which you can find [here][core-docs-m2].
 
-Quorums are the different divisions of the operator set for an AVS. One can think of a quorum being defined by the token staked for that quorum, although [it is slightly more complicated than that](./docs/StakeRegistry.md#definitions). One often wants to make trust assumptions on quorums, but wants many quorums for the same AVS.
+## Building and Running Tests
 
-One example of the quorum concept is in EigenDA, where we have a single ETH quorum for which LSTs and native beacon chain ETH are accepted as stake and another quorum for each rollup that wants to stake their own token for security.
+This repository uses Foundry. See the [Foundry docs](https://book.getfoundry.sh/) for more info on installation and usage. If you already have foundry, you can build this project and run tests with these commands:
 
-### RegistryCoordinator
-
-The Registry Coordinator is a contract that is deployed by each AVS. It handles
-
-- Keeping track of what quorums operators are a part of
-- Handling operator churn (registration/deregistration)
-- Communicating to registries
-  The current implementation of this contract is the [BLSRegistryCoordinatorWithIndices](./docs/BLSRegistryCoordinatorWithIndices.md).
-
-### Registries
-
-The registries are contracts that keep track of the attributes of individual operators. For example, we have initially built the
-
-- [StakeRegistry](./docs/StakeRegistry.md) which keeps track of the stakes of different operators for different quorums at different times
-- [BLSPubkeyRegistry](./docs/BLSPubkeyRegistry.md) which keeps track of the aggregate public key of different quorums at different times. Note that the AVS contracts use [BLS aggregate signatures](#bls-signature-checker) due to their favorable scalability to large operator sets.
-- [IndexRegistry](./docs/IndexRegistry.md) which keeps track of an ordered list of the operators in each quorum at different times. (note that this behavior is likely only needed for EigenDA)
-  Registries are meant to be read from and indexed by offchain AVS actors (operators and AVS coordinators).
-
-A registry coordinator has 1 or more registries connected to it and all of them are called when an operator registers or deregisters. They are a plug and play system that are meant to be added to the RegistryCoordinator as needed. AVSs should create registries they need for their purpose.
-
-### Note on (active) block ranges
-
-Note that the registry contract implementations use lists structs similar to the following type (with the `Value` type altered):
-
-```solidity
-struct ValueUpdateA {
-    Value value;
-    uint32 updateBlockNumber; // when the value started being valid
-    uint32 nextUpdateBlockNumber; // then the value stopped being valid or 0, if the value is still valid
-}
 ```
+foundryup
 
-or
-
-```solidity
-struct ValueUpdateB {
-    Value value;
-    uint32 toBlockNumber; // when the value expired
-}
+forge build
+forge test
 ```
-
-These structs, consecutively, are a history of the `Value` over certain ranges of blocks. These are (aptly) called block ranges, and _active_ block ranges for the `ValueUpdate` that contains the current block number.
-
-## TODO: Service Manager
-
-## BLS Signature Checker
-
-At the core of many AVSs on EigenLayer (almost all except those that affect Ethereum block production) is the verification of a quorum signature of an AVS's operator set on a certain message and slashing if some quality of that message and other state is true. The registry architecture is optimized for making this signature as cheap as possible to verify (it is still relatively expensive).
-
-The current implementation of this contract is the [BLSSignatureChecker](./docs/BLSSignatureChecker.md).
 
 ## Deployments
 
-### M2 Testnet (Current Goerli Deployment)
+### Current Mainnet Deployment
 
-| Name                      | Solidity                      | Contract                                                                                          | Notes |
-| ------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------- | ----- |
-| BLSOperatorStateRetriever | BLSOperatorStateRetriever.sol | [`0x737D...A3a3`](https://goerli.etherscan.io/address/0x737Dd62816a9392e84Fa21C531aF77C00816A3a3) |       |
-| BLSPubkeyCompendium       | BLSPubkeyCompendium.sol       | [`0xc81d...1b19`](https://goerli.etherscan.io/address/0xc81d3963087Fe09316cd1E032457989C7aC91b19) |       |
+No contracts have been deployed to mainnet yet.
 
-## Further reading
+### Current Testnet Deployment
 
-More detailed functional docs have been written on the AVS architecture implemented in the middleware contracts. The recommended order for reading the other docs in this folder is
-
-1. [BLSRegistryCoordinatorWithIndices](./docs/BLSRegistryCoordinatorWithIndices.md)
-2. [BLSPublicKeyCompendium](./docs/BLSPublicKeyCompendium.md) and [BLSPublicKeyRegistry](./docs/BLSPubkeyRegistry.md)
-3. [StakeRegistry](./docs/StakeRegistry.md)
-4. [IndexRegistry](./docs/IndexRegistry.md)
-5. [BLSOperatorStateRetriever](./docs/BLSOperatorStateRetriever.md)
-6. [BLSSignatureChecker](./docs/BLSSignatureChecker.md)
+TODO

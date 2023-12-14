@@ -43,7 +43,7 @@ interface IRegistryCoordinator {
      * @notice Data structure for storing info on operators
      */
     struct OperatorInfo {
-        // the id of the operator, which is likely the keccak256 hash of the operator's public key if using BLSRegsitry
+        // the id of the operator, which is likely the keccak256 hash of the operator's public key if using BLSRegistry
         bytes32 operatorId;
         // indicates whether the operator is actively registered for serving the middleware or not
         OperatorStatus status;
