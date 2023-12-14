@@ -3,6 +3,8 @@ Reference Links:
  -->
 [core-contracts-repo]: https://github.com/Layr-Labs/eigenlayer-contracts
 [core-docs-m2]: https://github.com/Layr-Labs/eigenlayer-contracts/tree/m2-mainnet/docs
+[eigenda-repo]: https://github.com/Layr-Labs/eigenda/
+[bitmaputils-lib]: ../src/libraries/BitmapUtils.sol
 
 [core-registerToAVS]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/m2-mainnet/docs/core/DelegationManager.md#registeroperatortoavs
 [core-deregisterFromAVS]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/m2-mainnet/docs/core/DelegationManager.md#deregisteroperatorfromavs
@@ -21,12 +23,15 @@ EigenLayer AVSs ("actively validated services") are protocols that make use of E
 
 **Additional Note**: Although the goal of this repo is to eventually provide general-purpose building blocks for all kinds of AVSs, many of the contracts and design considerations were made to support EigenDA. When these docs provide examples, they will often cite EigenDA.
 
+For more information on EigenDA, check out the repo: [Layr-Labs/eigenda][eigenda-repo].
+
 ### Contents
 
 * [Important Concepts](#important-concepts)
     * [Quorums](#quorums)
     * [Strategies and Stake](#strategies-and-stake)
     * [Operator Sets and Churn](#operator-sets-and-churn)
+    * [State Histories](#state-histories)
     * [Hooking Into EigenLayer Core](#hooking-into-eigenlayer-core)
 * [System Components](#system-components)
     * [Registries](#registries)
@@ -38,11 +43,15 @@ EigenLayer AVSs ("actively validated services") are protocols that make use of E
 
 ##### Quorums
 
-A quorum is a grouping and configuration of specific kinds of stake that an AVS considers when interacting with operators. When operators register for an AVS, they select one or more quorums within the AVS to register for. The purpose of having a quorum is that an AVS can customize the makeup of its security offering by choosing which kinds of stake/security it would like to utilize.
+A quorum is a grouping and configuration of specific kinds of stake that an AVS considers when interacting with operators. When operators register for an AVS, they select one or more quorums within the AVS to register for. Depending on its configuration, each quorum evaluates a specific subset of the operator's restaked tokens and uses this to determine a specific weight for the operator for that quorum. This weight is ultimately used to determine when an AVS has reached consensus.
+
+The purpose of having a quorum is that an AVS can customize the makeup of its security offering by choosing which kinds of stake/security it would like to utilize.
 
 As an example, an AVS might want to support primarily native ETH stakers. It would do so by configuring a quorum to only weigh operators that control shares belonging to the native eth strategy (defined in the core contracts).
 
-The Owner initializes quorums in the `RegistryCoordinator`, and may configure them further in both the `RegistryCoordinator` and `StakeRegistry` contracts.
+The Owner initializes quorums in the `RegistryCoordinator`, and may configure them further in both the `RegistryCoordinator` and `StakeRegistry` contracts. When quorums are initialized, they are assigned a unique, sequential quorum number.
+
+*Note:* For the most part, quorum numbers are passed between contracts as `bytes` arrays containing an ordered list of quorum numbers. However, when storing lists of quorums in state (and for other operations), these `bytes` arrays are converted to bitmaps using the [`BitmapUtils` library][bitmaputils-lib].
 
 ##### Strategies and Stake
 
@@ -70,13 +79,27 @@ When this happens, EigenDA needs to provide a list of the pubkeys of the non-sig
 
 In order to prevent the operator set from getting calcified, the churn mechanism was introduced to allow operators to be replaced in some cases. Future work is being done to increase the max operator count and refine the churn mechanism.
 
+##### State Histories
+
+Many of the contracts in this repo keep histories of states over time. Generally, you'll see structs that look like this:
+
+```solidity
+struct ValueUpdate {
+    Value value;
+    uint32 updateBlockNumber;     // when the value started being valid
+    uint32 nextUpdateBlockNumber; // when the value stopped being valid (or 0, if the value is still valid)
+}
+```
+
+These histories are used by offchain code to query state at particular blocks, and are ultimately used to validate specific actions on-chain. See the [`BLSSignatureChecker` section](#blssignaturechecker) below.
+
 ##### Hooking Into EigenLayer Core
 
 The main thing that links an AVS to the EigenLayer core contracts is that when EigenLayer operators register/deregister with an AVS, the AVS calls these functions in EigenLayer core:
 * [`DelegationManager.registerOperatorToAVS`][core-registerToAVS]
 * [`DelegationManager.deregisterOperatorFromAVS`][core-deregisterFromAVS]
 
-These methods ensure that the operator registering with the AVS is also registered as an operator in EigenLayer core. In this repo, these methods are called by the `RegistryCoordinator`.
+These methods ensure that the operator registering with the AVS is also registered as an operator in EigenLayer core. In this repo, these methods are called by the `ServiceManagerBase`.
 
 Eventually, operator slashing and payment for services will be part of the middleware/core relationship, but these features aren't implemented yet and their design is a work in progress.
 
@@ -91,9 +114,11 @@ Eventually, operator slashing and payment for services will be part of the middl
 | [`StakeRegistry.sol`](../src/StakeRegistry.sol) | Singleton | Transparent proxy |
 | [`IndexRegistry.sol`](../src/IndexRegistry.sol) | Singleton | Transparent proxy |
 
-The `RegistryCoordinator` is the primary entry point for operators as they register for and deregister from an AVS's quorums. When operators register or deregister, the registry coordinator updates that operator's currently-registered quorums, and pushes the registration/deregistration to each of the three registries it controls:
+The `RegistryCoordinator` keeps track of which quorums exist and have been initialized. It is also the primary entry point for operators as they register for and deregister from an AVS's quorums.
+
+When operators register or deregister, the registry coordinator updates that operator's currently-registered quorums, and pushes the registration/deregistration to each of the three registries it controls:
 * `BLSApkRegistry`: tracks the aggregate BLS pubkey hash for the operators registered to each quorum. Also maintains a history of these aggregate pubkey hashes.
-* `StakeRegistry`: interfaces with the EigenLayer core contracts to track historical state of operators per quorum.
+* `StakeRegistry`: interfaces with the EigenLayer core contracts to determine the weight of operators according to their stake and each quorum's configuration. Also maintains a history of these weights.
 * `IndexRegistry`: assigns indices to operators within each quorum, and tracks historical indices and operators per quorum. Used primarily by offchain infrastructure to fetch ordered lists of operators in quorums.
 
 Both the registry coordinator and each of the registries maintain historical state for the specific information they track. This historical state tracking can be used to query state at a particular block, which is primarily used in offchain infrastructure.

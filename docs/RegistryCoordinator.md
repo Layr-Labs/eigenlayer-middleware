@@ -24,7 +24,7 @@ This document organizes methods according to the following themes (click each to
 
 * Owner: a permissioned role that can create and configure quorums as well as manage other roles
 * Ejector: a permissioned role that can forcibly eject an operator from a quorum via `RegistryCoordinator.ejectOperator`
-* Churn Approver: a permissioned role that signs off on operation churn in `RegistryCoordinator.registerOperatorWithChurn`
+* Churn Approver: a permissioned role that signs off on operator churn in `RegistryCoordinator.registerOperatorWithChurn`
 
 ---    
 

@@ -42,4 +42,10 @@ forge test
 
 ## Deployments
 
+### Current Mainnet Deployment
+
+No contracts have been deployed to mainnet yet.
+
+### Current Testnet Deployment
+
 TODO
