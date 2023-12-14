@@ -219,7 +219,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                 // if so, load their stake at referenceBlockNumber and subtract it from running stake signed
                 for (uint256 j = 0; j < params.nonSignerPubkeys.length; j++) {
                     // if the nonSigner is a part of the quorum, subtract their stake from the running total
-                    if (BitmapUtils.numberIsInBitmap(nonSigners.quorumBitmaps[j], uint8(quorumNumbers[i]))) {
+                    if (BitmapUtils.isSet(nonSigners.quorumBitmaps[j], uint8(quorumNumbers[i]))) {
                         stakeTotals.signedStakeForQuorum[i] -=
                             stakeRegistry.getStakeAtBlockNumberAndIndex({
                                 quorumNumber: uint8(quorumNumbers[i]),
