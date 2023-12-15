@@ -153,6 +153,60 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
         return quorumNumber;
     }
 
+        /**
+     * @dev Initialize a new quorum with `minimumStake` and `numStrats`
+     * Create `numStrats` dummy strategies with multiplier of 1 for each. 
+     * Returns quorumNumber that was just initialized
+     */
+    function _initializeQuorum(uint96 minimumStake, uint256 numStrats) internal returns (uint8) {
+        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](numStrats);
+        for (uint256 i = 0; i < strategyParams.length; i++) {
+            strategyParams[i] = IStakeRegistry.StrategyParams(
+                IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(i)))))),
+                1
+            );
+        }
+
+        uint8 quorumNumber = nextQuorum;
+        nextQuorum++;
+
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
+
+        // Mark quorum initialized for other tests
+        initializedQuorumBitmap = uint192(initializedQuorumBitmap.addNumberToBitmap(quorumNumber));
+        initializedQuorumBytes = initializedQuorumBitmap.bitmapToBytesArray();
+
+        return quorumNumber;
+    }
+
+    /**
+     * @dev Initialize a new quorum with `minimumStake` and `multipliers`
+     * For each multiplier, a dummy strategy address is used
+     * Returns quorumNumber that was just initialized
+     */
+    function _initializeQuorum(uint96 minimumStake, uint96[] memory multipliers) internal returns (uint8) {
+        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](multipliers.length);
+        for (uint256 i = 0; i < strategyParams.length; i++) {
+            strategyParams[i] = IStakeRegistry.StrategyParams(
+                IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(i)))))),
+                multipliers[i]
+            );
+        }
+
+        uint8 quorumNumber = nextQuorum;
+        nextQuorum++;
+
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
+
+        // Mark quorum initialized for other tests
+        initializedQuorumBitmap = uint192(initializedQuorumBitmap.addNumberToBitmap(quorumNumber));
+        initializedQuorumBytes = initializedQuorumBitmap.bitmapToBytesArray();
+
+        return quorumNumber;
+    }
+
     /// @dev Return a new, unique operator/operatorId pair, guaranteed to be
     /// unregistered from all quorums
     function _selectNewOperator() internal returns (address, bytes32) {
