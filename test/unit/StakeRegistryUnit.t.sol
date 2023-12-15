@@ -106,6 +106,60 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
         initializedQuorumBytes = initializedQuorumBitmap.bitmapToBytesArray();
     }
 
+        /**
+     * @dev Initialize a new quorum with `minimumStake` and `numStrats`
+     * Create `numStrats` dummy strategies with multiplier of 1 for each. 
+     * Returns quorumNumber that was just initialized
+     */
+    function _initializeQuorum(uint96 minimumStake, uint256 numStrats) internal returns (uint8) {
+        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](numStrats);
+        for (uint256 i = 0; i < strategyParams.length; i++) {
+            strategyParams[i] = IStakeRegistry.StrategyParams(
+                IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(i)))))),
+                1
+            );
+        }
+
+        uint8 quorumNumber = nextQuorum;
+        nextQuorum++;
+
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
+
+        // Mark quorum initialized for other tests
+        initializedQuorumBitmap = uint192(initializedQuorumBitmap.addNumberToBitmap(quorumNumber));
+        initializedQuorumBytes = initializedQuorumBitmap.bitmapToBytesArray();
+
+        return quorumNumber;
+    }
+
+    /**
+     * @dev Initialize a new quorum with `minimumStake` and `multipliers`
+     * For each multiplier, a dummy strategy address is used
+     * Returns quorumNumber that was just initialized
+     */
+    function _initializeQuorum(uint96 minimumStake, uint96[] memory multipliers) internal returns (uint8) {
+        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](multipliers.length);
+        for (uint256 i = 0; i < strategyParams.length; i++) {
+            strategyParams[i] = IStakeRegistry.StrategyParams(
+                IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(i)))))),
+                multipliers[i]
+            );
+        }
+
+        uint8 quorumNumber = nextQuorum;
+        nextQuorum++;
+
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
+
+        // Mark quorum initialized for other tests
+        initializedQuorumBitmap = uint192(initializedQuorumBitmap.addNumberToBitmap(quorumNumber));
+        initializedQuorumBytes = initializedQuorumBitmap.bitmapToBytesArray();
+
+        return quorumNumber;
+    }
+
     /// @dev Return a new, unique operator/operatorId pair, guaranteed to be
     /// unregistered from all quorums
     function _selectNewOperator() internal returns (address, bytes32) {
@@ -458,6 +512,21 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
 
         return min + value;
     }
+
+    /// @dev Sort to ensure that the array is in desscending order for removeStrategies
+    function _sortArrayDesc(uint256[] memory arr) internal pure returns (uint256[] memory) {
+        uint256 l = arr.length;
+        for(uint256 i = 0; i < l; i++) {
+            for(uint256 j = i+1; j < l ;j++) {
+                if(arr[i] < arr[j]) {
+                    uint256 temp = arr[i];
+                    arr[i] = arr[j];
+                    arr[j] = temp;
+                }
+            }
+        }
+        return arr;
+    }
 }
 
 /// @notice Tests for any nonstandard/permissioned methods
@@ -486,6 +555,28 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
     }
 
+    function testFuzz_initializeQuorum_Revert_WhenInvalidArrayLengths(
+        uint8 quorumNumber,
+        uint96 minimumStake
+    ) public {
+        cheats.assume(quorumNumber >= nextQuorum);
+        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](0);
+        cheats.expectRevert("StakeRegistry._addStrategyParams: no strategies provided");
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
+
+        strategyParams = new IStakeRegistry.StrategyParams[](MAX_WEIGHING_FUNCTION_LENGTH + 1);
+        for (uint256 i = 0; i < strategyParams.length; i++) {
+            strategyParams[i] = IStakeRegistry.StrategyParams(
+                IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(i)))))),
+                uint96(1)
+            );
+        }
+        cheats.expectRevert("StakeRegistry._addStrategyParams: exceed MAX_WEIGHING_FUNCTION_LENGTH");
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
+    }
+
     /**
      * @dev Initializes a quorum with StrategyParams with fuzzed multipliers inputs and corresponding
      * strategy addresses. 
@@ -505,6 +596,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
                 multipliers[i]
             );
         }
+        quorumNumber = nextQuorum;
         cheats.prank(address(registryCoordinator));
         stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
 
@@ -612,6 +704,188 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
             (IStrategy strategy , uint96 multiplier) = stakeRegistry.strategyParams(quorumNumber, i + 1);
             assertEq(address(strategy), address(strategyParams[i].strategy), "invalid strategy");
             assertEq(multiplier, strategyParams[i].multiplier, "invalid multiplier");
+        }
+    }
+
+    /*******************************************************************************
+                            removeStrategies
+    *******************************************************************************/
+    function testFuzz_removeStrategies_Revert_WhenNotRegistryCoordinatorOwner(
+        uint8 quorumNumber,
+        uint256[] memory indicesToRemove
+    ) public fuzzOnlyInitializedQuorums(quorumNumber) {
+        cheats.expectRevert("StakeRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator");
+        stakeRegistry.removeStrategies(quorumNumber, indicesToRemove);
+    }
+
+    function testFuzz_removeStrategies_Revert_WhenInvalidQuorum(
+        uint8 quorumNumber,
+        uint256[] memory indicesToRemove
+    ) public {
+        // quorums [0,nextQuorum) are initialized, so use an invalid quorumNumber
+        cheats.assume(quorumNumber >= nextQuorum);
+        cheats.expectRevert("StakeRegistry.quorumExists: quorum does not exist");
+        cheats.prank(registryCoordinatorOwner);
+        stakeRegistry.removeStrategies(quorumNumber, indicesToRemove);
+    }
+
+    function testFuzz_removeStrategies_Revert_WhenIndexOutOfBounds(
+        uint96 minimumStake,
+        uint8 numStrategiesToAdd,
+        uint8 indexToRemove
+    ) public {
+        cheats.assume(0 < numStrategiesToAdd && numStrategiesToAdd <= MAX_WEIGHING_FUNCTION_LENGTH);
+        cheats.assume(numStrategiesToAdd <= indexToRemove);
+        uint8 quorumNumber = _initializeQuorum(minimumStake, numStrategiesToAdd);
+
+        uint256[] memory indicesToRemove = new uint256[](1);
+        indicesToRemove[0] = indexToRemove;
+        // index will be >= length of strategy params so should revert from index out of bounds
+        cheats.expectRevert();
+        cheats.prank(registryCoordinatorOwner);
+        stakeRegistry.removeStrategies(quorumNumber, indicesToRemove);
+    }
+
+    function testFuzz_removeStrategies_Revert_WhenEmptyStrategiesToRemove(
+        uint96 minimumStake,
+        uint8 numStrategiesToAdd
+    ) public {
+        cheats.assume(0 < numStrategiesToAdd && numStrategiesToAdd <= MAX_WEIGHING_FUNCTION_LENGTH);
+        uint8 quorumNumber = _initializeQuorum(minimumStake, numStrategiesToAdd);
+
+        uint256[] memory indicesToRemove = new uint256[](0);
+        cheats.expectRevert("StakeRegistry.removeStrategies: no indices to remove provided");
+        cheats.prank(registryCoordinatorOwner);
+        stakeRegistry.removeStrategies(quorumNumber, indicesToRemove);
+    }
+
+    /**
+     * @dev Fuzzes `numStrategiesToAdd` strategies to a quorum and then removes `numStrategiesToRemove` strategies
+     * Ensures the indices for `numStrategiesToRemove` are random within bounds, and are sorted desc.
+     */
+    function testFuzz_removeStrategies(
+        uint96 minimumStake,
+        uint8 numStrategiesToAdd,
+        uint8 numStrategiesToRemove
+    ) public {
+        cheats.assume(0 < numStrategiesToAdd && numStrategiesToAdd <= MAX_WEIGHING_FUNCTION_LENGTH);
+        cheats.assume(0 < numStrategiesToRemove && numStrategiesToRemove <= numStrategiesToAdd);
+        uint8 quorumNumber = _initializeQuorum(minimumStake, numStrategiesToAdd);
+
+        // Create array of indicesToRemove and sort desc 
+        uint256[] memory indicesToRemove = new uint256[](numStrategiesToRemove);
+        for (uint256 i = 0; i < numStrategiesToRemove; i++) {
+            indicesToRemove[i] = _randUint({ rand: bytes32(i), min: 0, max: numStrategiesToAdd - 1 });
+        }
+        indicesToRemove = _sortArrayDesc(indicesToRemove);
+        uint256 prevIndex = indicesToRemove[0];
+        for (uint256 i = 0; i < numStrategiesToRemove; i++) {
+            // ensure no duplicate indices
+            if (i > 0) {
+                cheats.assume(indicesToRemove[i] < prevIndex);
+                prevIndex = indicesToRemove[i];
+            }
+            (IStrategy strategy, ) = stakeRegistry.strategyParams(quorumNumber, indicesToRemove[i]);
+            cheats.expectEmit(true, true, true, true, address(stakeRegistry));
+            emit StrategyRemovedFromQuorum(quorumNumber, strategy);
+            cheats.expectEmit(true, true, true, true, address(stakeRegistry));
+            emit StrategyMultiplierUpdated(quorumNumber, strategy, 0);
+        }
+
+        // Remove strategies and do assertions
+        cheats.prank(registryCoordinatorOwner);
+        stakeRegistry.removeStrategies(quorumNumber, indicesToRemove);
+        assertEq(
+            stakeRegistry.strategyParamsLength(quorumNumber),
+            numStrategiesToAdd - numStrategiesToRemove,
+            "invalid strategy params length"
+        );
+    }
+
+    /*******************************************************************************
+                            modifyStrategyParams
+    *******************************************************************************/
+    function testFuzz_modifyStrategyParams_Revert_WhenNotRegistryCoordinatorOwner(
+        uint8 quorumNumber,
+        uint256[] calldata strategyIndices,
+        uint96[] calldata newMultipliers
+    ) public fuzzOnlyInitializedQuorums(quorumNumber) {
+        cheats.expectRevert("StakeRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator");
+        stakeRegistry.modifyStrategyParams(quorumNumber, strategyIndices, newMultipliers);   
+    }
+
+    function testFuzz_modifyStrategyParams_Revert_WhenInvalidQuorum(
+        uint8 quorumNumber,
+        uint256[] calldata strategyIndices,
+        uint96[] calldata newMultipliers
+    ) public {
+        // quorums [0,nextQuorum) are initialized, so use an invalid quorumNumber
+        cheats.assume(quorumNumber >= nextQuorum);
+        cheats.expectRevert("StakeRegistry.quorumExists: quorum does not exist");
+        cheats.prank(registryCoordinatorOwner);
+        stakeRegistry.modifyStrategyParams(quorumNumber, strategyIndices, newMultipliers);
+    }
+    
+    function testFuzz_modifyStrategyParams_Revert_WhenEmptyArray(
+        uint8 quorumNumber
+    ) public fuzzOnlyInitializedQuorums(quorumNumber) {
+        uint256[] memory strategyIndices = new uint256[](0);
+        uint96[] memory newMultipliers = new uint96[](0);
+        cheats.expectRevert("StakeRegistry.modifyStrategyParams: no strategy indices provided");
+        cheats.prank(registryCoordinatorOwner);
+        stakeRegistry.modifyStrategyParams(quorumNumber, strategyIndices, newMultipliers);
+    }
+
+    function testFuzz_modifyStrategyParams_Revert_WhenInvalidArrayLengths(
+        uint8 quorumNumber,
+        uint256[] calldata strategyIndices,
+        uint96[] calldata newMultipliers
+    ) public fuzzOnlyInitializedQuorums(quorumNumber) {
+        cheats.assume(strategyIndices.length != newMultipliers.length);
+        cheats.assume(strategyIndices.length > 0);
+        cheats.expectRevert("StakeRegistry.modifyStrategyParams: input length mismatch");
+        cheats.prank(registryCoordinatorOwner);
+        stakeRegistry.modifyStrategyParams(quorumNumber, strategyIndices, newMultipliers);    
+    }
+
+    /**
+     * @dev Fuzzes initialized quorum with random indices of strategies to modify with new multipliers.
+     * Checks for events emitted and new multipliers are updated
+     */
+    function testFuzz_modifyStrategyParams(
+        uint8 numStrategiesToAdd,
+        uint8 numStrategiesToModify
+    ) public {
+        cheats.assume(0 < numStrategiesToAdd && numStrategiesToAdd <= MAX_WEIGHING_FUNCTION_LENGTH);
+        cheats.assume(0 < numStrategiesToModify && numStrategiesToModify <= numStrategiesToAdd);
+
+        uint8 quorumNumber = _initializeQuorum(0 /* minimumStake */, numStrategiesToAdd);
+        uint256[] memory strategyIndices = new uint256[](numStrategiesToModify);
+        uint96[] memory newMultipliers = new uint96[](numStrategiesToModify);
+        uint256 prevIndex;
+        for (uint256 i = 0; i < strategyIndices.length; i++) {
+            strategyIndices[i] = _randUint({ rand: bytes32(i), min: 0, max: numStrategiesToAdd - 1 });
+            newMultipliers[i] = uint96(_randUint({ rand: bytes32(i), min: 1, max: type(uint96).max }));
+
+            // ensure no duplicate indices
+            if (i == 0) {
+                prevIndex = strategyIndices[0];
+            } else if (i > 0) {
+                cheats.assume(strategyIndices[i] < prevIndex);
+                prevIndex = strategyIndices[i];
+            }
+
+            (IStrategy strategy, ) = stakeRegistry.strategyParams(quorumNumber, strategyIndices[i]);
+            cheats.expectEmit(true, true, true, true, address(stakeRegistry));
+            emit StrategyMultiplierUpdated(quorumNumber, strategy, newMultipliers[i]);
+        }
+
+        cheats.prank(registryCoordinatorOwner);
+        stakeRegistry.modifyStrategyParams(quorumNumber, strategyIndices, newMultipliers);
+
+        for (uint256 i = 0; i < strategyIndices.length; i++) {
+            (, uint96 multiplier) = stakeRegistry.strategyParams(quorumNumber, strategyIndices[i]);
+            assertEq(multiplier, newMultipliers[i], "invalid multiplier");
         }
     }
 }
