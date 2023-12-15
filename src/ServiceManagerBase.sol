@@ -78,6 +78,36 @@ contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
     }
 
     /**
+     * @notice Returns the list of strategies that the AVS supports for restaking
+     * @dev This function is intended to be called off-chain
+     * @dev No guarantee is made on uniqueness of each element in the returned array. 
+     *      The off-chain service should do that validation separately
+     */
+    function getRestakeableStrategies() external view returns (address[] memory) {
+        uint256 quorumCount = registryCoordinator.quorumCount();
+
+        if (quorumCount == 0) {
+            return new address[](0);
+        }
+        
+        uint256 strategyCount;
+        for(uint256 i = 0; i < quorumCount; i++) {
+            strategyCount += stakeRegistry.strategyParamsLength(uint8(i));
+        }
+
+        address[] memory restakedStrategies = new address[](strategyCount);
+        uint256 index = 0;
+        for(uint256 i = 0; i < registryCoordinator.quorumCount(); i++) {
+            uint256 strategyParamsLength = stakeRegistry.strategyParamsLength(uint8(i));
+            for (uint256 j = 0; j < strategyParamsLength; j++) {
+                restakedStrategies[index] = address(stakeRegistry.strategyParamsByIndex(uint8(i), j).strategy);
+                index++;
+            }
+        }
+        return restakedStrategies;
+    }
+
+    /**
      * @notice Returns the list of strategies that the operator has potentially restaked on the AVS
      * @param operator The address of the operator to get restaked strategies for
      * @dev This function is intended to be called off-chain
