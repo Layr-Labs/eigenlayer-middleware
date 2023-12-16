@@ -31,7 +31,9 @@ import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
 
 contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
     using BitmapUtils for *;
-
+    
+    /// @notice Constant used as a divisor in calculating weights.
+    uint256 public constant WEIGHTING_DIVISOR = 1e18;
     /// @notice Maximum length of dynamic arrays in the `strategiesConsideredAndMultipliers` mapping.
     uint8 public constant MAX_WEIGHING_FUNCTION_LENGTH = 32;
 
@@ -159,42 +161,16 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
      * Returns quorumNumber that was just initialized
      */
     function _initializeQuorum(uint96 minimumStake, uint256 numStrats) internal returns (uint8) {
+        uint8 quorumNumber = nextQuorum;
+
         IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](numStrats);
         for (uint256 i = 0; i < strategyParams.length; i++) {
             strategyParams[i] = IStakeRegistry.StrategyParams(
-                IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(i)))))),
-                1
+                IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(quorumNumber, i)))))),
+                uint96(WEIGHTING_DIVISOR)
             );
         }
 
-        uint8 quorumNumber = nextQuorum;
-        nextQuorum++;
-
-        cheats.prank(address(registryCoordinator));
-        stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
-
-        // Mark quorum initialized for other tests
-        initializedQuorumBitmap = uint192(initializedQuorumBitmap.addNumberToBitmap(quorumNumber));
-        initializedQuorumBytes = initializedQuorumBitmap.bitmapToBytesArray();
-
-        return quorumNumber;
-    }
-
-    /**
-     * @dev Initialize a new quorum with `minimumStake` and `multipliers`
-     * For each multiplier, a dummy strategy address is used
-     * Returns quorumNumber that was just initialized
-     */
-    function _initializeQuorum(uint96 minimumStake, uint96[] memory multipliers) internal returns (uint8) {
-        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](multipliers.length);
-        for (uint256 i = 0; i < strategyParams.length; i++) {
-            strategyParams[i] = IStakeRegistry.StrategyParams(
-                IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(i)))))),
-                multipliers[i]
-            );
-        }
-
-        uint8 quorumNumber = nextQuorum;
         nextQuorum++;
 
         cheats.prank(address(registryCoordinator));
