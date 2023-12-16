@@ -73,7 +73,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         // Set operator weight in single quorum
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(MAX_QUORUM_BITMAP);
         for (uint i = 0; i < quorumNumbers.length; i++) {
-            stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), operator, defaultStake);
+            _setOperatorWeight(operator, uint8(quorumNumbers[i]), defaultStake);
         }    
     }
 

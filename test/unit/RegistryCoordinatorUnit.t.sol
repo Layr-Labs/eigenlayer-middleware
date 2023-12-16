@@ -162,7 +162,8 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
-        stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+        // stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+        _setOperatorWeight(defaultOperator, uint8(quorumNumbers[0]), defaultStake);
 
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
         emit OperatorSocketUpdate(defaultOperatorId, defaultSocket);
@@ -207,7 +208,7 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
         for (uint i = 0; i < quorumNumbers.length; i++) {
-            stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), defaultOperator, defaultStake);
+            _setOperatorWeight(defaultOperator, uint8(quorumNumbers[i]), defaultStake);
         }
 
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
@@ -260,7 +261,7 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
-        stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+        _setOperatorWeight(defaultOperator, defaultQuorumNumber, defaultStake);
         cheats.prank(defaultOperator);
         cheats.roll(registrationBlockNumber);
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket, emptySig);
@@ -268,7 +269,7 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
         bytes memory newQuorumNumbers = new bytes(1);
         newQuorumNumbers[0] = bytes1(defaultQuorumNumber+1);
 
-        stakeRegistry.setOperatorWeight(uint8(newQuorumNumbers[0]), defaultOperator, defaultStake);
+        _setOperatorWeight(defaultOperator, defaultQuorumNumber, defaultStake);
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
         emit OperatorSocketUpdate(defaultOperatorId, defaultSocket);
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
@@ -334,7 +335,8 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
     
         pubkeyCompendium.setBLSPublicKey(operatorToRegister, operatorToRegisterPubKey);
 
-        stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, defaultStake);
+        // stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, defaultStake);
+        _setOperatorWeight(defaultOperator, defaultQuorumNumber, defaultStake);
 
         cheats.prank(operatorToRegister);
         cheats.expectRevert("RegistryCoordinator.registerOperator: operator count exceeds maximum");
@@ -349,7 +351,8 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
-        stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+        // stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+        _setOperatorWeight(defaultOperator, uint8(quorumNumbers[0]), defaultStake);
         cheats.prank(defaultOperator);
         cheats.roll(registrationBlockNumber);
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket, emptySig);
@@ -409,7 +412,8 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
-        stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+        // stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+        _setOperatorWeight(defaultOperator, uint8(quorumNumbers[0]), defaultStake);
 
         cheats.startPrank(defaultOperator);
         
@@ -459,7 +463,8 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
         for (uint i = 0; i < quorumNumbers.length; i++) {
-            stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), defaultOperator, defaultStake);
+            // stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), defaultOperator, defaultStake);
+            _setOperatorWeight(defaultOperator, uint8(quorumNumbers[i]), defaultStake);
         }
 
         cheats.startPrank(defaultOperator);
@@ -674,7 +679,8 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
         pubkeyCompendium.setBLSPublicKey(operatorToRegister, operatorToRegisterPubKey);
 
         uint96 registeringStake = defaultKickBIPsOfOperatorStake * defaultStake;
-        stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, registeringStake);
+        // stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, registeringStake);
+        _setOperatorWeight(defaultOperator, defaultQuorumNumber, registeringStake);
 
         cheats.roll(registrationBlockNumber);
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
@@ -743,7 +749,8 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
         ) = _testRegisterOperatorWithKicks_SetUp(pseudoRandomNumber, quorumNumbers, defaultStake);
         bytes32 operatorToRegisterId = operatorToRegisterPubKey.hashG1Point();
 
-        stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, defaultStake);
+        // stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, defaultStake);
+        _setOperatorWeight(defaultOperator, defaultQuorumNumber, defaultStake);
 
         cheats.roll(registrationBlockNumber);
         ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry = _signOperatorChurnApproval(operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp + 10);
@@ -767,7 +774,8 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
 
 
         // set the stake of the operator to register to the defaultKickBIPsOfOperatorStake multiple of the operatorToKickStake
-        stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, operatorToKickStake * defaultKickBIPsOfOperatorStake / 10000 + 1);
+        // stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, operatorToKickStake * defaultKickBIPsOfOperatorStake / 10000 + 1);
+        _setOperatorWeight(operatorToRegister, defaultQuorumNumber, operatorToKickStake * defaultKickBIPsOfOperatorStake / 10000 + 1);
 
         cheats.roll(registrationBlockNumber);
         ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry = _signOperatorChurnApproval(operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp + 10);
@@ -788,7 +796,8 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
         ) = _testRegisterOperatorWithKicks_SetUp(pseudoRandomNumber, quorumNumbers, defaultStake);
 
         uint96 registeringStake = defaultKickBIPsOfOperatorStake * defaultStake;
-        stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, registeringStake);
+        // stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, registeringStake);
+        _setOperatorWeight(operatorToRegister, defaultQuorumNumber, registeringStake);
 
         cheats.roll(registrationBlockNumber);
         ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry;
@@ -813,7 +822,8 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
         bytes32 operatorToRegisterId = operatorToRegisterPubKey.hashG1Point();
 
         uint96 registeringStake = defaultKickBIPsOfOperatorStake * defaultStake;
-        stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, registeringStake);
+        // stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, registeringStake);
+        _setOperatorWeight(operatorToRegister, defaultQuorumNumber, registeringStake);
 
         cheats.roll(registrationBlockNumber);
         ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry = _signOperatorChurnApproval(operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp - 1);
@@ -828,7 +838,8 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
 
-        stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+        // stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+        _setOperatorWeight(defaultOperator, uint8(quorumNumbers[0]), defaultStake);
 
         cheats.prank(defaultOperator);
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket, emptySig);
@@ -863,7 +874,8 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
 
         for (uint i = 0; i < quorumNumbers.length; i++) {
-            stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), defaultOperator, defaultStake);
+            // stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), defaultOperator, defaultStake);
+            _setOperatorWeight(defaultOperator, uint8(quorumNumbers[i]), defaultStake);
         }
 
         cheats.prank(defaultOperator);
@@ -902,7 +914,8 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
 
-        stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+        // stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+        _setOperatorWeight(defaultOperator, uint8(quorumNumbers[0]), defaultStake);
 
         cheats.prank(defaultOperator);
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket, emptySig);
