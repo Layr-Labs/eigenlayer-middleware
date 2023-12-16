@@ -316,7 +316,7 @@ contract MockAVSDeployer is Test {
 
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
         for (uint i = 0; i < quorumNumbers.length; i++) {
-            stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), operator, stake);
+            _setOperatorWeight(operator, uint8(quorumNumbers[i]), stake);
         }
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
@@ -335,7 +335,8 @@ contract MockAVSDeployer is Test {
 
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
         for (uint i = 0; i < quorumNumbers.length; i++) {
-            stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), operator, stakes[uint8(quorumNumbers[i])]);
+            // stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), operator, stakes[uint8(quorumNumbers[i])]);
+            _setOperatorWeight(operator, uint8(quorumNumbers[i]), stakes[uint8(quorumNumbers[i])]);
         }
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
@@ -385,6 +386,17 @@ contract MockAVSDeployer is Test {
         }
 
         return (operatorMetadatas, expectedOperatorOverallIndices);
+    }
+
+    /**
+     * @dev Set the operator weight for a given quorum. Note we have to do this by setting delegationMock operatorShares
+     * Given each quorum must have at least one strategy, we set operatorShares for this strategy to this weight
+     */
+    function _setOperatorWeight(address operator, uint8 quorumNumber, uint96 weight) internal {
+        // Set StakeRegistry operator weight by setting DelegationManager operator shares
+        uint256 WEIGHTING_DIVISOR = 1e18;
+        (IStrategy strategy, uint96 multiplier) = stakeRegistry.strategyParams(quorumNumber, 0);
+        delegationMock.setOperatorShares(operator, strategy, ((uint256(weight) * WEIGHTING_DIVISOR) / uint256(multiplier)) );
     }
 
     function _incrementAddress(address start, uint256 inc) internal pure returns(address) {
