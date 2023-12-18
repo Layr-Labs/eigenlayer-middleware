@@ -42,6 +42,7 @@ These methods allow operators to register for/deregister from one or more quorum
 function registerOperator(
     bytes calldata quorumNumbers,
     string calldata socket,
+    IBLSApkRegistry.PubkeyRegistrationParams calldata params,
     SignatureWithSaltAndExpiry memory operatorSignature
 ) 
     external 
@@ -53,12 +54,16 @@ Registers the caller as an Operator for one or more quorums, as long as registra
 * `StakeRegistry.registerOperator`
 * `IndexRegistry.registerOperator`
 
-If the Operator was not currently registered for any quorums, this method will register the Operator to the AVS in the EigenLayer core contracts (`DelegationManager.registerOperatorToAVS`), passing in the provided `operatorSignature`. See the [`DelegationManager` docs][core-dmgr-docs] for more details.
+If the Operator has never registered for any of this AVS's quorums before, they need to register a BLS public key to participate in AVS signing events. In this case, this method will automatically pass `params` to the `BLSApkRegistry` to perform public key registration. The registered pubkey hash becomes the Operators unique operator id, used to identify them in many places in the middleware contracts.
+
+If the Operator was not currently registered for any quorums, this method will register the Operator to the AVS in the EigenLayer core contracts via the `ServiceManagerBase`.
 
 *Effects*:
+* If the Operator has never registered for the AVS before:
+    * Registers their BLS pubkey in the `BLSApkRegistry` (see [`BLSApkRegistry.registerBLSPublicKey`](./registries/BLSApkRegistry.md#registerblspublickey))
 * If the Operator was not currently registered for any quorums: 
     * Updates their status to `REGISTERED`
-    * Registers them in the core contracts (see [`DelegationManager.registerOperatorToAVS`][core-dmgr-register])
+    * Registers them in the core contracts (see [`ServiceManagerBase.registerOperatorToAVS`](./ServiceManagerBase.md#registeroperatortoavs))
 * Adds the new quorums to the Operator's current registered quorums, and updates the Operator's bitmap history
 * See [`BLSApkRegistry.registerOperator`](./registries/BLSApkRegistry.md#registeroperator)
 * See [`StakeRegistry.registerOperator`](./registries/StakeRegistry.md#registeroperator)
@@ -71,7 +76,7 @@ If the Operator was not currently registered for any quorums, this method will r
 * `quorumNumbers` MUST contain at least one valid quorum
 * `quorumNumbers` MUST NOT contain any quorums the Operator is already registered for
 * If the Operator was not currently registered for any quorums:
-    * See [`DelegationManager.registerOperatorToAVS`][core-dmgr-register]
+    * See [`ServiceManagerBase.registerOperatorToAVS`](./ServiceManagerBase.md#registeroperatortoavs)
 * See [`BLSApkRegistry.registerOperator`](./registries/BLSApkRegistry.md#registeroperator)
 * See [`StakeRegistry.registerOperator`](./registries/StakeRegistry.md#registeroperator)
 * See [`IndexRegistry.registerOperator`](./registries/IndexRegistry.md#registeroperator)
@@ -83,6 +88,7 @@ If the Operator was not currently registered for any quorums, this method will r
 function registerOperatorWithChurn(
     bytes calldata quorumNumbers, 
     string calldata socket,
+    IBLSApkRegistry.PubkeyRegistrationParams calldata params,
     OperatorKickParam[] calldata operatorKickParams,
     SignatureWithSaltAndExpiry memory churnApproverSignature,
     SignatureWithSaltAndExpiry memory operatorSignature
@@ -121,7 +127,9 @@ function deregisterOperator(
 Allows an Operator to deregister themselves from one or more quorums.
 
 *Effects*:
-* If the Operator is no longer registered for any quorums, updates their status to `DEREGISTERED`
+* If the Operator is no longer registered for any quorums:
+    * Updates their status to `DEREGISTERED`
+    * Deregisters them in the core contracts (see [`ServiceManagerBase.deregisterOperatorFromAVS`](./ServiceManagerBase.md#deregisteroperatorfromavs))
 * Removes the new quorums from the Operator's current registered quorums, and updates the Operator's bitmap history
 * See [`BLSApkRegistry.deregisterOperator`](./registries/BLSApkRegistry.md#deregisteroperator)
 * See [`StakeRegistry.deregisterOperator`](./registries/StakeRegistry.md#deregisteroperator)
@@ -133,6 +141,7 @@ Allows an Operator to deregister themselves from one or more quorums.
 * `quorumNumbers` MUST be an ordered array of quorum numbers, with no entry exceeding the current `quorumCount`
 * `quorumNumbers` MUST contain at least one valid quorum
 * `quorumNumbers` MUST ONLY contain bits that are also set in the Operator's current registered quorum bitmap
+* See [`ServiceManagerBase.deregisterOperatorFromAVS`](./ServiceManagerBase.md#deregisteroperatorfromavs)
 * See [`BLSApkRegistry.deregisterOperator`](./registries/BLSApkRegistry.md#deregisteroperator)
 * See [`StakeRegistry.deregisterOperator`](./registries/StakeRegistry.md#deregisteroperator)
 * See [`IndexRegistry.deregisterOperator`](./registries/IndexRegistry.md#deregisteroperator)
