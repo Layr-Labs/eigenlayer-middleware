@@ -10,7 +10,7 @@ import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy
 import {IEigenPodManager} from "eigenlayer-contracts/src/contracts/interfaces/IEigenPodManager.sol";
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
-import {StakeRegistry} from "../../src/StakeRegistry.sol";
+import {StakeRegistry, IStakeRegistry} from "../../src/StakeRegistry.sol";
 
 import {RegistryCoordinatorMock} from "../mocks/RegistryCoordinatorMock.sol";
 

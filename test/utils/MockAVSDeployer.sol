@@ -9,30 +9,30 @@ import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.s
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
-import {BN254} from "src/libraries/BN254.sol";
+import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
+import {BN254} from "../../src/libraries/BN254.sol";
 
-import {OperatorStateRetriever} from "src/OperatorStateRetriever.sol";
-import {RegistryCoordinator} from "src/RegistryCoordinator.sol";
-import {RegistryCoordinatorHarness} from "test/harnesses/RegistryCoordinatorHarness.t.sol";
-import {BLSApkRegistry} from "src/BLSApkRegistry.sol";
-import {ServiceManagerBase} from "src/ServiceManagerBase.sol";
-import {StakeRegistry} from "src/StakeRegistry.sol";
-import {IndexRegistry} from "src/IndexRegistry.sol";
-import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
-import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
-import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
-import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
-import {IServiceManager} from "src/interfaces/IServiceManager.sol";
+import {OperatorStateRetriever} from "../../src/OperatorStateRetriever.sol";
+import {RegistryCoordinator} from "../../src/RegistryCoordinator.sol";
+import {RegistryCoordinatorHarness} from "../harnesses/RegistryCoordinatorHarness.t.sol";
+import {BLSApkRegistry} from "../../src/BLSApkRegistry.sol";
+import {ServiceManagerBase} from "../../src/ServiceManagerBase.sol";
+import {StakeRegistry} from "../../src/StakeRegistry.sol";
+import {IndexRegistry} from "../../src/IndexRegistry.sol";
+import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
+import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
+import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
+import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
+import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
 
 
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
 import {EigenPodManagerMock} from "eigenlayer-contracts/src/test/mocks/EigenPodManagerMock.sol";
-import {DelegationMock} from "test/mocks/DelegationMock.sol";
-import {BLSApkRegistryHarness} from "test/harnesses/BLSApkRegistryHarness.sol";
+import {DelegationMock} from "../mocks/DelegationMock.sol";
+import {BLSApkRegistryHarness} from "../harnesses/BLSApkRegistryHarness.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 
-import {StakeRegistryHarness} from "test/harnesses/StakeRegistryHarness.sol";
+import {StakeRegistryHarness} from "../harnesses/StakeRegistryHarness.sol";
 
 import "forge-std/Test.sol";
 

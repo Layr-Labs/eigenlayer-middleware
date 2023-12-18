@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "src/BLSApkRegistry.sol";
+import "../../src/BLSApkRegistry.sol";
 
 // wrapper around the BLSApkRegistry contract that exposes internal functionality, for unit testing _other functionality_.
 contract BLSApkRegistryHarness is BLSApkRegistry {

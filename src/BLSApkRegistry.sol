@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {BLSApkRegistryStorage} from "src/BLSApkRegistryStorage.sol";
+import {BLSApkRegistryStorage} from "./BLSApkRegistryStorage.sol";
 
-import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
+import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 
-import {BN254} from "src/libraries/BN254.sol";
+import {BN254} from "./libraries/BN254.sol";
 
 contract BLSApkRegistry is BLSApkRegistryStorage {
     using BN254 for BN254.G1Point;

@@ -3,12 +3,12 @@ pragma solidity =0.8.12;
 
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
-import {StakeRegistryStorage} from "src/StakeRegistryStorage.sol";
+import {StakeRegistryStorage} from "./StakeRegistryStorage.sol";
 
-import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
-import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
+import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 
-import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
+import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 
 /**
  * @title A `Registry` that keeps track of stakes of operators for up to 256 quorums.

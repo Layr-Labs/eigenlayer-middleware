@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "src/RegistryCoordinator.sol";
+import "../../src/RegistryCoordinator.sol";
 
 import "forge-std/Test.sol";
 
