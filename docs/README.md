@@ -105,6 +105,18 @@ Eventually, operator slashing and payment for services will be part of the middl
 
 ### System Components
 
+#### Service Manager
+
+| Code | Type | Proxy |
+| -------- | -------- | -------- |
+| [`ServiceManagerBase.sol`](../src/ServiceManagerBase.sol) | Singleton | Transparent proxy |
+
+The Service Manager contract serves as the AVS's address relative to EigenLayer core contracts. When operators register for/deregister from the AVS, the Service Manager forwards this request to the DelegationManager (see [Hooking Into EigenLayer Core](#hooking-into-eigenlayer-core) above).
+
+It also contains a few convenience methods used to query operator information by the frontend.
+
+See full documentation in [`ServiceManagerBase.md`](./ServiceManagerBase.md).
+
 #### Registries
 
 | Code | Type | Proxy |
