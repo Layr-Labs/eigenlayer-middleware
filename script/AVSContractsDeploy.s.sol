@@ -17,7 +17,9 @@ import "eigenlayer-contracts/src/contracts/strategies/StrategyBaseTVLLimits.sol"
 import "eigenlayer-contracts/src/contracts/pods/EigenPod.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPodManager.sol";
 import "eigenlayer-contracts/src/contracts/pods/DelayedWithdrawalRouter.sol";
+
 import "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
+
 import "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 import "eigenlayer-contracts/src/test/mocks/ERC20Mock.sol";
 
