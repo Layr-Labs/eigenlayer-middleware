@@ -3,8 +3,8 @@ pragma solidity =0.8.12;
 
 
 import "forge-std/Test.sol";
-import "test/harnesses/BLSApkRegistryHarness.sol";
-import "test/mocks/RegistryCoordinatorMock.sol";
+import "../harnesses/BLSApkRegistryHarness.sol";
+import "../mocks/RegistryCoordinatorMock.sol";
 
 
 contract BLSApkRegistryUnitTests is Test {

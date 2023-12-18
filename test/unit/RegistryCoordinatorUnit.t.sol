@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "test/utils/MockAVSDeployer.sol";
+import "../utils/MockAVSDeployer.sol";
 
 contract RegistryCoordinatorUnit is MockAVSDeployer {
     using BN254 for BN254.G1Point;
@@ -354,11 +354,13 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
         stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
         cheats.prank(defaultOperator);
         cheats.roll(registrationBlockNumber);
+
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
 
         cheats.prank(defaultOperator);
         cheats.roll(nextRegistrationBlockNumber);
         cheats.expectRevert("RegistryCoordinator._registerOperator: operator already registered for some quorums being registered for");
+
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
     }
 
@@ -597,7 +599,6 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
 
         // re-register the operator
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
-
         // check success of registration
         uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
         assertEq(registryCoordinator.getOperatorId(defaultOperator), defaultOperatorId, "1");

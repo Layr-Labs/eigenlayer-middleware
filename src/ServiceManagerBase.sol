@@ -3,13 +3,13 @@ pragma solidity =0.8.12;
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
-import {BitmapUtils} from "src/libraries/BitmapUtils.sol"; 
+import {BitmapUtils} from "./libraries/BitmapUtils.sol"; 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
-import {IServiceManager} from "src/interfaces/IServiceManager.sol";
-import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
-import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
+import {IServiceManager} from "./interfaces/IServiceManager.sol";
+import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 
 /**
  * @title Minimal implementation of a ServiceManager-type contract.
