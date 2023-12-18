@@ -34,6 +34,7 @@ For more information on EigenDA, check out the repo: [Layr-Labs/eigenda][eigenda
     * [State Histories](#state-histories)
     * [Hooking Into EigenLayer Core](#hooking-into-eigenlayer-core)
 * [System Components](#system-components)
+    * [Service Manager](#service-manager)
     * [Registries](#registries)
     * [BLSSignatureChecker](#blssignaturechecker)
 
