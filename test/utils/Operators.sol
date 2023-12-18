@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "src/libraries/BN254.sol";
+import "../../src/libraries/BN254.sol";
 import "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 
