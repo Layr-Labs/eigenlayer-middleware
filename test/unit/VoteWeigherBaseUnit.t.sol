@@ -9,19 +9,8 @@ import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IS
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IEigenPodManager} from "eigenlayer-contracts/src/contracts/interfaces/IEigenPodManager.sol";
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
-<<<<<<< HEAD
-<<<<<<< HEAD
 import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
-import {IVoteWeigher} from "../../src/interfaces/IVoteWeigher.sol";
 import {StakeRegistry} from "../../src/StakeRegistry.sol";
-=======
-import {IServiceManager} from "src/interfaces/IServiceManager.sol";
-=======
->>>>>>> ecf7849 (chore: remove ServiceManagerBase and add RegistryCoordinator owner (#98))
-import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
-import {StakeRegistry} from "src/StakeRegistry.sol";
->>>>>>> 12b09de (fix: fix compilation issues and tests)
-
 import {RegistryCoordinatorMock} from "../mocks/RegistryCoordinatorMock.sol";
 import {OwnableMock} from "eigenlayer-contracts/src/test/mocks/OwnableMock.sol";
 import {DelegationManagerMock} from "eigenlayer-contracts/src/test/mocks/DelegationManagerMock.sol";

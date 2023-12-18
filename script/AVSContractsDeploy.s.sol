@@ -19,11 +19,6 @@ import "eigenlayer-contracts/src/contracts/pods/EigenPodManager.sol";
 import "eigenlayer-contracts/src/contracts/pods/DelayedWithdrawalRouter.sol";
 
 import "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
-<<<<<<< HEAD
-import "../src/BLSPublicKeyCompendium.sol";
-=======
->>>>>>> 68f3817 (chore: delete BLSPublicKeyCompendium and associated interface)
-
 import "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 import "eigenlayer-contracts/src/test/mocks/ERC20Mock.sol";
 
