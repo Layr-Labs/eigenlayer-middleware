@@ -11,7 +11,9 @@ import {IEigenPodManager} from "eigenlayer-contracts/src/contracts/interfaces/IE
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
 import {StakeRegistry} from "../../src/StakeRegistry.sol";
+
 import {RegistryCoordinatorMock} from "../mocks/RegistryCoordinatorMock.sol";
+
 import {OwnableMock} from "eigenlayer-contracts/src/test/mocks/OwnableMock.sol";
 import {DelegationManagerMock} from "eigenlayer-contracts/src/test/mocks/DelegationManagerMock.sol";
 

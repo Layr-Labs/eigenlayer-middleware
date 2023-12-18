@@ -59,6 +59,12 @@ contract RegistryCoordinatorMock is IRegistryCoordinator {
 
     function deregisterOperator(bytes calldata quorumNumbers, bytes calldata) external {}
 
+    function pubkeyRegistrationMessageHash(address operator) public view returns (BN254.G1Point memory) {
+        return BN254.hashToG1(
+                keccak256(abi.encode(operator))
+        );
+    }
+
     function quorumUpdateBlockNumber(uint8 quorumNumber) external view returns (uint256) {}
 
     function owner() external view returns (address) {}
