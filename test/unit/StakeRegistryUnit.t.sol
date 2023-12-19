@@ -31,9 +31,7 @@ import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
 
 contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
     using BitmapUtils for *;
-    
-    /// @notice Constant used as a divisor in calculating weights.
-    uint256 public constant WEIGHTING_DIVISOR = 1e18;
+
     /// @notice Maximum length of dynamic arrays in the `strategiesConsideredAndMultipliers` mapping.
     uint8 public constant MAX_WEIGHING_FUNCTION_LENGTH = 32;
 
@@ -225,11 +223,7 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
             cheats.assume(operatorWeights[i] >= minimumStakes[i]);
             cheats.assume(operatorWeights[i] >= fuzzy_addtlStake);
 
-            // Get first strategyParams for quorumNumber, guaranteed at least one strategy is initialized
-            // for the quorum
-            (IStrategy strategy, uint96 multiplier) = stakeRegistry.strategyParams(quorumNumber, 0);
-            // Set operator shares
-            delegationMock.setOperatorShares(operator, strategy, minimumStakes[i] / multiplier);
+            _setOperatorWeight(operator, quorumNumber, operatorWeights[i]);
         }
 
         /// Get starting state
@@ -359,13 +353,8 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
             } else {
                 assertEq(endingWeights[i], minimumStakes[i], "_fuzz_setupUpdateOperatorStake: invalid delta during setup");
             }
-
-            // // Set operator weights. The next time we call `updateOperatorStake`, these new weights will be used
-            // stakeRegistry.setOperatorWeight(quorumNumber, registerSetup.operator, endingWeights[i]);
-
-            // Set StakeRegistry operator weight by setting DelegationManager operator shares
-            (IStrategy strategy, uint96 multiplier) = stakeRegistry.strategyParams(quorumNumber, 0);
-            delegationMock.setOperatorShares(registerSetup.operator, strategy, endingWeights[i]);
+            // Set operator weights. The next time we call `updateOperatorStake`, these new weights will be used
+            _setOperatorWeight(registerSetup.operator, quorumNumber, endingWeights[i]);
         }
 
         uint96 stakeDeltaAbs = 

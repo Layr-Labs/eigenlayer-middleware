@@ -178,7 +178,12 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
             for (uint k = 0; k < operators[j].length; k++) {
                 uint8 quorumNumber = uint8(quorumNumbers[j]);
                 assertEq(operators[j][k].operatorId, operatorMetadatas[expectedOperatorOverallIndices[quorumNumber][k]].operatorId);
-                assertEq(operators[j][k].stake, operatorMetadatas[expectedOperatorOverallIndices[quorumNumber][k]].stakes[quorumNumber]);
+                // using assertApprox to account for rounding errors
+                assertApproxEqAbs(
+                    operators[j][k].stake,
+                    operatorMetadatas[expectedOperatorOverallIndices[quorumNumber][k]].stakes[quorumNumber],
+                    1
+                );
             }
         }
     }
