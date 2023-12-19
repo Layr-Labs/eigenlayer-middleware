@@ -1390,7 +1390,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         ) = _test_registerOperatorWithChurn_SetUp(pseudoRandomNumber, quorumNumbers, defaultStake);
         bytes32 operatorToRegisterId = BN254.hashG1Point(operatorToRegisterPubKey);
 
-        uint96 stakeWeight = _setOperatorWeight(operatorToRegister, defaultQuorumNumber, defaultStake);
+        _setOperatorWeight(operatorToRegister, defaultQuorumNumber, defaultStake);
 
         cheats.roll(registrationBlockNumber);
         ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry =

@@ -27,7 +27,8 @@ import {RegistryCoordinatorHarness} from "../harnesses/RegistryCoordinatorHarnes
 import {StakeRegistry} from "src/StakeRegistry.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 import {IStakeRegistryEvents} from "test/events/IStakeRegistryEvents.sol";
-import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
+
+import "../utils/MockAVSDeployer.sol";
 
 contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
     using BitmapUtils for *;
