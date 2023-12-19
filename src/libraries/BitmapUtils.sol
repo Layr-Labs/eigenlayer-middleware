@@ -311,14 +311,6 @@ library BitmapUtils {
     }
 
     /**
-     * @notice Sets the bit at `numberToAdd` in `bitmap` to 1 and returns the result.
-     * Note that if the bit is already set, this function will return the same bitmap.
-     */
-    function addNumberToBitmap(uint256 bitmap, uint8 numberToAdd) internal pure returns (uint256) {
-        return bitmap | (1 << numberToAdd);
-    }
-
-    /**
      * @notice Returns true if `bitmap` has no set bits
      */
     function isEmpty(uint256 bitmap) internal pure returns (bool) {

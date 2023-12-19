@@ -763,7 +763,7 @@ contract RegistryCoordinatorUnit is MockAVSDeployer {
         ) = _testRegisterOperatorWithKicks_SetUp(pseudoRandomNumber, quorumNumbers, defaultStake);
         bytes32 operatorToRegisterId = operatorToRegisterPubKey.hashG1Point();
 
-        uint96 stakeWeight = _setOperatorWeight(operatorToRegister, defaultQuorumNumber, defaultStake);
+        _setOperatorWeight(operatorToRegister, defaultQuorumNumber, defaultStake);
 
         cheats.roll(registrationBlockNumber);
         ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry = _signOperatorChurnApproval(operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp + 10);
