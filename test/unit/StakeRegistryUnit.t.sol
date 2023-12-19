@@ -3,26 +3,7 @@ pragma solidity =0.8.12;
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-
-import {Slasher} from "eigenlayer-contracts/src/contracts/core/Slasher.sol";
-import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
-import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
-import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
-import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
-import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
-import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
-import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
-
-import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
-
-import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
-import {EigenPodManagerMock} from "eigenlayer-contracts/src/test/mocks/EigenPodManagerMock.sol";
-import {DelegationManagerMock} from "eigenlayer-contracts/src/test/mocks/DelegationManagerMock.sol";
-
-import {StakeRegistryHarness} from "../harnesses/StakeRegistryHarness.sol";
-import {StakeRegistry} from "../../src/StakeRegistry.sol";
-import {RegistryCoordinatorHarness} from "../harnesses/RegistryCoordinatorHarness.t.sol";
+import "test/utils/MockAVSDeployer.sol";
 
 import {StakeRegistry} from "src/StakeRegistry.sol";
 import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
@@ -34,32 +15,6 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
 
     /// @notice Maximum length of dynamic arrays in the `strategiesConsideredAndMultipliers` mapping.
     uint8 public constant MAX_WEIGHING_FUNCTION_LENGTH = 32;
-
-
-    ProxyAdmin public proxyAdmin;
-    PauserRegistry public pauserRegistry;
-
-    ISlasher public slasher = ISlasher(address(uint160(uint256(keccak256("slasher")))));
-
-    Slasher public slasherImplementation;
-    StakeRegistryHarness public stakeRegistryImplementation;
-    StakeRegistryHarness public stakeRegistry;
-    RegistryCoordinatorHarness public registryCoordinator;
-    IServiceManager public serviceManager;
-
-    StrategyManagerMock public strategyManagerMock;
-    DelegationManagerMock public delegationMock;
-    EigenPodManagerMock public eigenPodManagerMock;
-
-    address public registryCoordinatorOwner = address(uint160(uint256(keccak256("registryCoordinatorOwner"))));
-    address public pauser = address(uint160(uint256(keccak256("pauser"))));
-    address public unpauser = address(uint160(uint256(keccak256("unpauser"))));
-    address public pubkeyRegistry = address(uint160(uint256(keccak256("pubkeyRegistry"))));
-    address public indexRegistry = address(uint160(uint256(keccak256("indexRegistry"))));
-
-    uint256 churnApproverPrivateKey = uint256(keccak256("churnApproverPrivateKey"));
-    address churnApprover = cheats.addr(churnApproverPrivateKey);
-    address ejector = address(uint160(uint256(keccak256("ejector"))));
 
     /**
      * Tracker variables used as we initialize quorums and operators during tests
@@ -78,7 +33,7 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
     uint256 gasUsed;
 
     modifier fuzzOnlyInitializedQuorums(uint8 quorumNumber) {
-        cheats.assume(initializedQuorumBitmap.numberIsInBitmap(quorumNumber));
+        cheats.assume(initializedQuorumBitmap.isSet(quorumNumber));
         _;
     }
 
@@ -147,7 +102,7 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
         stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
 
         // Mark quorum initialized for other tests
-        initializedQuorumBitmap = uint192(initializedQuorumBitmap.addNumberToBitmap(quorumNumber));
+        initializedQuorumBitmap = uint192(initializedQuorumBitmap.setBit(quorumNumber));
         initializedQuorumBytes = initializedQuorumBitmap.bitmapToBytesArray();
     }
 
@@ -173,7 +128,7 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
         stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
 
         // Mark quorum initialized for other tests
-        initializedQuorumBitmap = uint192(initializedQuorumBitmap.addNumberToBitmap(quorumNumber));
+        initializedQuorumBitmap = uint192(initializedQuorumBitmap.setBit(quorumNumber));
         initializedQuorumBytes = initializedQuorumBitmap.bitmapToBytesArray();
 
         return quorumNumber;
@@ -408,7 +363,7 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
         // Select real quorums up to the length, then insert an invalid quorum
         for (uint8 quorum = 0; quorum < length - 1; quorum++) {
             // sanity check test setup
-            assertTrue(initializedQuorumBitmap.numberIsInBitmap(quorum), "_fuzz_getInvalidQuorums: invalid quorum");
+            assertTrue(initializedQuorumBitmap.isSet(quorum), "_fuzz_getInvalidQuorums: invalid quorum");
             invalidQuorums[quorum] = bytes1(quorum);
         }
 
@@ -1199,7 +1154,7 @@ contract StakeRegistryUnitTests_Deregister is StakeRegistryUnitTests {
             IStakeRegistry.StakeUpdate memory newTotalStake = newTotalStakes[i];
 
             // Whether the operator was deregistered from this quorum
-            bool deregistered = setup.quorumsToRemoveBitmap.numberIsInBitmap(registeredQuorum);
+            bool deregistered = setup.quorumsToRemoveBitmap.isSet(registeredQuorum);
 
             if (deregistered) {
                 // Check that operator's stake was removed from both operator and total
@@ -1270,7 +1225,7 @@ contract StakeRegistryUnitTests_Deregister is StakeRegistryUnitTests {
                 IStakeRegistry.StakeUpdate memory newTotalStake = newTotalStakes[j];
 
                 // Whether the operator was deregistered from this quorum
-                bool deregistered = setup.quorumsToRemoveBitmap.numberIsInBitmap(registeredQuorum);
+                bool deregistered = setup.quorumsToRemoveBitmap.isSet(registeredQuorum);
 
                 if (deregistered) {
                     _totalStakeRemoved[registeredQuorum] += prevOperatorStake.stake;
@@ -1298,7 +1253,7 @@ contract StakeRegistryUnitTests_Deregister is StakeRegistryUnitTests {
             uint8 registeredQuorum = uint8(registeredQuorums[i]);
 
             // Whether or not we deregistered operators from this quorum
-            bool deregistered = quorumsToRemoveBitmap.numberIsInBitmap(registeredQuorum);
+            bool deregistered = quorumsToRemoveBitmap.isSet(registeredQuorum);
 
             if (deregistered) {
                 assertEq(finalTotalStakes[i].stake, 0, "failed to remove all stake from quorum");
@@ -1496,7 +1451,7 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
                 assertEq(prevTotalStake.stake - stakeRemoved, newTotalStake.stake, "failed to remove delta from total stake");
                 assertEq(newOperatorStake.stake, 0, "operator stake should now be zero");
                 // Quorum should be added to return bitmap
-                assertTrue(quorumsToRemove.numberIsInBitmap(quorumNumber), "quorum should be in removal bitmap");
+                assertTrue(quorumsToRemove.isSet(quorumNumber), "quorum should be in removal bitmap");
             } else {
                 // Check that no update occurs if weight remains the same
                 assertTrue(_isUnchanged(prevOperatorStake, newOperatorStake), "neutral stake delta should not have changed operator stake history");
