@@ -9,10 +9,11 @@ import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IS
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IEigenPodManager} from "eigenlayer-contracts/src/contracts/interfaces/IEigenPodManager.sol";
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
-import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
-import {StakeRegistry} from "src/StakeRegistry.sol";
+import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
+import {StakeRegistry, IStakeRegistry} from "../../src/StakeRegistry.sol";
 
-import {RegistryCoordinatorMock} from "test/mocks/RegistryCoordinatorMock.sol";
+import {RegistryCoordinatorMock} from "../mocks/RegistryCoordinatorMock.sol";
+
 import {OwnableMock} from "eigenlayer-contracts/src/test/mocks/OwnableMock.sol";
 import {DelegationManagerMock} from "eigenlayer-contracts/src/test/mocks/DelegationManagerMock.sol";
 

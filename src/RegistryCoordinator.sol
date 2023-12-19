@@ -9,16 +9,16 @@ import {EIP1271SignatureUtils} from "eigenlayer-contracts/src/contracts/librarie
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {Pausable} from "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
 
-import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
+import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
-import {ISocketUpdater} from "src/interfaces/ISocketUpdater.sol";
-import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
-import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
-import {IServiceManager} from "src/interfaces/IServiceManager.sol";
+import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
+import {ISocketUpdater} from "./interfaces/ISocketUpdater.sol";
+import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
+import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
+import {IServiceManager} from "./interfaces/IServiceManager.sol";
 
-import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
-import {BN254} from "src/libraries/BN254.sol";
+import {BitmapUtils} from "./libraries/BitmapUtils.sol";
+import {BN254} from "./libraries/BN254.sol";
 
 /**
  * @title A `RegistryCoordinator` that has three registries:

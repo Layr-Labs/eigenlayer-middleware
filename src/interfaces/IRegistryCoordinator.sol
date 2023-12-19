@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
-import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
-import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
-import {BN254} from "src/libraries/BN254.sol";
+import {IBLSApkRegistry} from "./IBLSApkRegistry.sol";
+import {IStakeRegistry} from "./IStakeRegistry.sol";
+import {IIndexRegistry} from "./IIndexRegistry.sol";
+import {BN254} from "../libraries/BN254.sol";
 
 /**
  * @title Interface for a contract that coordinates between various registries for an AVS.

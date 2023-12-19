@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {IRegistry} from "src/interfaces/IRegistry.sol";
+import {IRegistry} from "./IRegistry.sol";
 
-import {BN254} from "src/libraries/BN254.sol";
+import {BN254} from "../libraries/BN254.sol";
 
 /**
  * @title Minimal interface for a registry that keeps track of aggregate operator public keys for among many quorums.

@@ -3,6 +3,8 @@ pragma solidity =0.8.12;
 
 import "./FFIBase.sol";
 
+contract BLSSignatureCheckerFFITests is MockAVSDeployer, G2Operations {
+
 contract BLSSignatureCheckerFFITests is FFIBase {
     using BN254 for BN254.G1Point;
 

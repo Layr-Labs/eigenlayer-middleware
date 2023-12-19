@@ -3,7 +3,7 @@ pragma solidity =0.8.12;
 
 import "forge-std/Test.sol";
 import "openzeppelin-contracts/contracts/utils/Strings.sol";
-import "src/libraries/BN254.sol";
+import "../../../src/libraries/BN254.sol";
 
 contract G2Operations is Test {
     using Strings for uint256;

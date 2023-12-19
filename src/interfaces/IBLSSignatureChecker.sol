@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
-import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
-import {IStakeRegistry, IDelegationManager} from "src/interfaces/IStakeRegistry.sol";
+import {IRegistryCoordinator} from "./IRegistryCoordinator.sol";
+import {IBLSApkRegistry} from "./IBLSApkRegistry.sol";
+import {IStakeRegistry, IDelegationManager} from "./IStakeRegistry.sol";
 
-import {BN254} from "src/libraries/BN254.sol";
+import {BN254} from "../libraries/BN254.sol";
 
 /**
  * @title Used for checking BLS aggregate signatures from the operators of a EigenLayer AVS with the RegistryCoordinator/BLSApkRegistry/StakeRegistry architechture.

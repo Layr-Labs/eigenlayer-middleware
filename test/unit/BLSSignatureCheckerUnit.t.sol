@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "src/BLSSignatureChecker.sol";
-import "test/utils/BLSMockAVSDeployer.sol";
+import "../../src/BLSSignatureChecker.sol";
+import "../utils/BLSMockAVSDeployer.sol";
 
 contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
     using BN254 for BN254.G1Point;

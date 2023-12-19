@@ -8,21 +8,21 @@ import {Slasher} from "eigenlayer-contracts/src/contracts/core/Slasher.sol";
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
-import {IIndexRegistry} from "src/interfaces/IIndexRegistry.sol";
-import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
-import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
-import {IServiceManager} from "src/interfaces/IServiceManager.sol";
+import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
+import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
+import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
+import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
+import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
 
-import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
+import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
 
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
 import {EigenPodManagerMock} from "eigenlayer-contracts/src/test/mocks/EigenPodManagerMock.sol";
 import {DelegationManagerMock} from "eigenlayer-contracts/src/test/mocks/DelegationManagerMock.sol";
 
-import {StakeRegistryHarness} from "test/harnesses/StakeRegistryHarness.sol";
-import {StakeRegistry} from "src/StakeRegistry.sol";
-import {RegistryCoordinatorHarness} from "test/harnesses/RegistryCoordinatorHarness.t.sol";
+import {StakeRegistryHarness} from "../harnesses/StakeRegistryHarness.sol";
+import {StakeRegistry} from "../../src/StakeRegistry.sol";
+import {RegistryCoordinatorHarness} from "../harnesses/RegistryCoordinatorHarness.t.sol";
 
 import "forge-std/Test.sol";
 

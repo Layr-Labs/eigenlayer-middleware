@@ -39,4 +39,12 @@ interface IServiceManager {
      *      of each element in the returned array. The off-chain service should do that validation separately
      */
     function getOperatorRestakedStrategies(address operator) external view returns (address[] memory);
+
+    /**
+     * @notice Returns the list of strategies that the AVS supports for restaking
+     * @dev This function is intended to be called off-chain
+     * @dev No guarantee is made on uniqueness of each element in the returned array. 
+     *      The off-chain service should do that validation separately
+     */
+    function getRestakeableStrategies() external view returns (address[] memory);
 }

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "src/interfaces/IStakeRegistry.sol";
-import "src/interfaces/IRegistryCoordinator.sol";
+import "../../src/interfaces/IStakeRegistry.sol";
+import "../../src/interfaces/IRegistryCoordinator.sol";
 
 /**
  * @title Interface for a `Registry` that keeps track of stakes of operators for up to 256 quorums.

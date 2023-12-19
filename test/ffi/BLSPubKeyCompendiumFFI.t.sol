@@ -2,10 +2,10 @@
 /*
 pragma solidity =0.8.12;
 
-import "src/BLSApkRegistry.sol";
-import "test/ffi/util/G2Operations.sol";
-import {IBLSApkRegistry} from "src/interfaces/IBLSApkRegistry.sol";
-import {RegistryCoordinatorMock} from "test/mocks/RegistryCoordinatorMock.sol";
+import "../../src/BLSApkRegistry.sol";
+import "../ffi/util/G2Operations.sol";
+import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
+import {RegistryCoordinatorMock} from "../mocks/RegistryCoordinatorMock.sol";
 
 contract BLSApkRegistryFFITests is G2Operations {
     using BN254 for BN254.G1Point;

@@ -3,13 +3,13 @@ pragma solidity =0.8.12;
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
-import {BitmapUtils} from "src/libraries/BitmapUtils.sol"; 
+import {BitmapUtils} from "./libraries/BitmapUtils.sol"; 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
-import {IServiceManager} from "src/interfaces/IServiceManager.sol";
-import {IRegistryCoordinator} from "src/interfaces/IRegistryCoordinator.sol";
-import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
+import {IServiceManager} from "./interfaces/IServiceManager.sol";
+import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 
 /**
  * @title Minimal implementation of a ServiceManager-type contract.
@@ -19,32 +19,32 @@ import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
 contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
     using BitmapUtils for *;
 
-    IRegistryCoordinator immutable registryCoordinator;
-    IDelegationManager immutable delegationManager;
-    IStakeRegistry immutable stakeRegistry;
+    IRegistryCoordinator internal immutable _registryCoordinator;
+    IDelegationManager internal immutable _delegationManager;
+    IStakeRegistry internal immutable _stakeRegistry;
 
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
     modifier onlyRegistryCoordinator() {
         require(
-            msg.sender == address(registryCoordinator),
+            msg.sender == address(_registryCoordinator),
             "ServiceManagerBase.onlyRegistryCoordinator: caller is not the registry coordinator"
         );
         _;
     }
 
-    /// @notice Sets the (immutable) `registryCoordinator` address
+    /// @notice Sets the (immutable) `_registryCoordinator` address
     constructor(
-        IDelegationManager _delegationManager,
-        IRegistryCoordinator _registryCoordinator,
-        IStakeRegistry _stakeRegistry
+        IDelegationManager __delegationManager,
+        IRegistryCoordinator __registryCoordinator,
+        IStakeRegistry __stakeRegistry
     ) {
-        delegationManager = _delegationManager;
-        registryCoordinator = _registryCoordinator;
-        stakeRegistry = _stakeRegistry;
+        _delegationManager = __delegationManager;
+        _registryCoordinator = __registryCoordinator;
+        _stakeRegistry = __stakeRegistry;
         _disableInitializers();
     }
 
-    function initialize(address initialOwner) external initializer {
+    function initialize(address initialOwner) public virtual initializer {
         _transferOwnership(initialOwner);
     }
 
@@ -54,7 +54,7 @@ contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
      * @dev only callable by the owner
      */
     function setMetadataURI(string memory _metadataURI) public virtual onlyOwner {
-        delegationManager.updateAVSMetadataURI(_metadataURI);
+        _delegationManager.updateAVSMetadataURI(_metadataURI);
     }
 
     /**
@@ -66,7 +66,7 @@ contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) public virtual onlyRegistryCoordinator {
-        delegationManager.registerOperatorToAVS(operator, operatorSignature);
+        _delegationManager.registerOperatorToAVS(operator, operatorSignature);
     }
 
     /**
@@ -74,7 +74,37 @@ contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
      * @param operator The address of the operator to deregister.
      */
     function deregisterOperatorFromAVS(address operator) public virtual onlyRegistryCoordinator {
-        delegationManager.deregisterOperatorFromAVS(operator);
+        _delegationManager.deregisterOperatorFromAVS(operator);
+    }
+
+    /**
+     * @notice Returns the list of strategies that the AVS supports for restaking
+     * @dev This function is intended to be called off-chain
+     * @dev No guarantee is made on uniqueness of each element in the returned array. 
+     *      The off-chain service should do that validation separately
+     */
+    function getRestakeableStrategies() external view returns (address[] memory) {
+        uint256 quorumCount = _registryCoordinator.quorumCount();
+
+        if (quorumCount == 0) {
+            return new address[](0);
+        }
+        
+        uint256 strategyCount;
+        for(uint256 i = 0; i < quorumCount; i++) {
+            strategyCount += _stakeRegistry.strategyParamsLength(uint8(i));
+        }
+
+        address[] memory restakedStrategies = new address[](strategyCount);
+        uint256 index = 0;
+        for(uint256 i = 0; i < _registryCoordinator.quorumCount(); i++) {
+            uint256 strategyParamsLength = _stakeRegistry.strategyParamsLength(uint8(i));
+            for (uint256 j = 0; j < strategyParamsLength; j++) {
+                restakedStrategies[index] = address(_stakeRegistry.strategyParamsByIndex(uint8(i), j).strategy);
+                index++;
+            }
+        }
+        return restakedStrategies;
     }
 
     /**
@@ -85,10 +115,10 @@ contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
      *      of each element in the returned array. The off-chain service should do that validation separately
      */
     function getOperatorRestakedStrategies(address operator) external view returns (address[] memory) {
-        bytes32 operatorId = registryCoordinator.getOperatorId(operator);
-        uint192 operatorBitmap = registryCoordinator.getCurrentQuorumBitmap(operatorId);
+        bytes32 operatorId = _registryCoordinator.getOperatorId(operator);
+        uint192 operatorBitmap = _registryCoordinator.getCurrentQuorumBitmap(operatorId);
 
-        if (operatorBitmap == 0 || registryCoordinator.quorumCount() == 0) {
+        if (operatorBitmap == 0 || _registryCoordinator.quorumCount() == 0) {
             return new address[](0);
         }
 
@@ -96,7 +126,7 @@ contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
         bytes memory operatorRestakedQuorums = BitmapUtils.bitmapToBytesArray(operatorBitmap);
         uint256 strategyCount;
         for(uint256 i = 0; i < operatorRestakedQuorums.length; i++) {
-            strategyCount += stakeRegistry.strategyParamsLength(uint8(operatorRestakedQuorums[i]));
+            strategyCount += _stakeRegistry.strategyParamsLength(uint8(operatorRestakedQuorums[i]));
         }
 
         // Get strategies for each quorum in operator bitmap
@@ -104,9 +134,9 @@ contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
         uint256 index = 0;
         for(uint256 i = 0; i < operatorRestakedQuorums.length; i++) {
             uint8 quorum = uint8(operatorRestakedQuorums[i]);
-            uint256 strategyParamsLength = stakeRegistry.strategyParamsLength(quorum);
+            uint256 strategyParamsLength = _stakeRegistry.strategyParamsLength(quorum);
             for (uint256 j = 0; j < strategyParamsLength; j++) {
-                restakedStrategies[index] = address(stakeRegistry.strategyParamsByIndex(quorum, j).strategy);
+                restakedStrategies[index] = address(_stakeRegistry.strategyParamsByIndex(quorum, j).strategy);
                 index++;
             }
         }
