@@ -644,6 +644,40 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         stakeRegistry.addStrategies(quorumNumber, strategyParams);
     }
 
+    function test_addStrategies_Revert_WhenDuplicateStrategies() public {
+        uint8 quorumNumber = _initializeQuorum(uint96(type(uint16).max), 1);
+
+        IStrategy strat = IStrategy(address(uint160(uint256(keccak256(abi.encodePacked("duplicate strat"))))));
+        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](2);
+        strategyParams[0] = IStakeRegistry.StrategyParams(
+            strat,
+            uint96(WEIGHTING_DIVISOR)
+        );
+        strategyParams[1] = IStakeRegistry.StrategyParams(
+            strat,
+            uint96(WEIGHTING_DIVISOR)
+        );
+
+        cheats.expectRevert("StakeRegistry._addStrategyParams: cannot add same strategy 2x");
+        cheats.prank(registryCoordinatorOwner);
+        stakeRegistry.addStrategies(quorumNumber, strategyParams);
+    }
+
+    function test_addStrategies_Revert_WhenZeroWeight() public {
+        uint8 quorumNumber = _initializeQuorum(uint96(type(uint16).max), 1);
+
+        IStrategy strat = IStrategy(address(uint160(uint256(keccak256(abi.encodePacked("duplicate strat"))))));
+        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](2);
+        strategyParams[0] = IStakeRegistry.StrategyParams(
+            strat,
+            0
+        );
+
+        cheats.expectRevert("StakeRegistry._addStrategyParams: cannot add strategy with zero weight");
+        cheats.prank(registryCoordinatorOwner);
+        stakeRegistry.addStrategies(quorumNumber, strategyParams);
+    }
+
     /**
      * @dev Fuzzes initialized quorum numbers and using multipliers to create StrategyParams to add to
      * quorumNumber.
@@ -1570,5 +1604,112 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
         cheats.expectRevert("StakeRegistry.updateOperatorStake: quorum does not exist");
         cheats.prank(address(registryCoordinator));
         stakeRegistry.updateOperatorStake(setup.operator, setup.operatorId, invalidQuorums);
+    }
+}
+
+
+contract StakeRegistryUnitTests_weightOfOperator is StakeRegistryUnitTests {
+    using BitmapUtils for *;
+
+    // function test_weightOfOperatorForQuorum
+
+    function test_weightOfOperatorForQuorum(
+        address operator,
+        // IStakeRegistry.StrategyParams[] memory strategyParams,
+        uint96[] memory multipliers,
+        uint96[] memory shares
+    ) public {
+        cheats.assume(0 < multipliers.length && multipliers.length <= MAX_WEIGHING_FUNCTION_LENGTH);
+        cheats.assume(shares.length >= multipliers.length);
+        cheats.assume(multipliers.length > 3);
+
+        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](3);
+        for (uint i = 0; i < strategyParams.length; i++) {
+            multipliers[i] = uint96(_randUint({rand: bytes32(uint256(multipliers[i])), min: 0, max: 10000*WEIGHTING_DIVISOR }));
+            shares[i] = uint96(_randUint({rand: bytes32(uint256(shares[i])), min: 0, max: 10e50 }));
+
+            IStrategy strat = IStrategy(address(uint160(uint256(keccak256(abi.encodePacked("Voteweighing test", i))))));
+            strategyParams[i] = IStakeRegistry.StrategyParams(
+                strat,
+                uint96(WEIGHTING_DIVISOR) + multipliers[i]
+            );
+        }
+
+        // create a valid quorum
+        cheats.prank(address(registryCoordinator));
+        uint8 quorumNumber = nextQuorum;
+        stakeRegistry.initializeQuorum(quorumNumber, 0 /* minimumStake */, strategyParams);
+
+        // set the operator shares
+        for (uint i = 0; i < strategyParams.length; i++) {
+            delegationMock.setOperatorShares(operator, strategyParams[i].strategy, shares[i]);
+        }
+
+        // registerOperator
+        uint256 operatorBitmap = uint256(0).setBit(quorumNumber);
+        bytes memory quorumNumbers = operatorBitmap.bitmapToBytesArray();
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.registerOperator(operator, defaultOperatorId, quorumNumbers);
+
+
+        // make sure the weight of the operator is correct
+        uint96 expectedWeight = 0;
+        for (uint i = 0; i < strategyParams.length; i++) {
+            console.log(shares[i]);
+            console.log(strategyParams[i].multiplier);
+            // console.log(uint96(shares[i] * strategyParams[i].multiplier / WEIGHTING_DIVISOR));
+            expectedWeight += uint96(uint256(shares[i]) * uint256(strategyParams[i].multiplier) / WEIGHTING_DIVISOR);
+        }
+
+        console.log("expectedWeight", expectedWeight);
+        console.log("weightOfOperatorForQuorum", stakeRegistry.weightOfOperatorForQuorum(quorumNumber, operator));
+        assertEq(stakeRegistry.weightOfOperatorForQuorum(quorumNumber, operator), expectedWeight);
+    }
+
+    /// @dev consider multipliers for 3 strategies
+    function test_weightOfOperatorForQuorum_3Strategies(
+        address operator,
+        uint96[3] memory shares
+    ) public {
+        // 3 LST Strat multipliers, rETH, stETH, ETH
+        uint96[] memory multipliers = new uint96[](3);
+        multipliers[0] = uint96(1070136092289993178);
+        multipliers[1] = uint96(1071364636818145808);
+        multipliers[2] = uint96(1000000000000000000);
+
+        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](3);
+        for (uint i = 0; i < strategyParams.length; i++) {
+            shares[i] = uint96(_randUint({rand: bytes32(uint256(shares[i])), min: 0, max: 1e29 }));
+            IStrategy strat = IStrategy(address(uint160(uint256(keccak256(abi.encodePacked("Voteweighing test", i))))));
+            strategyParams[i] = IStakeRegistry.StrategyParams(
+                strat,
+                multipliers[i]
+            );
+        }
+
+        // create a valid quorum
+        cheats.prank(address(registryCoordinator));
+        uint8 quorumNumber = nextQuorum;
+        stakeRegistry.initializeQuorum(quorumNumber, 0 /* minimumStake */, strategyParams);
+
+        // set the operator shares
+        for (uint i = 0; i < strategyParams.length; i++) {
+            delegationMock.setOperatorShares(operator, strategyParams[i].strategy, shares[i]);
+        }
+
+        // registerOperator
+        uint256 operatorBitmap = uint256(0).setBit(quorumNumber);
+        bytes memory quorumNumbers = operatorBitmap.bitmapToBytesArray();
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.registerOperator(operator, defaultOperatorId, quorumNumbers);
+
+
+        // make sure the weight of the operator is correct
+        uint96 expectedWeight = 0;
+        for (uint i = 0; i < strategyParams.length; i++) {
+            // console.log(uint96(shares[i] * strategyParams[i].multiplier / WEIGHTING_DIVISOR));
+            expectedWeight += uint96(uint256(shares[i]) * uint256(strategyParams[i].multiplier) / WEIGHTING_DIVISOR);
+        }
+        assertEq(stakeRegistry.weightOfOperatorForQuorum(quorumNumber, operator), expectedWeight);
     }
 }
