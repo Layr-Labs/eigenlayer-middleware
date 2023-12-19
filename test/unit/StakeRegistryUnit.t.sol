@@ -31,9 +31,7 @@ import {BitmapUtils} from "src/libraries/BitmapUtils.sol";
 
 contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
     using BitmapUtils for *;
-    
-    /// @notice Constant used as a divisor in calculating weights.
-    uint256 public constant WEIGHTING_DIVISOR = 1e18;
+
     /// @notice Maximum length of dynamic arrays in the `strategiesConsideredAndMultipliers` mapping.
     uint8 public constant MAX_WEIGHING_FUNCTION_LENGTH = 32;
 
