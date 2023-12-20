@@ -43,7 +43,7 @@ contract DelegationMock is IDelegationManager {
         bytes32 /*approverSalt*/
     ) external pure {}
 
-    function undelegate(address staker) external returns (bytes32[] memory withdrawalRoot) {
+    function undelegate(address staker) external returns (bytes32 withdrawalRoot) {
         delegatedTo[staker] = address(0);
         return withdrawalRoot;
     }
