@@ -1,24 +1,20 @@
 .
-# OperatorStateRetriever tree (*** denotes that integration tests are needed to validate path)
-## when getOperatorState(IRegistryCoordinator,bytes32,uint32)
-### when the given operator has never registered with the given registryCoordinator (their quorumBitmapHistory has length 0)
-#### it should return (0, [])
-### when the given operator has registered with the given registryCoordinator 
-#### and was not registered for any quorums at the given blockNumber
-##### it should return (0, [])
-#### and was registered for a set of quorums at the given blockNumber
-##### it should return their quorum bitmap as the first argument and a list of the list of operators (by id and stake) ordered by index for each quorum in the set ascending by quorumNumber
-
-
-
-# OperatorStateRetriever tree (*** denotes that integration tests are needed to validate path)
-## when getOperatorState(IRegistryCoordinator,bytes32,uint32)
-### when the given operator has never registered with the given registryCoordinator (their quorumBitmapHistory has length 0)
-#### it should return 0
-### when the given operator's first registration with the given registryCoordinator was
-#### after the given blockNumber
-##### it should return 0
-#### before the given blockNumber
-### given the operator deregistered (and did not register again) with the given registryCoordinator before the given block number
-#### it should return 0
-### 
+└── OperatorStateRetriever tree (*** denotes that integration tests are needed to validate path)
+    ├── when getOperatorState(IRegistryCoordinator,bytes32,uint32) is called
+    │   ├── when the given operator has never registered with the given registryCoordinator (their quorumBitmapHistory has length 0)
+    │   │   └── it should revert
+    │   └── when the given operator has registered for the first time with the given registryCoordinator
+    │       ├── after the given blockNumber
+    │       │   └── it should revert with "RegistryCoordinator.getQuorumBitmapIndicesAtBlockNumber: operator has no bitmap history at blockNumber"
+    │       └── before the given blockNumber
+    │           ├── and was not registered for any quorums at the given blockNumber
+    │           │   └── it should return (0, [])
+    │           └── and was registered for a set of quorums at the given blockNumber
+    │               └── it should return their quorum bitmap as the first argument and a list of the list of operators (by id and stake) ordered by index for each quorum in the set ascending by quorumNumber
+    └── when getOperatorState(IRegistryCoordinator,bytes memory,uint32) is called
+        ├── when at least one of the given quorumNumbers are not created at the time of call
+        │   └── it should revert with "IndexRegistry._operatorCountAtBlockNumber: quorum does not exist"
+        ├── when at least one of the given quorumNumbers are not created before or at the given blockNumber
+        │   └── it should revert with "IndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number"
+        └── when the given quorumNumbers are created on the given registry registryCoordinator
+            └── it should return their quorum bitmap as the first argument and a list of the list of operators (by id and stake) ordered by index for each quorum in the set ascending by quorumNumber
