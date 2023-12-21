@@ -69,6 +69,12 @@ contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
         _delegationManager.registerOperatorToAVS(operator, operatorSignature);
     }
 
+    function registerOperatorToAVSWithoutSig(
+        address operator
+    ) public virtual onlyRegistryCoordinator {
+        _delegationManager.registerOperatorToAVSWithoutSig(operator);
+    }
+
     /**
      * @notice Forwards a call to EigenLayer's DelegationManager contract to confirm operator deregistration from the AVS
      * @param operator The address of the operator to deregister.

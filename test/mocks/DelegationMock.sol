@@ -182,4 +182,6 @@ contract DelegationMock is IDelegationManager {
     ) external {
         strategyManager.withdrawSharesAsTokens(recipient, strategy, shares, token);
     }
+
+    function registerOperatorToAVSWithoutSig(address operator) external{}
 }

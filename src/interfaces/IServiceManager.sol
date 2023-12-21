@@ -25,6 +25,8 @@ interface IServiceManager {
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external;
 
+    function registerOperatorToAVSWithoutSig(address operator) external;
+
     /**
      * @notice Forwards a call to EigenLayer's DelegationManager contract to confirm operator deregistration from the AVS
      * @param operator The address of the operator to deregister.

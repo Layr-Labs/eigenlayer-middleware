@@ -151,6 +151,53 @@ contract RegistryCoordinator is
                             EXTERNAL FUNCTIONS 
     *******************************************************************************/
 
+    function registerWithoutSig(
+        bytes calldata quorumNumbers,
+        string calldata socket
+    ) external {
+        address operator = msg.sender;
+        bytes32 operatorId = keccak256(abi.encodePacked(operator));
+        /**
+         * Get bitmap of quorums to register for and operator's current bitmap. Validate that:
+         * - we're trying to register for at least 1 quorum
+         * - the operator is not currently registered for any quorums we're registering for
+         * Then, calculate the operator's new bitmap after registration
+         */
+        uint192 quorumsToAdd = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
+        uint192 currentBitmap = _currentOperatorBitmap(operatorId);
+        require(!quorumsToAdd.isEmpty(), "RegistryCoordinator._registerOperator: bitmap cannot be 0");
+        require(_quorumsAllExist(quorumsToAdd), "RegistryCoordinator._registerOperator: some quorums do not exist");
+        require(quorumsToAdd.noBitsInCommon(currentBitmap), "RegistryCoordinator._registerOperator: operator already registered for some quorums being registered for");
+        uint192 newBitmap = uint192(currentBitmap.plus(quorumsToAdd));
+
+        /**
+         * Update operator's bitmap, socket, and status. Only update operatorInfo if needed:
+         * if we're `REGISTERED`, the operatorId and status are already correct.
+         */
+        _updateOperatorBitmap({
+            operatorId: operatorId,
+            newBitmap: newBitmap
+        });
+
+        emit OperatorSocketUpdate(operatorId, socket);
+
+        if (_operatorInfo[operator].status != OperatorStatus.REGISTERED) {
+            _operatorInfo[operator] = OperatorInfo({
+                operatorId: operatorId,
+                status: OperatorStatus.REGISTERED
+            });
+
+            // Register the operator with the EigenLayer via this AVS's ServiceManager
+            serviceManager.registerOperatorToAVSWithoutSig(operator);
+
+            emit OperatorRegistered(operator, operatorId);
+        }
+
+        /**
+         * Register the operator with the StakeRegistry
+         */
+        stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
+    }
     /**
      * @notice Registers msg.sender as an operator for one or more quorums. If any quorum reaches its maximum
      * operator capacity, this method will fail.
