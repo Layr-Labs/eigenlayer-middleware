@@ -8,6 +8,7 @@ contract RegistryCoordinatorUnitTests is MockAVSDeployer {
 
     uint8 internal constant PAUSED_REGISTER_OPERATOR = 0;
     uint8 internal constant PAUSED_DEREGISTER_OPERATOR = 1;
+    uint8 internal constant MAX_QUORUM_COUNT = 192;
 
     event OperatorSocketUpdate(bytes32 indexed operatorId, string socket);
 
@@ -177,6 +178,39 @@ contract RegistryCoordinatorUnitTests_Initialization_Setters is RegistryCoordina
         cheats.prank(defaultOperator);
         cheats.expectRevert("RegistryCoordinator.updateSocket: operator is not registered");
         registryCoordinator.updateSocket("localhost:32004");
+    }
+
+    function test_createQuorum_revert_notOwner() public {
+        IRegistryCoordinator.OperatorSetParam memory operatorSetParams;
+        uint96 minimumStake;
+        IStakeRegistry.StrategyParams[] memory strategyParams;
+
+        cheats.expectRevert("Ownable: caller is not the owner");
+        cheats.prank(defaultOperator);
+        registryCoordinator.createQuorum(operatorSetParams, minimumStake, strategyParams);
+    }
+
+    function test_createQuorum() public {
+        IRegistryCoordinator.OperatorSetParam memory operatorSetParams;
+        uint96 minimumStake;
+        IStakeRegistry.StrategyParams[] memory strategyParams;
+
+        uint8 quorumCountBefore = registryCoordinator.quorumCount();
+
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit OperatorSetParamsUpdated(quorumCountBefore, operatorSetParams);
+        cheats.prank(registryCoordinatorOwner);
+        registryCoordinator.createQuorum(operatorSetParams, minimumStake, strategyParams);
+
+        uint8 quorumCountAfter = registryCoordinator.quorumCount();
+        assertEq(quorumCountAfter, quorumCountBefore + 1, "quorum count did not increase properly");
+        assertLe(quorumCountAfter, MAX_QUORUM_COUNT, "quorum count exceeded max");
+
+        assertEq(
+            keccak256(abi.encode(operatorSetParams)),
+            keccak256(abi.encode(registryCoordinator.getOperatorSetParams(quorumCountBefore))),
+            "OperatorSetParams not stored properly"
+        );
     }
 }
 
