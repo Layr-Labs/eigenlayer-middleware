@@ -54,7 +54,7 @@ Registers the caller as an Operator for one or more quorums, as long as registra
 * `StakeRegistry.registerOperator`
 * `IndexRegistry.registerOperator`
 
-If the Operator has never registered for any of this AVS's quorums before, they need to register a BLS public key to participate in AVS signing events. In this case, this method will automatically pass `params` to the `BLSApkRegistry` to perform public key registration. The registered pubkey hash becomes the Operators unique operator id, used to identify them in many places in the middleware contracts.
+If the Operator has never registered for any of this AVS's quorums before, they need to register a BLS public key to participate in AVS signing events. In this case, this method will automatically pass `params` to the `BLSApkRegistry` to perform public key registration. The registered pubkey hash becomes the Operator's unique operator id, used to identify them in many places in the middleware contracts.
 
 If the Operator was not currently registered for any quorums, this method will register the Operator to the AVS in the EigenLayer core contracts via the `ServiceManagerBase`.
 

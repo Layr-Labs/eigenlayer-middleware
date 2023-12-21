@@ -149,4 +149,4 @@ The BLSSignatureChecker verifies signatures made by the aggregate pubkeys ("Apk"
 
 The `OperatorStateRetriever` is used by offchain code to query the `RegistryCoordinator` (and its registries) for information that will ultimately be passed into `BLSSignatureChecker.checkSignatures`.
 
-See full documentation in [`BLSSignatureChecker.md`](./BLSSignatureChecker.md).
+See full documentation for both of these contracts in [`BLSSignatureChecker.md`](./BLSSignatureChecker.md).
