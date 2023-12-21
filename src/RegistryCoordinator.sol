@@ -768,16 +768,10 @@ contract RegistryCoordinator is
             uint256 length = _operatorBitmapHistory[operatorIds[i]].length;
             for (uint256 j = 0; j < length; j++) {
                 if (_operatorBitmapHistory[operatorIds[i]][length - j - 1].updateBlockNumber <= blockNumber) {
-                    uint32 nextUpdateBlockNumber = 
-                        _operatorBitmapHistory[operatorIds[i]][length - j - 1].nextUpdateBlockNumber;
-                    require(
-                        nextUpdateBlockNumber == 0 || nextUpdateBlockNumber > blockNumber,
-                        "RegistryCoordinator.getQuorumBitmapIndicesAtBlockNumber: operatorId has no quorumBitmaps at blockNumber"
-                    );
                     indices[i] = uint32(length - j - 1);
                     break;
                 }
-            }
+            }            
         }
         return indices;
     }
