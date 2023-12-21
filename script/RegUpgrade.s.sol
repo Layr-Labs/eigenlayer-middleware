@@ -13,35 +13,47 @@ contract Upgrade_Reg_SM is Script, Test {
     RegistryCoordinator public newRegCoordinator;
     ServiceManagerBase public newServiceManager;
     ProxyAdmin public proxyAdmin;
+    string defaultSocket = "69.69.69.69:420";
+    IBLSApkRegistry.PubkeyRegistrationParams pubkeyRegistrationParams;
 
     function run() external {
+        
+        RegistryCoordinator regCord = RegistryCoordinator(0x31462912a0ABFB59cA03fFd6f10c416A8Bb7FD45);
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
+        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(1);
+
         vm.startBroadcast();
+        regCord.registerOperator(
+            quorumNumbers,
+            defaultSocket,
+            pubkeyRegistrationParams,
+            emptySignatureAndExpiry
+        );
+        // // Deploy New RegistryCoordinator
+        // newRegCoordinator = new RegistryCoordinator(
+        //     IServiceManager(0x787f666893F3EB6bF5D7A6AA9297784671A3312D),
+        //     IStakeRegistry(0x2e1145ea892EDebe0a6337208774dd70E8F05b04),
+        //     IBLSApkRegistry(0x442664e4b59A8264457981d2Fee459f20a6FBeC4),
+        //     IIndexRegistry(0xf88f3927264bb5fcCf900440DF6493963afce6F4)
+        // );
 
-        // Deploy New RegistryCoordinator
-        newRegCoordinator = new RegistryCoordinator(
-            IServiceManager(0x787f666893F3EB6bF5D7A6AA9297784671A3312D),
-            IStakeRegistry(0x2e1145ea892EDebe0a6337208774dd70E8F05b04),
-            IBLSApkRegistry(0x442664e4b59A8264457981d2Fee459f20a6FBeC4),
-            IIndexRegistry(0xf88f3927264bb5fcCf900440DF6493963afce6F4)
-        );
+        // // Deploy New ServiceManager
+        // newServiceManager = new ServiceManagerBase(
+        //     IDelegationManager(0x45b4c4DAE69393f62e1d14C5fe375792DF4E6332),
+        //     IRegistryCoordinator(0x31462912a0ABFB59cA03fFd6f10c416A8Bb7FD45),
+        //     IStakeRegistry(0x2e1145ea892EDebe0a6337208774dd70E8F05b04)
+        // );
 
-        // Deploy New ServiceManager
-        newServiceManager = new ServiceManagerBase(
-            IDelegationManager(0x45b4c4DAE69393f62e1d14C5fe375792DF4E6332),
-            IRegistryCoordinator(0x31462912a0ABFB59cA03fFd6f10c416A8Bb7FD45),
-            IStakeRegistry(0x2e1145ea892EDebe0a6337208774dd70E8F05b04)
-        );
-
-        // Upgrade Proxy Contract
-        proxyAdmin = ProxyAdmin(payable(0x4893704E387Ab56A73B456e833879EBA8cd82718));
-        proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(0x31462912a0ABFB59cA03fFd6f10c416A8Bb7FD45)),
-            address(newRegCoordinator)
-        );
-        proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(0x787f666893F3EB6bF5D7A6AA9297784671A3312D)),
-            address(newServiceManager)
-        );
+        // // Upgrade Proxy Contract
+        // proxyAdmin = ProxyAdmin(payable(0x4893704E387Ab56A73B456e833879EBA8cd82718));
+        // proxyAdmin.upgrade(
+        //     TransparentUpgradeableProxy(payable(0x31462912a0ABFB59cA03fFd6f10c416A8Bb7FD45)),
+        //     address(newRegCoordinator)
+        // );
+        // proxyAdmin.upgrade(
+        //     TransparentUpgradeableProxy(payable(0x787f666893F3EB6bF5D7A6AA9297784671A3312D)),
+        //     address(newServiceManager)
+        // );
 
         vm.stopBroadcast();
     }
