@@ -696,6 +696,13 @@ contract RegistryCoordinator is
     }
 
     /**
+     * @notice Returns true iff all of the given quorum exists
+     */
+    function _quorumExists(uint8 quorumNumber) internal view returns (bool) {
+        return quorumNumber < quorumCount;
+    }
+
+    /**
      * @notice Returns true iff all of the bits in `quorumBitmap` belong to initialized quorums
      */
      function _quorumsAllExist(uint192 quorumBitmap) internal view returns (bool) {
@@ -767,17 +774,17 @@ contract RegistryCoordinator is
         for (uint256 i = 0; i < operatorIds.length; i++) {
             uint256 length = _operatorBitmapHistory[operatorIds[i]].length;
             require(length != 0, "RegistryCoordinator.getQuorumBitmapIndicesAtBlockNumber: operator has no bitmap history");
+            // require that the operator has a bitmap history at the given blockNumber
+            require(
+                _operatorBitmapHistory[operatorIds[i]][0].updateBlockNumber <= blockNumber, 
+                "RegistryCoordinator.getQuorumBitmapIndicesAtBlockNumber: operator has no bitmap history at blockNumber"
+            );
             for (uint256 j = 0; j < length; j++) {
                 if (_operatorBitmapHistory[operatorIds[i]][length - j - 1].updateBlockNumber <= blockNumber) {
                     indices[i] = uint32(length - j - 1);
                     break;
                 }
-            }
-            // make sure we actually hit the break and that the operator had registered before the blockNumber
-            require(
-                _operatorBitmapHistory[operatorIds[i]][indices[i]].updateBlockNumber <= blockNumber, 
-                "RegistryCoordinator.getQuorumBitmapIndicesAtBlockNumber: operator has no bitmap history at blockNumber"
-            );
+            }            
         }
 
         return indices;
