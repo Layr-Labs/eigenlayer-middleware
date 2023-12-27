@@ -3,12 +3,29 @@ pragma solidity >=0.5.0;
 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IRegistryCoordinator} from "./IRegistryCoordinator.sol";
+import {IStakeRegistry} from "./IStakeRegistry.sol";
 
 /**
  * @title Minimal interface for a ServiceManager-type contract that forms the single point for an AVS to push updates to EigenLayer
  * @author Layr Labs, Inc.
  */
 interface IServiceManager {
+    /**
+     * @notice Retrieves the Registry Coordinator.
+     */
+    function registryCoordinator() external returns (IRegistryCoordinator);
+
+    /**
+     * @notice Retrieves the Delegation Manager.
+     */
+    function delegationManager() external returns (IDelegationManager);
+
+    /**
+     * @notice Retrieves the Stake Registry.
+     */
+    function stakeRegistry() external returns (IStakeRegistry);
+
     /**
      * @notice Sets the metadata URI for the AVS
      * @param _metadataURI is the metadata URI for the AVS
@@ -35,7 +52,7 @@ interface IServiceManager {
      * @notice Returns the list of strategies that the operator has potentially restaked on the AVS
      * @param operator The address of the operator to get restaked strategies for
      * @dev This function is intended to be called off-chain
-     * @dev No guarantee is made on whether the operator has shares for a strategy in a quorum or uniqueness 
+     * @dev No guarantee is made on whether the operator has shares for a strategy in a quorum or uniqueness
      *      of each element in the returned array. The off-chain service should do that validation separately
      */
     function getOperatorRestakedStrategies(address operator) external view returns (address[] memory);
@@ -43,7 +60,7 @@ interface IServiceManager {
     /**
      * @notice Returns the list of strategies that the AVS supports for restaking
      * @dev This function is intended to be called off-chain
-     * @dev No guarantee is made on uniqueness of each element in the returned array. 
+     * @dev No guarantee is made on uniqueness of each element in the returned array.
      *      The off-chain service should do that validation separately
      */
     function getRestakeableStrategies() external view returns (address[] memory);
