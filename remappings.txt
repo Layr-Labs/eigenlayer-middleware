@@ -3,3 +3,4 @@
 ds-test/=lib/ds-test/src/
 eigenlayer-contracts/=lib/eigenlayer-contracts/
 forge-std/=lib/forge-std/src/
+@hyperlane/=lib/hyperlane-monorepo/solidity/contracts/
