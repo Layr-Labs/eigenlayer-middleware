@@ -71,6 +71,20 @@ TODO
 *Requirements*:
 * 
 
+#### `registerBLSPublicKey`
+
+```solidity
+
+```
+
+TODO
+
+*Effects*:
+*
+
+*Requirements*:
+* 
+
 #### `initializeQuorum`
 
 ```solidity

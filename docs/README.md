@@ -34,6 +34,7 @@ For more information on EigenDA, check out the repo: [Layr-Labs/eigenda][eigenda
     * [State Histories](#state-histories)
     * [Hooking Into EigenLayer Core](#hooking-into-eigenlayer-core)
 * [System Components](#system-components)
+    * [Service Manager](#service-manager)
     * [Registries](#registries)
     * [BLSSignatureChecker](#blssignaturechecker)
 
@@ -105,6 +106,18 @@ Eventually, operator slashing and payment for services will be part of the middl
 
 ### System Components
 
+#### Service Manager
+
+| Code | Type | Proxy |
+| -------- | -------- | -------- |
+| [`ServiceManagerBase.sol`](../src/ServiceManagerBase.sol) | Singleton | Transparent proxy |
+
+The Service Manager contract serves as the AVS's address relative to EigenLayer core contracts. When operators register for/deregister from the AVS, the Service Manager forwards this request to the DelegationManager (see [Hooking Into EigenLayer Core](#hooking-into-eigenlayer-core) above).
+
+It also contains a few convenience methods used to query operator information by the frontend.
+
+See full documentation in [`ServiceManagerBase.md`](./ServiceManagerBase.md).
+
 #### Registries
 
 | Code | Type | Proxy |
@@ -136,4 +149,4 @@ The BLSSignatureChecker verifies signatures made by the aggregate pubkeys ("Apk"
 
 The `OperatorStateRetriever` is used by offchain code to query the `RegistryCoordinator` (and its registries) for information that will ultimately be passed into `BLSSignatureChecker.checkSignatures`.
 
-See full documentation in [`BLSSignatureChecker.md`](./BLSSignatureChecker.md).
+See full documentation for both of these contracts in [`BLSSignatureChecker.md`](./BLSSignatureChecker.md).
