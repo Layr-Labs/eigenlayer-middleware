@@ -57,7 +57,7 @@ contract ECDSAStakeRegistry {
     uint256 internal constant MAX_BIPS = 10000;
 
     /// @notice The address of the DelegationManager contract for EigenLayer.
-    IDelegationManager public immutable delegationManager;
+    IDelegationManager public immutable delegation;
 
     /// @notice the coordinator contract that this registry is associated with
     address public immutable registryCoordinator;
@@ -107,10 +107,10 @@ contract ECDSAStakeRegistry {
 
     constructor(
         IRegistryCoordinator _registryCoordinator, 
-        IDelegationManager _delegationManager
+        IDelegationManager _delegation
     ) {
         registryCoordinator = address(_registryCoordinator);
-        delegationManager = _delegationManager;
+        delegation = _delegation;
     }
 
     /*******************************************************************************
@@ -450,7 +450,7 @@ contract ECDSAStakeRegistry {
             strategyAndMultiplier = strategyParams[quorumNumber][i];
 
             // shares of the operator in the strategy
-            uint256 sharesAmount = delegationManager.operatorShares(operator, strategyAndMultiplier.strategy);
+            uint256 sharesAmount = delegation.operatorShares(operator, strategyAndMultiplier.strategy);
 
             // add the weight from the shares for this strategy to the total weight
             if (sharesAmount > 0) {
