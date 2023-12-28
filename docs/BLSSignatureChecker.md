@@ -67,13 +67,17 @@ Some notes on method parameters:
 * `params` contains both a signature from all signing Operators, as well as several fields that identify registered, non-signing Operators. While non-signing Operators haven't contributed to the signature, but need to be accounted for because, as Operators registered for one or more signing quorums, their public keys are included in that quorum's apk. Essentially, in order to validate the signature, nonsigners' public keys need to be subtracted out from the total apk to derive the apk that actually signed the message.
 
 This method performs the following steps. Note that each step involves lookups of historical state from `referenceBlockNumber`, but the writing in this section will use the present tense because adding "at the `referenceBlockNumber`" everywhere gets confusing. Steps follow:
-1. Calculate a total apk for all nonsigners, multiplying each nonsigner's pubkey by the number of `quorumNumbers` they are registered for.
-2. Negate the calculated total apk to "remove" the nonsigners' public keys.
+1. Calculate the *total nonsigner apk*, an aggregate pubkey composed of all nonsigner pubkeys. For each nonsigner:
+    * Query the `RegistryCoordinator` to get the nonsigner's registered quorums.
+    * Multiply the nonsigner's pubkey by the number of quorums in `quorumNumbers` the nonsigner is registered for.
+    * Add the result to the *total nonsigner apk*.
+2. Calculate the negative of the *total nonsigner apk*.
 3. For each quorum:
-    * Add the quorum's total apk to the total apk being calculated. Because the negation of nonsigner pubkeys are already in the total apk, this effectively subtracts nonsigner pubkeys from the total apk (leaving only signing pubkeys)
-    * Query the total stake for the quorum
-    * For each nonsigner, if the nonsigner is registered for the quorum, query their stake and subtract it from the total to calculate the stake from only the signers.
-4. Use the `msgHash`, calculated signers' apk, `params.apkG2`, and `params.sigma` to validate the BLS signature.
+    * Query the `BLSApkRegistry` to get the *quorum apk*: the aggregate pubkey of all Operators registered for that quorum.
+    * Add the *quorum apk* to the *total nonsigner apk*. This effectively subtracts out any pubkeys belonging to nonsigning Operators in the quorum, leaving only pubkeys of signing Operators. We'll call the result the *total signing apk*.
+    * Query the `StakeRegistry` to get the total stake for the quorum.
+    * For each nonsigner, if the nonsigner is registered for the quorum, query the `StakeRegistry` for their stake and subtract it from the total. This leaves only stake belonging to signing Operators.
+4. Use the `msgHash`, the *total signing apk*, `params.apkG2`, and `params.sigma` to validate the BLS signature.
 5. Return the total stake and signing stakes for each quorum, along with a hash identifying the `referenceBlockNumber` and non-signers 
 
 *Entry Points* (EigenDA):
@@ -161,7 +165,7 @@ struct CheckSignaturesIndices {
 }
 ```
 
-Traverses histories in the `RegistryCoordinator`, `IndexRegistry`, `StakeRegistry`, and `BLSApkRegistry` to retrieve information on one or more quorums' operator sets and nonsigning operators at a given `referenceBlockNumber`.
+Traverses histories in the `RegistryCoordinator`, `IndexRegistry`, `StakeRegistry`, and `BLSApkRegistry` to retrieve information on one or more quorums' Operator sets and nonsigning Operators at a given `referenceBlockNumber`.
 
 The return values are all "indices," because of the linear historical state each registry keeps. Offchain code calls this method to compute indices into historical state, which later is leveraged for cheap lookups in `BLSSignatureChecker.checkSignatures` (rather than traversing over the history during an onchain operation).
 
@@ -185,7 +189,7 @@ function setStaleStakesForbidden(
     onlyCoordinatorOwner
 ```
 
-This method allows the `RegistryCoordinator` Owner to update `staleStakesForbidden` in the `BLSSignatureChecker`. If stale stakes are forbidden, `BLSSignatureChecker.checkSignatures` will perform an additional check when querying each quorum's apk, operator stakes, and total stakes.
+This method allows the `RegistryCoordinator` Owner to update `staleStakesForbidden` in the `BLSSignatureChecker`. If stale stakes are forbidden, `BLSSignatureChecker.checkSignatures` will perform an additional check when querying each quorum's apk, Operator stakes, and total stakes.
 
 This additional check requires that each quorum was updated within a certain block window of the `referenceBlockNumber` passed into `BLSSignatureChecker.checkSignatures`.
 
