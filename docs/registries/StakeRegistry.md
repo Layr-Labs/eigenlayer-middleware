@@ -1,6 +1,6 @@
 ## StakeRegistry
 
-| File | Type | Proxy? |
+| File | Type | Proxy |
 | -------- | -------- | -------- |
 | [`StakeRegistry.sol`](../src/StakeRegistry.sol) | Singleton | Transparent proxy |
 
@@ -8,48 +8,38 @@ TODO
 
 #### High-level Concepts
 
-TODO
-
 This document organizes methods according to the following themes (click each to be taken to the relevant section):
-
-TODO
-<!-- * [Depositing Into EigenLayer](#depositing-into-eigenlayer)
-* [Restaking Beacon Chain ETH](#restaking-beacon-chain-eth)
-* [Withdrawal Processing](#withdrawal-processing)
+* [Registering and Deregistering](#registering-and-deregistering)
+* [Updating Registered Operators](#updating-registered-operators)
 * [System Configuration](#system-configuration)
-* [Other Methods](#other-methods) -->
-
-#### Important State Variables
-
-TODO
-
-<!-- * `EigenPodManager`:
-    * `mapping(address => IEigenPod) public ownerToPod`: Tracks the deployed `EigenPod` for each Staker
-    * `mapping(address => int256) public podOwnerShares`: Keeps track of the actively restaked beacon chain ETH for each Staker. 
-        * In some cases, a beacon chain balance update may cause a Staker's balance to drop below zero. This is because when queueing for a withdrawal in the `DelegationManager`, the Staker's current shares are fully removed. If the Staker's beacon chain balance drops after this occurs, their `podOwnerShares` may go negative. This is a temporary change to account for the drop in balance, and is ultimately corrected when the withdrawal is finally processed.
-        * Since balances on the consensus layer are stored only in Gwei amounts, the EigenPodManager enforces the invariant that `podOwnerShares` is always a whole Gwei amount for every staker, i.e. `podOwnerShares[staker] % 1e9 == 0` always. -->
 
 ---    
 
-### Theme
+### Registering and Deregistering
 
-TODO
-
-<!-- Before a Staker begins restaking beacon chain ETH, they need to deploy an `EigenPod`, stake, and start a beacon chain validator:
-* [`EigenPodManager.createPod`](#eigenpodmanagercreatepod)
-* [`EigenPodManager.stake`](#eigenpodmanagerstake)
-    * [`EigenPod.stake`](#eigenpodstake)
-
-To complete the deposit process, the Staker needs to prove that the validator's withdrawal credentials are pointed at the `EigenPod`:
-* [`EigenPod.verifyWithdrawalCredentials`](#eigenpodverifywithdrawalcredentials) -->
+These methods are ONLY called through the `RegistryCoordinator` - when an Operator registers for or deregisters from one or more quorums:
+* [`registerOperator`](#registeroperator)
+* [`deregisterOperator`](#deregisteroperator)
 
 #### `registerOperator`
 
 ```solidity
-
+function registerOperator(
+    address operator,
+    bytes32 operatorId,
+    bytes calldata quorumNumbers
+) 
+    public 
+    virtual 
+    onlyRegistryCoordinator 
+    returns (uint96[] memory, uint96[] memory)
 ```
 
 TODO
+
+*Entry Points*:
+* `RegistryCoordinator.registerOperator`
+* `RegistryCoordinator.registerOperatorWithChurn`
 
 *Effects*:
 *
@@ -60,49 +50,114 @@ TODO
 #### `deregisterOperator`
 
 ```solidity
-
+function deregisterOperator(
+    bytes32 operatorId,
+    bytes calldata quorumNumbers
+) 
+    public 
+    virtual 
+    onlyRegistryCoordinator
 ```
 
 TODO
+
+*Entry Points*:
+* `RegistryCoordinator.registerOperatorWithChurn`
+* `RegistryCoordinator.deregisterOperator`
+* `RegistryCoordinator.ejectOperator`
+* `RegistryCoordinator.updateOperators`
+* `RegistryCoordinator.updateOperatorsForQuorum`
 
 *Effects*:
 *
 
 *Requirements*:
 * 
+
+---
+
+### Updating Registered Operators
 
 #### `updateOperatorStake`
 
 ```solidity
-
+function updateOperatorStake(
+    address operator, 
+    bytes32 operatorId, 
+    bytes calldata quorumNumbers
+) 
+    external 
+    onlyRegistryCoordinator 
+    returns (uint192)
 ```
 
 TODO
+
+*Entry Points*:
+* `RegistryCoordinator.updateOperators`
+* `RegistryCoordinator.updateOperatorsForQuorum`
 
 *Effects*:
 *
 
 *Requirements*:
 * 
+
+### System Configuration
+
+This method is used by the `RegistryCoordinator` to initialize new quorums in the `StakeRegistry`:
+* [`initializeQuorum`](#initializequorum)
+
+These methods are used by the `RegistryCoordinator's` Owner to configure initialized quorums in the `StakeRegistry`:
+* [`setMinimumStakeForQuorum`](#setminimumstakeforquorum)
+* [`addStrategies`](#addstrategies)
+* [`removeStrategies`](#removestrategies)
+* [`modifyStrategyParams`](#modifystrategyparams)
 
 #### `initializeQuorum`
 
 ```solidity
+function initializeQuorum(
+    uint8 quorumNumber,
+    uint96 minimumStake,
+    StrategyParams[] memory _strategyParams
+) 
+    public 
+    virtual 
+    onlyRegistryCoordinator
 
+struct StrategyParams {
+    IStrategy strategy;
+    uint96 multiplier;
+}
 ```
 
-TODO
+<!-- This method is ONLY callable by the `RegistryCoordinator`, and is called when the `RegistryCoordinator` Owner creates a new quorum.
+
+`initializeQuorum` initializes a new quorum by pushing an initial `StakeUpdate` to `_totalStakeHistory[quorumNumber]`. Other methods can validate that a quorum exists by checking whether `_totalStakeHistory[quorumNumber]` has a nonzero length.
+
+*Entry Points*:
+* `RegistryCoordinator.createQuorum`
 
 *Effects*:
-*
+* 
+* Pushes a `StakeUpdate` to `_totalStakeHistory[quorumNumber]`. The update's `updateBlockNumber` is set to the current block, and `stake` is set to 0.
 
 *Requirements*:
-* 
+* Caller MUST be the `RegistryCoordinator`
+* `quorumNumber` MUST NOT belong to an existing, initialized quorum -->
 
 #### `setMinimumStakeForQuorum`
 
 ```solidity
-
+function setMinimumStakeForQuorum(
+    uint8 quorumNumber, 
+    uint96 minimumStake
+) 
+    public 
+    virtual 
+    onlyCoordinatorOwner 
+    quorumExists(quorumNumber)
 ```
 
 TODO
@@ -116,7 +171,19 @@ TODO
 #### `addStrategies`
 
 ```solidity
+function addStrategies(
+    uint8 quorumNumber, 
+    StrategyParams[] memory _strategyParams
+) 
+    public 
+    virtual 
+    onlyCoordinatorOwner 
+    quorumExists(quorumNumber)
 
+struct StrategyParams {
+    IStrategy strategy;
+    uint96 multiplier;
+}
 ```
 
 TODO
@@ -130,7 +197,14 @@ TODO
 #### `removeStrategies`
 
 ```solidity
-
+function removeStrategies(
+    uint8 quorumNumber,
+    uint256[] memory indicesToRemove
+) 
+    public 
+    virtual 
+    onlyCoordinatorOwner 
+    quorumExists(quorumNumber)
 ```
 
 TODO
@@ -144,7 +218,15 @@ TODO
 #### `modifyStrategyParams`
 
 ```solidity
-
+function modifyStrategyParams(
+    uint8 quorumNumber,
+    uint256[] calldata strategyIndices,
+    uint96[] calldata newMultipliers
+) 
+    public 
+    virtual 
+    onlyCoordinatorOwner 
+    quorumExists(quorumNumber)
 ```
 
 TODO
