@@ -4,17 +4,9 @@
 | -------- | -------- | -------- |
 | [`IndexRegistry.sol`](../../src/IndexRegistry.sol) | Singleton | Transparent proxy |
 
-The `IndexRegistry` provides an index for every registered Operator in every quorum. For example, if a quorum has `n` Operators, every Operator registered for that quorum will have an index in the range `[0:n-1]`. The role of this contract is to provide an AVS with a common, on-chain ordering of Operators within a quorum. 
-
-<!-- Each time an Operator registers for a quorum, -->
+The `IndexRegistry` provides an index for every registered Operator in every quorum. For example, if a quorum has `n` Operators, every Operator registered for that quorum will have an index in the range `[0:n-1]`. The role of this contract is to provide an AVS with a common, on-chain ordering of Operators within a quorum.
 
 *In EigenDA*, the Operator ordering properties of the `IndexRegistry` will eventually be used in proofs of custody, though this feature is not implemented yet.
-
-#### High-level Concepts
-
-This document organizes methods according to the following themes (click each to be taken to the relevant section):
-* [Registering and Deregistering](#registering-and-deregistering)
-* [System Configuration](#system-configuration)
 
 #### Important State Variables
 
@@ -45,6 +37,12 @@ Operators are assigned a unique index in each quorum they're registered for. If 
 * `_operatorCountHistory` keeps track of the number of Operators registered to each quorum over time. Note that a quorum's Operator count is also its "max index". Paired with `_indexHistory`, this allows offchain code to query the entire Operator set registered for a quorum at a given block number. For an example of this in the code, see `IndexRegistry.getOperatorListAtBlockNumber`.
 
 *Note*: `currentOperatorIndex` is ONLY updated when an Operator is *assigned* to an index. When an Operator deregisters and is removed, we don't update `currentOperatorIndex` because their index is not "0" - that's held by another Operator. Their index is also not the index they currently have. There's not really a "right answer" for this - see https://github.com/Layr-Labs/eigenlayer-middleware/issues/126 for more details.
+
+#### High-level Concepts
+
+This document organizes methods according to the following themes (click each to be taken to the relevant section):
+* [Registering and Deregistering](#registering-and-deregistering)
+* [System Configuration](#system-configuration)
 
 ---    
 
