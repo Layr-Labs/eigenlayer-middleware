@@ -126,9 +126,9 @@ contract BLSSignatureChecker {
 
             uint256 operatorBitmap = registryCoordinator.operatorBitmap(signerIds[i]);
             for (uint256 j = 0; j < quorumNumbers.length; j++) {
-                uint8 quorumNumber = uint8(quorumNumbers[i]);
+                uint8 quorumNumber = uint8(quorumNumbers[j]);
                 if (BitmapUtils.isSet(operatorBitmap, quorumNumber)) {
-                    stakeTotals.signedStakeForQuorum[i] += stakeRegistry.operatorStake(signerIds[i], quorumNumber);
+                    stakeTotals.signedStakeForQuorum[j] += stakeRegistry.operatorStake(signerIds[i], quorumNumber);
                 }
             }
         }
