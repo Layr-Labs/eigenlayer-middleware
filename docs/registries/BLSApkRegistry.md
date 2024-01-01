@@ -6,7 +6,7 @@
 
 The `BLSApkRegistry` tracks the current aggregate BLS pubkey for all Operators registered to each quorum, and keeps a historical record of each quorum's aggregate BLS pubkey hash. This contract makes heavy use of the `BN254` library to perform various operations on the BN254 elliptic curve (see [`BN254.sol`](../../src/libraries/BN254.sol)).
 
-Each time an Operator registers for a quorum, its BLS pubkey is added to that quorum's `currentApk`. Each time an Operator deregisters from a quorum, its BLS pubkey is negated, then subtracted from that quorum's `currentApk`. This contract maintains a history of the hash of each quorum's apk over time, which is used by the `BLSSignatureChecker` to fetch the "total signing key" for a quorum at a specific block number.
+Each time an Operator registers for a quorum, its BLS pubkey is added to that quorum's `currentApk`. Each time an Operator deregisters from a quorum, its BLS pubkey is subtracted from that quorum's `currentApk`. This contract maintains a history of the hash of each quorum's apk over time, which is used by the `BLSSignatureChecker` to fetch the "total signing key" for a quorum at a specific block number.
 
 #### High-level Concepts
 
