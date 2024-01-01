@@ -200,7 +200,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
      * @notice Returns the indices of the quorumApks index at `blockNumber` for the provided `quorumNumbers`
      * @dev Returns the current indices if `blockNumber >= block.number`
      */
-     function getApkIndicesAtBlockNumber(
+    function getApkIndicesAtBlockNumber(
         bytes calldata quorumNumbers,
         uint256 blockNumber
     ) external view returns (uint32[] memory) {
