@@ -556,7 +556,7 @@ contract RegistryCoordinator is
         }
 
         // Deregister operator with each of the registry contracts:
-        blsApkRegistry.deregisterOperator(operator, quorumNumbers);
+        // blsApkRegistry.deregisterOperator(operator, quorumNumbers);
         stakeRegistry.deregisterOperator(operatorId, quorumNumbers);
         indexRegistry.deregisterOperator(operatorId, quorumNumbers);
     }

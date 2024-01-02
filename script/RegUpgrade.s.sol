@@ -18,36 +18,40 @@ contract Upgrade_Reg_SM is Script, Test {
 
     function run() external {
         
-        RegistryCoordinator regCord = RegistryCoordinator(0x31462912a0ABFB59cA03fFd6f10c416A8Bb7FD45);
+        RegistryCoordinator regCord = RegistryCoordinator(0xc1DC4987Bd4c2f17446d51C9ED3397328b1827DA);
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(1);
 
         vm.startBroadcast();
-        regCord.registerOperator(
-            quorumNumbers,
-            defaultSocket,
-            pubkeyRegistrationParams,
-            emptySignatureAndExpiry
+        // regCord.registerOperator(
+        //     quorumNumbers,
+        //     defaultSocket,
+        //     pubkeyRegistrationParams,
+        //     emptySignatureAndExpiry
+        // );
+        regCord.deregisterOperator(
+            quorumNumbers
         );
+
         // // Deploy New RegistryCoordinator
         // newRegCoordinator = new RegistryCoordinator(
-        //     IServiceManager(0x787f666893F3EB6bF5D7A6AA9297784671A3312D),
-        //     IStakeRegistry(0x2e1145ea892EDebe0a6337208774dd70E8F05b04),
-        //     IBLSApkRegistry(0x442664e4b59A8264457981d2Fee459f20a6FBeC4),
-        //     IIndexRegistry(0xf88f3927264bb5fcCf900440DF6493963afce6F4)
+        //     IServiceManager(0x88AE05e4FA3835CfD3Bd80B9a927c8301857Ef55),
+        //     IStakeRegistry(0xd2701C630aBF8c41185734F0a237A4D5973E8cCF),
+        //     IBLSApkRegistry(0x5b83b0131E65B5b71047162F38871E91cCaa817B),
+        //     IIndexRegistry(0x6f9d5E456EE08c2857c0fF5bc25C7cDF9c3Dd318)
         // );
 
         // // Deploy New ServiceManager
         // newServiceManager = new ServiceManagerBase(
         //     IDelegationManager(0x45b4c4DAE69393f62e1d14C5fe375792DF4E6332),
-        //     IRegistryCoordinator(0x31462912a0ABFB59cA03fFd6f10c416A8Bb7FD45),
-        //     IStakeRegistry(0x2e1145ea892EDebe0a6337208774dd70E8F05b04)
+        //     IRegistryCoordinator(0xc1DC4987Bd4c2f17446d51C9ED3397328b1827DA),
+        //     IStakeRegistry(0xd2701C630aBF8c41185734F0a237A4D5973E8cCF)
         // );
 
         // // Upgrade Proxy Contract
-        // proxyAdmin = ProxyAdmin(payable(0x4893704E387Ab56A73B456e833879EBA8cd82718));
+        // proxyAdmin = ProxyAdmin(payable(0x2773976d6D37871fBD7De7572Ca52495e32900e4));
         // proxyAdmin.upgrade(
-        //     TransparentUpgradeableProxy(payable(0x31462912a0ABFB59cA03fFd6f10c416A8Bb7FD45)),
+        //     TransparentUpgradeableProxy(payable(0xc1DC4987Bd4c2f17446d51C9ED3397328b1827DA)),
         //     address(newRegCoordinator)
         // );
         // proxyAdmin.upgrade(

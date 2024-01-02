@@ -157,12 +157,8 @@ contract MiddlewareDeploy is Script, Test {
 
         IStakeRegistry.StrategyParams[][] memory quorumStrategiesConsideredAndMultipliers =
             new IStakeRegistry.StrategyParams[][](1);
-        quorumStrategiesConsideredAndMultipliers[0] = new IStakeRegistry.StrategyParams[](2);
+        quorumStrategiesConsideredAndMultipliers[0] = new IStakeRegistry.StrategyParams[](1);
         quorumStrategiesConsideredAndMultipliers[0][0] = IStakeRegistry.StrategyParams({
-            strategy: IStrategy(0xed6DE3f2916d20Cb427fe7255194a05061319FFB),
-            multiplier: 1e18
-        });
-        quorumStrategiesConsideredAndMultipliers[0][1] = IStakeRegistry.StrategyParams({
             strategy: IStrategy(0xd421b2a340497545dA68AE53089d99b9Fe0493cD),
             multiplier: 1e18
         });
