@@ -276,7 +276,7 @@ contract VoteWeigherBaseUnitTests is Test {
     //     voteWeigher.createQuorum(strategiesAndWeightingMultipliers);
 
     //     // remove certain strategies
-    //     // make sure events are emmitted
+    //     // make sure events are emitted
     //     for (uint i = 0; i < indicesToRemove.length; i++) {
     //         cheats.expectEmit(true, true, true, true, address(voteWeigher));
     //         emit StrategyRemovedFromQuorum(quorumNumber, strategiesAndWeightingMultipliers[indicesToRemove[i]].strategy);

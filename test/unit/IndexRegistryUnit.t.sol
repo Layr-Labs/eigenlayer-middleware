@@ -51,7 +51,7 @@ contract IndexRegistryUnitTests is Test {
      * 2. quorumNumbers ordered in ascending order
      * 3. quorumBitmap is <= uint192.max
      * 4. quorumNumbers.length != 0
-     * 5. operator is not already registerd for any quorums being registered for
+     * 5. operator is not already registered for any quorums being registered for
      */
     function testRegisterOperator() public {
         // register an operator
@@ -421,7 +421,7 @@ contract IndexRegistryUnitTests is Test {
      * 2. quorumNumbers ordered in ascending order
      * 3. quorumBitmap is <= uint192.max
      * 4. quorumNumbers.length != 0
-     * 5. operator is not already registerd for any quorums being registered for
+     * 5. operator is not already registered for any quorums being registered for
      */
     function testFuzzRegisterOperatorMultipleQuorums(bytes memory quorumNumbers) public {
         // Initialize quorum numbers, skipping invalid tests

@@ -15,7 +15,7 @@ contract BitmapUtilsUnitTests is Test {
         bitmapUtilsWrapper = new BitmapUtilsWrapper();
     }
 
-    // ensure that the bitmap encoding of an emtpy bytes array is an emtpy bitmap (function doesn't revert and approriately returns uint256(0))
+    // ensure that the bitmap encoding of an empty bytes array is an empty bitmap (function doesn't revert and approriately returns uint256(0))
     function testEmptyArrayEncoding() public view {
         bytes memory emptyBytesArray;
         uint256 returnedBitMap = bitmapUtilsWrapper.bytesArrayToBitmap(emptyBytesArray);
