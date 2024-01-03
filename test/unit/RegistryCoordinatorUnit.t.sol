@@ -41,7 +41,7 @@ contract RegistryCoordinatorUnitTests is MockAVSDeployer {
     event EjectorUpdated(address prevEjector, address newEjector);
 
     function setUp() virtual public {
-        _deployMockEigenLayerAndAVS();
+        _deployMockEigenLayerAndAVS(numQuorums);
     }
 
     function _testRegisterOperatorWithChurn_SetUp(uint256 pseudoRandomNumber, bytes memory quorumNumbers, uint96 operatorToKickStake) internal returns(address operatorToRegister, BN254.G1Point memory operatorToRegisterPubKey, IRegistryCoordinator.OperatorKickParam[] memory operatorKickParams) {
@@ -194,9 +194,23 @@ contract RegistryCoordinatorUnitTests_Initialization_Setters is RegistryCoordina
     }
 
     function test_createQuorum() public {
-        IRegistryCoordinator.OperatorSetParam memory operatorSetParams;
-        uint96 minimumStake;
-        IStakeRegistry.StrategyParams[] memory strategyParams;
+        // re-run setup, but setting up zero quorums
+        // this is necessary since the default setup already configures the max number of quorums, preventing adding more
+        _deployMockEigenLayerAndAVS(0);
+
+        IRegistryCoordinator.OperatorSetParam memory operatorSetParams = 
+            IRegistryCoordinator.OperatorSetParam({
+                    maxOperatorCount: defaultMaxOperatorCount,
+                    kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
+                    kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
+            });
+        uint96 minimumStake = 1;
+        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
+        strategyParams[0] =
+            IStakeRegistry.StrategyParams({
+                strategy: IStrategy(address(1000)),
+                multiplier: 1e16
+            });
 
         uint8 quorumCountBefore = registryCoordinator.quorumCount();
 
@@ -241,7 +255,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         registryCoordinator.registerOperator(emptyQuorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
     }
 
-    function testRegisterOperator_revert_invalidQUorum() public {
+    function testRegisterOperator_revert_invalidQuorum() public {
         bytes memory quorumNumbersTooLarge = new bytes(1);
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
 
