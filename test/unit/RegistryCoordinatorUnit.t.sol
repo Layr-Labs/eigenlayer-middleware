@@ -274,7 +274,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         registryCoordinator.registerOperator(quorumNumbersTooLarge, defaultSocket, pubkeyRegistrationParams, emptySig);
     }
 
-    function test_registerOperator_revert_NonexistentQuorum() public {
+    function test_registerOperator_revert_nonexistentQuorum() public {
         _deployMockEigenLayerAndAVS(10);
         bytes memory quorumNumbersNotCreated = new bytes(1);
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
@@ -922,6 +922,139 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
             }))),
             "5"
         );
+    }
+
+    // tests for the internal `_deregisterOperator` function:
+    function test_deregisterOperatorExternal_revert_noQuorums() public {
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        uint32 registrationBlockNumber = 100;
+        uint32 deregistrationBlockNumber = 200;
+
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+
+        cheats.roll(registrationBlockNumber);
+        cheats.startPrank(defaultOperator);
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
+
+        bytes memory emptyQuorumNumbers = new bytes(0);
+
+        cheats.roll(deregistrationBlockNumber);
+        cheats.expectRevert("RegistryCoordinator._deregisterOperator: bitmap cannot be 0");
+        registryCoordinator._deregisterOperatorExternal(defaultOperator, emptyQuorumNumbers);
+    }
+
+    function test_deregisterOperatorExternal_revert_notRegistered() public {
+        bytes memory emptyQuorumNumbers = new bytes(0);
+        cheats.expectRevert("RegistryCoordinator._deregisterOperator: operator is not registered");
+        registryCoordinator._deregisterOperatorExternal(defaultOperator, emptyQuorumNumbers);
+    }
+
+    function test_deregisterOperatorExternal_revert_incorrectQuorums() public {
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        uint32 registrationBlockNumber = 100;
+        uint32 deregistrationBlockNumber = 200;
+
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+
+        cheats.roll(registrationBlockNumber);
+        cheats.startPrank(defaultOperator);
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
+
+        bytes memory incorrectQuorum = new bytes(1);
+        incorrectQuorum[0] = bytes1(defaultQuorumNumber + 1);
+
+        cheats.roll(deregistrationBlockNumber);
+        cheats.expectRevert("RegistryCoordinator._deregisterOperator: operator is not registered for specified quorums");
+        registryCoordinator._deregisterOperatorExternal(defaultOperator, incorrectQuorum);
+    }
+
+    // note: this is not possible to test, because there is no route to getting the operator registered for nonexistent quorums
+    // function test_deregisterOperatorExternal_revert_nonexistentQuorums() public {
+
+    function testFuzz_deregisterOperatorInternal_partialDeregistration(
+        uint256 registrationQuorumBitmap,
+        uint256 deregistrationQuorumBitmap
+    ) public {
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        uint32 registrationBlockNumber = 100;
+        uint32 deregistrationBlockNumber = 200;
+
+        // filter down fuzzed input to only valid quorums
+        registrationQuorumBitmap = registrationQuorumBitmap & MAX_QUORUM_BITMAP;
+        cheats.assume(registrationQuorumBitmap != 0);
+        // filter the other fuzzed input to a subset of the first fuzzed input
+        deregistrationQuorumBitmap = deregistrationQuorumBitmap & registrationQuorumBitmap;
+        cheats.assume(deregistrationQuorumBitmap != 0);
+        bytes memory registrationquorumNumbers = BitmapUtils.bitmapToBytesArray(registrationQuorumBitmap);
+
+        for (uint i = 0; i < registrationquorumNumbers.length; i++) {
+            stakeRegistry.setOperatorWeight(uint8(registrationquorumNumbers[i]), defaultOperator, defaultStake);
+        }
+
+        cheats.roll(registrationBlockNumber);
+        cheats.startPrank(defaultOperator);
+        registryCoordinator.registerOperator(registrationquorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
+
+        bytes memory deregistrationquorumNumbers = BitmapUtils.bitmapToBytesArray(deregistrationQuorumBitmap);
+
+        cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
+        emit OperatorRemovedFromQuorums(defaultOperator, deregistrationquorumNumbers);
+        for (uint i = 0; i < deregistrationquorumNumbers.length; i++) {
+            cheats.expectEmit(true, true, true, true, address(stakeRegistry));
+            emit OperatorStakeUpdate(defaultOperatorId, uint8(deregistrationquorumNumbers[i]), 0);
+        }
+
+        cheats.roll(deregistrationBlockNumber);
+
+        registryCoordinator._deregisterOperatorExternal(defaultOperator, deregistrationquorumNumbers);
+
+        // check that the operator is marked as 'degregistered' only if deregistered from *all* quorums
+        if (deregistrationQuorumBitmap == registrationQuorumBitmap) {
+            assertEq(
+                keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))), 
+                keccak256(abi.encode(IRegistryCoordinator.OperatorInfo({
+                    operatorId: defaultOperatorId,
+                    status: IRegistryCoordinator.OperatorStatus.DEREGISTERED
+                })))
+            );            
+        } else {
+            assertEq(
+                keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))), 
+                keccak256(abi.encode(IRegistryCoordinator.OperatorInfo({
+                    operatorId: defaultOperatorId,
+                    status: IRegistryCoordinator.OperatorStatus.REGISTERED
+                })))
+            );            
+        }
+        // ensure that the operator's current quorum bitmap matches the expectation
+        uint256 expectedQuorumBitmap = BitmapUtils.minus(registrationQuorumBitmap, deregistrationQuorumBitmap);
+        assertEq(registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), expectedQuorumBitmap);
+        // check that the quorum bitmap history is as expected
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))), 
+            keccak256(abi.encode(IRegistryCoordinator.QuorumBitmapUpdate({
+                quorumBitmap: uint192(registrationQuorumBitmap),
+                updateBlockNumber: registrationBlockNumber,
+                nextUpdateBlockNumber: deregistrationBlockNumber
+            })))
+        );
+        // note: there will be no second entry in the operator's bitmap history in the event that the operator has totally deregistered
+        if (deregistrationQuorumBitmap != registrationQuorumBitmap) {
+            assertEq(
+                keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 1))), 
+                keccak256(abi.encode(IRegistryCoordinator.QuorumBitmapUpdate({
+                    quorumBitmap: uint192(expectedQuorumBitmap),
+                    updateBlockNumber: deregistrationBlockNumber,
+                    nextUpdateBlockNumber: 0
+                })))
+            );
+        }
     }
 
     function test_ejectOperator_allQuorums() public {

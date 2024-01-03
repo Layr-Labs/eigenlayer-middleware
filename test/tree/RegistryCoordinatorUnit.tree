@@ -136,7 +136,7 @@
 │   │   └── it should revert
 │   ├── given that any quorums being removed do not (yet) exist
 │   │   └── it should revert
-│   ├── given that the operator is *not* currently registered for any of quorums being removed
+│   ├── given that the operator is *not* currently registered for any or all of quorums being removed
 │   │   └── it should revert
 │   ├── given that the operator is being removed from all quorums that they were registered for
 │   │   └── it should mark the operator as no longer registered
