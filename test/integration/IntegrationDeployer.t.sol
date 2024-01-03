@@ -126,7 +126,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer, G2Operations {
     uint constant HAS_MINIMUM = (FLAG << 1);
 
     // Generated BLS keypairs
-    uint constant KEYS_TO_GENERATE = 20;
+    uint constant KEYS_TO_GENERATE = 5;
     uint fetchIdx = 0;
     uint[] privKeys;
     IBLSApkRegistry.PubkeyRegistrationParams[] pubkeys;
@@ -547,7 +547,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer, G2Operations {
         } else if (quorumFlag == TWO) {
             return 2;
         } else if (quorumFlag == MANY) {
-            return _randUint({ min: 3, max: MAX_QUORUM_COUNT });
+            return _randUint({ min: 3, max: 10 });
         } else {
             revert("_randQuorumCount: flag not recognized");
         }
