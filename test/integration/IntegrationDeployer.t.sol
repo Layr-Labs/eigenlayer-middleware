@@ -126,15 +126,18 @@ abstract contract IntegrationDeployer is Test, IUserDeployer, G2Operations {
     uint constant HAS_MINIMUM = (FLAG << 1);
 
     // Generated BLS keypairs
-    uint constant KEYS_TO_GENERATE = 100;
+    uint constant KEYS_TO_GENERATE = 20;
     uint fetchIdx = 0;
     uint[] privKeys;
     IBLSApkRegistry.PubkeyRegistrationParams[] pubkeys;
 
+    /**
+     * Since BLS key generation uses FFI, it's pretty slow. Pregenerating keys
+     * in the constructor apparently ensures that this only happens once,
+     * so this is the best way to speed things up when running multiple tests.
+     */
     constructor() {
-        for (uint i = 0; i < KEYS_TO_GENERATE; i++) {
-            emit log("hello");
-            
+        for (uint i = 0; i < KEYS_TO_GENERATE; i++) {            
             IBLSApkRegistry.PubkeyRegistrationParams memory pubkey;
             uint privKey = uint(keccak256(abi.encodePacked(i + 1)));
             

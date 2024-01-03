@@ -109,10 +109,12 @@ contract User is Test {
         return pubkeyParams.pubkeyG1.hashG1Point();
     }
 
-    function deregisterOperator() public createSnapshot virtual {
+    function deregisterOperator(bytes calldata quorums) public createSnapshot virtual {
         emit log(_name(".deregisterOperator"));
 
-        revert("TODO");   
+        registryCoordinator.deregisterOperator({
+            quorumNumbers: quorums
+        });
     }
 
     /**
@@ -166,6 +168,10 @@ contract User is Test {
         }
 
         return bytes4(0);
+    }
+
+    function pubkeyG1() public view returns (BN254.G1Point memory) {
+        return pubkeyParams.pubkeyG1;
     }
 
     function _genAVSRegistrationSig() internal returns (ISignatureUtils.SignatureWithSaltAndExpiry memory) {
