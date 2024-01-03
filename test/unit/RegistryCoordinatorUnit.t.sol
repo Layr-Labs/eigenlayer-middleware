@@ -493,6 +493,76 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
 
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
     }
+
+    // tests for the internal `_registerOperator` function:
+    function test_registerOperatorInternal_revert_noQuorums() public {
+        bytes memory emptyQuorumNumbers = new bytes(0);
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+
+        cheats.expectRevert("RegistryCoordinator._registerOperator: bitmap cannot be 0");
+        registryCoordinator._registerOperatorExternal(defaultOperator, defaultOperatorId, emptyQuorumNumbers, defaultSocket, emptySig);
+    }
+
+    function test_registerOperatorInternal_revert_nonexistentQuorum() public {
+        bytes memory quorumNumbersTooLarge = new bytes(1);
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+
+        quorumNumbersTooLarge[0] = 0xC0;
+
+        cheats.expectRevert("BitmapUtils.orderedBytesArrayToBitmap: bitmap exceeds max value");
+        registryCoordinator._registerOperatorExternal(defaultOperator, defaultOperatorId, quorumNumbersTooLarge, defaultSocket, emptySig);
+    }
+
+    function test_registerOperatorInternal_revert_operatorAlreadyRegisteredForQuorum() public {
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+        registryCoordinator._registerOperatorExternal(defaultOperator, defaultOperatorId, quorumNumbers, defaultSocket, emptySig);
+
+        cheats.expectRevert("RegistryCoordinator._registerOperator: operator already registered for some quorums being registered for");
+        registryCoordinator._registerOperatorExternal(defaultOperator, defaultOperatorId, quorumNumbers, defaultSocket, emptySig);
+    }
+
+    function test_registerOperatorInternal() public {
+        bytes memory quorumNumbers = new bytes(1);
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit OperatorSocketUpdate(defaultOperatorId, defaultSocket);
+        cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
+        emit OperatorAddedToQuorums(defaultOperator, quorumNumbers);
+        cheats.expectEmit(true, true, true, true, address(stakeRegistry));
+        emit OperatorStakeUpdate(defaultOperatorId, defaultQuorumNumber, defaultStake);
+        cheats.expectEmit(true, true, true, true, address(indexRegistry));
+        emit QuorumIndexUpdate(defaultOperatorId, defaultQuorumNumber, 0);
+
+        registryCoordinator._registerOperatorExternal(defaultOperator, defaultOperatorId, quorumNumbers, defaultSocket, emptySig);
+
+        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
+
+        assertEq(registryCoordinator.getOperatorId(defaultOperator), defaultOperatorId);
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))), 
+            keccak256(abi.encode(IRegistryCoordinator.OperatorInfo({
+                operatorId: defaultOperatorId,
+                status: IRegistryCoordinator.OperatorStatus.REGISTERED
+            })))
+        );
+        assertEq(registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), quorumBitmap);
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))), 
+            keccak256(abi.encode(IRegistryCoordinator.QuorumBitmapUpdate({
+                quorumBitmap: uint192(quorumBitmap),
+                updateBlockNumber: uint32(block.number),
+                nextUpdateBlockNumber: 0
+            })))
+        );
+    }
 }
 
 contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is RegistryCoordinatorUnitTests {
