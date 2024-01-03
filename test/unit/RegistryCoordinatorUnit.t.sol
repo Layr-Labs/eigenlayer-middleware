@@ -121,6 +121,8 @@ contract RegistryCoordinatorUnitTests_Initialization_Setters is RegistryCoordina
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
         emit OperatorSetParamsUpdated(0, operatorSetParams[1]);
         registryCoordinator.setOperatorSetParams(0, operatorSetParams[1]);
+        assertEq(keccak256(abi.encode(registryCoordinator.getOperatorSetParams(0))),keccak256(abi.encode(operatorSetParams[1])),
+            "operator set params not updated correctly");
     }
 
     function test_setOperatorSetParams_revert_notOwner() public {
@@ -135,6 +137,7 @@ contract RegistryCoordinatorUnitTests_Initialization_Setters is RegistryCoordina
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
         emit ChurnApproverUpdated(churnApprover, newChurnApprover);
         registryCoordinator.setChurnApprover(newChurnApprover);
+        assertEq(registryCoordinator.churnApprover(), newChurnApprover);
     }
 
     function test_setChurnApprover_revert_notOwner() public {
@@ -144,7 +147,7 @@ contract RegistryCoordinatorUnitTests_Initialization_Setters is RegistryCoordina
         registryCoordinator.setChurnApprover(newChurnApprover);
     }
 
-    function testSetEjector() public {
+    function test_setEjector() public {
         address newEjector = address(uint160(uint256(keccak256("newEjector"))));
         cheats.prank(registryCoordinatorOwner);
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
@@ -153,7 +156,7 @@ contract RegistryCoordinatorUnitTests_Initialization_Setters is RegistryCoordina
         assertEq(registryCoordinator.ejector(), newEjector);
     }
 
-    function testSetEjector_revert_notOwner() public {
+    function test_setEjector_revert_notOwner() public {
         address newEjector = address(uint160(uint256(keccak256("newEjector"))));
         cheats.expectRevert("Ownable: caller is not the owner");
         cheats.prank(defaultOperator);
