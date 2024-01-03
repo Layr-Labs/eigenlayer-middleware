@@ -82,8 +82,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         (uint32 referenceBlockNumber, BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature) = 
             _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(pseudoRandomNumber, numNonSigners, quorumBitmap);
         
-        // record a quorumBitmap update
-        registryCoordinator.recordOperatorQuorumBitmapUpdate(nonSignerStakesAndSignature.nonSignerPubkeys[0].hashG1Point(), uint192(quorumBitmap | 2));
+        // record a quorumBitmap update via a harnessed function
+        registryCoordinator._updateOperatorBitmapExternal(nonSignerStakesAndSignature.nonSignerPubkeys[0].hashG1Point(), uint192(quorumBitmap | 2));
 
         // set the nonSignerQuorumBitmapIndices to a different value
         nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices[0] = 1;
