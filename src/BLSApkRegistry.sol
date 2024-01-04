@@ -12,10 +12,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
 
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
     modifier onlyRegistryCoordinator() {
-        require(
-            msg.sender == address(registryCoordinator),
-            "BLSApkRegistry.onlyRegistryCoordinator: caller is not the registry coordinator"
-        );
+        _checkRegistryCoordinator();
         _;
     }
 
@@ -31,7 +28,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     /**
      * @notice Registers the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to register.
-     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
+     * @param quorumNumbers The quorum numbers the operator registers for, where each byte is an 8 bit integer quorumNumber.
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
@@ -150,7 +147,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     function _processQuorumApkUpdate(bytes memory quorumNumbers, BN254.G1Point memory point) internal {
         BN254.G1Point memory newApk;
 
-        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+        for (uint256 i; i < quorumNumbers.length;) {
             // Validate quorum exists and get history length
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             uint256 historyLength = apkHistory[quorumNumber].length;
@@ -174,7 +171,21 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
                     nextUpdateBlockNumber: 0
                 }));
             }
+
+            unchecked {
+                ++i;
+            }
         }
+    }
+
+    /**
+     * @dev This function is used within modifier 'onlyRegistryCoordinator'
+    */
+    function _checkRegistryCoordinator() internal {
+        require(
+            msg.sender == address(registryCoordinator),
+            "BLSApkRegistry.onlyRegistryCoordinator: caller is not the registry coordinator"
+        );
     }
 
     /*******************************************************************************
@@ -205,7 +216,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         uint256 blockNumber
     ) external view returns (uint32[] memory) {
         uint32[] memory indices = new uint32[](quorumNumbers.length);
-        for (uint i = 0; i < quorumNumbers.length; i++) {
+        for (uint i; i < quorumNumbers.length;) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             uint32 quorumApkUpdatesLength = uint32(apkHistory[quorumNumber].length);
 
@@ -215,11 +226,19 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
                 );
             }
 
-            for (uint32 j = 0; j < quorumApkUpdatesLength; j++) {
+            for (uint32 j; j < quorumApkUpdatesLength;) {
                 if (apkHistory[quorumNumber][quorumApkUpdatesLength - j - 1].updateBlockNumber <= blockNumber) {
                     indices[i] = quorumApkUpdatesLength - j - 1;
                     break;
                 }
+
+                unchecked {
+                    ++j;
+                }
+            }
+
+            unchecked {
+                ++i;
             }
         }
         return indices;
@@ -277,7 +296,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     }
 
     /// @notice returns the ID used to identify the `operator` within this AVS
-    /// @dev Returns zero in the event that the `operator` has never registered for the AVS
+    /// @dev Returns zero if the `operator` has never registered for the AVS
     function getOperatorId(address operator) public view returns (bytes32) {
         return operatorToPubkeyHash[operator];
     }
