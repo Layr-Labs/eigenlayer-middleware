@@ -1,0 +1,114 @@
+.
+├── StakeRegistry tree (*** denotes that integration tests are needed to validate path)
+├── when any function is called (invariants)
+│   └── when parameters contain uninitialized quorumNumbers
+│       └── it should revert
+├── when registerOperator is called
+│   ├── given caller is not the registry coordinator
+│   │   └── it should revert
+│   ├── given quorum does not exist
+│   │   └── it should revert
+│   ├── given the operator does not meet the minimum stake for a quorum
+│   │   └── it should revert
+│   └── given that the above conditions are satisfied
+│       ├── given the operator's stake is unchanged ***
+│       │   └── it should not update the operator's stake
+│       ├── given the operator does not have a stake update from the current block
+│       │   └── it should push a new stake update for the operator
+│       ├── given the operator does have a stake update for the current block ***
+│       │   └── it should update the operator's last stake update with the new stake
+│       ├── given the total stake history was not updated in the current block
+│       │   └── it should push a new stake update for the total stake
+│       └── given the total stake history was updated in the current block
+│           └── it should update the last total stake update with the new stake
+├── when deregisterOperator is called
+│   ├── given caller is not the registry coordinator
+│   │   └── it should revert
+│   ├── given quorum does not exist
+│   │   └── it should revert
+│   └── given that the above conditions are satisfied
+│       ├── given the operator's stake history is empty (although shouldn't be possible to register with empty stake history)
+│       │   └── it should push a single entry with 0 stake
+│       ├── given the operator's current stake is 0 and their history is nonempty
+│       │   └── it should not update the operator's stake history or total history
+│       ├── given the operator's current stake is nonzero and does not have a stake update for current block
+│       │   └── it should push a new stake update for the operator with 0 stake
+│       ├── given the operator's current stake is nonzero and was last updated in current block
+│       │   └── it should update the operator's last stake update with 0 stake
+│       ├── given the total stake history was not updated in the current block
+│       │   └── it should push a new stake update for the total stake
+│       └── given the total stake history was updated in the current block
+│           └── it should update the last total stake update with the new stake
+├── when updateOperatorStake is called
+│   ├── given caller is not the registry coordinator
+│   │   └── it should revert
+│   ├── given quorum does not exist
+│   │   └── it should revert
+│   ├── given the operator currently meets the minimum stake for the quorum
+│   │   ├── given they still do after updating
+│   │   │   └── it should update their history and apply the change to the total history
+│   │   └── given they no longer meet the minimum
+│   │       └── it should set their stake to zero, remove it from the total stake, and add the quorum to the return bitmap
+│   └── given the operator does not currently meet the minimum stake for the quorum
+│       ├── given their updated stake does not meet the minimum
+│       │   └── it should not perform any updates, and it should add the quorum to the return bitmap
+│       └── given they meet the minimum after the update
+│           └── it should update the operator and total history with the stake
+├── when initializeQuorum is called
+│   ├── given quorum already exists
+│   │   └── it should revert
+│   ├── given strategyParams is empty
+│   │   └── it should revert
+│   ├── given strategyParams length is > MAX_WEIGHING_FUNCTION_LENGTH
+│   │   └── it should revert
+│   └── given quorum doesn't already exist
+│       └── it should call _addStrategyParams and _setMinimumStakeForQuorum (internal functions below)
+│           └── given internal functions succeed
+│               └── it should set the first _totalStakeHistory entry for the initialized quorumNumber
+├── when setMinimumStakeForQuorum is called
+│   ├── given caller is not the registry coordinator owner
+│   │   └── it should revert
+│   ├── given quorum does not exist
+│   │   └── it should revert
+│   └── it should set the minimum stake and emit MinimumStakeForQuorumUpdated
+├── when addStrategies is called
+│   ├── given caller is not the registry coordinator owner
+│   │   └── it should revert
+│   ├── given quorum does not exist
+│   │   └── it should revert
+│   └── it should call _addStrategyParams (internal function)
+├── when _addStrategyParams is called
+│   ├── given strategyParams is empty
+│   │   └── it should revert
+│   ├── given strategyParams length is > MAX_WEIGHING_FUNCTION_LENGTH
+│   │   └── it should revert
+│   ├── given a strategy being added already exists in quorum
+│   │   └── it should revert
+│   ├── given a multiplier being added is 0
+│   │   └── it should revert
+│   └── given unique strategies and non-zero multipliers
+│       └── it should add the strategies and multipliers to the quorum
+├── when removeStrategies is called
+│   ├── given caller is not the registry coordinator owner
+│   │   └── it should revert
+│   ├── given quorum does not exist
+│   │   └── it should revert
+│   ├── given indicesToRemove length is 0
+│   │   └── it should revert
+│   ├── given an index in indicesToRemove is >= length of strategies in quorum
+│   │   └── it should revert
+│   ├── given valid indicesToRemove for an existing quorum but not in decreasing order
+│   │   └── it should revert
+│   └── given valid indicesToRemove for an existing quorum and in decreasing order
+│       └── it should remove the desired strategies from the quorum
+└── when modifyStrategyParams is called
+    ├── given caller is not the registry coordinator owner
+    │   └── it should revert
+    ├── given quorum does not exist
+    │   └── it should revert
+    ├── given strategyIndices length is 0 or has mismatch length with newMultipliers
+    │   └── it should revert
+    ├── given a index in strategyIndices is >= length of strategies in quorum
+    │   └── it should revert
+    └── given matching lengths and valid indices for an existing quorum
+        └── it should modify the weights of existing strategies in the quorum
