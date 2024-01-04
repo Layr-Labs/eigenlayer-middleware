@@ -8,6 +8,7 @@ contract RegistryCoordinatorUnitTests is MockAVSDeployer {
 
     uint8 internal constant PAUSED_REGISTER_OPERATOR = 0;
     uint8 internal constant PAUSED_DEREGISTER_OPERATOR = 1;
+    uint8 internal constant PAUSED_UPDATE_OPERATOR = 2;
     uint8 internal constant MAX_QUORUM_COUNT = 192;
 
     event OperatorSocketUpdate(bytes32 indexed operatorId, string socket);
@@ -1382,6 +1383,73 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
 }
 
 contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnitTests {
+    function test_updateOperators_revert_paused() public {
+        cheats.prank(pauser);
+        registryCoordinator.pause(2 ** PAUSED_UPDATE_OPERATOR);
+
+        address[] memory operatorsToUpdate = new address[](1);
+        operatorsToUpdate[0] = defaultOperator;
+
+        cheats.expectRevert(bytes("Pausable: index is paused"));
+        registryCoordinator.updateOperators(operatorsToUpdate);
+    }
+
+    // @notice tests the `updateOperators` function with a single registered operator as input
+    function test_updateOperators_singleOperator() public {
+        // register the default operator
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        uint32 registrationBlockNumber = 100;
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+        stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+        cheats.startPrank(defaultOperator);
+        cheats.roll(registrationBlockNumber);
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
+
+        address[] memory operatorsToUpdate = new address[](1);
+        operatorsToUpdate[0] = defaultOperator;
+
+        // TODO: any additional checks here? mostly this just calls the StakeRegistry, so more appropriate for an integration test
+        registryCoordinator.updateOperators(operatorsToUpdate);
+    }
+
+    // @notice tests the `updateOperators` function with a single *un*registered operator as input
+    function test_updateOperators_unregisteredOperator() public {
+        address[] memory operatorsToUpdate = new address[](1);
+        operatorsToUpdate[0] = defaultOperator;
+
+        // force a staticcall to the `updateOperators` function -- this should *pass* because the call should be a strict no-op!
+        (bool success, ) = address(registryCoordinator).staticcall(abi.encodeWithSignature("updateOperators(address[])", operatorsToUpdate));
+        require(success, "staticcall failed!");
+    }
+
+    function test_updateOperatorsForQuorum_revert_paused() public {
+        cheats.prank(pauser);
+        registryCoordinator.pause(2 ** PAUSED_UPDATE_OPERATOR);
+
+        address[][] memory operatorsToUpdate = new address[][](1);
+        address[] memory operatorArray = new address[](1);
+        operatorArray[0] =  defaultOperator;
+        operatorsToUpdate[0] = operatorArray;
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        cheats.expectRevert(bytes("Pausable: index is paused"));
+        registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
+    }
+
+    function test_updateOperatorsForQuorum_revert_nonexistentQuorum() public {
+        _deployMockEigenLayerAndAVS(10);
+        bytes memory quorumNumbersNotCreated = new bytes(1);
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        quorumNumbersNotCreated[0] = 0x0B;
+        address[][] memory operatorsToUpdate = new address[][](1);
+
+        cheats.prank(defaultOperator);
+        cheats.expectRevert("BitmapUtils.orderedBytesArrayToBitmap: bitmap exceeds max value");
+        registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbersNotCreated);
+    }
+
     // @notice tests that the internal `_updateOperatorBitmap` function works as expected, for fuzzed inputs
     function testFuzz_updateOperatorBitmapInternal_noPreviousEntries(uint192 newBitmap) public {
         registryCoordinator._updateOperatorBitmapExternal(defaultOperatorId, newBitmap);
@@ -1394,6 +1462,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
             })))
         );
     }
+
     // @notice tests that the internal `_updateOperatorBitmap` function works as expected, for fuzzed inputs
     function testFuzz_updateOperatorBitmapInternal_previousEntryInCurrentBlock(uint192 newBitmap) public {
         uint192 pastBitmap = 1;
