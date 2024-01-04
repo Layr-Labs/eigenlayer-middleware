@@ -41,6 +41,8 @@ contract RegistryCoordinatorUnitTests is MockAVSDeployer {
 
     event EjectorUpdated(address prevEjector, address newEjector);
 
+    event QuorumBlockNumberUpdated(uint8 indexed quorumNumber, uint256 blocknumber);
+
     function setUp() virtual public {
         _deployMockEigenLayerAndAVS(numQuorums);
     }
@@ -1414,7 +1416,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
     }
 
     // @notice tests the `updateOperators` function with a single *un*registered operator as input
-    function test_updateOperators_unregisteredOperator() public {
+    function test_updateOperators_unregisteredOperator() public view {
         address[] memory operatorsToUpdate = new address[](1);
         operatorsToUpdate[0] = defaultOperator;
 
@@ -1441,13 +1443,168 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
     function test_updateOperatorsForQuorum_revert_nonexistentQuorum() public {
         _deployMockEigenLayerAndAVS(10);
         bytes memory quorumNumbersNotCreated = new bytes(1);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
         quorumNumbersNotCreated[0] = 0x0B;
         address[][] memory operatorsToUpdate = new address[][](1);
 
         cheats.prank(defaultOperator);
         cheats.expectRevert("BitmapUtils.orderedBytesArrayToBitmap: bitmap exceeds max value");
         registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbersNotCreated);
+    }
+
+    function test_updateOperatorsForQuorum_revert_inputLengthMismatch() public {
+        address[][] memory operatorsToUpdate = new address[][](2);
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        cheats.expectRevert(bytes("RegistryCoordinator.updateOperatorsForQuorum: input length mismatch"));
+        registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
+    }
+
+    function test_updateOperatorsForQuorum_revert_incorrectNumberOfOperators() public {
+        address[][] memory operatorsToUpdate = new address[][](1);
+        address[] memory operatorArray = new address[](1);
+        operatorArray[0] =  defaultOperator;
+        operatorsToUpdate[0] = operatorArray;
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        cheats.expectRevert(bytes("RegistryCoordinator.updateOperatorsForQuorum: number of updated operators does not match quorum total"));
+        registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
+    }
+
+    function test_updateOperatorsForQuorum_revert_unregisteredOperator() public {
+        // register the default operator
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        uint32 registrationBlockNumber = 100;
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+        stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+        cheats.startPrank(defaultOperator);
+        cheats.roll(registrationBlockNumber);
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
+
+        address[][] memory operatorsToUpdate = new address[][](1);
+        address[] memory operatorArray = new address[](1);
+        // use an unregistered operator address as input
+        operatorArray[0] =  _incrementAddress(defaultOperator, 1);
+        operatorsToUpdate[0] = operatorArray;
+
+        cheats.expectRevert(bytes("RegistryCoordinator.updateOperatorsForQuorum: operator not in quorum"));
+        registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
+    }
+
+    // note: there is not an explicit check for duplicates, as checking for explicit ordering covers this
+    function test_updateOperatorsForQuorum_revert_duplicateOperator(uint256 pseudoRandomNumber) public {
+        // register 2 operators
+        uint32 numOperators = 2;
+        uint32 registrationBlockNumber = 200;
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
+        cheats.roll(registrationBlockNumber);
+        for (uint i = 0; i < numOperators; i++) {
+            BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
+            address operator = _incrementAddress(defaultOperator, i);
+            
+            _registerOperatorWithCoordinator(operator, quorumBitmap, pubKey);
+        }
+
+        address[][] memory operatorsToUpdate = new address[][](1);
+        address[] memory operatorArray = new address[](2);
+        // use the same operator address twice as input
+        operatorArray[0] =  defaultOperator;
+        operatorArray[1] =  defaultOperator;
+        operatorsToUpdate[0] = operatorArray;
+
+        // note: there is not an explicit check for duplicates, as checking for explicit ordering covers this
+        cheats.expectRevert(bytes("RegistryCoordinator.updateOperatorsForQuorum: operators array must be sorted in ascending address order"));
+        registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
+    }
+
+    function test_updateOperatorsForQuorum_revert_incorrectListOrder(uint256 pseudoRandomNumber) public {
+        // register 2 operators
+        uint32 numOperators = 2;
+        uint32 registrationBlockNumber = 200;
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
+        cheats.roll(registrationBlockNumber);
+        for (uint i = 0; i < numOperators; i++) {
+            BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
+            address operator = _incrementAddress(defaultOperator, i);
+            
+            _registerOperatorWithCoordinator(operator, quorumBitmap, pubKey);
+        }
+
+        address[][] memory operatorsToUpdate = new address[][](1);
+        address[] memory operatorArray = new address[](2);
+        // order the operator addresses in descending order, instead of ascending order
+        operatorArray[0] =  _incrementAddress(defaultOperator, 1);
+        operatorArray[1] =  defaultOperator;
+        operatorsToUpdate[0] = operatorArray;
+
+        cheats.expectRevert(bytes("RegistryCoordinator.updateOperatorsForQuorum: operators array must be sorted in ascending address order"));
+        registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
+    }
+
+    function test_updateOperatorsForQuorum_singleOperator() public {
+        // register the default operator
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        uint32 registrationBlockNumber = 100;
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+        stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+        cheats.startPrank(defaultOperator);
+        cheats.roll(registrationBlockNumber);
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
+
+        address[][] memory operatorsToUpdate = new address[][](1);
+        address[] memory operatorArray = new address[](1);
+        operatorArray[0] =  defaultOperator;
+        operatorsToUpdate[0] = operatorArray;
+
+        uint256 quorumUpdateBlockNumberBefore = registryCoordinator.quorumUpdateBlockNumber(defaultQuorumNumber);
+        require(quorumUpdateBlockNumberBefore != block.number, "bad test setup!");
+
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit QuorumBlockNumberUpdated(defaultQuorumNumber, block.number);
+        registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
+
+        uint256 quorumUpdateBlockNumberAfter = registryCoordinator.quorumUpdateBlockNumber(defaultQuorumNumber);
+        assertEq(quorumUpdateBlockNumberAfter, block.number, "quorumUpdateBlockNumber not set correctly");
+    }
+
+    function test_updateOperatorsForQuorum_twoOperators(uint256 pseudoRandomNumber) public {
+        // register 2 operators
+        uint32 numOperators = 2;
+        uint32 registrationBlockNumber = 200;
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
+        cheats.roll(registrationBlockNumber);
+        for (uint i = 0; i < numOperators; i++) {
+            BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
+            address operator = _incrementAddress(defaultOperator, i);
+            
+            _registerOperatorWithCoordinator(operator, quorumBitmap, pubKey);
+        }
+
+        address[][] memory operatorsToUpdate = new address[][](1);
+        address[] memory operatorArray = new address[](2);
+        // order the operator addresses in descending order, instead of ascending order
+        operatorArray[0] =  defaultOperator;
+        operatorArray[1] =  _incrementAddress(defaultOperator, 1);
+        operatorsToUpdate[0] = operatorArray;
+
+        uint256 quorumUpdateBlockNumberBefore = registryCoordinator.quorumUpdateBlockNumber(defaultQuorumNumber);
+        require(quorumUpdateBlockNumberBefore != block.number, "bad test setup!");
+
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit QuorumBlockNumberUpdated(defaultQuorumNumber, block.number);
+        registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
+
+        uint256 quorumUpdateBlockNumberAfter = registryCoordinator.quorumUpdateBlockNumber(defaultQuorumNumber);
+        assertEq(quorumUpdateBlockNumberAfter, block.number, "quorumUpdateBlockNumber not set correctly");
     }
 
     // @notice tests that the internal `_updateOperatorBitmap` function works as expected, for fuzzed inputs
