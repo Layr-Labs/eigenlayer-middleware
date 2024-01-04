@@ -1379,6 +1379,63 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
             emptyAVSRegSig
         );
     }
+}
 
+contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnitTests {
+    // @notice tests that the internal `_updateOperatorBitmap` function works as expected, for fuzzed inputs
+    function testFuzz_updateOperatorBitmapInternal_noPreviousEntries(uint192 newBitmap) public {
+        registryCoordinator._updateOperatorBitmapExternal(defaultOperatorId, newBitmap);
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))), 
+            keccak256(abi.encode(IRegistryCoordinator.QuorumBitmapUpdate({
+                quorumBitmap: uint192(newBitmap),
+                updateBlockNumber: uint32(block.number),
+                nextUpdateBlockNumber: 0
+            })))
+        );
+    }
+    // @notice tests that the internal `_updateOperatorBitmap` function works as expected, for fuzzed inputs
+    function testFuzz_updateOperatorBitmapInternal_previousEntryInCurrentBlock(uint192 newBitmap) public {
+        uint192 pastBitmap = 1;
+        testFuzz_updateOperatorBitmapInternal_noPreviousEntries(pastBitmap);
+
+        registryCoordinator._updateOperatorBitmapExternal(defaultOperatorId, newBitmap);
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))), 
+            keccak256(abi.encode(IRegistryCoordinator.QuorumBitmapUpdate({
+                quorumBitmap: uint192(newBitmap),
+                updateBlockNumber: uint32(block.number),
+                nextUpdateBlockNumber: 0
+            })))
+        );
+    }
+
+    // @notice tests that the internal `_updateOperatorBitmap` function works as expected, for fuzzed inputs
+    function testFuzz_updateOperatorBitmapInternal_previousEntryInPastBlock(uint192 newBitmap) public {
+        uint192 pastBitmap = 1;
+        testFuzz_updateOperatorBitmapInternal_noPreviousEntries(pastBitmap);
+
+        // advance the block number
+        uint256 previousBlockNumber = block.number;
+        cheats.roll(previousBlockNumber + 1);
+
+        registryCoordinator._updateOperatorBitmapExternal(defaultOperatorId, newBitmap);
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))), 
+            keccak256(abi.encode(IRegistryCoordinator.QuorumBitmapUpdate({
+                quorumBitmap: uint192(pastBitmap),
+                updateBlockNumber: uint32(previousBlockNumber),
+                nextUpdateBlockNumber: uint32(block.number)
+            })))
+        );
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 1))), 
+            keccak256(abi.encode(IRegistryCoordinator.QuorumBitmapUpdate({
+                quorumBitmap: uint192(newBitmap),
+                updateBlockNumber: uint32(block.number),
+                nextUpdateBlockNumber: 0
+            })))
+        );
+    }
 }
 
