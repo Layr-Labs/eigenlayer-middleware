@@ -1,0 +1,158 @@
+├── RegistryCoordinatorUnit.t.sol (*** denotes that integration tests are needed to validate path)
+│
+├── initialize
+│   ├── given that initialize has been called previously
+│   │   └── it should revert
+│   ├── given that the variable-length array input lengths don't all match
+│   │   └── it should revert
+│   └── it should set the storage variables correctly (owner, pauserRegistry, paused status, churnApprover, ejector, quorum params)
+│
+├── registerOperator()
+│   ├── given that operator registration is paused
+│   │   └── it should revert
+│   ├── given that the current number of operators for any of the quorums to register for already meets or exceeds the quorum's operator cap
+│   │   └── it should revert
+│   ├── given the operator has *not* previously registered a pubkey
+│   │   └── ***it should attempt to register the provided pubkey with the BLSApkRegistry
+│   ├── given that *has* previously registered a pubkey
+│   │   └── ***it should fetch the operator's pubkey from the BLSApkRegistry
+│   └── ***it should attempt to register the operator, via the `_registerOperator` function (see below)
+│
+├── registerOperatorWithChurn()
+│   ├── given that operator registration is paused
+│   │   └── it should revert
+│   ├── given that the provided operatorKickParams are not the same length as the provided quorumNumbers
+│   │   └── it should revert
+│   ├── given that the churnApprover did not sign the operatorKickParams and the caller's operatorID
+│   │   └── it should revert
+│   ├── given that the current number of operators for any of the quorums to register for already meets or exceeds the quorum's operator cap
+│   │   └── for each quorum, it should check that the new and to-be-kicked operators' stakes meet the configured requirements
+│   │       ├─ given that the configured requirements are not met
+│   │       │   └── it should revert
+│   │       └── it should deregister the to-be-kicked operator
+│   ├── given the operator has *not* previously registered a pubkey
+│   │   └── ***it should attempt to register the provided pubkey with the BLSApkRegistry
+│   ├── given that *has* previously registered a pubkey
+│   │   └── ***it should fetch the operator's pubkey from the BLSApkRegistry
+│   └── ***it should attempt to register the operator, via the `_registerOperator` function (see below)
+│
+├── deregisterOperator()
+│   ├── given that operator deregistration is paused
+│   │   └── it should revert
+│   └── ***it should attempt to deregister the caller, via the `_deregisterOperator` function (see below)
+│
+├── ejectOperator()
+│   ├── given that caller is not the ejector
+│   │   └── it should revert
+│   └── ***it should attempt to deregister the operator, via the `_deregisterOperator` function (see below)
+│
+├── updateOperators()
+│   ├── given that operator updates are paused
+│   │   └── it should revert
+│   └── ***for each operator, it should attempt to update the operator's stake information for all quorums
+│       that the operator is currently registered for, via the `_updateOperator` function (see below) 
+│
+├── updateOperatorsForQuorum()
+│   ├── given that operator updates are paused
+│   │   └── it should revert
+│   ├── given that any of the provided quorum numbers is for a non-existant quorum
+│   │   └── it should revert
+│   ├── given that the length of the provided array of operator lists does not match the length of the provided quorum numbers
+│   │   └── it should revert
+│   ├── given that the length of any provided list of operators does not match the current number of operators in that quorum
+│   │   └── it should revert
+│   ├── given that of any of the provided lists of operators contains an operator who is not currently registered for the quorum
+│   │   └── it should revert
+│   ├── given that of any of the provided lists of operators contains a duplicate
+│   │   └── it should revert
+│   ├── given that of any of the provided lists of operators is not in ascending address order
+│   │   └── it should revert
+│   └── ***for each operator, it should attempt to update the operator's stake information, via the `_updateOperator` function (see below)
+│          for each quorum, it should increase the quorumUpdateBlockNumber to the current block number
+│
+├── updateSocket()
+│   ├── given that the caller is not a registered operator
+│   │   └── it should revert
+│   └── it should emit an OperatorSocketUpdate event
+│
+├── createQuorum()
+│   ├── given that the caller is not a registered operator
+│   │   └── it should revert
+│   ├── given that the current quorum count meets or exceeds the MAX_QUORUM_COUNT
+│   │   └── it should revert
+│   └── it should set the OperatorSetParams for the new quorum
+│       *** it should initialize the new quorum on the StakeRegistry, IndexRegistry, and BLSApkRegistry
+│
+├── setOperatorSetParams()
+│   ├── given that the caller is not the owner
+│   │   └── it should revert
+│   ├── given that the quorum does not already exist
+│   │   └── it should revert
+│   └── it should set the OperatorSetParams for the quorum, and emit an event
+│
+├── setChurnApprover()
+│   ├── given that the caller is not the owner
+│   │   └── it should revert
+│   └── it should update the churnApprover address and emit an event
+│
+├── setEjector()
+│   ├── given that the caller is not the owner
+│   │   └── it should revert
+│   └── it should update the ejector address and emit an event
+│
+│
+├── getQuorumBitmapIndicesAtBlockNumber()
+│   ├── given that any of the operatorIDs was not registered at the block number
+│   │   └── it should revert
+│   └── it should return the proper index of the entry in each operatorID's quorum bitmap history
+│
+├── getQuorumBitmapAtBlockNumberByIndex()
+│   ├── given that the operatorID was not registered at the block number
+│   │   └── it should revert
+│   ├── given that the index specifies a bitmap that became invalid prior to the block number
+│   │   └── it should revert
+│   ├── given that the index specifies a bitmap that became valid after the block number
+│   │   └── it should revert
+│   └── it should return the quorum bitmap of the operatorID at the block number
+│
+├── _registerOperator() (internal function -- see mentions above)
+│   ├── given that no quorums are being registered for
+│   │   └── it should revert
+│   ├── given that any quorums being registered for do not (yet) exist
+│   │   └── it should revert
+│   ├── given that the operator is already registered for any of quorums being registered for
+│   │   └── it should revert
+│   ├── given that the operator is not already registered at the AVS level
+│   │   └── it should mark the operator as registered
+│   │       *** and call the serviceManager to register the operator on the EigenLayer level
+│   └── it should update the operator's bitmap history, via the `_updateOperatorBitmap` function (see below),
+│       with a new entry that includes the added quorums
+│       *** and call the BLSApkRegistry, StakeRegistry, and IndexRegistry to complete operator registration
+│
+├── _deregisterOperator() (internal function -- see mentions above)
+│   ├── given that the operator is not registered for the AVS
+│   │   └── it should revert
+│   ├── given that no quorums are being removed
+│   │   └── it should revert
+│   ├── given that any quorums being removed do not (yet) exist
+│   │   └── it should revert
+│   ├── given that the operator is *not* currently registered for any or all of quorums being removed
+│   │   └── it should revert
+│   ├── given that the operator is being removed from all quorums that they were registered for
+│   │   └── it should mark the operator as no longer registered
+│   │       *** and call the serviceManager to deregister the operator on the EigenLayer level
+│   └── it should update the operator's bitmap history, via the `_updateOperatorBitmap` function (see below),
+│       with a new entry that excludes the removed quorums
+│       *** and call the BLSApkRegistry, StakeRegistry, and IndexRegistry to complete operator deregistration
+│
+├── _updateOperator() (internal function -- see mentions above)
+│   ├── given that the operator is not actively registered
+│   │   └── it should do nothing ("no-op")
+│   └── *** it should call the StakeRegistry to make it perform a stake update on the operator
+│       *** and remove the operator from any quorums where the StakeRegistry returns that the operator
+│           no longer meets the requirements, via the `_deregisterOperator` function (see above)
+│
+└── _updateOperatorBitmap() (internal function -- see mentions above)
+    ├── given that the operator has no previous entries in their bitmap history OR given that the latest entry in the operator's bitmap history occurred in the current block
+    │   └── it should push a new entry with an "unset" (i.e. zero) nextUpdateBlock, and an updateBlockNumber of the current block
+    └── otherwise, it should only update the bitmap in the latest entry

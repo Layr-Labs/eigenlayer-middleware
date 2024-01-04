@@ -24,16 +24,36 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         _operatorInfo[operator].operatorId = operatorId;
     }
 
-    function recordOperatorQuorumBitmapUpdate(bytes32 operatorId, uint192 quorumBitmap) external {
-        uint256 operatorQuorumBitmapHistoryLength = _operatorBitmapHistory[operatorId].length;
-        if (operatorQuorumBitmapHistoryLength != 0) {
-            _operatorBitmapHistory[operatorId][operatorQuorumBitmapHistoryLength - 1].nextUpdateBlockNumber = uint32(block.number);
-        }
+    // @notice exposes the internal `_registerOperator` function, overriding all access controls
+    function _registerOperatorExternal(
+        address operator, 
+        bytes32 operatorId,
+        bytes calldata quorumNumbers,
+        string memory socket,
+        SignatureWithSaltAndExpiry memory operatorSignature
+    ) external returns (RegisterResults memory results) {
+        return _registerOperator(operator, operatorId, quorumNumbers, socket, operatorSignature);
+    }
 
-        _operatorBitmapHistory[operatorId].push(QuorumBitmapUpdate({
-            updateBlockNumber: uint32(block.number),
-            nextUpdateBlockNumber: 0,
-            quorumBitmap: quorumBitmap
-        }));
+    // @notice exposes the internal `_deregisterOperator` function, overriding all access controls
+    function _deregisterOperatorExternal(
+        address operator, 
+        bytes calldata quorumNumbers
+    ) external {
+        _deregisterOperator(operator, quorumNumbers);
+    }
+
+    // @notice exposes the internal `_updateOperator` function, overriding all access controls
+    function _updateOperatorExternal(
+        address operator,
+        OperatorInfo memory operatorInfo,
+        bytes memory quorumsToUpdate
+    ) external {
+        _updateOperator(operator, operatorInfo, quorumsToUpdate);
+    }
+
+    // @notice exposes the internal `_updateOperatorBitmap` function, overriding all access controls
+    function _updateOperatorBitmapExternal(bytes32 operatorId, uint192 quorumBitmap) external {
+        _updateOperatorBitmap(operatorId, quorumBitmap);
     }
 }
