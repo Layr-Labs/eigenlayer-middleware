@@ -307,13 +307,13 @@ contract IndexRegistry is IndexRegistryStorage {
         return _operatorCountHistory[quorumNumber][index];
     }
 
-    /// @notice Returns the most recent _operatorCountHistory entry for the specified quorumNumber
+    /// @notice Returns the most recent QuorumUpdate entry for the specified quorumNumber
     /// @dev Reverts if the quorum does not exist
     function getLatestQuorumUpdate(uint8 quorumNumber) external view returns (QuorumUpdate memory) {
         return _latestQuorumUpdate(quorumNumber);
     }
 
-    /// @notice Returns the most recent _operatorCountHistory entry for the specified quorumNumber
+    /// @notice Returns the most recent OperatorUpdate entry for the specified quorumNumber and index
     /// @dev Reverts if there is no update for the given index
     function getLatestOperatorUpdate(uint8 quorumNumber, uint32 index) external view returns (OperatorUpdate memory) {
         return _latestIndexUpdate(quorumNumber, index);
