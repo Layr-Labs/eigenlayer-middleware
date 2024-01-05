@@ -66,11 +66,17 @@ interface IIndexRegistry is IRegistry {
      */
     function initializeQuorum(uint8 quorumNumber) external;
 
-    /// @notice Returns the _indexHistory entry for the specified `operatorIndex` and `quorumNumber` at the specified `index`
+    /// @notice Returns the OperatorUpdate entry for the specified `operatorIndex` and `quorumNumber` at the specified `index`
     function getOperatorUpdateAtIndex(uint8 quorumNumber, uint32 operatorIndex, uint32 index) external view returns (OperatorUpdate memory);
 
-    /// @notice Returns the _operatorCountHistory entry for the specified `quorumNumber` at the specified `index`
+    /// @notice Returns the QuorumUpdate entry for the specified `quorumNumber` at the specified `index`
     function getQuorumUpdateAtIndex(uint8 quorumNumber, uint32 index) external view returns (QuorumUpdate memory);
+
+    /// @notice Returns the most recent OperatorUpdate entry for the specified quorumNumber and index
+    function getLatestOperatorUpdate(uint8 quorumNumber, uint32 index) external view returns (OperatorUpdate memory);
+
+    /// @notice Returns the most recent QuorumUpdate entry for the specified quorumNumber
+    function getLatestQuorumUpdate(uint8 quorumNumber) external view returns (QuorumUpdate memory);
 
     /// @notice Returns the current number of operators of this service for `quorumNumber`.
     function totalOperatorsForQuorum(uint8 quorumNumber) external view returns (uint32);
