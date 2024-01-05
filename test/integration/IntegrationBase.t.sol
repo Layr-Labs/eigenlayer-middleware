@@ -9,37 +9,15 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "src/libraries/BitmapUtils.sol";
 import "src/libraries/BN254.sol";
 
-import "test/integration/IntegrationDeployer.t.sol";
+import "test/integration/IntegrationConfig.t.sol";
 import "test/integration/TimeMachine.t.sol";
 import "test/integration/User.t.sol";
 
-abstract contract IntegrationBase is IntegrationDeployer {
+abstract contract IntegrationBase is IntegrationConfig {
 
     using Strings for *;
     using BitmapUtils for *;
     using BN254 for *;
-
-    uint numOperators = 0;
-
-    /**
-     * Gen/Init methods:
-     */
-
-    function _newRandomOperator() internal returns (User, IStrategy[] memory, uint[] memory) {
-        string memory operatorName = string.concat("Operator", numOperators.toString());
-        numOperators++;
-
-        (User operator, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser(operatorName);
-        
-        operator.registerAsOperator();
-        operator.depositIntoEigenlayer(strategies, tokenBalances);
-
-        assert_Snap_Added_StakerShares(operator, strategies, tokenBalances, "_newRandomOperator: failed to add delegatable shares");
-        assert_Snap_Added_OperatorShares(operator, strategies, tokenBalances, "_newRandomOperator: failed to award shares to operator");
-        assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
-
-        return (operator, strategies, tokenBalances);
-    }
 
     /// RegistryCoordinator:
 
@@ -52,7 +30,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     /// @dev Also checks that the user has NEVER_REGISTERED status
     function assert_HasNoOperatorInfo(User user, string memory err) internal {
-        IRegistryCoordinator.OperatorInfo memory info = registryCoordinator.getOperator(address(user));
+        IRegistryCoordinator.OperatorInfo memory info = _getOperatorInfo(user);
 
         assertEq(info.operatorId, bytes32(0), err);
         assertTrue(info.status == IRegistryCoordinator.OperatorStatus.NEVER_REGISTERED, err);
@@ -132,8 +110,20 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     /// StakeRegistry:
 
-    /// @dev Checks that the user meets the minimum stake required for each quorum
-    function assert_MeetsMinimumShares(User user, bytes memory quorums, string memory err) internal {
+    function assert_NoExistingStake(User user, bytes memory quorums, string memory err) internal {
+        bytes32 operatorId = user.operatorId();
+
+        for (uint i = 0; i < quorums.length; i++) {
+            uint8 quorum = uint8(quorums[i]);
+
+            uint96 curStake = stakeRegistry.getCurrentStake(operatorId, quorum);
+
+            assertEq(curStake, 0, err);
+        }
+    }
+
+    /// @dev Checks that the user meets the minimum weight required for each quorum
+    function assert_MeetsMinimumWeight(User user, bytes memory quorums, string memory err) internal {
         for (uint i = 0; i < quorums.length; i++) {
             uint8 quorum = uint8(quorums[i]);
 
@@ -141,6 +131,20 @@ abstract contract IntegrationBase is IntegrationDeployer {
             uint96 weight = stakeRegistry.weightOfOperatorForQuorum(quorum, address(user));
 
             assertTrue(weight >= minimum, err);
+        }
+    }
+
+    /// @dev Checks that the user meets the minimum stake required for each quorum
+    function assert_HasAtLeastMinimumStake(User user, bytes memory quorums, string memory err) internal {
+        bytes32 operatorId = user.operatorId();
+
+        for (uint i = 0; i < quorums.length; i++) {
+            uint8 quorum = uint8(quorums[i]);
+
+            uint96 minimum = stakeRegistry.minimumStakeForQuorum(quorum);
+            uint96 stake = stakeRegistry.getCurrentStake(operatorId, quorum);
+
+            assertTrue(stake >= minimum, err);
         }
     }
 
@@ -202,6 +206,23 @@ abstract contract IntegrationBase is IntegrationDeployer {
         assertTrue(curBitmap == prevBitmap.minus(quorumsRemoved), err);
     }
 
+    function assert_Snap_Unchanged_OperatorInfo(User user, string memory err) internal {
+        IRegistryCoordinator.OperatorInfo memory curInfo = _getOperatorInfo(user);
+        IRegistryCoordinator.OperatorInfo memory prevInfo = _getPrevOperatorInfo(user);
+
+        assertEq(prevInfo.operatorId, curInfo.operatorId, err);
+        assertTrue(prevInfo.status == curInfo.status, err);
+    }
+
+    function assert_Snap_Unchanged_QuorumBitmap(User user, string memory err) internal {
+        bytes32 operatorId = user.operatorId();
+        
+        uint192 curBitmap = _getQuorumBitmap(operatorId);
+        uint192 prevBitmap = _getPrevQuorumBitmap(operatorId);
+
+        assertEq(curBitmap, prevBitmap, err);
+    }
+
     /// @dev Check that the user's pubkey was added to each quorum's apk
     function assert_Snap_Added_QuorumApk(User user, bytes memory quorums, string memory err) internal {
         BN254.G1Point memory userPubkey = user.pubkeyG1();
@@ -229,9 +250,64 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
-    /// @dev After registering for quorums, check that the operator's weight
-    /// was correctly added.
-    function assert_Snap_Added_OperatorStake(
+    function assert_Snap_Unchanged_QuorumApk(bytes memory quorums, string memory err) internal {
+        BN254.G1Point[] memory curApks = _getQuorumApks(quorums);
+        BN254.G1Point[] memory prevApks = _getPrevQuorumApks(quorums);
+
+        for (uint i = 0; i < quorums.length; i++) {
+            assertEq(curApks[i].X, prevApks[i].X, err);
+            assertEq(curApks[i].Y, prevApks[i].Y, err);
+        }
+    }
+
+    /// @dev Check that specific weights were added to the operator and total stakes for each quorum
+    function assert_Snap_AddedWeightToStakes(
+        User user, 
+        bytes memory quorums,
+        uint96[] memory addedWeights,
+        string memory err
+    ) internal {
+        uint96[] memory curOperatorStakes = _getStakes(user, quorums);
+        uint96[] memory prevOperatorStakes = _getPrevStakes(user, quorums);
+
+        uint96[] memory curTotalStakes = _getTotalStakes(quorums);
+        uint96[] memory prevTotalStakes = _getPrevTotalStakes(quorums);
+
+        for (uint i = 0; i < quorums.length; i++) {
+            assertEq(curOperatorStakes[i], prevOperatorStakes[i] + addedWeights[i], err);
+            assertEq(curTotalStakes[i], prevTotalStakes[i] + addedWeights[i], err);
+        }
+    }
+
+    /// @dev Check that the operator's stake weight was added to the operator and total
+    /// stakes for each quorum
+    function assert_Snap_AddedOperatorWeight(
+        User user, 
+        bytes memory quorums,
+        string memory err
+    ) internal {
+        uint96[] memory addedWeights = _getWeights(user, quorums);
+
+        assert_Snap_AddedWeightToStakes(user, quorums, addedWeights, err);
+    }
+
+    // function assert_Snap_Removed_OperatorStake(
+    //     User user, 
+    //     bytes memory quorums,
+    //     string memory err
+    // ) internal {
+    //     uint96[] memory curStakes = _getStakes(user, quorums);
+    //     uint96[] memory prevStakes = _getPrevStakes(user, quorums);
+
+    //     // uint96[] memory curWeights = _getWeights(user, quorums);
+    //     uint96[] memory prevWeights = _getPrevWeights(user, quorums);
+
+    //     for (uint i = 0; i < quorums.length; i++) {
+    //         assertEq(curStakes[i], prevStakes[i] - prevWeights[i], err);
+    //     }
+    // }
+
+    function assert_Snap_Unchanged_OperatorStake(
         User user, 
         bytes memory quorums,
         string memory err
@@ -239,48 +315,64 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint96[] memory curStakes = _getStakes(user, quorums);
         uint96[] memory prevStakes = _getPrevStakes(user, quorums);
 
+        for (uint i = 0; i < quorums.length; i++) {
+            assertEq(curStakes[i], prevStakes[i], err);
+        }
+    }
+
+    /// @dev Check that a user's calculated weight DID NOT DECREASE since the last snapshot
+    function assert_Snap_Increased_OperatorWeight(
+        User user,
+        bytes memory quorums,
+        string memory err
+    ) internal {
         uint96[] memory curWeights = _getWeights(user, quorums);
         uint96[] memory prevWeights = _getPrevWeights(user, quorums);
 
         for (uint i = 0; i < quorums.length; i++) {
-            assertEq(curStakes[i], prevStakes[i] + prevWeights[i], err);
-            // Sanity check -- current and previous weight should be the same
-            assertEq(curWeights[i], prevWeights[i], "assert_Snap_Added_OperatorStake: weight should not have changed");
-            // Sanity check -- prev stake should be 0 (cur can still be zero if the quorum has no minimum)
-            assertEq(prevStakes[i], 0, "assert_Snap_Added_OperatorStake: previous weight should be been zero");
+            assertTrue(curWeights[i] >= prevWeights[i], err);
         }
     }
 
-    function assert_Snap_Removed_OperatorStake(
-        User user, 
+    /// @dev Check that a user's calculated weight DID NOT INCREASE since the last snapshot
+    function assert_Snap_Decreased_OperatorWeight(
+        User user,
         bytes memory quorums,
         string memory err
     ) internal {
-        uint96[] memory curStakes = _getStakes(user, quorums);
-        uint96[] memory prevStakes = _getPrevStakes(user, quorums);
-
-        // uint96[] memory curWeights = _getWeights(user, quorums);
+        uint96[] memory curWeights = _getWeights(user, quorums);
         uint96[] memory prevWeights = _getPrevWeights(user, quorums);
 
         for (uint i = 0; i < quorums.length; i++) {
-            assertEq(curStakes[i], prevStakes[i] - prevWeights[i], err);
+            assertTrue(curWeights[i] <= prevWeights[i], err);
+        }
+    }
+
+    function assert_Snap_Unchanged_OperatorWeight(
+        User user,
+        bytes memory quorums,
+        string memory err
+    ) internal {
+        uint96[] memory curWeights = _getWeights(user, quorums);
+        uint96[] memory prevWeights = _getPrevWeights(user, quorums);
+
+        for (uint i = 0; i < quorums.length; i++) {
+            assertEq(curWeights[i], prevWeights[i], err);
         }
     }
 
     /// @dev After registering for quorums, check that the operator's stake
     /// was added to the total stake for the quorum
     function assert_Snap_Added_TotalStake(
-        User user, 
         bytes memory quorums,
+        uint96[] memory addedWeights,
         string memory err
     ) internal {
-        uint96[] memory curOperatorStakes = _getStakes(user, quorums);
-
         uint96[] memory curTotalStakes = _getTotalStakes(quorums);
         uint96[] memory prevTotalStakes = _getPrevTotalStakes(quorums);
 
         for (uint i = 0; i < quorums.length; i++) {
-            assertEq(curTotalStakes[i], prevTotalStakes[i] + curOperatorStakes[i], err);
+            assertEq(curTotalStakes[i], prevTotalStakes[i] + addedWeights[i], err);
         }
     }
 
@@ -297,6 +389,18 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         for (uint i = 0; i < quorums.length; i++) {
             assertEq(curTotalStakes[i], prevTotalStakes[i] - prevOperatorStakes[i], err);
+        }
+    }
+
+    function assert_Snap_Unchanged_TotalStake(
+        bytes memory quorums,
+        string memory err
+    ) internal {
+        uint96[] memory curTotalStakes = _getTotalStakes(quorums);
+        uint96[] memory prevTotalStakes = _getPrevTotalStakes(quorums);
+
+        for (uint i = 0; i < quorums.length; i++) {
+            assertEq(curTotalStakes[i], prevTotalStakes[i], err);
         }
     }
 
@@ -319,6 +423,15 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
+    function assert_Snap_Unchanged_OperatorCount(bytes memory quorums, string memory err) internal {
+        uint32[] memory curOperatorCounts = _getOperatorCounts(quorums);
+        uint32[] memory prevOperatorCounts = _getPrevOperatorCounts(quorums);
+        
+        for (uint i = 0; i < quorums.length; i++) {
+            assertEq(curOperatorCounts[i], prevOperatorCounts[i], err);
+        }
+    }
+
     /// @dev After registering for quorums, checks that the list of operators calculated
     /// for each quorum grew by one
     function assert_Snap_Added_OperatorListEntry(bytes memory quorums, string memory err) internal {
@@ -337,6 +450,16 @@ abstract contract IntegrationBase is IntegrationDeployer {
         for (uint i = 0; i < quorums.length; i++) {
             assertEq(curOperatorLists[i].length, prevOperatorLists[i].length - 1, err);
         }
+    }
+
+    function assert_Snap_Unchanged_OperatorListEntry(bytes memory quorums, string memory err) internal {
+        bytes32[][] memory curOperatorLists = _getOperatorLists(quorums);
+        bytes32[][] memory prevOperatorLists = _getPrevOperatorLists(quorums);
+
+        bytes32 curHash = keccak256(abi.encode(curOperatorLists));
+        bytes32 prevHash = keccak256(abi.encode(prevOperatorLists));
+
+        assertEq(curHash, prevHash, err);
     }
 
     /*******************************************************************************
@@ -443,6 +566,13 @@ abstract contract IntegrationBase is IntegrationDeployer {
                                 UTILITY METHODS
     *******************************************************************************/
 
+    function _calcRemaining(bytes memory start, bytes memory removed) internal pure returns (bytes memory) {
+        uint startBM = start.bytesArrayToBitmap();
+        uint removeBM = removed.bytesArrayToBitmap();
+
+        return startBM.minus(removeBM).bitmapToBytesArray();
+    }
+
     /// @dev For some strategies/underlying token balances, calculate the expected shares received
     /// from depositing all tokens
     function _calculateExpectedShares(IStrategy[] memory strategies, uint[] memory tokenBalances) internal returns (uint[] memory) {
@@ -546,6 +676,14 @@ abstract contract IntegrationBase is IntegrationDeployer {
     
     /// RegistryCoordinator:
 
+    function _getOperatorInfo(User user) internal view returns (IRegistryCoordinator.OperatorInfo memory) {
+        return registryCoordinator.getOperator(address(user));
+    }
+
+    function _getPrevOperatorInfo(User user) internal timewarp() returns (IRegistryCoordinator.OperatorInfo memory) {
+        return _getOperatorInfo(user);
+    }
+
     function _getQuorumBitmap(bytes32 operatorId) internal view returns (uint192) {
         return registryCoordinator.getCurrentQuorumBitmap(operatorId);
     }
@@ -599,6 +737,28 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function _getPrevWeights(User user, bytes memory quorums) internal timewarp() returns (uint96[] memory) {
         return _getWeights(user, quorums);
+    }
+
+    /// @dev Calculates the amount added to the user's stake weight for each quorum since the last snapshot
+    /// NOTE: Fails if the user's stake weight was reduced
+    function _getAddedWeight(User user, bytes memory quorums) internal returns (uint96[] memory) {
+        uint96[] memory curWeights = _getWeights(user, quorums);
+        uint96[] memory prevWeights = _getPrevWeights(user, quorums);
+
+        uint96[] memory addedWeights = new uint96[](quorums.length);
+
+        for (uint i = 0; i < quorums.length; i++) {
+            uint96 curWeight = curWeights[i];
+            uint96 prevWeight = prevWeights[i];
+
+            if (curWeight < prevWeight) {
+                revert("_getAddedWeight: expected positive weight delta");
+            }
+
+            addedWeights[i] = curWeight - prevWeight;
+        }
+
+        return addedWeights;
     }
 
     function _getTotalStakes(bytes memory quorums) internal view returns (uint96[] memory) {
