@@ -2,6 +2,7 @@
 pragma solidity =0.8.12;
 
 import "forge-std/Test.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 // Interfaces
 import "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
@@ -31,6 +32,7 @@ interface IUserDeployer {
 contract User is Test {
 
     using BN254 for *;
+    using Strings for *;
 
     Vm cheats = Vm(HEVM_ADDRESS);
 
@@ -97,7 +99,7 @@ contract User is Test {
      */
 
     function registerOperator(bytes calldata quorums) public createSnapshot virtual returns (bytes32) {
-        emit log(_name(".registerOperator"));
+        _log("registerOperator", quorums);
 
         registryCoordinator.registerOperator({
             quorumNumbers: quorums,
@@ -110,11 +112,18 @@ contract User is Test {
     }
 
     function deregisterOperator(bytes calldata quorums) public createSnapshot virtual {
-        emit log(_name(".deregisterOperator"));
+        _log("deregisterOperator", quorums);
 
-        registryCoordinator.deregisterOperator({
-            quorumNumbers: quorums
-        });
+        registryCoordinator.deregisterOperator(quorums);
+    }
+
+    function updateStakes() public createSnapshot virtual {
+        _log("updateStakes");
+
+        address[] memory addrs = new address[](1);
+        addrs[0] = address(this);
+
+        registryCoordinator.updateOperators(addrs);
     }
 
     /**
@@ -122,7 +131,7 @@ contract User is Test {
      */
 
     function registerAsOperator() public createSnapshot virtual {
-        emit log(_name(".registerAsOperator (core)"));
+        _log("registerAsOperator (core)");
 
         IDelegationManager.OperatorDetails memory details = IDelegationManager.OperatorDetails({
             earningsReceiver: address(this),
@@ -135,7 +144,7 @@ contract User is Test {
 
     // Deposit LSTs into the StrategyManager. This setup does not use the EPMgr or native ETH.
     function depositIntoEigenlayer(IStrategy[] memory strategies, uint[] memory tokenBalances) public createSnapshot virtual {
-        emit log(_name(".depositIntoEigenlayer (core)"));
+        _log("depositIntoEigenLayer (core)");
 
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
@@ -147,13 +156,21 @@ contract User is Test {
         }
     }
 
-    function queueWithdrawals(
-        IStrategy[] memory strategies, 
-        uint[] memory shares
-    ) public createSnapshot virtual returns (IDelegationManager.Withdrawal[] memory) {
-        emit log(_name(".queueWithdrawals (core)"));
+    function exitEigenlayer() public createSnapshot virtual returns (IStrategy[] memory, uint[] memory) {
+        _log("exitEigenlayer (core)");
 
-        revert("TODO"); 
+        (IStrategy[] memory strategies, uint[] memory shares) = delegationManager.getDelegatableShares(address(this));
+
+        IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
+        params[0] = IDelegationManager.QueuedWithdrawalParams({
+            strategies: strategies,
+            shares: shares,
+            withdrawer: address(this)
+        });
+
+        delegationManager.queueWithdrawals(params);
+
+        return (strategies, shares);
     }
 
     /**
@@ -192,7 +209,40 @@ contract User is Test {
         return signature;
     }
 
-    function _name(string memory s) internal view returns (string memory) {
-        return string.concat(NAME, s);
+    // Operator0.registerOperator
+    function _log(string memory s) internal virtual {
+        emit log(string.concat(NAME, ".", s));
     }
+
+    // Operator0.registerOperator: [0x00, 0x01, 0x02, ...]
+    function _log(string memory s, bytes calldata quorums) internal virtual {
+        emit log_named_bytes(string.concat(NAME, ".", s), quorums);
+    }
+}
+
+contract User_AltMethods is User {
+
+    constructor(string memory name, uint _privKey, IBLSApkRegistry.PubkeyRegistrationParams memory _pubkeyParams) 
+        User(name, _privKey, _pubkeyParams) {}
+
+    /// @dev Rather than calling deregisterOperator, this pranks the ejector and calls
+    /// ejectOperator
+    function deregisterOperator(bytes calldata quorums) public createSnapshot virtual override {
+        _log("deregisterOperator (eject)", quorums);
+
+        address ejector = registryCoordinator.ejector();
+
+        cheats.prank(ejector);
+        registryCoordinator.ejectOperator(address(this), quorums);
+    }
+
+    // /// @dev Calls updateOperatorsForQuorum
+    // function updateStakes() public createSnapshot virtual {
+    //     _log("updateStakes");
+
+    //     address[] memory addrs = new address[](1);
+    //     addrs[0] = address(this);
+
+    //     registryCoordinator.updateOperators(addrs);
+    // }
 }
