@@ -47,11 +47,6 @@ contract ECDSARegistryCoordinator is
         bytes32 indexed operatorId
     );
 
-    event OperatorSetParamsUpdated(
-        uint8 indexed quorumNumber,
-        OperatorSetParam operatorSetParams
-    );
-
     event EjectorUpdated(address prevEjector, address newEjector);
 
     /// @notice emitted when all the operators for a quorum are updated at once
@@ -91,8 +86,6 @@ contract ECDSARegistryCoordinator is
         keccak256("ECDSAPubkeyRegistration(address operator)");
     /// @notice The maximum value of a quorum bitmap
     uint256 internal constant MAX_QUORUM_BITMAP = type(uint256).max;
-    /// @notice The basis point denominator
-    uint16 internal constant BIPS_DENOMINATOR = 10000;
     /// @notice Index for flag that pauses operator registration
     uint8 internal constant PAUSED_REGISTER_OPERATOR = 0;
     /// @notice Index for flag that pauses operator deregistration
@@ -121,8 +114,6 @@ contract ECDSARegistryCoordinator is
     mapping(bytes32 => address) operatorIdToOperator;
     mapping(uint8 => uint32) public totalOperatorsForQuorum;
 
-    /// @notice the dynamic-length array of the registries this coordinator is coordinating
-    address[] public registries;
     /// @notice the address of the entity allowed to eject operators from the AVS
     address public ejector;
 
@@ -171,9 +162,6 @@ contract ECDSARegistryCoordinator is
         _transferOwnership(_initialOwner);
         _initializePauser(_pauserRegistry, _initialPausedStatus);
         _setEjector(_ejector);
-
-        // Add registry contracts to the registries array
-        registries.push(address(stakeRegistry));
 
         // Create quorums
         for (uint256 i = 0; i < _operatorSetParams.length; i++) {
@@ -345,19 +333,6 @@ contract ECDSARegistryCoordinator is
         IStakeRegistry.StrategyParams[] memory strategyParams
     ) external virtual onlyOwner {
         _createQuorum(operatorSetParams, minimumStake, strategyParams);
-    }
-
-    /**
-     * @notice Updates a quorum's OperatorSetParams
-     * @param quorumNumber is the quorum number to set the maximum number of operators for
-     * @param operatorSetParams is the parameters of the operator set for the `quorumNumber`
-     * @dev only callable by the owner
-     */
-    function setOperatorSetParams(
-        uint8 quorumNumber,
-        OperatorSetParam memory operatorSetParams
-    ) external onlyOwner quorumExists(quorumNumber) {
-        _setOperatorSetParams(quorumNumber, operatorSetParams);
     }
 
     /**
@@ -593,34 +568,9 @@ contract ECDSARegistryCoordinator is
     }
 
     /**
-     * @notice Returns the stake threshold required for an incoming operator to replace an existing operator
-     * The incoming operator must have more stake than the return value.
-     */
-    function _individualKickThreshold(
-        uint96 operatorStake,
-        OperatorSetParam memory setParams
-    ) internal pure returns (uint96) {
-        return
-            (operatorStake * setParams.kickBIPsOfOperatorStake) /
-            BIPS_DENOMINATOR;
-    }
-
-    /**
-     * @notice Returns the total stake threshold required for an operator to remain in a quorum.
-     * The operator must have at least the returned stake amount to keep their position.
-     */
-    function _totalKickThreshold(
-        uint96 totalStake,
-        OperatorSetParam memory setParams
-    ) internal pure returns (uint96) {
-        return (totalStake * setParams.kickBIPsOfTotalStake) / BIPS_DENOMINATOR;
-    }
-
-    /**
      * @notice Creates and initializes a quorum in each registry contract
      */
     function _createQuorum(
-        OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
         IStakeRegistry.StrategyParams[] memory strategyParams
     ) internal {
@@ -636,7 +586,6 @@ contract ECDSARegistryCoordinator is
         uint8 quorumNumber = prevQuorumCount;
 
         // Initialize the quorum here and in each registry
-        _setOperatorSetParams(quorumNumber, operatorSetParams);
         stakeRegistry.initializeQuorum(
             quorumNumber,
             minimumStake,
@@ -720,11 +669,6 @@ contract ECDSARegistryCoordinator is
         bytes32 operatorId
     ) external view returns (uint256) {
         return _currentOperatorBitmap(operatorId);
-    }
-
-    /// @notice Returns the number of registries
-    function numRegistries() external view returns (uint256) {
-        return registries.length;
     }
 
     /**
