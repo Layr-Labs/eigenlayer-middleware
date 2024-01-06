@@ -5,15 +5,15 @@ import {ECDSARegistryCoordinator} from "./ECDSARegistryCoordinator.sol";
 import {ECDSAStakeRegistry, IDelegationManager} from "./ECDSAStakeRegistry.sol";
 import {EIP1271SignatureUtils} from "eigenlayer-contracts/src/contracts/libraries/EIP1271SignatureUtils.sol";
 
-import {BitmapUtils} from "./libraries/BitmapUtils.sol";
+import {BitmapUtils} from "../libraries/BitmapUtils.sol";
 
 /**
- * @title Used for checking BLS aggregate signatures from the operators of a `BLSRegistry`.
+ * @title Used for checking ECDSA signatures from the operators of a `ECDSARegistry`.
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This is the contract for checking the validity of aggregate operator signatures.
  */
-contract BLSSignatureChecker {    
+contract ECDSASignatureChecker {    
 
     /**
      * @notice this data structure is used for recording the details on the total stake of the registered
@@ -39,7 +39,7 @@ contract BLSSignatureChecker {
     bool public staleStakesForbidden;
 
     modifier onlyCoordinatorOwner() {
-        require(msg.sender == registryCoordinator.owner(), "BLSSignatureChecker.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator");
+        require(msg.sender == registryCoordinator.owner(), "ECDSASignatureChecker.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator");
         _;
     }
 
@@ -98,7 +98,7 @@ contract BLSSignatureChecker {
     {
         require(
             signerIds.length == signatures.length,
-            "BLSSignatureChecker.checkSignatures: signature input length mismatch"
+            "ECDSASignatureChecker.checkSignatures: signature input length mismatch"
         );
         // For each quorum, we're also going to query the total stake for all registered operators
         // at the referenceBlockNumber, and derive the stake held by signers by subtracting out
@@ -150,7 +150,7 @@ contract BLSSignatureChecker {
                 if (_staleStakesForbidden) {
                     require(
                         registryCoordinator.quorumUpdateBlockNumber(uint8(quorumNumbers[i])) + withdrawalDelayBlocks >= block.number,
-                        "BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within withdrawalDelayBlocks window"
+                        "ECDSASignatureChecker.checkSignatures: StakeRegistry updates must be within withdrawalDelayBlocks window"
                     );
                 }
 
