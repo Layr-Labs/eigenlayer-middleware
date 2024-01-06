@@ -10,7 +10,6 @@ import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPa
 import {Pausable} from "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 
-import {ISocketUpdater} from "../interfaces/ISocketUpdater.sol";
 import {IStakeRegistry} from "../interfaces/IStakeRegistry.sol";
 import {IServiceManager} from "../interfaces/IServiceManager.sol";
 import {BitmapUtils} from "../libraries/BitmapUtils.sol";
@@ -30,7 +29,6 @@ contract ECDSARegistryCoordinator is
     Initializable,
     Pausable,
     OwnableUpgradeable,
-    ISocketUpdater,
     ISignatureUtils
 {
     using BitmapUtils for *;
@@ -52,11 +50,6 @@ contract ECDSARegistryCoordinator is
     event OperatorSetParamsUpdated(
         uint8 indexed quorumNumber,
         OperatorSetParam operatorSetParams
-    );
-
-    event ChurnApproverUpdated(
-        address prevChurnApprover,
-        address newChurnApprover
     );
 
     event EjectorUpdated(address prevEjector, address newEjector);
@@ -87,38 +80,12 @@ contract ECDSARegistryCoordinator is
         OperatorStatus status;
     }
 
-    /**
-     * @notice Data structure for storing operator set params for a given quorum. Specifically the
-     * `maxOperatorCount` is the maximum number of operators that can be registered for the quorum,
-     * `kickBIPsOfOperatorStake` is the basis points of a new operator needs to have of an operator they are trying to kick from the quorum,
-     * and `kickBIPsOfTotalStake` is the basis points of the total stake of the quorum that an operator needs to be below to be kicked.
-     */
-    struct OperatorSetParam {
-        uint32 maxOperatorCount;
-        uint16 kickBIPsOfOperatorStake;
-        uint16 kickBIPsOfTotalStake;
-    }
-
-    /**
-     * @notice Data structure for the parameters needed to kick an operator from a quorum with number `quorumNumber`, used during registration churn.
-     * `operator` is the address of the operator to kick
-     */
-    struct OperatorKickParam {
-        uint8 quorumNumber;
-        address operator;
-    }
-
     // TODO: doument
     struct ECDSAPubkeyRegistrationParams {
         address signingAddress;
         SignatureWithSaltAndExpiry signatureAndExpiry;
     }
 
-    /// @notice The EIP-712 typehash for the `DelegationApproval` struct used by the contract
-    bytes32 public constant OPERATOR_CHURN_APPROVAL_TYPEHASH =
-        keccak256(
-            "OperatorChurnApproval(bytes32 registeringOperatorId,OperatorKickParam[] operatorKickParams)OperatorKickParam(address operator,bytes32[] operatorIdsToSwap)"
-        );
     /// @notice The EIP-712 typehash used for registering ECDSA public keys
     bytes32 public constant PUBKEY_REGISTRATION_TYPEHASH =
         keccak256("ECDSAPubkeyRegistration(address operator)");
@@ -143,14 +110,10 @@ contract ECDSARegistryCoordinator is
 
     /// @notice the current number of quorums supported by the registry coordinator
     uint8 public quorumCount;
-    /// @notice maps quorum number => operator cap and kick params
-    mapping(uint8 => OperatorSetParam) internal _quorumParams;
     /// @notice maps operator id => current quorums they are registered for
     mapping(bytes32 => uint256) public operatorBitmap;
     /// @notice maps operator address => operator id and status
     mapping(address => OperatorInfo) internal _operatorInfo;
-    /// @notice whether the salt has been used for an operator churn approval
-    mapping(bytes32 => bool) public isChurnApproverSaltUsed;
     /// @notice mapping from quorum number to the latest block that all quorums were updated all at once
     mapping(uint8 => uint256) public quorumUpdateBlockNumber;
 
@@ -160,8 +123,6 @@ contract ECDSARegistryCoordinator is
 
     /// @notice the dynamic-length array of the registries this coordinator is coordinating
     address[] public registries;
-    /// @notice the address of the entity allowed to sign off on operators getting kicked out of the AVS during registration
-    address public churnApprover;
     /// @notice the address of the entity allowed to eject operators from the AVS
     address public ejector;
 
@@ -193,7 +154,6 @@ contract ECDSARegistryCoordinator is
 
     function initialize(
         address _initialOwner,
-        address _churnApprover,
         address _ejector,
         IPauserRegistry _pauserRegistry,
         uint256 _initialPausedStatus,
@@ -210,7 +170,6 @@ contract ECDSARegistryCoordinator is
         // Initialize roles
         _transferOwnership(_initialOwner);
         _initializePauser(_pauserRegistry, _initialPausedStatus);
-        _setChurnApprover(_churnApprover);
         _setEjector(_ejector);
 
         // Add registry contracts to the registries array
@@ -234,14 +193,12 @@ contract ECDSARegistryCoordinator is
      * @notice Registers msg.sender as an operator for one or more quorums. If any quorum reaches its maximum
      * operator capacity, this method will fail.
      * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for
-     * @param socket is the socket of the operator
      * @param params TODO: document
      * @dev the `params` input param is ignored if the caller has previously registered a public key
      * @param operatorSignature is the signature of the operator used by the AVS to register the operator in the delegation manager
      */
     function registerOperator(
         bytes calldata quorumNumbers,
-        string calldata socket,
         ECDSAPubkeyRegistrationParams memory params,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
@@ -256,100 +213,8 @@ contract ECDSARegistryCoordinator is
             operator: msg.sender,
             operatorId: operatorId,
             quorumNumbers: quorumNumbers,
-            socket: socket,
             operatorSignature: operatorSignature
         }).numOperatorsPerQuorum;
-
-        for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            uint8 quorumNumber = uint8(quorumNumbers[i]);
-
-            /**
-             * The new operator count for each quorum may not exceed the configured maximum
-             * If it does, use `registerOperatorWithChurn` instead.
-             */
-            require(
-                numOperatorsPerQuorum[i] <=
-                    _quorumParams[quorumNumber].maxOperatorCount,
-                "RegistryCoordinator.registerOperator: operator count exceeds maximum"
-            );
-        }
-    }
-
-    /**
-     * @notice Registers msg.sender as an operator for one or more quorums. If any quorum reaches its maximum operator
-     * capacity, `operatorKickParams` is used to replace an old operator with the new one.
-     * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for
-     * @param params TODO: document
-     * @param operatorKickParams are used to determine which operator is removed to maintain quorum capacity as the
-     * operator registers for quorums.
-     * @param churnApproverSignature is the signature of the churnApprover on the operator kick params
-     * @param operatorSignature is the signature of the operator used by the AVS to register the operator in the delegation manager
-     * @dev the `params` input param is ignored if the caller has previously registered a public key
-     */
-    function registerOperatorWithChurn(
-        bytes calldata quorumNumbers,
-        string calldata socket,
-        ECDSAPubkeyRegistrationParams memory params,
-        OperatorKickParam[] calldata operatorKickParams,
-        SignatureWithSaltAndExpiry memory churnApproverSignature,
-        SignatureWithSaltAndExpiry memory operatorSignature
-    ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        require(
-            operatorKickParams.length == quorumNumbers.length,
-            "RegistryCoordinator.registerOperatorWithChurn: input length mismatch"
-        );
-
-        /**
-         * IF the operator has never registered a pubkey before, THEN register their pubkey
-         * OTHERWISE, simply ignore the provided `params` input
-         */
-        bytes32 operatorId = _getOrCreateOperatorId(msg.sender, params);
-
-        // Verify the churn approver's signature for the registering operator and kick params
-        _verifyChurnApproverSignature({
-            registeringOperatorId: operatorId,
-            operatorKickParams: operatorKickParams,
-            churnApproverSignature: churnApproverSignature
-        });
-
-        // Register the operator in each of the registry contracts
-        RegisterResults memory results = _registerOperator({
-            operator: msg.sender,
-            operatorId: operatorId,
-            quorumNumbers: quorumNumbers,
-            socket: socket,
-            operatorSignature: operatorSignature
-        });
-
-        for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            // reference: uint8 quorumNumber = uint8(quorumNumbers[i]);
-            OperatorSetParam memory operatorSetParams = _quorumParams[
-                uint8(quorumNumbers[i])
-            ];
-
-            /**
-             * If the new operator count for any quorum exceeds the maximum, validate
-             * that churn can be performed, then deregister the specified operator
-             */
-            if (
-                results.numOperatorsPerQuorum[i] >
-                operatorSetParams.maxOperatorCount
-            ) {
-                _validateChurn({
-                    quorumNumber: uint8(quorumNumbers[i]),
-                    totalQuorumStake: results.totalStakes[i],
-                    newOperator: msg.sender,
-                    newOperatorStake: results.operatorStakes[i],
-                    kickParams: operatorKickParams[i],
-                    setParams: operatorSetParams
-                });
-
-                _deregisterOperator(
-                    operatorKickParams[i].operator,
-                    quorumNumbers[i:i + 1]
-                );
-            }
-        }
     }
 
     /**
@@ -451,18 +316,6 @@ contract ECDSARegistryCoordinator is
         }
     }
 
-    /**
-     * @notice Updates the socket of the msg.sender given they are a registered operator
-     * @param socket is the new socket of the operator
-     */
-    function updateSocket(string memory socket) external {
-        require(
-            _operatorInfo[msg.sender].status == OperatorStatus.REGISTERED,
-            "RegistryCoordinator.updateSocket: operator is not registered"
-        );
-        emit OperatorSocketUpdate(_operatorInfo[msg.sender].operatorId, socket);
-    }
-
     /*******************************************************************************
                             EXTERNAL FUNCTIONS - EJECTOR
     *******************************************************************************/
@@ -508,15 +361,6 @@ contract ECDSARegistryCoordinator is
     }
 
     /**
-     * @notice Sets the churnApprover
-     * @param _churnApprover is the address of the churnApprover
-     * @dev only callable by the owner
-     */
-    function setChurnApprover(address _churnApprover) external onlyOwner {
-        _setChurnApprover(_churnApprover);
-    }
-
-    /**
      * @notice Sets the ejector
      * @param _ejector is the address of the ejector
      * @dev only callable by the owner
@@ -537,13 +381,12 @@ contract ECDSARegistryCoordinator is
 
     /**
      * @notice Register the operator for one or more quorums. This method updates the
-     * operator's quorum bitmap, socket, and status, then registers them with each registry.
+     * operator's quorum bitmap, and status, then registers them with each registry.
      */
     function _registerOperator(
         address operator,
         bytes32 operatorId,
         bytes calldata quorumNumbers,
-        string memory socket,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) internal virtual returns (RegisterResults memory results) {
         /**
@@ -571,12 +414,10 @@ contract ECDSARegistryCoordinator is
         uint256 newBitmap = uint256(currentBitmap.plus(quorumsToAdd));
 
         /**
-         * Update operator's bitmap, socket, and status. Only update operatorInfo if needed:
+         * Update operator's bitmap and status. Only update operatorInfo if needed:
          * if we're `REGISTERED`, the operatorId and status are already correct.
          */
         _updateOperatorBitmap({operatorId: operatorId, newBitmap: newBitmap});
-
-        emit OperatorSocketUpdate(operatorId, socket);
 
         if (_operatorInfo[operator].status != OperatorStatus.REGISTERED) {
             _operatorInfo[operator] = OperatorInfo({
@@ -661,42 +502,6 @@ contract ECDSARegistryCoordinator is
         // TODO: event
         // emit NewPubkeyRegistration(operator, params.pubkeyG1, params.pubkeyG2);
         return operatorId;
-    }
-
-    function _validateChurn(
-        uint8 quorumNumber,
-        uint96 totalQuorumStake,
-        address newOperator,
-        uint96 newOperatorStake,
-        OperatorKickParam memory kickParams,
-        OperatorSetParam memory setParams
-    ) internal view {
-        address operatorToKick = kickParams.operator;
-        bytes32 idToKick = _operatorInfo[operatorToKick].operatorId;
-        require(
-            newOperator != operatorToKick,
-            "RegistryCoordinator._validateChurn: cannot churn self"
-        );
-        require(
-            kickParams.quorumNumber == quorumNumber,
-            "RegistryCoordinator._validateChurn: quorumNumber not the same as signed"
-        );
-
-        // Get the target operator's stake and check that it is below the kick thresholds
-        uint96 operatorToKickStake = stakeRegistry.getCurrentStake(
-            idToKick,
-            quorumNumber
-        );
-        require(
-            newOperatorStake >
-                _individualKickThreshold(operatorToKickStake, setParams),
-            "RegistryCoordinator._validateChurn: incoming operator has insufficient stake for churn"
-        );
-        require(
-            operatorToKickStake <
-                _totalKickThreshold(totalQuorumStake, setParams),
-            "RegistryCoordinator._validateChurn: cannot kick operator with more than kickBIPsOfTotalStake"
-        );
     }
 
     /**
@@ -811,38 +616,6 @@ contract ECDSARegistryCoordinator is
         return (totalStake * setParams.kickBIPsOfTotalStake) / BIPS_DENOMINATOR;
     }
 
-    /// @notice verifies churnApprover's signature on operator churn approval and increments the churnApprover nonce
-    function _verifyChurnApproverSignature(
-        bytes32 registeringOperatorId,
-        OperatorKickParam[] memory operatorKickParams,
-        SignatureWithSaltAndExpiry memory churnApproverSignature
-    ) internal {
-        // make sure the salt hasn't been used already
-        require(
-            !isChurnApproverSaltUsed[churnApproverSignature.salt],
-            "RegistryCoordinator._verifyChurnApproverSignature: churnApprover salt already used"
-        );
-        require(
-            churnApproverSignature.expiry >= block.timestamp,
-            "RegistryCoordinator._verifyChurnApproverSignature: churnApprover signature expired"
-        );
-
-        // set salt used to true
-        isChurnApproverSaltUsed[churnApproverSignature.salt] = true;
-
-        // check the churnApprover's signature
-        EIP1271SignatureUtils.checkSignature_EIP1271(
-            churnApprover,
-            calculateOperatorChurnApprovalDigestHash(
-                registeringOperatorId,
-                operatorKickParams,
-                churnApproverSignature.salt,
-                churnApproverSignature.expiry
-            ),
-            churnApproverSignature.signature
-        );
-    }
-
     /**
      * @notice Creates and initializes a quorum in each registry contract
      */
@@ -900,19 +673,6 @@ contract ECDSARegistryCoordinator is
         return operatorBitmap[operatorId];
     }
 
-    function _setOperatorSetParams(
-        uint8 quorumNumber,
-        OperatorSetParam memory operatorSetParams
-    ) internal {
-        _quorumParams[quorumNumber] = operatorSetParams;
-        emit OperatorSetParamsUpdated(quorumNumber, operatorSetParams);
-    }
-
-    function _setChurnApprover(address newChurnApprover) internal {
-        emit ChurnApproverUpdated(churnApprover, newChurnApprover);
-        churnApprover = newChurnApprover;
-    }
-
     function _setEjector(address newEjector) internal {
         emit EjectorUpdated(ejector, newEjector);
         ejector = newEjector;
@@ -965,34 +725,6 @@ contract ECDSARegistryCoordinator is
     /// @notice Returns the number of registries
     function numRegistries() external view returns (uint256) {
         return registries.length;
-    }
-
-    /**
-     * @notice Public function for the the churnApprover signature hash calculation when operators are being kicked from quorums
-     * @param registeringOperatorId The is of the registering operator
-     * @param operatorKickParams The parameters needed to kick the operator from the quorums that have reached their caps
-     * @param salt The salt to use for the churnApprover's signature
-     * @param expiry The desired expiry time of the churnApprover's signature
-     */
-    function calculateOperatorChurnApprovalDigestHash(
-        bytes32 registeringOperatorId,
-        OperatorKickParam[] memory operatorKickParams,
-        bytes32 salt,
-        uint256 expiry
-    ) public view returns (bytes32) {
-        // calculate the digest hash
-        return
-            _hashTypedDataV4(
-                keccak256(
-                    abi.encode(
-                        OPERATOR_CHURN_APPROVAL_TYPEHASH,
-                        registeringOperatorId,
-                        operatorKickParams,
-                        salt,
-                        expiry
-                    )
-                )
-            );
     }
 
     /**
