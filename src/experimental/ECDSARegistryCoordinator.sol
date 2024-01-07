@@ -14,14 +14,11 @@ import {IStakeRegistry} from "../interfaces/IStakeRegistry.sol";
 import {IServiceManager} from "../interfaces/IServiceManager.sol";
 import {BitmapUtils} from "../libraries/BitmapUtils.sol";
 
-import {ValidatorAnnounce} from "@hyperlane/isms/multisig/ValidatorAnnounce.sol";
-
 /**
  * @title A `RegistryCoordinator` that:
  *      1) keeps track of operators' ECDSA public keys
  *      2) keeps track of an ordered list of operators for each quorum
  *      3) uses an independent `ECDSAStakeRegistry` that keeps track of operators' stakes
- *      4) potentially uses an independent `ValidatorAnnounce` contract that stores the storage locations of validator signatures
  *
  * @author Layr Labs, Inc.
  */
@@ -82,12 +79,6 @@ contract ECDSARegistryCoordinator is
         SignatureWithSaltAndExpiry signatureAndExpiry;
     }
 
-    struct ValidatorAnnounceParams {
-        address validator;
-        string storageLocation;
-        bytes signature;
-    }
-
     /// @notice The EIP-712 typehash used for registering ECDSA public keys
     bytes32 public constant PUBKEY_REGISTRATION_TYPEHASH =
         keccak256("ECDSAPubkeyRegistration(address operator)");
@@ -106,8 +97,6 @@ contract ECDSARegistryCoordinator is
     IServiceManager public immutable serviceManager;
     /// @notice the Stake Registry contract that will keep track of operators' stakes
     IStakeRegistry public immutable stakeRegistry;
-    /// @notice hyperlane's ValidatorAnnounce contract which stores the storage locations of validator signatures
-    ValidatorAnnounce public immutable validatorAnnounce;
 
     /// @notice the current number of quorums supported by the registry coordinator
     uint8 public quorumCount;
@@ -143,12 +132,10 @@ contract ECDSARegistryCoordinator is
 
     constructor(
         IServiceManager _serviceManager,
-        IStakeRegistry _stakeRegistry,
-        ValidatorAnnounce _validatorAnnounce
+        IStakeRegistry _stakeRegistry
     ) EIP712("AVSRegistryCoordinator", "v0.0.1") {
         serviceManager = _serviceManager;
         stakeRegistry = _stakeRegistry;
-        validatorAnnounce = _validatorAnnounce;
 
         _disableInitializers();
     }
@@ -191,7 +178,6 @@ contract ECDSARegistryCoordinator is
      */
     function registerOperator(
         bytes calldata quorumNumbers,
-        ValidatorAnnounceParams memory validatorAnnounceParams,
         ECDSAPubkeyRegistrationParams memory params,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
@@ -206,7 +192,6 @@ contract ECDSARegistryCoordinator is
             operator: msg.sender,
             operatorId: operatorId,
             quorumNumbers: quorumNumbers,
-            validatorAnnounceParams: validatorAnnounceParams,
             operatorSignature: operatorSignature
         }).numOperatorsPerQuorum;
     }
@@ -367,7 +352,6 @@ contract ECDSARegistryCoordinator is
         address operator,
         bytes32 operatorId,
         bytes calldata quorumNumbers,
-        ValidatorAnnounceParams memory validatorAnnounceParams,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) internal virtual returns (RegisterResults memory results) {
         /**
@@ -426,15 +410,6 @@ contract ECDSARegistryCoordinator is
             totalOperatorsForQuorum[quorumNumber] = newTotalOperatorsForQuorum;
             results.numOperatorsPerQuorum[i] = newTotalOperatorsForQuorum;
         }
-
-        require(
-            validatorAnnounce.announce(
-                validatorAnnounceParams.validator,
-                validatorAnnounceParams.storageLocation,
-                validatorAnnounceParams.signature
-            ),
-            "RegistryCoordinator._registerOperator: validator announce failed"
-        );
 
         return results;
     }
