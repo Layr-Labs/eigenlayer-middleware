@@ -18,9 +18,10 @@ import {ValidatorAnnounce} from "@hyperlane/isms/multisig/ValidatorAnnounce.sol"
 
 /**
  * @title A `RegistryCoordinator` that:
- *      1) uses an independent `ECDSAStakeRegistry` that keeps track of operators' stakes
- *      2) keeps track of operators' ECDSA public keys
- *      3) keeps track of an ordered list of operators for each quorum
+ *      1) keeps track of operators' ECDSA public keys
+ *      2) keeps track of an ordered list of operators for each quorum
+ *      3) uses an independent `ECDSAStakeRegistry` that keeps track of operators' stakes
+ *      4) potentially uses an independent `ValidatorAnnounce` contract that stores the storage locations of validator signatures
  *
  * @author Layr Labs, Inc.
  */
@@ -157,13 +158,11 @@ contract ECDSARegistryCoordinator is
         address _ejector,
         IPauserRegistry _pauserRegistry,
         uint256 _initialPausedStatus,
-        OperatorSetParam[] memory _operatorSetParams,
         uint96[] memory _minimumStakes,
         IStakeRegistry.StrategyParams[][] memory _strategyParams
     ) external initializer {
         require(
-            _operatorSetParams.length == _minimumStakes.length &&
-                _minimumStakes.length == _strategyParams.length,
+            _minimumStakes.length == _strategyParams.length,
             "RegistryCoordinator.initialize: input length mismatch"
         );
 
@@ -173,12 +172,8 @@ contract ECDSARegistryCoordinator is
         _setEjector(_ejector);
 
         // Create quorums
-        for (uint256 i = 0; i < _operatorSetParams.length; i++) {
-            _createQuorum(
-                _operatorSetParams[i],
-                _minimumStakes[i],
-                _strategyParams[i]
-            );
+        for (uint256 i = 0; i < _minimumStakes.length; i++) {
+            _createQuorum(_minimumStakes[i], _strategyParams[i]);
         }
     }
 
@@ -339,11 +334,10 @@ contract ECDSARegistryCoordinator is
      * @notice Creates a quorum and initializes it in each registry contract
      */
     function createQuorum(
-        OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
         IStakeRegistry.StrategyParams[] memory strategyParams
     ) external virtual onlyOwner {
-        _createQuorum(operatorSetParams, minimumStake, strategyParams);
+        _createQuorum(minimumStake, strategyParams);
     }
 
     /**
@@ -651,13 +645,6 @@ contract ECDSARegistryCoordinator is
     /*******************************************************************************
                             VIEW FUNCTIONS
     *******************************************************************************/
-
-    /// @notice Returns the operator set params for the given `quorumNumber`
-    function getOperatorSetParams(
-        uint8 quorumNumber
-    ) external view returns (OperatorSetParam memory) {
-        return _quorumParams[quorumNumber];
-    }
 
     /// @notice Returns the operator struct for the given `operator`
     function getOperator(
