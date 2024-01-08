@@ -10,14 +10,14 @@ import {IRegistry} from "./IRegistry.sol";
 interface IIndexRegistry is IRegistry {
     // EVENTS
     
-    // emitted when an operator's index in the orderd operator list for the quorum with number `quorumNumber` is updated
-    event QuorumIndexUpdate(bytes32 indexed operatorId, uint8 quorumNumber, uint32 newIndex);
+    // emitted when an operator's index in the ordered operator list for the quorum with number `quorumNumber` is updated
+    event QuorumIndexUpdate(bytes32 indexed operatorId, uint8 quorumNumber, uint32 newOperatorIndex);
 
     // DATA STRUCTURES
 
     // struct used to give definitive ordering to operators at each blockNumber. 
     struct OperatorUpdate {
-        // blockNumber number from which `index` was the operators index
+        // blockNumber number from which `operatorIndex` was the operators index
         // the operator's index is the first entry such that `blockNumber >= entry.fromBlockNumber`
         uint32 fromBlockNumber;
         // the operator at this index
@@ -66,14 +66,18 @@ interface IIndexRegistry is IRegistry {
      */
     function initializeQuorum(uint8 quorumNumber) external;
 
-    /// @notice Returns the OperatorUpdate entry for the specified `operatorIndex` and `quorumNumber` at the specified `index`
-    function getOperatorUpdateAtIndex(uint8 quorumNumber, uint32 operatorIndex, uint32 index) external view returns (OperatorUpdate memory);
+    /// @notice Returns the OperatorUpdate entry for the specified `operatorIndex` and `quorumNumber` at the specified `arrayIndex`
+    function getOperatorUpdateAtIndex(
+        uint8 quorumNumber,
+        uint32 operatorIndex,
+        uint32 arrayIndex
+    ) external view returns (OperatorUpdate memory);
 
-    /// @notice Returns the QuorumUpdate entry for the specified `quorumNumber` at the specified `index`
-    function getQuorumUpdateAtIndex(uint8 quorumNumber, uint32 index) external view returns (QuorumUpdate memory);
+    /// @notice Returns the QuorumUpdate entry for the specified `quorumNumber` at the specified `quorumIndex`
+    function getQuorumUpdateAtIndex(uint8 quorumNumber, uint32 quorumIndex) external view returns (QuorumUpdate memory);
 
-    /// @notice Returns the most recent OperatorUpdate entry for the specified quorumNumber and index
-    function getLatestOperatorUpdate(uint8 quorumNumber, uint32 index) external view returns (OperatorUpdate memory);
+    /// @notice Returns the most recent OperatorUpdate entry for the specified quorumNumber and operatorIndex
+    function getLatestOperatorUpdate(uint8 quorumNumber, uint32 operatorIndex) external view returns (OperatorUpdate memory);
 
     /// @notice Returns the most recent QuorumUpdate entry for the specified quorumNumber
     function getLatestQuorumUpdate(uint8 quorumNumber) external view returns (QuorumUpdate memory);

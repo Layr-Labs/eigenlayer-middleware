@@ -168,12 +168,12 @@ contract IndexRegistryUnitTests is MockAVSDeployer, IIndexRegistryEvents {
     function _assertOperatorUpdate(
         uint8 quorumNumber,
         uint32 operatorIndex,
-        uint32 index,
+        uint32 arrayIndex,
         bytes32 operatorId,
         uint256 expectedFromBlockNumber
     ) internal {
         IIndexRegistry.OperatorUpdate memory operatorUpdate = indexRegistry
-            .getOperatorUpdateAtIndex(quorumNumber, operatorIndex, index);
+            .getOperatorUpdateAtIndex(quorumNumber, operatorIndex, arrayIndex);
         assertEq(
             operatorUpdate.operatorId,
             operatorId,
@@ -352,7 +352,7 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
         _assertOperatorUpdate({
             quorumNumber: defaultQuorumNumber,
             operatorIndex: 0,
-            index: 0,
+            arrayIndex: 0,
             operatorId: operatorId,
             expectedFromBlockNumber: block.number
         });
@@ -383,7 +383,7 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
         _assertOperatorUpdate({
             quorumNumber: defaultQuorumNumber + 1,
             operatorIndex: 0,
-            index: 0,
+            arrayIndex: 0,
             operatorId: operatorId,
             expectedFromBlockNumber: block.number
         });
@@ -423,7 +423,7 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
         _assertOperatorUpdate({
             quorumNumber: defaultQuorumNumber,
             operatorIndex: 0,
-            index: 0,
+            arrayIndex: 0,
             operatorId: operatorId,
             expectedFromBlockNumber: block.number
         });
@@ -437,7 +437,7 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
         _assertOperatorUpdate({
             quorumNumber: defaultQuorumNumber + 1,
             operatorIndex: 0,
-            index: 0,
+            arrayIndex: 0,
             operatorId: operatorId,
             expectedFromBlockNumber: block.number
         });
@@ -463,14 +463,14 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
         _assertOperatorUpdate({
             quorumNumber: defaultQuorumNumber,
             operatorIndex: 0,
-            index: 0,
+            arrayIndex: 0,
             operatorId: operatorId1,
             expectedFromBlockNumber: block.number
         });
         _assertOperatorUpdate({
             quorumNumber: defaultQuorumNumber,
             operatorIndex: 1,
-            index: 0,
+            arrayIndex: 0,
             operatorId: operatorId2,
             expectedFromBlockNumber: block.number
         });
@@ -516,7 +516,7 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
             _assertOperatorUpdate({
                 quorumNumber: uint8(quorumNumbers[i]),
                 operatorIndex: 0,
-                index: 0,
+                arrayIndex: 0,
                 operatorId: operatorId1,
                 expectedFromBlockNumber: block.number
             });
@@ -565,7 +565,7 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
                 _assertOperatorUpdate({
                     quorumNumber: uint8(quorumNumbers[j]),
                     operatorIndex: uint32(i),
-                    index: 0,
+                    arrayIndex: 0,
                     operatorId: operatorId,
                     expectedFromBlockNumber: block.number
                 });
@@ -655,7 +655,7 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
         _assertOperatorUpdate({
             quorumNumber: defaultQuorumNumber,
             operatorIndex: 0,
-            index: 0,
+            arrayIndex: 0,
             operatorId: OPERATOR_DOES_NOT_EXIST_ID,
             expectedFromBlockNumber: block.number
         });
@@ -685,7 +685,7 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
         _assertOperatorUpdate({
             quorumNumber: defaultQuorumNumber,
             operatorIndex: 0,
-            index: 0,
+            arrayIndex: 0,
             operatorId: operatorId,
             expectedFromBlockNumber: block.number - 1
         });
@@ -694,7 +694,7 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
         _assertOperatorUpdate({
             quorumNumber: defaultQuorumNumber,
             operatorIndex: 0,
-            index: 1,
+            arrayIndex: 1,
             operatorId: OPERATOR_DOES_NOT_EXIST_ID,
             expectedFromBlockNumber: block.number
         });
@@ -738,7 +738,7 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
             assertTrue(operatorIndex <= quorumCountBefore - 1, "operator index should be less than quorumCount");
             bytes32 operatorIdAtBeforeQuorumCount = indexRegistry.getLatestOperatorUpdate({
                 quorumNumber: quorumNumber,
-                index: quorumCountBefore - 1
+                operatorIndex: quorumCountBefore - 1
             }).operatorId;
 
             if (operatorIndex != quorumCountBefore - 1) {
@@ -753,7 +753,7 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
                 _assertOperatorUpdate({
                     quorumNumber: quorumNumber,
                     operatorIndex: operatorIndex,
-                    index: 0,
+                    arrayIndex: 0,
                     operatorId: operatorIdAtBeforeQuorumCount,
                     expectedFromBlockNumber: block.number
                 });
@@ -763,7 +763,7 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
             _assertOperatorUpdate({
                 quorumNumber: quorumNumber,
                 operatorIndex: quorumCountBefore - 1,
-                index: 0,
+                arrayIndex: 0,
                 operatorId: OPERATOR_DOES_NOT_EXIST_ID,
                 expectedFromBlockNumber: block.number
             });
@@ -805,7 +805,7 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
             assertTrue(operatorIndex <= quorumCountBefore - 1, "operator index should be less than quorumCount");
             bytes32 operatorIdAtBeforeQuorumCount = indexRegistry.getLatestOperatorUpdate({
                 quorumNumber: quorumNumber,
-                index: quorumCountBefore - 1
+                operatorIndex: quorumCountBefore - 1
             }).operatorId;
 
             if (operatorIndex != quorumCountBefore - 1) {
@@ -824,7 +824,7 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
                 _assertOperatorUpdate({
                     quorumNumber: quorumNumber,
                     operatorIndex: operatorIndex,
-                    index: 1,
+                    arrayIndex: 1,
                     operatorId: operatorIdAtBeforeQuorumCount,
                     expectedFromBlockNumber: block.number
                 });
@@ -856,7 +856,7 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
             _assertOperatorUpdate({
                 quorumNumber: uint8(quorumsToRemove[i]),
                 operatorIndex: 0,
-                index: 0,
+                arrayIndex: 0,
                 operatorId: operatorId3,
                 expectedFromBlockNumber: block.number
             });
@@ -864,7 +864,7 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
             _assertOperatorUpdate({
                 quorumNumber: uint8(quorumsToRemove[i]),
                 operatorIndex: 1,
-                index: 0,
+                arrayIndex: 0,
                 operatorId: operatorId2,
                 expectedFromBlockNumber: block.number
             });
@@ -872,7 +872,7 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
             _assertOperatorUpdate({
                 quorumNumber: uint8(quorumsToRemove[i]),
                 operatorIndex: 2,
-                index: 0,
+                arrayIndex: 0,
                 operatorId: OPERATOR_DOES_NOT_EXIST_ID,
                 expectedFromBlockNumber: block.number
             });
@@ -884,7 +884,7 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
             });
 
             IIndexRegistry.OperatorUpdate memory operatorUpdate = indexRegistry
-                .getLatestOperatorUpdate({quorumNumber: uint8(quorumsToRemove[i]), index: 0});
+                .getLatestOperatorUpdate({quorumNumber: uint8(quorumsToRemove[i]), operatorIndex: 0});
             assertEq(operatorUpdate.fromBlockNumber, block.number, "fromBlockNumber not set correctly");
             assertEq(operatorUpdate.operatorId, operatorId3, "incorrect operatorId");
         }
@@ -930,14 +930,14 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
             _assertOperatorUpdate({
                 quorumNumber: uint8(quorumsToRemove[i]),
                 operatorIndex: 0,
-                index: 0,
+                arrayIndex: 0,
                 operatorId: operatorId2,
                 expectedFromBlockNumber: block.number
             });
 
             // Check operator's index for removed quorums
             IIndexRegistry.OperatorUpdate memory operatorUpdate = indexRegistry
-                .getLatestOperatorUpdate({quorumNumber: uint8(quorumsToRemove[i]), index: 1});
+                .getLatestOperatorUpdate({quorumNumber: uint8(quorumsToRemove[i]), operatorIndex: 1});
             assertEq(operatorUpdate.fromBlockNumber, block.number, "fromBlockNumber not set correctly");
             assertEq(operatorUpdate.operatorId, bytes32(0), "incorrect operatorId");
         }
