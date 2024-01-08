@@ -21,7 +21,9 @@ import "src/StakeRegistry.sol";
 import "src/ServiceManagerBase.sol";
 
 import "src/libraries/BN254.sol";
+import "src/libraries/BitmapUtils.sol";
 import "test/integration/TimeMachine.t.sol";
+import "test/integration/utils/Sort.t.sol";
 
 
 interface IUserDeployer {
@@ -117,8 +119,9 @@ contract User is Test {
         registryCoordinator.deregisterOperator(quorums);
     }
 
+    /// @dev Uses updateOperators to update this user's stake
     function updateStakes() public createSnapshot virtual {
-        _log("updateStakes");
+        _log("updateStakes (updateOperators)");
 
         address[] memory addrs = new address[](1);
         addrs[0] = address(this);
@@ -222,6 +225,14 @@ contract User is Test {
 
 contract User_AltMethods is User {
 
+    using BitmapUtils for *;
+
+    modifier createSnapshot() virtual override {
+        cheats.roll(block.number + 1);
+        timeMachine.createSnapshot();
+        _;
+    }
+
     constructor(string memory name, uint _privKey, IBLSApkRegistry.PubkeyRegistrationParams memory _pubkeyParams) 
         User(name, _privKey, _pubkeyParams) {}
 
@@ -236,13 +247,26 @@ contract User_AltMethods is User {
         registryCoordinator.ejectOperator(address(this), quorums);
     }
 
-    // /// @dev Calls updateOperatorsForQuorum
-    // function updateStakes() public createSnapshot virtual {
-    //     _log("updateStakes");
+    /// @dev Uses updateOperatorsForQuorum to update stakes of all operators in all quorums
+    function updateStakes() public createSnapshot virtual override {
+        _log("updateStakes (updateOperatorsForQuorum)");
 
-    //     address[] memory addrs = new address[](1);
-    //     addrs[0] = address(this);
+        bytes memory allQuorums = ((1 << registryCoordinator.quorumCount()) - 1).bitmapToBytesArray();
+        address[][] memory operatorsPerQuorum = new address[][](allQuorums.length);
 
-    //     registryCoordinator.updateOperators(addrs);
-    // }
+        for (uint i = 0; i < allQuorums.length; i++) {
+            uint8 quorum = uint8(allQuorums[i]);
+            bytes32[] memory operatorIds = indexRegistry.getOperatorListAtBlockNumber(quorum, uint32(block.number));
+
+            operatorsPerQuorum[i] = new address[](operatorIds.length);
+
+            for (uint j = 0; j < operatorIds.length; j++) {
+                operatorsPerQuorum[i][j] = blsApkRegistry.getOperatorFromPubkeyHash(operatorIds[j]);
+            }
+
+            Sort.sort(operatorsPerQuorum[i]);
+        }
+
+        registryCoordinator.updateOperatorsForQuorum(operatorsPerQuorum, allQuorums);        
+    }
 }
