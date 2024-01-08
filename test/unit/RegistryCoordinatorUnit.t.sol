@@ -568,6 +568,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
     }
 }
 
+// @dev note that this contract also contains tests for the `getQuorumBitmapIndicesAtBlockNumber` and `getQuorumBitmapAtBlockNumberByIndex` view fncs
 contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is RegistryCoordinatorUnitTests {
     function test_deregisterOperator_revert_paused() public {
         bytes memory quorumNumbers = new bytes(1);
@@ -1150,6 +1151,86 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         cheats.prank(defaultOperator);
         registryCoordinator.ejectOperator(defaultOperator, quorumNumbers);
     }
+
+    // TODO: this test currently fails. either need to document behavior + modify the test, or modify the code
+    function test_getQuorumBitmapIndicesAtBlockNumber_revert_notRegistered() public {
+        uint32 blockNumber;
+        bytes32[] memory operatorIds = new bytes32[](1);
+        cheats.expectRevert("RegistryCoordinator.getQuorumBitmapIndicesAtBlockNumber: operatorId has no quorumBitmaps at blockNumber");
+        registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
+    }
+
+    // @notice tests for correct reversion and return values in the event that an operator registers and later deregisters
+    function test_getQuorumBitmapIndicesAtBlockNumber_operatorDeregistered() public {
+        test_deregisterOperator_singleQuorumAndSingleOperator();
+        uint32 registrationBlockNumber = 100;
+        uint32 deregistrationBlockNumber = 200;
+        uint32 blockNumber = 0;
+        bytes32[] memory operatorIds = new bytes32[](1);
+        operatorIds[0] = defaultOperatorId;
+
+        uint32[] memory returnArray = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
+        assertEq(returnArray[0], 0, "defaultOperator bitmap index at blockNumber 0 was not 0");
+
+        blockNumber = registrationBlockNumber;
+        returnArray = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
+        assertEq(returnArray[0], 0, "defaultOperator bitmap index at blockNumber registrationBlockNumber was not 0");        
+
+        blockNumber = registrationBlockNumber + 1;
+        returnArray = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
+        assertEq(returnArray[0], 0, "defaultOperator bitmap index at blockNumber registrationBlockNumber + 1 was not 0");
+
+        blockNumber = deregistrationBlockNumber;
+        returnArray = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
+        assertEq(returnArray[0], 1, "defaultOperator bitmap index at blockNumber deregistrationBlockNumber was not 1");        
+
+        blockNumber = deregistrationBlockNumber + 1;
+        returnArray = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
+        assertEq(returnArray[0], 1, "defaultOperator bitmap index at blockNumber deregistrationBlockNumber + 1 was not 1");        
+    }
+
+    // @notice tests for correct reversion and return values in the event that an operator registers and later deregisters
+    function test_getQuorumBitmapAtBlockNumberByIndex_operatorDeregistered() public {
+        test_deregisterOperator_singleQuorumAndSingleOperator();
+        uint32 registrationBlockNumber = 100;
+        uint32 deregistrationBlockNumber = 200;
+        uint32 blockNumber = 0;
+        bytes32 operatorId = defaultOperatorId;
+        uint256 index = 0;
+
+        uint192 defaultQuorumBitmap = 1;
+        uint192 emptyBitmap = 0;
+
+        // try an incorrect blockNumber input and confirm reversion
+        cheats.expectRevert("RegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber");
+        uint192 returnVal = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
+
+        blockNumber = registrationBlockNumber;
+        returnVal = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
+        assertEq(returnVal, defaultQuorumBitmap, "defaultOperator bitmap index at blockNumber registrationBlockNumber was not defaultQuorumBitmap");        
+
+        blockNumber = registrationBlockNumber + 1;
+        returnVal = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
+        assertEq(returnVal, defaultQuorumBitmap, "defaultOperator bitmap index at blockNumber registrationBlockNumber + 1 was not defaultQuorumBitmap");
+
+        // try an incorrect index input and confirm reversion
+        index = 1;
+        cheats.expectRevert("RegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber");
+        returnVal = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
+
+        blockNumber = deregistrationBlockNumber;
+        returnVal = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
+        assertEq(returnVal, emptyBitmap, "defaultOperator bitmap index at blockNumber deregistrationBlockNumber was not emptyBitmap");        
+
+        blockNumber = deregistrationBlockNumber + 1;
+        returnVal = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
+        assertEq(returnVal, emptyBitmap, "defaultOperator bitmap index at blockNumber deregistrationBlockNumber + 1 was not emptyBitmap");        
+
+        // try an incorrect index input and confirm reversion
+        index = 0;
+        cheats.expectRevert("RegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from before blockNumber");
+        returnVal = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
+    }
 }
 
 contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoordinatorUnitTests {
@@ -1664,4 +1745,3 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         );
     }
 }
-
