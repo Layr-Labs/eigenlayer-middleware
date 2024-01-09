@@ -330,9 +330,6 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
      */
     function test_registerOperator() public {
         // register an operator
-        bytes memory quorumNumbers = new bytes(1);
-        quorumNumbers[0] = bytes1(defaultQuorumNumber);
-
         (, bytes32 operatorId) = _selectNewOperator();
         uint32 numOperators = _registerOperatorSingleQuorum(operatorId, defaultQuorumNumber);
 
@@ -358,37 +355,9 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
         });
     }
 
-    function test_registerOperator_MultipleQuorums() public {
-        // Register operator for 1st quorum
-        (, bytes32 operatorId) = _selectNewOperator();
-        _registerOperatorSingleQuorum(operatorId, defaultQuorumNumber);
-
-        // Register operator for 2nd quorum
-        uint32 numOperators = _registerOperatorSingleQuorum(operatorId, defaultQuorumNumber + 1);
-
-        ///@notice The only value that should be different from before are what quorum we index into and the globalOperatorList
-        // Check return value
-        assertEq(
-            numOperators,
-            1,
-            "IndexRegistry.registerOperator: numOperators is not 1"
-        );
-        // Check _indexHistory updates
-        _assertQuorumUpdate({
-            quorumNumber: defaultQuorumNumber + 1,
-            expectedNumOperators: 1, 
-            expectedFromBlockNumber: block.number
-        });
-        // Check _totalOperatorsHistory updates
-        _assertOperatorUpdate({
-            quorumNumber: defaultQuorumNumber + 1,
-            operatorIndex: 0,
-            arrayIndex: 0,
-            operatorId: operatorId,
-            expectedFromBlockNumber: block.number
-        });
-    }
-
+    /**
+     * @dev register operator for 2 quorums and check OperatorUpdate and QuorumUpdate values
+     */
     function test_registerOperator_MultipleQuorumsSingleCall() public {
         // Register operator for 1st and 2nd quorum
         bytes memory quorumNumbers = new bytes(2);
@@ -443,7 +412,12 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
         });
     }
 
-    function test_registerOperator_MultipleOperatorsSingleQuorum() public {
+    /**
+     * @dev register two operators for the same quorum within the same block.
+     * operator1 should register with index 0, operator2 should register with index1.
+     * Total quorumCount should be 2
+     */
+    function test_registerOperator_MultipleOperators_SingleBlock() public {
         // Register operator for first quorum
         (, bytes32 operatorId1) = _selectNewOperator();
         _registerOperatorSingleQuorum(operatorId1, defaultQuorumNumber);
@@ -529,7 +503,9 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
     }
 
     /**
-     * @dev fuzz number of operators and bitmap for operators to register for
+     * @dev fuzz number of operators and bitmap for operators to register for.
+     * For each operator, register for a random number of quorums from the bitmap and assert the correct
+     * OperatorUpdate and QuorumUpdate values.
      */
     function testFuzz_registerOperator_MultipleOperatorsMultipleQuorums(
         uint8 numOperators,
@@ -539,7 +515,7 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
         cheats.assume(bitmap <= 192);
         bitmap = uint192(bitmap.minus(uint256(initializedQuorumBitmap)));
         bytes memory quorumNumbers = bitmapUtilsWrapper.bitmapToBytesArray(bitmap);
-        // Initialize fuzzed quorum numbers, skipping invalid tests
+        // Initialize fuzzed quorum numbers
         _initializeFuzzedQuorums(bitmap);
 
         for (uint256 i = 0; i < numOperators; i++) {
@@ -579,7 +555,6 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
 
         // Check history of _totalOperatorsHistory updates at each blockNumber
         IIndexRegistry.QuorumUpdate memory quorumUpdate;
-        // uint256 numOperators = 3;
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             quorumUpdate = indexRegistry.getLatestQuorumUpdate(uint8(quorumNumbers[i]));
             assertEq(quorumUpdate.numOperators, numOperators, "num operators not correct");
@@ -832,6 +807,13 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
         }
     }
 
+    /**
+     * @dev Test deregistering an operator with multiple operators already registered.
+     * We deregister the operator with arrayIndex 0 and check that the operator with arrayIndex 2
+     * ends up getting swapped with the deregistering operator. 
+     * 
+     * Also checking QuorumUpdates and OperatorUpdates as well.
+     */
     function test_deregisterOperator_MultipleQuorums() public {
         // Register 3 operators to two quorums
         bytes memory quorumNumbers = new bytes(3);

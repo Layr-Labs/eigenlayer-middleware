@@ -2,6 +2,7 @@
 ├── IndexRegistry tree (*** denotes that integration tests are needed to validate path)
 ├── when any function is called (invariants)
 │   ├── current number of registered operators in a quorum is equal to _operatorCountHistory[quorumNumber][latestQuorumUpdateIndex].operatorCount
+│   ├── For any currently registered operator, currentOperatorIndex[operatorId] is in the range [0:operatorCount - 1]
 │   └── For any quorumNumber, if _operatorCountHistory[quorumNumber] is empty, then the quorum does not exist
 ├── when register operator is called
 │   ├── given caller is not the registry coordinator
