@@ -43,6 +43,9 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
      */
     mapping(uint8 => StrategyParams[]) public strategyParams;
 
+    /// @notice mapping from quorum number to the root used for storage proofs of operator set 
+    mapping(uint8 => bytes32) public quorumRoot;
+
     constructor(
         IRegistryCoordinator _registryCoordinator, 
         IDelegationManager _delegationManager

@@ -323,6 +323,7 @@ contract RegistryCoordinator is
                 "RegistryCoordinator.updateOperatorsForQuorum: number of updated operators does not match quorum total"
             );
             address prevOperatorAddress = address(0);
+            stakeRegistry.clearQuorumRoot(quorumNumber);
             // Update stakes for each operator in this quorum
             for (uint256 j = 0; j < currQuorumOperators.length; ++j) {
                 address operator = currQuorumOperators[j];

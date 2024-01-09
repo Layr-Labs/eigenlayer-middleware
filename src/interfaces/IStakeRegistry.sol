@@ -118,6 +118,12 @@ interface IStakeRegistry is IRegistry {
         uint96[] calldata newMultipliers
     ) external;
 
+    /**
+     * @notice clears the quorum root for the given quorum
+     * @dev This function is called by the registry coordinator on stake updates to consolidate the size of the storage proof
+     */
+    function clearQuorumRoot(uint8 quorumNumber) external;
+
     /// @notice Constant used as a divisor in calculating weights.
     function WEIGHTING_DIVISOR() external pure returns (uint256);
 

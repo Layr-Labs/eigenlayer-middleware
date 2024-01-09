@@ -273,6 +273,14 @@ contract StakeRegistry is StakeRegistryStorage {
         }
     }
 
+    /**
+     * @notice clears the quorum root for the given quorum
+     * @dev This function is called by the registry coordinator on stake updates to consolidate the size of the storage proof
+     */
+    function clearQuorumRoot(uint8 quorumNumber) external onlyRegistryCoordinator quorumExists(quorumNumber) {
+        quorumRoot[quorumNumber] = bytes32(0);
+    }
+
     /*******************************************************************************
                             INTERNAL FUNCTIONS
     *******************************************************************************/
@@ -324,6 +332,9 @@ contract StakeRegistry is StakeRegistryStorage {
                 nextUpdateBlockNumber: 0,
                 stake: newStake
             }));
+
+            _updateQuorumRoot(operatorId, quorumNumber, uint32(block.number), newStake);
+
         } else {
             // We have prior stake history - fetch our last-recorded stake
             StakeUpdate storage lastUpdate = operatorStakeHistory[operatorId][quorumNumber][historyLength-1]; 
@@ -347,6 +358,8 @@ contract StakeRegistry is StakeRegistryStorage {
                     nextUpdateBlockNumber: 0,
                     stake: newStake
                 }));
+
+                _updateQuorumRoot(operatorId, quorumNumber, uint32(block.number), newStake);
             }
         }
 
@@ -493,6 +506,12 @@ contract StakeRegistry is StakeRegistryStorage {
     /// @notice Returns `true` if the quorum has been initialized
     function _quorumExists(uint8 quorumNumber) internal view returns (bool) {
         return _totalStakeHistory[quorumNumber].length != 0;
+    }
+
+    /// @notice Updates the quorum root for the given quorum 
+    /// @dev quorumRoot+1 = h(quorumRoot, {operator stake update})
+    function _updateQuorumRoot(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber, uint96 stake) internal {
+        quorumRoot[quorumNumber] = keccak256(abi.encodePacked(quorumRoot[quorumNumber], operatorId, blockNumber, stake));
     }
 
     /*******************************************************************************

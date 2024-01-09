@@ -77,6 +77,8 @@ contract StakeRegistryMock is IStakeRegistry {
         uint96[] calldata newMultipliers
     ) external {}
 
+    function clearQuorumRoot(uint8 quorumNumber) external {}
+
     function delegation() external view returns (IDelegationManager) {}
 
     function WEIGHTING_DIVISOR() external pure returns (uint256) {}
