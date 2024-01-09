@@ -1152,7 +1152,6 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         registryCoordinator.ejectOperator(defaultOperator, quorumNumbers);
     }
 
-    // TODO: this test currently fails. either need to document behavior + modify the test, or modify the code
     function test_getQuorumBitmapIndicesAtBlockNumber_revert_notRegistered() public {
         uint32 blockNumber;
         bytes32[] memory operatorIds = new bytes32[](1);
@@ -1522,8 +1521,45 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         address[] memory operatorsToUpdate = new address[](1);
         operatorsToUpdate[0] = defaultOperator;
 
-        // TODO: any additional checks here? mostly this just calls the StakeRegistry, so more appropriate for an integration test
         registryCoordinator.updateOperators(operatorsToUpdate);
+    }
+
+    // @notice tests the `updateOperators` function with a single registered operator as input
+    // @dev also sets up return data from the StakeRegistry
+    function testFuzz_updateOperators_singleOperator(uint192 registrationBitmap, uint192 mockReturnData) public {
+        // filter fuzzed inputs to only valid inputs
+        cheats.assume(registrationBitmap != 0);
+        mockReturnData = (mockReturnData & registrationBitmap);
+        emit log_named_uint("mockReturnData", mockReturnData);
+
+        // register the default operator
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        uint32 registrationBlockNumber = 100;
+        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(registrationBitmap);
+        for (uint256 i = 0; i < quorumNumbers.length; ++i) {
+            stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), defaultOperator, defaultStake);            
+        }
+        cheats.startPrank(defaultOperator);
+        cheats.roll(registrationBlockNumber);
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
+
+        address[] memory operatorsToUpdate = new address[](1);
+        operatorsToUpdate[0] = defaultOperator;
+
+        uint192 quorumBitmapBefore = registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId);
+        assertEq(quorumBitmapBefore, registrationBitmap, "operator bitmap somehow incorrect");
+
+        // make the stake registry return info that the operator should be removed from quorums
+        uint192 quorumBitmapToRemove = mockReturnData;
+        bytes memory quorumNumbersToRemove = BitmapUtils.bitmapToBytesArray(quorumBitmapToRemove);
+        for (uint256 i = 0; i < quorumNumbersToRemove.length; ++i) {
+            stakeRegistry.setOperatorWeight(uint8(quorumNumbersToRemove[i]), defaultOperator, 0);            
+        }
+        uint256 expectedQuorumBitmap = BitmapUtils.minus(quorumBitmapBefore, quorumBitmapToRemove);
+
+        registryCoordinator.updateOperators(operatorsToUpdate);
+        uint192 quorumBitmapAfter = registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId);
+        assertEq(expectedQuorumBitmap, quorumBitmapAfter, "quorum bitmap did not update correctly");
     }
 
     // @notice tests the `updateOperators` function with a single *un*registered operator as input
