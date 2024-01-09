@@ -783,8 +783,10 @@ contract RegistryCoordinator is
     }
 
     /**
-     * @notice Returns the quorum bitmap for the given `operatorId` at the given `blockNumber` via the `index`
-     * @dev reverts if `index` is incorrect 
+     * @notice Returns the quorum bitmap for the given `operatorId` at the given `blockNumber` via the `index`,
+     * reverting if `index` is incorrect
+     * @dev This function is meant to be used in concert with `getQuorumBitmapIndicesAtBlockNumber`, which
+     * helps off-chain processes to fetch the correct `index` input
      */ 
     function getQuorumBitmapAtBlockNumberByIndex(
         bytes32 operatorId, 
