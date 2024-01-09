@@ -136,6 +136,35 @@ contract IndexRegistryUnitTests is MockAVSDeployer, IIndexRegistryEvents {
         indexRegistry.deregisterOperator(operatorId, quorumNumbers);
     }
 
+    /// @dev Uses `rand` to return a random uint, with a range given by `min` and `max` (inclusive)
+    /// @return `min` <= result <= `max`
+    function _randUint(bytes32 rand, uint min, uint max) internal pure returns (uint) {
+        // hashing makes for more uniform randomness
+        rand = keccak256(abi.encodePacked(rand));
+        
+        uint range = max - min + 1;
+
+        // calculate the number of bits needed for the range
+        uint bitsNeeded = 0;
+        uint tempRange = range;
+        while (tempRange > 0) {
+            bitsNeeded++;
+            tempRange >>= 1;
+        }
+
+        // create a mask for the required number of bits
+        // and extract the value from the hash
+        uint mask = (1 << bitsNeeded) - 1;
+        uint value = uint(rand) & mask;
+
+        // in case value is out of range, wrap around or retry
+        while (value >= range) {
+            value = (value - range) & mask;
+        }
+
+        return min + value;
+    }
+
     /*******************************************************************************
                             ASSERTION HELPERS
     *******************************************************************************/
@@ -197,87 +226,181 @@ contract IndexRegistryUnitTests_configAndGetters is IndexRegistryUnitTests {
                                 UNIT TESTS - GETTERS
     *******************************************************************************/
 
-    function test_getOperatorListForQuorumAtBlockNumber() public {
-        // Register two operators
-        bytes memory quorumNumbers = new bytes(1);
-        quorumNumbers[0] = bytes1(defaultQuorumNumber);
-        _registerOperator(operatorId1, quorumNumbers);
-        vm.roll(block.number + 10);
-        _registerOperator(operatorId2, quorumNumbers);
-
-        // Deregister first operator
-        vm.roll(block.number + 10);
-        cheats.prank(address(registryCoordinator));
-        indexRegistry.deregisterOperator(operatorId1, quorumNumbers);
-
-        // Check the operator list after first registration
-        bytes32[] memory operatorList = indexRegistry.getOperatorListAtBlockNumber(
-            defaultQuorumNumber,
-            uint32(block.number - 20)
-        );
-        assertEq(
-            operatorList.length,
-            1,
-            "IndexRegistry.getOperatorListAtBlockNumber: operator list length not 1"
+    function _assertOperatorListsEqual(
+        bytes32[] memory operatorList1,
+        bytes32[] memory operatorList2,
+        uint256 listLength
+    ) internal {
+        assertTrue(
+            listLength <= operatorList1.length && listLength <= operatorList2.length,
+            "invalid operator list lengths"
         );
 
-        assertEq(
-            operatorList[0],
-            operatorId1,
-            "IndexRegistry.getOperatorListAtBlockNumber: operator list incorrect"
-        );
-
-        // Check the operator list after second registration
-        operatorList = indexRegistry.getOperatorListAtBlockNumber(
-            defaultQuorumNumber,
-            uint32(block.number - 10)
-        );
-        assertEq(
-            operatorList.length,
-            2,
-            "IndexRegistry.getOperatorListAtBlockNumber: operator list length not 2"
-        );
-
-        assertEq(
-            operatorList[0],
-            operatorId1,
-            "IndexRegistry.getOperatorListAtBlockNumber: operator list incorrect"
-        );
-
-        assertEq(
-            operatorList[1],
-            operatorId2,
-            "IndexRegistry.getOperatorListAtBlockNumber: operator list incorrect"
-        );
-
-        // Check the operator list after deregistration
-        operatorList = indexRegistry.getOperatorListAtBlockNumber(defaultQuorumNumber, uint32(block.number));
-        assertEq(
-            operatorList.length,
-            1,
-            "IndexRegistry.getOperatorListAtBlockNumber: operator list length not 1"
-        );
-        assertEq(
-            operatorList[0],
-            operatorId2,
-            "IndexRegistry.getOperatorListAtBlockNumber: operator list incorrect"
-        );
+        for (uint256 i = 0; i < operatorList1.length; i++) {
+            assertEq(
+                operatorList1[i],
+                operatorList2[i],
+                "operator lists not equal"
+            );
+        }
     }
 
-    function testFuzz_TotalOperatorUpdatesForOneQuorum(uint8 numOperators) public {
-        bytes memory quorumNumbers = new bytes(1);
-        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+    /**
+     * @dev Loop for numOperators randomly registering and deregistering operators for a single quorum
+     * Calling getOperatorListAtBlockNumber for an invalid blocknumber, i.e before the quorum existed.
+     */
+    function testFuzz_getOperatorListForQuorumAtBlockNumber_Revert_WhenInvalidBlockNumber(
+        uint8 numOperators,
+        bytes32 randSalt
+    ) public {
+        uint32 startBlockNumber = uint32(block.number);
+        uint32 currBlockNumber = startBlockNumber;
 
-        uint256 lengthBefore = 0;
+        currBlockNumber += 10;
+        cheats.roll(currBlockNumber);
+        
+        // initialize a new quorum after startBlockNumber
+        uint8 quorumNumber = nextQuorum;
+        _initializeQuorum();
+
+        bytes32[] memory currRegisteredOperatorIds = new bytes32[](numOperators);
+        uint256 currIndex = 0;
         for (uint256 i = 0; i < numOperators; i++) {
-            _registerOperator(bytes32(i), quorumNumbers);
+            uint256 rand = _randUint({
+                rand: keccak256(abi.encodePacked(bytes32(i), randSalt)),
+                min: 0, 
+                max: 1
+            });
+
+            // Roll block number
+            currBlockNumber += 10;
+            cheats.roll(currBlockNumber);
+
+            // deregister operator, must also have at least one registered operator
+            if (rand == 0 && currIndex > 0) {
+                bytes32 operatorId = currRegisteredOperatorIds[currIndex - 1];
+                _deregisterOperatorSingleQuorum(operatorId, quorumNumber);
+                currRegisteredOperatorIds[currIndex] = operatorId;
+                currIndex--;
+            // register operator
+            } else {
+                (, bytes32 operatorId) = _selectNewOperator();
+                _registerOperatorSingleQuorum(operatorId, quorumNumber);
+
+                currRegisteredOperatorIds[currIndex] = operatorId;
+                currIndex++;
+            }
+
+            // should revert with startBlocknumber
+            cheats.expectRevert("IndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number");
+            indexRegistry.getOperatorListAtBlockNumber(
+                quorumNumber,
+                startBlockNumber
+            );
+        }
+    }
+
+    /**
+     * @dev Loop for numOperators randomly registering and deregistering operators for a single quorum
+     * And keeping track of the total operators and their indexes. Checks that the return list of operatorIds
+     * from `getOperatorListForQuorum` matches the expected list of operatorIds
+     */
+    function testFuzz_getOperatorListForQuorumAtBlockNumber(uint8 numOperators, bytes32 randSalt) public {
+        bytes32[] memory currRegisteredOperatorIds = new bytes32[](numOperators);
+        uint256 currIndex = 0;
+        uint32 currBlockNumber = uint32(block.number);
+        for (uint256 i = 0; i < numOperators; i++) {
+            uint256 rand = _randUint({
+                rand: keccak256(abi.encodePacked(bytes32(i), randSalt)),
+                min: 0, 
+                max: 1
+            });
+
+            // Roll block number
+            currBlockNumber += 10;
+            cheats.roll(currBlockNumber);
+
+            // deregister operator, must also have at least one registered operator
+            if (rand == 0 && currIndex > 0) {
+                bytes32 operatorId = currRegisteredOperatorIds[currIndex - 1];
+                _deregisterOperatorSingleQuorum(operatorId, defaultQuorumNumber);
+                currRegisteredOperatorIds[currIndex] = operatorId;
+                currIndex--;
+            // register operator
+            } else {
+                (, bytes32 operatorId) = _selectNewOperator();
+                _registerOperatorSingleQuorum(operatorId, defaultQuorumNumber);
+
+                currRegisteredOperatorIds[currIndex] = operatorId;
+                currIndex++;
+            }
+
+            // Check operator list
+            bytes32[] memory operatorList = indexRegistry.getOperatorListAtBlockNumber(
+                defaultQuorumNumber,
+                currBlockNumber
+            );
+
+            _assertOperatorListsEqual(
+                operatorList,
+                currRegisteredOperatorIds,
+                currIndex
+            );
+        }
+    }
+
+    /**
+     * @dev Loop for numOperators randomly registering and deregistering operators for a single quorum.
+     * Checks that the totalOperatorsForQuorum returns the correct total after each register/deregister
+     */
+    function testFuzz_TotalOperatorUpdatesForOneQuorum(uint8 numOperators, bytes32 randSalt) public {
+        bytes32[] memory currRegisteredOperatorIds = new bytes32[](numOperators);
+        uint256 currIndex = 0;
+        for (uint256 i = 0; i < numOperators; i++) {
+            uint256 rand = _randUint({
+                rand: keccak256(abi.encodePacked(bytes32(i), randSalt)),
+                min: 0, 
+                max: 1
+            });
+
+            // deregister operator, must also have at least one registered operator
+            if (rand == 0 && currIndex > 0) {
+                bytes32 operatorId = currRegisteredOperatorIds[currIndex - 1];
+                _deregisterOperatorSingleQuorum(operatorId, defaultQuorumNumber);
+                currRegisteredOperatorIds[currIndex] = operatorId;
+                currIndex--;
+            // register operator
+            } else {
+                (, bytes32 operatorId) = _selectNewOperator();
+                _registerOperatorSingleQuorum(operatorId, defaultQuorumNumber);
+
+                currRegisteredOperatorIds[currIndex] = operatorId;
+                currIndex++;
+            }
+
+            // Check total operators for quorum
             assertEq(
-                indexRegistry.totalOperatorsForQuorum(defaultQuorumNumber) - lengthBefore,
-                1,
+                indexRegistry.totalOperatorsForQuorum(defaultQuorumNumber),
+                currIndex,
                 "incorrect update"
             );
-            lengthBefore++;
         }
+    }
+
+    function testFuzz_viewFunctions_Revert_WhenInvalidQuorumNumber(uint8 quorumNumber) public {
+        cheats.assume(quorumNumber >= nextQuorum);
+
+        cheats.expectRevert();
+        indexRegistry.getLatestQuorumUpdate(quorumNumber);
+
+        cheats.expectRevert();
+        indexRegistry.getLatestOperatorUpdate(quorumNumber, 0);
+
+        cheats.expectRevert();
+        indexRegistry.totalOperatorsForQuorum(quorumNumber);
+
+        cheats.expectRevert();
+        indexRegistry.getOperatorListAtBlockNumber(quorumNumber, 0);
     }
 }
 
