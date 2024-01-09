@@ -1160,6 +1160,35 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
     }
 
+    // @notice tests for correct reversion and return values in the event that an operator registers
+    function test_getQuorumBitmapIndicesAtBlockNumber_operatorRegistered() public {
+        // register the operator
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        uint32 registrationBlockNumber = 100;
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+        stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+        cheats.roll(registrationBlockNumber);
+        cheats.startPrank(defaultOperator);        
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
+
+        uint32 blockNumber = 0;
+        bytes32[] memory operatorIds = new bytes32[](1);
+        operatorIds[0] = defaultOperatorId;
+
+        uint32[] memory returnArray;
+        cheats.expectRevert("RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number");
+        registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
+
+        blockNumber = registrationBlockNumber;
+        returnArray = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
+        assertEq(returnArray[0], 0, "defaultOperator bitmap index at blockNumber registrationBlockNumber was not 0");        
+
+        blockNumber = registrationBlockNumber + 1;
+        returnArray = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
+        assertEq(returnArray[0], 0, "defaultOperator bitmap index at blockNumber registrationBlockNumber + 1 was not 0");
+    }
+
     // @notice tests for correct reversion and return values in the event that an operator registers and later deregisters
     function test_getQuorumBitmapIndicesAtBlockNumber_operatorDeregistered() public {
         test_deregisterOperator_singleQuorumAndSingleOperator();
