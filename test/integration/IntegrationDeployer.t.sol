@@ -82,8 +82,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     address constant pauser = address(555);
     address constant unpauser = address(556);
     address public registryCoordinatorOwner = address(uint160(uint256(keccak256("registryCoordinatorOwner"))));
-    uint256 churnApproverPrivateKey = uint256(keccak256("churnApproverPrivateKey"));
-    address churnApprover = cheats.addr(churnApproverPrivateKey);
+    uint256 public churnApproverPrivateKey = uint256(keccak256("churnApproverPrivateKey"));
+    address public churnApprover = cheats.addr(churnApproverPrivateKey);
     address ejector = address(uint160(uint256(keccak256("ejector"))));
 
     // Constants/Defaults

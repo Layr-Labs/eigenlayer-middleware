@@ -29,6 +29,8 @@ import "test/integration/utils/Sort.t.sol";
 interface IUserDeployer {
     function registryCoordinator() external view returns (RegistryCoordinator);
     function timeMachine() external view returns (TimeMachine);
+    function churnApproverPrivateKey() external view returns (uint);
+    function churnApprover() external view returns (address);
 }
 
 contract User is Test {
@@ -50,6 +52,9 @@ contract User is Test {
     IndexRegistry indexRegistry;
     
     TimeMachine timeMachine;
+
+    uint churnApproverPrivateKey;
+    address churnApprover;
 
     string public NAME;
     bytes32 public operatorId;
@@ -76,6 +81,9 @@ contract User is Test {
         strategyManager = StrategyManager(address(delegationManager.strategyManager()));
 
         timeMachine = deployer.timeMachine();
+
+        churnApproverPrivateKey = deployer.churnApproverPrivateKey();
+        churnApprover = deployer.churnApprover();
 
         NAME = name;
 
@@ -111,6 +119,96 @@ contract User is Test {
         });
 
         return pubkeyParams.pubkeyG1.hashG1Point();
+    }
+
+    /// @param churnQuorums Quorums to register for that have an associated churnTarget
+    /// @param churnTargets A user that can be churned for each of churnQuorums
+    /// @param standardQuorums Any additional quorums to register for that don't require churn
+    function registerOperatorWithChurn(
+        bytes calldata churnQuorums,
+        User[] calldata churnTargets,
+        bytes calldata standardQuorums
+    ) public createSnapshot virtual {
+        _logChurn("registerOperatorWithChurn", churnQuorums, churnTargets, standardQuorums);
+
+        // Sanity check input:
+        // - churnQuorums and churnTargets should have equal length
+        // - churnQuorums and standardQuorums should not have any bits in common
+        uint192 churnBitmap = churnQuorums.orderedBytesArrayToBitmap();
+        uint192 standardBitmap = standardQuorums.orderedBytesArrayToBitmap();
+        assertEq(churnQuorums.length, churnTargets.length, "User.registerOperatorWithChurn: input length mismatch");
+        assertTrue(churnBitmap.noBitsInCommon(standardBitmap), "User.registerOperatorWithChurn: input quorums have common bits");
+
+        bytes memory allQuorums = 
+            churnBitmap
+                .plus(standardBitmap)
+                .bitmapToBytesArray();
+
+        IRegistryCoordinator.OperatorKickParam[] memory kickParams 
+            = new IRegistryCoordinator.OperatorKickParam[](allQuorums.length);
+
+        // this constructs OperatorKickParam[] in ascending quorum order
+        // (yikes)
+        uint churnIdx;
+        uint stdIdx;
+        while (churnIdx + stdIdx < allQuorums.length) {
+            if (churnIdx == churnQuorums.length) {
+                kickParams[churnIdx + stdIdx] = IRegistryCoordinator.OperatorKickParam({
+                    quorumNumber: 0
+                    operator: address(0)
+                });
+                stdIdx++;
+            } else if (stdIdx == stdQuorums.length || churnQuorums[churnIdx] < standardQuorums[stdIdx]) {
+                kickParams[churnIdx + stdIdx] = IRegistryCoordinator.OperatorKickParam({
+                    quorumNumber: churnQuorums[churnIdx],
+                    operator: address(churnTargets[churnIdx])
+                });
+                churnIdx++;
+            } else if (standardQuorums[stdIdx] < churnQuorums[churnIdx]) {
+                kickParams[churnIdx + stdIdx] = IRegistryCoordinator.OperatorKickParam({
+                    quorumNumber: 0
+                    operator: address(0)
+                });
+                stdIdx++;
+            } else {
+                revert("User.registerOperatorWithChurn: malformed input");
+            }
+        }
+
+        // Generate churn approver signature
+        bytes32 salt = keccak256(abi.encodePacked(++salt, address(this)));
+        uint expiry = type(uint).max;
+        bytes32 digest = registryCoordinator.calculateOperatorChurnApprovalDigestHash({
+            registeringOperatorId: address(this),
+            operatorKickParams: kickParams,
+            salt: salt,
+            expiry: expiry
+        });
+
+        // Sign digest
+        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(churnApproverPrivateKey, digest);
+        bytes memory signature = new bytes(65);
+        assembly {
+            mstore(add(signature, 0x20), r)
+            mstore(add(signature, 0x40), s)
+        }
+        signature[signature.length - 1] = bytes1(v);
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature
+            = ISignatureUtils.SignatureWithSaltAndExpiry({
+                signature: signature
+                salt: salt,
+                expiry: expiry
+            });
+
+        registryCoordinator.registerOperatorWithChurn({
+            quorumNumbers: allQuorums,
+            socket: NAME,
+            params: pubkeyParams,
+            operatorKickParams: kickParams,
+            churnApproverSignature: churnApproverSignature,
+            operatorSignature: _genAVSRegistrationSig()
+        });
     }
 
     function deregisterOperator(bytes calldata quorums) public createSnapshot virtual {
@@ -217,9 +315,31 @@ contract User is Test {
         emit log(string.concat(NAME, ".", s));
     }
 
-    // Operator0.registerOperator: [0x00, 0x01, 0x02, ...]
+    // Operator0.registerOperator: 0x00010203...
     function _log(string memory s, bytes calldata quorums) internal virtual {
         emit log_named_bytes(string.concat(NAME, ".", s), quorums);
+    }
+
+    // Operator0.registerOperatorWithChurn (standardQuorums): 0x00010203...
+    // - churnQuorums: 0x0405...
+    // - churnTargets: Operator1, Operator2, ...
+    function _logChurn(
+        string memory s, 
+        bytes memory churnQuorums, 
+        User[] memory churnTargets, 
+        bytes memory standardQuorums
+    ) internal virtual {
+        emit log_named_bytes(string.concat(NAME, ".", s, " (standardQuorums)"), standardQuorums);
+
+        emit log_named_bytes("- churnQuorums", churnQuorums);
+
+        string memory targetString = "["
+        for (uint i = 0; i < churnTargets.length; i++) {
+            targetString = string.concat(targetString, churnTargets[i].NAME(), ", ");
+        }
+        targetString = string.concat(targetString, "]");
+
+        emit log_named_string("- churnTargets", targetString);
     }
 }
 
