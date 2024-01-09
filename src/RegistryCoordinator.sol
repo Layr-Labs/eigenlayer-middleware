@@ -758,28 +758,46 @@ contract RegistryCoordinator is
         return _operatorInfo[operator].status;
     }
 
-    /// @notice Returns the indices of the quorumBitmaps for the provided `operatorIds` at the given `blockNumber`
+    /**
+     * @notice Returns the indices of the quorumBitmaps for the provided `operatorIds` at the given `blockNumber`
+     * @dev Reverts if any of the `operatorIds` was not (yet) registered at `blockNumber`
+     * @dev This function is designed to find proper inputs to the `getQuorumBitmapAtBlockNumberByIndex` function
+     */
     function getQuorumBitmapIndicesAtBlockNumber(
         uint32 blockNumber, 
         bytes32[] memory operatorIds
     ) external view returns (uint32[] memory) {
         uint32[] memory indices = new uint32[](operatorIds.length);
         for (uint256 i = 0; i < operatorIds.length; i++) {
-            uint256 length = _operatorBitmapHistory[operatorIds[i]].length;
-            for (uint256 j = 0; j < length; j++) {
-                if (_operatorBitmapHistory[operatorIds[i]][length - j - 1].updateBlockNumber <= blockNumber) {
-                    uint32 nextUpdateBlockNumber = 
-                        _operatorBitmapHistory[operatorIds[i]][length - j - 1].nextUpdateBlockNumber;
-                    require(
-                        nextUpdateBlockNumber == 0 || nextUpdateBlockNumber > blockNumber,
-                        "RegistryCoordinator.getQuorumBitmapIndicesAtBlockNumber: operatorId has no quorumBitmaps at blockNumber"
-                    );
-                    indices[i] = uint32(length - j - 1);
-                    break;
-                }
-            }
+            indices[i] = _getQuorumBitmapIndexAtBlockNumber(blockNumber, operatorIds[i]);
         }
         return indices;
+    }
+
+    /**
+     * @notice Returns the index of the quorumBitmap for the provided `operatorId` at the given `blockNumber`
+     * @dev Reverts if the operator had not yet (ever) registered at `blockNumber`
+     * @dev This function is designed to find proper inputs to the `getQuorumBitmapAtBlockNumberByIndex` function
+     */
+    function _getQuorumBitmapIndexAtBlockNumber(
+        uint32 blockNumber, 
+        bytes32 operatorId
+    ) internal view returns (uint32 index) {
+        uint256 length = _operatorBitmapHistory[operatorId].length;
+        for (uint256 i = 0; i < length; i++) {
+            if (_operatorBitmapHistory[operatorId][length - i - 1].updateBlockNumber <= blockNumber) {
+                uint32 nextUpdateBlockNumber = 
+                    _operatorBitmapHistory[operatorId][length - i - 1].nextUpdateBlockNumber;
+                require(
+                    nextUpdateBlockNumber == 0 || nextUpdateBlockNumber > blockNumber,
+                    "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: operatorId has no bitmap update at blockNumber"
+                );
+                return uint32(length - i - 1);
+            }
+        }
+        revert(
+            "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number"
+        );
     }
 
     /**

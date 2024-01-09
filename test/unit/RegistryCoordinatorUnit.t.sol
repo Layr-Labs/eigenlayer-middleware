@@ -1156,7 +1156,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
     function test_getQuorumBitmapIndicesAtBlockNumber_revert_notRegistered() public {
         uint32 blockNumber;
         bytes32[] memory operatorIds = new bytes32[](1);
-        cheats.expectRevert("RegistryCoordinator.getQuorumBitmapIndicesAtBlockNumber: operatorId has no quorumBitmaps at blockNumber");
+        cheats.expectRevert("RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number");
         registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
     }
 
@@ -1169,8 +1169,9 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         bytes32[] memory operatorIds = new bytes32[](1);
         operatorIds[0] = defaultOperatorId;
 
-        uint32[] memory returnArray = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
-        assertEq(returnArray[0], 0, "defaultOperator bitmap index at blockNumber 0 was not 0");
+        uint32[] memory returnArray;
+        cheats.expectRevert("RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number");
+        registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
 
         blockNumber = registrationBlockNumber;
         returnArray = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
