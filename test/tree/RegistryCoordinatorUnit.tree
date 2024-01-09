@@ -102,7 +102,7 @@
 │
 │
 ├── getQuorumBitmapIndicesAtBlockNumber()
-│   ├── given that any of the operatorIDs was not registered at the block number
+│   ├── given that any of the operatorIDs had not yet registered at the block number
 │   │   └── it should revert
 │   └── it should return the proper index of the entry in each operatorID's quorum bitmap history
 │
