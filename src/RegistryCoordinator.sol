@@ -726,13 +726,8 @@ contract RegistryCoordinator is
         uint256 length = _operatorBitmapHistory[operatorId].length;
         for (uint256 i = 0; i < length; i++) {
             if (_operatorBitmapHistory[operatorId][length - i - 1].updateBlockNumber <= blockNumber) {
-                uint32 nextUpdateBlockNumber = 
-                    _operatorBitmapHistory[operatorId][length - i - 1].nextUpdateBlockNumber;
-                require(
-                    nextUpdateBlockNumber == 0 || nextUpdateBlockNumber > blockNumber,
-                    "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: operatorId has no bitmap update at blockNumber"
-                );
-                return uint32(length - i - 1);
+                index = length - i - 1;
+                return index;
             }
         }
         revert(
