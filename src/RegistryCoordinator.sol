@@ -726,7 +726,7 @@ contract RegistryCoordinator is
         uint256 length = _operatorBitmapHistory[operatorId].length;
         for (uint256 i = 0; i < length; i++) {
             if (_operatorBitmapHistory[operatorId][length - i - 1].updateBlockNumber <= blockNumber) {
-                index = length - i - 1;
+                index = uint32(length - i - 1);
                 return index;
             }
         }
