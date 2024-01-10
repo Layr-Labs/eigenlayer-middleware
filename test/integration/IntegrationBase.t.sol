@@ -202,8 +202,14 @@ abstract contract IntegrationBase is IntegrationConfig {
         uint192 curBitmap = _getQuorumBitmap(operatorId);
         uint192 prevBitmap = _getPrevQuorumBitmap(operatorId);
 
-        // assertTrue(prevBitmap.plus(quorumsRemoved) == curBitmap, err);
-        assertTrue(curBitmap == prevBitmap.minus(quorumsRemoved), err);
+        // Originally, this check looked like this:
+        // assertTrue(curBitmap == prevBitmap.minus(quorumsRemoved), err);
+        //
+        // However, if quorumsRemoved were not the only quorums we removed from
+        // the user, this check fails. The new check ensures that quorumsRemoved
+        // were set in the previous bitmap, and are NOT set in the current bitmap
+        assertTrue(quorumsRemoved.isSubsetOf(prevBitmap), err);
+        assertTrue(quorumsRemoved.noBitsInCommon(curBitmap), err);
     }
 
     function assert_Snap_Unchanged_OperatorInfo(User user, string memory err) internal {
@@ -260,6 +266,38 @@ abstract contract IntegrationBase is IntegrationConfig {
         }
     }
 
+    /// @dev For each churned quorum, checks that the incomingOperator's pk was added
+    /// and the corresponding churned operator's pk was removed
+    function assert_Snap_Churned_QuorumApk(
+        User incomingOperator,
+        User[] memory churnedOperators,
+        bytes memory churnedQuorums,
+        string memory err
+    ) internal {
+        // Sanity check input lengths
+        assertEq(churnedOperators.length, churnedQuorums.length, "assert_Snap_Churned_QuorumApk: input length mismatch");
+
+        BN254.G1Point memory incomingPubkey = incomingOperator.pubkeyG1();
+
+        BN254.G1Point[] memory curApks = _getQuorumApks(churnedQuorums);
+        BN254.G1Point[] memory prevApks = _getPrevQuorumApks(churnedQuorums);
+
+        // For each churned quorum, check:
+        // - that the corresponding churned operator pubkey was removed
+        // - ... AND that the incomingOperator pubkey was added
+        for (uint i = 0; i < churnedQuorums.length; i++) {
+            BN254.G1Point memory churnedPubkey = churnedOperators[i].pubkeyG1();
+
+            BN254.G1Point memory expectedApk 
+                = prevApks[i]
+                    .plus(churnedPubkey.negate())
+                    .plus(incomingPubkey);
+                
+            assertEq(expectedApk.X, curApks[i].X, err);
+            assertEq(expectedApk.Y, curApks[i].Y, err);
+        }
+    }
+
     /// @dev Check that specific weights were added to the operator and total stakes for each quorum
     function assert_Snap_AddedWeightToStakes(
         User user, 
@@ -281,7 +319,7 @@ abstract contract IntegrationBase is IntegrationConfig {
 
     /// @dev Check that the operator's stake weight was added to the operator and total
     /// stakes for each quorum
-    function assert_Snap_AddedOperatorWeight(
+    function assert_Snap_Added_OperatorWeight(
         User user, 
         bytes memory quorums,
         string memory err
@@ -291,21 +329,37 @@ abstract contract IntegrationBase is IntegrationConfig {
         assert_Snap_AddedWeightToStakes(user, quorums, addedWeights, err);
     }
 
-    // function assert_Snap_Removed_OperatorStake(
-    //     User user, 
-    //     bytes memory quorums,
-    //     string memory err
-    // ) internal {
-    //     uint96[] memory curStakes = _getStakes(user, quorums);
-    //     uint96[] memory prevStakes = _getPrevStakes(user, quorums);
+    /// @dev For each churned quorum, checks that the incomingOperator's weight was added
+    /// and the corresponding churned operator's weight was removed
+    function assert_Snap_Churned_OperatorWeight(
+        User incomingOperator,
+        User[] memory churnedOperators,
+        bytes memory churnedQuorums,
+        string memory err
+    ) internal {
+        // Sanity check input lengths
+        assertEq(churnedOperators.length, churnedQuorums.length, "assert_Snap_Churned_OperatorWeight: input length mismatch");
 
-    //     // uint96[] memory curWeights = _getWeights(user, quorums);
-    //     uint96[] memory prevWeights = _getPrevWeights(user, quorums);
+        // Get weights added and removed for each quorum
+        uint96[] memory addedWeights = _getWeights(incomingOperator, churnedQuorums);
+        uint96[] memory removedWeights = new uint96[](churnedOperators.length);
+        for (uint i = 0; i < churnedOperators.length; i++) {
+            removedWeights[i] = _getWeight(uint8(churnedQuorums[i]), churnedOperators[i]);
+        }
 
-    //     for (uint i = 0; i < quorums.length; i++) {
-    //         assertEq(curStakes[i], prevStakes[i] - prevWeights[i], err);
-    //     }
-    // }
+        uint96[] memory curIncomingOpStakes = _getStakes(incomingOperator, churnedQuorums);
+        uint96[] memory prevIncomingOpStakes = _getPrevStakes(incomingOperator, churnedQuorums);
+
+        uint96[] memory curTotalStakes = _getTotalStakes(churnedQuorums);
+        uint96[] memory prevTotalStakes = _getPrevTotalStakes(churnedQuorums);
+
+        // For each quorum, check that the incoming operator's individual stake was increased by addedWeights
+        // and that the total stake is plus addedWeights and minus removedWeights
+        for (uint i = 0; i < churnedQuorums.length; i++) {
+            assertEq(curIncomingOpStakes[i], prevIncomingOpStakes[i] + addedWeights[i], err);
+            assertEq(curTotalStakes[i], prevTotalStakes[i] + addedWeights[i] - removedWeights[i], err);
+        }
+    }
 
     function assert_Snap_Unchanged_OperatorStake(
         User user, 
@@ -432,23 +486,41 @@ abstract contract IntegrationBase is IntegrationConfig {
         }
     }
 
-    /// @dev After registering for quorums, checks that the list of operators calculated
-    /// for each quorum grew by one
-    function assert_Snap_Added_OperatorListEntry(bytes memory quorums, string memory err) internal {
+    /// @dev After registering for quorums, checks:
+    /// - that the list length grew by one
+    /// - that the operator is in the current list, but not the previous list
+    function assert_Snap_Added_OperatorListEntry(
+        User operator,
+        bytes memory quorums, 
+        string memory err
+    ) internal {
         bytes32[][] memory curOperatorLists = _getOperatorLists(quorums);
         bytes32[][] memory prevOperatorLists = _getPrevOperatorLists(quorums);
 
         for (uint i = 0; i < quorums.length; i++) {
             assertEq(curOperatorLists[i].length, prevOperatorLists[i].length + 1, err);
+
+            assertTrue(_contains(curOperatorLists[i], operator), err);
+            assertFalse(_contains(prevOperatorLists[i], operator), err);
         }
     }
 
-    function assert_Snap_Removed_OperatorListEntry(bytes memory quorums, string memory err) internal {
+    /// @dev After registering for quorums, checks:
+    /// - that the list length shrunk by one
+    /// - that the operator is in the previous list, but not the current list
+    function assert_Snap_Removed_OperatorListEntry(
+        User operator,
+        bytes memory quorums, 
+        string memory err
+    ) internal {
         bytes32[][] memory curOperatorLists = _getOperatorLists(quorums);
         bytes32[][] memory prevOperatorLists = _getPrevOperatorLists(quorums);
 
         for (uint i = 0; i < quorums.length; i++) {
             assertEq(curOperatorLists[i].length, prevOperatorLists[i].length - 1, err);
+
+            assertFalse(_contains(curOperatorLists[i], operator), err);
+            assertTrue(_contains(prevOperatorLists[i], operator), err);
         }
     }
 
@@ -460,6 +532,35 @@ abstract contract IntegrationBase is IntegrationConfig {
         bytes32 prevHash = keccak256(abi.encode(prevOperatorLists));
 
         assertEq(curHash, prevHash, err);
+    }
+
+    /// @dev After registering for quorums with churn, checks:
+    /// - that the list length stayed the same
+    /// - that the incoming operator is in the current list, but was NOT in the previous list
+    /// - that each churned operator is NOT in the current list, but was in the previous list
+    function assert_Snap_Replaced_OperatorListEntries(
+        User incomingOperator,
+        User[] memory churnedOperators,
+        bytes memory churnedQuorums, 
+        string memory err
+    ) internal {
+        // Sanity check input lengths
+        assertEq(churnedOperators.length, churnedQuorums.length, "assert_Snap_Replaced_OperatorListEntries: input length mismatch");
+        
+        bytes32[][] memory curOperatorLists = _getOperatorLists(churnedQuorums);
+        bytes32[][] memory prevOperatorLists = _getPrevOperatorLists(churnedQuorums);
+
+        for (uint i = 0; i < churnedQuorums.length; i++) {
+            assertEq(curOperatorLists[i].length, prevOperatorLists[i].length, err);
+
+            // check incomingOperator was added
+            assertTrue(_contains(curOperatorLists[i], incomingOperator), err);
+            assertFalse(_contains(prevOperatorLists[i], incomingOperator), err);
+
+            // check churnedOperator was removed
+            assertFalse(_contains(curOperatorLists[i], churnedOperators[i]), err);
+            assertTrue(_contains(prevOperatorLists[i], churnedOperators[i]), err);
+        }
     }
 
     /*******************************************************************************
@@ -612,6 +713,18 @@ abstract contract IntegrationBase is IntegrationConfig {
         }
 
         return tokens;
+    }
+
+    function _contains(bytes32[] memory operatorIds, User operator) internal view returns (bool) {
+        bytes32 checkId = operator.operatorId();
+
+        for (uint i = 0; i < operatorIds.length; i++) {
+            if (operatorIds[i] == checkId) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /*******************************************************************************

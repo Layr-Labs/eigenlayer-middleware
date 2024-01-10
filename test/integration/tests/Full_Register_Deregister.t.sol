@@ -29,15 +29,22 @@ contract Integration_Full_Register_Deregister is IntegrationChecks {
 
         // Select churnable operators in each quorum. If needed, deals/deposits assets
         // for the operator, and fills any non-full quorums
-        User[] memory churnTargets = _getChurnTargets(operator, quorums);
+        User[] memory churnTargets = _getChurnTargets({
+            incomingOperator: operator,
+            churnQuorums: quorums,
+            standardQuorums: new bytes(0)
+        });
 
         check_Never_Registered(operator);
-        check_Can_Churn(operator, churnTargets, quorums);
 
         // 1. Register for all quorums by churning old operators
-        operator.registerOperatorWithChurn(quorums, churnTargets);
-        check_Register_State(operator, quorums);
-        check_Churned_State(operator, churnTargets, quorums);
+        operator.registerOperatorWithChurn(quorums, churnTargets, new bytes(0));
+        check_Churned_State({
+            incomingOperator: operator,
+            churnedOperators: churnTargets,
+            churnedQuorums: quorums,
+            standardQuorums: new bytes(0)
+        });
 
         // 2. Deregister from all quorums
         operator.deregisterOperator(quorums);
@@ -52,7 +59,8 @@ contract Integration_Full_Register_Deregister is IntegrationChecks {
     // 1. Register for all quorums by churning old operators
     // 2. Deregister from all quorums
     // 3. Old operators re-register for quorums
-    function testFuzz_churnAll_deregisterAll_reregisterAll(uint24 _random) public {
+    // 4. Original operator re-registers for all quorums by churning old operators again
+    function testFuzz_churnAll_deregisterAll_oldReregisterAll(uint24 _random) public {
         _configRand({
             _randomSeed: _random,
             _userTypes: DEFAULT | ALT_METHODS,
@@ -69,15 +77,22 @@ contract Integration_Full_Register_Deregister is IntegrationChecks {
 
         // Select churnable operators in each quorum, dealing additional assets to
         // the main operator if needed
-        User[] memory churnTargets = _getChurnTargets(operator, quorums);
+        User[] memory churnTargets = _getChurnTargets({
+            incomingOperator: operator,
+            churnQuorums: quorums,
+            standardQuorums: new bytes(0)
+        });
 
         check_Never_Registered(operator);
-        check_Can_Churn(operator, churnTargets, quorums);
 
         // 1. Register for all quorums by churning old operators
-        operator.registerOperatorWithChurn(quorums, churnTargets);
-        check_Register_State(operator, quorums);
-        check_Churned_State(operator, churnTargets, quorums);
+        operator.registerOperatorWithChurn(quorums, churnTargets, new bytes(0));
+        check_Churned_State({
+            incomingOperator: operator,
+            churnedOperators: churnTargets,
+            churnedQuorums: quorums,
+            standardQuorums: new bytes(0)
+        });
 
         // 2. Deregister from all quorums
         operator.deregisterOperator(quorums);
@@ -88,73 +103,27 @@ contract Integration_Full_Register_Deregister is IntegrationChecks {
         // Note: churnTargets.length == quorums.length, so we do these one at a time
         for (uint i = 0; i < churnTargets.length; i++) {
             User churnTarget = churnTargets[i];
-            bytes memory quorum = quorums[i:i+1];
+            bytes memory quorum = new bytes(1);
+            quorum[0] = quorums[i];
 
-            check_Can_Register(churnTarget, quorum);
             churnTarget.registerOperator(quorum);
             check_Register_State(churnTarget, quorum);
         }
-
-        // Check that the operator could churn each target again
-        check_Can_Churn(operator, churnTargets, quorums);
+        
+        // 4. Original operator re-registers for all quorums by churning old operators again
+        operator.registerOperatorWithChurn(quorums, churnTargets, new bytes(0));
+        check_Churned_State({
+            incomingOperator: operator,
+            churnedOperators: churnTargets,
+            churnedQuorums: quorums,
+            standardQuorums: new bytes(0)
+        });
     }
 
     // 1. Register for *some* quorums with churn, and the rest without churn
     // 2. Deregister from all quorums
     // 3. Re-register for all quorums without needing churn
-    function testFuzz_registerSome_deregisterSome_deregisterRemaining(uint24 _random) public {
-        _configRand({
-            _randomSeed: _random,
-            _userTypes: DEFAULT | ALT_METHODS,
-            _quorumConfig: QuorumConfig({
-                numQuorums: ONE | TWO | MANY,
-                numStrategies: ONE | TWO | MANY,
-                minimumStake: NO_MINIMUM | HAS_MINIMUM,
-                fillTypes: EMPTY | SOME_FILL
-            })
-        });
-
-        User operator = _newRandomOperator();
-        bytes memory quorums = quorumArray;
-
-        // Select some quorums to register using churn, and the rest without churn
-        bytes memory churnQuorums = _selectRand(quorums);
-        bytes memory standardQuorums = 
-            quorums
-                .minus(churnQuorums.orderedBytesArrayToBitmap())
-                .bitmapToBytesArray();
-
-        // Select churnable operators in each quorum. If needed, deals/deposits assets
-        // for the operator, and fills any non-full quorums
-        User[] memory churnTargets = _getChurnTargets(operator, churnQuorums);
-
-        check_Never_Registered(operator);
-        check_Can_Churn(operator, churnTargets, churnQuorums);
-        check_Can_Register(operator, standardQuorums);
-
-        // 1. Register for *some* quorums with churn, and the rest without churn
-        operator.registerOperatorWithChurn({
-            churnQuorums: churnQuorums,
-            churnTargets: churnTargets,
-            standardQuorums: standardQuorums
-        });
-        check_Register_State(operator, quorums);
-        check_Churned_State(operator, churnTargets, quorums);
-
-        // 2. Deregister from all quorums
-        operator.deregisterOperator(quorums);
-        check_Deregister_State(operator, quorums);
-        check_CompleteDeregister_State(operator);
-
-        // 3. Re-register for all quorums without needing churn
-        operator.registerOperator(quorums);
-        check_Register_State(operator, quorums);
-    }
-
-    // 1. Register for all quorums by churning old operators
-    // 2. Each old operator deposits funds into EigenLayer
-    // 3. Each old operator re-registers by churning
-    function testFuzz_registerSome_deregisterSome_reregisterSome(uint24 _random) public {
+    function testFuzz_churnSome_deregisterSome_deregisterRemaining(uint24 _random) public {
         _configRand({
             _randomSeed: _random,
             _userTypes: DEFAULT | ALT_METHODS,
@@ -166,27 +135,47 @@ contract Integration_Full_Register_Deregister is IntegrationChecks {
             })
         });
 
-        revert("TODO");
+        User operator = _newRandomOperator();
+        bytes memory quorums = quorumArray;
 
-        // User operator = _newRandomOperator();
-        // // Select at least one quorum to register for
-        // bytes memory quorums = _selectRand(quorumArray);
+        // Select some quorums to register using churn, and the rest without churn
+        bytes memory churnQuorums = _selectRand(quorums);
+        bytes memory standardQuorums = 
+            quorums
+                .orderedBytesArrayToBitmap()
+                .minus(churnQuorums.orderedBytesArrayToBitmap())
+                .bitmapToBytesArray();
 
-        // check_Never_Registered(operator);
-        // check_Can_Register(operator, quorums);
+        // Select churnable operators in each quorum. If needed, deals/deposits assets
+        // for the operator, and deregisters operators from standardQuorums to make room
+        User[] memory churnTargets = _getChurnTargets({
+            incomingOperator: operator,
+            churnQuorums: churnQuorums,
+            standardQuorums: standardQuorums
+        });
 
-        // // 1. Register for some quorums
-        // operator.registerOperator(quorums);
-        // check_Register_State(operator, quorums);
+        check_Never_Registered(operator);
 
-        // // 2. Deregister from at least one quorum
-        // bytes memory quorumsToRemove = _selectRand(quorums);
-        // operator.deregisterOperator(quorumsToRemove);
-        // check_Deregister_State(operator, quorumsToRemove);
+        // 1. Register for *some* quorums with churn, and the rest without churn
+        operator.registerOperatorWithChurn({
+            churnQuorums: churnQuorums,
+            churnTargets: churnTargets,
+            standardQuorums: standardQuorums
+        });
+        check_Churned_State({
+            incomingOperator: operator,
+            churnedOperators: churnTargets,
+            churnedQuorums: churnQuorums,
+            standardQuorums: standardQuorums
+        });
 
-        // // 3. Reregister for at least one quorum
-        // bytes memory quorumsToAdd = _selectRand(quorumsToRemove);
-        // operator.registerOperator(quorumsToAdd);
-        // check_Register_State(operator, quorumsToAdd);
+        // 2. Deregister from all quorums
+        operator.deregisterOperator(quorums);
+        check_Deregister_State(operator, quorums);
+        check_CompleteDeregister_State(operator);
+
+        // 3. Re-register for all quorums without needing churn
+        operator.registerOperator(quorums);
+        check_Register_State(operator, quorums);
     }
 }

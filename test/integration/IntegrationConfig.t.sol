@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 
 import "test/integration/IntegrationDeployer.t.sol";
 import "test/ffi/util/G2Operations.sol";
+import "test/integration/utils/BitmapStrings.t.sol";
 
 contract Constants {
 
@@ -25,10 +26,13 @@ contract Constants {
     uint constant NUM_GENERATED_OPERATORS = MAX_OPERATOR_COUNT + 5;
 
     uint constant MAX_QUORUM_COUNT = 192;  // From RegistryCoordinator.MAX_QUORUM_COUNT
+
+    uint16 internal constant BIPS_DENOMINATOR = 10000;
 }
 
 contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
 
+    using BitmapStrings for *;
     using Strings for *;
     using BN254 for *;
     using BitmapUtils for *;
@@ -184,7 +188,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
         }
 
         emit log("=====================");
-        emit log("_configRand complete!");
+        emit log("_configRand complete; starting test!");
         emit log("=====================");
     }
 
@@ -231,7 +235,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
     function _dealRandTokens(User user) internal returns (IStrategy[] memory, uint[] memory) {
         IStrategy[] memory strategies = new IStrategy[](allStrats.length);
         uint[] memory balances = new uint[](allStrats.length);
-        emit log_named_string("_dealRandAssets: dealing assets to", user.NAME());
+        emit log_named_string("_dealRandTokens: dealing assets to", user.NAME());
         
         // Deal the user a random balance between [MIN_BALANCE, MAX_BALANCE] for each existing strategy
         for (uint i = 0; i < allStrats.length; i++) {
@@ -245,8 +249,134 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
             balances[i] = balance;
         }
 
-        emit log_named_uint("_dealRandTokens: num assets awarded: ", strategies.length);
         return (strategies, balances);
+    }
+
+    function _dealMaxTokens(User user) internal returns (IStrategy[] memory, uint[] memory) {
+        IStrategy[] memory strategies = new IStrategy[](allStrats.length);
+        uint[] memory balances = new uint[](allStrats.length);
+        emit log_named_string("_dealMaxTokens: dealing assets to", user.NAME());
+        
+        // Deal the user the 100 * MAX_BALANCE for each existing strategy
+        for (uint i = 0; i < allStrats.length; i++) {
+            IStrategy strat = allStrats[i];
+            IERC20 underlyingToken = strat.underlyingToken();
+
+            uint balance = 100 * MAX_BALANCE;
+            StdCheats.deal(address(underlyingToken), address(user), balance);
+
+            strategies[i] = strat;
+            balances[i] = balance;
+        }
+
+        return (strategies, balances);
+    }
+
+    /// @param incomingOperator the operator that will churn operators in churnQuorums
+    /// @param churnQuorums the quorums that we need to select churnable operators from
+    /// @param standardQuorums the quorums that we want to register for WITHOUT churn
+    /// @return churnTargets: one churnable operator for each churnQuorum
+    function _getChurnTargets(
+        User incomingOperator, 
+        bytes memory churnQuorums,
+        bytes memory standardQuorums
+    ) internal returns (User[] memory) {
+        emit log_named_string("_getChurnTargets: incoming operator", incomingOperator.NAME());
+        emit log_named_string("_getChurnTargets: churnQuorums", churnQuorums.toString());
+        emit log_named_string("_getChurnTargets: standardQuorums", standardQuorums.toString());
+
+        // For each standard registration quorum, eject operators to make room
+        _makeRoom(standardQuorums);
+
+        // For each churn quorum, select operators as churn targets
+        User[] memory churnTargets = new User[](churnQuorums.length);
+
+        for (uint i = 0; i < churnQuorums.length; i++) {
+            uint8 quorum = uint8(churnQuorums[i]);
+
+            IRegistryCoordinator.OperatorSetParam memory params 
+                = registryCoordinator.getOperatorSetParams(quorum);
+
+            // Sanity check - make sure we're at the operator cap
+            uint32 curNumOperators = indexRegistry.totalOperatorsForQuorum(quorum);
+            assertTrue(curNumOperators >= params.maxOperatorCount, "_getChurnTargets: non-full quorum cannot be churned");
+
+            // Get a random registered operator
+            churnTargets[i] = _selectRandRegisteredOperator(quorum);
+            emit log_named_string(
+                string.concat("_getChurnTargets: selected churn target for quorum ", uint(quorum).toString()),
+                churnTargets[i].NAME());
+
+            uint96 currentTotalStake = stakeRegistry.getCurrentTotalStake(quorum);
+            uint96 operatorToChurnStake = stakeRegistry.getCurrentStake(churnTargets[i].operatorId(), quorum);
+
+            // Ensure the incoming operator exceeds the individual stake threshold --
+            // more stake than the outgoing operator by kickBIPsOfOperatorStake
+            while (
+                _getWeight(quorum, incomingOperator) <= _individualKickThreshold(operatorToChurnStake, params) ||
+                operatorToChurnStake >= _totalKickThreshold(currentTotalStake + _getWeight(quorum, incomingOperator), params)
+            ) {
+                (IStrategy[] memory strategies, uint[] memory balances) = _dealMaxTokens(incomingOperator);
+                incomingOperator.depositIntoEigenlayer(strategies, balances);
+            }
+        }
+
+        // Oh jeez that was a lot. Return the churn targets
+        return churnTargets;
+    }
+
+    /// From RegistryCoordinator._individualKickThreshold
+    function _individualKickThreshold(
+        uint96 operatorStake, 
+        IRegistryCoordinator.OperatorSetParam memory setParams
+    ) internal pure returns (uint96) {
+        return operatorStake * setParams.kickBIPsOfOperatorStake / BIPS_DENOMINATOR;
+    }
+
+    /// From RegistryCoordinator._totalKickThreshold
+    function _totalKickThreshold(
+        uint96 totalStake, 
+        IRegistryCoordinator.OperatorSetParam memory setParams
+    ) internal pure returns (uint96) {
+        return totalStake * setParams.kickBIPsOfTotalStake / BIPS_DENOMINATOR;
+    }
+
+    function _getWeight(
+        uint8 quorum,
+        User operator
+    ) internal view returns (uint96) {
+        return stakeRegistry.weightOfOperatorForQuorum(quorum, address(operator));
+    }
+
+    function _makeRoom(bytes memory quorums) private {
+        emit log_named_string("_getChurnTargets: making room by removing operators from quorums", quorums.toString());
+
+        for (uint i = 0; i < quorums.length; i++) {
+            uint8 quorum = uint8(quorums[i]);
+            uint32 maxOperatorCount = registryCoordinator.getOperatorSetParams(quorum).maxOperatorCount;
+
+            // Continue deregistering until we're under the cap
+            // This uses while in case we tested a config change that lowered the max count
+            while (indexRegistry.totalOperatorsForQuorum(quorum) >= maxOperatorCount) {
+                // Select a random operator and deregister them from the quorum
+                User operatorToKick = _selectRandRegisteredOperator(quorum);
+
+                bytes memory quorumArr = new bytes(1);
+                quorumArr[0] = bytes1(quorum);
+                operatorToKick.deregisterOperator(quorumArr);
+            }
+        }
+    }
+
+    function _selectRandRegisteredOperator(uint8 quorum) internal returns (User) {
+        uint32 curNumOperators = indexRegistry.totalOperatorsForQuorum(quorum);
+        
+        bytes32 randId = indexRegistry.getLatestOperatorUpdate({
+            quorumNumber: quorum,
+            index: uint32(_randUint({ min: 0, max: curNumOperators - 1 }))
+        }).operatorId;
+
+        return User(blsApkRegistry.getOperatorFromPubkeyHash(randId));
     }
 
     function _fetchKeypair() internal returns (uint, IBLSApkRegistry.PubkeyRegistrationParams memory) {

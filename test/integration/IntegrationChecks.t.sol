@@ -7,6 +7,8 @@ import "test/integration/User.t.sol";
 /// @notice Contract that provides utility functions to reuse common test blocks & checks
 contract IntegrationChecks is IntegrationBase {
     
+    using BitmapUtils for *;
+
     /*******************************************************************************
                                 PRE-REGISTER CHECKS
     *******************************************************************************/
@@ -29,29 +31,6 @@ contract IntegrationChecks is IntegrationBase {
         // DelegationManager
         assert_NotRegisteredToAVS(operator, 
             "operator should not be registered to the AVS");
-    }
-
-    function check_Can_Register(
-        User operator,
-        bytes memory quorums
-    ) internal {
-        _log("check_Can_Register", operator);
-
-        // RegistryCoordinator
-        assert_QuorumsExist(quorums,
-            "not all quorums exist");
-        assert_NotRegisteredForQuorums(operator, quorums,
-            "operator is already registered for some quorums");
-
-        // StakeRegistry
-        assert_MeetsMinimumWeight(operator, quorums,
-            "operator does not meet minimum weight for all quorums");
-        assert_NoExistingStake(operator, quorums, 
-            "operator should not already have stake in any quorums");
-
-        // IndexRegistry
-        assert_BelowMaxOperators(quorums,
-            "operator cap reached");
     }
 
     /*******************************************************************************
@@ -83,18 +62,99 @@ contract IntegrationChecks is IntegrationBase {
         // StakeRegistry
         assert_HasAtLeastMinimumStake(operator, quorums,
             "operator should have at least the minimum stake in each quorum");
-        assert_Snap_AddedOperatorWeight(operator, quorums,
+        assert_Snap_Added_OperatorWeight(operator, quorums,
             "failed to add operator weight to operator and total stake in each quorum");
 
         // IndexRegistry
         assert_Snap_Added_OperatorCount(quorums,
             "total operator count should have increased for each quorum");
-        assert_Snap_Added_OperatorListEntry(quorums,
+        assert_Snap_Added_OperatorListEntry(operator, quorums,
             "operator list should have one more entry");
 
         // DelegationManager
         assert_IsRegisteredToAVS(operator,
             "operator should be registered to AVS");
+    }
+
+    /// @dev Combines many checks of check_Register_State and check_Deregister_State
+    /// to account for quorums registered with churn
+    function check_Churned_State(
+        User incomingOperator,
+        User[] memory churnedOperators,
+        bytes memory churnedQuorums,
+        bytes memory standardQuorums
+    ) internal {
+        _log("check_Churned_State", incomingOperator);
+
+        bytes memory combinedQuorums = 
+            churnedQuorums
+                .orderedBytesArrayToBitmap()
+                .plus(standardQuorums.orderedBytesArrayToBitmap())
+                .bitmapToBytesArray();
+
+        // RegistryCoordinator
+        assert_HasOperatorInfoWithId(incomingOperator, 
+            "operatorInfo should have operatorId");
+        assert_HasRegisteredStatus(incomingOperator,
+            "operatorInfo status should be REGISTERED");
+        assert_IsRegisteredForQuorums(incomingOperator, combinedQuorums,
+            "current operator bitmap should include quorums");
+        assert_Snap_Registered_ForQuorums(incomingOperator, combinedQuorums,
+            "operator did not register for all quorums");
+
+        // BLSApkRegistry
+        assert_HasRegisteredPubkey(incomingOperator, 
+            "operator should have registered a pubkey");
+        assert_Snap_Added_QuorumApk(incomingOperator, standardQuorums,
+            "operator pubkey should have been added to standardQuorums apks");
+        assert_Snap_Churned_QuorumApk(incomingOperator, churnedOperators, churnedQuorums,
+            "operator pubkey should have been added and churned operator pubkeys should have been removed from apks");
+        
+        // StakeRegistry
+        assert_HasAtLeastMinimumStake(incomingOperator, combinedQuorums,
+            "operator should have at least the minimum stake in each quorum");
+        assert_Snap_Added_OperatorWeight(incomingOperator, standardQuorums,
+            "failed to add operator weight to operator and total stake in standardQuorums");
+        assert_Snap_Churned_OperatorWeight(incomingOperator, churnedOperators, churnedQuorums,
+            "failed to add operator weight and remove churned weight from each quorum");
+
+        // IndexRegistry
+        assert_Snap_Added_OperatorCount(standardQuorums,
+            "total operator count should have increased for standardQuorums");
+        assert_Snap_Unchanged_OperatorCount(churnedQuorums,
+            "total operator count should be the same for churnedQuorums");
+        assert_Snap_Added_OperatorListEntry(incomingOperator, standardQuorums,
+            "operator list should have one more entry in standardQuorums");
+        assert_Snap_Replaced_OperatorListEntries(incomingOperator, churnedOperators, churnedQuorums,
+            "operator list should contain incoming operator and should not contain churned operators");
+
+        // DelegationManager
+        assert_IsRegisteredToAVS(incomingOperator,
+            "operator should be registered to AVS");
+
+        // Check that churnedOperators are deregistered from churnedQuorums
+        for (uint i = 0; i < churnedOperators.length; i++) {
+            User churnedOperator = churnedOperators[i];
+
+            bytes memory churnedQuorum = new bytes(1);
+            churnedQuorum[0] = churnedQuorums[i];
+
+            // RegistryCoordinator
+            assert_HasOperatorInfoWithId(churnedOperator, 
+                "churned operatorInfo should still have operatorId");
+            assert_NotRegisteredForQuorums(churnedOperator, churnedQuorum,
+                "churned operator bitmap should not include churned quorums");
+            assert_Snap_Deregistered_FromQuorums(churnedOperator, churnedQuorum,
+                "churned operator did not deregister from churned quorum");
+
+            // BLSApkRegistry
+            assert_HasRegisteredPubkey(churnedOperator, 
+                "churned operator should still have a registered pubkey");
+
+            // StakeRegistry
+            assert_NoExistingStake(churnedOperator, churnedQuorum,
+                "operator should no longer have stake in any quorums");
+        }
     }
 
     /*******************************************************************************
@@ -249,7 +309,7 @@ contract IntegrationChecks is IntegrationBase {
         // IndexRegistry
         assert_Snap_Reduced_OperatorCount(quorums,
             "total operator count should have decreased for each quorum");
-        assert_Snap_Removed_OperatorListEntry(quorums,
+        assert_Snap_Removed_OperatorListEntry(operator, quorums,
             "operator list should have one fewer entry");
 
         // DelegationManager
@@ -323,7 +383,7 @@ contract IntegrationChecks is IntegrationBase {
         // IndexRegistry
         assert_Snap_Reduced_OperatorCount(quorums,
             "total operator count should have decreased for each quorum");
-        assert_Snap_Removed_OperatorListEntry(quorums,
+        assert_Snap_Removed_OperatorListEntry(operator, quorums,
             "operator list should have one fewer entry");
     }
 

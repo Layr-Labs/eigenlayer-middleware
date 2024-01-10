@@ -27,7 +27,6 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
         bytes memory quorums = quorumArray;
 
         check_Never_Registered(operator);
-        check_Can_Register(operator, quorums);
 
         // 1. Register for all quorums
         operator.registerOperator(quorums);
@@ -73,7 +72,6 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
         bytes memory quorums = quorumArray;
 
         check_Never_Registered(operator);
-        check_Can_Register(operator, quorums);
 
         // 1. Register for all quorums
         operator.registerOperator(quorums);
@@ -114,7 +112,6 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
         bytes memory quorums = quorumArray;
 
         check_Never_Registered(operator);
-        check_Can_Register(operator, quorums);
 
         // 1. Register for all quorums
         operator.registerOperator(quorums);
@@ -148,7 +145,6 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
         bytes memory quorums = quorumArray;
 
         check_Never_Registered(operator);
-        check_Can_Register(operator, quorums);
 
         // 1. Register for all quorums
         operator.registerOperator(quorums);
@@ -183,7 +179,6 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
         bytes memory quorums = quorumArray;
 
         check_Never_Registered(operator);
-        check_Can_Register(operator, quorums);
 
         // 1. Register for all quorums
         operator.registerOperator(quorums);

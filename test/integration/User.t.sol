@@ -24,6 +24,7 @@ import "src/libraries/BN254.sol";
 import "src/libraries/BitmapUtils.sol";
 import "test/integration/TimeMachine.t.sol";
 import "test/integration/utils/Sort.t.sol";
+import "test/integration/utils/BitmapStrings.t.sol";
 
 
 interface IUserDeployer {
@@ -37,6 +38,8 @@ contract User is Test {
 
     using BN254 for *;
     using Strings for *;
+    using BitmapStrings for *;
+    using BitmapUtils for *;
 
     Vm cheats = Vm(HEVM_ADDRESS);
 
@@ -102,8 +105,6 @@ contract User is Test {
         _;
     }
 
-    receive() external payable {}
-
     /**
      * Middleware contracts:
      */
@@ -134,8 +135,8 @@ contract User is Test {
         // Sanity check input:
         // - churnQuorums and churnTargets should have equal length
         // - churnQuorums and standardQuorums should not have any bits in common
-        uint192 churnBitmap = churnQuorums.orderedBytesArrayToBitmap();
-        uint192 standardBitmap = standardQuorums.orderedBytesArrayToBitmap();
+        uint192 churnBitmap = uint192(churnQuorums.orderedBytesArrayToBitmap());
+        uint192 standardBitmap = uint192(standardQuorums.orderedBytesArrayToBitmap());
         assertEq(churnQuorums.length, churnTargets.length, "User.registerOperatorWithChurn: input length mismatch");
         assertTrue(churnBitmap.noBitsInCommon(standardBitmap), "User.registerOperatorWithChurn: input quorums have common bits");
 
@@ -154,19 +155,19 @@ contract User is Test {
         while (churnIdx + stdIdx < allQuorums.length) {
             if (churnIdx == churnQuorums.length) {
                 kickParams[churnIdx + stdIdx] = IRegistryCoordinator.OperatorKickParam({
-                    quorumNumber: 0
+                    quorumNumber: 0,
                     operator: address(0)
                 });
                 stdIdx++;
-            } else if (stdIdx == stdQuorums.length || churnQuorums[churnIdx] < standardQuorums[stdIdx]) {
+            } else if (stdIdx == standardQuorums.length || churnQuorums[churnIdx] < standardQuorums[stdIdx]) {
                 kickParams[churnIdx + stdIdx] = IRegistryCoordinator.OperatorKickParam({
-                    quorumNumber: churnQuorums[churnIdx],
+                    quorumNumber: uint8(churnQuorums[churnIdx]),
                     operator: address(churnTargets[churnIdx])
                 });
                 churnIdx++;
             } else if (standardQuorums[stdIdx] < churnQuorums[churnIdx]) {
                 kickParams[churnIdx + stdIdx] = IRegistryCoordinator.OperatorKickParam({
-                    quorumNumber: 0
+                    quorumNumber: 0,
                     operator: address(0)
                 });
                 stdIdx++;
@@ -176,12 +177,12 @@ contract User is Test {
         }
 
         // Generate churn approver signature
-        bytes32 salt = keccak256(abi.encodePacked(++salt, address(this)));
+        bytes32 _salt = keccak256(abi.encodePacked(++salt, address(this)));
         uint expiry = type(uint).max;
         bytes32 digest = registryCoordinator.calculateOperatorChurnApprovalDigestHash({
-            registeringOperatorId: address(this),
+            registeringOperatorId: operatorId,
             operatorKickParams: kickParams,
-            salt: salt,
+            salt: _salt,
             expiry: expiry
         });
 
@@ -196,8 +197,8 @@ contract User is Test {
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature
             = ISignatureUtils.SignatureWithSaltAndExpiry({
-                signature: signature
-                salt: salt,
+                signature: signature,
+                salt: _salt,
                 expiry: expiry
             });
 
@@ -317,10 +318,11 @@ contract User is Test {
 
     // Operator0.registerOperator: 0x00010203...
     function _log(string memory s, bytes calldata quorums) internal virtual {
-        emit log_named_bytes(string.concat(NAME, ".", s), quorums);
+        emit log_named_string(string.concat(NAME, ".", s), quorums.toString());
     }
 
-    // Operator0.registerOperatorWithChurn (standardQuorums): 0x00010203...
+    // Operator0.registerOperatorWithChurn 
+    // - standardQuorums: 0x00010203...
     // - churnQuorums: 0x0405...
     // - churnTargets: Operator1, Operator2, ...
     function _logChurn(
@@ -329,13 +331,18 @@ contract User is Test {
         User[] memory churnTargets, 
         bytes memory standardQuorums
     ) internal virtual {
-        emit log_named_bytes(string.concat(NAME, ".", s, " (standardQuorums)"), standardQuorums);
+        emit log(string.concat(NAME, ".", s));
 
-        emit log_named_bytes("- churnQuorums", churnQuorums);
+        emit log_named_string("- standardQuorums", standardQuorums.toString());
+        emit log_named_string("- churnQuorums", churnQuorums.toString());
 
-        string memory targetString = "["
+        string memory targetString = "[";
         for (uint i = 0; i < churnTargets.length; i++) {
-            targetString = string.concat(targetString, churnTargets[i].NAME(), ", ");
+            if (i == churnTargets.length - 1) {
+                targetString = string.concat(targetString, churnTargets[i].NAME());
+            } else {
+                targetString = string.concat(targetString, churnTargets[i].NAME(), ", ");
+            }
         }
         targetString = string.concat(targetString, "]");
 

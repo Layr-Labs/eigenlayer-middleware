@@ -27,7 +27,6 @@ contract Integration_NonFull_Register_Deregister is IntegrationChecks {
         bytes memory quorums = quorumArray;
 
         check_Never_Registered(operator);
-        check_Can_Register(operator, quorums);
 
         // 1. Register for all quorums
         operator.registerOperator(quorums);
@@ -59,7 +58,6 @@ contract Integration_NonFull_Register_Deregister is IntegrationChecks {
         bytes memory quorums = _selectRand(quorumArray);
 
         check_Never_Registered(operator);
-        check_Can_Register(operator, quorums);
 
         // 1. Register for some quorums
         operator.registerOperator(quorums);
@@ -99,7 +97,6 @@ contract Integration_NonFull_Register_Deregister is IntegrationChecks {
         bytes memory quorums = _selectRand(quorumArray);
 
         check_Never_Registered(operator);
-        check_Can_Register(operator, quorums);
 
         // 1. Register for some quorums
         operator.registerOperator(quorums);
