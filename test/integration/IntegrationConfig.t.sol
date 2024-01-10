@@ -373,7 +373,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
         
         bytes32 randId = indexRegistry.getLatestOperatorUpdate({
             quorumNumber: quorum,
-            index: uint32(_randUint({ min: 0, max: curNumOperators - 1 }))
+            operatorIndex: uint32(_randUint({ min: 0, max: curNumOperators - 1 }))
         }).operatorId;
 
         return User(blsApkRegistry.getOperatorFromPubkeyHash(randId));
