@@ -19,10 +19,10 @@ abstract contract IndexRegistryStorage is Initializable, IIndexRegistry {
     /// @notice The RegistryCoordinator contract for this middleware
     address public immutable registryCoordinator;
 
-    /// @notice maps quorumNumber => operator id => current index
+    /// @notice maps quorumNumber => operator id => current operatorIndex
     mapping(uint8 => mapping(bytes32 => uint32)) public currentOperatorIndex;
-    /// @notice maps quorumNumber => index => historical operator ids at that index
-    mapping(uint8 => mapping(uint32 => OperatorUpdate[])) internal _indexHistory;
+    /// @notice maps quorumNumber => operatorIndex => historical operator ids at that index
+    mapping(uint8 => mapping(uint32 => OperatorUpdate[])) internal _operatorIndexHistory;
     /// @notice maps quorumNumber => historical number of unique registered operators
     mapping(uint8 => QuorumUpdate[]) internal _operatorCountHistory;
 
