@@ -258,7 +258,7 @@ contract MockAVSDeployer is Test {
             quorumStrategiesConsideredAndMultipliers[i] = new IStakeRegistry.StrategyParams[](1);
             quorumStrategiesConsideredAndMultipliers[i][0] = IStakeRegistry.StrategyParams(
                 IStrategy(address(uint160(i))),
-                uint96(WEIGHTING_DIVISOR+1)
+                uint96(WEIGHTING_DIVISOR)
             );
         }
 

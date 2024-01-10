@@ -1156,8 +1156,6 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
                 assertEq(prevUpdate.updateBlockNumber + 1, newTotalStakes[j].updateBlockNumber, "prev entry should be from last block");
                 assertEq(prevUpdate.nextUpdateBlockNumber, newTotalStakes[j].updateBlockNumber, "prev entry.next should be latest.cur");
             }
-
-            stakeRegistry.setOperatorWeight(quorumNumber, operator, operatorWeight);
         }
     }
 
