@@ -5,10 +5,6 @@ import "../../src/libraries/BitmapUtils.sol";
 
 // wrapper around the BitmapUtils library that exposes the internal functions
 contract BitmapUtilsWrapper {
-    function bytesArrayToBitmap(bytes calldata bytesArray) external pure returns (uint256) {
-        return BitmapUtils.bytesArrayToBitmap(bytesArray);
-    }
-
     function orderedBytesArrayToBitmap(bytes calldata orderedBytesArray) external pure returns (uint256) {
         return BitmapUtils.orderedBytesArrayToBitmap(orderedBytesArray);
     }
@@ -21,14 +17,6 @@ contract BitmapUtilsWrapper {
         return BitmapUtils.bitmapToBytesArray(bitmap);
     }
 
-    function orderedBytesArrayToBitmap_Yul(bytes calldata orderedBytesArray) external pure returns (uint256) {
-        return BitmapUtils.orderedBytesArrayToBitmap_Yul(orderedBytesArray);
-    }
-
-    function bytesArrayToBitmap_Yul(bytes calldata bytesArray) external pure returns (uint256) {
-        return BitmapUtils.bytesArrayToBitmap_Yul(bytesArray);
-    }
-
     function countNumOnes(uint256 n) external pure returns (uint16) {
         return BitmapUtils.countNumOnes(n);
     }
@@ -37,8 +25,8 @@ contract BitmapUtilsWrapper {
         return BitmapUtils.isSet(bitmap, numberToCheckForInclusion);
     }
 
-    function setBit(uint256 bitmap, uint8 numberToAdd) external pure returns (uint256) {
-        return BitmapUtils.setBit(bitmap, numberToAdd);
+    function setBit(uint256 bitmap, uint8 bit) external pure returns (uint256) {
+        return BitmapUtils.setBit(bitmap, bit);
     }
 
     function isEmpty(uint256 bitmap) external pure returns (bool) {

@@ -1,88 +1,161 @@
 ## BLSApkRegistry
 
-| File | Type | Proxy? |
+| File | Type | Proxy |
 | -------- | -------- | -------- |
 | [`BLSApkRegistry.sol`](../../src/BLSApkRegistry.sol) | Singleton | Transparent proxy |
 
-TODO
+The `BLSApkRegistry` tracks the current aggregate BLS pubkey for all Operators registered to each quorum, and keeps a historical record of each quorum's aggregate BLS pubkey hash. This contract makes heavy use of the `BN254` library to perform various operations on the BN254 elliptic curve (see [`BN254.sol`](../../src/libraries/BN254.sol)).
+
+Each time an Operator registers for a quorum, its BLS pubkey is added to that quorum's `currentApk`. Each time an Operator deregisters from a quorum, its BLS pubkey is subtracted from that quorum's `currentApk`. This contract maintains a history of the hash of each quorum's apk over time, which is used by the `BLSSignatureChecker` to fetch the "total signing key" for a quorum at a specific block number.
 
 #### High-level Concepts
 
-TODO
-
 This document organizes methods according to the following themes (click each to be taken to the relevant section):
-
-TODO
-<!-- * [Depositing Into EigenLayer](#depositing-into-eigenlayer)
-* [Restaking Beacon Chain ETH](#restaking-beacon-chain-eth)
-* [Withdrawal Processing](#withdrawal-processing)
+* [Registering and Deregistering](#registering-and-deregistering)
 * [System Configuration](#system-configuration)
-* [Other Methods](#other-methods) -->
-
-#### Important State Variables
-
-TODO
-
-<!-- * `EigenPodManager`:
-    * `mapping(address => IEigenPod) public ownerToPod`: Tracks the deployed `EigenPod` for each Staker
-    * `mapping(address => int256) public podOwnerShares`: Keeps track of the actively restaked beacon chain ETH for each Staker. 
-        * In some cases, a beacon chain balance update may cause a Staker's balance to drop below zero. This is because when queueing for a withdrawal in the `DelegationManager`, the Staker's current shares are fully removed. If the Staker's beacon chain balance drops after this occurs, their `podOwnerShares` may go negative. This is a temporary change to account for the drop in balance, and is ultimately corrected when the withdrawal is finally processed.
-        * Since balances on the consensus layer are stored only in Gwei amounts, the EigenPodManager enforces the invariant that `podOwnerShares` is always a whole Gwei amount for every staker, i.e. `podOwnerShares[staker] % 1e9 == 0` always. -->
 
 ---    
 
-### Theme
+### Registering and Deregistering
 
-TODO
+These methods are ONLY called through the `RegistryCoordinator` - when an Operator registers for or deregisters from one or more quorums:
+* [`registerBLSPublicKey`](#registerblspublickey)
+* [`registerOperator`](#registeroperator)
+* [`deregisterOperator`](#deregisteroperator)
 
-<!-- Before a Staker begins restaking beacon chain ETH, they need to deploy an `EigenPod`, stake, and start a beacon chain validator:
-* [`EigenPodManager.createPod`](#eigenpodmanagercreatepod)
-* [`EigenPodManager.stake`](#eigenpodmanagerstake)
-    * [`EigenPod.stake`](#eigenpodstake)
+#### `registerBLSPublicKey`
 
-To complete the deposit process, the Staker needs to prove that the validator's withdrawal credentials are pointed at the `EigenPod`:
-* [`EigenPod.verifyWithdrawalCredentials`](#eigenpodverifywithdrawalcredentials) -->
+```solidity
+function registerBLSPublicKey(
+    address operator,
+    PubkeyRegistrationParams calldata params,
+    BN254.G1Point calldata pubkeyRegistrationMessageHash
+) 
+    external 
+    onlyRegistryCoordinator 
+    returns (bytes32 operatorId)
+
+struct PubkeyRegistrationParams {
+    BN254.G1Point pubkeyRegistrationSignature;
+    BN254.G1Point pubkeyG1;
+    BN254.G2Point pubkeyG2;
+}
+```
+
+This method is ONLY callable by the `RegistryCoordinator`. It is called when an Operator registers for the AVS for the first time.
+
+This method validates a BLS signature over the `pubkeyRegistrationMessageHash`, then permanently assigns the pubkey to the Operator. The hash of `params.pubkeyG1` becomes the Operator's unique `operatorId`, which identifies the Operator throughout the registry contracts.
+
+*Entry Points*:
+* `RegistryCoordinator.registerOperator`
+* `RegistryCoordinator.registerOperatorWithChurn`
+
+*Effects*:
+* Registers the Operator's BLS pubkey for the first time, updating the following mappings:
+    * `operatorToPubkey[operator]`
+    * `operatorToPubkeyHash[operator]`
+    * `pubkeyHashToOperator[pubkeyHash]`
+
+*Requirements*:
+* Caller MUST be the `RegistryCoordinator`
+* `params.pubkeyG1` MUST NOT hash to the `ZERO_PK_HASH`
+* `operator` MUST NOT have already registered a pubkey:
+    * `operatorToPubkeyHash[operator]` MUST be zero
+    * `pubkeyHashToOperator[pubkeyHash]` MUST be zero
+* `params.pubkeyRegistrationSignature` MUST be a valid signature over `pubkeyRegistrationMessageHash`
 
 #### `registerOperator`
 
 ```solidity
-
+function registerOperator(
+    address operator,
+    bytes memory quorumNumbers
+) 
+    public 
+    virtual 
+    onlyRegistryCoordinator
 ```
 
-TODO
+`registerOperator` fetches the Operator's registered BLS pubkey (see `registerBLSPublicKey` above). Then, for each quorum in `quorumNumbers`, the Operator's pubkey is added to that quorum's `currentApk`. The `apkHistory` for the `quorumNumber` is also updated to reflect this change.
+
+This method is ONLY callable by the `RegistryCoordinator`, and is called when an Operator registers for one or more quorums. This method *assumes* that `operator` is not already registered for any of `quorumNumbers`, and that there are no duplicates in `quorumNumbers`. These properties are enforced by the `RegistryCoordinator`.
+
+*Entry Points*:
+* `RegistryCoordinator.registerOperator`
+* `RegistryCoordinator.registerOperatorWithChurn`
 
 *Effects*:
-*
+* For each `quorum` in `quorumNumbers`:
+    * Add the Operator's pubkey to the quorum's apk in `currentApk[quorum]`
+    * Updates the quorum's `apkHistory`, pushing a new `ApkUpdate` for the current block number and setting its `apkHash` to the new hash of `currentApk[quorum]`.
+        * *Note:* If the most recent entry in `apkHistory[quorum]` was made during the current block, this method updates the most recent entry rather than pushing a new one.
 
 *Requirements*:
-* 
+* Caller MUST be the `RegistryCoordinator`
+* `operator` MUST already have a registered BLS pubkey (see `registerBLSPublicKey` above) 
+* Each quorum in `quorumNumbers` MUST be initialized (see `initializeQuorum` below)
 
 #### `deregisterOperator`
 
 ```solidity
-
+function deregisterOperator(
+    address operator,
+    bytes memory quorumNumbers
+) 
+    public 
+    virtual 
+    onlyRegistryCoordinator
 ```
 
-TODO
+`deregisterOperator` fetches the Operator's registered BLS pubkey (see `registerBLSPublicKey` above). For each quorum in `quorumNumbers`, `deregisterOperator` performs the same steps as `registerOperator` above - except that the Operator's pubkey is negated. Whereas `registerOperator` "adds" a pubkey to each quorum's apk, `deregisterOperator` "subtracts" a pubkey from each quorum's apk.
+
+This method is ONLY callable by the `RegistryCoordinator`, and is called when an Operator deregisters from one or more quorums. This method *assumes* that `operator` is registered for all quorums in `quorumNumbers`, and that there are no duplicates in `quorumNumbers`. These properties are enforced by the `RegistryCoordinator`.
+
+*Entry Points*:
+* `RegistryCoordinator.registerOperatorWithChurn`
+* `RegistryCoordinator.deregisterOperator`
+* `RegistryCoordinator.ejectOperator`
+* `RegistryCoordinator.updateOperators`
+* `RegistryCoordinator.updateOperatorsForQuorum`
 
 *Effects*:
-*
+* For each `quorum` in `quorumNumbers`:
+    * Negate the Operator's pubkey, then subtract it from the quorum's apk in `currentApk[quorum]`
+    * Updates the quorum's `apkHistory`, pushing a new `ApkUpdate` for the current block number and setting its `apkHash` to the new hash of `currentApk[quorum]`.
+        * *Note:* If the most recent entry in `apkHistory[quorum]` was made during the current block, this method updates the most recent entry rather than pushing a new one.
 
 *Requirements*:
-* 
+* Caller MUST be the `RegistryCoordinator`
+* `operator` MUST already have a registered BLS pubkey (see `registerBLSPublicKey` above)
+* Each quorum in `quorumNumbers` MUST be initialized (see `initializeQuorum` below)
+
+---
+
+### System Configuration
 
 #### `initializeQuorum`
 
 ```solidity
-
+function initializeQuorum(
+    uint8 quorumNumber
+) 
+    public 
+    virtual 
+    onlyRegistryCoordinator
 ```
 
-TODO
+This method is ONLY callable by the `RegistryCoordinator`. It is called when the `RegistryCoordinator` Owner creates a new quorum.
+
+`initializeQuorum` initializes a new quorum by pushing an initial `ApkUpdate` to `apkHistory[quorumNumber]`. Other methods can validate that a quorum exists by checking whether `apkHistory[quorumNumber]` has a nonzero length.
+
+*Entry Points*:
+* `RegistryCoordinator.createQuorum`
 
 *Effects*:
-*
+* Pushes an `ApkUpdate` to `apkHistory[quorumNumber]`. The update has a zeroed out `apkHash`, and its `updateBlockNumber` is set to the current block.
 
 *Requirements*:
-* 
+* Caller MUST be the `RegistryCoordinator`
+* `apkHistory[quorumNumber].length` MUST be zero
 
 ---

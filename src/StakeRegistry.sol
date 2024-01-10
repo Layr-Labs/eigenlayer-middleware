@@ -394,7 +394,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @dev This function has no check to make sure that the strategies for a single quorum have the same underlying asset. This is a concious choice,
      * since a middleware may want, e.g., a stablecoin quorum that accepts USDC, USDT, DAI, etc. as underlying assets and trades them as "equivalent".
      */
-     function _addStrategyParams(
+    function _addStrategyParams(
         uint8 quorumNumber,
         StrategyParams[] memory _strategyParams
     ) internal {
@@ -544,7 +544,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param operatorId The id of the operator of interest.
      * @param quorumNumber The quorum number to get the stake for.
      */
-     function getStakeHistory(
+    function getStakeHistory(
         bytes32 operatorId, 
         uint8 quorumNumber
     ) external view returns (StakeUpdate[] memory) {
@@ -555,7 +555,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @notice Returns the most recent stake weight for the `operatorId` for quorum `quorumNumber`
      * @dev Function returns weight of **0** in the event that the operator has no stake history
      */
-     function getCurrentStake(bytes32 operatorId, uint8 quorumNumber) external view returns (uint96) {
+    function getCurrentStake(bytes32 operatorId, uint8 quorumNumber) external view returns (uint96) {
         StakeUpdate memory operatorStakeUpdate = getLatestStakeUpdate(operatorId, quorumNumber);
         return operatorStakeUpdate.stake;
     }
@@ -585,7 +585,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param index Array index for lookup, within the dynamic array `operatorStakeHistory[operatorId][quorumNumber]`.
      * @dev Function will revert if `index` is out-of-bounds.
      */
-     function getStakeUpdateAtIndex(
+    function getStakeUpdateAtIndex(
         uint8 quorumNumber,
         bytes32 operatorId,
         uint256 index
@@ -624,7 +624,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param blockNumber Block number to make sure the stake is from.
      * @dev Function will revert if `index` is out-of-bounds.
      */
-     function getStakeAtBlockNumberAndIndex(
+    function getStakeAtBlockNumberAndIndex(
         uint8 quorumNumber,
         uint32 blockNumber,
         bytes32 operatorId,
@@ -659,7 +659,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param quorumNumber The quorum number to get the stake for.
      * @param index Array index for lookup, within the dynamic array `_totalStakeHistory[quorumNumber]`.
      */
-     function getTotalStakeUpdateAtIndex(
+    function getTotalStakeUpdateAtIndex(
         uint8 quorumNumber,
         uint256 index
     ) external view returns (StakeUpdate memory) {
@@ -674,7 +674,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param blockNumber Block number to make sure the stake is from.
      * @dev Function will revert if `index` is out-of-bounds.
      */
-     function getTotalStakeAtBlockNumberFromIndex(
+    function getTotalStakeAtBlockNumberFromIndex(
         uint8 quorumNumber,
         uint32 blockNumber,
         uint256 index
@@ -690,7 +690,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param quorumNumbers The quorum numbers to get the stake indices for.
      * @dev Function will revert if there are no indices for the given `blockNumber`
      */
-     function getTotalStakeIndicesAtBlockNumber(
+    function getTotalStakeIndicesAtBlockNumber(
         uint32 blockNumber,
         bytes calldata quorumNumbers
     ) external view returns (uint32[] memory) {
