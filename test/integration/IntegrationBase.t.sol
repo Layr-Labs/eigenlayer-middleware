@@ -67,7 +67,7 @@ abstract contract IntegrationBase is IntegrationConfig {
     /// @dev Checks that the user's current bitmap includes ALL of these quorums
     function assert_IsRegisteredForQuorums(User user, bytes memory quorums, string memory err) internal {
         uint192 currentBitmap = registryCoordinator.getCurrentQuorumBitmap(user.operatorId());
-        uint192 subsetBitmap = uint192(quorums.bytesArrayToBitmap());
+        uint192 subsetBitmap = uint192(quorums.orderedBytesArrayToBitmap());
 
         assertTrue(subsetBitmap.isSubsetOf(currentBitmap), err);
     }
@@ -668,8 +668,8 @@ abstract contract IntegrationBase is IntegrationConfig {
     *******************************************************************************/
 
     function _calcRemaining(bytes memory start, bytes memory removed) internal pure returns (bytes memory) {
-        uint startBM = start.bytesArrayToBitmap();
-        uint removeBM = removed.bytesArrayToBitmap();
+        uint startBM = start.orderedBytesArrayToBitmap();
+        uint removeBM = removed.orderedBytesArrayToBitmap();
 
         return startBM.minus(removeBM).bitmapToBytesArray();
     }
