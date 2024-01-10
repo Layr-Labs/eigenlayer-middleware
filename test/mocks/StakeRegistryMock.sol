@@ -9,6 +9,12 @@ import "../../src/interfaces/IRegistryCoordinator.sol";
  * @author Layr Labs, Inc.
  */
 contract StakeRegistryMock is IStakeRegistry {
+    // bitmap returned by the mocked `updateOperatorStake` function
+    uint192 updateOperatorStakeReturnBitmap;
+
+    function set_updateOperatorStakeReturnBitmap(uint192 newValue) external {
+        updateOperatorStakeReturnBitmap = newValue;
+    }
 
     function registryCoordinator() external view returns (address) {}
 
@@ -197,10 +203,12 @@ contract StakeRegistryMock is IStakeRegistry {
      * added to the
      */
     function updateOperatorStake(
-        address operator, 
-        bytes32 operatorId, 
-        bytes calldata quorumNumbers
-    ) external returns (uint192) {}
+        address /*operator*/, 
+        bytes32 /*operatorId*/, 
+        bytes calldata /*quorumNumbers*/
+    ) external returns (uint192) {
+        return updateOperatorStakeReturnBitmap;
+    }
 
     function getMockOperatorId(address operator) external pure returns(bytes32) {
         return bytes32(uint256(keccak256(abi.encodePacked(operator, "operatorId"))));
