@@ -17,19 +17,6 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
     /// @notice Maximum length of dynamic arrays in the `strategiesConsideredAndMultipliers` mapping.
     uint8 public constant MAX_WEIGHING_FUNCTION_LENGTH = 32;
 
-<<<<<<< HEAD
-import {StakeRegistry} from "src/StakeRegistry.sol";
-import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
-import {IStakeRegistryEvents} from "test/events/IStakeRegistryEvents.sol";
-
-import "../utils/MockAVSDeployer.sol";
-
-contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
-    using BitmapUtils for *;
-
-    /// @notice Maximum length of dynamic arrays in the `strategiesConsideredAndMultipliers` mapping.
-    uint8 public constant MAX_WEIGHING_FUNCTION_LENGTH = 32;
-
     /**
      * Tracker variables used as we initialize quorums and operators during tests
      * (see _initializeQuorum and _selectNewOperator)
@@ -38,16 +25,6 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
     address nextOperator = address(1000);
     bytes32 nextOperatorId = bytes32(uint256(1000));
 
-=======
-    /**
-     * Tracker variables used as we initialize quorums and operators during tests
-     * (see _initializeQuorum and _selectNewOperator)
-     */
-    uint8 nextQuorum = 0;
-    address nextOperator = address(1000);
-    bytes32 nextOperatorId = bytes32(uint256(1000));
-
->>>>>>> 96f8aa33aed9ef6611535bd1cefd8b4b46a168b9
     /**
      * Fuzz input filters:
      */
@@ -57,11 +34,7 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
     uint256 gasUsed;
 
     modifier fuzzOnlyInitializedQuorums(uint8 quorumNumber) {
-<<<<<<< HEAD
-        cheats.assume(initializedQuorumBitmap.numberIsInBitmap(quorumNumber));
-=======
         cheats.assume(initializedQuorumBitmap.isSet(quorumNumber));
->>>>>>> 96f8aa33aed9ef6611535bd1cefd8b4b46a168b9
         _;
     }
 
@@ -123,7 +96,6 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
             IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(quorumNumber)))))),
             uint96(WEIGHTING_DIVISOR)
         );
-<<<<<<< HEAD
 
         nextQuorum++;
 
@@ -131,7 +103,7 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
         stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
 
         // Mark quorum initialized for other tests
-        initializedQuorumBitmap = uint192(initializedQuorumBitmap.addNumberToBitmap(quorumNumber));
+        initializedQuorumBitmap = uint192(initializedQuorumBitmap.setBit(quorumNumber));
         initializedQuorumBytes = initializedQuorumBitmap.bitmapToBytesArray();
     }
 
@@ -157,50 +129,7 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
         stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
 
         // Mark quorum initialized for other tests
-        initializedQuorumBitmap = uint192(initializedQuorumBitmap.addNumberToBitmap(quorumNumber));
-        initializedQuorumBytes = initializedQuorumBitmap.bitmapToBytesArray();
-
-        return quorumNumber;
-=======
-
-        nextQuorum++;
-
-        cheats.prank(address(registryCoordinator));
-        stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
-
-        // Mark quorum initialized for other tests
         initializedQuorumBitmap = uint192(initializedQuorumBitmap.setBit(quorumNumber));
-        initializedQuorumBytes = initializedQuorumBitmap.bitmapToBytesArray();
->>>>>>> 96f8aa33aed9ef6611535bd1cefd8b4b46a168b9
-    }
-
-        /**
-     * @dev Initialize a new quorum with `minimumStake` and `numStrats`
-     * Create `numStrats` dummy strategies with multiplier of 1 for each. 
-     * Returns quorumNumber that was just initialized
-     */
-    function _initializeQuorum(uint96 minimumStake, uint256 numStrats) internal returns (uint8) {
-        uint8 quorumNumber = nextQuorum;
-
-        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](numStrats);
-        for (uint256 i = 0; i < strategyParams.length; i++) {
-            strategyParams[i] = IStakeRegistry.StrategyParams(
-                IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(quorumNumber, i)))))),
-                uint96(WEIGHTING_DIVISOR)
-            );
-        }
-
-        nextQuorum++;
-
-        cheats.prank(address(registryCoordinator));
-        stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
-
-        // Mark quorum initialized for other tests
-<<<<<<< HEAD
-        initializedQuorumBitmap = uint192(initializedQuorumBitmap.addNumberToBitmap(quorumNumber));
-=======
-        initializedQuorumBitmap = uint192(initializedQuorumBitmap.setBit(quorumNumber));
->>>>>>> 96f8aa33aed9ef6611535bd1cefd8b4b46a168b9
         initializedQuorumBytes = initializedQuorumBitmap.bitmapToBytesArray();
 
         return quorumNumber;
@@ -273,17 +202,10 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
             prevTotalStakes: prevTotalStakes
         });
     }
-<<<<<<< HEAD
 
     function _fuzz_setupRegisterOperators(uint192 fuzzy_Bitmap, uint16 fuzzy_addtlStake, uint numOperators) internal returns (RegisterSetup[] memory) {
         RegisterSetup[] memory setups = new RegisterSetup[](numOperators);
 
-=======
-
-    function _fuzz_setupRegisterOperators(uint192 fuzzy_Bitmap, uint16 fuzzy_addtlStake, uint numOperators) internal returns (RegisterSetup[] memory) {
-        RegisterSetup[] memory setups = new RegisterSetup[](numOperators);
-
->>>>>>> 96f8aa33aed9ef6611535bd1cefd8b4b46a168b9
         for (uint i = 0; i < numOperators; i++) {
             setups[i] = _fuzz_setupRegisterOperator(fuzzy_Bitmap, fuzzy_addtlStake);
         }
@@ -442,11 +364,7 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
         // Select real quorums up to the length, then insert an invalid quorum
         for (uint8 quorum = 0; quorum < length - 1; quorum++) {
             // sanity check test setup
-<<<<<<< HEAD
-            assertTrue(initializedQuorumBitmap.numberIsInBitmap(quorum), "_fuzz_getInvalidQuorums: invalid quorum");
-=======
             assertTrue(initializedQuorumBitmap.isSet(quorum), "_fuzz_getInvalidQuorums: invalid quorum");
->>>>>>> 96f8aa33aed9ef6611535bd1cefd8b4b46a168b9
             invalidQuorums[quorum] = bytes1(quorum);
         }
 
@@ -1006,7 +924,6 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
 
 /// @notice Tests for StakeRegistry.registerOperator
 contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
-<<<<<<< HEAD
 
     /*******************************************************************************
                               registerOperator
@@ -1022,23 +939,6 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
     function testFuzz_Revert_WhenQuorumDoesNotExist(bytes32 rand) public {
         RegisterSetup memory setup = _fuzz_setupRegisterOperator(initializedQuorumBitmap, 0);
 
-=======
-
-    /*******************************************************************************
-                              registerOperator
-    *******************************************************************************/
-
-    function test_registerOperator_Revert_WhenNotRegistryCoordinator() public {
-        (address operator, bytes32 operatorId) = _selectNewOperator();
-
-        cheats.expectRevert("StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator");
-        stakeRegistry.registerOperator(operator, operatorId, initializedQuorumBytes);
-    }
-
-    function testFuzz_Revert_WhenQuorumDoesNotExist(bytes32 rand) public {
-        RegisterSetup memory setup = _fuzz_setupRegisterOperator(initializedQuorumBitmap, 0);
-
->>>>>>> 96f8aa33aed9ef6611535bd1cefd8b4b46a168b9
         // Get a list of valid quorums ending in an invalid quorum number
         bytes memory invalidQuorums = _fuzz_getInvalidQuorums(rand);
 
@@ -1260,7 +1160,6 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
             stakeRegistry.setOperatorWeight(quorumNumber, operator, operatorWeight);
         }
     }
-<<<<<<< HEAD
 
     function _tallyTotalStakeAdded(bytes memory quorumNumbers, uint96[] memory stakeAdded) internal {
         for (uint i = 0; i < quorumNumbers.length; i++) {
@@ -1306,53 +1205,6 @@ contract StakeRegistryUnitTests_Deregister is StakeRegistryUnitTests {
         stakeRegistry.registerOperator(setup.operator, setup.operatorId, invalidQuorums);
     }
 
-=======
-
-    function _tallyTotalStakeAdded(bytes memory quorumNumbers, uint96[] memory stakeAdded) internal {
-        for (uint i = 0; i < quorumNumbers.length; i++) {
-            uint8 quorumNumber = uint8(quorumNumbers[i]);
-            _totalStakeAdded[quorumNumber] += stakeAdded[i];
-        }
-    }
-}
-
-/// @notice Tests for StakeRegistry.deregisterOperator
-contract StakeRegistryUnitTests_Deregister is StakeRegistryUnitTests {
-
-    using BitmapUtils for *;
-
-    /*******************************************************************************
-                              deregisterOperator
-    *******************************************************************************/
-
-    function test_deregisterOperator_Revert_WhenNotRegistryCoordinator() public {
-        DeregisterSetup memory setup = _fuzz_setupDeregisterOperator({
-            registeredFor: initializedQuorumBitmap,
-            fuzzy_toRemove: initializedQuorumBitmap,
-            fuzzy_addtlStake: 0
-        });
-
-        cheats.expectRevert("StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator");
-        stakeRegistry.deregisterOperator(setup.operatorId, setup.quorumsToRemove);
-    }
-
-    function testFuzz_deregisterOperator_Revert_WhenQuorumDoesNotExist(bytes32 rand) public {
-        // Create a new operator registered for all quorums
-        DeregisterSetup memory setup = _fuzz_setupDeregisterOperator({
-            registeredFor: initializedQuorumBitmap,
-            fuzzy_toRemove: initializedQuorumBitmap,
-            fuzzy_addtlStake: 0
-        });
-        
-        // Get a list of valid quorums ending in an invalid quorum number
-        bytes memory invalidQuorums = _fuzz_getInvalidQuorums(rand);
-
-        cheats.expectRevert("StakeRegistry.registerOperator: quorum does not exist");
-        cheats.prank(address(registryCoordinator));
-        stakeRegistry.registerOperator(setup.operator, setup.operatorId, invalidQuorums);
-    }
-
->>>>>>> 96f8aa33aed9ef6611535bd1cefd8b4b46a168b9
     /**
      * @dev Registers an operator for each initialized quorum, adding `additionalStake`
      * to the minimum stake for each quorum. Tests deregistering the operator for
@@ -1387,11 +1239,7 @@ contract StakeRegistryUnitTests_Deregister is StakeRegistryUnitTests {
             IStakeRegistry.StakeUpdate memory newTotalStake = newTotalStakes[i];
 
             // Whether the operator was deregistered from this quorum
-<<<<<<< HEAD
-            bool deregistered = setup.quorumsToRemoveBitmap.numberIsInBitmap(registeredQuorum);
-=======
             bool deregistered = setup.quorumsToRemoveBitmap.isSet(registeredQuorum);
->>>>>>> 96f8aa33aed9ef6611535bd1cefd8b4b46a168b9
 
             if (deregistered) {
                 // Check that operator's stake was removed from both operator and total
@@ -1462,11 +1310,7 @@ contract StakeRegistryUnitTests_Deregister is StakeRegistryUnitTests {
                 IStakeRegistry.StakeUpdate memory newTotalStake = newTotalStakes[j];
 
                 // Whether the operator was deregistered from this quorum
-<<<<<<< HEAD
-                bool deregistered = setup.quorumsToRemoveBitmap.numberIsInBitmap(registeredQuorum);
-=======
                 bool deregistered = setup.quorumsToRemoveBitmap.isSet(registeredQuorum);
->>>>>>> 96f8aa33aed9ef6611535bd1cefd8b4b46a168b9
 
                 if (deregistered) {
                     _totalStakeRemoved[registeredQuorum] += prevOperatorStake.stake;
@@ -1494,11 +1338,7 @@ contract StakeRegistryUnitTests_Deregister is StakeRegistryUnitTests {
             uint8 registeredQuorum = uint8(registeredQuorums[i]);
 
             // Whether or not we deregistered operators from this quorum
-<<<<<<< HEAD
-            bool deregistered = quorumsToRemoveBitmap.numberIsInBitmap(registeredQuorum);
-=======
             bool deregistered = quorumsToRemoveBitmap.isSet(registeredQuorum);
->>>>>>> 96f8aa33aed9ef6611535bd1cefd8b4b46a168b9
 
             if (deregistered) {
                 assertEq(finalTotalStakes[i].stake, 0, "failed to remove all stake from quorum");
@@ -1695,11 +1535,7 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
                 assertEq(prevTotalStake.stake - stakeRemoved, newTotalStake.stake, "failed to remove delta from total stake");
                 assertEq(newOperatorStake.stake, 0, "operator stake should now be zero");
                 // Quorum should be added to return bitmap
-<<<<<<< HEAD
-                assertTrue(quorumsToRemove.numberIsInBitmap(quorumNumber), "quorum should be in removal bitmap");
-=======
                 assertTrue(quorumsToRemove.isSet(quorumNumber), "quorum should be in removal bitmap");
->>>>>>> 96f8aa33aed9ef6611535bd1cefd8b4b46a168b9
             } else {
                 // Check that no update occurs if weight remains the same
                 assertTrue(_isUnchanged(prevOperatorStake, newOperatorStake), "neutral stake delta should not have changed operator stake history");
