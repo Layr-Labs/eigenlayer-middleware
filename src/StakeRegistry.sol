@@ -278,7 +278,8 @@ contract StakeRegistry is StakeRegistryStorage {
      * @dev This function is called by the registry coordinator on stake updates to consolidate the size of the storage proof
      */
     function clearQuorumRoot(uint8 quorumNumber) external onlyRegistryCoordinator quorumExists(quorumNumber) {
-        quorumRoot[quorumNumber] = bytes32(0);
+        quorumOperatorSetRoot[quorumNumber] = bytes32(0);
+        emit QuorumOperatorSetRootCleared(quorumNumber);
     }
 
     /*******************************************************************************
@@ -511,7 +512,7 @@ contract StakeRegistry is StakeRegistryStorage {
     /// @notice Updates the quorum root for the given quorum 
     /// @dev quorumRoot+1 = h(quorumRoot, {operator stake update})
     function _updateQuorumRoot(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber, uint96 stake) internal {
-        quorumRoot[quorumNumber] = keccak256(abi.encodePacked(quorumRoot[quorumNumber], operatorId, blockNumber, stake));
+        quorumOperatorSetRoot[quorumNumber] = keccak256(abi.encodePacked(quorumOperatorSetRoot[quorumNumber], operatorId, blockNumber, stake));
     }
 
     /*******************************************************************************

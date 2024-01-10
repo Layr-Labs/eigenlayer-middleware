@@ -52,6 +52,8 @@ interface IStakeRegistry is IRegistry {
     event StrategyRemovedFromQuorum(uint8 indexed quorumNumber, IStrategy strategy);
     /// @notice emitted when `strategy` has its `multiplier` updated in the array at `strategyParams[quorumNumber]`
     event StrategyMultiplierUpdated(uint8 indexed quorumNumber, IStrategy strategy, uint256 multiplier);
+    /// @notice emitted when the `quorumOperatorSetRoot` root is cleared 
+    event QuorumOperatorSetRootCleared(uint8 indexed quorumNumber);
 
     /**
      * @notice Registers the `operator` with `operatorId` for the specified `quorumNumbers`.
