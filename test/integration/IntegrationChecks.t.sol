@@ -161,6 +161,9 @@ contract IntegrationChecks is IntegrationBase {
                                  BALANCE UPDATE CHECKS
     *******************************************************************************/
 
+    /// @dev Validate state directly after the operator deposits into Eigenlayer core
+    /// We're mostly checking that nothing in the middleware contracts has changed,
+    /// except that the operator's weight shows a new value
     function check_Deposit_State(
         User operator,
         bytes memory quorums,
