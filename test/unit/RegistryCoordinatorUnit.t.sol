@@ -16,6 +16,11 @@ contract RegistryCoordinatorUnitTests is MockAVSDeployer {
     /// Emits when an operator is deregistered
     event OperatorDeregistered(address indexed operator, bytes32 indexed operatorId);
 
+    /// Emits when an operator is registered
+    event OperatorRegistered(address indexed operator, bytes32 indexed operatorId);
+    /// Emits when an operator is deregistered
+    event OperatorDeregistered(address indexed operator, bytes32 indexed operatorId);
+
     event OperatorSocketUpdate(bytes32 indexed operatorId, string socket);
 
     /// @notice emitted whenever the stake of `operator` is updated
@@ -1319,16 +1324,24 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         blsApkRegistry.setBLSPublicKey(operatorToRegister, operatorToRegisterPubKey);
 
         uint96 registeringStake = defaultKickBIPsOfOperatorStake * defaultStake;
-        stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, registeringStake);
+        _setOperatorWeight(operatorToRegister, defaultQuorumNumber, registeringStake);
 
         cheats.roll(registrationBlockNumber);
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit OperatorSocketUpdate(operatorToRegisterId, defaultSocket);
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit OperatorRegistered(operatorToRegister, operatorToRegisterId);
+
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
         emit OperatorAddedToQuorums(operatorToRegister, quorumNumbers);
-        cheats.expectEmit(true, true, true, true, address(stakeRegistry));
-        emit OperatorStakeUpdate(operatorToRegisterId, defaultQuorumNumber, registeringStake);
+        cheats.expectEmit(true, true, true, false, address(stakeRegistry));
+        emit OperatorStakeUpdate(operatorToRegisterId, defaultQuorumNumber, registeringStake - 1);
         cheats.expectEmit(true, true, true, true, address(indexRegistry));
         emit QuorumIndexUpdate(operatorToRegisterId, defaultQuorumNumber, numOperators);
 
+
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit OperatorDeregistered(operatorKickParams[0].operator, operatorToKickId);
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
         emit OperatorRemovedFromQuorums(operatorKickParams[0].operator, quorumNumbers);
         cheats.expectEmit(true, true, true, true, address(stakeRegistry));

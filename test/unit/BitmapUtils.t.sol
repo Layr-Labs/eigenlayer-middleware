@@ -43,6 +43,7 @@ contract BitmapUtilsUnitTests_bitwiseOperations is BitmapUtilsUnitTests {
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     function test_setBit(uint256 bitmap, uint8 bitToSet) public {
         // Ensure that numberToAdd isn't already in the bitmap
         cheats.assume(bitmap | (1 << bitToSet) != bitmap);
@@ -50,13 +51,18 @@ contract BitmapUtilsUnitTests_bitwiseOperations is BitmapUtilsUnitTests {
         assertTrue(
             bitmapUtilsWrapper.isSet(updatedBitmap, bitToSet), "setBit function is broken"
 =======
+=======
+>>>>>>> 96f8aa33aed9ef6611535bd1cefd8b4b46a168b9
     function test_setBit(uint256 bitmap, uint8 numberToAdd) public {
         // Ensure that numberToAdd isn't already in the bitmap
         cheats.assume(bitmap | (1 << numberToAdd) != bitmap);
         uint256 updatedBitmap = bitmapUtilsWrapper.setBit(bitmap, numberToAdd);
         assertTrue(
             bitmapUtilsWrapper.isSet(updatedBitmap, numberToAdd), "setBit function is broken"
+<<<<<<< HEAD
 >>>>>>> feat: addNumberToBitmap function
+=======
+>>>>>>> 96f8aa33aed9ef6611535bd1cefd8b4b46a168b9
         );
     }
 
@@ -131,7 +137,11 @@ contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
     // ensure that the bitmap encoding of an empty bytes array is an empty bitmap (function doesn't revert and approriately returns uint256(0))
     function test_EmptyArrayEncoding() public {
         bytes memory emptyBytesArray;
+<<<<<<< HEAD
         uint256 returnedBitMap = bitmapUtilsWrapper.orderedBytesArrayToBitmap(emptyBytesArray);
+=======
+        uint256 returnedBitMap = bitmapUtilsWrapper.bytesArrayToBitmap(emptyBytesArray);
+>>>>>>> 96f8aa33aed9ef6611535bd1cefd8b4b46a168b9
         assertEq(returnedBitMap, 0, "BitmapUtilsUnitTests.testEmptyArrayEncoding: empty array not encoded to empty bitmap");
     }
 
@@ -146,7 +156,10 @@ contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
 
     // ensure that the bitmap encoding of a two uint8's (i.e. a two byte array) matches the expected output
     function testFuzz_TwoByteEncoding(uint8 firstFuzzedNumber, uint8 secondFuzzedNumber) public {
+<<<<<<< HEAD
         cheats.assume(secondFuzzedNumber > firstFuzzedNumber);
+=======
+>>>>>>> 96f8aa33aed9ef6611535bd1cefd8b4b46a168b9
         bytes1 firstSingleByte = bytes1(firstFuzzedNumber);
         bytes1 secondSingleByte = bytes1(secondFuzzedNumber);
         bytes memory bytesArray = abi.encodePacked(firstSingleByte, secondSingleByte);
@@ -163,8 +176,27 @@ contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
     }
 
     // ensure that converting bytes array => bitmap => bytes array returns the original bytes array (i.e. is lossless and artifactless)
+<<<<<<< HEAD
     // note that this only works on ordered arrays, because unordered arrays will be returned ordered
     function testFuzz_BytesArrayToBitmapToBytesArray(bytes memory originalBytesArray) public {
+=======
+    // note that this only works on ordered arrays, because unordered arrays will be returned ordered
+    function testFuzz_BytesArrayToBitmapToBytesArray(bytes memory originalBytesArray) public {
+        // filter down to only ordered inputs
+        cheats.assume(bitmapUtilsWrapper.isArrayStrictlyAscendingOrdered(originalBytesArray));
+        uint256 bitmap = bitmapUtilsWrapper.bytesArrayToBitmap(originalBytesArray);
+        bytes memory returnedBytesArray = bitmapUtilsWrapper.bitmapToBytesArray(bitmap);
+        assertEq(
+            keccak256(abi.encodePacked(originalBytesArray)),
+            keccak256(abi.encodePacked(returnedBytesArray)),
+            "BitmapUtilsUnitTests.testBytesArrayToBitmapToBytesArray: output does not match input"
+        );
+    }
+
+    // ensure that converting bytes array => bitmap => bytes array returns the original bytes array (i.e. is lossless and artifactless)
+    // note that this only works on ordered arrays, because unordered arrays will be returned ordered
+    function testFuzz_BytesArrayToBitmapToBytesArray_Yul(bytes memory originalBytesArray) public {
+>>>>>>> 96f8aa33aed9ef6611535bd1cefd8b4b46a168b9
         // filter down to only ordered inputs
         cheats.assume(bitmapUtilsWrapper.isArrayStrictlyAscendingOrdered(originalBytesArray));
         uint256 bitmap = bitmapUtilsWrapper.orderedBytesArrayToBitmap(originalBytesArray);
@@ -172,7 +204,11 @@ contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
         assertEq(
             keccak256(abi.encodePacked(originalBytesArray)),
             keccak256(abi.encodePacked(returnedBytesArray)),
+<<<<<<< HEAD
             "BitmapUtilsUnitTests.testBytesArrayToBitmapToBytesArray: output does not match input"
+=======
+            "BitmapUtilsUnitTests.testBytesArrayToBitmapToBytesArray_Yul: output does not match input"
+>>>>>>> 96f8aa33aed9ef6611535bd1cefd8b4b46a168b9
         );
     }
 
@@ -210,6 +246,22 @@ contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
             keccak256(abi.encodePacked(returnedBytesArray)),
             "BitmapUtilsUnitTests.testBytesArrayToBitmapToBytesArray: output does not match input"
         );
+<<<<<<< HEAD
+=======
+    }
+
+    // testing one function for a specific input. used for comparing gas costs
+    function test_BytesArrayToBitmap_OrderedVersion_Yul_SpecificInput() public {
+        bytes memory originalBytesArray = abi.encodePacked(
+            bytes1(uint8(5)), bytes1(uint8(6)), bytes1(uint8(7)), bytes1(uint8(8)), bytes1(uint8(9)), bytes1(uint8(10)), bytes1(uint8(11)), bytes1(uint8(12))
+        );
+        uint256 gasLeftBefore = gasleft();
+        uint256 bitmap = bitmapUtilsWrapper.orderedBytesArrayToBitmap_Yul(originalBytesArray);
+        uint256 gasLeftAfter = gasleft();
+        uint256 gasSpent = gasLeftBefore - gasLeftAfter;
+        assertEq(bitmap, 8160);
+        emit log_named_uint("gasSpent", gasSpent);
+>>>>>>> 96f8aa33aed9ef6611535bd1cefd8b4b46a168b9
     }
 
     // testing one function for a specific input. used for comparing gas costs
@@ -219,6 +271,8 @@ contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
         );
         uint256 gasLeftBefore = gasleft();
         uint256 bitmap = bitmapUtilsWrapper.orderedBytesArrayToBitmap(originalBytesArray);
+<<<<<<< HEAD
+=======
         uint256 gasLeftAfter = gasleft();
         uint256 gasSpent = gasLeftBefore - gasLeftAfter;
         assertEq(bitmap, 8160);
@@ -231,7 +285,29 @@ contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
             bytes1(uint8(5)), bytes1(uint8(6)), bytes1(uint8(7)), bytes1(uint8(8)), bytes1(uint8(9)), bytes1(uint8(10)), bytes1(uint8(11)), bytes1(uint8(12))
         );
         uint256 gasLeftBefore = gasleft();
+        uint256 bitmap = bitmapUtilsWrapper.bytesArrayToBitmap(originalBytesArray);
+>>>>>>> 96f8aa33aed9ef6611535bd1cefd8b4b46a168b9
+        uint256 gasLeftAfter = gasleft();
+        uint256 gasSpent = gasLeftBefore - gasLeftAfter;
+        assertEq(bitmap, 8160);
+        emit log_named_uint("gasSpent", gasSpent);
+    }
+
+    // testing one function for a specific input. used for comparing gas costs
+<<<<<<< HEAD
+    function test_BytesArrayToBitmap_SpecificInput() public {
+=======
+    function test_BytesArrayToBitmap_Yul_SpecificInput() public {
+>>>>>>> 96f8aa33aed9ef6611535bd1cefd8b4b46a168b9
+        bytes memory originalBytesArray = abi.encodePacked(
+            bytes1(uint8(5)), bytes1(uint8(6)), bytes1(uint8(7)), bytes1(uint8(8)), bytes1(uint8(9)), bytes1(uint8(10)), bytes1(uint8(11)), bytes1(uint8(12))
+        );
+        uint256 gasLeftBefore = gasleft();
+<<<<<<< HEAD
         uint256 bitmap = bitmapUtilsWrapper.orderedBytesArrayToBitmap(originalBytesArray);
+=======
+        uint256 bitmap = bitmapUtilsWrapper.bytesArrayToBitmap_Yul(originalBytesArray);
+>>>>>>> 96f8aa33aed9ef6611535bd1cefd8b4b46a168b9
         uint256 gasLeftAfter = gasleft();
         uint256 gasSpent = gasLeftBefore - gasLeftAfter;
         assertEq(bitmap, 8160);
@@ -239,6 +315,18 @@ contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
     }
 }
 
+<<<<<<< HEAD
+=======
+contract BitmapUtilsUnitTests_bitmapToBytesArray is BitmapUtilsUnitTests {
+    // ensure that converting bitmap => bytes array => bitmap is returns the original bitmap (i.e. is lossless and artifactless)
+    function testFuzz_BitMapToBytesArrayToBitmap(uint256 originalBitmap) public {
+        bytes memory bytesArray = bitmapUtilsWrapper.bitmapToBytesArray(originalBitmap);
+        uint256 returnedBitMap = bitmapUtilsWrapper.bytesArrayToBitmap(bytesArray);
+        assertEq(returnedBitMap, originalBitmap, "BitmapUtilsUnitTests.testBitMapToArrayToBitmap: output does not match input");
+    }
+}
+
+>>>>>>> 96f8aa33aed9ef6611535bd1cefd8b4b46a168b9
 contract BitmapUtilsUnitTests_isArrayStrictlyAscendingOrdered is BitmapUtilsUnitTests {
     function test_DifferentBytesArrayOrdering() public {
         // Descending order and duplicate element bytes arrays should return false
