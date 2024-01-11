@@ -116,7 +116,7 @@ contract RegistryCoordinator is
     *******************************************************************************/
 
     /**
-     * @notice Registers msg.sender as an operator for one or more quorums. If any quorum excees its maximum
+     * @notice Registers msg.sender as an operator for one or more quorums. If any quorum exceeds its maximum
      * operator capacity after the operator is registered, this method will fail.
      * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for
      * @param socket is the socket of the operator (typically an IP address)
@@ -250,7 +250,7 @@ contract RegistryCoordinator is
     /**
      * @notice Updates the StakeRegistry's view of one or more operators' stakes. If any operator
      * is found to be below the minimum stake for the quorum, they are deregistered.
-     * @dev stakes are queryed from the Eigenlayer core DelegationManager contract
+     * @dev stakes are queried from the Eigenlayer core DelegationManager contract
      * @param operators a list of operator addresses to update
      */
     function updateOperators(address[] calldata operators) external onlyWhenNotPaused(PAUSED_UPDATE_OPERATOR) {
@@ -270,13 +270,15 @@ contract RegistryCoordinator is
      * @notice For each quorum in `quorumNumbers`, updates the StakeRegistry's view of ALL its registered operators' stakes.
      * Each quorum's `quorumUpdateBlockNumber` is also updated, which tracks the most recent block number when ALL registered
      * operators were updated.
-     * @dev stakes are queryed from the Eigenlayer core DelegationManager contract
+     * @dev stakes are queried from the Eigenlayer core DelegationManager contract
      * @param operatorsPerQuorum for each quorum in `quorumNumbers`, this has a corresponding list of operators to update.
      * @dev Each list of operator addresses MUST be sorted in ascending order
      * @dev Each list of operator addresses MUST represent the entire list of registered operators for the corresponding quorum
      * @param quorumNumbers is an ordered byte array containing the quorum numbers being updated
      * @dev invariant: Each list of `operatorsPerQuorum` MUST be a sorted version of `IndexRegistry.getOperatorListAtBlockNumber`
      * for the corresponding quorum.
+     * @dev note on race condition: if an operator registers/deregisters for any quorum in `quorumNumbers` after a txn to 
+     * this method is broadcast (but before it is executed), the method will fail
      */
     function updateOperatorsForQuorum(
         address[][] calldata operatorsPerQuorum,
@@ -516,8 +518,8 @@ contract RegistryCoordinator is
      * operator based on the stake of both
      * @dev In order to churn, the incoming operator needs to have more stake than the
      * existing operator by a proportion given by `kickBIPsOfOperatorStake`
-     * @dev In order to be churned, the existing operator needs to have less stake than
-     * the total quorum stake by a propertion given by `kickBIPsOfTotalStake`
+     * @dev In order to be churned out, the existing operator needs to have a proportion
+     * of the total quorum stake less than `kickBIPsOfTotalStake`
      * @param quorumNumber `newOperator` is trying to replace an operator in this quorum
      * @param totalQuorumStake the total stake of all operators in the quorum, after the
      * `newOperator` registers
@@ -602,7 +604,7 @@ contract RegistryCoordinator is
     }
 
     /**
-     * @notice Updates the StakeRegistry's view of the operator's stake one or more quorums.
+     * @notice Updates the StakeRegistry's view of the operator's stake in one or more quorums.
      * For any quorums where the StakeRegistry finds the operator is under the configured minimum
      * stake, `quorumsToRemove` is returned and used to deregister the operator from those quorums
      * @dev does nothing if operator is not registered for any quorums.
