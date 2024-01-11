@@ -90,7 +90,7 @@ contract StakeRegistryMock is IStakeRegistry {
     function strategyParamsLength(uint8 quorumNumber) external view returns (uint256) {}
 
     /// @notice In order to register for a quorum i, an operator must have at least `minimumStakeForQuorum[i]`
-    function minimumStakeForQuorum(uint256 quorumNumber) external view returns (uint96) {}
+    function minimumStakeForQuorum(uint8 quorumNumber) external view returns (uint96) {}
 
     /// @notice Returns the strategy and weight multiplier for the `index`'th strategy in the quorum `quorumNumber`
     function strategyParamsByIndex(
