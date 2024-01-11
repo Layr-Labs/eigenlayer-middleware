@@ -489,7 +489,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         );
     }
 
-    function testBLSSignatureChecker_EmptyQuorums_Reverts(uint256 pseudoRandomNumber) public {
+    function testBLSSignatureChecker_reverts_emptyQuorums(uint256 pseudoRandomNumber) public {
         uint256 numNonSigners = pseudoRandomNumber % (maxOperatorsToRegister - 2) + 1;
 
         uint256 quorumBitmap = 1;
