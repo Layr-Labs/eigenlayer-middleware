@@ -178,14 +178,16 @@ library BitmapUtils {
     }
 
     /**
-     * @notice Adds `a` and `b` using bitwise-or
+     * @notice Returns a new bitmap that contains all bits set in either `a` or `b`
+     * @dev Result is the union of `a` and `b`
      */
     function plus(uint256 a, uint256 b) internal pure returns (uint256) {
         return a | b;
     }
 
     /**
-     * @notice Subtracts `b` from `a` by negating `b` and using bitwise-and
+     * @notice Returns a new bitmap that clears all set bits of `b` from `a`
+     * @dev Negates `b` and returns the intersection of the result with `a`
      */
     function minus(uint256 a, uint256 b) internal pure returns (uint256) {
         return a & ~b;

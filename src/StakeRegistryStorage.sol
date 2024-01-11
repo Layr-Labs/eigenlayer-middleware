@@ -29,10 +29,10 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
 
     /// @notice In order to register for a quorum i, an operator must have at least `minimumStakeForQuorum[i]`
     /// evaluated by this contract's 'VoteWeigher' logic.
-    uint96[256] public minimumStakeForQuorum;
+    mapping(uint8 => uint96) public minimumStakeForQuorum;
 
-    /// @notice array of the history of the total stakes for each quorum -- marked as internal since getTotalStakeFromIndex is a getter for this
-    StakeUpdate[][256] internal _totalStakeHistory;
+    /// @notice History of the total stakes for each quorum
+    mapping(uint8 => StakeUpdate[]) internal _totalStakeHistory;
 
     /// @notice mapping from operator's operatorId to the history of their stake updates
     mapping(bytes32 => mapping(uint8 => StakeUpdate[])) internal operatorStakeHistory;
@@ -53,5 +53,5 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
 
     // storage gap for upgradeability
     // slither-disable-next-line shadowing-state
-    uint256[64] private __GAP;
+    uint256[46] private __GAP;
 }
