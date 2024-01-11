@@ -334,8 +334,6 @@ contract StakeRegistry is StakeRegistryStorage {
                 stake: newStake
             }));
 
-            _updateQuorumRoot(operatorId, quorumNumber, uint32(block.number), newStake);
-
         } else {
             // We have prior stake history - fetch our last-recorded stake
             StakeUpdate storage lastUpdate = operatorStakeHistory[operatorId][quorumNumber][historyLength-1]; 
@@ -359,10 +357,18 @@ contract StakeRegistry is StakeRegistryStorage {
                     nextUpdateBlockNumber: 0,
                     stake: newStake
                 }));
-
-                _updateQuorumRoot(operatorId, quorumNumber, uint32(block.number), newStake);
             }
         }
+
+        _updateQuorumRoot(
+            quorumNumber, 
+            operatorId, 
+            StakeUpdate({
+                updateBlockNumber: uint32(block.number),
+                nextUpdateBlockNumber: 0,
+                stake: newStake
+            })
+        );
 
         // Log update and return stake delta
         emit OperatorStakeUpdate(operatorId, quorumNumber, newStake);
@@ -511,8 +517,8 @@ contract StakeRegistry is StakeRegistryStorage {
 
     /// @notice Updates the quorum root for the given quorum 
     /// @dev quorumRoot+1 = h(quorumRoot, {operator stake update})
-    function _updateQuorumRoot(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber, uint96 stake) internal {
-        quorumOperatorSetRoot[quorumNumber] = keccak256(abi.encodePacked(quorumOperatorSetRoot[quorumNumber], operatorId, blockNumber, stake));
+    function _updateQuorumRoot(uint8 quorumNumber, bytes32 operatorId, StakeUpdate memory operatorStakeUpdate) internal {
+        quorumOperatorSetRoot[quorumNumber] = keccak256(abi.encode(quorumOperatorSetRoot[quorumNumber], operatorId, operatorStakeUpdate));
     }
 
     /*******************************************************************************
