@@ -34,11 +34,12 @@ For shadowy super-coders:
 
 This repository uses Foundry. See the [Foundry docs](https://book.getfoundry.sh/) for more info on installation and usage. If you already have foundry, you can build this project and run tests with these commands:
 
-```
+```sh
 foundryup
 
 forge build
-forge test
+# FFI tests are currently broken; working on it! for now, run the tests without them
+forge test --no-match-contracts FFI
 ```
 
 ## Deployments
