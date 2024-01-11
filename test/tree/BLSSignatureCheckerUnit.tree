@@ -22,7 +22,15 @@
 │   ├── given that the staleStakesForbidden flag is set and the quorumUpdateBlock number is strictly within
 │   │   `delegation.withdrawalDelayBlocks()` of the present block, for any of the quorumNumbers
 │   │   └── it should revert
-│   ├── given that the non-signer pubkeys contain any duplicates (technically a sub-case of above)
+│   ├── given that any of the provided nonSignerQuorumBitmapIndices is incorrect for the referenceBlockNumber
+│   │   └── ***it should revert (via bubbling up a revert from the RegistryCoordinator)
+│   ├── given that any of the provided totalStakeIndices is incorrect for the referenceBlockNumber
+│   │   └── ***it should revert (via bubbling up a revert from the StakeRegistry)
+│   ├── given that any of the provided nonSignerStakeIndices is incorrect for the referenceBlockNumber
+│   │   └── ***it should revert (via bubbling up a revert from the StakeRegistry)
+│   ├── given that any of the provided quorumApkIndices is incorrect for the referenceBlockNumber
+│   │   └── ***it should revert (via bubbling up a revert from the BLSApkRegistry)
+│   ├── given that any of the provided quorumApks does not match the hash returned by the BLSApkRegistry for the referenceBlockNumber
 │   │   └── it should revert
 │   ├── given that the provided signature ("sigma") is not a signature over the provided apk / apkG2 (i.e. pairing check returns 'false')
 │   │   └── it should revert
