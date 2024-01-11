@@ -23,6 +23,8 @@
         │   └── it should revert with "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number"
         ├── when any of the given operator has registered for the first time with the given registryCoordinator after the given blockNumber
         │   └── it should revert with "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number"
+        ├── when any of the given operator is completely deregistered with the given registryCoordinator at the given blockNumber
+        │   └── it should revert with "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number"
         ├── when any of the given quorumNumbers are not created at the time of the call
         │   └── it should revert with "StakeRegistry.getTotalStakeIndicesAtBlockNumber: quorum does not exist"
         ├── when any of the given quorumNumbers were not created before or at the given blockNumber
