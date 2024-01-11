@@ -10,6 +10,11 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         _deployMockEigenLayerAndAVS();
     }
 
+    function test_getOperatorState_revert_neverRegistered() public {
+        cheats.expectRevert("RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number");
+        operatorStateRetriever.getOperatorState(registryCoordinator, defaultOperatorId, uint32(block.number));
+    }
+
     function testGetOperatorState_Valid(uint256 pseudoRandomNumber) public {
         // register random operators and get the expected indices within the quorums and the metadata for the operators
         (
