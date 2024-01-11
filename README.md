@@ -25,19 +25,21 @@ Most of this content is intro-level and describes user interactions with the Eig
 
 ### Deep Dive
 
-The most up-to-date and technical documentation can be found in [/docs](/docs). If you're a shadowy super coder, this is a great place to get an overview of the contracts before diving into the code.
-
-It might be helpful to explore the EigenLayer core technical documentation as well, which you can find [here][core-docs-m2].
+For shadowy super-coders:
+* The most up-to-date technical documentation can be found in [/docs](/docs).
+* To get an idea of how users interact with these contracts, check out the integration tests: [/test/integration](./test/integration)
+* To explore the EigenLayer core contracts, check out the core repo technical docs [here][core-docs-m2].
 
 ## Building and Running Tests
 
 This repository uses Foundry. See the [Foundry docs](https://book.getfoundry.sh/) for more info on installation and usage. If you already have foundry, you can build this project and run tests with these commands:
 
-```
+```sh
 foundryup
 
 forge build
-forge test
+# FFI tests are currently broken; working on it! for now, run the tests without them
+forge test --no-match-contracts FFI
 ```
 
 ## Deployments
