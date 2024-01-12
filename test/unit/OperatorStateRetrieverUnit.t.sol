@@ -36,8 +36,8 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         registryCoordinator.deregisterOperator(BitmapUtils.bitmapToBytesArray(quorumBitmap));
 
         (uint256 fetchedQuorumBitmap, OperatorStateRetriever.Operator[][] memory operators) = operatorStateRetriever.getOperatorState(registryCoordinator, defaultOperatorId, uint32(block.number));
-        assertEq(fetchedQuorumBitmap, 0, "quorumBitmap should be zero because the operator was deregistered before the reference block number");
-        assertEq(operators.length, 0, "operators should be empty because the operator was deregistered before the reference block number");
+        assertEq(fetchedQuorumBitmap, 0);
+        assertEq(operators.length, 0);
     }
 
     function test_getOperatorState_registeredAtReferenceBlockNumber() public {
@@ -46,11 +46,12 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         _registerOperatorWithCoordinator(defaultOperator, quorumBitmap, defaultPubKey);
 
         (uint256 fetchedQuorumBitmap, OperatorStateRetriever.Operator[][] memory operators) = operatorStateRetriever.getOperatorState(registryCoordinator, defaultOperatorId, uint32(block.number));
-        assertEq(fetchedQuorumBitmap, 1, "quorumBitmap should be zero because the operator was deregistered before the reference block number");
-        assertEq(operators.length, 1, "operators should be empty because the operator was deregistered before the reference block number");
-        assertEq(operators[0].length, 1, "operators should be empty because the operator was deregistered before the reference block number");
-        assertEq(operators[0][0].operatorId, defaultOperatorId, "operators should be empty because the operator was deregistered before the reference block number");
-        assertEq(operators[0][0].stake, defaultStake, "operators should be empty because the operator was deregistered before the reference block number");
+        assertEq(fetchedQuorumBitmap, 1);
+        assertEq(operators.length, 1);
+        assertEq(operators[0].length, 1);
+        assertEq(operators[0][0].operator, defaultOperator);
+        assertEq(operators[0][0].operatorId, defaultOperatorId);
+        assertEq(operators[0][0].stake, defaultStake);
     }
 
     function test_getOperatorState_revert_quorumNotCreatedAtCallTime() public {
@@ -93,15 +94,18 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         _registerOperatorWithCoordinator(otherOperator, quorumBitmapThree, otherPubKey, defaultStake -1);
 
         OperatorStateRetriever.Operator[][] memory operators = operatorStateRetriever.getOperatorState(registryCoordinator, BitmapUtils.bitmapToBytesArray(quorumBitmapThree), uint32(block.number));
-        assertEq(operators.length, 2, "operators are registered for 2 quorums, so there should be 2 arrays of operators");
-        assertEq(operators[0].length, 2, "operators are registered for 2 quorums, so there should be 1 operator in the first quorum");
-        assertEq(operators[1].length, 1, "operators are registered for 2 quorums, so there should be 1 operator in the second quorum");
-        assertEq(operators[0][0].operatorId, defaultOperatorId, "the first operator in the first quorum should be the default operator");
-        assertEq(operators[0][0].stake, defaultStake, "the first operator in the first quorum should have the default stake");
-        assertEq(operators[0][1].operatorId, otherOperatorId, "the second operator in the first quorum should be the other operator");
-        assertEq(operators[0][1].stake, defaultStake - 1, "the second operator in the first quorum should have the default stake minus 1");
-        assertEq(operators[1][0].operatorId, otherOperatorId, "the first operator in the second quorum should be the other operator");
-        assertEq(operators[1][0].stake, defaultStake - 1, "the first operator in the second quorum should have the default stake minus 1");
+        assertEq(operators.length, 2);
+        assertEq(operators[0].length, 2);
+        assertEq(operators[1].length, 1);
+        assertEq(operators[0][0].operator, defaultOperator);
+        assertEq(operators[0][0].operatorId, defaultOperatorId);
+        assertEq(operators[0][0].stake, defaultStake);
+        assertEq(operators[0][1].operator, otherOperator);
+        assertEq(operators[0][1].operatorId, otherOperatorId);
+        assertEq(operators[0][1].stake, defaultStake - 1);
+        assertEq(operators[1][0].operator, otherOperator);
+        assertEq(operators[1][0].operatorId, otherOperatorId);
+        assertEq(operators[1][0].stake, defaultStake - 1);
     }
 
     function test_getCheckSignaturesIndices_revert_neverRegistered() public {
