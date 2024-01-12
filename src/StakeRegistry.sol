@@ -697,6 +697,7 @@ contract StakeRegistry is StakeRegistryStorage {
         uint32[] memory indices = new uint32[](quorumNumbers.length);
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
+            require(_quorumExists(quorumNumber), "StakeRegistry.getTotalStakeIndicesAtBlockNumber: quorum does not exist");
             require(
                 _totalStakeHistory[quorumNumber][0].updateBlockNumber <= blockNumber,
                 "StakeRegistry.getTotalStakeIndicesAtBlockNumber: quorum has no stake history at blockNumber"

@@ -6,8 +6,277 @@ import "../utils/MockAVSDeployer.sol";
 contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
     using BN254 for BN254.G1Point;
 
+
     function setUp() virtual public {
-        _deployMockEigenLayerAndAVS();
+        numQuorums = 8;
+        _deployMockEigenLayerAndAVS(numQuorums);
+    }
+
+    function test_getOperatorState_revert_neverRegistered() public {
+        cheats.expectRevert("RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number");
+        operatorStateRetriever.getOperatorState(registryCoordinator, defaultOperatorId, uint32(block.number));
+    }
+
+    function test_getOperatorState_revert_registeredFirstAfterReferenceBlockNumber() public {
+        cheats.roll(registrationBlockNumber);
+        _registerOperatorWithCoordinator(defaultOperator, 1, defaultPubKey);
+
+        // should revert because the operator was registered for the first time after the reference block number
+        cheats.expectRevert("RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number");
+        operatorStateRetriever.getOperatorState(registryCoordinator, defaultOperatorId, registrationBlockNumber - 1);
+    }
+
+    function test_getOperatorState_deregisteredBeforeReferenceBlockNumber() public {
+        uint256 quorumBitmap = 1;
+        cheats.roll(registrationBlockNumber);
+        _registerOperatorWithCoordinator(defaultOperator, quorumBitmap, defaultPubKey);
+
+        cheats.roll(registrationBlockNumber + 10);
+        cheats.prank(defaultOperator);
+        registryCoordinator.deregisterOperator(BitmapUtils.bitmapToBytesArray(quorumBitmap));
+
+        (uint256 fetchedQuorumBitmap, OperatorStateRetriever.Operator[][] memory operators) = operatorStateRetriever.getOperatorState(registryCoordinator, defaultOperatorId, uint32(block.number));
+        assertEq(fetchedQuorumBitmap, 0);
+        assertEq(operators.length, 0);
+    }
+
+    function test_getOperatorState_registeredAtReferenceBlockNumber() public {
+        uint256 quorumBitmap = 1;
+        cheats.roll(registrationBlockNumber);
+        _registerOperatorWithCoordinator(defaultOperator, quorumBitmap, defaultPubKey);
+
+        (uint256 fetchedQuorumBitmap, OperatorStateRetriever.Operator[][] memory operators) = operatorStateRetriever.getOperatorState(registryCoordinator, defaultOperatorId, uint32(block.number));
+        assertEq(fetchedQuorumBitmap, 1);
+        assertEq(operators.length, 1);
+        assertEq(operators[0].length, 1);
+        assertEq(operators[0][0].operator, defaultOperator);
+        assertEq(operators[0][0].operatorId, defaultOperatorId);
+        assertEq(operators[0][0].stake, defaultStake);
+    }
+
+    function test_getOperatorState_revert_quorumNotCreatedAtCallTime() public {
+        cheats.expectRevert("IndexRegistry._operatorCountAtBlockNumber: quorum does not exist");
+        operatorStateRetriever.getOperatorState(registryCoordinator, BitmapUtils.bitmapToBytesArray(1 << numQuorums), uint32(block.number));
+    }
+
+    function test_getOperatorState_revert_quorumNotCreatedAtReferenceBlockNumber() public {
+        cheats.roll(registrationBlockNumber);
+        IRegistryCoordinator.OperatorSetParam memory operatorSetParams = 
+            IRegistryCoordinator.OperatorSetParam({
+                    maxOperatorCount: defaultMaxOperatorCount,
+                    kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
+                    kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
+            });
+        uint96 minimumStake = 1;
+        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
+        strategyParams[0] =
+            IStakeRegistry.StrategyParams({
+                strategy: IStrategy(address(1000)),
+                multiplier: 1e16
+            });
+
+        cheats.prank(registryCoordinator.owner());
+        registryCoordinator.createQuorum(operatorSetParams, minimumStake, strategyParams);
+
+        cheats.expectRevert("IndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number");
+        operatorStateRetriever.getOperatorState(registryCoordinator, BitmapUtils.bitmapToBytesArray(1 << numQuorums), uint32(registrationBlockNumber - 1));
+    }
+
+    function test_getOperatorState_returnsCorrect() public {
+        uint256 quorumBitmapOne = 1;
+        uint256 quorumBitmapThree = 3;
+        cheats.roll(registrationBlockNumber);
+        _registerOperatorWithCoordinator(defaultOperator, quorumBitmapOne, defaultPubKey);
+
+        address otherOperator = _incrementAddress(defaultOperator, 1);
+        BN254.G1Point memory otherPubKey = BN254.G1Point(1, 2);
+        bytes32 otherOperatorId = BN254.hashG1Point(otherPubKey);
+        _registerOperatorWithCoordinator(otherOperator, quorumBitmapThree, otherPubKey, defaultStake -1);
+
+        OperatorStateRetriever.Operator[][] memory operators = operatorStateRetriever.getOperatorState(registryCoordinator, BitmapUtils.bitmapToBytesArray(quorumBitmapThree), uint32(block.number));
+        assertEq(operators.length, 2);
+        assertEq(operators[0].length, 2);
+        assertEq(operators[1].length, 1);
+        assertEq(operators[0][0].operator, defaultOperator);
+        assertEq(operators[0][0].operatorId, defaultOperatorId);
+        assertEq(operators[0][0].stake, defaultStake);
+        assertEq(operators[0][1].operator, otherOperator);
+        assertEq(operators[0][1].operatorId, otherOperatorId);
+        assertEq(operators[0][1].stake, defaultStake - 1);
+        assertEq(operators[1][0].operator, otherOperator);
+        assertEq(operators[1][0].operatorId, otherOperatorId);
+        assertEq(operators[1][0].stake, defaultStake - 1);
+    }
+
+    function test_getCheckSignaturesIndices_revert_neverRegistered() public {
+        bytes32[] memory nonSignerOperatorIds = new bytes32[](1);
+        nonSignerOperatorIds[0] = defaultOperatorId;
+
+        cheats.expectRevert("RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number");
+        operatorStateRetriever.getCheckSignaturesIndices(registryCoordinator, uint32(block.number), BitmapUtils.bitmapToBytesArray(1), nonSignerOperatorIds);
+    }
+
+    function test_getCheckSignaturesIndices_revert_registeredFirstAfterReferenceBlockNumber() public {
+        bytes32[] memory nonSignerOperatorIds = new bytes32[](1);
+        nonSignerOperatorIds[0] = defaultOperatorId;
+
+        cheats.roll(registrationBlockNumber);
+        _registerOperatorWithCoordinator(defaultOperator, 1, defaultPubKey);
+
+        // should revert because the operator was registered for the first time after the reference block number
+        cheats.expectRevert("RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number");
+        operatorStateRetriever.getCheckSignaturesIndices(registryCoordinator, registrationBlockNumber - 1, BitmapUtils.bitmapToBytesArray(1), nonSignerOperatorIds);
+    }
+
+    function test_getCheckSignaturesIndices_revert_deregisteredAtReferenceBlockNumber() public {
+        bytes32[] memory nonSignerOperatorIds = new bytes32[](1);
+        nonSignerOperatorIds[0] = defaultOperatorId;
+
+        cheats.roll(registrationBlockNumber);
+        _registerOperatorWithCoordinator(defaultOperator, 1, defaultPubKey);
+
+        cheats.roll(registrationBlockNumber + 10);
+        cheats.prank(defaultOperator);
+        registryCoordinator.deregisterOperator(BitmapUtils.bitmapToBytesArray(1));
+
+        // should revert because the operator was registered for the first time after the reference block number
+        cheats.expectRevert("OperatorStateRetriever.getCheckSignaturesIndices: operator must be registered at blocknumber");
+        operatorStateRetriever.getCheckSignaturesIndices(registryCoordinator, uint32(block.number), BitmapUtils.bitmapToBytesArray(1), nonSignerOperatorIds);
+    }
+
+    function test_getCheckSignaturesIndices_revert_quorumNotCreatedAtCallTime() public {
+        bytes32[] memory nonSignerOperatorIds = new bytes32[](1);
+        nonSignerOperatorIds[0] = defaultOperatorId;
+
+        _registerOperatorWithCoordinator(defaultOperator, 1, defaultPubKey);
+
+        cheats.expectRevert("StakeRegistry.getTotalStakeIndicesAtBlockNumber: quorum does not exist");
+        operatorStateRetriever.getCheckSignaturesIndices(registryCoordinator, uint32(block.number), BitmapUtils.bitmapToBytesArray(1 << numQuorums), nonSignerOperatorIds);
+    }
+
+    function test_getCheckSignaturesIndices_revert_quorumNotCreatedAtReferenceBlockNumber() public {
+        cheats.roll(registrationBlockNumber);
+        _registerOperatorWithCoordinator(defaultOperator, 1, defaultPubKey);
+
+        cheats.roll(registrationBlockNumber + 10);
+        bytes32[] memory nonSignerOperatorIds = new bytes32[](1);
+        nonSignerOperatorIds[0] = defaultOperatorId;
+
+        IRegistryCoordinator.OperatorSetParam memory operatorSetParams = 
+            IRegistryCoordinator.OperatorSetParam({
+                    maxOperatorCount: defaultMaxOperatorCount,
+                    kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
+                    kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
+            });
+        uint96 minimumStake = 1;
+        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
+        strategyParams[0] =
+            IStakeRegistry.StrategyParams({
+                strategy: IStrategy(address(1000)),
+                multiplier: 1e16
+            });
+
+        cheats.prank(registryCoordinator.owner());
+        registryCoordinator.createQuorum(operatorSetParams, minimumStake, strategyParams);
+
+        cheats.expectRevert("StakeRegistry.getTotalStakeIndicesAtBlockNumber: quorum has no stake history at blockNumber");
+        operatorStateRetriever.getCheckSignaturesIndices(registryCoordinator, registrationBlockNumber + 5, BitmapUtils.bitmapToBytesArray(1 << numQuorums), nonSignerOperatorIds);
+    }
+
+    function test_getCheckSignaturesIndices_returnsCorrect() public {
+        uint256 quorumBitmapOne = 1;
+        uint256 quorumBitmapTwo = 2;
+        uint256 quorumBitmapThree = 3;
+
+        cheats.roll(registrationBlockNumber);
+        _registerOperatorWithCoordinator(defaultOperator, quorumBitmapOne, defaultPubKey);
+
+        cheats.roll(registrationBlockNumber + 10);
+        address otherOperator = _incrementAddress(defaultOperator, 1);
+        BN254.G1Point memory otherPubKey = BN254.G1Point(1, 2);
+        bytes32 otherOperatorId = BN254.hashG1Point(otherPubKey);
+        _registerOperatorWithCoordinator(otherOperator, quorumBitmapThree, otherPubKey, defaultStake -1);
+
+        cheats.roll(registrationBlockNumber + 15);
+        cheats.prank(defaultOperator);
+        registryCoordinator.deregisterOperator(BitmapUtils.bitmapToBytesArray(quorumBitmapOne));
+
+        cheats.roll(registrationBlockNumber + 20);
+        _registerOperatorWithCoordinator(defaultOperator, quorumBitmapTwo, defaultPubKey);
+
+        cheats.roll(registrationBlockNumber + 25);
+        cheats.prank(otherOperator);
+        registryCoordinator.deregisterOperator(BitmapUtils.bitmapToBytesArray(quorumBitmapTwo));
+
+        cheats.roll(registrationBlockNumber + 30);
+        _registerOperatorWithCoordinator(otherOperator, quorumBitmapTwo, otherPubKey, defaultStake - 2);
+
+        bytes32[] memory nonSignerOperatorIds = new bytes32[](2);
+        nonSignerOperatorIds[0] = defaultOperatorId;
+        nonSignerOperatorIds[1] = otherOperatorId;
+
+        OperatorStateRetriever.CheckSignaturesIndices memory checkSignaturesIndices = operatorStateRetriever.getCheckSignaturesIndices(registryCoordinator, uint32(block.number), BitmapUtils.bitmapToBytesArray(quorumBitmapThree), nonSignerOperatorIds);
+        // we're querying for 2 operators, so there should be 2 nonSignerQuorumBitmapIndices
+        assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices.length, 2);
+        // the first operator (0) registered for quorum 1, (1) deregistered from quorum 1, and (2) registered for quorum 2
+        assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices[0], 2);
+        // the second operator (0) registered for quorum 1 and 2 (1) deregistered from quorum 2, and (2) registered for quorum 2
+        assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices[1], 2);
+        // the operators, together, serve 2 quorums so there should be 2 quorumApkIndices
+        assertEq(checkSignaturesIndices.quorumApkIndices.length, 2);
+        // quorum 1 (0) was initialized, (1) the first operator registered, (2) the second operator registered, and (3) the first operator deregistered
+        assertEq(checkSignaturesIndices.quorumApkIndices[0], 3);
+        // quorum 2 (0) was initialized, (1) the second operator registered, (2) the first operator registered, (3) the second operator deregistered, and (4) the second operator registered
+        assertEq(checkSignaturesIndices.quorumApkIndices[1], 4);
+        // the operators, together, serve 2 quorums so there should be 2 totalStakeIndices
+        assertEq(checkSignaturesIndices.totalStakeIndices.length, 2);
+        // quorum 1 (0) was initialized, (1) the first operator registered, (2) the second operator registered, and (3) the first operator deregistered
+        assertEq(checkSignaturesIndices.totalStakeIndices[0], 3);
+        // quorum 2 (0) was initialized, (1) the second operator registered, (2) the first operator registered, (3) the second operator deregistered, and (4) the second operator registered
+        assertEq(checkSignaturesIndices.totalStakeIndices[1], 4);
+        // the operators, together, serve 2 quorums so there should be 2 nonSignerStakeIndices
+        assertEq(checkSignaturesIndices.nonSignerStakeIndices.length, 2);
+        // quorum 1 only has the second operator registered, so there should be 1 nonSignerStakeIndices
+        assertEq(checkSignaturesIndices.nonSignerStakeIndices[0].length, 1);
+        // the second operator has (0) registered for quorum 1
+        assertEq(checkSignaturesIndices.nonSignerStakeIndices[0][0], 0);
+        // quorum 2 has both operators registered, so there should be 2 nonSignerStakeIndices
+        assertEq(checkSignaturesIndices.nonSignerStakeIndices[1].length, 2);
+        // the first operator has (0) registered for quorum 1
+        assertEq(checkSignaturesIndices.nonSignerStakeIndices[1][0], 0);
+        // the second operator has (0) registered for quorum 2, (1) deregistered from quorum 2, and (2) registered for quorum 2
+        assertEq(checkSignaturesIndices.nonSignerStakeIndices[1][1], 2);
+
+        nonSignerOperatorIds = new bytes32[](1);
+        nonSignerOperatorIds[0] = otherOperatorId;
+        // taking only the deregistration into account
+        checkSignaturesIndices = operatorStateRetriever.getCheckSignaturesIndices(registryCoordinator, registrationBlockNumber + 15, BitmapUtils.bitmapToBytesArray(quorumBitmapThree), nonSignerOperatorIds);
+        // we're querying for 1 operator, so there should be 1 nonSignerQuorumBitmapIndices
+        assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices.length, 1);
+        // the second operator (0) registered for quorum 1 and 2
+        assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices[0], 0);
+        // at the time, the operator served 2 quorums so there should be 2 quorumApkIndices
+        assertEq(checkSignaturesIndices.quorumApkIndices.length, 2);
+        // at the time, quorum 1 (0) was initialized, (1) the first operator registered, (2) the second operator registered, and (3) the first operator deregistered
+        assertEq(checkSignaturesIndices.quorumApkIndices[0], 3);
+        // at the time, quorum 2 (0) was initialized, (1) the second operator registered
+        assertEq(checkSignaturesIndices.quorumApkIndices[1], 1);
+        // at the time, the operator served 2 quorums so there should be 2 totalStakeIndices
+        assertEq(checkSignaturesIndices.totalStakeIndices.length, 2);
+        // at the time, quorum 1 (0) was initialized, (1) the first operator registered, (2) the second operator registered, and (3) the first operator deregistered
+        assertEq(checkSignaturesIndices.totalStakeIndices[0], 3);
+        // at the time, quorum 2 (0) was initialized, (1) the second operator registered
+        assertEq(checkSignaturesIndices.totalStakeIndices[1], 1);
+        // at the time, the operator served 2 quorums so there should be 2 nonSignerStakeIndices
+        assertEq(checkSignaturesIndices.nonSignerStakeIndices.length, 2);
+        // quorum 1 only has the second operator registered, so there should be 1 nonSignerStakeIndices
+        assertEq(checkSignaturesIndices.nonSignerStakeIndices[0].length, 1);
+        // the second operator has (0) registered for quorum 1
+        assertEq(checkSignaturesIndices.nonSignerStakeIndices[0][0], 0);
+        // quorum 2 only has the second operator registered, so there should be 1 nonSignerStakeIndices
+        assertEq(checkSignaturesIndices.nonSignerStakeIndices[1].length, 1);
+        // the second operator has (0) registered for quorum 2
+        assertEq(checkSignaturesIndices.nonSignerStakeIndices[1][0], 0);
     }
 
     function testGetOperatorState_Valid(uint256 pseudoRandomNumber) public {

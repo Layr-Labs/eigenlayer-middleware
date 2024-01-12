@@ -112,6 +112,7 @@ contract OperatorStateRetriever {
 
         // get the indices of the quorumBitmap updates for each of the operators in the nonSignerOperatorIds array
         checkSignaturesIndices.nonSignerQuorumBitmapIndices = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(referenceBlockNumber, nonSignerOperatorIds);
+
         // get the indices of the totalStake updates for each of the quorums in the quorumNumbers array
         checkSignaturesIndices.totalStakeIndices = stakeRegistry.getTotalStakeIndicesAtBlockNumber(referenceBlockNumber, quorumNumbers);
         
@@ -129,6 +130,8 @@ contract OperatorStateRetriever {
                         referenceBlockNumber, 
                         checkSignaturesIndices.nonSignerQuorumBitmapIndices[i]
                     );
+                
+                require(nonSignerQuorumBitmap != 0, "OperatorStateRetriever.getCheckSignaturesIndices: operator must be registered at blocknumber");
                 
                 // if the operator was a part of the quorum and the quorum is a part of the provided quorumNumbers
                 if ((nonSignerQuorumBitmap >> uint8(quorumNumbers[quorumNumberIndex])) & 1 == 1) {

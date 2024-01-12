@@ -1,0 +1,39 @@
+.
+└── OperatorStateRetriever tree (*** denotes that integration tests are needed to validate path)
+    ├── when getOperatorState(IRegistryCoordinator,bytes32,uint32) is called
+    │   ├── when the given operator has never registered with the given registryCoordinator (their quorumBitmapHistory has length 0)
+    │   │   └── it should revert with "RegistryCoordinator.getQuorumBitmapIndicesAtBlockNumber: operator has no bitmap history at blockNumber"
+    │   └── when the given operator has registered for the first time with the given registryCoordinator
+    │       ├── after the given blockNumber
+    │       │   └── it should revert with "RegistryCoordinator.getQuorumBitmapIndicesAtBlockNumber: operator has no bitmap history at blockNumber"
+    │       └── before the given blockNumber
+    │           ├── and was not registered for any quorums at the given blockNumber
+    │           │   └── it should return (0, [])
+    │           └── and was registered for a set of quorums at the given blockNumber
+    │               └── it should return 
+                        └── the given operator's quorum bitmap at the given blockNumber as the first argument and 
+                        └── a list of the list of operators (by id and stake) ordered by index for each quorum in the quorumBitmap from the first argument ascending by quorumNumber
+    ├── when getOperatorState(IRegistryCoordinator,bytes memory,uint32) is called
+    │   ├── when at any of the given quorumNumbers were not created at the time of call
+    │   │   └── it should revert with "IndexRegistry._operatorCountAtBlockNumber: quorum does not exist"
+    │   ├── when at any of the given quorumNumbers were not created before or at the given blockNumber
+    │   │   └── it should revert with "IndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number"
+    │   └── when the given quorumNumbers are created on the given registry registryCoordinator
+    │       └── it should return their quorum bitmap as the first argument and a list of the list of operators (by id and stake) ordered by index for each quorum in the set ascending by quorumNumber
+    └── when getCheckSignaturesIndices is called
+        ├── when any of the given nonSignerOperatorIds were never registered with the given registryCoordinator
+        │   └── it should revert with "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number"
+        ├── when any of the given operator has registered for the first time with the given registryCoordinator after the given blockNumber
+        │   └── it should revert with "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number"
+        ├── when any of the given operator is completely deregistered with the given registryCoordinator at the given blockNumber
+        │   └── it should revert with "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number"
+        ├── when any of the given quorumNumbers were not created at the time of the call
+        │   └── it should revert with "StakeRegistry.getTotalStakeIndicesAtBlockNumber: quorum does not exist"
+        ├── when any of the given quorumNumbers were not created before or at the given blockNumber
+        │   └── it should revert with "StakeRegistry.getTotalStakeIndicesAtBlockNumber: quorum has no stake history at blockNumber"
+        └── otherwise
+            └── it should return
+                ├── a list of the indices of the QuorumBitmapUpdates at the given blockNumber for the given nonSignerOperatorIds in the inputted quorumNumber order as the first argument
+                ├── a list of the indices of the ApkUpdates at the given blockNumber for each quorum in the inputted quorumNumber order as the second argument
+                ├── a list of the indices of the StakeUpdates at the given blockNumber for the total stake for each quorum in the inputted quorumNumber order as the third argument
+                └── a list of (a list of the indices of the stakes of each operator in each of the quorums the operator was in at the blockNumber from lowest to greatest quorumNumber they were apart of) in the order of the inputted nonSigners
