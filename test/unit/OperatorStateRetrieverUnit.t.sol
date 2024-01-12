@@ -200,43 +200,78 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         cheats.roll(registrationBlockNumber + 20);
         _registerOperatorWithCoordinator(defaultOperator, quorumBitmapTwo, defaultPubKey);
 
+        cheats.roll(registrationBlockNumber + 25);
+        cheats.prank(otherOperator);
+        registryCoordinator.deregisterOperator(BitmapUtils.bitmapToBytesArray(quorumBitmapTwo));
+
+        cheats.roll(registrationBlockNumber + 30);
+        _registerOperatorWithCoordinator(otherOperator, quorumBitmapTwo, otherPubKey, defaultStake - 2);
+
         bytes32[] memory nonSignerOperatorIds = new bytes32[](2);
         nonSignerOperatorIds[0] = defaultOperatorId;
         nonSignerOperatorIds[1] = otherOperatorId;
 
         OperatorStateRetriever.CheckSignaturesIndices memory checkSignaturesIndices = operatorStateRetriever.getCheckSignaturesIndices(registryCoordinator, uint32(block.number), BitmapUtils.bitmapToBytesArray(quorumBitmapThree), nonSignerOperatorIds);
+        // we're querying for 2 operators, so there should be 2 nonSignerQuorumBitmapIndices
         assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices.length, 2);
+        // the first operator (0) registered for quorum 1, (1) deregistered from quorum 1, and (2) registered for quorum 2
         assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices[0], 2);
-        assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices[1], 0);
+        // the second operator (0) registered for quorum 1 and 2 (1) deregistered from quorum 2, and (2) registered for quorum 2
+        assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices[1], 2);
+        // the operators, together, serve 2 quorums so there should be 2 quorumApkIndices
         assertEq(checkSignaturesIndices.quorumApkIndices.length, 2);
+        // quorum 1 (0) was initialized, (1) the first operator registered, (2) the second operator registered, and (3) the first operator deregistered
         assertEq(checkSignaturesIndices.quorumApkIndices[0], 3);
-        assertEq(checkSignaturesIndices.quorumApkIndices[1], 2);
+        // quorum 2 (0) was initialized, (1) the second operator registered, (2) the first operator registered, (3) the second operator deregistered, and (4) the second operator registered
+        assertEq(checkSignaturesIndices.quorumApkIndices[1], 4);
+        // the operators, together, serve 2 quorums so there should be 2 totalStakeIndices
         assertEq(checkSignaturesIndices.totalStakeIndices.length, 2);
+        // quorum 1 (0) was initialized, (1) the first operator registered, (2) the second operator registered, and (3) the first operator deregistered
         assertEq(checkSignaturesIndices.totalStakeIndices[0], 3);
-        assertEq(checkSignaturesIndices.totalStakeIndices[1], 2);
+        // quorum 2 (0) was initialized, (1) the second operator registered, (2) the first operator registered, (3) the second operator deregistered, and (4) the second operator registered
+        assertEq(checkSignaturesIndices.totalStakeIndices[1], 4);
+        // the operators, together, serve 2 quorums so there should be 2 nonSignerStakeIndices
         assertEq(checkSignaturesIndices.nonSignerStakeIndices.length, 2);
+        // quorum 1 only has the second operator registered, so there should be 1 nonSignerStakeIndices
         assertEq(checkSignaturesIndices.nonSignerStakeIndices[0].length, 1);
+        // the second operator has (0) registered for quorum 1
         assertEq(checkSignaturesIndices.nonSignerStakeIndices[0][0], 0);
+        // quorum 2 has both operators registered, so there should be 2 nonSignerStakeIndices
         assertEq(checkSignaturesIndices.nonSignerStakeIndices[1].length, 2);
+        // the first operator has (0) registered for quorum 1
         assertEq(checkSignaturesIndices.nonSignerStakeIndices[1][0], 0);
-        assertEq(checkSignaturesIndices.nonSignerStakeIndices[1][1], 0);
+        // the second operator has (0) registered for quorum 2, (1) deregistered from quorum 2, and (2) registered for quorum 2
+        assertEq(checkSignaturesIndices.nonSignerStakeIndices[1][1], 2);
 
         nonSignerOperatorIds = new bytes32[](1);
         nonSignerOperatorIds[0] = otherOperatorId;
         // taking only the deregistration into account
         checkSignaturesIndices = operatorStateRetriever.getCheckSignaturesIndices(registryCoordinator, registrationBlockNumber + 15, BitmapUtils.bitmapToBytesArray(quorumBitmapThree), nonSignerOperatorIds);
+        // we're querying for 1 operator, so there should be 1 nonSignerQuorumBitmapIndices
         assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices.length, 1);
+        // the second operator (0) registered for quorum 1 and 2
         assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices[0], 0);
+        // at the time, the operator served 2 quorums so there should be 2 quorumApkIndices
         assertEq(checkSignaturesIndices.quorumApkIndices.length, 2);
+        // at the time, quorum 1 (0) was initialized, (1) the first operator registered, (2) the second operator registered, and (3) the first operator deregistered
         assertEq(checkSignaturesIndices.quorumApkIndices[0], 3);
+        // at the time, quorum 2 (0) was initialized, (1) the second operator registered
         assertEq(checkSignaturesIndices.quorumApkIndices[1], 1);
+        // at the time, the operator served 2 quorums so there should be 2 totalStakeIndices
         assertEq(checkSignaturesIndices.totalStakeIndices.length, 2);
+        // at the time, quorum 1 (0) was initialized, (1) the first operator registered, (2) the second operator registered, and (3) the first operator deregistered
         assertEq(checkSignaturesIndices.totalStakeIndices[0], 3);
+        // at the time, quorum 2 (0) was initialized, (1) the second operator registered
         assertEq(checkSignaturesIndices.totalStakeIndices[1], 1);
+        // at the time, the operator served 2 quorums so there should be 2 nonSignerStakeIndices
         assertEq(checkSignaturesIndices.nonSignerStakeIndices.length, 2);
+        // quorum 1 only has the second operator registered, so there should be 1 nonSignerStakeIndices
         assertEq(checkSignaturesIndices.nonSignerStakeIndices[0].length, 1);
+        // the second operator has (0) registered for quorum 1
         assertEq(checkSignaturesIndices.nonSignerStakeIndices[0][0], 0);
+        // quorum 2 only has the second operator registered, so there should be 1 nonSignerStakeIndices
         assertEq(checkSignaturesIndices.nonSignerStakeIndices[1].length, 1);
+        // the second operator has (0) registered for quorum 2
         assertEq(checkSignaturesIndices.nonSignerStakeIndices[1][0], 0);
     }
 
