@@ -10,6 +10,6 @@ Any operator must go through the following sequence of steps:
 - [Register as an operator](./EigenLayer-delegation-flow.md#operator-registration) in EigenLayer
 - Get stakers to [delegate to them](./EigenLayer-delegation-flow.md#staker-delegation)
 - For each middleware:
-    - Opt into [slashing](./EigenLayer-tech-spec.md#slasher) by the middleware's [ServiceManager](../src/contracts/interfaces/IServiceManager.sol) contract
-    - Make sure to respect any other preconditions set by the middleware — for [EigenDA](https://docs.eigenda.xyz/), these are registering a BLS key in the [BLSPublicKeyCompendium](](../src/contracts/interfaces/IBLSPublicKeyCompendium.sol) and having sufficient (delegated) stake in EigenLayer to meet the minimum stake requirements set by EigenDA
-    - Call a function on one of the middleware's contracts to complete the registration — for EigenDA, this is registering on its [BLSRegistry](../src/contracts/interfaces/IBLSRegistry.sol)
+    - Opt into [slashing](./EigenLayer-tech-spec.md#slasher) by the middleware's [ServiceManager](../src/interfaces/IServiceManager.sol) contract
+    - Make sure to respect any other preconditions set by the middleware — for [EigenDA](https://docs.eigenda.xyz/), these are registering a BLS key in the [BLSPublicKeyCompendium](../src/interfaces/IBLSPublicKeyCompendium.sol) and having sufficient (delegated) stake in EigenLayer to meet the minimum stake requirements set by EigenDA
+    - Call a function on one of the middleware's contracts to complete the registration — for EigenDA, this is registering on its [BLSRegistry](../src/interfaces/IBLSRegistry.sol)
