@@ -66,6 +66,9 @@ contract MockAVSDeployer is Test {
     DelegationMock public delegationMock;
     EigenPodManagerMock public eigenPodManagerMock;
 
+    /// @notice StakeRegistry, Constant used as a divisor in calculating weights.
+    uint256 public constant WEIGHTING_DIVISOR = 1e18;
+
     address public proxyAdminOwner = address(uint160(uint256(keccak256("proxyAdminOwner"))));
     address public registryCoordinatorOwner = address(uint160(uint256(keccak256("registryCoordinatorOwner"))));
     address public pauser = address(uint160(uint256(keccak256("pauser"))));
@@ -255,7 +258,7 @@ contract MockAVSDeployer is Test {
             quorumStrategiesConsideredAndMultipliers[i] = new IStakeRegistry.StrategyParams[](1);
             quorumStrategiesConsideredAndMultipliers[i][0] = IStakeRegistry.StrategyParams(
                 IStrategy(address(uint160(i))),
-                uint96(i+1)
+                uint96(WEIGHTING_DIVISOR)
             );
         }
 
@@ -316,7 +319,7 @@ contract MockAVSDeployer is Test {
 
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
         for (uint i = 0; i < quorumNumbers.length; i++) {
-            stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), operator, stake);
+            _setOperatorWeight(operator, uint8(quorumNumbers[i]), stake);
         }
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
@@ -335,7 +338,7 @@ contract MockAVSDeployer is Test {
 
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
         for (uint i = 0; i < quorumNumbers.length; i++) {
-            stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), operator, stakes[uint8(quorumNumbers[i])]);
+            _setOperatorWeight(operator, uint8(quorumNumbers[i]), stakes[uint8(quorumNumbers[i])]);
         }
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
@@ -385,6 +388,20 @@ contract MockAVSDeployer is Test {
         }
 
         return (operatorMetadatas, expectedOperatorOverallIndices);
+    }
+
+    /**
+     * @dev Set the operator weight for a given quorum. Note we have to do this by setting delegationMock operatorShares
+     * Given each quorum must have at least one strategy, we set operatorShares for this strategy to this weight
+     * Returns actual weight calculated set for operator shares in DelegationMock since multiplier and WEIGHTING_DIVISOR calculations
+     * can give small rounding errors.
+     */
+    function _setOperatorWeight(address operator, uint8 quorumNumber, uint96 weight) internal returns (uint96) {
+        // Set StakeRegistry operator weight by setting DelegationManager operator shares
+        (IStrategy strategy, uint96 multiplier) = stakeRegistry.strategyParams(quorumNumber, 0);
+        uint256 actualWeight = ((uint256(weight) * WEIGHTING_DIVISOR) / uint256(multiplier));
+        delegationMock.setOperatorShares(operator, strategy, actualWeight);
+        return uint96(actualWeight);
     }
 
     function _incrementAddress(address start, uint256 inc) internal pure returns(address) {

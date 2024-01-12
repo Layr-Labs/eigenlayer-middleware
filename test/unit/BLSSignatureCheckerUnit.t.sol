@@ -233,4 +233,25 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
             nonSignerStakesAndSignature
         );
     }
+
+    function testBLSSignatureChecker_EmptyQuorums_Reverts(uint256 pseudoRandomNumber) public {
+        uint256 numNonSigners = pseudoRandomNumber % (maxOperatorsToRegister - 2) + 1;
+
+        uint256 quorumBitmap = 1;
+
+        (uint32 referenceBlockNumber, BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature) = 
+            _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(pseudoRandomNumber, numNonSigners, quorumBitmap);
+        
+        // Create an empty quorumNumbers array
+        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(0);
+
+        // expect a non-specific low-level revert, since this call will ultimately fail as part of the precompile call
+        cheats.expectRevert("BLSSignatureChecker.checkSignatures: empty quorum input");
+        blsSignatureChecker.checkSignatures(
+            msgHash, 
+            quorumNumbers,
+            referenceBlockNumber, 
+            nonSignerStakesAndSignature
+        );
+    }
 }

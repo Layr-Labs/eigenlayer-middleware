@@ -1,0 +1,76 @@
+.
+├── IndexRegistry tree (*** denotes that integration tests are needed to validate path)
+├── when any function is called (invariants)
+│   ├── current number of registered operators in a quorum is equal to _operatorCountHistory[quorumNumber][latestQuorumUpdateIndex].operatorCount
+│   ├── For any currently registered operator, currentOperatorIndex[operatorId] is in the range [0:operatorCount - 1]
+│   └── For any quorumNumber, if _operatorCountHistory[quorumNumber] is empty, then the quorum does not exist
+├── when register operator is called
+│   ├── given caller is not the registry coordinator
+│   │   └── it should revert
+│   ├── given a quorum does not exist (_operatorCountHistory[quorumNumber] is empty)
+│   │   └── it should revert
+│   └── given that above conditions are satisfied
+│       ├── it should call _increaseOperatorCount (internal function) for each quorum
+│       ├── it should call _assignOperatorToIndex (internal function) for each quorum
+│       └── given above functions are called for each quorum
+│           └── it should return the operator counts for each quorum
+├── when _increaseOperatorCount is called (internal function)
+│   ├── given operatorCount has been updated for the quorum within the same block
+│   │   └── it should increment the operatorCount of the latest QuorumUpdate
+│   │       └── given this is the first time using the index
+│   │           └── it should push an update
+│   └── given operatorCount has not been updated for the quorum within the same block
+│       └── it should create a new QuorumUpdate with the new operatorCount
+│           └── given this is the first time using the index
+│               └── it should push an update
+├── when _assignOperatorToIndex is called (internal function)
+│   ├── given latest index has been updated for the quorum within the same block
+│   │   └── it should update the index with the new operatorId, set currOperatorIndex, and emit QuorumIndexUpdate
+│   └── given latest index has not been updated for the quorum within the same block
+│       └── it should push a new OperatorUpdate with the new operatorId, set currOperatorIndex, and emit QuorumIndexUpdate
+├── when deregister operator is called
+│   ├── given caller is not the registry coordinator
+│   │   └── it should revert
+│   ├── given a quorum does not exist (_operatorCountHistory[quorumNumber] is empty)
+│   │   └── it should revert
+│   └── given that above conditions are satisfied
+│       ├── it should call _decreaseOperatorCount (internal function) for each quorum
+│       └── it should call _popLastOperator (internal function) for each quorum
+│           └── given operatorId does not equal lastOperatorId
+│               └── it should call _assignOperatorToIndex (internal function)
+├── when _decreaseOperatorCount is called (internal function)
+│   ├── given operatorCount has been updated for the quorum within the same block
+│   │   └── it should decrement the operatorCount of the latest QuorumUpdate
+│   │       └── given this is the first time using the index
+│   │           └── it should push an update
+│   └── given operatorCount has not been updated for the quorum within the same block
+│       └── it should decrement a new QuorumUpdate with the new operatorCount
+│           └── given this is the first time using the index
+│               └── it should push an update
+├── when _popLastOperator is called (internal function)
+│   ├── given latest index has been updated for the quorum within the same block
+│   │   └── it should update the operatorId with OPERATOR_DOES_NOT_EXIST_ID and emit QuorumIndexUpdate
+│   └── given latest index has not been updated for the quorum within the same block
+│       └── it should push a new OperatorUpdate with OPERATOR_DOES_NOT_EXIST_ID and emit QuorumIndexUpdate
+├── when _assignOperatorToIndex is called (internal function)
+│   ├── given the deregistered index has been updated within the same block
+│   │   └── it should update the index with the replacing operatorId and emit QuorumIndexUpdate
+│   └── given the deregistered index has not been updated within the same block
+│       └── it should push a new OperatorUpdate with the replacing operatorId and emit QuorumIndexUpdate
+├── when initializeQuorum is called
+│   ├── given caller is not the registry coordinator
+│   │   └── it should revert
+│   ├── given a quorum does not exist (_operatorCountHistory[quorumNumber] is empty)
+│   │   └── it should revert
+│   └── given that above conditions are satisfied
+│       └── it should push a new QuorumUpdate with 0 operators
+└── when getOperatorListAtBlockNumber is called
+    ├── given that the quorum does not exist (_operatorCountHistory[quorumNumber] is empty)
+    │   └── it should revert
+    ├── given that the quorum does not have any update that began before or at `blockNumber`
+    │   └── it should revert
+    └── given calling _operatorCountAtBlockNumber (internal function) doesn't revert
+        ├── given that an index in [0:operatorCount - 1], was unused for the blockNumber
+        │   └── it should revert
+        └── given that all indexes in [0:operatorCount - 1], were used for the blockNumber
+            └── it should return the set of registered operatorIds for a quorum at the specified blockNumber
