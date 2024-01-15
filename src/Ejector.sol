@@ -58,6 +58,8 @@ contract Ejector is IEjector, Ownable{
 
             for(uint8 j = 0; j < quorumNumbers.length; ++j) {
                 uint8 quorumNumber = uint8(quorumNumbers[j]);
+                require(quorumEjectionParams[quorumNumber].timeDelta > 0, "Ejector: Quorum ejection params not set");
+
                 uint256 operatorStake = stakeRegistry.getCurrentStake(_operatorIds[i], quorumNumber);
 
                 if(msg.sender == ejector){
