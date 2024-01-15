@@ -125,7 +125,7 @@ interface IStakeRegistry is IRegistry {
     function delegation() external view returns (IDelegationManager);
 
     /// @notice In order to register for a quorum i, an operator must have at least `minimumStakeForQuorum[i]`
-    function minimumStakeForQuorum(uint256 quorumNumber) external view returns (uint96);
+    function minimumStakeForQuorum(uint8 quorumNumber) external view returns (uint96);
 
     /// @notice Returns the length of the dynamic array stored in `strategyParams[quorumNumber]`.
     function strategyParamsLength(uint8 quorumNumber) external view returns (uint256);

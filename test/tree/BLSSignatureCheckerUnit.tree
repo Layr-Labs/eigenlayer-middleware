@@ -1,0 +1,43 @@
+├── BLSSignatureCheckerUnit.t.sol (*** denotes that integration tests are needed to validate path)
+│
+│
+├── setStaleStakesForbidden()
+│   ├── given that the caller is not the registryCoordinator owner
+│   │   └── it should revert
+│   └── it should update the `staleStakesForbidden` flag and emit an event
+│
+├── checkSignatures()
+│   ├── given that the quorumNumbers have length zero
+│   │   └── it should revert
+│   ├── given that the quorumNumbers, quorumApks, quorumApkIndices, totalStakeIndices, or nonSignerStakeIndices differ in length
+│   │   └── it should revert
+│   ├── given that the nonSignerPubkeys and nonSignerQuorumBitmapIndices differ in length
+│   │   └── it should revert
+│   ├── given that the referenceBlockNumber is in the future (i.e. exceeds the current block number)
+│   │   └── it should revert
+│   ├── given that the non-signer pubkeys are not in ascending order of their G1 hash
+│   │   └── it should revert
+│   ├── given that the non-signer pubkeys contain any duplicates (technically a sub-case of above)
+│   │   └── it should revert
+│   ├── given that the staleStakesForbidden flag is set and the quorumUpdateBlock number is strictly within
+│   │   `delegation.withdrawalDelayBlocks()` of the present block, for any of the quorumNumbers
+│   │   └── it should revert
+│   ├── given that any of the provided nonSignerQuorumBitmapIndices is incorrect for the referenceBlockNumber
+│   │   └── ***it should revert (via bubbling up a revert from the RegistryCoordinator)
+│   ├── given that any of the provided totalStakeIndices is incorrect for the referenceBlockNumber
+│   │   └── ***it should revert (via bubbling up a revert from the StakeRegistry)
+│   ├── given that any of the provided nonSignerStakeIndices is incorrect for the referenceBlockNumber
+│   │   └── ***it should revert (via bubbling up a revert from the StakeRegistry)
+│   ├── given that any of the provided quorumApkIndices is incorrect for the referenceBlockNumber
+│   │   └── ***it should revert (via bubbling up a revert from the BLSApkRegistry)
+│   ├── given that any of the provided quorumApks does not match the hash returned by the BLSApkRegistry for the referenceBlockNumber
+│   │   └── it should revert
+│   ├── given that the provided signature ("sigma") is not a signature over the provided apk / apkG2 (i.e. pairing check returns 'false')
+│   │   └── it should revert
+│   ├── given that the pairing check reverts
+│   │   └── it should revert
+│   └── it should attempt to fetch and return the total stake, calculate the signing stake, and return these together with
+│       a hash of the referenceBlockNumber and nonsigner pubkey hashes
+│
+└── trySignatureAndApkVerification()
+    └── it should return whether or not the pairing check reverted, as well as the return value from the check

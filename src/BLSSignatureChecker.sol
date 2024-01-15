@@ -94,6 +94,8 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
             bytes32
         )
     {
+        require(quorumNumbers.length != 0, "BLSSignatureChecker.checkSignatures: empty quorum input");
+
         require(
             (quorumNumbers.length == params.quorumApks.length) &&
             (quorumNumbers.length == params.quorumApkIndices.length) &&

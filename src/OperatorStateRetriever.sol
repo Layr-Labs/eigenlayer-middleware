@@ -14,6 +14,7 @@ import {BitmapUtils} from "./libraries/BitmapUtils.sol";
  */
 contract OperatorStateRetriever {
     struct Operator {
+        address operator;
         bytes32 operatorId;
         uint96 stake;
     }
@@ -58,7 +59,7 @@ contract OperatorStateRetriever {
      * @param registryCoordinator is the registry coordinator to fetch the AVS registry information from
      * @param quorumNumbers are the ids of the quorums to get the operator state for
      * @param blockNumber is the block number to get the operator state for
-     * @return 2d array of operators. For each quorum, an ordered list of operators
+     * @return 2d array of Operators. For each quorum, an ordered list of Operators
      */
     function getOperatorState(
         IRegistryCoordinator registryCoordinator, 
@@ -67,6 +68,7 @@ contract OperatorStateRetriever {
     ) public view returns(Operator[][] memory) {
         IStakeRegistry stakeRegistry = registryCoordinator.stakeRegistry();
         IIndexRegistry indexRegistry = registryCoordinator.indexRegistry();
+        IBLSApkRegistry blsApkRegistry = registryCoordinator.blsApkRegistry();
 
         Operator[][] memory operators = new Operator[][](quorumNumbers.length);
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
@@ -74,10 +76,10 @@ contract OperatorStateRetriever {
             bytes32[] memory operatorIds = indexRegistry.getOperatorListAtBlockNumber(quorumNumber, blockNumber);
             operators[i] = new Operator[](operatorIds.length);
             for (uint256 j = 0; j < operatorIds.length; j++) {
-                bytes32 operatorId = bytes32(operatorIds[j]);
                 operators[i][j] = Operator({
-                    operatorId: operatorId,
-                    stake: stakeRegistry.getStakeAtBlockNumber(operatorId, quorumNumber, blockNumber)
+                    operator: blsApkRegistry.getOperatorFromPubkeyHash(operatorIds[j]),
+                    operatorId: bytes32(operatorIds[j]),
+                    stake: stakeRegistry.getStakeAtBlockNumber(bytes32(operatorIds[j]), quorumNumber, blockNumber)
                 });
             }
         }
@@ -110,6 +112,7 @@ contract OperatorStateRetriever {
 
         // get the indices of the quorumBitmap updates for each of the operators in the nonSignerOperatorIds array
         checkSignaturesIndices.nonSignerQuorumBitmapIndices = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(referenceBlockNumber, nonSignerOperatorIds);
+
         // get the indices of the totalStake updates for each of the quorums in the quorumNumbers array
         checkSignaturesIndices.totalStakeIndices = stakeRegistry.getTotalStakeIndicesAtBlockNumber(referenceBlockNumber, quorumNumbers);
         
@@ -127,6 +130,8 @@ contract OperatorStateRetriever {
                         referenceBlockNumber, 
                         checkSignaturesIndices.nonSignerQuorumBitmapIndices[i]
                     );
+                
+                require(nonSignerQuorumBitmap != 0, "OperatorStateRetriever.getCheckSignaturesIndices: operator must be registered at blocknumber");
                 
                 // if the operator was a part of the quorum and the quorum is a part of the provided quorumNumbers
                 if ((nonSignerQuorumBitmap >> uint8(quorumNumbers[quorumNumberIndex])) & 1 == 1) {
