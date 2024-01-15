@@ -8,7 +8,7 @@ import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 
 /**
- * @title Used for automated ejection of operators from the registryCoordinator
+ * @title Used for automated ejection of operators from the RegistryCoordinator
  * @author Layr Labs, Inc.
  */
 contract Ejector is IEjector, Ownable{
@@ -20,21 +20,21 @@ contract Ejector is IEjector, Ownable{
     address public ejector;
 
     /// @notice Keeps track of the total stake ejected for a quorum within a time delta
-    mapping(uint8 => mapping(uint256 => uint256)) public stakeEjectedForQuorumInDelta;
+    mapping(uint8 => StakeEjection[]) public stakeEjectedForQuorum;
     /// @notice Ratelimit parameters for each quorum
     mapping(uint8 => QuorumEjectionParams) public quorumEjectionParams;
 
     constructor(
-        IRegistryCoordinator _registryCoordinator, 
-        IStakeRegistry _stakeRegistry,
         address _owner, 
         address _ejector,
+        IRegistryCoordinator _registryCoordinator, 
+        IStakeRegistry _stakeRegistry,
         QuorumEjectionParams[] memory _quorumEjectionParams
     ) {
         registryCoordinator = _registryCoordinator;
         stakeRegistry = _stakeRegistry;
-        _setEjector(_ejector);
         _transferOwnership(_owner);
+        _setEjector(_ejector);
 
         for(uint8 i = 0; i < _quorumEjectionParams.length; i++) {
             quorumEjectionParams[i] = _quorumEjectionParams[i];
@@ -50,27 +50,34 @@ contract Ejector is IEjector, Ownable{
         require(msg.sender == ejector || msg.sender == owner(), "Ejector: Only owner or ejector can eject");
         require(_operatorIds.length == _quorumBitmaps.length, "Ejector: _operatorIds and _quorumBitmaps must be same length");
 
-        for(uint i = 0; i < _operatorIds.length; i++) {
+        for(uint i = 0; i < _operatorIds.length; ++i) {
             bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(_quorumBitmaps[i]);
 
-            for(uint8 j = 0; j < quorumNumbers.length; j++) {
+            for(uint8 j = 0; j < quorumNumbers.length; ++j) {
                 uint8 quorumNumber = uint8(quorumNumbers[j]);
                 uint256 operatorStake = stakeRegistry.getCurrentStake(_operatorIds[i], quorumNumber);
 
-                uint256 timeBlock = block.timestamp % quorumEjectionParams[quorumNumber].timeDelta;
-                if(
-                    msg.sender == ejector &&
-                    stakeEjectedForQuorumInDelta[quorumNumber][timeBlock] + operatorStake > quorumEjectionParams[quorumNumber].maxStakePerDelta
-                ){
-                    revert("Ejector: Operator stake exceeds max stake per delta");
-                } 
-                stakeEjectedForQuorumInDelta[quorumNumber][timeBlock] += operatorStake;                
+                if(msg.sender == ejector){
+                    require(canEject(operatorStake, quorumNumber), "Ejector: Stake exceeds quorum ejection ratelimit");
+                }
+
+                stakeEjectedForQuorum[quorumNumber].push(StakeEjection({
+                    timestamp: block.timestamp,
+                    stakeEjected: operatorStake
+                }));
             }
 
-            registryCoordinator.ejectOperator(
+            try registryCoordinator.ejectOperator(
                 registryCoordinator.getOperatorFromId(_operatorIds[i]),
                 quorumNumbers
-            );
+            ) {
+                emit OperatorEjected(_operatorIds[i], _quorumBitmaps[i]);
+            } catch (bytes memory err) {
+                for(uint8 j = 0; j < quorumNumbers.length; ++j) {
+                    stakeEjectedForQuorum[uint8(quorumNumbers[j])].pop();
+                }
+                emit FailedOperatorEjection(_operatorIds[i], _quorumBitmaps[i], err);
+            }
         }
     }
 
@@ -81,6 +88,7 @@ contract Ejector is IEjector, Ownable{
      */
     function setQuorumEjectionParams(uint8 _quorumNumber, QuorumEjectionParams memory _quorumEjectionParams) external onlyOwner() {
         quorumEjectionParams[_quorumNumber] = _quorumEjectionParams;
+        emit QuorumEjectionParamsSet(_quorumNumber, _quorumEjectionParams.timeDelta, _quorumEjectionParams.maxStakePerDelta);
     }
 
     /**
@@ -91,9 +99,44 @@ contract Ejector is IEjector, Ownable{
         _setEjector(_ejector);
     }
 
+    ///@dev internal function to set the ejector
     function _setEjector(address _ejector) internal {
-        emit EjectorChanged(ejector, _ejector);
+        emit EjectorUpdated(ejector, _ejector);
         ejector = _ejector;
     }
-    
+
+    /**
+     * @dev Cleans up old ejections for a quorums StakeEjection array
+     * @param _quorumNumber The addresses of the operators to eject
+     */
+    function _cleanOldEjections(uint8 _quorumNumber) internal {
+        uint256 cutoffTime = block.timestamp - quorumEjectionParams[_quorumNumber].timeDelta;
+        uint256 index = 0;
+        StakeEjection[] storage stakeEjections = stakeEjectedForQuorum[_quorumNumber];
+        while (index < stakeEjections.length && stakeEjections[index].timestamp < cutoffTime) {
+            index++;
+        }
+        if (index > 0) {
+            for (uint256 i = index; i < stakeEjections.length; ++i) {
+                stakeEjections[i - index] = stakeEjections[i];
+            }
+            for (uint256 i = 0; i < index; ++i) {
+                stakeEjections.pop();
+            }
+        }
+    }
+
+    /**
+     * @notice Checks if an amount of stake can be ejected for a quorum with ratelimit
+     * @param _amount The amount of stake to eject
+     * @param _quorumNumber The quorum number to eject for
+     */
+    function canEject(uint256 _amount, uint8 _quorumNumber) public view returns (bool) {
+        uint256 totalEjected = 0;
+        for (uint256 i = 0; i < stakeEjectedForQuorum[_quorumNumber].length; i++) {
+            totalEjected += stakeEjectedForQuorum[_quorumNumber][i].stakeEjected;
+        }
+        return totalEjected + _amount <= quorumEjectionParams[_quorumNumber].maxStakePerDelta;
+    }
+
 }

@@ -5,7 +5,7 @@ import {IRegistryCoordinator} from "./IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./IStakeRegistry.sol";
 
 /**
- * @title Interface for a contract that ejects operators from an AVS
+ * @title Interface for a contract that ejects operators from an AVSs RegistryCoordinator
  * @author Layr Labs, Inc.
  */
 interface IEjector {
@@ -16,8 +16,20 @@ interface IEjector {
         uint256 maxStakePerDelta; // Max stake to be ejectable per time delta
     }
 
+    /// @notice A stake ejection event
+    struct StakeEjection {
+        uint256 timestamp; // Timestamp of the ejection
+        uint256 stakeEjected; // Amount of stake ejected at the timestamp
+    }
+
     ///@notice Emitted when the ejector address is set
-    event EjectorChanged(address previousAddress, address newAddress);
+    event EjectorUpdated(address previousAddress, address newAddress);
+    ///@notice Emitted when an operator is ejected
+    event OperatorEjected(bytes32 operatorId, uint256 quorumBitmap);
+    ///@notice Emitted when an operator ejection fails
+    event FailedOperatorEjection(bytes32 operatorId, uint256 quorumBitmap, bytes err);
+    ///@notice Emitted when the ratelimit parameters for a quorum are set
+    event QuorumEjectionParamsSet(uint8 quorumNumber, uint256 timeDelta, uint256 maxStakePerDelta);
 
     /**
      * @notice Ejects operators from the AVSs registryCoordinator
@@ -38,5 +50,12 @@ interface IEjector {
      * @param _ejector The address to permission
      */
     function setEjector(address _ejector) external;
+
+    /**
+     * @notice Checks if an amount of stake can be ejected for a quorum with ratelimit
+     * @param _amount The amount of stake to eject
+     * @param _quorumNumber The quorum number to eject for
+     */
+    function canEject(uint256 _amount, uint8 _quorumNumber) external view returns (bool);
     
 }
