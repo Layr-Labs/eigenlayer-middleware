@@ -12,8 +12,8 @@ interface IEjector {
 
     /// @notice A quorum's ratelimit parameters
     struct QuorumEjectionParams {
-        uint256 timeDelta; // Time delta to track ejection over
-        uint256 maxStakePerDelta; // Max stake to be ejectable per time delta
+        uint32 timeDelta; // Time delta to track ejection over
+        uint16 ejectableStakePercent; // Max stake to be ejectable per time delta
     }
 
     /// @notice A stake ejection event
@@ -29,7 +29,7 @@ interface IEjector {
     ///@notice Emitted when an operator ejection fails
     event FailedOperatorEjection(bytes32 operatorId, uint256 quorumBitmap, bytes err);
     ///@notice Emitted when the ratelimit parameters for a quorum are set
-    event QuorumEjectionParamsSet(uint8 quorumNumber, uint256 timeDelta, uint256 maxStakePerDelta);
+    event QuorumEjectionParamsSet(uint8 quorumNumber, uint32 timeDelta, uint16 ejectableStakePercent);
 
     /**
      * @notice Ejects operators from the AVSs registryCoordinator

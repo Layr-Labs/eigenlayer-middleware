@@ -13,6 +13,9 @@ import {BitmapUtils} from "./libraries/BitmapUtils.sol";
  */
 contract Ejector is IEjector, Ownable{
 
+    /// @notice The basis point denominator for the ejectable stake percent
+    uint16 internal constant BIPS_DENOMINATOR = 10000;
+
     IRegistryCoordinator public immutable registryCoordinator;
     IStakeRegistry public immutable stakeRegistry;
 
@@ -58,6 +61,7 @@ contract Ejector is IEjector, Ownable{
                 uint256 operatorStake = stakeRegistry.getCurrentStake(_operatorIds[i], quorumNumber);
 
                 if(msg.sender == ejector){
+                    _cleanOldEjections(quorumNumber);
                     require(canEject(operatorStake, quorumNumber), "Ejector: Stake exceeds quorum ejection ratelimit");
                 }
 
@@ -88,7 +92,7 @@ contract Ejector is IEjector, Ownable{
      */
     function setQuorumEjectionParams(uint8 _quorumNumber, QuorumEjectionParams memory _quorumEjectionParams) external onlyOwner() {
         quorumEjectionParams[_quorumNumber] = _quorumEjectionParams;
-        emit QuorumEjectionParamsSet(_quorumNumber, _quorumEjectionParams.timeDelta, _quorumEjectionParams.maxStakePerDelta);
+        emit QuorumEjectionParamsSet(_quorumNumber, _quorumEjectionParams.timeDelta, _quorumEjectionParams.ejectableStakePercent);
     }
 
     /**
@@ -136,7 +140,8 @@ contract Ejector is IEjector, Ownable{
         for (uint256 i = 0; i < stakeEjectedForQuorum[_quorumNumber].length; i++) {
             totalEjected += stakeEjectedForQuorum[_quorumNumber][i].stakeEjected;
         }
-        return totalEjected + _amount <= quorumEjectionParams[_quorumNumber].maxStakePerDelta;
+        uint256 totalEjectable = quorumEjectionParams[_quorumNumber].ejectableStakePercent * stakeRegistry.getCurrentTotalStake(_quorumNumber) / BIPS_DENOMINATOR;
+        return totalEjected + _amount <= totalEjectable;
     }
 
 }
