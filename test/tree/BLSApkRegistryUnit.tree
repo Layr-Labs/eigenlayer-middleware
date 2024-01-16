@@ -49,7 +49,7 @@
 ├── initializeQuorum()
 │   ├── given caller is not the registry coordinator
 │   │   └── it should revert
-│   ├── given a quorum does not exist (apkHistory[quorumNumber] == 0)
+│   ├── given a quorum already exists (apkHistory[quorumNumber] != 0)
 │   │   └── it should revert
 │   └── given all above conditions are met
 │       └── it should push the first ApkUpdate with the zero apkHash
