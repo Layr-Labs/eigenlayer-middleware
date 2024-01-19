@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.9;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {IEjector} from "./interfaces/IEjector.sol";
+import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import {IEjectionManager} from "./interfaces/IEjectionManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
@@ -11,7 +11,7 @@ import {BitmapUtils} from "./libraries/BitmapUtils.sol";
  * @title Used for automated ejection of operators from the RegistryCoordinator
  * @author Layr Labs, Inc.
  */
-contract Ejector is IEjector, Ownable{
+contract EjectionManager is IEjectionManager, OwnableUpgradeable{
 
     /// @notice The basis point denominator for the ejectable stake percent
     uint16 internal constant BIPS_DENOMINATOR = 10000;
@@ -28,14 +28,20 @@ contract Ejector is IEjector, Ownable{
     mapping(uint8 => QuorumEjectionParams) public quorumEjectionParams;
 
     constructor(
-        address _owner, 
-        address _ejector,
         IRegistryCoordinator _registryCoordinator, 
-        IStakeRegistry _stakeRegistry,
-        QuorumEjectionParams[] memory _quorumEjectionParams
+        IStakeRegistry _stakeRegistry
     ) {
         registryCoordinator = _registryCoordinator;
         stakeRegistry = _stakeRegistry;
+
+        _disableInitializers();
+    }
+
+    function initialize(
+        address _owner, 
+        address _ejector,
+        QuorumEjectionParams[] memory _quorumEjectionParams
+    ) external initializer {
         _transferOwnership(_owner);
         _setEjector(_ejector);
 
@@ -58,7 +64,7 @@ contract Ejector is IEjector, Ownable{
 
             for(uint8 j = 0; j < quorumNumbers.length; ++j) {
                 uint8 quorumNumber = uint8(quorumNumbers[j]);
-                require(quorumEjectionParams[quorumNumber].timeDelta > 0, "Ejector: Quorum ejection params not set");
+                require(quorumEjectionParams[quorumNumber].rateLimitWindow > 0, "Ejector: Quorum ejection params not set");
 
                 uint256 operatorStake = stakeRegistry.getCurrentStake(_operatorIds[i], quorumNumber);
 
@@ -94,7 +100,7 @@ contract Ejector is IEjector, Ownable{
      */
     function setQuorumEjectionParams(uint8 _quorumNumber, QuorumEjectionParams memory _quorumEjectionParams) external onlyOwner() {
         quorumEjectionParams[_quorumNumber] = _quorumEjectionParams;
-        emit QuorumEjectionParamsSet(_quorumNumber, _quorumEjectionParams.timeDelta, _quorumEjectionParams.ejectableStakePercent);
+        emit QuorumEjectionParamsSet(_quorumNumber, _quorumEjectionParams.rateLimitWindow, _quorumEjectionParams.ejectableStakePercent);
     }
 
     /**
@@ -116,7 +122,7 @@ contract Ejector is IEjector, Ownable{
      * @param _quorumNumber The addresses of the operators to eject
      */
     function _cleanOldEjections(uint8 _quorumNumber) internal {
-        uint256 cutoffTime = block.timestamp - quorumEjectionParams[_quorumNumber].timeDelta;
+        uint256 cutoffTime = block.timestamp - quorumEjectionParams[_quorumNumber].rateLimitWindow;
         uint256 index = 0;
         StakeEjection[] storage stakeEjections = stakeEjectedForQuorum[_quorumNumber];
         while (index < stakeEjections.length && stakeEjections[index].timestamp < cutoffTime) {
