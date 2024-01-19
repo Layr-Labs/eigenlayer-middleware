@@ -21,6 +21,11 @@ contract BLSMockAVSDeployer is MockAVSDeployer {
         _setAggregatePublicKeysAndSignature();
     }
 
+    function _setUpBLSMockAVSDeployer(uint8 numQuorumsToAdd) virtual public {
+        _deployMockEigenLayerAndAVS(numQuorumsToAdd);
+        _setAggregatePublicKeysAndSignature();
+    }
+
     function _setAggregatePublicKeysAndSignature() internal {
         // aggSignerPrivKey*g2
         aggSignerApkG2.X[1] = 19101821850089705274637533855249918363070101489527618151493230256975900223847;
