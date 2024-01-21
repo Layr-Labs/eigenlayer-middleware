@@ -5,8 +5,18 @@ libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./" }]
 
 ffi = true
+no-match-contract = "FFI"
 
 # The number of optimizer runs
 optimizer_runs = 200
+
+[fmt]
+bracket_spacing = false
+int_types = "long"
+line_length = 100
+multiline_func_header = "params_first"
+number_underscore = "thousands"
+quote_style = "double"
+tab_width = 4
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
