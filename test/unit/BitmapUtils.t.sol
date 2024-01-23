@@ -228,6 +228,37 @@ contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
         assertEq(bitmap, 8160);
         emit log_named_uint("gasSpent", gasSpent);
     }
+
+    function testFuzz_bitmapToBytesArrayToBitmap(uint256 originalBitmap) public {
+        uint256 gasLeftBefore = gasleft();
+        bytes memory bytesArray = bitmapUtilsWrapper.bitmapToBytesArray(originalBitmap);
+        uint256 gasLeftAfter = gasleft();
+        uint256 gasSpent = gasLeftBefore - gasLeftAfter;
+        emit log_named_uint("gas spent by bitmapToBytesArray operation", gasSpent);
+        uint256 bitmapOutput = bitmapUtilsWrapper.orderedBytesArrayToBitmap(bytesArray);
+        assertEq(originalBitmap, bitmapOutput, "bitmap output does not match original bitmap!");
+    }
+
+    function test_bitmapToBytesArrayToBitmap_maxBitmap() public {
+        uint256 originalBitmap = type(uint256).max;
+        testFuzz_bitmapToBytesArrayToBitmap(originalBitmap);
+    }
+
+    function test_bitmapToBytesArrayToBitmap_emptyBitmap() public {
+        uint256 originalBitmap = 0;
+        testFuzz_bitmapToBytesArrayToBitmap(originalBitmap);
+    }
+
+    function test_bitmapToBytesArrayToBitmap_firstTenEntriesBitmap() public {
+        uint256 originalBitmap = 2047;
+        testFuzz_bitmapToBytesArrayToBitmap(originalBitmap);
+    }
+
+    function test_bitmapToBytesArrayToBitmap_distributedTenEntriesBitmap() public {
+        // 2^0+2^10+2^20+2^30+2^40+2^50+2^60+2^70+2^80+2^90
+        uint256 originalBitmap = 1239150146850664126585242625;
+        testFuzz_bitmapToBytesArrayToBitmap(originalBitmap);
+    }
 }
 
 contract BitmapUtilsUnitTests_isArrayStrictlyAscendingOrdered is BitmapUtilsUnitTests {
