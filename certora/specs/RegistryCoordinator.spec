@@ -38,8 +38,8 @@ methods {
     function indexRegistry() external returns (address) envfree;
     function churnApprover() external returns (address) envfree;
     function isChurnApproverSaltUsed(bytes32) external returns (bool) envfree;
-    function getOperatorSetParams(uint8 quorumNumber) external returns (IBLSRegistryCoordinatorWithIndices.OperatorSetParam) envfree;
-    function getOperator(address operator) external returns (IRegistryCoordinator.Operator) envfree;
+    function getOperatorSetParams(uint8 quorumNumber) external returns (IRegistryCoordinator.OperatorSetParam) envfree;
+    function getOperator(address operator) external returns (IRegistryCoordinator.OperatorInfo) envfree;
     function getOperatorId(address operator) external returns (bytes32) envfree;
     function getOperatorStatus(address operator) external returns (IRegistryCoordinator.OperatorStatus) envfree;
     function getQuorumBitmapIndicesAtBlockNumber(uint32 blockNumber, bytes32[] operatorIds)
@@ -53,7 +53,7 @@ methods {
     function numRegistries() external returns (uint256) envfree;
     function calculateOperatorChurnApprovalDigestHash(
         bytes32 registeringOperatorId,
-        IBLSRegistryCoordinatorWithIndices.OperatorKickParam[] operatorKickParams,
+        IRegistryCoordinator.OperatorKickParam[] operatorKickParams,
         bytes32 salt,
         uint256 expiry
     ) external returns (bytes32) envfree;
@@ -66,7 +66,7 @@ methods {
 // If my Operator status is REGISTERED ⇔ my quorum bitmap MUST BE nonzero
 invariant registeredOperatorsHaveNonzeroBitmaps(address operator)
     getOperatorStatus(operator) == IRegistryCoordinator.OperatorStatus.REGISTERED <=>
-        getCurrentQuorumBitmapByOperatorId(getOperatorId(operator)) != 0;
+        getCurrentQuorumBitmap(getOperatorId(operator)) != 0;
 
 // if two operators have different addresses, then they have different IDs
 // excludes the case in which the operator is not registered, since then they can both have ID zero (the default)
@@ -75,40 +75,49 @@ invariant operatorIdIsUnique(address operator1, address operator2)
         (getOperatorStatus(operator1) == IRegistryCoordinator.OperatorStatus.REGISTERED => getOperatorId(operator1) != getOperatorId(operator2));
 
 definition methodCanModifyBitmap(method f) returns bool =
-    f.selector == sig:registerOperatorWithCoordinator(bytes, bytes).selector
-    || f.selector == sig:registerOperatorWithCoordinator(bytes, BN254.G1Point, string).selector
-    || f.selector == sig:registerOperatorWithCoordinator(
-        bytes,
-        BN254.G1Point,
-        string,
-        IBLSRegistryCoordinatorWithIndices.OperatorKickParam[],
-        ISignatureUtils.SignatureWithSaltAndExpiry
+    f.selector == sig:registerOperatorWithCoordinator(
+      bytes,
+      string,
+      IBLSApkRegistry.PubkeyRegistrationParams,
+      ISignatureUtils.SignatureWithSaltAndExpiry
     ).selector
-    || f.selector == sig:deregisterOperatorWithCoordinator(bytes, bytes).selector
-    || f.selector == sig:deregisterOperatorWithCoordinator(bytes, BN254.G1Point, bytes32[]).selector;
+    || f.selector == sig:registerOperatorWithChurn(
+        bytes,
+        string,
+        IBLSApkRegistry.PubkeyRegistrationParams,
+        IRegistryCoordinator.OperatorKickParam[],
+        ISignatureUtils.SignatureWithSaltAndExpiry,
+        ISignatureUtils.SignatureWithSaltAndExpiry
+    ).selector;
 
 definition methodCanAddToBitmap(method f) returns bool =
-    f.selector == sig:registerOperatorWithCoordinator(bytes, bytes).selector
-    || f.selector == sig:registerOperatorWithCoordinator(bytes, BN254.G1Point, string).selector
-    || f.selector == sig:registerOperatorWithCoordinator(
+    f.selector == sig:registerOperatorWithCoordinator(
+      bytes,
+      string,
+      IBLSApkRegistry.PubkeyRegistrationParams,
+      ISignatureUtils.SignatureWithSaltAndExpiry
+    ).selector
+    || f.selector == sig:registerOperatorWithChurn(
         bytes,
-        BN254.G1Point,
         string,
-        IBLSRegistryCoordinatorWithIndices.OperatorKickParam[],
+        IBLSApkRegistry.PubkeyRegistrationParams,
+        IRegistryCoordinator.OperatorKickParam[],
+        ISignatureUtils.SignatureWithSaltAndExpiry,
         ISignatureUtils.SignatureWithSaltAndExpiry
     ).selector;
 
 // `registerOperatorWithCoordinator` with kick params also meets this definition due to the 'churn' mechanism
 definition methodCanRemoveFromBitmap(method f) returns bool =
-    f.selector == sig:registerOperatorWithCoordinator(
+    f.selector == sig:registerOperatorWithChurn(
         bytes,
-        BN254.G1Point,
         string,
-        IBLSRegistryCoordinatorWithIndices.OperatorKickParam[],
+        IBLSApkRegistry.PubkeyRegistrationParams,
+        IRegistryCoordinator.OperatorKickParam[],
+        ISignatureUtils.SignatureWithSaltAndExpiry,
         ISignatureUtils.SignatureWithSaltAndExpiry
     ).selector
-    || f.selector == sig:deregisterOperatorWithCoordinator(bytes, bytes).selector
-    || f.selector == sig:deregisterOperatorWithCoordinator(bytes, BN254.G1Point, bytes32[]).selector;
+    || f.selector == sig:deregisterOperator(bytes).selector
+    || f.selector == sig:ejectOperator(address, bytes).selector;
 
 // verify that quorumNumbers provided as an input to deregister operator MUST BE a subset of the operator’s current quorums
 rule canOnlyDeregisterFromExistingQuorums(address operator) {
@@ -117,14 +126,14 @@ rule canOnlyDeregisterFromExistingQuorums(address operator) {
     // TODO: store this status, verify that all calls to `deregisterOperatorWithCoordinator` *fail* if the operator is not registered first!
     require(getOperatorStatus(operator) == IRegistryCoordinator.OperatorStatus.REGISTERED);
 
-    uint256 bitmapBefore = getCurrentQuorumBitmapByOperatorId(getOperatorId(operator));
+    uint256 bitmapBefore = getCurrentQuorumBitmap(getOperatorId(operator));
 
     bytes quorumNumbers;
     BN254.G1Point pubkey;
     bytes32[] operatorIdsToSwap;
     env e;
 
-    deregisterOperatorWithCoordinator(e, quorumNumbers, pubkey, operatorIdsToSwap);
+    deregisterOperator(e, quorumNumbers);
 
     // if deregistration is successful, verify that `quorumNumbers` input was proper
     if (getOperatorStatus(operator) != IRegistryCoordinator.OperatorStatus.REGISTERED) {
@@ -137,7 +146,7 @@ rule canOnlyDeregisterFromExistingQuorums(address operator) {
 /* TODO: this is a Work In Progress
 rule canOnlyModifyBitmapWithSpecificFunctions(address operator) {
     requireInvariant registeredOperatorsHaveNonzeroBitmaps(operator);
-    uint256 bitmapBefore = getCurrentQuorumBitmapByOperatorId(getOperatorId(operator));
+    uint256 bitmapBefore = getCurrentQuorumBitmap(getOperatorId(operator));
     // prepare to perform arbitrary function call
     method f;
     env e;
@@ -146,13 +155,13 @@ rule canOnlyModifyBitmapWithSpecificFunctions(address operator) {
         // perform arbitrary function call
         calldataarg arg;
         f(e, arg);
-        uint256 bitmapAfter = getCurrentQuorumBitmapByOperatorId(getOperatorId(operator));
+        uint256 bitmapAfter = getCurrentQuorumBitmap(getOperatorId(operator));
         assert(bitmapAfter == bitmapBefore);
     } else if (
         f.selector == sig:registerOperatorWithCoordinator(bytes, bytes).selector
     ) {
         if (e.msg.sender != operator) {
-            uint256 bitmapAfter = getCurrentQuorumBitmapByOperatorId(getOperatorId(operator));
+            uint256 bitmapAfter = getCurrentQuorumBitmap(getOperatorId(operator));
             assert(bitmapAfter == bitmapBefore);
         }
     }

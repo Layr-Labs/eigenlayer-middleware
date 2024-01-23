@@ -41,7 +41,7 @@ contract RegistryCoordinatorHarness is RegistryCoordinator {
 
     // @notice verifies that a bytes array is a (non-strict) subset of a bitmap
     function bytesArrayIsSubsetOfBitmap(uint256 referenceBitmap, bytes memory arrayWhichShouldBeASubsetOfTheReference) public pure returns (bool) {
-        uint256 arrayWhichShouldBeASubsetOfTheReferenceBitmap = BitmapUtils.bytesArrayToBitmap(arrayWhichShouldBeASubsetOfTheReference);
+        uint256 arrayWhichShouldBeASubsetOfTheReferenceBitmap = BitmapUtils.orderedBytesArrayToBitmap(arrayWhichShouldBeASubsetOfTheReference);
         if (referenceBitmap | arrayWhichShouldBeASubsetOfTheReferenceBitmap == referenceBitmap) {
             return true;
         } else {
