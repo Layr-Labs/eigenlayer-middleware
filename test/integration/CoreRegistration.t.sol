@@ -23,6 +23,8 @@ contract Test_CoreRegistration is MockAVSDeployer {
 
         // Deploy New DelegationManager
         DelegationManager delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasher, eigenPodManagerMock);
+        IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
+        uint256[] memory initializeWithdrawalDelayBlocks = new uint256[](0);
         delegationManager = DelegationManager(
             address(
                 new TransparentUpgradeableProxy(
@@ -33,7 +35,9 @@ contract Test_CoreRegistration is MockAVSDeployer {
                         address(this),
                         pauserRegistry,
                         0, // 0 is initialPausedStatus
-                        50400 // Initial withdrawal delay blocks
+                        50400, // Initial withdrawal delay blocks
+                        initializeStrategiesToSetDelayBlocks,
+                        initializeWithdrawalDelayBlocks
                     )
                 )
             )

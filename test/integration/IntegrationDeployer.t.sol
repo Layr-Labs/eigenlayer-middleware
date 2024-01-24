@@ -152,7 +152,9 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         DelayedWithdrawalRouter delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
 
         // Third, upgrade the proxy contracts to point to the implementations
-        uint256 withdrawalDelayBlocks = 7 days / 12 seconds;
+        uint256 minWithdrawalDelayBlocks = 7 days / 12 seconds;
+        IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
+        uint256[] memory initializeWithdrawalDelayBlocks = new uint256[](0);
         // DelegationManager
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(delegationManager))),
@@ -162,7 +164,9 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 eigenLayerReputedMultisig, // initialOwner
                 pauserRegistry,
                 0 /* initialPausedStatus */,
-                withdrawalDelayBlocks
+                minWithdrawalDelayBlocks,
+                initializeStrategiesToSetDelayBlocks,
+                initializeWithdrawalDelayBlocks
             )
         );
         // StrategyManager
@@ -210,7 +214,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 eigenLayerReputedMultisig, // initialOwner
                 pauserRegistry,
                 0, // initialPausedStatus
-                withdrawalDelayBlocks
+                minWithdrawalDelayBlocks
             )
         );
 
@@ -339,9 +343,10 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
         // Whitelist strategy
         IStrategy[] memory strategies = new IStrategy[](1);
+        bool[] memory thirdPartyTransfersForbiddenValues = new bool[](1);
         strategies[0] = strategy;
         cheats.prank(strategyManager.strategyWhitelister());
-        strategyManager.addStrategiesToDepositWhitelist(strategies);
+        strategyManager.addStrategiesToDepositWhitelist(strategies, thirdPartyTransfersForbiddenValues);
 
         // Add to allStrats
         allStrats.push(strategy);

@@ -46,7 +46,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
 
     /**
      * RegistryCoordinator owner can either enforce or not that operator stakes are staler
-     * than the delegation.withdrawalDelayBlocks() window.
+     * than the delegation.minWithdrawalDelayBlocks() window.
      * @param value to toggle staleStakesForbidden
      */
     function setStaleStakesForbidden(bool value) external onlyCoordinatorOwner {
@@ -179,8 +179,8 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
          * - subtract the stake for each nonsigner to calculate the stake belonging to signers
          */
         {
-            uint256 withdrawalDelayBlocks = delegation.withdrawalDelayBlocks();
             bool _staleStakesForbidden = staleStakesForbidden;
+            uint256 withdrawalDelayBlocks = _staleStakesForbidden ? delegation.minWithdrawalDelayBlocks() : 0;
 
             for (uint256 i = 0; i < quorumNumbers.length; i++) {
                 // If we're disallowing stale stake updates, check that each quorum's last update block
