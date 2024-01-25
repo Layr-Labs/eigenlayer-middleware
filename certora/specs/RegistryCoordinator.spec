@@ -75,7 +75,7 @@ invariant operatorIdIsUnique(address operator1, address operator2)
         (getOperatorStatus(operator1) == IRegistryCoordinator.OperatorStatus.REGISTERED => getOperatorId(operator1) != getOperatorId(operator2));
 
 definition methodCanModifyBitmap(method f) returns bool =
-    f.selector == sig:registerOperatorWithCoordinator(
+    f.selector == sig:registerOperator(
       bytes,
       string,
       IBLSApkRegistry.PubkeyRegistrationParams,
@@ -91,7 +91,7 @@ definition methodCanModifyBitmap(method f) returns bool =
     ).selector;
 
 definition methodCanAddToBitmap(method f) returns bool =
-    f.selector == sig:registerOperatorWithCoordinator(
+    f.selector == sig:registerOperator(
       bytes,
       string,
       IBLSApkRegistry.PubkeyRegistrationParams,
@@ -106,7 +106,7 @@ definition methodCanAddToBitmap(method f) returns bool =
         ISignatureUtils.SignatureWithSaltAndExpiry
     ).selector;
 
-// `registerOperatorWithCoordinator` with kick params also meets this definition due to the 'churn' mechanism
+// `registerOperatorWithChurn` with kick params also meets this definition due to the 'churn' mechanism
 definition methodCanRemoveFromBitmap(method f) returns bool =
     f.selector == sig:registerOperatorWithChurn(
         bytes,
@@ -123,14 +123,12 @@ definition methodCanRemoveFromBitmap(method f) returns bool =
 rule canOnlyDeregisterFromExistingQuorums(address operator) {
     requireInvariant registeredOperatorsHaveNonzeroBitmaps(operator);
 
-    // TODO: store this status, verify that all calls to `deregisterOperatorWithCoordinator` *fail* if the operator is not registered first!
+    // TODO: store this status, verify that all calls to `deregisterOperator` *fail* if the operator is not registered first!
     require(getOperatorStatus(operator) == IRegistryCoordinator.OperatorStatus.REGISTERED);
 
     uint256 bitmapBefore = getCurrentQuorumBitmap(getOperatorId(operator));
 
     bytes quorumNumbers;
-    BN254.G1Point pubkey;
-    bytes32[] operatorIdsToSwap;
     env e;
 
     deregisterOperator(e, quorumNumbers);
