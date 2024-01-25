@@ -9,6 +9,7 @@ certoraRun certora/harnesses/RegistryCoordinatorHarness.sol \
     lib/openzeppelin-contracts/contracts/mocks/ERC1271WalletMock.sol \
     src/StakeRegistry.sol src/BLSApkRegistry.sol src/IndexRegistry.sol \
     lib/eigenlayer-contracts/src/contracts/core/Slasher.sol \
+    lib/eigenlayer-contracts/src/contracts/core/DelegationManager.sol \
     --verify RegistryCoordinatorHarness:certora/specs/RegistryCoordinator.spec \
     --optimistic_loop \
     --optimistic_hashing \
