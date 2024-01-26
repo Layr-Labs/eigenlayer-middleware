@@ -10,6 +10,7 @@ import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPa
 import {Pausable} from "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 
+import {ECDSAIndexRegistry} from "./ECDSAIndexRegistry.sol";
 import {ECDSAStakeRegistry} from "./ECDSAStakeRegistry.sol";
 import {IServiceManager} from "../interfaces/IServiceManager.sol";
 import {BitmapUtils} from "../libraries/BitmapUtils.sol";
@@ -74,6 +75,17 @@ contract ECDSARegistryCoordinator is
         OperatorStatus status;
     }
 
+    /**
+     * @notice Data structure for storing info on quorum bitmap updates where the `quorumBitmap` is the bitmap of the
+     * quorums the operator is registered for starting at (inclusive)`updateBlockNumber` and ending at (exclusive) `nextUpdateBlockNumber`
+     * @dev nextUpdateBlockNumber is initialized to 0 for the latest update
+     */
+    struct QuorumBitmapUpdate {
+        uint32 updateBlockNumber;
+        uint32 nextUpdateBlockNumber;
+        uint192 quorumBitmap;
+    }
+
     // TODO: document
     struct ECDSAPubkeyRegistrationParams {
         address signingAddress;
@@ -84,7 +96,7 @@ contract ECDSARegistryCoordinator is
     bytes32 public constant PUBKEY_REGISTRATION_TYPEHASH =
         keccak256("ECDSAPubkeyRegistration(address operator)");
     /// @notice The maximum value of a quorum bitmap
-    uint256 internal constant MAX_QUORUM_BITMAP = type(uint256).max;
+    uint192 internal constant MAX_QUORUM_BITMAP = type(uint192).max;
     /// @notice Index for flag that pauses operator registration
     uint8 internal constant PAUSED_REGISTER_OPERATOR = 0;
     /// @notice Index for flag that pauses operator deregistration
@@ -98,11 +110,12 @@ contract ECDSARegistryCoordinator is
     IServiceManager public immutable serviceManager;
     /// @notice the Stake Registry contract that will keep track of operators' stakes
     ECDSAStakeRegistry public immutable stakeRegistry;
+    ECDSAIndexRegistry public immutable indexRegistry;
 
     /// @notice the current number of quorums supported by the registry coordinator
     uint8 public quorumCount;
-    /// @notice maps operator id => current quorums they are registered for
-    mapping(address => uint256) public operatorBitmap;
+    /// @notice maps operator id => historical quorums they registered for
+    mapping(address => QuorumBitmapUpdate[]) internal _operatorBitmapHistory;
     /// @notice maps operator address => operator id and status
     mapping(address => OperatorInfo) internal _operatorInfo;
     /// @notice mapping from quorum number to the latest block that all quorums were updated all at once
@@ -110,7 +123,6 @@ contract ECDSARegistryCoordinator is
 
     // TODO: document
     mapping(address => address) operatorIdToOperator;
-    mapping(uint8 => uint32) public totalOperatorsForQuorum;
 
     /// @notice the address of the entity allowed to eject operators from the AVS
     address public ejector;
@@ -133,10 +145,12 @@ contract ECDSARegistryCoordinator is
 
     constructor(
         IServiceManager _serviceManager,
-        ECDSAStakeRegistry _stakeRegistry
+        ECDSAStakeRegistry _stakeRegistry,
+        ECDSAIndexRegistry _indexRegistry
     ) EIP712("AVSRegistryCoordinator", "v0.0.1") {
         serviceManager = _serviceManager;
         stakeRegistry = _stakeRegistry;
+        indexRegistry = _indexRegistry;
 
         _disableInitializers();
     }
@@ -226,7 +240,7 @@ contract ECDSARegistryCoordinator is
             address operatorId = operatorInfo.operatorId;
 
             // Update the operator's stake for their active quorums
-            uint256 currentBitmap = _currentOperatorBitmap(operatorId);
+            uint192 currentBitmap = _currentOperatorBitmap(operatorId);
             bytes memory quorumsToUpdate = BitmapUtils.bitmapToBytesArray(
                 currentBitmap
             );
@@ -248,7 +262,7 @@ contract ECDSARegistryCoordinator is
         address[][] calldata operatorsPerQuorum,
         bytes calldata quorumNumbers
     ) external onlyWhenNotPaused(PAUSED_UPDATE_OPERATOR) {
-        uint256 quorumBitmap = uint256(
+        uint192 quorumBitmap = uint192(
             BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount)
         );
         require(
@@ -265,7 +279,7 @@ contract ECDSARegistryCoordinator is
             address[] calldata currQuorumOperators = operatorsPerQuorum[i];
             require(
                 currQuorumOperators.length ==
-                    totalOperatorsForQuorum[quorumNumber],
+                    indexRegistry.totalOperatorsForQuorum(quorumNumber),
                 "RegistryCoordinator.updateOperatorsForQuorum: number of updated operators does not match quorum total"
             );
             address prevOperatorAddress = address(0);
@@ -361,10 +375,10 @@ contract ECDSARegistryCoordinator is
          * - the operator is not currently registered for any quorums we're registering for
          * Then, calculate the operator's new bitmap after registration
          */
-        uint256 quorumsToAdd = uint256(
+        uint192 quorumsToAdd = uint192(
             BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount)
         );
-        uint256 currentBitmap = _currentOperatorBitmap(operatorId);
+        uint192 currentBitmap = _currentOperatorBitmap(operatorId);
         require(
             !quorumsToAdd.isEmpty(),
             "RegistryCoordinator._registerOperator: bitmap cannot be 0"
@@ -377,7 +391,7 @@ contract ECDSARegistryCoordinator is
             quorumsToAdd.noBitsInCommon(currentBitmap),
             "RegistryCoordinator._registerOperator: operator already registered for some quorums being registered for"
         );
-        uint256 newBitmap = uint256(currentBitmap.plus(quorumsToAdd));
+        uint192 newBitmap = uint192(currentBitmap.plus(quorumsToAdd));
 
         /**
          * Update operator's bitmap and status. Only update operatorInfo if needed:
@@ -402,15 +416,10 @@ contract ECDSARegistryCoordinator is
          */
         (results.operatorStakes, results.totalStakes) = stakeRegistry
             .registerOperator(operator, operatorId, quorumNumbers);
-        results.numOperatorsPerQuorum = new uint32[](quorumNumbers.length);
-        for (uint256 i = 0; i < quorumNumbers.length; ++i) {
-            uint8 quorumNumber = uint8(quorumNumbers[i]);
-            uint32 newTotalOperatorsForQuorum = totalOperatorsForQuorum[
-                quorumNumber
-            ] + 1;
-            totalOperatorsForQuorum[quorumNumber] = newTotalOperatorsForQuorum;
-            results.numOperatorsPerQuorum[i] = newTotalOperatorsForQuorum;
-        }
+        results.numOperatorsPerQuorum = indexRegistry.registerOperator(
+            operatorId,
+            quorumNumbers
+        );
 
         return results;
     }
@@ -493,10 +502,10 @@ contract ECDSARegistryCoordinator is
          * - the operator is currently registered for any quorums we're trying to deregister from
          * Then, calculate the opreator's new bitmap after deregistration
          */
-        uint256 quorumsToRemove = uint256(
+        uint192 quorumsToRemove = uint192(
             BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount)
         );
-        uint256 currentBitmap = _currentOperatorBitmap(operatorId);
+        uint192 currentBitmap = _currentOperatorBitmap(operatorId);
         require(
             !quorumsToRemove.isEmpty(),
             "RegistryCoordinator._deregisterOperator: bitmap cannot be 0"
@@ -509,7 +518,7 @@ contract ECDSARegistryCoordinator is
             quorumsToRemove.isSubsetOf(currentBitmap),
             "RegistryCoordinator._deregisterOperator: operator is not registered for specified quorums"
         );
-        uint256 newBitmap = uint256(currentBitmap.minus(quorumsToRemove));
+        uint192 newBitmap = uint192(currentBitmap.minus(quorumsToRemove));
 
         /**
          * Update operator's bitmap and status:
@@ -525,10 +534,7 @@ contract ECDSARegistryCoordinator is
 
         // Deregister operator with each of the registry contracts:
         stakeRegistry.deregisterOperator(operatorId, quorumNumbers);
-        for (uint256 i = 0; i < quorumNumbers.length; ++i) {
-            uint8 quorumNumber = uint8(quorumNumbers[i]);
-            --totalOperatorsForQuorum[quorumNumber];
-        }
+        indexRegistry.deregisterOperator(operatorId, quorumNumbers);
     }
 
     /**
@@ -582,6 +588,7 @@ contract ECDSARegistryCoordinator is
             minimumStake,
             strategyParams
         );
+        indexRegistry.initializeQuorum(quorumNumber);
     }
 
     /**
@@ -590,16 +597,49 @@ contract ECDSARegistryCoordinator is
      */
     function _updateOperatorBitmap(
         address operatorId,
-        uint256 newBitmap
+        uint192 newBitmap
     ) internal {
-        operatorBitmap[operatorId] = newBitmap;
+        uint256 historyLength = _operatorBitmapHistory[operatorId].length;
+
+        if (historyLength == 0) {
+            // No prior bitmap history - push our first entry
+            _operatorBitmapHistory[operatorId].push(
+                QuorumBitmapUpdate({
+                    updateBlockNumber: uint32(block.number),
+                    nextUpdateBlockNumber: 0,
+                    quorumBitmap: newBitmap
+                })
+            );
+        } else {
+            // We have prior history - fetch our last-recorded update
+            QuorumBitmapUpdate storage lastUpdate = _operatorBitmapHistory[
+                operatorId
+            ][historyLength - 1];
+
+            /**
+             * If the last update was made in the current block, update the entry.
+             * Otherwise, push a new entry and update the previous entry's "next" field
+             */
+            if (lastUpdate.updateBlockNumber == uint32(block.number)) {
+                lastUpdate.quorumBitmap = newBitmap;
+            } else {
+                lastUpdate.nextUpdateBlockNumber = uint32(block.number);
+                _operatorBitmapHistory[operatorId].push(
+                    QuorumBitmapUpdate({
+                        updateBlockNumber: uint32(block.number),
+                        nextUpdateBlockNumber: 0,
+                        quorumBitmap: newBitmap
+                    })
+                );
+            }
+        }
     }
 
     /**
      * @notice Returns true iff all of the bits in `quorumBitmap` belong to initialized quorums
      */
     function _quorumsAllExist(
-        uint256 quorumBitmap
+        uint192 quorumBitmap
     ) internal view returns (bool) {
         uint256 initializedQuorumBitmap = uint256((1 << quorumCount) - 1);
         return quorumBitmap.isSubsetOf(initializedQuorumBitmap);
@@ -609,8 +649,44 @@ contract ECDSARegistryCoordinator is
     /// the operator is not registered.
     function _currentOperatorBitmap(
         address operatorId
-    ) internal view returns (uint256) {
-        return operatorBitmap[operatorId];
+    ) internal view returns (uint192) {
+        uint256 historyLength = _operatorBitmapHistory[operatorId].length;
+        if (historyLength == 0) {
+            return 0;
+        } else {
+            return
+                _operatorBitmapHistory[operatorId][historyLength - 1]
+                    .quorumBitmap;
+        }
+    }
+
+    /**
+     * @notice Returns the index of the quorumBitmap for the provided `operatorId` at the given `blockNumber`
+     * @dev Reverts if the operator had not yet (ever) registered at `blockNumber`
+     * @dev This function is designed to find proper inputs to the `getQuorumBitmapAtBlockNumberByIndex` function
+     */
+    function _getQuorumBitmapIndexAtBlockNumber(
+        uint32 blockNumber,
+        address operatorId
+    ) internal view returns (uint32 index) {
+        uint256 length = _operatorBitmapHistory[operatorId].length;
+
+        // Traverse the operator's bitmap history in reverse, returning the first index
+        // corresponding to an update made before or at `blockNumber`
+        for (uint256 i = 0; i < length; i++) {
+            index = uint32(length - i - 1);
+
+            if (
+                _operatorBitmapHistory[operatorId][index].updateBlockNumber <=
+                blockNumber
+            ) {
+                return index;
+            }
+        }
+
+        revert(
+            "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number"
+        );
     }
 
     function _setEjector(address newEjector) internal {
@@ -648,11 +724,78 @@ contract ECDSARegistryCoordinator is
         return _operatorInfo[operator].status;
     }
 
+    /**
+     * @notice Returns the indices of the quorumBitmaps for the provided `operatorIds` at the given `blockNumber`
+     * @dev Reverts if any of the `operatorIds` was not (yet) registered at `blockNumber`
+     * @dev This function is designed to find proper inputs to the `getQuorumBitmapAtBlockNumberByIndex` function
+     */
+    function getQuorumBitmapIndicesAtBlockNumber(
+        uint32 blockNumber,
+        address[] memory operatorIds
+    ) external view returns (uint32[] memory) {
+        uint32[] memory indices = new uint32[](operatorIds.length);
+        for (uint256 i = 0; i < operatorIds.length; i++) {
+            indices[i] = _getQuorumBitmapIndexAtBlockNumber(
+                blockNumber,
+                operatorIds[i]
+            );
+        }
+        return indices;
+    }
+
+    /**
+     * @notice Returns the quorum bitmap for the given `operatorId` at the given `blockNumber` via the `index`,
+     * reverting if `index` is incorrect
+     * @dev This function is meant to be used in concert with `getQuorumBitmapIndicesAtBlockNumber`, which
+     * helps off-chain processes to fetch the correct `index` input
+     */
+    function getQuorumBitmapAtBlockNumberByIndex(
+        address operatorId,
+        uint32 blockNumber,
+        uint256 index
+    ) external view returns (uint192) {
+        QuorumBitmapUpdate memory quorumBitmapUpdate = _operatorBitmapHistory[
+            operatorId
+        ][index];
+
+        /**
+         * Validate that the update is valid for the given blockNumber:
+         * - blockNumber should be >= the update block number
+         * - the next update block number should be either 0 or strictly greater than blockNumber
+         */
+        require(
+            blockNumber >= quorumBitmapUpdate.updateBlockNumber,
+            "RegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber"
+        );
+        require(
+            quorumBitmapUpdate.nextUpdateBlockNumber == 0 ||
+                blockNumber < quorumBitmapUpdate.nextUpdateBlockNumber,
+            "RegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from before blockNumber"
+        );
+
+        return quorumBitmapUpdate.quorumBitmap;
+    }
+
+    /// @notice Returns the `index`th entry in the operator with `operatorId`'s bitmap history
+    function getQuorumBitmapUpdateByIndex(
+        address operatorId,
+        uint256 index
+    ) external view returns (QuorumBitmapUpdate memory) {
+        return _operatorBitmapHistory[operatorId][index];
+    }
+
     /// @notice Returns the current quorum bitmap for the given `operatorId` or 0 if the operator is not registered for any quorum
     function getCurrentQuorumBitmap(
         address operatorId
-    ) external view returns (uint256) {
+    ) external view returns (uint192) {
         return _currentOperatorBitmap(operatorId);
+    }
+
+    /// @notice Returns the length of the quorum bitmap history for the given `operatorId`
+    function getQuorumBitmapHistoryLength(
+        address operatorId
+    ) external view returns (uint256) {
+        return _operatorBitmapHistory[operatorId].length;
     }
 
     /**

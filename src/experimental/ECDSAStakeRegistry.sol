@@ -18,8 +18,20 @@ import {BitmapUtils} from "../libraries/BitmapUtils.sol";
  * @author Layr Labs, Inc.
  */
 contract ECDSAStakeRegistry {
-
     using BitmapUtils for *;
+
+    // DATA STRUCTURES
+
+    /// @notice struct used to store the stakes of an individual operator or the sum of all operators' stakes, for storage
+    struct StakeUpdate {
+        // the block number at which the stake amounts were updated and stored
+        uint32 updateBlockNumber;
+        // the block number at which the *next update* occurred.
+        /// @notice This entry has the value **0** until another update takes place.
+        uint32 nextUpdateBlockNumber;
+        // stake weight for the quorum
+        uint96 stake;
+    }
 
     /**
      * @notice In weighing a particular strategy, the amount of underlying asset for that strategy is
@@ -29,7 +41,7 @@ contract ECDSAStakeRegistry {
         IStrategy strategy;
         uint96 multiplier;
     }
-    
+
     // EVENTS
 
     /// @notice emitted whenever the stake of `operator` is updated
@@ -39,54 +51,26 @@ contract ECDSAStakeRegistry {
         uint96 stake
     );
     /// @notice emitted when the minimum stake for a quorum is updated
-    event MinimumStakeForQuorumUpdated(uint8 indexed quorumNumber, uint96 minimumStake);
+    event MinimumStakeForQuorumUpdated(
+        uint8 indexed quorumNumber,
+        uint96 minimumStake
+    );
     /// @notice emitted when a new quorum is created
     event QuorumCreated(uint8 indexed quorumNumber);
     /// @notice emitted when `strategy` has been added to the array at `strategyParams[quorumNumber]`
     event StrategyAddedToQuorum(uint8 indexed quorumNumber, IStrategy strategy);
     /// @notice emitted when `strategy` has removed from the array at `strategyParams[quorumNumber]`
-    event StrategyRemovedFromQuorum(uint8 indexed quorumNumber, IStrategy strategy);
+    event StrategyRemovedFromQuorum(
+        uint8 indexed quorumNumber,
+        IStrategy strategy
+    );
     /// @notice emitted when `strategy` has its `multiplier` updated in the array at `strategyParams[quorumNumber]`
-    event StrategyMultiplierUpdated(uint8 indexed quorumNumber, IStrategy strategy, uint256 multiplier);
+    event StrategyMultiplierUpdated(
+        uint8 indexed quorumNumber,
+        IStrategy strategy,
+        uint256 multiplier
+    );
 
-    /// @notice Constant used as a divisor in calculating weights.
-    uint256 public constant WEIGHTING_DIVISOR = 1e18;
-    /// @notice Maximum length of dynamic arrays in the `strategiesConsideredAndMultipliers` mapping.
-    uint8 public constant MAX_WEIGHING_FUNCTION_LENGTH = 32;
-    /// @notice Constant used as a divisor in dealing with BIPS amounts.
-    uint256 internal constant MAX_BIPS = 10000;
-
-    /// @notice The address of the DelegationManager contract for EigenLayer.
-    IDelegationManager public immutable delegation;
-
-    /// @notice the coordinator contract that this registry is associated with
-    address public immutable registryCoordinator;
-
-    /// @notice In order to register for a quorum i, an operator must have at least `minimumStakeForQuorum[i]`
-    /// evaluated by this contract's 'VoteWeigher' logic.
-    uint96[256] public minimumStakeForQuorum;
-
-    /// @notice mapping from operator's operatorId to quorum number to their current stake
-    mapping(address => mapping(uint8 => uint96)) public operatorStake;
-
-    /**
-     * @notice mapping from quorum number to the total stake for that quorum
-     */
-    mapping(uint8 => uint96) public totalStake;
-
-    /**
-     * @notice mapping from quorum number to the list of strategies considered and their
-     * corresponding multipliers for that specific quorum
-     */
-    mapping(uint8 => StrategyParams[]) public strategyParams;
-
-    // @notice mapping from quorum number to whether or not it exists
-    mapping(uint8 => bool) internal _quorumExists;
-
-    // storage gap for upgradeability
-    // slither-disable-next-line shadowing-state
-    uint256[40] private __GAP;
-    
     modifier onlyRegistryCoordinator() {
         require(
             msg.sender == address(registryCoordinator),
@@ -96,22 +80,62 @@ contract ECDSAStakeRegistry {
     }
 
     modifier onlyCoordinatorOwner() {
-        require(msg.sender == ECDSARegistryCoordinator(registryCoordinator).owner(), "StakeRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator");
+        require(
+            msg.sender == ECDSARegistryCoordinator(registryCoordinator).owner(),
+            "StakeRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator"
+        );
         _;
     }
 
     modifier quorumExists(uint8 quorumNumber) {
-        require(_quorumExists[quorumNumber], "StakeRegistry.quorumExists: quorum does not exist");
+        require(
+            _quorumExists(quorumNumber),
+            "StakeRegistry.quorumExists: quorum does not exist"
+        );
         _;
     }
 
+    /// @notice Constant used as a divisor in calculating weights.
+    uint256 public constant WEIGHTING_DIVISOR = 1e18;
+    /// @notice Maximum length of dynamic arrays in the `strategiesConsideredAndMultipliers` mapping.
+    uint8 public constant MAX_WEIGHING_FUNCTION_LENGTH = 32;
+    /// @notice Constant used as a divisor in dealing with BIPS amounts.
+    uint256 internal constant MAX_BIPS = 10000;
+
+    /// @notice The address of the Delegation contract for EigenLayer.
+    IDelegationManager public immutable delegation;
+
+    /// @notice the coordinator contract that this registry is associated with
+    address public immutable registryCoordinator;
+
+    /// @notice In order to register for a quorum i, an operator must have at least `minimumStakeForQuorum[i]`
+    /// evaluated by this contract's 'VoteWeigher' logic.
+    mapping(uint8 => uint96) public minimumStakeForQuorum;
+
+    /// @notice History of the total stakes for each quorum
+    mapping(uint8 => StakeUpdate[]) internal _totalStakeHistory;
+
+    /// @notice mapping from operator's operatorId to the history of their stake updates
+    mapping(address => mapping(uint8 => StakeUpdate[]))
+        internal operatorStakeHistory;
+
+    /**
+     * @notice mapping from quorum number to the list of strategies considered and their
+     * corresponding multipliers for that specific quorum
+     */
+    mapping(uint8 => StrategyParams[]) public strategyParams;
+
     constructor(
-        ECDSARegistryCoordinator _registryCoordinator, 
-        IDelegationManager _delegation
+        ECDSARegistryCoordinator _registryCoordinator,
+        IDelegationManager _delegationManager
     ) {
         registryCoordinator = address(_registryCoordinator);
-        delegation = _delegation;
+        delegation = _delegationManager;
     }
+
+    // storage gap for upgradeability
+    // slither-disable-next-line shadowing-state
+    uint256[46] private __GAP;
 
     /*******************************************************************************
                       EXTERNAL FUNCTIONS - REGISTRY COORDINATOR
@@ -134,18 +158,27 @@ contract ECDSAStakeRegistry {
         address operator,
         address operatorId,
         bytes calldata quorumNumbers
-    ) public virtual onlyRegistryCoordinator returns (uint96[] memory, uint96[] memory) {
-
+    )
+        public
+        virtual
+        onlyRegistryCoordinator
+        returns (uint96[] memory, uint96[] memory)
+    {
         uint96[] memory currentStakes = new uint96[](quorumNumbers.length);
         uint96[] memory totalStakes = new uint96[](quorumNumbers.length);
-        for (uint256 i = 0; i < quorumNumbers.length; i++) {            
-            
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            require(_quorumExists[quorumNumber], "StakeRegistry.registerOperator: quorum does not exist");
+            require(
+                _quorumExists(quorumNumber),
+                "StakeRegistry.registerOperator: quorum does not exist"
+            );
 
             // Retrieve the operator's current weighted stake for the quorum, reverting if they have not met
             // the minimum.
-            (uint96 currentStake, bool hasMinimumStake) = _weightOfOperatorForQuorum(quorumNumber, operator);
+            (
+                uint96 currentStake,
+                bool hasMinimumStake
+            ) = _weightOfOperatorForQuorum(quorumNumber, operator);
             require(
                 hasMinimumStake,
                 "StakeRegistry.registerOperator: Operator does not meet minimum stake requirement for quorum"
@@ -153,7 +186,7 @@ contract ECDSAStakeRegistry {
 
             // Update the operator's stake
             int256 stakeDelta = _recordOperatorStakeUpdate({
-                operatorId: operatorId, 
+                operatorId: operatorId,
                 quorumNumber: quorumNumber,
                 newStake: currentStake
             });
@@ -188,12 +221,15 @@ contract ECDSAStakeRegistry {
          */
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            require(_quorumExists[quorumNumber], "StakeRegistry.deregisterOperator: quorum does not exist");
+            require(
+                _quorumExists(quorumNumber),
+                "StakeRegistry.deregisterOperator: quorum does not exist"
+            );
 
             // Update the operator's stake for the quorum and retrieve the shares removed
             int256 stakeDelta = _recordOperatorStakeUpdate({
-                operatorId: operatorId, 
-                quorumNumber: quorumNumber, 
+                operatorId: operatorId,
+                quorumNumber: quorumNumber,
                 newStake: 0
             });
 
@@ -212,8 +248,8 @@ contract ECDSAStakeRegistry {
      * and should be deregistered.
      */
     function updateOperatorStake(
-        address operator, 
-        address operatorId, 
+        address operator,
+        address operatorId,
         bytes calldata quorumNumbers
     ) external onlyRegistryCoordinator returns (uint192) {
         uint192 quorumsToRemove;
@@ -228,11 +264,17 @@ contract ECDSAStakeRegistry {
          */
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            require(_quorumExists[quorumNumber], "StakeRegistry.updateOperatorStake: quorum does not exist");
+            require(
+                _quorumExists(quorumNumber),
+                "StakeRegistry.updateOperatorStake: quorum does not exist"
+            );
 
             // Fetch the operator's current stake, applying weighting parameters and checking
             // against the minimum stake requirements for the quorum.
-            (uint96 stakeWeight, bool hasMinimumStake) = _weightOfOperatorForQuorum(quorumNumber, operator);
+            (
+                uint96 stakeWeight,
+                bool hasMinimumStake
+            ) = _weightOfOperatorForQuorum(quorumNumber, operator);
 
             // If the operator no longer meets the minimum stake, set their stake to zero and mark them for removal
             if (!hasMinimumStake) {
@@ -261,28 +303,37 @@ contract ECDSAStakeRegistry {
         uint96 minimumStake,
         StrategyParams[] memory _strategyParams
     ) public virtual onlyRegistryCoordinator {
-        require(!_quorumExists[quorumNumber], "StakeRegistry.initializeQuorum: quorum already exists");
+        require(
+            !_quorumExists(quorumNumber),
+            "StakeRegistry.initializeQuorum: quorum already exists"
+        );
         _addStrategyParams(quorumNumber, _strategyParams);
         _setMinimumStakeForQuorum(quorumNumber, minimumStake);
 
-        _quorumExists[quorumNumber] = true;
+        _totalStakeHistory[quorumNumber].push(
+            StakeUpdate({
+                updateBlockNumber: uint32(block.number),
+                nextUpdateBlockNumber: 0,
+                stake: 0
+            })
+        );
     }
 
     function setMinimumStakeForQuorum(
-        uint8 quorumNumber, 
+        uint8 quorumNumber,
         uint96 minimumStake
     ) public virtual onlyCoordinatorOwner quorumExists(quorumNumber) {
         _setMinimumStakeForQuorum(quorumNumber, minimumStake);
     }
 
-    /** 
+    /**
      * @notice Adds strategies and weights to the quorum
      * @dev Checks to make sure that the *same* strategy cannot be added multiple times (checks against both against existing and new strategies).
      * @dev This function has no check to make sure that the strategies for a single quorum have the same underlying asset. This is a concious choice,
      * since a middleware may want, e.g., a stablecoin quorum that accepts USDC, USDT, DAI, etc. as underlying assets and trades them as "equivalent".
      */
     function addStrategies(
-        uint8 quorumNumber, 
+        uint8 quorumNumber,
         StrategyParams[] memory _strategyParams
     ) public virtual onlyCoordinatorOwner quorumExists(quorumNumber) {
         _addStrategyParams(quorumNumber, _strategyParams);
@@ -298,16 +349,28 @@ contract ECDSAStakeRegistry {
         uint256[] memory indicesToRemove
     ) public virtual onlyCoordinatorOwner quorumExists(quorumNumber) {
         uint256 toRemoveLength = indicesToRemove.length;
-        require(toRemoveLength > 0, "StakeRegistry.removeStrategies: no indices to remove provided");
+        require(
+            toRemoveLength > 0,
+            "StakeRegistry.removeStrategies: no indices to remove provided"
+        );
 
         StrategyParams[] storage _strategyParams = strategyParams[quorumNumber];
 
         for (uint256 i = 0; i < toRemoveLength; i++) {
-            emit StrategyRemovedFromQuorum(quorumNumber, _strategyParams[indicesToRemove[i]].strategy);
-            emit StrategyMultiplierUpdated(quorumNumber, _strategyParams[indicesToRemove[i]].strategy, 0);
+            emit StrategyRemovedFromQuorum(
+                quorumNumber,
+                _strategyParams[indicesToRemove[i]].strategy
+            );
+            emit StrategyMultiplierUpdated(
+                quorumNumber,
+                _strategyParams[indicesToRemove[i]].strategy,
+                0
+            );
 
             // Replace index to remove with the last item in the list, then pop the last item
-            _strategyParams[indicesToRemove[i]] = _strategyParams[_strategyParams.length - 1];
+            _strategyParams[indicesToRemove[i]] = _strategyParams[
+                _strategyParams.length - 1
+            ];
             _strategyParams.pop();
         }
     }
@@ -324,15 +387,25 @@ contract ECDSAStakeRegistry {
         uint96[] calldata newMultipliers
     ) public virtual onlyCoordinatorOwner quorumExists(quorumNumber) {
         uint256 numStrats = strategyIndices.length;
-        require(numStrats > 0, "StakeRegistry.modifyStrategyParams: no strategy indices provided");
-        require(newMultipliers.length == numStrats, "StakeRegistry.modifyStrategyParams: input length mismatch");
+        require(
+            numStrats > 0,
+            "StakeRegistry.modifyStrategyParams: no strategy indices provided"
+        );
+        require(
+            newMultipliers.length == numStrats,
+            "StakeRegistry.modifyStrategyParams: input length mismatch"
+        );
 
         StrategyParams[] storage _strategyParams = strategyParams[quorumNumber];
 
         for (uint256 i = 0; i < numStrats; i++) {
             // Change the strategy's associated multiplier
             _strategyParams[strategyIndices[i]].multiplier = newMultipliers[i];
-            emit StrategyMultiplierUpdated(quorumNumber, _strategyParams[strategyIndices[i]].strategy, newMultipliers[i]);
+            emit StrategyMultiplierUpdated(
+                quorumNumber,
+                _strategyParams[strategyIndices[i]].strategy,
+                newMultipliers[i]
+            );
         }
     }
 
@@ -340,7 +413,37 @@ contract ECDSAStakeRegistry {
                             INTERNAL FUNCTIONS
     *******************************************************************************/
 
-    function _setMinimumStakeForQuorum(uint8 quorumNumber, uint96 minimumStake) internal {
+    function _getStakeUpdateIndexForOperatorAtBlockNumber(
+        address operatorId,
+        uint8 quorumNumber,
+        uint32 blockNumber
+    ) internal view returns (uint32) {
+        uint256 length = operatorStakeHistory[operatorId][quorumNumber].length;
+        for (uint256 i = 0; i < length; i++) {
+            if (
+                operatorStakeHistory[operatorId][quorumNumber][length - i - 1]
+                    .updateBlockNumber <= blockNumber
+            ) {
+                uint32 nextUpdateBlockNumber = operatorStakeHistory[operatorId][
+                    quorumNumber
+                ][length - i - 1].nextUpdateBlockNumber;
+                require(
+                    nextUpdateBlockNumber == 0 ||
+                        nextUpdateBlockNumber > blockNumber,
+                    "StakeRegistry._getStakeUpdateIndexForOperatorAtBlockNumber: operatorId has no stake update at blockNumber"
+                );
+                return uint32(length - i - 1);
+            }
+        }
+        revert(
+            "StakeRegistry._getStakeUpdateIndexForOperatorAtBlockNumber: no stake update found for operatorId and quorumNumber at block number"
+        );
+    }
+
+    function _setMinimumStakeForQuorum(
+        uint8 quorumNumber,
+        uint96 minimumStake
+    ) internal {
         minimumStakeForQuorum[quorumNumber] = minimumStake;
         emit MinimumStakeForQuorumUpdated(quorumNumber, minimumStake);
     }
@@ -354,44 +457,108 @@ contract ECDSAStakeRegistry {
         uint8 quorumNumber,
         uint96 newStake
     ) internal returns (int256) {
+        uint96 prevStake;
+        uint256 historyLength = operatorStakeHistory[operatorId][quorumNumber]
+            .length;
 
-        uint96 prevStake = operatorStake[operatorId][quorumNumber];
-        operatorStake[operatorId][quorumNumber] = newStake;
+        if (historyLength == 0) {
+            // No prior stake history - push our first entry
+            operatorStakeHistory[operatorId][quorumNumber].push(
+                StakeUpdate({
+                    updateBlockNumber: uint32(block.number),
+                    nextUpdateBlockNumber: 0,
+                    stake: newStake
+                })
+            );
+        } else {
+            // We have prior stake history - fetch our last-recorded stake
+            StakeUpdate storage lastUpdate = operatorStakeHistory[operatorId][
+                quorumNumber
+            ][historyLength - 1];
+            prevStake = lastUpdate.stake;
+
+            // Short-circuit in case there's no change in stake
+            if (prevStake == newStake) {
+                return 0;
+            }
+
+            /**
+             * If our last stake entry was made in the current block, update the entry
+             * Otherwise, push a new entry and update the previous entry's "next" field
+             */
+            if (lastUpdate.updateBlockNumber == uint32(block.number)) {
+                lastUpdate.stake = newStake;
+            } else {
+                lastUpdate.nextUpdateBlockNumber = uint32(block.number);
+                operatorStakeHistory[operatorId][quorumNumber].push(
+                    StakeUpdate({
+                        updateBlockNumber: uint32(block.number),
+                        nextUpdateBlockNumber: 0,
+                        stake: newStake
+                    })
+                );
+            }
+        }
 
         // Log update and return stake delta
         emit OperatorStakeUpdate(operatorId, quorumNumber, newStake);
-        return _calculateDelta({ prev: prevStake, cur: newStake });
+        return _calculateDelta({prev: prevStake, cur: newStake});
     }
 
     /// @notice Applies a delta to the total stake recorded for `quorumNumber`
     /// @return Returns the new total stake for the quorum
-    function _recordTotalStakeUpdate(uint8 quorumNumber, int256 stakeDelta) internal returns (uint96) {
-        uint96 prevStake = totalStake[quorumNumber];
+    function _recordTotalStakeUpdate(
+        uint8 quorumNumber,
+        int256 stakeDelta
+    ) internal returns (uint96) {
+        // Get our last-recorded stake update
+        uint256 historyLength = _totalStakeHistory[quorumNumber].length;
+        StakeUpdate storage lastStakeUpdate = _totalStakeHistory[quorumNumber][
+            historyLength - 1
+        ];
 
         // Return early if no update is needed
         if (stakeDelta == 0) {
-            return prevStake;
+            return lastStakeUpdate.stake;
         }
-        
-        // Calculate the new total stake by applying the delta to our previous stake
-        uint96 newStake = _applyDelta(prevStake, stakeDelta);
 
-        totalStake[quorumNumber] = newStake;
+        // Calculate the new total stake by applying the delta to our previous stake
+        uint96 newStake = _applyDelta(lastStakeUpdate.stake, stakeDelta);
+
+        /**
+         * If our last stake entry was made in the current block, update the entry
+         * Otherwise, push a new entry and update the previous entry's "next" field
+         */
+        if (lastStakeUpdate.updateBlockNumber == uint32(block.number)) {
+            lastStakeUpdate.stake = newStake;
+        } else {
+            lastStakeUpdate.nextUpdateBlockNumber = uint32(block.number);
+            _totalStakeHistory[quorumNumber].push(
+                StakeUpdate({
+                    updateBlockNumber: uint32(block.number),
+                    nextUpdateBlockNumber: 0,
+                    stake: newStake
+                })
+            );
+        }
 
         return newStake;
     }
 
-    /** 
+    /**
      * @notice Adds `strategyParams` to the `quorumNumber`-th quorum.
      * @dev Checks to make sure that the *same* strategy cannot be added multiple times (checks against both against existing and new strategies).
      * @dev This function has no check to make sure that the strategies for a single quorum have the same underlying asset. This is a concious choice,
      * since a middleware may want, e.g., a stablecoin quorum that accepts USDC, USDT, DAI, etc. as underlying assets and trades them as "equivalent".
      */
-     function _addStrategyParams(
+    function _addStrategyParams(
         uint8 quorumNumber,
         StrategyParams[] memory _strategyParams
     ) internal {
-        require(_strategyParams.length > 0, "StakeRegistry._addStrategyParams: no strategies provided");
+        require(
+            _strategyParams.length > 0,
+            "StakeRegistry._addStrategyParams: no strategies provided"
+        );
         uint256 numStratsToAdd = _strategyParams.length;
         uint256 numStratsExisting = strategyParams[quorumNumber].length;
         require(
@@ -402,7 +569,8 @@ contract ECDSAStakeRegistry {
             // fairly gas-expensive internal loop to make sure that the *same* strategy cannot be added multiple times
             for (uint256 j = 0; j < (numStratsExisting + i); j++) {
                 require(
-                    strategyParams[quorumNumber][j].strategy != _strategyParams[i].strategy,
+                    strategyParams[quorumNumber][j].strategy !=
+                        _strategyParams[i].strategy,
                     "StakeRegistry._addStrategyParams: cannot add same strategy 2x"
                 );
             }
@@ -411,7 +579,10 @@ contract ECDSAStakeRegistry {
                 "StakeRegistry._addStrategyParams: cannot add strategy with zero weight"
             );
             strategyParams[quorumNumber].push(_strategyParams[i]);
-            emit StrategyAddedToQuorum(quorumNumber, _strategyParams[i].strategy);
+            emit StrategyAddedToQuorum(
+                quorumNumber,
+                _strategyParams[i].strategy
+            );
             emit StrategyMultiplierUpdated(
                 quorumNumber,
                 _strategyParams[i].strategy,
@@ -421,17 +592,44 @@ contract ECDSAStakeRegistry {
     }
 
     /// @notice Returns the change between a previous and current value as a signed int
-    function _calculateDelta(uint96 prev, uint96 cur) internal pure returns (int256) {
+    function _calculateDelta(
+        uint96 prev,
+        uint96 cur
+    ) internal pure returns (int256) {
         return int256(uint256(cur)) - int256(uint256(prev));
     }
 
     /// @notice Adds or subtracts delta from value, according to its sign
-    function _applyDelta(uint96 value, int256 delta) internal pure returns (uint96) {
+    function _applyDelta(
+        uint96 value,
+        int256 delta
+    ) internal pure returns (uint96) {
         if (delta < 0) {
             return value - uint96(uint256(-delta));
         } else {
             return value + uint96(uint256(delta));
         }
+    }
+
+    /// @notice Validates that the `operatorStake` was accurate at the given `blockNumber`
+    function _validateOperatorStakeUpdateAtBlockNumber(
+        StakeUpdate memory operatorStakeUpdate,
+        uint32 blockNumber
+    ) internal pure {
+        /**
+         * Validate that the update is valid for the given blockNumber:
+         * - blockNumber should be >= the update block number
+         * - the next update block number should be either 0 or strictly greater than blockNumber
+         */
+        require(
+            blockNumber >= operatorStakeUpdate.updateBlockNumber,
+            "StakeRegistry._validateOperatorStakeAtBlockNumber: operatorStakeUpdate is from after blockNumber"
+        );
+        require(
+            operatorStakeUpdate.nextUpdateBlockNumber == 0 ||
+                blockNumber < operatorStakeUpdate.nextUpdateBlockNumber,
+            "StakeRegistry._validateOperatorStakeAtBlockNumber: there is a newer operatorStakeUpdate available before blockNumber"
+        );
     }
 
     /**
@@ -440,7 +638,10 @@ contract ECDSAStakeRegistry {
      * @return `uint96` The weighted sum of the operator's shares across each strategy considered by the quorum
      * @return `bool` True if the operator meets the quorum's minimum stake
      */
-    function _weightOfOperatorForQuorum(uint8 quorumNumber, address operator) internal virtual view returns (uint96, bool) {
+    function _weightOfOperatorForQuorum(
+        uint8 quorumNumber,
+        address operator
+    ) internal view virtual returns (uint96, bool) {
         uint96 weight;
         uint256 stratsLength = strategyParamsLength(quorumNumber);
         StrategyParams memory strategyAndMultiplier;
@@ -450,17 +651,28 @@ contract ECDSAStakeRegistry {
             strategyAndMultiplier = strategyParams[quorumNumber][i];
 
             // shares of the operator in the strategy
-            uint256 sharesAmount = delegation.operatorShares(operator, strategyAndMultiplier.strategy);
+            uint256 sharesAmount = delegation.operatorShares(
+                operator,
+                strategyAndMultiplier.strategy
+            );
 
             // add the weight from the shares for this strategy to the total weight
             if (sharesAmount > 0) {
-                weight += uint96(sharesAmount * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR);
+                weight += uint96(
+                    (sharesAmount * strategyAndMultiplier.multiplier) /
+                        WEIGHTING_DIVISOR
+                );
             }
         }
 
         // Return the weight, and `true` if the operator meets the quorum's minimum stake
         bool hasMinimumStake = weight >= minimumStakeForQuorum[quorumNumber];
         return (weight, hasMinimumStake);
+    }
+
+    /// @notice Returns `true` if the quorum has been initialized
+    function _quorumExists(uint8 quorumNumber) internal view returns (bool) {
+        return _totalStakeHistory[quorumNumber].length != 0;
     }
 
     /*******************************************************************************
@@ -472,25 +684,255 @@ contract ECDSAStakeRegistry {
      * @dev reverts if the quorum does not exist
      */
     function weightOfOperatorForQuorum(
-        uint8 quorumNumber, 
+        uint8 quorumNumber,
         address operator
-    ) public virtual view quorumExists(quorumNumber) returns (uint96) {
+    ) public view virtual quorumExists(quorumNumber) returns (uint96) {
         (uint96 stake, ) = _weightOfOperatorForQuorum(quorumNumber, operator);
         return stake;
     }
 
     /// @notice Returns the length of the dynamic array stored in `strategyParams[quorumNumber]`.
-    function strategyParamsLength(uint8 quorumNumber) public view returns (uint256) {
+    function strategyParamsLength(
+        uint8 quorumNumber
+    ) public view returns (uint256) {
         return strategyParams[quorumNumber].length;
     }
 
     /// @notice Returns the strategy and weight multiplier for the `index`'th strategy in the quorum `quorumNumber`
     function strategyParamsByIndex(
-        uint8 quorumNumber, 
+        uint8 quorumNumber,
         uint256 index
-    ) public view returns (StrategyParams memory)
-    {
+    ) public view returns (StrategyParams memory) {
         return strategyParams[quorumNumber][index];
     }
 
+    /*******************************************************************************
+                      VIEW FUNCTIONS - Operator Stake History
+    *******************************************************************************/
+
+    /**
+     * @notice Returns the length of an operator's stake history for the given quorum
+     */
+    function getStakeHistoryLength(
+        address operatorId,
+        uint8 quorumNumber
+    ) external view returns (uint256) {
+        return operatorStakeHistory[operatorId][quorumNumber].length;
+    }
+
+    /**
+     * @notice Returns the entire `operatorStakeHistory[operatorId][quorumNumber]` array.
+     * @param operatorId The id of the operator of interest.
+     * @param quorumNumber The quorum number to get the stake for.
+     */
+    function getStakeHistory(
+        address operatorId,
+        uint8 quorumNumber
+    ) external view returns (StakeUpdate[] memory) {
+        return operatorStakeHistory[operatorId][quorumNumber];
+    }
+
+    /**
+     * @notice Returns the most recent stake weight for the `operatorId` for quorum `quorumNumber`
+     * @dev Function returns weight of **0** in the event that the operator has no stake history
+     */
+    function getCurrentStake(
+        address operatorId,
+        uint8 quorumNumber
+    ) external view returns (uint96) {
+        StakeUpdate memory operatorStakeUpdate = getLatestStakeUpdate(
+            operatorId,
+            quorumNumber
+        );
+        return operatorStakeUpdate.stake;
+    }
+
+    /**
+     * @notice Returns the most recent stake weight for the `operatorId` for a certain quorum
+     * @dev Function returns an StakeUpdate struct with **every entry equal to 0** in the event that the operator has no stake history
+     */
+    function getLatestStakeUpdate(
+        address operatorId,
+        uint8 quorumNumber
+    ) public view returns (StakeUpdate memory) {
+        uint256 historyLength = operatorStakeHistory[operatorId][quorumNumber]
+            .length;
+        StakeUpdate memory operatorStakeUpdate;
+        if (historyLength == 0) {
+            return operatorStakeUpdate;
+        } else {
+            operatorStakeUpdate = operatorStakeHistory[operatorId][
+                quorumNumber
+            ][historyLength - 1];
+            return operatorStakeUpdate;
+        }
+    }
+
+    /**
+     * @notice Returns the `index`-th entry in the `operatorStakeHistory[operatorId][quorumNumber]` array.
+     * @param quorumNumber The quorum number to get the stake for.
+     * @param operatorId The id of the operator of interest.
+     * @param index Array index for lookup, within the dynamic array `operatorStakeHistory[operatorId][quorumNumber]`.
+     * @dev Function will revert if `index` is out-of-bounds.
+     */
+    function getStakeUpdateAtIndex(
+        uint8 quorumNumber,
+        address operatorId,
+        uint256 index
+    ) external view returns (StakeUpdate memory) {
+        return operatorStakeHistory[operatorId][quorumNumber][index];
+    }
+
+    /// @notice Returns the stake of the operator for the provided `quorumNumber` at the given `blockNumber`
+    function getStakeAtBlockNumber(
+        address operatorId,
+        uint8 quorumNumber,
+        uint32 blockNumber
+    ) external view returns (uint96) {
+        return
+            operatorStakeHistory[operatorId][quorumNumber][
+                _getStakeUpdateIndexForOperatorAtBlockNumber(
+                    operatorId,
+                    quorumNumber,
+                    blockNumber
+                )
+            ].stake;
+    }
+
+    /// @notice Returns the indices of the operator stakes for the provided `quorumNumber` at the given `blockNumber`
+    function getStakeUpdateIndexAtBlockNumber(
+        address operatorId,
+        uint8 quorumNumber,
+        uint32 blockNumber
+    ) external view returns (uint32) {
+        return
+            _getStakeUpdateIndexForOperatorAtBlockNumber(
+                operatorId,
+                quorumNumber,
+                blockNumber
+            );
+    }
+
+    /**
+     * @notice Returns the stake weight corresponding to `operatorId` for quorum `quorumNumber`, at the
+     * `index`-th entry in the `operatorStakeHistory[operatorId][quorumNumber]` array if it was the operator's
+     * stake at `blockNumber`. Reverts otherwise.
+     * @param quorumNumber The quorum number to get the stake for.
+     * @param operatorId The id of the operator of interest.
+     * @param index Array index for lookup, within the dynamic array `operatorStakeHistory[operatorId][quorumNumber]`.
+     * @param blockNumber Block number to make sure the stake is from.
+     * @dev Function will revert if `index` is out-of-bounds.
+     */
+    function getStakeAtBlockNumberAndIndex(
+        uint8 quorumNumber,
+        uint32 blockNumber,
+        address operatorId,
+        uint256 index
+    ) external view returns (uint96) {
+        StakeUpdate memory operatorStakeUpdate = operatorStakeHistory[
+            operatorId
+        ][quorumNumber][index];
+        _validateOperatorStakeUpdateAtBlockNumber(
+            operatorStakeUpdate,
+            blockNumber
+        );
+        return operatorStakeUpdate.stake;
+    }
+
+    /*******************************************************************************
+                        VIEW FUNCTIONS - Total Stake History
+    *******************************************************************************/
+
+    /**
+     * @notice Returns the length of the total stake history for the given quorum
+     */
+    function getTotalStakeHistoryLength(
+        uint8 quorumNumber
+    ) external view returns (uint256) {
+        return _totalStakeHistory[quorumNumber].length;
+    }
+
+    /**
+     * @notice Returns the stake weight from the latest entry in `_totalStakeHistory` for quorum `quorumNumber`.
+     * @dev Will revert if `_totalStakeHistory[quorumNumber]` is empty.
+     */
+    function getCurrentTotalStake(
+        uint8 quorumNumber
+    ) external view returns (uint96) {
+        return
+            _totalStakeHistory[quorumNumber][
+                _totalStakeHistory[quorumNumber].length - 1
+            ].stake;
+    }
+
+    /**
+     * @notice Returns the `index`-th entry in the dynamic array of total stake, `_totalStakeHistory` for quorum `quorumNumber`.
+     * @param quorumNumber The quorum number to get the stake for.
+     * @param index Array index for lookup, within the dynamic array `_totalStakeHistory[quorumNumber]`.
+     */
+    function getTotalStakeUpdateAtIndex(
+        uint8 quorumNumber,
+        uint256 index
+    ) external view returns (StakeUpdate memory) {
+        return _totalStakeHistory[quorumNumber][index];
+    }
+
+    /**
+     * @notice Returns the total stake weight for quorum `quorumNumber`, at the `index`-th entry in the
+     * `_totalStakeHistory[quorumNumber]` array if it was the stake at `blockNumber`. Reverts otherwise.
+     * @param quorumNumber The quorum number to get the stake for.
+     * @param index Array index for lookup, within the dynamic array `_totalStakeHistory[quorumNumber]`.
+     * @param blockNumber Block number to make sure the stake is from.
+     * @dev Function will revert if `index` is out-of-bounds.
+     */
+    function getTotalStakeAtBlockNumberFromIndex(
+        uint8 quorumNumber,
+        uint32 blockNumber,
+        uint256 index
+    ) external view returns (uint96) {
+        StakeUpdate memory totalStakeUpdate = _totalStakeHistory[quorumNumber][
+            index
+        ];
+        _validateOperatorStakeUpdateAtBlockNumber(
+            totalStakeUpdate,
+            blockNumber
+        );
+        return totalStakeUpdate.stake;
+    }
+
+    /**
+     * @notice Returns the indices of the total stakes for the provided `quorumNumbers` at the given `blockNumber`
+     * @param blockNumber Block number to retrieve the stake indices from.
+     * @param quorumNumbers The quorum numbers to get the stake indices for.
+     * @dev Function will revert if there are no indices for the given `blockNumber`
+     */
+    function getTotalStakeIndicesAtBlockNumber(
+        uint32 blockNumber,
+        bytes calldata quorumNumbers
+    ) external view returns (uint32[] memory) {
+        uint32[] memory indices = new uint32[](quorumNumbers.length);
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+            require(
+                _quorumExists(quorumNumber),
+                "StakeRegistry.getTotalStakeIndicesAtBlockNumber: quorum does not exist"
+            );
+            require(
+                _totalStakeHistory[quorumNumber][0].updateBlockNumber <=
+                    blockNumber,
+                "StakeRegistry.getTotalStakeIndicesAtBlockNumber: quorum has no stake history at blockNumber"
+            );
+            uint256 length = _totalStakeHistory[quorumNumber].length;
+            for (uint256 j = 0; j < length; j++) {
+                if (
+                    _totalStakeHistory[quorumNumber][length - j - 1]
+                        .updateBlockNumber <= blockNumber
+                ) {
+                    indices[i] = uint32(length - j - 1);
+                    break;
+                }
+            }
+        }
+        return indices;
+    }
 }
