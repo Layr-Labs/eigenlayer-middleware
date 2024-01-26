@@ -44,7 +44,7 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
         _disableInitializers();
     }
 
-    function initialize(address initialOwner) public virtual initializer {
+    function __ServiceManagerBase_init(address initialOwner) internal virtual onlyInitializing {
         _transferOwnership(initialOwner);
     }
 
