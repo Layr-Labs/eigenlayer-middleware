@@ -16,7 +16,7 @@ import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
  * This contract can inherited from or simply used as a point-of-reference.
  * @author Layr Labs, Inc.
  */
-contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
+abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
     using BitmapUtils for *;
 
     IRegistryCoordinator internal immutable _registryCoordinator;
