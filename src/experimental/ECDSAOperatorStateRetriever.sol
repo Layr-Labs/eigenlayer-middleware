@@ -18,6 +18,12 @@ contract ECDSAOperatorStateRetriever {
         uint96 stake;
     }
 
+    struct CheckSignaturesIndices {
+        uint32[] signerQuorumBitmapIndices; // is the indices of all signer quorum bitmaps
+        uint32[] totalStakeIndices; // is the indices of each quorums total stake
+        uint32[][] signerStakeIndices; // is the indices of each signers stake within a quorum
+    }
+
     /**
      * @notice This function is intended to to be called by AVS operators every time a new task is created (i.e.)
      * the AVS coordinator makes a request to AVS operators. Since all of the crucial information is kept onchain,
@@ -94,5 +100,106 @@ contract ECDSAOperatorStateRetriever {
         }
 
         return operators;
+    }
+
+    /**
+     * @notice this is called by the AVS operator to get the relevant indices for the checkSignatures function
+     * if they are not running an indexer
+     * @param registryCoordinator is the registry coordinator to fetch the AVS registry information from
+     * @param referenceBlockNumber is the block number to get the indices for
+     * @param quorumNumbers are the ids of the quorums to get the operator state for
+     * @param signerOperatorIds are the ids of the nonsigning operators
+     * @return 1) the indices of the quorumBitmaps for each of the operators in the @param nonSignerOperatorIds array at the given blocknumber
+     *         2) the indices of the total stakes entries for the given quorums at the given blocknumber
+     *         3) the indices of the stakes of each of the nonsigners in each of the quorums they were a
+     *            part of (for each nonsigner, an array of length the number of quorums they were a part of
+     *            that are also part of the provided quorumNumbers) at the given blocknumber
+     *         4) the indices of the quorum apks for each of the provided quorums at the given blocknumber
+     */
+    function getCheckSignaturesIndices(
+        ECDSARegistryCoordinator registryCoordinator,
+        uint32 referenceBlockNumber,
+        bytes calldata quorumNumbers,
+        address[] calldata signerOperatorIds
+    ) external view returns (CheckSignaturesIndices memory) {
+        ECDSAStakeRegistry stakeRegistry = registryCoordinator.stakeRegistry();
+        CheckSignaturesIndices memory checkSignaturesIndices;
+
+        // get the indices of the quorumBitmap updates for each of the operators in the nonSignerOperatorIds array
+        checkSignaturesIndices.signerQuorumBitmapIndices = registryCoordinator
+            .getQuorumBitmapIndicesAtBlockNumber(
+                referenceBlockNumber,
+                signerOperatorIds
+            );
+
+        // get the indices of the totalStake updates for each of the quorums in the quorumNumbers array
+        checkSignaturesIndices.totalStakeIndices = stakeRegistry
+            .getTotalStakeIndicesAtBlockNumber(
+                referenceBlockNumber,
+                quorumNumbers
+            );
+
+        checkSignaturesIndices.signerStakeIndices = new uint32[][](
+            quorumNumbers.length
+        );
+        for (
+            uint8 quorumNumberIndex = 0;
+            quorumNumberIndex < quorumNumbers.length;
+            quorumNumberIndex++
+        ) {
+            uint256 numNonSignersForQuorum = 0;
+            // this array's length will be at most the number of nonSignerOperatorIds, this will be trimmed after it is filled
+            checkSignaturesIndices.signerStakeIndices[
+                quorumNumberIndex
+            ] = new uint32[](signerOperatorIds.length);
+
+            for (uint i = 0; i < signerOperatorIds.length; i++) {
+                // get the quorumBitmap for the operator at the given blocknumber and index
+                uint192 nonSignerQuorumBitmap = registryCoordinator
+                    .getQuorumBitmapAtBlockNumberByIndex(
+                        signerOperatorIds[i],
+                        referenceBlockNumber,
+                        checkSignaturesIndices.signerQuorumBitmapIndices[i]
+                    );
+
+                require(
+                    nonSignerQuorumBitmap != 0,
+                    "OperatorStateRetriever.getCheckSignaturesIndices: operator must be registered at blocknumber"
+                );
+
+                // if the operator was a part of the quorum and the quorum is a part of the provided quorumNumbers
+                if (
+                    (nonSignerQuorumBitmap >>
+                        uint8(quorumNumbers[quorumNumberIndex])) &
+                        1 ==
+                    1
+                ) {
+                    // get the index of the stake update for the operator at the given blocknumber and quorum number
+                    checkSignaturesIndices.signerStakeIndices[
+                        quorumNumberIndex
+                    ][numNonSignersForQuorum] = stakeRegistry
+                        .getStakeUpdateIndexAtBlockNumber(
+                            signerOperatorIds[i],
+                            uint8(quorumNumbers[quorumNumberIndex]),
+                            referenceBlockNumber
+                        );
+                    numNonSignersForQuorum++;
+                }
+            }
+
+            // resize the array to the number of nonSigners for this quorum
+            uint32[] memory nonSignerStakeIndicesForQuorum = new uint32[](
+                numNonSignersForQuorum
+            );
+            for (uint i = 0; i < numNonSignersForQuorum; i++) {
+                nonSignerStakeIndicesForQuorum[i] = checkSignaturesIndices
+                    .signerStakeIndices[quorumNumberIndex][i];
+            }
+            checkSignaturesIndices.signerStakeIndices[
+                    quorumNumberIndex
+                ] = nonSignerStakeIndicesForQuorum;
+        }
+
+        return checkSignaturesIndices;
     }
 }
