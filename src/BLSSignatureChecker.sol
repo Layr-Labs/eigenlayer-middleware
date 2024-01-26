@@ -280,4 +280,8 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                 PAIRING_EQUALITY_CHECK_GAS
             );
     }
+
+    // storage gap for upgradeability
+    // slither-disable-next-line shadowing-state
+    uint256[49] private __GAP;
 }
