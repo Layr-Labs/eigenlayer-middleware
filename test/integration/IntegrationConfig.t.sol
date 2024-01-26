@@ -93,7 +93,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
             uint privKey = uint(keccak256(abi.encodePacked(i + 1)));
             
             pubkey.pubkeyG1 = BN254.generatorG1().scalar_mul(privKey);
-            pubkey.pubkeyG2 = G2Operations.mul(privKey);
+            pubkey.pubkeyG2 = G2Operations.mulGen(privKey);
 
             privKeys.push(privKey);
             pubkeys.push(pubkey);

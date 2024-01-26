@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: BUSL-1.1
-/*
 pragma solidity =0.8.12;
 
 import "../../src/BLSApkRegistry.sol";
@@ -22,20 +21,21 @@ contract BLSApkRegistryFFITests is G2Operations {
     address alice = address(0x69);
 
     function setUp() public {
-        blsApkRegistry = new BLSApkRegistry(registryCoordinator);
         registryCoordinator = new RegistryCoordinatorMock();
+        blsApkRegistry = new BLSApkRegistry(registryCoordinator);
     }
 
-    function testRegisterBLSPublicKey(uint256 _privKey) public {
+    function xtestRegisterBLSPublicKey(uint256 _privKey) public {
         vm.assume(_privKey > 0);
 
         _setKeys(_privKey);
 
         pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(alice);
 
-        vm.prank(address(registryCoordinator));
+        vm.startPrank(address(registryCoordinator));
         blsApkRegistry.registerBLSPublicKey(alice, pubkeyRegistrationParams, registryCoordinator.pubkeyRegistrationMessageHash(alice));
-
+        vm.stopPrank();
+    
         assertEq(blsApkRegistry.operatorToPubkeyHash(alice), BN254.hashG1Point(pubkeyRegistrationParams.pubkeyG1),
             "pubkey hash not stored correctly");
         assertEq(blsApkRegistry.pubkeyHashToOperator(BN254.hashG1Point(pubkeyRegistrationParams.pubkeyG1)), alice,
@@ -53,4 +53,3 @@ contract BLSApkRegistryFFITests is G2Operations {
         return BN254.scalar_mul(messageHash, privKey);
     }
 }
-*/

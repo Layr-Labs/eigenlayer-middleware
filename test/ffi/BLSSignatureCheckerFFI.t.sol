@@ -16,10 +16,10 @@ contract BLSSignatureCheckerFFITests is FFIBase {
     }
 
     function xtestSingleBLSSignatureChecker() public {
-        uint64 numOperators = 10;
-        uint64 numNonSigners = 5;
-        uint64 numberOfQuorums = 1;
-        uint256 setQuorumBitmap = 1;
+        uint64 numOperators = 200;
+        uint64 numNonSigners = 20;
+        uint64 numberOfQuorums = 10;
+        uint256 setQuorumBitmap = 0;
 
         bytes memory message = "eigen";
         bytes32 msgHash = _setOperators(setQuorumBitmap, numberOfQuorums, numOperators, message);
@@ -52,7 +52,6 @@ contract BLSSignatureCheckerFFITests is FFIBase {
         assertTrue(quorumStakeTotals.signedStakeForQuorum[0] > 0);
     }
 
-    /*
     function xtestFuzzyBLSSignatureChecker(
         uint256 pseduoRandomNumber,
         uint64 numOperators, 
@@ -64,7 +63,7 @@ contract BLSSignatureCheckerFFITests is FFIBase {
         vm.assume(numOperators > numNonSigners);
         vm.assume(numOperators > numberOfQuorums);
 
-        _deployMockEigenLayerAndAVS();
+        _deployMockEigenLayerAndAVS(); 
         uint256 setQuorumBitmap = 0;
         bytes memory message = abi.encode(keccak256(abi.encode(pseduoRandomNumber)));
         bytes32 msgHash = _setOperators(setQuorumBitmap, numberOfQuorums, numOperators, message);
@@ -76,12 +75,12 @@ contract BLSSignatureCheckerFFITests is FFIBase {
         ) = _getNonSignerStakeAndSignatures(
             numOperators, 
             numNonSigners, 
-            numQuorums
+            numberOfQuorums
         );
 
         (
             BLSSignatureChecker.QuorumStakeTotals memory quorumStakeTotals,
-            /* bytes32 signatoryRecordHash *//*
+            /* bytes32 signatoryRecordHash */
         ) = blsSignatureChecker.checkSignatures(
             msgHash, 
             quorumNumbers,
@@ -91,5 +90,5 @@ contract BLSSignatureCheckerFFITests is FFIBase {
 
         assertTrue(quorumStakeTotals.signedStakeForQuorum[0] > 0);
     }
-    */
+
 }
