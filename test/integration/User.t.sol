@@ -30,6 +30,7 @@ import "test/integration/utils/BitmapStrings.t.sol";
 
 interface IUserDeployer {
     function registryCoordinator() external view returns (RegistryCoordinator);
+    function avsDirectory() external view returns (AVSDirectory);
     function timeMachine() external view returns (TimeMachine);
     function churnApproverPrivateKey() external view returns (uint);
     function churnApprover() external view returns (address);
@@ -76,6 +77,7 @@ contract User is Test {
         IUserDeployer deployer = IUserDeployer(msg.sender);
 
         registryCoordinator = deployer.registryCoordinator();
+        avsDirectory = deployer.avsDirectory();
         serviceManager = ServiceManagerBase(address(registryCoordinator.serviceManager()));
 
         blsApkRegistry = BLSApkRegistry(address(registryCoordinator.blsApkRegistry()));
