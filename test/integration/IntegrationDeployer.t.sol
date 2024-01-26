@@ -15,6 +15,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
 import "eigenlayer-contracts/src/contracts/core/Slasher.sol";
+import "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPodManager.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPod.sol";
@@ -48,6 +49,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
     // Core contracts to deploy
     DelegationManager delegationManager;
+    AVSDirectory avsDirectory;
     StrategyManager strategyManager;
     EigenPodManager eigenPodManager;
     PauserRegistry pauserRegistry;
@@ -124,6 +126,9 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), ""))
         );
         delayedWithdrawalRouter = DelayedWithdrawalRouter(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), ""))
+        );
+        avsDirectory = AVSDirectory(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), ""))
         );
 
@@ -215,6 +220,17 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 pauserRegistry,
                 0, // initialPausedStatus
                 minWithdrawalDelayBlocks
+            )
+        );
+        // AVS Directory
+        proxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(avsDirectory))),
+            address(new AVSDirectory(delegationManager)),
+            abi.encodeWithSelector(
+                AVSDirectory.initialize.selector,
+                eigenLayerReputedMultisig, // initialOwner
+                pauserRegistry,
+                0 // initialPausedStatus
             )
         );
 

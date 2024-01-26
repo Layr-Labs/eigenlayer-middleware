@@ -28,6 +28,7 @@ import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
 
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
 import {EigenPodManagerMock} from "eigenlayer-contracts/src/test/mocks/EigenPodManagerMock.sol";
+import {AVSDirectoryMock} from "../mocks/AVSDirectoryMock.sol";
 import {DelegationMock} from "../mocks/DelegationMock.sol";
 import {BLSApkRegistryHarness} from "../harnesses/BLSApkRegistryHarness.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
@@ -63,6 +64,7 @@ contract MockAVSDeployer is Test {
     ServiceManagerBase public serviceManager;
 
     StrategyManagerMock public strategyManagerMock;
+    AVSDirectoryMock public avsDirectoryMock;
     DelegationMock public delegationMock;
     EigenPodManagerMock public eigenPodManagerMock;
 
@@ -127,7 +129,9 @@ contract MockAVSDeployer is Test {
         pausers[0] = pauser;
         pauserRegistry = new PauserRegistry(pausers, unpauser);
 
+
         delegationMock = new DelegationMock();
+        avsDirectoryMock = new AVSDirectoryMock();
         eigenPodManagerMock = new EigenPodManagerMock();
         strategyManagerMock = new StrategyManagerMock();
         slasherImplementation = new Slasher(strategyManagerMock, delegationMock);
@@ -230,7 +234,7 @@ contract MockAVSDeployer is Test {
         );
 
         serviceManagerImplementation = new ServiceManagerBase(
-            delegationMock,
+            avsDirectoryMock,
             registryCoordinator,
             stakeRegistry
         );

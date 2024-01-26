@@ -2,12 +2,15 @@
 pragma solidity =0.8.12;
 
 import "../utils/MockAVSDeployer.sol";
+import { AVSDirectory } from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
+import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import { DelegationManager } from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import { IDelegationManager } from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
 contract Test_CoreRegistration is MockAVSDeployer {
     // Contracts
     DelegationManager public delegationManager;
+    AVSDirectory public avsDirectory;
 
     // Operator info
     uint256 operatorPrivateKey = 420;
@@ -43,9 +46,27 @@ contract Test_CoreRegistration is MockAVSDeployer {
             )
         );
 
+        // Deploy New AVS Directory
+        AVSDirectory avsDirectoryImplementation = new AVSDirectory(delegationManager);
+        avsDirectory = AVSDirectory(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(avsDirectoryImplementation),
+                    address(proxyAdmin),
+                    abi.encodeWithSelector(
+                        AVSDirectory.initialize.selector,
+                        address(this), // owner
+                        pauserRegistry,
+                        0 // 0 is initialPausedStatus
+                    )
+                )
+            )
+        );
+
+
         // Deploy New ServiceManager & RegistryCoordinator implementations
         serviceManagerImplementation = new ServiceManagerBase(
-            delegationManager,
+            avsDirectory,
             registryCoordinator,
             stakeRegistry
         );
@@ -108,7 +129,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, operatorSignature);
 
         // Check operator is registered
-        IDelegationManager.OperatorAVSRegistrationStatus operatorStatus = delegationManager.avsOperatorStatus(address(serviceManager), operator);
+        IAVSDirectory.OperatorAVSRegistrationStatus operatorStatus = avsDirectory.avsOperatorStatus(address(serviceManager), operator);
         assertEq(uint8(operatorStatus), uint8(IDelegationManager.OperatorAVSRegistrationStatus.REGISTERED));
     }
 
@@ -122,7 +143,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         registryCoordinator.deregisterOperator(quorumNumbers);
 
         // Check operator is deregistered
-        IDelegationManager.OperatorAVSRegistrationStatus operatorStatus = delegationManager.avsOperatorStatus(address(serviceManager), operator);
+        IAVSDirectory.OperatorAVSRegistrationStatus operatorStatus = avsDirectory.avsOperatorStatus(address(serviceManager), operator);
         assertEq(uint8(operatorStatus), uint8(IDelegationManager.OperatorAVSRegistrationStatus.UNREGISTERED));
     }
 
@@ -138,7 +159,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         registryCoordinator.deregisterOperator(quorumNumbers);
 
         // Check operator is still registered
-        IDelegationManager.OperatorAVSRegistrationStatus operatorStatus = delegationManager.avsOperatorStatus(address(serviceManager), operator);
+        IAVSDirectory.OperatorAVSRegistrationStatus operatorStatus = avsDirectory.avsOperatorStatus(address(serviceManager), operator);
         assertEq(uint8(operatorStatus), uint8(IDelegationManager.OperatorAVSRegistrationStatus.REGISTERED));
     }
 
@@ -149,11 +170,14 @@ contract Test_CoreRegistration is MockAVSDeployer {
         serviceManager.setMetadataURI("Test MetadataURI");
     }
 
+    event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
+
     function test_setMetadataURI() public {  
         address toPrankFrom = serviceManager.owner();      
         cheats.prank(toPrankFrom);
+        cheats.expectEmit(true, true, true, true);
+        emit AVSMetadataURIUpdated(address(serviceManager), "Test MetadataURI");
         serviceManager.setMetadataURI("Test MetadataURI");
-        // TODO: check effects here
     }
 
     // Utils
