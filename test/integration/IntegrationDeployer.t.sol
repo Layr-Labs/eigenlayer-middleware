@@ -49,7 +49,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
     // Core contracts to deploy
     DelegationManager delegationManager;
-    AVSDirectory avsDirectory;
+    AVSDirectory public avsDirectory;
     StrategyManager strategyManager;
     EigenPodManager eigenPodManager;
     AVSDirectory avsDirectory;
