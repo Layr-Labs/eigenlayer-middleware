@@ -130,7 +130,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
 
         // Check operator is registered
         IAVSDirectory.OperatorAVSRegistrationStatus operatorStatus = avsDirectory.avsOperatorStatus(address(serviceManager), operator);
-        assertEq(uint8(operatorStatus), uint8(IDelegationManager.OperatorAVSRegistrationStatus.REGISTERED));
+        assertEq(uint8(operatorStatus), uint8(IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED));
     }
 
     function test_deregisterOperator_coreStateChanges() public {
@@ -144,7 +144,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
 
         // Check operator is deregistered
         IAVSDirectory.OperatorAVSRegistrationStatus operatorStatus = avsDirectory.avsOperatorStatus(address(serviceManager), operator);
-        assertEq(uint8(operatorStatus), uint8(IDelegationManager.OperatorAVSRegistrationStatus.UNREGISTERED));
+        assertEq(uint8(operatorStatus), uint8(IAVSDirectory.OperatorAVSRegistrationStatus.UNREGISTERED));
     }
 
     function test_deregisterOperator_notGloballyDeregistered() public {
@@ -160,7 +160,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
 
         // Check operator is still registered
         IAVSDirectory.OperatorAVSRegistrationStatus operatorStatus = avsDirectory.avsOperatorStatus(address(serviceManager), operator);
-        assertEq(uint8(operatorStatus), uint8(IDelegationManager.OperatorAVSRegistrationStatus.REGISTERED));
+        assertEq(uint8(operatorStatus), uint8(IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED));
     }
 
     function test_setMetadataURI_fail_notServiceManagerOwner() public {
@@ -206,7 +206,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         operatorSignature.salt = salt;
         operatorSignature.expiry = expiry;
         {
-            bytes32 digestHash = delegationManager.calculateOperatorAVSRegistrationDigestHash(operatorToSign, avs, salt, expiry);
+            bytes32 digestHash = avsDirectory.calculateOperatorAVSRegistrationDigestHash(operatorToSign, avs, salt, expiry);
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(_operatorPrivateKey, digestHash);
             operatorSignature.signature = abi.encodePacked(r, s, v);
         }

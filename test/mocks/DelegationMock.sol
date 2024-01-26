@@ -188,10 +188,4 @@ contract DelegationMock is IDelegationManager {
     ) external {
         strategyManager.withdrawSharesAsTokens(recipient, strategy, shares, token);
     }
-
-    function minWithdrawalDelayBlocks() external view returns (uint256) {}
-
-    function strategyWithdrawalDelayBlocks(IStrategy strategy) external view returns (uint256) {}
-
-    function getWithdrawalDelay(IStrategy[] calldata strategies) external view returns (uint256) {}
 }

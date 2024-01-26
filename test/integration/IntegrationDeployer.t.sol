@@ -49,7 +49,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
     // Core contracts to deploy
     DelegationManager delegationManager;
-    AVSDirectory avsDirectory;
+    AVSDirectory public avsDirectory;
     StrategyManager strategyManager;
     EigenPodManager eigenPodManager;
     PauserRegistry pauserRegistry;
@@ -299,7 +299,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         StakeRegistry stakeRegistryImplementation = new StakeRegistry(IRegistryCoordinator(registryCoordinator), IDelegationManager(delegationManager));
         BLSApkRegistry blsApkRegistryImplementation = new BLSApkRegistry(IRegistryCoordinator(registryCoordinator));
         IndexRegistry indexRegistryImplementation = new IndexRegistry(IRegistryCoordinator(registryCoordinator));
-        ServiceManagerBase serviceManagerImplementation = new ServiceManagerBase(IDelegationManager(delegationManager), IRegistryCoordinator(registryCoordinator), stakeRegistry);
+        ServiceManagerBase serviceManagerImplementation = new ServiceManagerBase(IAVSDirectory(avsDirectory), IRegistryCoordinator(registryCoordinator), stakeRegistry);
 
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(stakeRegistry))),

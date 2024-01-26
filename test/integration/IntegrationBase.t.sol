@@ -166,13 +166,13 @@ abstract contract IntegrationBase is IntegrationConfig {
     /// AVSDirectory:
     
     function assert_NotRegisteredToAVS(User operator, string memory err) internal {
-        IAVSDirectory.OperatorAVSRegistrationStatus status = avsDirectory.avsOperatorStatus(address(serviceManager), operator);
+        IAVSDirectory.OperatorAVSRegistrationStatus status = avsDirectory.avsOperatorStatus(address(serviceManager), address(operator));
 
         assertTrue(status == IAVSDirectory.OperatorAVSRegistrationStatus.UNREGISTERED, err);
     }
 
     function assert_IsRegisteredToAVS(User operator, string memory err) internal {
-        IAVSDirectory.OperatorAVSRegistrationStatus status = avsDirectory.avsOperatorStatus(address(serviceManager), operator);
+        IAVSDirectory.OperatorAVSRegistrationStatus status = avsDirectory.avsOperatorStatus(address(serviceManager), address(operator));
 
         assertTrue(status == IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED, err);
     }
