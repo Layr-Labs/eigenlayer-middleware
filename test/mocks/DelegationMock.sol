@@ -132,17 +132,11 @@ contract DelegationMock is IDelegationManager {
 
     function DELEGATION_APPROVAL_TYPEHASH() external view returns (bytes32) {}
 
-    function OPERATOR_AVS_REGISTRATION_TYPEHASH() external view returns (bytes32) {}
-
     function domainSeparator() external view returns (bytes32) {}
 
     function cumulativeWithdrawalsQueued(address staker) external view returns (uint256) {}
 
     function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32) {}
-
-    function registerOperatorToAVS(address operator, ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) external {}
-
-    function deregisterOperatorFromAVS(address operator) external {}
 
     function operatorSaltIsSpent(address avs, bytes32 salt) external view returns (bool) {}
 
