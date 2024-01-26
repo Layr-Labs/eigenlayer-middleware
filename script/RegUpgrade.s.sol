@@ -3,6 +3,8 @@ pragma solidity =0.8.12;
 
 import "../src/RegistryCoordinator.sol";
 import "../src/ServiceManagerBase.sol";
+import "../src/StakeRegistry.sol";
+import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
@@ -19,19 +21,35 @@ contract Upgrade_Reg_SM is Script, Test {
     function run() external {
         
         RegistryCoordinator regCord = RegistryCoordinator(0xc1DC4987Bd4c2f17446d51C9ED3397328b1827DA);
+        IStakeRegistry stakeReg = regCord.stakeRegistry();
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(1);
 
+        IStakeRegistry.StrategyParams[] memory quorumStrategiesConsideredAndMultipliers =
+        new IStakeRegistry.StrategyParams[](1);
+        quorumStrategiesConsideredAndMultipliers[0] = IStakeRegistry.StrategyParams({
+            strategy: IStrategy(0xed6DE3f2916d20Cb427fe7255194a05061319FFB),
+            multiplier: 1e18
+        });
+
+
         vm.startBroadcast();
-        // regCord.registerOperator(
-        //     quorumNumbers,
-        //     defaultSocket,
-        //     pubkeyRegistrationParams,
-        //     emptySignatureAndExpiry
+
+        // stakeReg.addStrategies(
+        //     0,
+        //     quorumStrategiesConsideredAndMultipliers
         // );
-        regCord.deregisterOperator(
-            quorumNumbers
+
+        regCord.registerOperator(
+            quorumNumbers,
+            defaultSocket,
+            pubkeyRegistrationParams,
+            emptySignatureAndExpiry
         );
+        // regCord.deregisterOperator(
+        //     quorumNumbers
+        // );
+
 
         // // Deploy New RegistryCoordinator
         // newRegCoordinator = new RegistryCoordinator(
