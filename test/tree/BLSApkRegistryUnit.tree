@@ -1,0 +1,64 @@
+.
+├── BLSApkRegistry tree (*** denotes that integration tests are needed to validate path)
+├── registerOperator()
+│   ├── given caller is not the registry coordinator
+│   │   └── it should revert
+│   ├── given caller has not registered a pubkey
+│   │   └── it should revert
+│   └── given all above conditions are met
+│       └── it should call _processQuorumApkUpdate() with the operator pubkey and emit OperatorAddedToQuorums
+│
+├── deregisterOperator()
+│   ├── given caller is not the registry coordinator
+│   │   └── it should revert
+│   ├── given caller has not registered a pubkey
+│   │   └── it should revert
+│   └── given all above conditions are met
+│       └── it should call _processQuorumApkUpdate() with the negated operator pubkey and emit OperatorRemovedFromQuorums
+│
+├── _processQuorumApkUpdate() (internal function)
+│   ├── given a quorum does not exist (apkHistory[quorumNumber] == 0)
+│   │   └── it should revert
+│   ├── given the latest quorum ApkUpdate occurred in the current block
+│   │   ├── it should add the operator pubkey to the quorum apk
+│   │   └── it should update the latest quorum ApkUpdate with the updated apkHash
+│   └── given the latest quorum ApkUpdate occurred in a previous block
+│       ├── it should update the latest quorum ApkUpdate's nextUpdateBlockNumber to current blocknumber
+│       ├── it should add the operator pubkey to the quorum apk
+│       └── it should push a new quorum ApkUpdate with the updated apkHash
+│
+├── registerBLSPublicKey()
+│   ├── given caller is not the registry coordinator
+│   │   └── it should revert
+│   ├── given operator address has already registered a pubkey
+│   │   └── it should revert
+│   ├── given pubkey input is the zero pubkey
+│   │   └── it should revert
+│   ├── given pubkey input is already registered
+│   │   └── it should revert
+│   ├── given pubkey signature verification fails
+│   │   └── it should revert
+│   ├── given G1 or G2 private key do not match
+│   │   └── it should revert
+│   └── given all above conditions are met
+│       ├── it should map the operator address to the pubkey
+│       ├── it should map the operator address to the pubkey hash
+│       ├── it should map the pubkey hash to the operator address
+│       └── it should emit NewPubkeyRegistration and return the pubkey hash
+│
+├── initializeQuorum()
+│   ├── given caller is not the registry coordinator
+│   │   └── it should revert
+│   ├── given a quorum already exists (apkHistory[quorumNumber] != 0)
+│   │   └── it should revert
+│   └── given all above conditions are met
+│       └── it should push the first ApkUpdate with the zero apkHash
+│
+└── getApkIndicesAtBlockNumber()
+    ├── given a quorum does not exist (apkHistory[quorumNumber] == 0)
+    │   └── it should revert
+    ├── given for any passed in quorum,the input blocknumber is < the quorum's first ApkUpdate.updateBlockNumber
+    │   └── it should revert
+    └── given all above conditions are met
+        └── it should return the apk indices at the block number for each quorum
+

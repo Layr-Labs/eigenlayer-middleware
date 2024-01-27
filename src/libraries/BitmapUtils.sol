@@ -115,17 +115,27 @@ library BitmapUtils {
      * @return bytesArray The resulting bitmap array of bytes.
      * @dev Each byte in the input is processed as indicating a single bit to flip in the bitmap
      */
-    function bitmapToBytesArray(uint256 bitmap) internal pure returns (bytes memory bytesArray) {
+    function bitmapToBytesArray(uint256 bitmap) internal pure returns (bytes memory /*bytesArray*/) {
         // initialize an empty uint256 to be used as a bitmask inside the loop
         uint256 bitMask;
-        // loop through each index in the bitmap to construct the array
-        for (uint256 i = 0; i < 256; ++i) {
+        // allocate only the needed amount of memory
+        bytes memory bytesArray = new bytes(countNumOnes(bitmap));
+        // track the array index to assign to
+        uint256 arrayIndex = 0;
+        /**
+         * loop through each index in the bitmap to construct the array,
+         * but short-circuit the loop if we reach the number of ones and thus are done
+         * assigning to memory
+         */
+        for (uint256 i = 0; (arrayIndex < bytesArray.length) && (i < 256); ++i) {
             // construct a single-bit mask for the i-th bit
             bitMask = uint256(1 << i);
             // check if the i-th bit is flipped in the bitmap
             if (bitmap & bitMask != 0) {
                 // if the i-th bit is flipped, then add a byte encoding the value 'i' to the `bytesArray`
-                bytesArray = bytes.concat(bytesArray, bytes1(uint8(i)));
+                bytesArray[arrayIndex] = bytes1(uint8(i));
+                // increment the bytesArray slot since we've assigned one more byte of memory
+                unchecked{ ++arrayIndex; }
             }
         }
         return bytesArray;

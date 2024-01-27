@@ -38,8 +38,7 @@ This repository uses Foundry. See the [Foundry docs](https://book.getfoundry.sh/
 foundryup
 
 forge build
-# FFI tests are currently broken; working on it! for now, run the tests without them
-forge test --no-match-contracts FFI
+forge test
 ```
 
 ## Deployments
