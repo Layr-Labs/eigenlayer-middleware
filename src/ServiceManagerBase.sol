@@ -20,10 +20,6 @@ contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
     using BitmapUtils for *;
 
     IRegistryCoordinator internal immutable _registryCoordinator;
-<<<<<<< HEAD
-=======
-    IAVSDirectory internal immutable _avsDirectory;
->>>>>>> feat: add avs directory to service manager
     IStakeRegistry internal immutable _stakeRegistry;
     IAVSDirectory internal immutable _avsDirectory;
 
