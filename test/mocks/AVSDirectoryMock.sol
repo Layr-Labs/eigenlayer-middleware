@@ -1,12 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-<<<<<<< HEAD
 import {IAVSDirectory, ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-=======
-import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
->>>>>>> cac457271cc43feb8aefe886ef359a4f6621cb9c
 
 contract AVSDirectoryMock is IAVSDirectory {
     /**

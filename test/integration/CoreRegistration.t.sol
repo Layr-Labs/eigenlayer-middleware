@@ -11,7 +11,6 @@ import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAV
 contract Test_CoreRegistration is MockAVSDeployer {
     // Contracts
     DelegationManager public delegationManager;
-    AVSDirectory public avsDirectory;
 
     // Operator info
     uint256 operatorPrivateKey = 420;

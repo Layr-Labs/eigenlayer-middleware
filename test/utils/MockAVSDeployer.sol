@@ -69,7 +69,6 @@ contract MockAVSDeployer is Test {
     ServiceManagerBase public serviceManager;
 
     StrategyManagerMock public strategyManagerMock;
-    AVSDirectoryMock public avsDirectoryMock;
     DelegationMock public delegationMock;
     EigenPodManagerMock public eigenPodManagerMock;
     AVSDirectory public avsDirectory;
