@@ -9,6 +9,7 @@ on:
     branches:
       - master
       - m2-mainnet
+      - m2-mainnet-fixes
   pull_request:
 
 env:
