@@ -12,6 +12,7 @@ import "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 // Core
 import "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
+import "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 
 // Middleware
 import "src/RegistryCoordinator.sol";
@@ -46,6 +47,7 @@ contract User is Test {
     // Core contracts
     DelegationManager delegationManager;
     StrategyManager strategyManager;
+    AVSDirectory avsDirectory;
 
     // Middleware contracts
     RegistryCoordinator registryCoordinator;
@@ -82,6 +84,7 @@ contract User is Test {
 
         delegationManager = DelegationManager(address(stakeRegistry.delegation()));
         strategyManager = StrategyManager(address(delegationManager.strategyManager()));
+        avsDirectory = AVSDirectory(address(serviceManager.avsDirectory()));
 
         timeMachine = deployer.timeMachine();
 
@@ -300,7 +303,7 @@ contract User is Test {
             expiry: type(uint256).max
         });
 
-        bytes32 digest = delegationManager.calculateOperatorAVSRegistrationDigestHash({
+        bytes32 digest = avsDirectory.calculateOperatorAVSRegistrationDigestHash({
             operator: address(this),
             avs: address(serviceManager),
             salt: signature.salt,

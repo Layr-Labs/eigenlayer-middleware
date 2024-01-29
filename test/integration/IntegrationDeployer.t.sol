@@ -15,6 +15,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
 import "eigenlayer-contracts/src/contracts/core/Slasher.sol";
+import "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPodManager.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPod.sol";
@@ -50,6 +51,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     DelegationManager delegationManager;
     StrategyManager strategyManager;
     EigenPodManager eigenPodManager;
+    AVSDirectory avsDirectory;
     PauserRegistry pauserRegistry;
     Slasher slasher;
     IBeacon eigenPodBeacon;
@@ -126,6 +128,9 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         delayedWithdrawalRouter = DelayedWithdrawalRouter(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), ""))
         );
+        avsDirectory = AVSDirectory(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), ""))
+        );
 
         // Deploy EigenPod Contracts
         pod = new EigenPod(
@@ -150,6 +155,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             delegationManager
         );
         DelayedWithdrawalRouter delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
+        AVSDirectory avsDirectoryImplemntation = new AVSDirectory(delegationManager);
 
         // Third, upgrade the proxy contracts to point to the implementations
         uint256 minWithdrawalDelayBlocks = 7 days / 12 seconds;
@@ -215,6 +221,17 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 pauserRegistry,
                 0, // initialPausedStatus
                 minWithdrawalDelayBlocks
+            )
+        );
+        // AVSDirectory
+        proxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(avsDirectory))),
+            address(avsDirectoryImplemntation),
+            abi.encodeWithSelector(
+                AVSDirectory.initialize.selector,
+                eigenLayerReputedMultisig, // initialOwner
+                pauserRegistry,
+                0 // initialPausedStatus
             )
         );
 
@@ -283,7 +300,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         StakeRegistry stakeRegistryImplementation = new StakeRegistry(IRegistryCoordinator(registryCoordinator), IDelegationManager(delegationManager));
         BLSApkRegistry blsApkRegistryImplementation = new BLSApkRegistry(IRegistryCoordinator(registryCoordinator));
         IndexRegistry indexRegistryImplementation = new IndexRegistry(IRegistryCoordinator(registryCoordinator));
-        ServiceManagerBase serviceManagerImplementation = new ServiceManagerBase(IDelegationManager(delegationManager), IRegistryCoordinator(registryCoordinator), stakeRegistry);
+        ServiceManagerBase serviceManagerImplementation = new ServiceManagerBase(IAVSDirectory(avsDirectory), IRegistryCoordinator(registryCoordinator), stakeRegistry);
 
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(stakeRegistry))),
