@@ -173,7 +173,7 @@ contract StakeRegistry is StakeRegistryStorage {
                 quorumsToRemove = uint192(quorumsToRemove.setBit(quorumNumber));
             }
 
-            // Update the operator's stake and retrieve the delta
+            // Update the operator's stake weight and retrieve the delta
             // If we're deregistering them, their weight is set to 0
             int256 stakeDelta = _recordOperatorStakeUpdate({
                 operatorId: operatorId,
@@ -186,6 +186,67 @@ contract StakeRegistry is StakeRegistryStorage {
         }
 
         return quorumsToRemove;
+    }
+
+    /**
+     * @notice Called by the registry coordinator to update a set of operators' stake weights for
+     * exactly one quorum.
+     *
+     * If the operator no longer has the minimum stake required for the quorum, then they are
+     * added to the `operatorsToRemove`, which is returned to the registry coordinator
+     * @return A struct containing a bitmap of booleans indicating which operators no longer meet
+     * the minimum stake weight requirement of the quorum and should be deregistered.
+     */
+    function updateOperatorsStake(
+        address[] calldata operators, 
+        bytes32[] calldata operatorIds, 
+        uint8 quorumNumber
+    ) external onlyRegistryCoordinator returns (OperatorsToRemove memory) {
+        require(operators.length == operatorIds.length,
+            "this require should be done at the RegistryCoordinator level and assumed here instead");
+        require(_quorumExists(quorumNumber),
+            "this require should be done at the RegistryCoordinator level and assumed here instead");
+        // because we return a bitmap with max 256 entries, we must restrict the size of memory array inputs
+        require(operators.length <= 256,
+            "TODO: write a good revert here");
+        OperatorsToRemove memory operatorsToRemove;
+
+        // The net effect on total stake weight of all operators will be written to storage after the loop
+        int256 totalStakeDelta;
+        /**
+         * For each operator, update the operator's stake and update the delta
+         * in the quorum's total stake. T
+         *
+         * If the operator no longer has the minimum stake required to be registered
+         * in the quorum, the quorum number is added to `quorumsToRemove`, which
+         * is returned to the registry coordinator.
+         */
+        for (uint8 i = 0; i < operators.length; i++) {
+            // Fetch the operator's current stake, applying weighting parameters and checking
+            // against the minimum stake requirements for the quorum.
+            (uint96 stakeWeight, bool hasMinimumStake) =
+                _weightOfOperatorForQuorum(quorumNumber, operators[i]);
+
+            // If the operator no longer meets the minimum stake,
+            // then set their stake to zero and mark them for removal
+            if (!hasMinimumStake) {
+                stakeWeight = 0;
+                operatorsToRemove.bitmap.setBit(i);
+                operatorsToRemove.numberBitmapEntries += 1;
+            }
+
+            // Update the operator's stake weight and retrieve the delta.
+            // use this delta to store the cumulative stake difference in memory
+            totalStakeDelta += _recordOperatorStakeUpdate({
+                operatorId: operatorIds[i],
+                quorumNumber: quorumNumber,
+                newStake: stakeWeight
+            });
+        }
+        // Apply the delta to the quorum's total stake
+        _recordTotalStakeUpdate(quorumNumber, totalStakeDelta);
+
+        return operatorsToRemove;
     }
 
     /// @notice Initialize a new quorum and push its first history update

@@ -313,7 +313,7 @@ contract RegistryCoordinator is
             // For each operator:
             // - check that they are registered for this quorum
             // - check that their address is strictly greater than the last operator
-            // ... then, update their stakes
+            // ... then, update their weight in the quorum
             for (uint256 j = 0; j < currQuorumOperators.length; ++j) {
                 address operator = currQuorumOperators[j];
                 
@@ -628,6 +628,100 @@ contract RegistryCoordinator is
         }
     }
 
+    // updates all operators in a single quorum
+    function updateOperatorsForQuorum(
+        address[] calldata allOperatorsInQuorum,
+        uint8 quorumNumber
+    )
+        external
+        onlyWhenNotPaused(PAUSED_UPDATE_OPERATOR)
+        quorumExists(quorumNumber)
+    {
+        // Ensure we've passed in at least enough operators for this quorum
+        uint256 totalOperatorsInQuorum = indexRegistry.totalOperatorsForQuorum(quorumNumber);
+        // inequality is acceptable, so the caller can hedge against changes in the race condition
+        // of operators registering or deregistering
+        require(allOperatorsInQuorum.length >= totalOperatorsInQuorum,
+            "TODO: write a good revert here");
+
+        OperatorInfo[] memory operatorInfos = new OperatorInfo[](allOperatorsInQuorum.length);
+        address prevOperatorAddress = address(0);
+        uint256 registeredOperatorsInInput = 0;
+        // For each operator:
+        // - check that their address is strictly greater than the last operator
+        // - check that they are registered for this quorum, AND:
+        // if they ARE, then update their weight in the quorum and count them in the registeredOperatorsInInput
+        // if they are NOT, then ignore that input as no update is necessary for them.
+        for (uint256 i = 0; i < allOperatorsInQuorum.length; ++i) {
+            address operator = allOperatorsInQuorum[i];
+            // Prevent duplicate input entries
+            require(
+                operator > prevOperatorAddress,
+                "RegistryCoordinator.updateOperatorsForQuorum: operators array must be sorted in ascending address order"
+            );
+            
+            operatorInfos[i] = _operatorInfo[operator];
+            {
+                uint192 operatorBitmap = _currentOperatorBitmap(operatorInfos[i].operatorId);
+                // Check if the operator is registered
+                // if they are, then increment the "correct input" counter
+                if (BitmapUtils.isSet(operatorBitmap, quorumNumber)) {
+                    ++registeredOperatorsInInput;
+                }
+            }
+        }
+
+        // only now are we able to verify if the input did indeed contain the whole set
+        require(registeredOperatorsInInput == totalOperatorsInQuorum,
+            "input did not contain all operators registered for quorum");
+
+        // Update the operators
+        _updateOperators(allOperatorsInQuorum, operatorInfos, quorumNumber);
+
+        // Update timestamp at which all operators in the quorum have been simultaneously updated
+        quorumUpdateBlockNumber[quorumNumber] = block.number;
+        emit QuorumBlockNumberUpdated(quorumNumber, block.number);
+    }
+
+
+    /**
+     * @notice Updates the StakeRegistry's view of the operators's stake weight in a single quorum.
+     * For any operators where the StakeRegistry finds the operator is under the configured minimum
+     * stake, `operatorsToRemove` is returned and used to deregister the operator from the quorum
+     * @dev skips over any operator who is not registered for the quorum.
+     */
+    function _updateOperators(
+        address[] memory operators,
+        OperatorInfo[] memory operatorInfos,
+        uint8 quorumNumber
+    ) internal {
+        bytes32[] memory operatorIds = new bytes32[](operators.length);
+        for (uint256 i = 0; i < operators.length; ++i) {
+            if (operatorInfos[i].status != OperatorStatus.REGISTERED) {
+                // TODO: do something
+            }
+            operatorIds[i] = operatorInfos[i].operatorId;
+        }
+        IStakeRegistry.OperatorsToRemove memory operatorsToRemove =
+            stakeRegistry.updateOperatorsStake(operators, operatorIds, quorumNumber);
+
+        if (operatorsToRemove.numberBitmapEntries != 0) {
+            bytes memory quorumNumbers = new bytes(1);
+            quorumNumbers[0] = bytes1(quorumNumber);
+
+            uint256 operatorsRemoved = 0;
+            // break out of loop once operatorsRemoved matches the number to remove
+            for (uint8 i = 0; operatorsRemoved < operatorsToRemove.numberBitmapEntries; ++i) {
+                if (operatorsToRemove.bitmap.isSet(i)) {
+                    _deregisterOperator({
+                        operator: operators[i],
+                        quorumNumbers: quorumNumbers
+                    });
+                    ++operatorsRemoved;
+                }
+            }
+        }
+    }
     /**
      * @notice Returns the stake threshold required for an incoming operator to replace an existing operator
      * The incoming operator must have more stake than the return value.

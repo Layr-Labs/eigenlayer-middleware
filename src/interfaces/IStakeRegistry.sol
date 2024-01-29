@@ -245,4 +245,17 @@ interface IStakeRegistry is IRegistry {
         bytes32 operatorId, 
         bytes calldata quorumNumbers
     ) external returns (uint192);
+
+    // struct returned by the `updateOperatorsStake` function
+    struct OperatorsToRemove {
+        uint256 bitmap;
+        // simply tracks the number of '1's stored in the bitmap
+        uint256 numberBitmapEntries;
+    }
+
+    function updateOperatorsStake(
+        address[] calldata operators, 
+        bytes32[] calldata operatorIds, 
+        uint8 quorumNumber
+    ) external returns (OperatorsToRemove memory);
 }

@@ -208,6 +208,12 @@ contract StakeRegistryMock is IStakeRegistry {
         return updateOperatorStakeReturnBitmap;
     }
 
+    function updateOperatorsStake(
+        address[] calldata operators, 
+        bytes32[] calldata operatorIds, 
+        uint8 quorumNumber
+    ) external returns (OperatorsToRemove memory){}
+
     function getMockOperatorId(address operator) external pure returns(bytes32) {
         return bytes32(uint256(keccak256(abi.encodePacked(operator, "operatorId"))));
     }
