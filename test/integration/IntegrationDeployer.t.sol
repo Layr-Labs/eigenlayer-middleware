@@ -52,7 +52,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     AVSDirectory public avsDirectory;
     StrategyManager strategyManager;
     EigenPodManager eigenPodManager;
-    AVSDirectory avsDirectory;
     PauserRegistry pauserRegistry;
     Slasher slasher;
     IBeacon eigenPodBeacon;
