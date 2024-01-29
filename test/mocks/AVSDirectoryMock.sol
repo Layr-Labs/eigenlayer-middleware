@@ -31,9 +31,7 @@ contract AVSDirectoryMock is IAVSDirectory {
      * @notice Returns whether or not the salt has already been used by the operator.
      * @dev Salts is used in the `registerOperatorToAVS` function.
      */
-    function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool) {
-        return false;
-    }
+    function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool) {}
 
     /**
      * @notice Calculates the digest hash to be signed by an operator to register with an AVS
@@ -47,12 +45,8 @@ contract AVSDirectoryMock is IAVSDirectory {
         address avs,
         bytes32 salt,
         uint256 expiry
-    ) external view returns (bytes32) {
-        return 0x0;
-    }
+    ) external view returns (bytes32) {}
 
     /// @notice The EIP-712 typehash for the Registration struct used by the contract
-    function OPERATOR_AVS_REGISTRATION_TYPEHASH() external view returns (bytes32) {
-        return 0x0;
-    }
-}
+    function OPERATOR_AVS_REGISTRATION_TYPEHASH() external view returns (bytes32) {}
+} 

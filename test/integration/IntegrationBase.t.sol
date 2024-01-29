@@ -163,7 +163,7 @@ abstract contract IntegrationBase is IntegrationConfig {
         }
     }
 
-    /// DelegationManager:
+    /// AVSDirectory:
     
     function assert_NotRegisteredToAVS(User operator, string memory err) internal {
         IAVSDirectory.OperatorAVSRegistrationStatus status = avsDirectory.avsOperatorStatus(address(serviceManager), address(operator));
