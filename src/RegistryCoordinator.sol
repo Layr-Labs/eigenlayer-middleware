@@ -195,6 +195,7 @@ contract RegistryCoordinator is
 
         // Verify the churn approver's signature for the registering operator and kick params
         _verifyChurnApproverSignature({
+            registeringOperator: msg.sender,
             registeringOperatorId: operatorId,
             operatorKickParams: operatorKickParams,
             churnApproverSignature: churnApproverSignature
@@ -646,6 +647,7 @@ contract RegistryCoordinator is
 
     /// @notice verifies churnApprover's signature on operator churn approval and increments the churnApprover nonce
     function _verifyChurnApproverSignature(
+        address registeringOperator,
         bytes32 registeringOperatorId, 
         OperatorKickParam[] memory operatorKickParams, 
         SignatureWithSaltAndExpiry memory churnApproverSignature
@@ -660,7 +662,7 @@ contract RegistryCoordinator is
         // check the churnApprover's signature 
         EIP1271SignatureUtils.checkSignature_EIP1271(
             churnApprover, 
-            calculateOperatorChurnApprovalDigestHash(registeringOperatorId, operatorKickParams, churnApproverSignature.salt, churnApproverSignature.expiry), 
+            calculateOperatorChurnApprovalDigestHash(registeringOperator, registeringOperatorId, operatorKickParams, churnApproverSignature.salt, churnApproverSignature.expiry), 
             churnApproverSignature.signature
         );
     }
@@ -889,19 +891,20 @@ contract RegistryCoordinator is
 
     /**
      * @notice Public function for the the churnApprover signature hash calculation when operators are being kicked from quorums
-     * @param registeringOperatorId The is of the registering operator 
+     * @param registeringOperatorId The id of the registering operator 
      * @param operatorKickParams The parameters needed to kick the operator from the quorums that have reached their caps
      * @param salt The salt to use for the churnApprover's signature
      * @param expiry The desired expiry time of the churnApprover's signature
      */
     function calculateOperatorChurnApprovalDigestHash(
+        address registeringOperator,
         bytes32 registeringOperatorId,
         OperatorKickParam[] memory operatorKickParams,
         bytes32 salt,
         uint256 expiry
     ) public view returns (bytes32) {
         // calculate the digest hash
-        return _hashTypedDataV4(keccak256(abi.encode(OPERATOR_CHURN_APPROVAL_TYPEHASH, registeringOperatorId, operatorKickParams, salt, expiry)));
+        return _hashTypedDataV4(keccak256(abi.encode(OPERATOR_CHURN_APPROVAL_TYPEHASH, registeringOperator, registeringOperatorId, operatorKickParams, salt, expiry)));
     }
 
     /**
