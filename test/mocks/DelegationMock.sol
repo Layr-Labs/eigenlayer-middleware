@@ -77,8 +77,20 @@ contract DelegationMock is IDelegationManager {
         return 0;
     }
 
-    function withdrawalDelayBlocks() external pure returns (uint256) {
+    function minWithdrawalDelayBlocks() external view returns (uint256) {
         return 50400;
+    }
+
+    /**
+     * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
+     * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
+     */
+    function strategyWithdrawalDelayBlocks(IStrategy /*strategy*/) external view returns (uint256) {
+        return 0;
+    }
+
+    function getWithdrawalDelay(IStrategy[] calldata /*strategies*/) public view returns (uint256) {
+        return 0;
     }
 
     function isDelegated(address staker) external view returns (bool) {
@@ -120,17 +132,11 @@ contract DelegationMock is IDelegationManager {
 
     function DELEGATION_APPROVAL_TYPEHASH() external view returns (bytes32) {}
 
-    function OPERATOR_AVS_REGISTRATION_TYPEHASH() external view returns (bytes32) {}
-
     function domainSeparator() external view returns (bytes32) {}
 
     function cumulativeWithdrawalsQueued(address staker) external view returns (uint256) {}
 
     function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32) {}
-
-    function registerOperatorToAVS(address operator, ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) external {}
-
-    function deregisterOperatorFromAVS(address operator) external {}
 
     function operatorSaltIsSpent(address avs, bytes32 salt) external view returns (bool) {}
 

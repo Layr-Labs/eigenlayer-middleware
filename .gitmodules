@@ -4,7 +4,7 @@
 [submodule "lib/eigenlayer-contracts"]
 	path = lib/eigenlayer-contracts
 	url = https://github.com/Layr-labs/eigenlayer-contracts
-	branch = m2-mainnet
+	branch = m2-mainnet-fixes
 [submodule "lib/ds-test"]
 	path = lib/ds-test
 	url = https://github.com/dapphub/ds-test

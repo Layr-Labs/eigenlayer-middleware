@@ -312,7 +312,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         }
 
         // move referenceBlockNumber forward to a block number the last block number where the stakes will be considered "not stale"
-        referenceBlockNumber = uint32(stalestUpdateBlock + delegationMock.withdrawalDelayBlocks());
+        referenceBlockNumber = uint32(stalestUpdateBlock + delegationMock.minWithdrawalDelayBlocks());
         // roll forward to make the reference block number valid
         cheats.roll(referenceBlockNumber);
         blsSignatureChecker.checkSignatures(
