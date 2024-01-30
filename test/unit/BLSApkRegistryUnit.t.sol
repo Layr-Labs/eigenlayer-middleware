@@ -327,13 +327,14 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is BLSApkRegistryUnitTests
         address operator,
         address operator2
     ) public {
+        cheats.assume(operator != address(0));
         cheats.assume(operator != operator2);
         BN254.G1Point memory messageHash =
             registryCoordinator.pubkeyRegistrationMessageHash(operator);
         pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(operator);
 
         cheats.startPrank(address(registryCoordinator));
-        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
+        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);        
 
         cheats.expectRevert("BLSApkRegistry.registerBLSPublicKey: public key already registered");
         blsApkRegistry.registerBLSPublicKey(operator2, pubkeyRegistrationParams, messageHash);
