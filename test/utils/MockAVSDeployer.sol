@@ -28,7 +28,13 @@ import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
 
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
 import {EigenPodManagerMock} from "eigenlayer-contracts/src/test/mocks/EigenPodManagerMock.sol";
+import {AVSDirectoryMock} from "../mocks/AVSDirectoryMock.sol";
 import {DelegationMock} from "../mocks/DelegationMock.sol";
+import {AVSDirectory} from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
+import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+
+
+import {AVSDirectoryMock} from "../mocks/AVSDirectoryMock.sol";
 import {BLSApkRegistryHarness} from "../harnesses/BLSApkRegistryHarness.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 
@@ -65,6 +71,9 @@ contract MockAVSDeployer is Test {
     StrategyManagerMock public strategyManagerMock;
     DelegationMock public delegationMock;
     EigenPodManagerMock public eigenPodManagerMock;
+    AVSDirectory public avsDirectory;
+    AVSDirectory public avsDirectoryImplementation;
+    AVSDirectoryMock public avsDirectoryMock;
 
     /// @notice StakeRegistry, Constant used as a divisor in calculating weights.
     uint256 public constant WEIGHTING_DIVISOR = 1e18;
@@ -127,7 +136,9 @@ contract MockAVSDeployer is Test {
         pausers[0] = pauser;
         pauserRegistry = new PauserRegistry(pausers, unpauser);
 
+
         delegationMock = new DelegationMock();
+        avsDirectoryMock = new AVSDirectoryMock();
         eigenPodManagerMock = new EigenPodManagerMock();
         strategyManagerMock = new StrategyManagerMock();
         slasherImplementation = new Slasher(strategyManagerMock, delegationMock);
@@ -137,6 +148,17 @@ contract MockAVSDeployer is Test {
                     address(slasherImplementation),
                     address(proxyAdmin),
                     abi.encodeWithSelector(Slasher.initialize.selector, msg.sender, pauserRegistry, 0/*initialPausedStatus*/)
+                )
+            )
+        );
+        avsDirectoryMock = new AVSDirectoryMock();
+        avsDirectoryImplementation = new AVSDirectory(delegationMock);
+        avsDirectory = AVSDirectory(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(avsDirectoryImplementation),
+                    address(proxyAdmin),
+                    abi.encodeWithSelector(AVSDirectory.initialize.selector, msg.sender, pauserRegistry, 0/*initialPausedStatus*/)
                 )
             )
         );
@@ -230,7 +252,7 @@ contract MockAVSDeployer is Test {
         );
 
         serviceManagerImplementation = new ServiceManagerBase(
-            delegationMock,
+            avsDirectoryMock,
             registryCoordinator,
             stakeRegistry
         );

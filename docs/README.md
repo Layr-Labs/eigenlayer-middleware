@@ -97,8 +97,8 @@ These histories are used by offchain code to query state at particular blocks, a
 ##### Hooking Into EigenLayer Core
 
 The main thing that links an AVS to the EigenLayer core contracts is that when EigenLayer Operators register/deregister with an AVS, the AVS calls these functions in EigenLayer core:
-* [`DelegationManager.registerOperatorToAVS`][core-registerToAVS]
-* [`DelegationManager.deregisterOperatorFromAVS`][core-deregisterFromAVS]
+* [`AVSDirectory.registerOperatorToAVS`][core-registerToAVS]
+* [`AVSDirectory.deregisterOperatorFromAVS`][core-deregisterFromAVS]
 
 These methods ensure that the Operator registering with the AVS is also registered as an Operator in EigenLayer core. In this repo, these methods are called by the `ServiceManagerBase`.
 
