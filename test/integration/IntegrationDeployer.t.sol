@@ -30,7 +30,7 @@ import "src/RegistryCoordinator.sol";
 import "src/StakeRegistry.sol";
 import "src/IndexRegistry.sol";
 import "src/BLSApkRegistry.sol";
-import "src/ServiceManagerBase.sol";
+import "test/mocks/ServiceManagerMock.sol";
 import "src/OperatorStateRetriever.sol";
 
 // Mocks and More
@@ -65,7 +65,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
     // Middleware contracts to deploy
     RegistryCoordinator public registryCoordinator;
-    ServiceManagerBase serviceManager;
+    ServiceManagerMock serviceManager;
     BLSApkRegistry blsApkRegistry;
     StakeRegistry stakeRegistry;
     IndexRegistry indexRegistry;
@@ -286,7 +286,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             )
         );
 
-        serviceManager = ServiceManagerBase(
+        serviceManager = ServiceManagerMock(
             address(
                 new TransparentUpgradeableProxy(
                     address(emptyContract),
@@ -300,7 +300,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         StakeRegistry stakeRegistryImplementation = new StakeRegistry(IRegistryCoordinator(registryCoordinator), IDelegationManager(delegationManager));
         BLSApkRegistry blsApkRegistryImplementation = new BLSApkRegistry(IRegistryCoordinator(registryCoordinator));
         IndexRegistry indexRegistryImplementation = new IndexRegistry(IRegistryCoordinator(registryCoordinator));
-        ServiceManagerBase serviceManagerImplementation = new ServiceManagerBase(IAVSDirectory(avsDirectory), IRegistryCoordinator(registryCoordinator), stakeRegistry);
+        ServiceManagerMock serviceManagerImplementation = new ServiceManagerMock(IAVSDirectory(avsDirectory), IRegistryCoordinator(registryCoordinator), stakeRegistry);
 
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(stakeRegistry))),

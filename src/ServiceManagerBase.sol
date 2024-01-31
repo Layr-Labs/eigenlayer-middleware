@@ -16,7 +16,7 @@ import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
  * This contract can inherited from or simply used as a point-of-reference.
  * @author Layr Labs, Inc.
  */
-contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
+abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
     using BitmapUtils for *;
 
     IRegistryCoordinator internal immutable _registryCoordinator;
@@ -44,7 +44,7 @@ contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
         _disableInitializers();
     }
 
-    function initialize(address initialOwner) public virtual initializer {
+    function __ServiceManagerBase_init(address initialOwner) internal virtual onlyInitializing {
         _transferOwnership(initialOwner);
     }
 
@@ -147,4 +147,8 @@ contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
     function avsDirectory() external view override returns (address) {
         return address(_avsDirectory);
     }
+    
+    // storage gap for upgradeability
+    // slither-disable-next-line shadowing-state
+    uint256[50] private __GAP;
 }
