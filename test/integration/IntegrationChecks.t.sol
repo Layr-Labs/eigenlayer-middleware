@@ -71,7 +71,7 @@ contract IntegrationChecks is IntegrationBase {
         assert_Snap_Added_OperatorListEntry(operator, quorums,
             "operator list should have one more entry");
 
-        // DelegationManager
+        // AVSDirectory
         assert_IsRegisteredToAVS(operator,
             "operator should be registered to AVS");
     }
@@ -128,7 +128,7 @@ contract IntegrationChecks is IntegrationBase {
         assert_Snap_Replaced_OperatorListEntries(incomingOperator, churnedOperators, churnedQuorums,
             "operator list should contain incoming operator and should not contain churned operators");
 
-        // DelegationManager
+        // AVSDirectory
         assert_IsRegisteredToAVS(incomingOperator,
             "operator should be registered to AVS");
 
@@ -235,7 +235,7 @@ contract IntegrationChecks is IntegrationBase {
         assert_Snap_Unchanged_OperatorListEntry(quorums,
             "operator list should be unchanged for each quorum");
 
-        // DelegationManager
+        // AVSDirectory
         assert_IsRegisteredToAVS(operator,
             "operator should be registered to AVS");
     }
@@ -315,7 +315,7 @@ contract IntegrationChecks is IntegrationBase {
         assert_Snap_Removed_OperatorListEntry(operator, quorums,
             "operator list should have one fewer entry");
 
-        // DelegationManager
+        // AVSDirectory
         assert_NotRegisteredToAVS(operator, 
             "operator should not be registered to the AVS");
     }
@@ -404,7 +404,7 @@ contract IntegrationChecks is IntegrationBase {
         assert_HasDeregisteredStatus(operator,
             "operatorInfo status should be DEREGISTERED");
 
-        // DelegationManager
+        // AVSDirectory
         assert_NotRegisteredToAVS(operator, 
             "operator should not be registered to the AVS");
     }

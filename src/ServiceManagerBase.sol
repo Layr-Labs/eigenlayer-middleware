@@ -5,7 +5,7 @@ import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/Ownabl
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol"; 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
@@ -20,8 +20,8 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
     using BitmapUtils for *;
 
     IRegistryCoordinator internal immutable _registryCoordinator;
-    IDelegationManager internal immutable _delegationManager;
     IStakeRegistry internal immutable _stakeRegistry;
+    IAVSDirectory internal immutable _avsDirectory;
 
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
     modifier onlyRegistryCoordinator() {
@@ -34,11 +34,11 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
 
     /// @notice Sets the (immutable) `_registryCoordinator` address
     constructor(
-        IDelegationManager __delegationManager,
+        IAVSDirectory __avsDirectory,
         IRegistryCoordinator __registryCoordinator,
         IStakeRegistry __stakeRegistry
     ) {
-        _delegationManager = __delegationManager;
+        _avsDirectory = __avsDirectory;
         _registryCoordinator = __registryCoordinator;
         _stakeRegistry = __stakeRegistry;
         _disableInitializers();
@@ -54,11 +54,11 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
      * @dev only callable by the owner
      */
     function setMetadataURI(string memory _metadataURI) public virtual onlyOwner {
-        _delegationManager.updateAVSMetadataURI(_metadataURI);
+        _avsDirectory.updateAVSMetadataURI(_metadataURI);
     }
 
     /**
-     * @notice Forwards a call to EigenLayer's DelegationManager contract to confirm operator registration with the AVS
+     * @notice Forwards a call to EigenLayer's AVSDirectory contract to confirm operator registration with the AVS
      * @param operator The address of the operator to register.
      * @param operatorSignature The signature, salt, and expiry of the operator's signature.
      */
@@ -66,15 +66,15 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) public virtual onlyRegistryCoordinator {
-        _delegationManager.registerOperatorToAVS(operator, operatorSignature);
+        _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
     }
 
     /**
-     * @notice Forwards a call to EigenLayer's DelegationManager contract to confirm operator deregistration from the AVS
+     * @notice Forwards a call to EigenLayer's AVSDirectory contract to confirm operator deregistration from the AVS
      * @param operator The address of the operator to deregister.
      */
     function deregisterOperatorFromAVS(address operator) public virtual onlyRegistryCoordinator {
-        _delegationManager.deregisterOperatorFromAVS(operator);
+        _avsDirectory.deregisterOperatorFromAVS(operator);
     }
 
     /**
@@ -143,6 +143,11 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
         return restakedStrategies;        
     }
 
+    /// @notice Returns the EigenLayer AVSDirectory contract.
+    function avsDirectory() external view override returns (address) {
+        return address(_avsDirectory);
+    }
+    
     // storage gap for upgradeability
     // slither-disable-next-line shadowing-state
     uint256[50] private __GAP;

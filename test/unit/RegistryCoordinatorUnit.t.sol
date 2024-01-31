@@ -1347,7 +1347,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         {
             ISignatureUtils.SignatureWithSaltAndExpiry memory emptyAVSRegSig;
             ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry =
-                _signOperatorChurnApproval(operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp + 10);
+                _signOperatorChurnApproval(operatorToRegister, operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp + 10);
             cheats.prank(operatorToRegister);
             uint256 gasBefore = gasleft();
             registryCoordinator.registerOperatorWithChurn(
@@ -1402,7 +1402,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
 
         cheats.roll(registrationBlockNumber);
         ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry =
-            _signOperatorChurnApproval(operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp + 10);
+            _signOperatorChurnApproval(operatorToRegister, operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp + 10);
         cheats.prank(operatorToRegister);
         cheats.expectRevert("RegistryCoordinator._validateChurn: incoming operator has insufficient stake for churn");
         registryCoordinator.registerOperatorWithChurn(
@@ -1434,7 +1434,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
 
         cheats.roll(registrationBlockNumber);
         ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry =
-            _signOperatorChurnApproval(operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp + 10);
+            _signOperatorChurnApproval(operatorToRegister, operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp + 10);
         cheats.prank(operatorToRegister);
         cheats.expectRevert("RegistryCoordinator._validateChurn: cannot kick operator with more than kickBIPsOfTotalStake");
         registryCoordinator.registerOperatorWithChurn(
@@ -1496,7 +1496,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
 
         cheats.roll(registrationBlockNumber);
         ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry =
-            _signOperatorChurnApproval(operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp - 1);
+            _signOperatorChurnApproval(operatorToRegister, operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp - 1);
         cheats.prank(operatorToRegister);
         cheats.expectRevert("RegistryCoordinator._verifyChurnApproverSignature: churnApprover signature expired");
         registryCoordinator.registerOperatorWithChurn(
