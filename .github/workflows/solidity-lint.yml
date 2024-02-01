@@ -17,4 +17,4 @@ jobs:
         - name: Install Solhint
           run: npm install -g solhint
         - name: Lint all Solidity files in the repository
-          run: solhint --config .github/.solhint.json '**/*.sol'
+          run: solhint --config .github/solhint.json '**/*.sol'
