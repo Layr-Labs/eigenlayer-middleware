@@ -1,0 +1,20 @@
+name: Solidity Lint Workflow
+
+on: [push, pull_request]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+    lint:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v3
+        - name: Set up Node.js
+          uses: actions/setup-node@v3
+          with:
+            node-version: '14'
+        - name: Install Solhint
+          run: npm install -g solhint
+        - name: Lint all Solidity files in the repository
+          run: solhint --config .github/.solhint.json '**/*.sol'
