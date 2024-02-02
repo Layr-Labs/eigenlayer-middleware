@@ -418,6 +418,7 @@ contract StakeRegistry is StakeRegistryStorage {
                 "StakeRegistry._addStrategyParams: cannot add strategy with zero weight"
             );
             strategyParams[quorumNumber].push(_strategyParams[i]);
+            strategiesPerQuorum[quorumNumber].push(_strategyParams[i].strategy);
             emit StrategyAddedToQuorum(quorumNumber, _strategyParams[i].strategy);
             emit StrategyMultiplierUpdated(
                 quorumNumber,
@@ -472,16 +473,14 @@ contract StakeRegistry is StakeRegistryStorage {
         uint256 stratsLength = strategyParamsLength(quorumNumber);
         StrategyParams memory strategyAndMultiplier;
 
+        uint256[] memory strategyShares = delegation.getOperatorShares(operator, strategiesPerQuorum[quorumNumber]);
         for (uint256 i = 0; i < stratsLength; i++) {
             // accessing i^th StrategyParams struct for the quorumNumber
             strategyAndMultiplier = strategyParams[quorumNumber][i];
 
-            // shares of the operator in the strategy
-            uint256 sharesAmount = delegation.operatorShares(operator, strategyAndMultiplier.strategy);
-
             // add the weight from the shares for this strategy to the total weight
-            if (sharesAmount > 0) {
-                weight += uint96(sharesAmount * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR);
+            if (strategyShares[i] > 0) {
+                weight += uint96(strategyShares[i] * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR);
             }
         }
 
