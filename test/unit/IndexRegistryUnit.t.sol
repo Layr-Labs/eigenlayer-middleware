@@ -415,6 +415,7 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
     function testFuzz_Revert_WhenNonRegistryCoordinator(address nonRegistryCoordinator) public {
         cheats.assume(nonRegistryCoordinator != address(registryCoordinator));
         cheats.assume(nonRegistryCoordinator != proxyAdminOwner);
+        cheats.assume(nonRegistryCoordinator != address(proxyAdmin));
         bytes memory quorumNumbers = new bytes(defaultQuorumNumber);
 
         cheats.prank(nonRegistryCoordinator);
