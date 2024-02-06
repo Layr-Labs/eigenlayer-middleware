@@ -15,7 +15,7 @@ contract Constants {
     /// NOTE: This means each quorum has an operator limit of MAX_OPERATOR_COUNT by default
     ///       This is a low number because each operator receives its own BLS keypair, which
     ///       is very slow to generate.
-    uint32 constant MAX_OPERATOR_COUNT = 200;
+    uint32 constant MAX_OPERATOR_COUNT = 5;
     uint16 constant KICK_BIPS_OPERATOR_STAKE = 15000;
     uint16 constant KICK_BIPS_TOTAL_STAKE = 150;
 

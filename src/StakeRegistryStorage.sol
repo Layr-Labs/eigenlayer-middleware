@@ -55,5 +55,5 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
 
     // storage gap for upgradeability
     // slither-disable-next-line shadowing-state
-    uint256[46] private __GAP;
+    uint256[45] private __GAP;
 }

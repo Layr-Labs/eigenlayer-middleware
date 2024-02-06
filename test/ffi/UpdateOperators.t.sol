@@ -28,8 +28,6 @@ contract Integration_AVS_Sync_GasCosts_FFI is IntegrationChecks {
         for (uint256 i = 0; i < MAX_OPERATOR_COUNT; i++) {
             IBLSApkRegistry.PubkeyRegistrationParams memory pubkey;
             uint256 privateKey = privateKeys[i];
-            // pubkey.pubkeyG1 = BN254.generatorG1().scalar_mul(privateKey);
-            // pubkey.pubkeyG2 = G2Operations.mul(privateKey);
             // G1
             pubkey.pubkeyG1.X = stdJson.readUint(
                 config_data,

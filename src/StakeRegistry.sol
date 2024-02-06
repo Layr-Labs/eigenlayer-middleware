@@ -3,7 +3,7 @@ pragma solidity =0.8.12;
 
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
-import {StakeRegistryStorage} from "./StakeRegistryStorage.sol";
+import {StakeRegistryStorage, IStrategy} from "./StakeRegistryStorage.sol";
 
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
@@ -238,6 +238,7 @@ contract StakeRegistry is StakeRegistryStorage {
         require(toRemoveLength > 0, "StakeRegistry.removeStrategies: no indices to remove provided");
 
         StrategyParams[] storage _strategyParams = strategyParams[quorumNumber];
+        IStrategy[] storage _strategiesPerQuorum = strategiesPerQuorum[quorumNumber];
 
         for (uint256 i = 0; i < toRemoveLength; i++) {
             emit StrategyRemovedFromQuorum(quorumNumber, _strategyParams[indicesToRemove[i]].strategy);
@@ -246,6 +247,8 @@ contract StakeRegistry is StakeRegistryStorage {
             // Replace index to remove with the last item in the list, then pop the last item
             _strategyParams[indicesToRemove[i]] = _strategyParams[_strategyParams.length - 1];
             _strategyParams.pop();
+            _strategiesPerQuorum[indicesToRemove[i]] = _strategiesPerQuorum[_strategiesPerQuorum.length - 1];
+            _strategiesPerQuorum.pop();
         }
     }
 
