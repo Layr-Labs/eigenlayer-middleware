@@ -16,7 +16,7 @@ import {OperatorStateRetriever} from "../../src/OperatorStateRetriever.sol";
 import {RegistryCoordinator} from "../../src/RegistryCoordinator.sol";
 import {RegistryCoordinatorHarness} from "../harnesses/RegistryCoordinatorHarness.t.sol";
 import {BLSApkRegistry} from "../../src/BLSApkRegistry.sol";
-import {ServiceManagerBase} from "../../src/ServiceManagerBase.sol";
+import {ServiceManagerMock} from "../mocks/ServiceManagerMock.sol";
 import {StakeRegistry} from "../../src/StakeRegistry.sol";
 import {IndexRegistry} from "../../src/IndexRegistry.sol";
 import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
@@ -59,17 +59,16 @@ contract MockAVSDeployer is Test {
     StakeRegistryHarness public stakeRegistryImplementation;
     IBLSApkRegistry public blsApkRegistryImplementation;
     IIndexRegistry public indexRegistryImplementation;
-    ServiceManagerBase public serviceManagerImplementation;
+    ServiceManagerMock public serviceManagerImplementation;
 
     OperatorStateRetriever public operatorStateRetriever;
     RegistryCoordinatorHarness public registryCoordinator;
     StakeRegistryHarness public stakeRegistry;
     BLSApkRegistryHarness public blsApkRegistry;
     IIndexRegistry public indexRegistry;
-    ServiceManagerBase public serviceManager;
+    ServiceManagerMock public serviceManager;
 
     StrategyManagerMock public strategyManagerMock;
-    AVSDirectoryMock public avsDirectoryMock;
     DelegationMock public delegationMock;
     EigenPodManagerMock public eigenPodManagerMock;
     AVSDirectory public avsDirectory;
@@ -210,7 +209,7 @@ contract MockAVSDeployer is Test {
             )
         );
 
-        serviceManager = ServiceManagerBase(
+        serviceManager = ServiceManagerMock(
             address(
                 new TransparentUpgradeableProxy(
                     address(emptyContract),
@@ -252,7 +251,7 @@ contract MockAVSDeployer is Test {
             address(indexRegistryImplementation)
         );
 
-        serviceManagerImplementation = new ServiceManagerBase(
+        serviceManagerImplementation = new ServiceManagerMock(
             avsDirectoryMock,
             registryCoordinator,
             stakeRegistry
@@ -435,8 +434,9 @@ contract MockAVSDeployer is Test {
         return bytes32(uint256(start) + inc);
     }
 
-    function _signOperatorChurnApproval(bytes32 registeringOperatorId, IRegistryCoordinator.OperatorKickParam[] memory operatorKickParams, bytes32 salt,  uint256 expiry) internal view returns(ISignatureUtils.SignatureWithSaltAndExpiry memory) {
+    function _signOperatorChurnApproval(address registeringOperator, bytes32 registeringOperatorId, IRegistryCoordinator.OperatorKickParam[] memory operatorKickParams, bytes32 salt,  uint256 expiry) internal view returns(ISignatureUtils.SignatureWithSaltAndExpiry memory) {
         bytes32 digestHash = registryCoordinator.calculateOperatorChurnApprovalDigestHash(
+            registeringOperator,
             registeringOperatorId,
             operatorKickParams,
             salt,

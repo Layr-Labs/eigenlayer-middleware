@@ -185,6 +185,7 @@ contract User is Test {
         bytes32 _salt = keccak256(abi.encodePacked(++salt, address(this)));
         uint expiry = type(uint).max;
         bytes32 digest = registryCoordinator.calculateOperatorChurnApprovalDigestHash({
+            registeringOperator: address(this),
             registeringOperatorId: operatorId,
             operatorKickParams: kickParams,
             salt: _salt,

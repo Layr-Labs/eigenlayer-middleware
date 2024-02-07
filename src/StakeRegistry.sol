@@ -3,7 +3,7 @@ pragma solidity =0.8.12;
 
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
-import {StakeRegistryStorage} from "./StakeRegistryStorage.sol";
+import {StakeRegistryStorage, IStrategy} from "./StakeRegistryStorage.sol";
 
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
@@ -238,6 +238,7 @@ contract StakeRegistry is StakeRegistryStorage {
         require(toRemoveLength > 0, "StakeRegistry.removeStrategies: no indices to remove provided");
 
         StrategyParams[] storage _strategyParams = strategyParams[quorumNumber];
+        IStrategy[] storage _strategiesPerQuorum = strategiesPerQuorum[quorumNumber];
 
         for (uint256 i = 0; i < toRemoveLength; i++) {
             emit StrategyRemovedFromQuorum(quorumNumber, _strategyParams[indicesToRemove[i]].strategy);
@@ -246,6 +247,8 @@ contract StakeRegistry is StakeRegistryStorage {
             // Replace index to remove with the last item in the list, then pop the last item
             _strategyParams[indicesToRemove[i]] = _strategyParams[_strategyParams.length - 1];
             _strategyParams.pop();
+            _strategiesPerQuorum[indicesToRemove[i]] = _strategiesPerQuorum[_strategiesPerQuorum.length - 1];
+            _strategiesPerQuorum.pop();
         }
     }
 
@@ -418,6 +421,7 @@ contract StakeRegistry is StakeRegistryStorage {
                 "StakeRegistry._addStrategyParams: cannot add strategy with zero weight"
             );
             strategyParams[quorumNumber].push(_strategyParams[i]);
+            strategiesPerQuorum[quorumNumber].push(_strategyParams[i].strategy);
             emit StrategyAddedToQuorum(quorumNumber, _strategyParams[i].strategy);
             emit StrategyMultiplierUpdated(
                 quorumNumber,
@@ -472,16 +476,14 @@ contract StakeRegistry is StakeRegistryStorage {
         uint256 stratsLength = strategyParamsLength(quorumNumber);
         StrategyParams memory strategyAndMultiplier;
 
+        uint256[] memory strategyShares = delegation.getOperatorShares(operator, strategiesPerQuorum[quorumNumber]);
         for (uint256 i = 0; i < stratsLength; i++) {
             // accessing i^th StrategyParams struct for the quorumNumber
             strategyAndMultiplier = strategyParams[quorumNumber][i];
 
-            // shares of the operator in the strategy
-            uint256 sharesAmount = delegation.operatorShares(operator, strategyAndMultiplier.strategy);
-
             // add the weight from the shares for this strategy to the total weight
-            if (sharesAmount > 0) {
-                weight += uint96(sharesAmount * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR);
+            if (strategyShares[i] > 0) {
+                weight += uint96(strategyShares[i] * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR);
             }
         }
 
