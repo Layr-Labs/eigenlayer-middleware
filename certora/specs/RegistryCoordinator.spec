@@ -27,7 +27,10 @@ methods {
     // function _.registerOperatorToAVS(address, ISignatureUtils.SignatureWithSaltAndExpiry) external => NONDET;
     // function _.deregisterOperatorToAVS(address) external => NONDET;
 
-    // external calls to DelegationManager
+    // external calls to AVSDirectory
+    function _.registerOperatorToAVS(address, ISignatureUtils.SignatureWithSaltAndExpiry) external => DISPATCHER(true);
+    function _.deregisterOperatorFromAVS(address) external => DISPATCHER(true);
+
 
     // external calls to ERC1271 (can import OpenZeppelin mock implementation)
     // isValidSignature(bytes32 hash, bytes memory signature) returns (bytes4 magicValue) => DISPATCHER(true)
