@@ -5,11 +5,11 @@ import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IServiceManager} from "../interfaces/IServiceManager.sol";
-import {LinearWeightQuorum} from "./LinearWeightQuorum.sol";
+import {SimpleLinearWeightQuorum} from "./SimpleLinearWeightQuorum.sol";
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
-contract EcdsaEpochRegistry is LinearWeightQuorum {
+contract EcdsaEpochRegistry is SimpleLinearWeightQuorum {
         /// @notice the ServiceManager for this AVS, which forwards calls onto EigenLayer's core contracts
     IServiceManager public immutable serviceManager;
 
@@ -60,7 +60,7 @@ contract EcdsaEpochRegistry is LinearWeightQuorum {
         uint256 _epochLengthSeconds,
         uint256 _epochZeroStart
     )
-        LinearWeightQuorum(_delegationManager)
+        SimpleLinearWeightQuorum(_delegationManager)
     {
         serviceManager = _serviceManager;
         epochLengthSeconds = _epochLengthSeconds;
