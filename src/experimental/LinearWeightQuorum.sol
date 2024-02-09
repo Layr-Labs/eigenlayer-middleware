@@ -3,40 +3,18 @@ pragma solidity =0.8.12;
 
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
-import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {IServiceManager} from "../interfaces/IServiceManager.sol";
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
-contract EcdsaEpochRegistry is OwnableUpgradeable {
+abstract contract LinearWeightQuorum is OwnableUpgradeable {
     
     /// @notice Constant used as a divisor in calculating weights.
     uint256 public constant WEIGHTING_DIVISOR = 1e18;
     /// @notice Maximum length of dynamic arrays in the `strategiesConsideredAndMultipliers` mapping.
     uint8 public constant MAX_WEIGHING_FUNCTION_LENGTH = 32;
 
-    /// @notice the ServiceManager for this AVS, which forwards calls onto EigenLayer's core contracts
-    IServiceManager public immutable serviceManager;
     /// @notice The address of the Delegation contract for EigenLayer.
     IDelegationManager public immutable delegation;
-
-    // @notice the length of each epoch, in seconds
-    uint256 public immutable epochLengthSeconds;
-    // @notice the start of the initial epoch
-    uint256 public immutable epochZeroStart;
-
-    /// @notice History of the total stakes
-    /// Mapping: epoch => total stake in epoch
-    mapping(uint256 => uint256) public totalStakeHistory;
-
-    // TODO: possibly pack the first 2 variables here
-    /// @notice Mapping: operator address => epoch => stake of operator in epoch
-    mapping(address => mapping(uint256 => uint256)) internal _operatorStakeHistory;
-
-    // TODO: this corresponds with suggested packing, above.
-    function operatorStakeHistory(address operator, uint256 epoch) public view returns (uint256) {
-        return _operatorStakeHistory[operator][epoch];
-    }
 
     /**
      * @notice In weighing a particular strategy, the amount of underlying asset for that strategy is
@@ -50,80 +28,14 @@ contract EcdsaEpochRegistry is OwnableUpgradeable {
     // @notice list of strategies considered and their corresponding multipliers for this AVS     
     StrategyParams[] public strategyParams;
 
-    enum OperatorStatus {
-        // default is NEVER_REGISTERED
-        NEVER_REGISTERED,
-        REGISTERED,
-        DEREGISTERED
-    }
-
-    // TODO: documentation
-    mapping(address => OperatorStatus) operatorStatus;
-
-    // @notice: mapping: epoch => set of operators for the epoch
-    mapping(uint256 => address[]) public operatorsForEpoch;
-    // TODO: could probably restructure `operatorStakeHistory` to also jam that into the same slot as above
-
     // storage gap for upgradeability
     // slither-disable-next-line shadowing-state
-    uint256[45] private __GAP;
+    uint256[49] private __GAP;
 
-    /** 
-     * @dev setting the `_epochZeroStart` to be in the past is disallowed.
-     * If you try to do so, the current block.timestamp will be used instead.
-     * Future times are allowed, with no safety check in place.
-     */
     constructor(
-        IServiceManager _serviceManager,
-        IDelegationManager _delegationManager,
-        uint256 _epochLengthSeconds,
-        uint256 _epochZeroStart
+        IDelegationManager _delegationManager
     ) {
-        serviceManager = _serviceManager;
         delegation = _delegationManager;
-        epochLengthSeconds = _epochLengthSeconds;
-        uint256 epochZeroValueToSet;
-        if (_epochZeroStart < block.timestamp) {
-            epochZeroValueToSet = block.timestamp;
-        } else {
-            epochZeroValueToSet = _epochZeroStart;
-        }
-        epochZeroStart = epochZeroValueToSet;
-    }
-
-    /*******************************************************************************
-                    EXTERNAL FUNCTIONS - unpermissioned
-    *******************************************************************************/
-    /**
-     * @notice Registers msg.sender as an operator.
-     * @param operatorSignature is the signature of the operator used by the AVS to register the operator in the delegation manager
-     */
-    function registerOperator(
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) public virtual {
-        address operator = msg.sender;
-        if (operatorStatus[operator] != OperatorStatus.REGISTERED) {
-            operatorStatus[operator] = OperatorStatus.REGISTERED;
-
-            // Register the operator with the EigenLayer via this AVS's ServiceManager
-            serviceManager.registerOperatorToAVS(operator, operatorSignature);
-
-            // TODO: event
-            // emit OperatorRegistered(operator, operatorId);
-        }
-    }
-
-    // @notice Deregisters the msg.sender.
-    function deregisterOperator() public virtual {
-        address operator = msg.sender;
-        if (operatorStatus[operator] == OperatorStatus.REGISTERED) {
-
-            operatorStatus[operator] = OperatorStatus.DEREGISTERED;
-            serviceManager.deregisterOperatorFromAVS(operator);
-
-            // TODO: event
-            // emit OperatorDeregistered(operator, operatorId);
-        }
     }
 
 
@@ -184,29 +96,6 @@ contract EcdsaEpochRegistry is OwnableUpgradeable {
         }
     }
 
-    // @notice TODO: proper documentation
-    function evaluateOperatorSet(
-        address[] calldata operatorsToEvaluate,
-        uint256 minimumWeight
-    ) public virtual onlyOwner {
-        address lastOperator = address(0);
-        uint256 _currentEpoch = currentEpoch();
-        require(operatorsForEpoch[_currentEpoch].length == 0, "operator set already set for epoch");
-        // add any registered operator that meets the weight requirement to the current epoch's operator set
-        for (uint256 i = 0; i < operatorsToEvaluate.length; ++i) {
-            // check for duplicates
-            require(operatorsToEvaluate[i] > lastOperator, "failed the duplicate check");
-            if (operatorStatus[operatorsToEvaluate[i]] == OperatorStatus.REGISTERED) {
-                uint256 operatorWeight = weightOfOperator(operatorsToEvaluate[i]);
-                if (operatorWeight >= minimumWeight) {
-                    operatorsForEpoch[_currentEpoch].push(operatorsToEvaluate[i]);
-                    _operatorStakeHistory[operatorsToEvaluate[i]][_currentEpoch] = operatorWeight;
-                    // TODO: add event
-                }
-            }
-        }
-    }
-
     /*******************************************************************************
                             INTERNAL FUNCTIONS
     *******************************************************************************/
@@ -218,7 +107,7 @@ contract EcdsaEpochRegistry is OwnableUpgradeable {
      */
     function _addStrategyParams(
         StrategyParams[] memory _strategyParams
-    ) internal {
+    ) internal virtual {
         require(_strategyParams.length > 0, "StakeRegistry._addStrategyParams: no strategies provided");
         uint256 numStratsToAdd = _strategyParams.length;
         uint256 numStratsExisting = strategyParams.length;
@@ -248,7 +137,6 @@ contract EcdsaEpochRegistry is OwnableUpgradeable {
     /*******************************************************************************
                             VIEW FUNCTIONS
     *******************************************************************************/
-
     /**
      * @notice This function computes the total weight of the @param operator.
      * @return `uint256` The weighted sum of the operator's shares across each strategy considered
@@ -284,30 +172,5 @@ contract EcdsaEpochRegistry is OwnableUpgradeable {
     ) public view returns (StrategyParams memory)
     {
         return strategyParams[index];
-    }
-
-    /// @notice converts a UTC timestamp to an epoch number. Reverts if the timestamp is prior to the initial epoch
-    function timestampToEpoch(uint256 timestamp) public view returns (uint256) {
-        require(timestamp >= epochZeroStart, "TODO: informative revert message");
-        return (timestamp - epochZeroStart) / epochLengthSeconds;
-    }
-
-    function currentEpoch() public view returns (uint256) {
-        return (block.timestamp - epochZeroStart) / epochLengthSeconds;
-    }
-
-    // @notice Returns the UTC timestamp at which the `epochNumber`-th epoch begins
-    function epochStart(uint256 epochNumber) public view returns (uint256) {
-        return epochZeroStart + (epochNumber * epochLengthSeconds);
-    }
-
-    // @notice Returns the stake weight for the `operator` in the current epoch
-    function currentStake(address operator) public view returns (uint256) {
-        return operatorStakeHistory(operator, currentEpoch());
-    }
-
-    // @notice Returns the total stake weight for in the current epoch
-    function currentTotalStake() public view returns (uint256) {
-        return totalStakeHistory[currentEpoch()];
     }
 }
