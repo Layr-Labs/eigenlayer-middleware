@@ -9,7 +9,7 @@ import {SimpleLinearWeightQuorum} from "./SimpleLinearWeightQuorum.sol";
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
-contract EcdsaEpochRegistry is SimpleLinearWeightQuorum {
+contract EcdsaEpochRegistry_Modular is SimpleLinearWeightQuorum {
         /// @notice the ServiceManager for this AVS, which forwards calls onto EigenLayer's core contracts
     IServiceManager public immutable serviceManager;
 
@@ -98,25 +98,10 @@ contract EcdsaEpochRegistry is SimpleLinearWeightQuorum {
     *******************************************************************************/
     // @notice TODO: proper documentation
     function evaluateOperatorSet(
-        address[] calldata operatorsToEvaluate,
+        address[] memory operatorsToEvaluate,
         uint256 minimumWeight
     ) public virtual onlyOwner {
-        address lastOperator = address(0);
-        uint256 _currentEpoch = currentEpoch();
-        require(operatorsForEpoch[_currentEpoch].length == 0, "operator set already set for epoch");
-        // add any registered operator that meets the weight requirement to the current epoch's operator set
-        for (uint256 i = 0; i < operatorsToEvaluate.length; ++i) {
-            // check for duplicates
-            require(operatorsToEvaluate[i] > lastOperator, "failed the duplicate check");
-            if (operatorStatus[operatorsToEvaluate[i]] == OperatorStatus.REGISTERED) {
-                uint256 operatorWeight = weightOfOperator(operatorsToEvaluate[i]);
-                if (operatorWeight >= minimumWeight) {
-                    operatorsForEpoch[_currentEpoch].push(operatorsToEvaluate[i]);
-                    _operatorStakeHistory[operatorsToEvaluate[i]][_currentEpoch] = operatorWeight;
-                    // TODO: add event
-                }
-            }
-        }
+        _evaluateOperatorSet(operatorsToEvaluate, minimumWeight);
     }
 
     /*******************************************************************************
@@ -151,6 +136,30 @@ contract EcdsaEpochRegistry is SimpleLinearWeightQuorum {
             // emit OperatorDeregistered(operator, operatorId);
         }
     }
+
+    // @notice TODO: proper documentation
+    function _evaluateOperatorSet(
+        address[] memory operatorsToEvaluate,
+        uint256 minimumWeight
+    ) internal virtual {
+        address lastOperator = address(0);
+        uint256 _currentEpoch = currentEpoch();
+        require(operatorsForEpoch[_currentEpoch].length == 0, "operator set already set for epoch");
+        // add any registered operator that meets the weight requirement to the current epoch's operator set
+        for (uint256 i = 0; i < operatorsToEvaluate.length; ++i) {
+            // check for duplicates
+            require(operatorsToEvaluate[i] > lastOperator, "failed the duplicate check");
+            if (operatorStatus[operatorsToEvaluate[i]] == OperatorStatus.REGISTERED) {
+                uint256 operatorWeight = weightOfOperator(operatorsToEvaluate[i]);
+                if (operatorWeight >= minimumWeight) {
+                    operatorsForEpoch[_currentEpoch].push(operatorsToEvaluate[i]);
+                    _operatorStakeHistory[operatorsToEvaluate[i]][_currentEpoch] = operatorWeight;
+                    // TODO: add event
+                }
+            }
+        }
+    }
+
 
     /*******************************************************************************
                             VIEW FUNCTIONS
