@@ -241,11 +241,13 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         (/*uint32 referenceBlockNumber*/, BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature) = 
             _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(pseudoRandomNumber, numNonSigners, quorumBitmap);
         
+        // Create an invalid reference block: any block number >= the current block
+        uint32 invalidReferenceBlock = uint32(block.number + (pseudoRandomNumber % 20));
         cheats.expectRevert("BLSSignatureChecker.checkSignatures: invalid reference block");
         blsSignatureChecker.checkSignatures(
             msgHash, 
             quorumNumbers,
-            uint32(block.number + 1), 
+            invalidReferenceBlock, 
             nonSignerStakesAndSignature
         );
     }
@@ -314,7 +316,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         // move referenceBlockNumber forward to a block number the last block number where the stakes will be considered "not stale"
         referenceBlockNumber = uint32(stalestUpdateBlock + delegationMock.minWithdrawalDelayBlocks());
         // roll forward to make the reference block number valid
-        cheats.roll(referenceBlockNumber);
+        // we roll to referenceBlockNumber + 1 because the current block number is not a valid reference block
+        cheats.roll(referenceBlockNumber + 1);
         blsSignatureChecker.checkSignatures(
             msgHash, 
             quorumNumbers,
@@ -324,8 +327,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
 
         // move referenceBlockNumber forward one more block, making the stakes "stale"
         referenceBlockNumber += 1;
-        // roll forward to make the reference block number valid
-        cheats.roll(referenceBlockNumber);
+        // roll forward to reference + 1 to ensure the referenceBlockNumber is still valid
+        cheats.roll(referenceBlockNumber + 1);
         cheats.expectRevert("BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within withdrawalDelayBlocks window");
         blsSignatureChecker.checkSignatures(
             msgHash, 
