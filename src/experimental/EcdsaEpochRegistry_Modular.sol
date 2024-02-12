@@ -170,6 +170,7 @@ contract EcdsaEpochRegistry_Modular is SimpleLinearWeightQuorum {
         return (timestamp - epochZeroStart) / epochLengthSeconds;
     }
 
+    // @dev reverts if the 0-th epoch has not yet started
     function currentEpoch() public view returns (uint256) {
         return (block.timestamp - epochZeroStart) / epochLengthSeconds;
     }
