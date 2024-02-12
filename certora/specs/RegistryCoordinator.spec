@@ -59,6 +59,7 @@ methods {
     function registries(uint256) external returns (address) envfree;
     function numRegistries() external returns (uint256) envfree;
     function calculateOperatorChurnApprovalDigestHash(
+        address registeringOperator,
         bytes32 registeringOperatorId,
         IRegistryCoordinator.OperatorKickParam[] operatorKickParams,
         bytes32 salt,
