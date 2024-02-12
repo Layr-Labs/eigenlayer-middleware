@@ -19,18 +19,27 @@ contract EcdsaEpochRegistry_Permissionless is EcdsaEpochRegistry_Modular {
     // @notice Mapping: operator address => current index in `registeredOperators` array
     mapping(address => uint256) public operatorIndex;
 
-    // @notice minimum weight for operators to register
-    uint256 minimumWeight;
+    // @notice Mapping epoch => the minimum weight of the operators for that epoch
+    mapping(uint256 => uint256) public realizedMinimumWeight;
 
-    // @notice the `minimumWeight` is adjusted each epoch, to help target the `targetOperatorSetSize`
-    uint256 targetOperatorSetSize;
+    // @notice minimum weight for operators to register
+    uint256 public minimumWeightRequirement;
+
+    // @notice the `minimumWeightRequirement` is adjusted each epoch, to help target the `targetOperatorSetSize`
+    uint256 public targetOperatorSetSize;
 
     // @notice upper bound on length of `registeredOperators` array
-    uint256 maxRegisteredOperators;
+    uint256 public maxRegisteredOperators;
+
+    // @notice default value to which the `minimumWeightRequirement` will reset in the event that there were zero operators in the previous epoch
+    uint256 public defaultWeightRequirement;
+
+    // @notice exponential weight requirement retargeting factor
+    uint256 public retargetingFactorWei;
 
     // storage gap for upgradeability
     // slither-disable-next-line shadowing-state
-    uint256[46] private __GAP;
+    uint256[44] private __GAP;
 
     event MinimumWeightChanged(uint256 newValue);
 
@@ -44,18 +53,22 @@ contract EcdsaEpochRegistry_Permissionless is EcdsaEpochRegistry_Modular {
         IDelegationManager _delegationManager,
         uint256 _epochLengthSeconds,
         uint256 _epochZeroStart,
-        uint256 _minimumWeightInitValue,
+        uint256 _minimumWeightRequirementInitValue,
         uint256 _targetOperatorSetSize,
-        uint256 _maxRegisteredOperators
+        uint256 _maxRegisteredOperators,
+        uint256 _defaultWeightRequirement,
+        uint256 _retargetingFactorWei
     )
         EcdsaEpochRegistry_Modular(_serviceManager, _delegationManager, _epochLengthSeconds, _epochZeroStart)
     {
         require(_targetOperatorSetSize != 0, "no.");
         require(_maxRegisteredOperators >= _targetOperatorSetSize, "cannot target above max size");
-        minimumWeight = _minimumWeightInitValue;
-        emit MinimumWeightChanged(_minimumWeightInitValue);
+        minimumWeightRequirement = _minimumWeightRequirementInitValue;
+        emit MinimumWeightChanged(_minimumWeightRequirementInitValue);
         targetOperatorSetSize = _targetOperatorSetSize;
         maxRegisteredOperators = _maxRegisteredOperators;
+        defaultWeightRequirement = _defaultWeightRequirement;
+        retargetingFactorWei = _retargetingFactorWei;
     }
 
     /*******************************************************************************
@@ -82,24 +95,37 @@ contract EcdsaEpochRegistry_Permissionless is EcdsaEpochRegistry_Modular {
     // evaluates the operator set for the current epoch
     function evaluateOperatorSet(
         address[] memory /*operatorsToEvaluate*/,
-        uint256 /*minimumWeight*/
+        uint256 /*minimumWeightRequirement*/
     ) public virtual override {
-        _adjustMinimumWeight();
         uint256 _currentEpoch = currentEpoch();
+        require(operatorsForEpoch[_currentEpoch].length == 0, "operator set already calculated for current epoch");
+
         uint256 _numberRegisteredOperators = numberRegisteredOperators();
-        require(operatorsForEpoch[_currentEpoch].length == 0, "operator set already set for epoch");
+        uint256 _realizedMinimumWeight = type(uint256).max;
+
         for (uint256 i = 0; i < _numberRegisteredOperators; ++i) {
             address operator = registeredOperators[i];
             uint256 operatorWeight = weightOfOperator(operator);
             // add any registered operator that meets the weight requirement to the current epoch's operator set
-            if (operatorWeight >= minimumWeight) {
+            if (operatorWeight >= minimumWeightRequirement) {
                 operatorsForEpoch[_currentEpoch].push(operator);
                 _operatorStakeHistory[operator][_currentEpoch] = operatorWeight;
                 // TODO: add event
+                if (operatorWeight < _realizedMinimumWeight) {
+                    _realizedMinimumWeight = operatorWeight;
+                }
             // otherwise, evict the operator
             } else {
                 _deregisterOperator(operator);
             }
+        }
+
+        // require(operatorsForEpoch[_currentEpoch].length != 0, "no operators found for current epoch");
+        realizedMinimumWeight[_currentEpoch] = _realizedMinimumWeight;
+
+        // perform exponential retargeting -- adjust `minimumWeightRequirement` to target the desired number of operators
+        if (_currentEpoch != 0) {
+            _adjustMinimumWeight({previousEpoch: _currentEpoch - 1});
         }
     }
 
@@ -112,7 +138,7 @@ contract EcdsaEpochRegistry_Permissionless is EcdsaEpochRegistry_Modular {
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) internal virtual override {
         if (operatorStatus[operator] != OperatorStatus.REGISTERED) {
-            require(weightOfOperator(operator) >= minimumWeight,
+            require(weightOfOperator(operator) >= minimumWeightRequirement,
                 "insufficient weight to register");
             operatorStatus[operator] = OperatorStatus.REGISTERED;
 
@@ -151,25 +177,49 @@ contract EcdsaEpochRegistry_Permissionless is EcdsaEpochRegistry_Modular {
     }
 
     // TODO: documentation
-    function _adjustMinimumWeight() internal virtual {
+    // only called if `currentEpoch() != 0`
+    function _adjustMinimumWeight(uint256 previousEpoch) internal virtual {
         uint256 currentOperatorSetSize = numberRegisteredOperators();
-        uint256 previousMinimumWeight = minimumWeight;
-        uint256 _currentEpoch = currentEpoch();
-        uint256 previousEpoch = (_currentEpoch != 0) ? _currentEpoch - 1 : _currentEpoch;
+        uint256 newWeightRequirement;
+        if (currentOperatorSetSize == 0) {
+            newWeightRequirement = defaultWeightRequirement;
+        } else {
+            // store values in memory
+            uint256 previousWeightRequirement = minimumWeightRequirement;
+            uint256 _targetOperatorSetSize = targetOperatorSetSize;
 
-        uint256 subscriptionFactor = (1e18 * currentOperatorSetSize) / targetOperatorSetSize;
-        uint256 previousEpochOperatorSetSize = operatorsForEpoch[previousEpoch].length;
-        uint256 previousEpochAverageWeight = totalStakeHistory[previousEpoch] / previousEpochOperatorSetSize;
+            // calculate intermediate values
+            uint256 subscriptionFactor;
+            if (currentOperatorSetSize >= targetOperatorSetSize) {
+                subscriptionFactor = (1e18 * (currentOperatorSetSize - targetOperatorSetSize)) / targetOperatorSetSize;
+            } else {
+                subscriptionFactor = (1e18 * (targetOperatorSetSize - currentOperatorSetSize)) / targetOperatorSetSize;                
+            }
+            uint256 previousEpochOperatorSetSize = operatorsForEpoch[previousEpoch].length;
+            uint256 previousEpochAverageWeight = totalStakeHistory[previousEpoch] / previousEpochOperatorSetSize;
+            uint256 previousEpochMinimumWeight = realizedMinimumWeight[previousEpoch];
 
-        uint256 newMinFromAverage = (previousEpochAverageWeight * 1e18) / subscriptionFactor;
-        uint256 newMinFromPreviousMin = (previousMinimumWeight * 1e18) / subscriptionFactor;
+            // find new values -- adjust requirement up if subscriptionFactor < 1, down if > 1
+            uint256 newMinFromAverage = (previousEpochAverageWeight * retargetingFactorWei) / subscriptionFactor;
+            uint256 newMinFromPreviousMin = (previousEpochMinimumWeight * retargetingFactorWei) / subscriptionFactor;
+            // TODO: determine if useful
+            uint256 newMinFromPreviousRequirement = (previousWeightRequirement * retargetingFactorWei) / subscriptionFactor;
+            if (subscriptionFactor < 1e18) {
+                newWeightRequirement = min(newMinFromAverage, newMinFromPreviousMin);            
+            } else {
+                newWeightRequirement = max(newMinFromAverage, newMinFromPreviousMin);            
+            }
+        }
 
-        uint256 newMinimumWeight = max(newMinFromAverage, newMinFromPreviousMin);
-        minimumWeight = newMinimumWeight;
-        emit MinimumWeightChanged(newMinimumWeight);
+        minimumWeightRequirement = newWeightRequirement;
+        emit MinimumWeightChanged(newWeightRequirement);
     }
 
     function max(uint256 a, uint256 b) internal pure returns (uint256) {
         return (a >= b ? a : b);
+    }
+
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return (a <= b ? a : b);
     }
 }
