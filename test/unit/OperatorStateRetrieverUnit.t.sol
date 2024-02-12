@@ -55,7 +55,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
     }
 
     function test_getOperatorState_revert_quorumNotCreatedAtCallTime() public {
-        cheats.expectRevert("IndexRegistry._operatorCountAtBlockNumber: quorum does not exist");
+        cheats.expectRevert("IndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number");
         operatorStateRetriever.getOperatorState(registryCoordinator, BitmapUtils.bitmapToBytesArray(1 << numQuorums), uint32(block.number));
     }
 

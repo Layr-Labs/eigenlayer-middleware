@@ -286,17 +286,15 @@ contract StakeRegistry is StakeRegistryStorage {
         uint32 blockNumber
     ) internal view returns (uint32) {
         uint256 length = operatorStakeHistory[operatorId][quorumNumber].length;
-        for (uint256 i = 0; i < length; i++) {
-            if (operatorStakeHistory[operatorId][quorumNumber][length - i - 1].updateBlockNumber <= blockNumber) {
-                uint32 nextUpdateBlockNumber = 
-                    operatorStakeHistory[operatorId][quorumNumber][length - i - 1].nextUpdateBlockNumber;
-                require(
-                    nextUpdateBlockNumber == 0 || nextUpdateBlockNumber > blockNumber,
-                    "StakeRegistry._getStakeUpdateIndexForOperatorAtBlockNumber: operatorId has no stake update at blockNumber"
-                );
-                return uint32(length - i - 1);
+
+        // Iterate backwards through operatorStakeHistory until we find an update that preceeds blockNumber
+        for (uint256 i = length; i > 0; i--) {
+            if (operatorStakeHistory[operatorId][quorumNumber][i - 1].updateBlockNumber <= blockNumber) {
+                return uint32(i - 1);
             }
         }
+
+        // If we hit this point, no stake update exists at blockNumber
         revert(
             "StakeRegistry._getStakeUpdateIndexForOperatorAtBlockNumber: no stake update found for operatorId and quorumNumber at block number"
         );
