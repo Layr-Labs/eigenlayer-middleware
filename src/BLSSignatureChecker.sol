@@ -109,7 +109,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
             "BLSSignatureChecker.checkSignatures: input nonsigner length mismatch"
         );
 
-        require(referenceBlockNumber <= uint32(block.number), "BLSSignatureChecker.checkSignatures: invalid reference block");
+        require(referenceBlockNumber < uint32(block.number), "BLSSignatureChecker.checkSignatures: invalid reference block");
 
         // This method needs to calculate the aggregate pubkey for all signing operators across
         // all signing quorums. To do that, we can query the aggregate pubkey for each quorum
