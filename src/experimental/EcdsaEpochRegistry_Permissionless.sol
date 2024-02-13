@@ -188,7 +188,7 @@ contract EcdsaEpochRegistry_Permissionless is EcdsaEpochRegistry_Modular {
             uint256 previousWeightRequirement = minimumWeightRequirement;
             uint256 _targetOperatorSetSize = targetOperatorSetSize;
 
-            // start with "adjustment" of 1 (leaving the value unchanged)
+            // start with "adjustment" of 1 (i.e. leaving the `minimumWeightRequirement` value unchanged)
             uint256 adjustmentFactor = 1e18;
             if (currentOperatorSetSize >= _targetOperatorSetSize) {
                 // when current = target, no change
@@ -209,12 +209,14 @@ contract EcdsaEpochRegistry_Permissionless is EcdsaEpochRegistry_Modular {
 
             // find new values -- adjust requirement up if subscriptionFactor < 1, down if > 1
             if (currentOperatorSetSize >= _targetOperatorSetSize) {
+                // TODO: better decision here -- newMinFromPreviousMin will always be less than newMinFromAverage
                 uint256 newMinFromAverage = previousEpochAverageWeight * adjustmentFactor / 1e18;
                 uint256 newMinFromPreviousMin = previousEpochMinimumWeight * adjustmentFactor / 1e18;
                 // TODO: determine if useful
                 uint256 newMinFromPreviousRequirement = previousWeightRequirement * adjustmentFactor / 1e18;
                 newWeightRequirement = max(newMinFromAverage, newMinFromPreviousMin);            
             } else {
+                // TODO: better decision here -- newMinFromPreviousMin will always be less than newMinFromAverage
                 uint256 newMinFromAverage = previousEpochAverageWeight * 1e18 / adjustmentFactor;
                 uint256 newMinFromPreviousMin = previousEpochMinimumWeight * 1e18 / adjustmentFactor;
                 // TODO: determine if useful
