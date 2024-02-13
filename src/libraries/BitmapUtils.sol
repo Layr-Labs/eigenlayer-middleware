@@ -62,12 +62,9 @@ library BitmapUtils {
     function orderedBytesArrayToBitmap(bytes memory orderedBytesArray, uint8 bitUpperBound) internal pure returns (uint256) {
         uint256 bitmap = orderedBytesArrayToBitmap(orderedBytesArray);
 
-        if (bitmap != 0) {
-            require(
-                uint8(orderedBytesArray[orderedBytesArray.length - 1]) < bitUpperBound, 
-                "BitmapUtils.orderedBytesArrayToBitmap: bitmap exceeds max value"
-            );
-        }
+        require((1 << bitUpperBound) > bitmap, 
+            "BitmapUtils.orderedBytesArrayToBitmap: bitmap exceeds max value"
+        );
 
         return bitmap;
     }
