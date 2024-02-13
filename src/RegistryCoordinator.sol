@@ -286,7 +286,7 @@ contract RegistryCoordinator is
         bytes calldata quorumNumbers
     ) external onlyWhenNotPaused(PAUSED_UPDATE_OPERATOR) {
         // Input validation 
-        // - all quorums should exist
+        // - all quorums should exist (checked against `quorumCount` in orderedBytesArrayToBitmap)
         // - there should be no duplicates in `quorumNumbers`
         // - there should be one list of operators per quorum
         uint192 quorumBitmap = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
@@ -447,6 +447,7 @@ contract RegistryCoordinator is
         /**
          * Get bitmap of quorums to register for and operator's current bitmap. Validate that:
          * - we're trying to register for at least 1 quorum
+         * - the quorums we're registering for exist (checked against `quorumCount` in orderedBytesArrayToBitmap)
          * - the operator is not currently registered for any quorums we're registering for
          * Then, calculate the operator's new bitmap after registration
          */
@@ -569,6 +570,7 @@ contract RegistryCoordinator is
         /**
          * Get bitmap of quorums to deregister from and operator's current bitmap. Validate that:
          * - we're trying to deregister from at least 1 quorum
+         * - the quorums we're deregistering from exist (checked against `quorumCount` in orderedBytesArrayToBitmap)
          * - the operator is currently registered for any quorums we're trying to deregister from
          * Then, calculate the operator's new bitmap after deregistration
          */
