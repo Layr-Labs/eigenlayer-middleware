@@ -62,7 +62,7 @@ contract EcdsaEpochRegistry_Permissionless is EcdsaEpochRegistry_Modular {
         EcdsaEpochRegistry_Modular(_serviceManager, _delegationManager, _epochLengthSeconds, _epochZeroStart)
     {
         require(_targetOperatorSetSize != 0, "no.");
-        require(_maxRegisteredOperators >= _targetOperatorSetSize, "cannot target above max size");
+        require(_maxRegisteredOperators > _targetOperatorSetSize, "max must be above target");
         minimumWeightRequirement = _minimumWeightRequirementInitValue;
         emit MinimumWeightChanged(_minimumWeightRequirementInitValue);
         targetOperatorSetSize = _targetOperatorSetSize;
@@ -188,26 +188,38 @@ contract EcdsaEpochRegistry_Permissionless is EcdsaEpochRegistry_Modular {
             uint256 previousWeightRequirement = minimumWeightRequirement;
             uint256 _targetOperatorSetSize = targetOperatorSetSize;
 
-            // calculate intermediate values
-            uint256 subscriptionFactor;
-            if (currentOperatorSetSize >= targetOperatorSetSize) {
-                subscriptionFactor = (1e18 * (currentOperatorSetSize - targetOperatorSetSize)) / targetOperatorSetSize;
+            // start with "adjustment" of 1 (leaving the value unchanged)
+            uint256 adjustmentFactor = 1e18;
+            if (currentOperatorSetSize >= _targetOperatorSetSize) {
+                // when current = target, no change
+                // when current = max, add the retargetingFactorWei
+                // when current is halfway between target and max, add half of retargetingFactorWei
+                adjustmentFactor += retargetingFactorWei * (currentOperatorSetSize - _targetOperatorSetSize) / (maxRegisteredOperators - _targetOperatorSetSize);
             } else {
-                subscriptionFactor = (1e18 * (targetOperatorSetSize - currentOperatorSetSize)) / targetOperatorSetSize;                
+                // when current = target, no change
+                // when current = 0, add the retargetingFactorWei
+                // when current is halfway between 0 and target, add half of retargetingFactorWei
+                adjustmentFactor += retargetingFactorWei * (_targetOperatorSetSize - currentOperatorSetSize) / _targetOperatorSetSize;
             }
+
+            // calculate intermediate values
             uint256 previousEpochOperatorSetSize = operatorsForEpoch[previousEpoch].length;
             uint256 previousEpochAverageWeight = totalStakeHistory[previousEpoch] / previousEpochOperatorSetSize;
             uint256 previousEpochMinimumWeight = realizedMinimumWeight[previousEpoch];
 
             // find new values -- adjust requirement up if subscriptionFactor < 1, down if > 1
-            uint256 newMinFromAverage = (previousEpochAverageWeight * retargetingFactorWei) / subscriptionFactor;
-            uint256 newMinFromPreviousMin = (previousEpochMinimumWeight * retargetingFactorWei) / subscriptionFactor;
-            // TODO: determine if useful
-            uint256 newMinFromPreviousRequirement = (previousWeightRequirement * retargetingFactorWei) / subscriptionFactor;
-            if (subscriptionFactor < 1e18) {
-                newWeightRequirement = min(newMinFromAverage, newMinFromPreviousMin);            
-            } else {
+            if (currentOperatorSetSize >= _targetOperatorSetSize) {
+                uint256 newMinFromAverage = previousEpochAverageWeight * adjustmentFactor / 1e18;
+                uint256 newMinFromPreviousMin = previousEpochMinimumWeight * adjustmentFactor / 1e18;
+                // TODO: determine if useful
+                uint256 newMinFromPreviousRequirement = previousWeightRequirement * adjustmentFactor / 1e18;
                 newWeightRequirement = max(newMinFromAverage, newMinFromPreviousMin);            
+            } else {
+                uint256 newMinFromAverage = previousEpochAverageWeight * 1e18 / adjustmentFactor;
+                uint256 newMinFromPreviousMin = previousEpochMinimumWeight * 1e18 / adjustmentFactor;
+                // TODO: determine if useful
+                uint256 newMinFromPreviousRequirement = previousWeightRequirement * 1e18 / adjustmentFactor;
+                newWeightRequirement = min(newMinFromAverage, newMinFromPreviousMin);            
             }
         }
 
