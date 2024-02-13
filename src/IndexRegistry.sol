@@ -289,7 +289,7 @@ contract IndexRegistry is IndexRegistryStorage {
             }
         }
 
-        // we should only it this if the operatorIndex was never used before blockNumber
+        // we should only hit this if the operatorIndex was never used before blockNumber
         return OPERATOR_DOES_NOT_EXIST_ID;
     }
 

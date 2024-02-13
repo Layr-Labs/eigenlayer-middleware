@@ -369,7 +369,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         // set the totalStakeIndices to a different value
         nonSignerStakesAndSignature.totalStakeIndices[0] = 0;
 
-        cheats.expectRevert("StakeRegistry._validateOperatorStakeAtBlockNumber: there is a newer operatorStakeUpdate available before blockNumber");
+        cheats.expectRevert("StakeRegistry._validateStakeUpdateAtBlockNumber: there is a newer stakeUpdate available before blockNumber");
         blsSignatureChecker.checkSignatures(
             msgHash, 
             quorumNumbers,
@@ -398,7 +398,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         // set the nonSignerStakeIndices to a different value
         nonSignerStakesAndSignature.nonSignerStakeIndices[0][0] = 1;
 
-        cheats.expectRevert("StakeRegistry._validateOperatorStakeAtBlockNumber: operatorStakeUpdate is from after blockNumber");
+        cheats.expectRevert("StakeRegistry._validateStakeUpdateAtBlockNumber: stakeUpdate is from after blockNumber");
         blsSignatureChecker.checkSignatures(
             msgHash, 
             quorumNumbers,
