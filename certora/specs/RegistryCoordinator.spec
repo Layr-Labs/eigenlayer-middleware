@@ -1,36 +1,35 @@
-
+using ServiceManagerMock as serviceManager;
+using StakeRegistry as stakeRegistry;
+using BLSApkRegistry as blsApkRegistry;
+using IndexRegistry as indexRegistry;
+using DelegationManager as delegation;
 methods {
-    //// External Calls
-	// external calls to StakeRegistry
-    function _.quorumCount() external => DISPATCHER(true);
-    function _.getCurrentTotalStake(uint8 quorumNumber) external => DISPATCHER(true);
-    function _.getCurrentStake(bytes32 operatorId, uint8 quorumNumber) external => DISPATCHER(true);
-    // function _.registerOperator(address, bytes32, bytes) external => DISPATCHER(true);
-    function _.registerOperator(address, bytes32, bytes) external => NONDET;
-    function _.deregisterOperator(bytes32, bytes) external => NONDET;
+    // //// External Calls
+	// // external calls to StakeRegistry
+    // function _.quorumCount() external => DISPATCHER(true);
+    // function _.getCurrentTotalStake(uint8 quorumNumber) external => DISPATCHER(true);
+    // function _.getCurrentStake(bytes32 operatorId, uint8 quorumNumber) external => DISPATCHER(true);
+    // // function _.registerOperator(address, bytes32, bytes) external => DISPATCHER(true);
+    // function _.registerOperator(address, bytes32, bytes) external => NONDET;
+    // function _.deregisterOperator(bytes32, bytes) external => NONDET;
 
-    // external calls to BlsApkRegistry
-    // function _.registerOperator(address, bytes, BN254.G1Point) external => DISPATCHER(true);
-    function _.registerOperator(address, bytes) external => NONDET;
-    function _.deregisterOperator(address, bytes) external => NONDET;
-    function _.pubkeyHashToOperator(bytes32) external => DISPATCHER(true);
+    // // external calls to BlsApkRegistry
+    // // function _.registerOperator(address, bytes, BN254.G1Point) external => DISPATCHER(true);
+    // function _.registerOperator(address, bytes) external => NONDET;
+    // function _.deregisterOperator(address, bytes) external => NONDET;
+    // function _.pubkeyHashToOperator(bytes32) external => DISPATCHER(true);
 
-    // external calls to IndexRegistry
-    // function _.registerOperator(bytes32, bytes) external => DISPATCHER(true);
-    function _.registerOperator(bytes32, bytes) external => NONDET;
-    function _.deregisterOperator(bytes32, bytes, bytes32[]) external => NONDET;
+    // // external calls to IndexRegistry
+    // // function _.registerOperator(bytes32, bytes) external => DISPATCHER(true);
+    // function _.registerOperator(bytes32, bytes) external => NONDET;
+    // function _.deregisterOperator(bytes32, bytes, bytes32[]) external => NONDET;
 
-	// external calls to ServiceManager
-    function _.registerOperatorToAVS(address, ISignatureUtils.SignatureWithSaltAndExpiry) external => DISPATCHER(true);
-    function _.deregisterOperatorFromAVS(address) external => DISPATCHER(true);
-    // function _.recordLastStakeUpdateAndRevokeSlashingAbility(address, uint256) external => DISPATCHER(true);
-    // function _.registerOperatorToAVS(address, ISignatureUtils.SignatureWithSaltAndExpiry) external => NONDET;
-    // function _.deregisterOperatorToAVS(address) external => NONDET;
-
-    // external calls to AVSDirectory
-    function _.registerOperatorToAVS(address, ISignatureUtils.SignatureWithSaltAndExpiry) external => DISPATCHER(true);
-    function _.deregisterOperatorFromAVS(address) external => DISPATCHER(true);
-
+	// // external calls to ServiceManager
+    // function _.registerOperatorToAVS(address, ISignatureUtils.SignatureWithSaltAndExpiry) external => DISPATCHER(true);
+    // function _.deregisterOperatorFromAVS(address) external => DISPATCHER(true);
+    // // function _.recordLastStakeUpdateAndRevokeSlashingAbility(address, uint256) external => DISPATCHER(true);
+    // // function _.registerOperatorToAVS(address, ISignatureUtils.SignatureWithSaltAndExpiry) external => NONDET;
+    // // function _.deregisterOperatorToAVS(address) external => NONDET;
 
     // external calls to ERC1271 (can import OpenZeppelin mock implementation)
     // isValidSignature(bytes32 hash, bytes memory signature) returns (bytes4 magicValue) => DISPATCHER(true)
@@ -81,6 +80,10 @@ invariant registeredOperatorsHaveNonzeroBitmaps(address operator)
 invariant operatorIdIsUnique(address operator1, address operator2)
     operator1 != operator2 =>
         (getOperatorStatus(operator1) == IRegistryCoordinator.OperatorStatus.REGISTERED => getOperatorId(operator1) != getOperatorId(operator2));
+
+invariant initializedQuorumHistories(uint8 quorumNumber)
+    quorumNumber < currentContract.quorumCount <=> stakeRegistry._totalStakeHistory[quorumNumber].length != 0 && 
+    indexRegistry._operatorCountHistory[quorumNumber].length != 0 && blsApkRegistry.apkHistory[quorumNumber].length != 0;
 
 definition methodCanModifyBitmap(method f) returns bool =
     f.selector == sig:registerOperator(
