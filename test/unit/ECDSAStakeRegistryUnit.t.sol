@@ -33,6 +33,11 @@ contract ECDSAStakeRegistryTest is Test, ECDSAStakeRegistryEventsAndErrors {
     address internal operator2;
     uint256 internal operator1Pk;
     uint256 internal operator2Pk;
+    bytes internal signature1;
+    bytes internal signature2;
+    address[] internal signers;
+    bytes[] internal signatures;
+    bytes32 internal msgHash;
 
     function setUp() public virtual {
         (operator1, operator1Pk) = makeAddrAndKey("Signer 1");
@@ -335,47 +340,11 @@ contract UpdateMinimumWeight is ECDSAStakeRegistryTest {
     }
 }
 
-contract ECDSASignatureCheckerTest is Test {
-    ECDSAStakeRegistry internal mockStakeRegistry;
-    MockDelegationManager public mockDelegationManager;
-    MockServiceManager public mockServiceManager;
-    address internal signer1;
-    address internal signer2;
-    uint256 internal signer1Pk;
-    uint256 internal signer2Pk;
-    bytes internal signature1;
-    bytes internal signature2;
-    address[] internal signers;
-    bytes[] internal signatures;
-    bytes32 internal msgHash;
-
-    /// TODO: Reuse some of the setup from before
-    function setUp() public virtual {
-        (signer1, signer1Pk) = makeAddrAndKey("Signer 1");
-        (signer2, signer2Pk) = makeAddrAndKey("Signer 2");
-        assertTrue(signer1 < signer2, "Signers Out of Order");
-        mockDelegationManager = new MockDelegationManager();
-        mockServiceManager = new MockServiceManager();
-        mockStakeRegistry = new ECDSAStakeRegistry(
-            IDelegationManager(address(mockDelegationManager))
-        );
-
-        IStrategy mockStrategy = IStrategy(address(0x1234));
-        Quorum memory quorum = Quorum({strategies: new StrategyParams[](1)});
-        quorum.strategies[0] = StrategyParams({strategy: mockStrategy, multiplier: 10000});
-        mockStakeRegistry.initialize(address(mockServiceManager), 1, quorum);
-
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
-        mockStakeRegistry.registerOperatorWithSignature(signer1, operatorSignature);
-        mockStakeRegistry.registerOperatorWithSignature(signer2, operatorSignature);
-    }
-}
-
-contract UpdateThresholdStake is ECDSASignatureCheckerTest {
+contract UpdateThresholdStake is ECDSAStakeRegistryTest {
     function testUpdateThresholdStake() public {
         uint256 thresholdWeight = 10000000000;
-        vm.prank(mockStakeRegistry.owner());
-        mockStakeRegistry.updateStakeThreshold(thresholdWeight);
+        vm.prank(registry.owner());
+        registry.updateStakeThreshold(thresholdWeight);
     }
 
     function test_RevertsWhen_NotOwner() public {
@@ -383,22 +352,22 @@ contract UpdateThresholdStake is ECDSASignatureCheckerTest {
         address notOwner = address(0x123);
         vm.prank(notOwner);
         vm.expectRevert("Ownable: caller is not the owner");
-        mockStakeRegistry.updateStakeThreshold(thresholdWeight);
+        registry.updateStakeThreshold(thresholdWeight);
     }
 }
 
-contract CheckSignatures is ECDSASignatureCheckerTest {
+contract CheckSignatures is ECDSAStakeRegistryTest {
     function testCheckSignatures() public {
         msgHash = keccak256("data");
         signers = new address[](2);
-        (signers[0], signers[1]) = (signer1, signer2);
+        (signers[0], signers[1]) = (operator1, operator2);
         signatures = new bytes[](2);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signer1Pk, msgHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(operator1Pk, msgHash);
         signatures[0] = abi.encodePacked(r, s, v);
-        (v, r, s) = vm.sign(signer2Pk, msgHash);
+        (v, r, s) = vm.sign(operator2Pk, msgHash);
         signatures[1] = abi.encodePacked(r, s, v);
 
-        mockStakeRegistry.isValidSignature(
+        registry.isValidSignature(
             msgHash,
             abi.encode(signers, signatures, type(uint32).max)
         );
@@ -407,13 +376,13 @@ contract CheckSignatures is ECDSASignatureCheckerTest {
     function testCheckSignaturesLengthMismatch() public {
         msgHash = keccak256("data");
         signers = new address[](2);
-        (signers[0], signers[1]) = (signer1, signer2);
+        (signers[0], signers[1]) = (operator1, operator2);
         signatures = new bytes[](1);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signer1Pk, msgHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(operator1Pk, msgHash);
         signatures[0] = abi.encode(v, r, s);
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.LengthMismatch.selector);
-        mockStakeRegistry.isValidSignature(
+        registry.isValidSignature(
             msgHash,
             abi.encode(signers, signatures, type(uint32).max)
         );
@@ -425,7 +394,7 @@ contract CheckSignatures is ECDSASignatureCheckerTest {
         bytes[] memory signatures = new bytes[](0);
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InvalidLength.selector);
-        mockStakeRegistry.isValidSignature(
+        registry.isValidSignature(
             dataHash,
             abi.encode(signers, signatures, type(uint32).max)
         );
@@ -434,16 +403,16 @@ contract CheckSignatures is ECDSASignatureCheckerTest {
     function testCheckSignaturesNotSorted() public {
         msgHash = keccak256("data");
         signers = new address[](2);
-        (signers[1], signers[0]) = (signer1, signer2);
-        mockStakeRegistry.updateOperators(signers);
+        (signers[1], signers[0]) = (operator1, operator2);
+        registry.updateOperators(signers);
         signatures = new bytes[](2);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signer1Pk, msgHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(operator1Pk, msgHash);
         signatures[1] = abi.encodePacked(r, s, v);
-        (v, r, s) = vm.sign(signer2Pk, msgHash);
+        (v, r, s) = vm.sign(operator2Pk, msgHash);
         signatures[0] = abi.encodePacked(r, s, v);
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
-        mockStakeRegistry.isValidSignature(
+        registry.isValidSignature(
             msgHash,
             abi.encode(signers, signatures, type(uint32).max)
         );
@@ -452,12 +421,12 @@ contract CheckSignatures is ECDSASignatureCheckerTest {
     function testCheckSignaturesInvalidSignature() public {
         bytes32 dataHash = keccak256("data");
         address[] memory signers = new address[](1);
-        signers[0] = signer1;
+        signers[0] = operator1;
         bytes[] memory signatures = new bytes[](1);
         signatures[0] = "invalid-signature";
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InvalidSignature.selector);
-        mockStakeRegistry.isValidSignature(
+        registry.isValidSignature(
             dataHash,
             abi.encode(signers, signatures, type(uint32).max)
         );
@@ -466,29 +435,29 @@ contract CheckSignatures is ECDSASignatureCheckerTest {
     function testCheckSignaturesInsufficientSignedStake() public {
         msgHash = keccak256("data");
         signers = new address[](2);
-        (signers[0], signers[1]) = (signer1, signer2);
-        mockStakeRegistry.updateOperators(signers);
+        (signers[0], signers[1]) = (operator1, operator2);
+        registry.updateOperators(signers);
         signatures = new bytes[](2);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signer1Pk, msgHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(operator1Pk, msgHash);
         signatures[0] = abi.encodePacked(r, s, v);
-        (v, r, s) = vm.sign(signer2Pk, msgHash);
+        (v, r, s) = vm.sign(operator2Pk, msgHash);
         signatures[1] = abi.encodePacked(r, s, v);
 
         uint256 thresholdWeight = 10000000000;
-        vm.prank(mockStakeRegistry.owner());
-        mockStakeRegistry.updateStakeThreshold(thresholdWeight);
+        vm.prank(registry.owner());
+        registry.updateStakeThreshold(thresholdWeight);
 
         vm.mockCall(
-            address(mockStakeRegistry),
+            address(registry),
             abi.encodeWithSelector(
                 ECDSAStakeRegistry.getLastCheckpointOperatorWeight.selector,
-                signer1
+                operator1
             ),
             abi.encode(50)
         );
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InsufficientSignedStake.selector);
-        mockStakeRegistry.isValidSignature(
+        registry.isValidSignature(
             msgHash,
             abi.encode(signers, signatures, type(uint32).max)
         );
@@ -498,12 +467,12 @@ contract CheckSignatures is ECDSASignatureCheckerTest {
         bytes32 dataHash = keccak256("data");
         uint32 referenceBlock = 123;
         address[] memory signers = new address[](2);
-        signers[0] = signer1;
-        signers[1] = signer2;
+        signers[0] = operator1;
+        signers[1] = operator2;
         bytes[] memory signatures = new bytes[](1);
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.LengthMismatch.selector);
-        mockStakeRegistry.isValidSignature(
+        registry.isValidSignature(
             dataHash,
             abi.encode(signers, signatures, referenceBlock)
         );
@@ -516,7 +485,7 @@ contract CheckSignatures is ECDSASignatureCheckerTest {
         bytes[] memory signatures = new bytes[](0);
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InvalidLength.selector);
-        mockStakeRegistry.isValidSignature(
+        registry.isValidSignature(
             dataHash,
             abi.encode(signers, signatures, referenceBlock)
         );
@@ -527,16 +496,16 @@ contract CheckSignatures is ECDSASignatureCheckerTest {
         vm.roll(123 + 1);
         msgHash = keccak256("data");
         signers = new address[](2);
-        (signers[1], signers[0]) = (signer1, signer2);
-        mockStakeRegistry.updateOperators(signers);
+        (signers[1], signers[0]) = (operator1, operator2);
+        registry.updateOperators(signers);
         signatures = new bytes[](2);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signer1Pk, msgHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(operator1Pk, msgHash);
         signatures[1] = abi.encodePacked(r, s, v);
-        (v, r, s) = vm.sign(signer2Pk, msgHash);
+        (v, r, s) = vm.sign(operator2Pk, msgHash);
         signatures[0] = abi.encodePacked(r, s, v);
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
-        mockStakeRegistry.isValidSignature(
+        registry.isValidSignature(
             msgHash,
             abi.encode(signers, signatures, referenceBlock)
         );
@@ -546,31 +515,31 @@ contract CheckSignatures is ECDSASignatureCheckerTest {
         uint32 referenceBlock = 123;
         msgHash = keccak256("data");
         signers = new address[](2);
-        (signers[0], signers[1]) = (signer1, signer2);
-        mockStakeRegistry.updateOperators(signers);
+        (signers[0], signers[1]) = (operator1, operator2);
+        registry.updateOperators(signers);
         vm.roll(referenceBlock + 1);
         signatures = new bytes[](2);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signer1Pk, msgHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(operator1Pk, msgHash);
         signatures[0] = abi.encodePacked(r, s, v);
-        (v, r, s) = vm.sign(signer2Pk, msgHash);
+        (v, r, s) = vm.sign(operator2Pk, msgHash);
         signatures[1] = abi.encodePacked(r, s, v);
 
         uint256 thresholdWeight = 10000000000;
-        vm.prank(mockStakeRegistry.owner());
-        mockStakeRegistry.updateStakeThreshold(thresholdWeight);
+        vm.prank(registry.owner());
+        registry.updateStakeThreshold(thresholdWeight);
 
         vm.mockCall(
-            address(mockStakeRegistry),
+            address(registry),
             abi.encodeWithSelector(
                 ECDSAStakeRegistry.getOperatorWeightAtBlock.selector,
-                signer1,
+                operator1,
                 referenceBlock
             ),
             abi.encode(50)
         );
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InsufficientSignedStake.selector);
-        mockStakeRegistry.isValidSignature(
+        registry.isValidSignature(
             msgHash,
             abi.encode(signers, signatures, referenceBlock)
         );
