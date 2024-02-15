@@ -32,6 +32,14 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
         _;
     }
 
+    modifier onlyStakeRegistry() {
+        require(
+            msg.sender == address(_stakeRegistry),
+            "ServiceManagerBase.onlyStakeRegistry: caller is not the stake registry"
+        );
+        _;
+    }
+
     /// @notice Sets the (immutable) `_registryCoordinator` address
     constructor(
         IAVSDirectory __avsDirectory,
@@ -79,42 +87,41 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
 
     /**
      * @notice Returns the list of strategies that the AVS supports for restaking
-     * @dev This function is intended to be called off-chain
-     * @dev No guarantee is made on uniqueness of each element in the returned array. 
-     *      The off-chain service should do that validation separately
+     * @dev No guarantee is made on uniqueness of each element in the `restakeableStrategies` 
+     *       array. The off-chain service should do that validation separately
      */
-    function getRestakeableStrategies() external view returns (address[] memory) {
+    function updateAVSStrategies() public virtual onlyStakeRegistry {
         uint256 quorumCount = _registryCoordinator.quorumCount();
-
         if (quorumCount == 0) {
-            return new address[](0);
+            // Do nothing if there are no quorums
+            return;
         }
-        
+
         uint256 strategyCount;
         for(uint256 i = 0; i < quorumCount; i++) {
             strategyCount += _stakeRegistry.strategyParamsLength(uint8(i));
         }
 
-        address[] memory restakedStrategies = new address[](strategyCount);
+        address[] memory restakeableStrategies = new address[](strategyCount);
         uint256 index = 0;
         for(uint256 i = 0; i < _registryCoordinator.quorumCount(); i++) {
             uint256 strategyParamsLength = _stakeRegistry.strategyParamsLength(uint8(i));
             for (uint256 j = 0; j < strategyParamsLength; j++) {
-                restakedStrategies[index] = address(_stakeRegistry.strategyParamsByIndex(uint8(i), j).strategy);
+                restakeableStrategies[index] = address(_stakeRegistry.strategyParamsByIndex(uint8(i), j).strategy);
                 index++;
             }
         }
-        return restakedStrategies;
+
+        _avsDirectory.updateAVSStrategies(restakeableStrategies);
     }
 
     /**
-     * @notice Returns the list of strategies that the operator has potentially restaked on the AVS
+     * @notice Pushes the list of strategies that the operator has potentially restaked on the AVS to the `AVSDirectory` contract
      * @param operator The address of the operator to get restaked strategies for
-     * @dev This function is intended to be called off-chain
      * @dev No guarantee is made on whether the operator has shares for a strategy in a quorum or uniqueness 
      *      of each element in the returned array. The off-chain service should do that validation separately
      */
-    function getOperatorRestakedStrategies(address operator) external view returns (address[] memory) {
+    function updateOperatorRestakedStrategies(address operator) external onlyRegistryCoordinator {
         bytes32 operatorId = _registryCoordinator.getOperatorId(operator);
         uint192 operatorBitmap = _registryCoordinator.getCurrentQuorumBitmap(operatorId);
 
@@ -140,7 +147,8 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
                 index++;
             }
         }
-        return restakedStrategies;        
+
+        _avsDirectory.updateOperatorRestakedStrategies(operator, restakedStrategies);       
     }
 
     /// @notice Returns the EigenLayer AVSDirectory contract.

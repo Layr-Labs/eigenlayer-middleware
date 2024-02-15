@@ -24,8 +24,11 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
     /// @notice The address of the Delegation contract for EigenLayer.
     IDelegationManager public immutable delegation;
 
-    /// @notice the coordinator contract that this registry is associated with
+    /// @notice The coordinator contract that this registry is associated with
     address public immutable registryCoordinator;
+
+    /// @notice The service manager contract that this registry is associated with
+    address public immutable serviceManager
 
     /// @notice In order to register for a quorum i, an operator must have at least `minimumStakeForQuorum[i]`
     /// evaluated by this contract's 'VoteWeigher' logic.

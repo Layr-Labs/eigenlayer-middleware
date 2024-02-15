@@ -488,6 +488,9 @@ contract RegistryCoordinator is
             stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
         results.numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
 
+        // Update operator's strategies on the serviceManager
+        serviceManager.updateOperatorRestakedStrategies(operator);
+
         return results;
     }
 

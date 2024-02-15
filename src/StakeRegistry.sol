@@ -7,6 +7,7 @@ import {StakeRegistryStorage, IStrategy} from "./StakeRegistryStorage.sol";
 
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
+import {IServiceManager} from "./interfaces/IServiceManager.sol";
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 
@@ -43,8 +44,9 @@ contract StakeRegistry is StakeRegistryStorage {
 
     constructor(
         IRegistryCoordinator _registryCoordinator,
-        IDelegationManager _delegationManager
-    ) StakeRegistryStorage(_registryCoordinator, _delegationManager) {}
+        IDelegationManager _delegationManager,
+        IServiceManager _serviceManager
+    ) StakeRegistryStorage(_registryCoordinator, _delegationManager, _serviceManager) {}
 
     /*******************************************************************************
                       EXTERNAL FUNCTIONS - REGISTRY COORDINATOR
@@ -250,6 +252,8 @@ contract StakeRegistry is StakeRegistryStorage {
             _strategiesPerQuorum[indicesToRemove[i]] = _strategiesPerQuorum[_strategiesPerQuorum.length - 1];
             _strategiesPerQuorum.pop();
         }
+
+        _serviceManager.updateAVSStrategies();
     }
 
     /**
@@ -427,6 +431,8 @@ contract StakeRegistry is StakeRegistryStorage {
                 _strategyParams[i].multiplier
             );
         }
+
+        _serviceManager.updateAVSStrategies();
     }
 
     /// @notice Returns the change between a previous and current value as a signed int
