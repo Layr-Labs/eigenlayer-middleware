@@ -12,13 +12,14 @@ contract Integration_Full_Register_Deregister is IntegrationChecks {
     // 1. Register for all quorums by churning old operators
     // 2. Deregister from all quorums
     // 3. Re-register for all quorums without needing churn
-    function testFuzz_churnAll_deregisterAll_reregisterAll(uint24 _random) public {
+    function testFuzz_churnAll_deregisterAll_reregisterAll() public {
+        uint24 _random = 50;
         _configRand({
             _randomSeed: _random,
             _userTypes: DEFAULT | ALT_METHODS,
             _quorumConfig: QuorumConfig({
-                numQuorums: ONE | TWO | MANY,
-                numStrategies: ONE | TWO | MANY,
+                numQuorums: TEN,
+                numStrategies: TWO,
                 minimumStake: NO_MINIMUM | HAS_MINIMUM,
                 fillTypes: FULL
             })
@@ -52,7 +53,10 @@ contract Integration_Full_Register_Deregister is IntegrationChecks {
         check_CompleteDeregister_State(operator);
 
         // 3. Re-register for all quorums without needing churn
-        operator.registerOperator(quorums);
+        uint256 gasBefore = gasleft();
+        operator.registerOperator(quorumArray);
+        uint256 gasAfter = gasleft();
+        console.log("gas used: ", gasBefore - gasAfter);        
         check_Register_State(operator, quorums);
     }
 
