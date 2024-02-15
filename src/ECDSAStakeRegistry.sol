@@ -325,15 +325,18 @@ contract ECDSAStakeRegistry is
     /// @param _operator The address of the operator to update the weight of.
     function _updateOperatorWeight(address _operator) internal {
         int256 delta;
+        uint256 oldWeight;
+        uint256 newWeight;
         if (!_operatorRegistered[_operator]) {
-            (uint256 oldWeight, ) = _operatorWeightHistory[_operator].push(0);
+            (oldWeight, ) = _operatorWeightHistory[_operator].push(0);
             delta -= int(oldWeight);
         } else {
-            uint256 operatorWeight = getOperatorWeight(_operator);
-            (uint256 oldWeight, ) = _operatorWeightHistory[_operator].push(operatorWeight);
-            delta = int256(operatorWeight) - int256(oldWeight);
+            newWeight = getOperatorWeight(_operator);
+            (oldWeight, ) = _operatorWeightHistory[_operator].push(newWeight);
+            delta = int256(newWeight) - int256(oldWeight);
         }
         _updateTotalWeight(delta);
+        emit OperatorWeightUpdated(_operator, oldWeight, newWeight);
     }
 
     /// @dev Internal function to update the total weight of the stake
@@ -347,6 +350,7 @@ contract ECDSAStakeRegistry is
         int256 newWeight = int256(oldTotalWeight) + delta;
         newTotalWeight = uint256(newWeight);
         _totalWeightHistory.push(newTotalWeight);
+        emit TotalWeightUpdated(oldTotalWeight, newTotalWeight);
     }
 
     /// @dev Verifies a quorum has:
