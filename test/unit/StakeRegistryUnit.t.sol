@@ -53,7 +53,8 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
 
         stakeRegistryImplementation = new StakeRegistryHarness(
             IRegistryCoordinator(address(registryCoordinator)),
-            delegationMock
+            delegationMock,
+            serviceManager
         );
 
         stakeRegistry = StakeRegistryHarness(

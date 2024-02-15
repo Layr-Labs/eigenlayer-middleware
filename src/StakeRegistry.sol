@@ -253,7 +253,7 @@ contract StakeRegistry is StakeRegistryStorage {
             _strategiesPerQuorum.pop();
         }
 
-        _serviceManager.updateAVSStrategies();
+        serviceManager.updateAVSStrategies();
     }
 
     /**
@@ -432,7 +432,7 @@ contract StakeRegistry is StakeRegistryStorage {
             );
         }
 
-        _serviceManager.updateAVSStrategies();
+        serviceManager.updateAVSStrategies();
     }
 
     /// @notice Returns the change between a previous and current value as a signed int

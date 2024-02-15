@@ -225,7 +225,8 @@ contract MockAVSDeployer is Test {
 
         stakeRegistryImplementation = new StakeRegistryHarness(
             IRegistryCoordinator(registryCoordinator),
-            delegationMock
+            delegationMock,
+            IServiceManager(serviceManager)
         );
 
         proxyAdmin.upgrade(

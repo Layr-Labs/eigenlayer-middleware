@@ -49,4 +49,17 @@ contract AVSDirectoryMock is IAVSDirectory {
 
     /// @notice The EIP-712 typehash for the Registration struct used by the contract
     function OPERATOR_AVS_REGISTRATION_TYPEHASH() external view returns (bytes32) {}
+
+        /**
+     * @notice Called by an avs to emit an `AVSStrategiesUpdated` event
+     * @param strategies List of strategies that are restakeable on an AVS
+     */
+    function updateAVSStrategies(address[] calldata strategies) external {}
+
+    /**
+     * @notice Called by an avs to emit an `OperatorAVSStrategiesUpdated` event
+     * @param operator The address of the operator that is staking on the avs
+     * @param strategies The strategies that the operator is restaking on 
+     */
+    function updateOperatorStrategies(address operator, address[] calldata strategies) external {}
 } 

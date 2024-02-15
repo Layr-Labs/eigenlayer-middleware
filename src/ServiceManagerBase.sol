@@ -126,7 +126,7 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
         uint192 operatorBitmap = _registryCoordinator.getCurrentQuorumBitmap(operatorId);
 
         if (operatorBitmap == 0 || _registryCoordinator.quorumCount() == 0) {
-            return new address[](0);
+            return;
         }
 
         // Get number of strategies for each quorum in operator bitmap
