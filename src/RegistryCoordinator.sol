@@ -489,7 +489,7 @@ contract RegistryCoordinator is
         results.numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
 
         // Update operator's strategies on the serviceManager
-        serviceManager.updateOperatorRestakedStrategies(operator);
+        serviceManager.updateOperatorStrategies(operator);
 
         return results;
     }

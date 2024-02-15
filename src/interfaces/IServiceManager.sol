@@ -32,21 +32,19 @@ interface IServiceManager {
     function deregisterOperatorFromAVS(address operator) external;
 
     /**
-     * @notice Returns the list of strategies that the operator has potentially restaked on the AVS
+     * @notice Returns the list of strategies that the AVS supports for restaking
+     * @dev No guarantee is made on uniqueness of each element in the `restakeableStrategies` 
+     *       array. The off-chain service should do that validation separately
+     */
+    function updateAVSStrategies() external;
+
+    /**
+     * @notice Pushes the list of strategies that the operator has potentially restaked on the AVS to the `AVSDirectory` contract
      * @param operator The address of the operator to get restaked strategies for
-     * @dev This function is intended to be called off-chain
      * @dev No guarantee is made on whether the operator has shares for a strategy in a quorum or uniqueness 
      *      of each element in the returned array. The off-chain service should do that validation separately
      */
-    function getOperatorRestakedStrategies(address operator) external view returns (address[] memory);
-
-    /**
-     * @notice Returns the list of strategies that the AVS supports for restaking
-     * @dev This function is intended to be called off-chain
-     * @dev No guarantee is made on uniqueness of each element in the returned array. 
-     *      The off-chain service should do that validation separately
-     */
-    function getRestakeableStrategies() external view returns (address[] memory);
+    function updateOperatorStrategies(address operator) external;
 
     /// @notice Returns the EigenLayer AVSDirectory contract.
     function avsDirectory() external view returns (address);

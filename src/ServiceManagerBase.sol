@@ -121,7 +121,7 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
      * @dev No guarantee is made on whether the operator has shares for a strategy in a quorum or uniqueness 
      *      of each element in the returned array. The off-chain service should do that validation separately
      */
-    function updateOperatorRestakedStrategies(address operator) external onlyRegistryCoordinator {
+    function updateOperatorStrategies(address operator) external onlyRegistryCoordinator {
         bytes32 operatorId = _registryCoordinator.getOperatorId(operator);
         uint192 operatorBitmap = _registryCoordinator.getCurrentQuorumBitmap(operatorId);
 
@@ -148,7 +148,7 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
             }
         }
 
-        _avsDirectory.updateOperatorRestakedStrategies(operator, restakedStrategies);       
+        _avsDirectory.updateOperatorStrategies(operator, restakedStrategies);       
     }
 
     /// @notice Returns the EigenLayer AVSDirectory contract.
