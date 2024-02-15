@@ -61,6 +61,9 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
     uint constant FIFTEEN = (FLAG << 3);
     uint constant TWENTY = (FLAG << 4);
     uint constant TWENTYFIVE = (FLAG << 5);
+    uint constant TEN = (FLAG << 6);
+    uint constant FIVE = (FLAG << 7);
+    uint constant FOUR = (FLAG << 8);
 
     /// @dev Flags for minimumStake
     uint constant NO_MINIMUM = (FLAG << 0);
@@ -479,7 +482,14 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
             // Ideally this would be MAX_QUORUM_COUNT, but that really slows tests
             // that have users register for all quorums
             return _randUint({ min: 3, max: 10 });
-        } else {
+        } else if (quorumFlag == FIVE){
+            return 5;
+        } else if (quorumFlag == TEN) {
+            return 10;
+        } else if (quorumFlag == FOUR) {
+            return 4;
+        }
+        else {
             revert("_randQuorumCount: flag not recognized");
         }
     }
@@ -498,6 +508,12 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
             strategyCount = 2;
         } else if (strategyFlag == MANY) {
             strategyCount = _randUint({ min: 3, max: allStrats.length - 1 });
+        } else if (strategyFlag == TEN) {
+            strategyCount = 10;
+        } else if (strategyFlag == FIVE) {
+            strategyCount = 5;
+        } else if (strategyFlag == FOUR) {
+            strategyCount = 4;
         } else if (strategyFlag == FIFTEEN) {
             strategyCount = 15;
         } else if (strategyFlag == TWENTY) {

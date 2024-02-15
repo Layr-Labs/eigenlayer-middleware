@@ -18,8 +18,8 @@ contract Integration_Full_Register_Deregister is IntegrationChecks {
             _randomSeed: _random,
             _userTypes: DEFAULT | ALT_METHODS,
             _quorumConfig: QuorumConfig({
-                numQuorums: TWO,
-                numStrategies: FIFTEEN,
+                numQuorums: TEN,
+                numStrategies: TWO,
                 minimumStake: NO_MINIMUM | HAS_MINIMUM,
                 fillTypes: FULL
             })

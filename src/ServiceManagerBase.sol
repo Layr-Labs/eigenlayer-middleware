@@ -104,7 +104,7 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
 
         address[] memory restakeableStrategies = new address[](strategyCount);
         uint256 index = 0;
-        for(uint256 i = 0; i < _registryCoordinator.quorumCount(); i++) {
+        for(uint256 i = 0; i < quorumCount; i++) {
             uint256 strategyParamsLength = _stakeRegistry.strategyParamsLength(uint8(i));
             for (uint256 j = 0; j < strategyParamsLength; j++) {
                 restakeableStrategies[index] = address(_stakeRegistry.strategyParamsByIndex(uint8(i), j).strategy);
