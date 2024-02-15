@@ -4,7 +4,7 @@ pragma solidity ^0.8.12;
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {IServiceManager} from "./interfaces/IServiceManager.sol";
+import {IServiceManager} from "../interfaces/IServiceManager.sol";
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {CheckpointsUpgradeable} from "@openzeppelin-upgrades/contracts/utils/CheckpointsUpgradeable.sol";
@@ -125,6 +125,7 @@ abstract contract ECDSAStakeRegistryStorage is ECDSAStakeRegistryEventsAndErrors
 }
 
 /// @title ECDSA Stake Registry
+/// @notice THIS CONTRACT IS NOT AUDITED
 /// @notice Manages operator registration and quorum updates for a staking system using ECDSA signatures.
 /// @dev Extends OpenZeppelin's upgradeable Ownable and Pausable patterns to ensure upgradability and pause functionality.
 contract ECDSAStakeRegistry is
