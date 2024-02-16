@@ -62,6 +62,7 @@ struct QuorumStakeTotals {
 The goal of this method is to allow an AVS to validate a BLS signature formed from the aggregate pubkey ("apk") of Operators registered in one or more quorums at some `referenceBlockNumber`.
 
 Some notes on method parameters:
+* `msgHash` is the hash being signed by the apk. Note that the caller is responsible for ensuring `msgHash` is a hash! If someone can provide arbitrary input, it may be possible to tamper with signature verification.
 * `referenceBlockNumber` is the reason each registry contract keeps historical states: so that lookups can be performed on each registry's info at a particular block. This is important because Operators may sign some data on behalf of an AVS, then deregister from one or more of the AVS's quorums. Historical states allow signature validation to be performed against a "fixed point" in AVS/quorum history.
 * `quorumNumbers` is used to perform signature validation across one *or more* quorums. Also, Operators may be registered for more than one quorum - and for each quorum an Operator is registered for, that Operator's pubkey is included in that quorum's apk within the `BLSApkRegistry`. This means that, when calculating an apk across multiple `quorumNumbers`, Operators registered for more than one of these quorums will have their pubkey included more than once in the total apk.
 * `params` contains both a signature from all signing Operators, as well as several fields that identify registered, non-signing Operators. While non-signing Operators haven't contributed to the signature, but need to be accounted for because, as Operators registered for one or more signing quorums, their public keys are included in that quorum's apk. Essentially, in order to validate the signature, nonsigners' public keys need to be subtracted out from the total apk to derive the apk that actually signed the message.
@@ -87,11 +88,11 @@ This method performs the following steps. Note that each step involves lookups o
 * Input validation:
     * Quorum-related fields MUST have equal lengths: `quorumNumbers`, `params.quorumApks`, `params.quorumApkIndices`, `params.totalStakeIndices`, `params.nonSignerStakeIndices`
     * Nonsigner-related fields MUST have equal lengths: `params.nonSignerPubkeys`, `params.nonSignerQuorumBitmapIndices`
-    * `referenceBlockNumber` MUST NOT be greater than `block.number`
+    * `referenceBlockNumber` MUST be less than `block.number`
     * `quorumNumbers` MUST be an ordered list of valid, initialized quorums
     * `params.nonSignerPubkeys` MUST ONLY contain unique pubkeys, in ascending order of their pubkey hash
 * For each quorum:
-    * If stale stakes are forbidden (see [`BLSSignatureChecker.setStaleStakesForbidden`](#blssignaturecheckersetstalestakesforbidden)), check the last `quorumUpdateBlockNumber` is within `DelegationManager.withdrawalDelayBlocks` of `referenceBlockNumber`. This references a value in the EigenLayer core contracts - see [EigenLayer core docs][core-docs-m2] for more info.
+    * If stale stakes are forbidden (see [`BLSSignatureChecker.setStaleStakesForbidden`](#blssignaturecheckersetstalestakesforbidden)), check the last `quorumUpdateBlockNumber` is within `DelegationManager.minWithdrawalDelayBlocks` of `referenceBlockNumber`. This references a value in the EigenLayer core contracts - see [EigenLayer core docs][core-docs-m2] for more info.
     * Validate that each `params.quorumApks` corresponds to the quorum's apk at the `referenceBlockNumber`
 * For each historical state lookup, the `referenceBlockNumber` and provided index MUST point to a valid historical entry: 
     * `referenceBlockNumber` MUST come after the entry's `updateBlockNumber`

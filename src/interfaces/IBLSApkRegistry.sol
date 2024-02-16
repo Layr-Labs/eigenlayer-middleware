@@ -6,7 +6,7 @@ import {IRegistry} from "./IRegistry.sol";
 import {BN254} from "../libraries/BN254.sol";
 
 /**
- * @title Minimal interface for a registry that keeps track of aggregate operator public keys for among many quorums.
+ * @title Minimal interface for a registry that keeps track of aggregate operator public keys across many quorums.
  * @author Layr Labs, Inc.
  */
 interface IBLSApkRegistry is IRegistry {
