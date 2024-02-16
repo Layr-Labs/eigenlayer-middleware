@@ -2,7 +2,7 @@
 pragma solidity ^0.8.12;
 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {ECDSAStakeRegistry} from "./ECDSAStakeRegistry.sol";
+import {ECDSAStakeRegistry} from "../ECDSAStakeRegistry.sol";
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
 contract ECDSAStakeRegistryPermissioned is ECDSAStakeRegistry {
