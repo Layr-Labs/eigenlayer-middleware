@@ -46,4 +46,3 @@ abstract contract ECDSAStakeRegistryStorage is ECDSAStakeRegistryEventsAndErrors
     // solhint-disable-next-line
     uint256[42] private __gap;
 }
-

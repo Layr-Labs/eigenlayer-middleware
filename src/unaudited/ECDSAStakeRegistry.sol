@@ -356,8 +356,6 @@ contract ECDSAStakeRegistry is
         }
     }
 
-
-
     /// @notice Validates that the cumulative stake of signed messages meets or exceeds the required threshold.
     /// @param _signedWeight The cumulative weight of the signers that have signed the message.
     /// @param _referenceBlock The block number to verify the stake threshold for

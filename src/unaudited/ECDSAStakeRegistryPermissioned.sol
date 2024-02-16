@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
@@ -15,7 +14,7 @@ contract ECDSAStakeRegistryPermissioned is ECDSAStakeRegistry {
     }
 
     function permitOperator(address _operator) external onlyOwner {
-        allowlistedOperators[_operator]=true;
+        allowlistedOperators[_operator] = true;
     }
 
     function revokeOperator(address _operator) external onlyOwner {
@@ -27,8 +26,11 @@ contract ECDSAStakeRegistryPermissioned is ECDSAStakeRegistry {
         _deregisterOperator(_operator);
     }
 
-    function _registerOperatorWithSig(address _operator, ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature) internal override {
-        if (allowlistedOperators[_operator]!=true) revert OperatorNotAllowlisted();
+    function _registerOperatorWithSig(
+        address _operator,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature
+    ) internal override {
+        if (allowlistedOperators[_operator] != true) revert OperatorNotAllowlisted();
         super._registerOperatorWithSig(_operator, _operatorSignature);
     }
 }

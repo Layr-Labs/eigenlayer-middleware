@@ -4,7 +4,7 @@ pragma solidity ^0.8.12;
 import {Test} from "forge-std/Test.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
-import {ECDSAStakeRegistry}from "../../src/unaudited/ECDSAStakeRegistry.sol";
+import {ECDSAStakeRegistry} from "../../src/unaudited/ECDSAStakeRegistry.sol";
 import {ECDSAStakeRegistryEventsAndErrors, Quorum, StrategyParams} from "../../src/interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
@@ -369,10 +369,7 @@ contract CheckSignatures is ECDSAStakeRegistryTest {
         (v, r, s) = vm.sign(operator2Pk, msgHash);
         signatures[1] = abi.encodePacked(r, s, v);
 
-        registry.isValidSignature(
-            msgHash,
-            abi.encode(signers, signatures, type(uint32).max)
-        );
+        registry.isValidSignature(msgHash, abi.encode(signers, signatures, type(uint32).max));
     }
 
     function testCheckSignaturesLengthMismatch() public {
@@ -384,10 +381,7 @@ contract CheckSignatures is ECDSAStakeRegistryTest {
         signatures[0] = abi.encode(v, r, s);
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.LengthMismatch.selector);
-        registry.isValidSignature(
-            msgHash,
-            abi.encode(signers, signatures, type(uint32).max)
-        );
+        registry.isValidSignature(msgHash, abi.encode(signers, signatures, type(uint32).max));
     }
 
     function testCheckSignaturesInvalidLength() public {
@@ -396,10 +390,7 @@ contract CheckSignatures is ECDSAStakeRegistryTest {
         bytes[] memory signatures = new bytes[](0);
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InvalidLength.selector);
-        registry.isValidSignature(
-            dataHash,
-            abi.encode(signers, signatures, type(uint32).max)
-        );
+        registry.isValidSignature(dataHash, abi.encode(signers, signatures, type(uint32).max));
     }
 
     function testCheckSignaturesNotSorted() public {
@@ -414,10 +405,7 @@ contract CheckSignatures is ECDSAStakeRegistryTest {
         signatures[0] = abi.encodePacked(r, s, v);
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
-        registry.isValidSignature(
-            msgHash,
-            abi.encode(signers, signatures, type(uint32).max)
-        );
+        registry.isValidSignature(msgHash, abi.encode(signers, signatures, type(uint32).max));
     }
 
     function testCheckSignaturesInvalidSignature() public {
@@ -428,10 +416,7 @@ contract CheckSignatures is ECDSAStakeRegistryTest {
         signatures[0] = "invalid-signature";
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InvalidSignature.selector);
-        registry.isValidSignature(
-            dataHash,
-            abi.encode(signers, signatures, type(uint32).max)
-        );
+        registry.isValidSignature(dataHash, abi.encode(signers, signatures, type(uint32).max));
     }
 
     function testCheckSignaturesInsufficientSignedStake() public {
@@ -448,7 +433,7 @@ contract CheckSignatures is ECDSAStakeRegistryTest {
         uint256 thresholdWeight = 10000000000;
         vm.prank(registry.owner());
         registry.updateStakeThreshold(thresholdWeight);
-        vm.roll(block.number+1);
+        vm.roll(block.number + 1);
 
         vm.mockCall(
             address(registry),
@@ -460,10 +445,7 @@ contract CheckSignatures is ECDSAStakeRegistryTest {
         );
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InsufficientSignedStake.selector);
-        registry.isValidSignature(
-            msgHash,
-            abi.encode(signers, signatures, type(uint32).max)
-        );
+        registry.isValidSignature(msgHash, abi.encode(signers, signatures, type(uint32).max));
     }
 
     function testCheckSignaturesAtBlockLengthMismatch() public {
@@ -475,10 +457,7 @@ contract CheckSignatures is ECDSAStakeRegistryTest {
         bytes[] memory signatures = new bytes[](1);
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.LengthMismatch.selector);
-        registry.isValidSignature(
-            dataHash,
-            abi.encode(signers, signatures, referenceBlock)
-        );
+        registry.isValidSignature(dataHash, abi.encode(signers, signatures, referenceBlock));
     }
 
     function testCheckSignaturesAtBlockInvalidLength() public {
@@ -488,10 +467,7 @@ contract CheckSignatures is ECDSAStakeRegistryTest {
         bytes[] memory signatures = new bytes[](0);
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InvalidLength.selector);
-        registry.isValidSignature(
-            dataHash,
-            abi.encode(signers, signatures, referenceBlock)
-        );
+        registry.isValidSignature(dataHash, abi.encode(signers, signatures, referenceBlock));
     }
 
     function testCheckSignaturesAtBlockNotSorted() public {
@@ -508,10 +484,7 @@ contract CheckSignatures is ECDSAStakeRegistryTest {
         signatures[0] = abi.encodePacked(r, s, v);
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
-        registry.isValidSignature(
-            msgHash,
-            abi.encode(signers, signatures, referenceBlock)
-        );
+        registry.isValidSignature(msgHash, abi.encode(signers, signatures, referenceBlock));
     }
 
     function testCheckSignaturesAtBlockInsufficientSignedStake() public {
@@ -542,9 +515,6 @@ contract CheckSignatures is ECDSAStakeRegistryTest {
         );
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InsufficientSignedStake.selector);
-        registry.isValidSignature(
-            msgHash,
-            abi.encode(signers, signatures, referenceBlock)
-        );
+        registry.isValidSignature(msgHash, abi.encode(signers, signatures, referenceBlock));
     }
 }

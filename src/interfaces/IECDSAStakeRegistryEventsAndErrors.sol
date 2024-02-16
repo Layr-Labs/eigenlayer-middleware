@@ -72,4 +72,3 @@ interface ECDSAStakeRegistryEventsAndErrors {
 
     error OperatorNotRegistered();
 }
-
