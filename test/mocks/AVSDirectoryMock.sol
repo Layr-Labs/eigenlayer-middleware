@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
+<<<<<<< HEAD
 pragma solidity ^0.8.12;
+=======
+pragma solidity =0.8.12;
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
 
 import {IAVSDirectory, ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 

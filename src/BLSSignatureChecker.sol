@@ -76,7 +76,11 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
      * is correct, i.e., ensure that the stake returned from the specified block number is recent enough and that the stake is either the most recent update
      * for the total stake (of the operator) or latest before the referenceBlockNumber.
      * @param msgHash is the hash being signed
+<<<<<<< HEAD
      * @dev NOTE: Be careful to ensure `msgHash` is collision-resistant! This method does not hash
+=======
+     * @dev NOTE: Be careful to ensure `msgHash` is collision-resistant! This method does not hash 
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
      * `msgHash` in any way, so if an attacker is able to pass in an arbitrary value, they may be able
      * to tamper with signature verification.
      * @param quorumNumbers is the bytes array of quorum numbers that are being signed for
@@ -110,10 +114,14 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
             "BLSSignatureChecker.checkSignatures: input nonsigner length mismatch"
         );
 
+<<<<<<< HEAD
         require(
             referenceBlockNumber < uint32(block.number),
             "BLSSignatureChecker.checkSignatures: invalid reference block"
         );
+=======
+        require(referenceBlockNumber < uint32(block.number), "BLSSignatureChecker.checkSignatures: invalid reference block");
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
 
         // This method needs to calculate the aggregate pubkey for all signing operators across
         // all signing quorums. To do that, we can query the aggregate pubkey for each quorum
@@ -193,9 +201,13 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
          */
         {
             bool _staleStakesForbidden = staleStakesForbidden;
+<<<<<<< HEAD
             uint256 withdrawalDelayBlocks = _staleStakesForbidden
                 ? delegation.minWithdrawalDelayBlocks()
                 : 0;
+=======
+            uint256 withdrawalDelayBlocks = _staleStakesForbidden ? delegation.minWithdrawalDelayBlocks() : 0;
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
 
             for (uint256 i = 0; i < quorumNumbers.length; i++) {
                 // If we're disallowing stale stake updates, check that each quorum's last update block

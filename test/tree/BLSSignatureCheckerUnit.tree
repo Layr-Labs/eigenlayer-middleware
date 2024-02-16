@@ -21,10 +21,14 @@
 │   │   └── it should revert
 │   ├── given that the staleStakesForbidden flag is set and the quorumUpdateBlock number is strictly within
 <<<<<<< HEAD
+<<<<<<< HEAD
 │   │   `delegation.minWithdrawalDelayBlocks()` of the present block, for any of the quorumNumbers
 =======
 │   │   `delegation.withdrawalDelayBlocks()` of the present block, for any of the quorumNumbers
 >>>>>>> feat: improve sig checker unit tests (#144)
+=======
+│   │   `delegation.minWithdrawalDelayBlocks()` of the present block, for any of the quorumNumbers
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
 │   │   └── it should revert
 │   ├── given that any of the provided nonSignerQuorumBitmapIndices is incorrect for the referenceBlockNumber
 │   │   └── ***it should revert (via bubbling up a revert from the RegistryCoordinator)

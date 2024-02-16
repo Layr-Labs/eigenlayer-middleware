@@ -6,8 +6,12 @@ import { AVSDirectory } from "eigenlayer-contracts/src/contracts/core/AVSDirecto
 import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import { DelegationManager } from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import { IDelegationManager } from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+<<<<<<< HEAD
 import { RewardsCoordinator } from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
 import { IRewardsCoordinator } from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+=======
+import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
 
 contract Test_CoreRegistration is MockAVSDeployer {
     // Contracts
@@ -42,6 +46,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
                         50400, // Initial withdrawal delay blocks
                         initializeStrategiesToSetDelayBlocks,
                         initializeWithdrawalDelayBlocks
+<<<<<<< HEAD
                     )
                 )
             )
@@ -59,18 +64,43 @@ contract Test_CoreRegistration is MockAVSDeployer {
                         address(this), // owner
                         pauserRegistry,
                         0 // 0 is initialPausedStatus
+=======
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
                     )
                 )
             )
         );
 
+<<<<<<< HEAD
         // Deploy Mock RewardsCoordinator
         rewardsCoordinatorMock = new RewardsCoordinatorMock();
+=======
+        // Deploy New AVS Directory
+        AVSDirectory avsDirectoryImplementation = new AVSDirectory(delegationManager);
+        avsDirectory = AVSDirectory(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(avsDirectoryImplementation),
+                    address(proxyAdmin),
+                    abi.encodeWithSelector(
+                        AVSDirectory.initialize.selector,
+                        address(this), // owner
+                        pauserRegistry,
+                        0 // 0 is initialPausedStatus
+                    )
+                )
+            )
+        );
+
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
 
         // Deploy New ServiceManager & RegistryCoordinator implementations
         serviceManagerImplementation = new ServiceManagerMock(
             avsDirectory,
+<<<<<<< HEAD
             rewardsCoordinatorMock,
+=======
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
             registryCoordinator,
             stakeRegistry
         );
@@ -179,12 +209,21 @@ contract Test_CoreRegistration is MockAVSDeployer {
 
     event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
 
+<<<<<<< HEAD
     function test_setMetadataURI() public {
         address toPrankFrom = serviceManager.owner();
         cheats.prank(toPrankFrom);
         cheats.expectEmit(true, true, true, true);
         emit AVSMetadataURIUpdated(address(serviceManager), "Test MetadataURI");
         serviceManager.updateAVSMetadataURI("Test MetadataURI");
+=======
+    function test_setMetadataURI() public {  
+        address toPrankFrom = serviceManager.owner();      
+        cheats.prank(toPrankFrom);
+        cheats.expectEmit(true, true, true, true);
+        emit AVSMetadataURIUpdated(address(serviceManager), "Test MetadataURI");
+        serviceManager.setMetadataURI("Test MetadataURI");
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
     }
 
     // Utils

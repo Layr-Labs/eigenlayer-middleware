@@ -39,10 +39,14 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
     // correctly on the BLSSignatureChecker contract when all operators are only regsitered for a single quorum and
     // the signature is only checked for stakes on that quorum
 <<<<<<< HEAD
+<<<<<<< HEAD
     function testFuzz_checkSignatures_SingleQuorum(uint256 pseudoRandomNumber) public { 
 =======
     function test_checkSignatures_SingleQuorum(uint256 pseudoRandomNumber) public { 
 >>>>>>> feat: improve sig checker unit tests (#144)
+=======
+    function testFuzz_checkSignatures_SingleQuorum(uint256 pseudoRandomNumber) public { 
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
         uint256 numNonSigners = pseudoRandomNumber % (maxOperatorsToRegister - 1);
         uint256 quorumBitmap = 1;
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
@@ -246,19 +250,28 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
             _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(pseudoRandomNumber, numNonSigners, quorumBitmap);
         
 <<<<<<< HEAD
+<<<<<<< HEAD
         // Create an invalid reference block: any block number >= the current block
         uint32 invalidReferenceBlock = uint32(block.number + (pseudoRandomNumber % 20));
 =======
 >>>>>>> feat: improve sig checker unit tests (#144)
+=======
+        // Create an invalid reference block: any block number >= the current block
+        uint32 invalidReferenceBlock = uint32(block.number + (pseudoRandomNumber % 20));
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
         cheats.expectRevert("BLSSignatureChecker.checkSignatures: invalid reference block");
         blsSignatureChecker.checkSignatures(
             msgHash, 
             quorumNumbers,
 <<<<<<< HEAD
+<<<<<<< HEAD
             invalidReferenceBlock, 
 =======
             uint32(block.number + 1), 
 >>>>>>> feat: improve sig checker unit tests (#144)
+=======
+            invalidReferenceBlock, 
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
             nonSignerStakesAndSignature
         );
     }
@@ -326,6 +339,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
 
         // move referenceBlockNumber forward to a block number the last block number where the stakes will be considered "not stale"
 <<<<<<< HEAD
+<<<<<<< HEAD
         referenceBlockNumber = uint32(stalestUpdateBlock + delegationMock.minWithdrawalDelayBlocks()) - 1;
         // roll forward to make the reference block number valid
         // we roll to referenceBlockNumber + 1 because the current block number is not a valid reference block
@@ -336,6 +350,12 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         // roll forward to make the reference block number valid
         cheats.roll(referenceBlockNumber);
 >>>>>>> feat: improve sig checker unit tests (#144)
+=======
+        referenceBlockNumber = uint32(stalestUpdateBlock + delegationMock.minWithdrawalDelayBlocks());
+        // roll forward to make the reference block number valid
+        // we roll to referenceBlockNumber + 1 because the current block number is not a valid reference block
+        cheats.roll(referenceBlockNumber + 1);
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
         blsSignatureChecker.checkSignatures(
             msgHash, 
             quorumNumbers,
@@ -346,12 +366,17 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         // move referenceBlockNumber forward one more block, making the stakes "stale"
         referenceBlockNumber += 1;
 <<<<<<< HEAD
+<<<<<<< HEAD
         // roll forward to reference + 1 to ensure the referenceBlockNumber is still valid
         cheats.roll(referenceBlockNumber + 1);
 =======
         // roll forward to make the reference block number valid
         cheats.roll(referenceBlockNumber);
 >>>>>>> feat: improve sig checker unit tests (#144)
+=======
+        // roll forward to reference + 1 to ensure the referenceBlockNumber is still valid
+        cheats.roll(referenceBlockNumber + 1);
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
         cheats.expectRevert("BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within withdrawalDelayBlocks window");
         blsSignatureChecker.checkSignatures(
             msgHash, 

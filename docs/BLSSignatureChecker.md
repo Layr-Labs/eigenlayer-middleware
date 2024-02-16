@@ -90,7 +90,11 @@ This method performs the following steps. Note that each step involves lookups o
     * `quorumNumbers` MUST be an ordered list of valid, initialized quorums
     * `params.nonSignerPubkeys` MUST ONLY contain unique pubkeys, in ascending order of their pubkey hash
 * For each quorum:
+<<<<<<< HEAD
     * If stale stakes are forbidden (see [`BLSSignatureChecker.setStaleStakesForbidden`](#blssignaturecheckersetstalestakesforbidden)), check the last `quorumUpdateBlockNumber` is within `DelegationManager.minWithdrawalDelayBlocks` of `referenceBlockNumber`. This references a value in the EigenLayer core contracts - see [EigenLayer core docs][core-docs-dev] for more info.
+=======
+    * If stale stakes are forbidden (see [`BLSSignatureChecker.setStaleStakesForbidden`](#blssignaturecheckersetstalestakesforbidden)), check the last `quorumUpdateBlockNumber` is within `DelegationManager.minWithdrawalDelayBlocks` of `referenceBlockNumber`. This references a value in the EigenLayer core contracts - see [EigenLayer core docs][core-docs-m2] for more info.
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
     * Validate that each `params.quorumApks` corresponds to the quorum's apk at the `referenceBlockNumber`
 * For each historical state lookup, the `referenceBlockNumber` and provided index MUST point to a valid historical entry: 
     * `referenceBlockNumber` MUST come after the entry's `updateBlockNumber`

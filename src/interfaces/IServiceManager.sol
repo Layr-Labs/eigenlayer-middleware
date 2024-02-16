@@ -67,5 +67,11 @@ interface IServiceManager is IServiceManagerUI {
      *      The off-chain service should do that validation separately
      */
     function getRestakeableStrategies() external view returns (address[] memory);
+<<<<<<< HEAD
 >>>>>>> Add a function to register operator with pubkey.
+=======
+
+    /// @notice Returns the EigenLayer AVSDirectory contract.
+    function avsDirectory() external view returns (address);
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
 }

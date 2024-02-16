@@ -32,11 +32,16 @@ import {DelegationMock} from "../mocks/DelegationMock.sol";
 import {AVSDirectory} from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
+<<<<<<< HEAD
 import {RewardsCoordinatorMock} from "../mocks/RewardsCoordinatorMock.sol";
 
 import { RewardsCoordinator } from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
 import { IRewardsCoordinator } from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
+=======
+
+import {AVSDirectoryMock} from "../mocks/AVSDirectoryMock.sol";
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
 import {BLSApkRegistryHarness} from "../harnesses/BLSApkRegistryHarness.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 
@@ -76,9 +81,12 @@ contract MockAVSDeployer is Test {
     AVSDirectory public avsDirectory;
     AVSDirectory public avsDirectoryImplementation;
     AVSDirectoryMock public avsDirectoryMock;
+<<<<<<< HEAD
     RewardsCoordinator public rewardsCoordinator;
     RewardsCoordinator public rewardsCoordinatorImplementation;
     RewardsCoordinatorMock public rewardsCoordinatorMock;
+=======
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
 
     /// @notice StakeRegistry, Constant used as a divisor in calculating weights.
     uint256 public constant WEIGHTING_DIVISOR = 1e18;
@@ -145,6 +153,7 @@ contract MockAVSDeployer is Test {
         pausers[0] = pauser;
         pauserRegistry = new PauserRegistry(pausers, unpauser);
 
+
         delegationMock = new DelegationMock();
         avsDirectoryMock = new AVSDirectoryMock();
         eigenPodManagerMock = new EigenPodManagerMock();
@@ -171,6 +180,7 @@ contract MockAVSDeployer is Test {
                 new TransparentUpgradeableProxy(
                     address(avsDirectoryImplementation),
                     address(proxyAdmin),
+<<<<<<< HEAD
                     abi.encodeWithSelector(
                         AVSDirectory.initialize.selector,
                         msg.sender,
@@ -179,6 +189,17 @@ contract MockAVSDeployer is Test {
                     )
                 )
             )
+=======
+                    abi.encodeWithSelector(AVSDirectory.initialize.selector, msg.sender, pauserRegistry, 0/*initialPausedStatus*/)
+                )
+            )
+        );
+
+        strategyManagerMock.setAddresses(
+            delegationMock,
+            eigenPodManagerMock,
+            slasher
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
         );
         rewardsCoordinatorMock = new RewardsCoordinatorMock();
 
@@ -244,7 +265,10 @@ contract MockAVSDeployer is Test {
 
         serviceManagerImplementation = new ServiceManagerMock(
             avsDirectoryMock,
+<<<<<<< HEAD
             IRewardsCoordinator(address(rewardsCoordinatorMock)),
+=======
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
             registryCoordinator,
             stakeRegistry
         );
@@ -462,6 +486,7 @@ contract MockAVSDeployer is Test {
         return bytes32(uint256(start) + inc);
     }
 
+<<<<<<< HEAD
     function _signOperatorChurnApproval(
         address registeringOperator,
         bytes32 registeringOperatorId,
@@ -471,6 +496,15 @@ contract MockAVSDeployer is Test {
     ) internal view returns (ISignatureUtils.SignatureWithSaltAndExpiry memory) {
         bytes32 digestHash = registryCoordinator.calculateOperatorChurnApprovalDigestHash(
             registeringOperator, registeringOperatorId, operatorKickParams, salt, expiry
+=======
+    function _signOperatorChurnApproval(address registeringOperator, bytes32 registeringOperatorId, IRegistryCoordinator.OperatorKickParam[] memory operatorKickParams, bytes32 salt,  uint256 expiry) internal view returns(ISignatureUtils.SignatureWithSaltAndExpiry memory) {
+        bytes32 digestHash = registryCoordinator.calculateOperatorChurnApprovalDigestHash(
+            registeringOperator,
+            registeringOperatorId,
+            operatorKickParams,
+            salt,
+            expiry
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
         );
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(churnApproverPrivateKey, digestHash);
         return ISignatureUtils.SignatureWithSaltAndExpiry({

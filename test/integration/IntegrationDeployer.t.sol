@@ -16,7 +16,10 @@ import "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
 import "eigenlayer-contracts/src/contracts/core/Slasher.sol";
 import "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
+<<<<<<< HEAD
 import "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
+=======
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
 import "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPodManager.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPod.sol";
@@ -153,6 +156,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             )
         );
         avsDirectory = AVSDirectory(
+<<<<<<< HEAD
             address(
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
@@ -160,6 +164,10 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         // RewardsCoordinator = RewardsCoordinator(
         //     address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), ""))
         // );
+=======
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), ""))
+        );
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
 
         // Deploy EigenPod Contracts
         pod = new EigenPod(
@@ -181,6 +189,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit, eigenPodBeacon, strategyManager, slasher, delegationManager
         );
+<<<<<<< HEAD
         DelayedWithdrawalRouter delayedWithdrawalRouterImplementation =
             new DelayedWithdrawalRouter(eigenPodManager);
         AVSDirectory avsDirectoryImplemntation = new AVSDirectory(delegationManager);
@@ -192,6 +201,10 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         //     MAX_FUTURE_LENGTH,
         //     GENESIS_REWARDS_TIMESTAMP
         // );
+=======
+        DelayedWithdrawalRouter delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
+        AVSDirectory avsDirectoryImplemntation = new AVSDirectory(delegationManager);
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
 
         // Third, upgrade the proxy contracts to point to the implementations
         uint256 minWithdrawalDelayBlocks = 7 days / 12 seconds;
@@ -205,7 +218,11 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 DelegationManager.initialize.selector,
                 eigenLayerReputedMultisig, // initialOwner
                 pauserRegistry,
+<<<<<<< HEAD
                 0, /* initialPausedStatus */
+=======
+                0 /* initialPausedStatus */,
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
                 minWithdrawalDelayBlocks,
                 initializeStrategiesToSetDelayBlocks,
                 initializeWithdrawalDelayBlocks
@@ -329,6 +346,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
         cheats.stopPrank();
 
+<<<<<<< HEAD
         StakeRegistry stakeRegistryImplementation = new StakeRegistry(
             IRegistryCoordinator(registryCoordinator), IDelegationManager(delegationManager)
         );
@@ -342,6 +360,12 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             IRegistryCoordinator(registryCoordinator),
             stakeRegistry
         );
+=======
+        StakeRegistry stakeRegistryImplementation = new StakeRegistry(IRegistryCoordinator(registryCoordinator), IDelegationManager(delegationManager));
+        BLSApkRegistry blsApkRegistryImplementation = new BLSApkRegistry(IRegistryCoordinator(registryCoordinator));
+        IndexRegistry indexRegistryImplementation = new IndexRegistry(IRegistryCoordinator(registryCoordinator));
+        ServiceManagerMock serviceManagerImplementation = new ServiceManagerMock(IAVSDirectory(avsDirectory), IRegistryCoordinator(registryCoordinator), stakeRegistry);
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
 
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(stakeRegistry))),
@@ -416,9 +440,13 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         bool[] memory thirdPartyTransfersForbiddenValues = new bool[](1);
         strategies[0] = strategy;
         cheats.prank(strategyManager.strategyWhitelister());
+<<<<<<< HEAD
         strategyManager.addStrategiesToDepositWhitelist(
             strategies, thirdPartyTransfersForbiddenValues
         );
+=======
+        strategyManager.addStrategiesToDepositWhitelist(strategies, thirdPartyTransfersForbiddenValues);
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
 
         // Add to allStrats
         allStrats.push(strategy);

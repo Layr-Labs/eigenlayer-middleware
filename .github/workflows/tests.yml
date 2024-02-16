@@ -8,9 +8,14 @@ on:
   push:
     branches:
       - master
+<<<<<<< HEAD
       - mainnet
       - testnet-goerli
       - dev
+=======
+      - m2-mainnet
+      - m2-mainnet-fixes
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
   pull_request:
 
 env:

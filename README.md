@@ -5,12 +5,16 @@
 
 EigenLayer is a set of smart contracts deployed on Ethereum that enable restaking of assets to secure new services called AVSs (actively validated services). The core contracts that enable these features can be found in the [`eigenlayer-contracts` repo][core-repo].
 
+<<<<<<< HEAD
+=======
+This repo contains smart contracts used to create an AVS that interacts with the EigenLayer core contracts. Because these contracts are meant to be used by any AVS, there is no single deployment. However, you can see EigenDA's deployment info on our [docs site](https://docs.eigenlayer.xyz/eigenda/deployed-contracts).
+
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
 ## Getting Started
 
 * [Branching](#branching)
 * [Documentation](#documentation)
 * [Building and Running Tests](#building-and-running-tests)
-* [Deployments](#deployments)
 
 ## Branching
 
@@ -45,6 +49,7 @@ foundryup
 
 forge build
 forge test
+<<<<<<< HEAD
 ```
 
 ## Deployments
@@ -81,3 +86,6 @@ The current testnet deployment is on holesky, is from our M2 beta release. You c
 [`ProxyAdmin`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0xB043...5c15`](https://holesky.etherscan.io/address/0xB043055dd967A382577c2f5261fA6428f2905c15) | |
 [`eigenda/EigenDAServiceManager`](https://github.com/Layr-Labs/eigenda/blob/a33b41561cc3fb4cd6d50a8738e4c5dca43ec0a5/contracts/src/core/EigenDAServiceManager.sol) | [`0xD4A7E1Bd8015057293f0D0A557088c286942e84b`](https://holesky.etherscan.io/address/0xD4A7E1Bd8015057293f0D0A557088c286942e84b) | [`0xa722...67f3`](https://holesky.etherscan.io/address/0xa7227485e6C693AC4566fe168C5E3647c5c267f3) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 
+=======
+```
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)

@@ -5,7 +5,10 @@ import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/Ownabl
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+<<<<<<< HEAD
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+=======
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
 
 import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
@@ -20,14 +23,18 @@ import {BN254} from "../libraries/BN254.sol";
  * This contract can be inherited from or simply used as a point-of-reference.
  * @author Layr Labs, Inc.
  */
+<<<<<<< HEAD
 abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseStorage {
+=======
+abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
     using BitmapUtils for *;
 
 <<<<<<< HEAD
 =======
     IRegistryCoordinator internal immutable _registryCoordinator;
-    IDelegationManager internal immutable _delegationManager;
     IStakeRegistry internal immutable _stakeRegistry;
+    IAVSDirectory internal immutable _avsDirectory;
 
     mapping(PubKey => ISignatureUtils.SignatureWithSaltAndExpiry) public signatureMap;
 
@@ -53,6 +60,7 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
     /// @notice Sets the (immutable) `_registryCoordinator` address
     constructor(
         IAVSDirectory __avsDirectory,
+<<<<<<< HEAD
         IRewardsCoordinator __rewardsCoordinator,
         IRegistryCoordinator __registryCoordinator,
         IStakeRegistry __stakeRegistry
@@ -71,6 +79,18 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
         address initialOwner,
         address _rewardsInitiator
     ) internal virtual onlyInitializing {
+=======
+        IRegistryCoordinator __registryCoordinator,
+        IStakeRegistry __stakeRegistry
+    ) {
+        _avsDirectory = __avsDirectory;
+        _registryCoordinator = __registryCoordinator;
+        _stakeRegistry = __stakeRegistry;
+        _disableInitializers();
+    }
+
+    function __ServiceManagerBase_init(address initialOwner) internal virtual onlyInitializing {
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
         _transferOwnership(initialOwner);
         _setRewardsInitiator(_rewardsInitiator);
     }
@@ -80,6 +100,7 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
      * @param _metadataURI is the metadata URI for the AVS
      * @dev only callable by the owner
      */
+<<<<<<< HEAD
     function updateAVSMetadataURI(string memory _metadataURI) public virtual onlyOwner {
         _avsDirectory.updateAVSMetadataURI(_metadataURI);
     }
@@ -112,6 +133,10 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
         }
 
         _rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
+=======
+    function setMetadataURI(string memory _metadataURI) public virtual onlyOwner {
+        _avsDirectory.updateAVSMetadataURI(_metadataURI);
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
     }
 
     /**
@@ -144,6 +169,7 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
      */
     function deregisterOperatorFromAVS(address operator) public virtual onlyRegistryCoordinator {
         _avsDirectory.deregisterOperatorFromAVS(operator);
+<<<<<<< HEAD
     }
 
     /**
@@ -158,6 +184,8 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
     function _setRewardsInitiator(address newRewardsInitiator) internal {
         emit RewardsInitiatorUpdated(rewardsInitiator, newRewardsInitiator);
         rewardsInitiator = newRewardsInitiator;
+=======
+>>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
     }
 
     /**
@@ -236,4 +264,13 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
     function avsDirectory() external view override returns (address) {
         return address(_avsDirectory);
     }
+
+    /// @notice Returns the EigenLayer AVSDirectory contract.
+    function avsDirectory() external view override returns (address) {
+        return address(_avsDirectory);
+    }
+    
+    // storage gap for upgradeability
+    // slither-disable-next-line shadowing-state
+    uint256[50] private __GAP;
 }
