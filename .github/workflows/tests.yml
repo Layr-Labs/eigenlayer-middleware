@@ -9,6 +9,7 @@ on:
     branches:
       - master
 <<<<<<< HEAD
+<<<<<<< HEAD
       - mainnet
       - testnet-goerli
       - dev
@@ -16,6 +17,11 @@ on:
       - m2-mainnet
       - m2-mainnet-fixes
 >>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
+=======
+      - mainnet
+      - testnet-goerli
+      - dev
+>>>>>>> chore: update core submodule and fix broken docs links (#188)
   pull_request:
 
 env:
