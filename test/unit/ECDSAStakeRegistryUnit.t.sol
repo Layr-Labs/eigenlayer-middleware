@@ -296,6 +296,7 @@ contract UpdateOperators is ECDSAStakeRegistryTest {
         uint256 updatedWeight2 = registry.getLastCheckpointOperatorWeight(operator2);
         assertEq(updatedWeight1, 525);
         assertEq(updatedWeight2, 1000);
+        vm.roll(block.number + 1);
     }
 }
 
@@ -446,6 +447,7 @@ contract CheckSignatures is ECDSAStakeRegistryTest {
         uint256 thresholdWeight = 10000000000;
         vm.prank(registry.owner());
         registry.updateStakeThreshold(thresholdWeight);
+        vm.roll(block.number+1);
 
         vm.mockCall(
             address(registry),
@@ -517,7 +519,6 @@ contract CheckSignatures is ECDSAStakeRegistryTest {
         signers = new address[](2);
         (signers[0], signers[1]) = (operator1, operator2);
         registry.updateOperators(signers);
-        vm.roll(referenceBlock + 1);
         signatures = new bytes[](2);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(operator1Pk, msgHash);
         signatures[0] = abi.encodePacked(r, s, v);
@@ -527,6 +528,7 @@ contract CheckSignatures is ECDSAStakeRegistryTest {
         uint256 thresholdWeight = 10000000000;
         vm.prank(registry.owner());
         registry.updateStakeThreshold(thresholdWeight);
+        vm.roll(referenceBlock + 1);
 
         vm.mockCall(
             address(registry),

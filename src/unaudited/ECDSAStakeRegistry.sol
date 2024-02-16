@@ -101,11 +101,11 @@ abstract contract ECDSAStakeRegistryStorage is ECDSAStakeRegistryEventsAndErrors
     /// @notice Defines the duration after which the stake's weight expires.
     uint256 internal stakeExpiry;
 
-    /// @notice Sets the threshold weight that signatures must meet to be valid.
-    uint256 internal thresholdWeightBps;
-
     /// @notice Tracks the total stake history over time using checkpoints
     CheckpointsUpgradeable.History internal _totalWeightHistory;
+
+    /// @notice Tracks the threshold bps history using checkpoints
+    CheckpointsUpgradeable.History internal _thresholdWeightBpsHistory;
 
     /// @notice Maps operator addresses to their respective stake histories using checkpoints
     mapping(address => CheckpointsUpgradeable.History) internal _operatorWeightHistory;
@@ -283,7 +283,7 @@ contract ECDSAStakeRegistry is
     }
 
     function _updateStakeThreshold(uint256 _thresholdWeightBps) internal {
-        thresholdWeightBps = _thresholdWeightBps;
+        _thresholdWeightBpsHistory.push(_thresholdWeightBps);
         emit ThresholdWeightUpdated(_thresholdWeightBps);
     }
 
@@ -459,12 +459,22 @@ contract ECDSAStakeRegistry is
         }
     }
 
+    function _getThresholdStake(uint32 _referenceBlock) internal view returns (uint256) {
+        if (_referenceBlock == type(uint32).max) {
+            return _thresholdWeightBpsHistory.latest();
+        } else {
+            return _thresholdWeightBpsHistory.getAtBlock(_referenceBlock);
+        }
+    }
+
+
+
     /// @notice Validates that the cumulative stake of signed messages meets or exceeds the required threshold.
     /// @param _signedWeight The cumulative weight of the signers that have signed the message.
     /// @param _referenceBlock The block number to verify the stake threshold for
     function _validateThresholdStake(uint256 _signedWeight, uint32 _referenceBlock) internal view {
         uint256 totalWeight = _getTotalWeight(_referenceBlock);
-        if (thresholdWeightBps > (_signedWeight * BPS) / totalWeight)
+        if (_getThresholdStake(_referenceBlock) > (_signedWeight * BPS) / totalWeight)
             revert InsufficientSignedStake();
     }
 }
