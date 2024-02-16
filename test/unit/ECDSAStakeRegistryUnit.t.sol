@@ -4,7 +4,8 @@ pragma solidity ^0.8.12;
 import {Test} from "forge-std/Test.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
-import {ECDSAStakeRegistry, ECDSAStakeRegistryEventsAndErrors, Quorum, StrategyParams} from "../../src/unaudited/ECDSAStakeRegistry.sol";
+import {ECDSAStakeRegistry}from "../../src/unaudited/ECDSAStakeRegistry.sol";
+import {ECDSAStakeRegistryEventsAndErrors, Quorum, StrategyParams} from "../../src/interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
+import {ECDSAStakeRegistryStorage, Quorum, StrategyParams} from "./ECDSAStakeRegistryStorage.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
@@ -11,118 +12,6 @@ import {CheckpointsUpgradeable} from "@openzeppelin-upgrades/contracts/utils/Che
 import {PausableUpgradeable} from "@openzeppelin-upgrades/contracts/security/PausableUpgradeable.sol";
 import {SignatureCheckerUpgradeable} from "@openzeppelin-upgrades/contracts/utils/cryptography/SignatureCheckerUpgradeable.sol";
 import {IERC1271Upgradeable} from "@openzeppelin-upgrades/contracts/interfaces/IERC1271Upgradeable.sol";
-
-struct StrategyParams {
-    IStrategy strategy; // The strategy contract reference
-    uint96 multiplier; // The multiplier applied to the strategy
-}
-
-struct Quorum {
-    StrategyParams[] strategies; // An array of strategy parameters to define the quorum
-}
-
-abstract contract ECDSAStakeRegistryEventsAndErrors {
-    /// @notice Emitted when the system registers an operator
-    /// @param _operator The address of the registered operator
-    /// @param _avs The address of the associated AVS
-    event OperatorRegistered(address indexed _operator, address indexed _avs);
-
-    /// @notice Emitted when the system deregisters an operator
-    /// @param _operator The address of the deregistered operator
-    /// @param _avs The address of the associated AVS
-    event OperatorDeregistered(address indexed _operator, address indexed _avs);
-
-    /// @notice Emitted when the system updates the quorum
-    /// @param _old The previous quorum configuration
-    /// @param _new The new quorum configuration
-    event QuorumUpdated(Quorum _old, Quorum _new);
-
-    /// @notice Emitted when the weight required to be an operator changes
-    /// @param oldMinimumWeight The previous weight
-    /// @param newMinimumWeight The updated weight
-    event UpdateMinimumWeight(uint256 oldMinimumWeight, uint256 newMinimumWeight);
-
-    /// @notice Emitted when the system updates an operator's weight
-    /// @param _operator The address of the operator updated
-    /// @param oldWeight The operator's weight before the update
-    /// @param newWeight The operator's weight after the update
-    event OperatorWeightUpdated(address indexed _operator, uint256 oldWeight, uint256 newWeight);
-
-    /// @notice Emitted when the system updates the total weight
-    /// @param oldTotalWeight The total weight before the update
-    /// @param newTotalWeight The total weight after the update
-    event TotalWeightUpdated(uint256 oldTotalWeight, uint256 newTotalWeight);
-
-    /// @notice Emits when setting a new threshold weight.
-    event ThresholdWeightUpdated(uint256 _thresholdWeight);
-
-    /// @notice Indicates when the lengths of the signers array and signatures array do not match.
-    error LengthMismatch();
-
-    /// @notice Indicates encountering an invalid length for the signers or signatures array.
-    error InvalidLength();
-
-    /// @notice Indicates encountering an invalid signature.
-    error InvalidSignature();
-
-    /// @notice Indicates the total signed stake fails to meet the required threshold.
-    error InsufficientSignedStake();
-
-    /// @notice Indicates an individual signer's weight fails to meet the required threshold.
-    error InsufficientWeight();
-
-    /// @notice Indicates the quorum is invalid
-    error InvalidQuorum();
-
-    /// @notice Indicates the system finds a list of items unsorted
-    error NotSorted();
-
-    error OperatorAlreadyRegistered();
-
-    error OperatorNotRegistered();
-}
-
-abstract contract ECDSAStakeRegistryStorage is ECDSAStakeRegistryEventsAndErrors {
-    /// @notice Manages staking delegations through the DelegationManager interface
-    IDelegationManager internal immutable DELEGATION_MANAGER;
-
-    /// @dev The total amount of multipliers to weigh stakes
-    uint256 internal constant BPS = 10_000;
-
-    /// @notice Stores the current quorum configuration
-    Quorum internal quorum;
-
-    /// @notice Specifies the weight required to become an operator
-    uint256 public minimumWeight;
-
-    /// @notice Holds the address of the service manager
-    address internal serviceManager;
-
-    /// @notice Defines the duration after which the stake's weight expires.
-    uint256 internal stakeExpiry;
-
-    /// @notice Tracks the total stake history over time using checkpoints
-    CheckpointsUpgradeable.History internal _totalWeightHistory;
-
-    /// @notice Tracks the threshold bps history using checkpoints
-    CheckpointsUpgradeable.History internal _thresholdWeightBpsHistory;
-
-    /// @notice Maps operator addresses to their respective stake histories using checkpoints
-    mapping(address => CheckpointsUpgradeable.History) internal _operatorWeightHistory;
-
-    /// @notice Maps an operator to their registration status
-    mapping(address => bool) internal _operatorRegistered;
-
-    /// @param _delegationManager Connects this registry with the DelegationManager
-    constructor(IDelegationManager _delegationManager) {
-        DELEGATION_MANAGER = _delegationManager;
-    }
-
-    // slither-disable-next-line shadowing-state
-    /// @dev Reserves storage slots for future upgrades
-    // solhint-disable-next-line
-    uint256[42] private __gap;
-}
 
 /// @title ECDSA Stake Registry
 /// @notice THIS CONTRACT IS NOT AUDITED
