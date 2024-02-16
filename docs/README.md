@@ -2,12 +2,12 @@
 Reference Links:
  -->
 [core-contracts-repo]: https://github.com/Layr-Labs/eigenlayer-contracts
-[core-docs-m2]: https://github.com/Layr-Labs/eigenlayer-contracts/tree/m2-mainnet/docs
+[core-docs-dev]: https://github.com/Layr-Labs/eigenlayer-contracts/tree/dev/docs
 [eigenda-repo]: https://github.com/Layr-Labs/eigenda/
 [bitmaputils-lib]: ../src/libraries/BitmapUtils.sol
 
-[core-registerToAVS]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/m2-mainnet/docs/core/DelegationManager.md#registeroperatortoavs
-[core-deregisterFromAVS]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/m2-mainnet/docs/core/DelegationManager.md#deregisteroperatorfromavs
+[core-registerToAVS]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/dev/docs/core/AVSDirectory.md#registeroperatortoavs
+[core-deregisterFromAVS]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/dev/docs/core/AVSDirectory.md#deregisteroperatorfromavs
 
 ## EigenLayer Middleware Docs
 
@@ -64,7 +64,7 @@ Each quorum has an associated list of `StrategyParams`, which the Owner can conf
 
 When the `StakeRegistry` updates its view of an Operator's stake for a given quorum, it queries the `DelegationManager` to get the Operator's shares in each of the quorum's strategies and applies the multiplier to the returned share count.
 
-For more information on the `DelegationManager`, see the [EigenLayer core docs][core-docs-m2].
+For more information on the `DelegationManager`, see the [EigenLayer core docs][core-docs-dev].
 
 ##### Operator Sets and Churn
 

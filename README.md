@@ -1,4 +1,4 @@
-[core-docs-m2]: https://github.com/Layr-Labs/eigenlayer-contracts/tree/m2-mainnet/docs
+[core-docs-dev]: https://github.com/Layr-Labs/eigenlayer-contracts/tree/dev/docs
 [core-repo]: https://github.com/Layr-Labs/eigenlayer-contracts
 
 # EigenLayer Middleware
@@ -27,7 +27,7 @@ Most of this content is intro-level and describes user interactions with the Eig
 For shadowy super-coders:
 * The most up-to-date technical documentation can be found in [/docs](/docs).
 * To get an idea of how users interact with these contracts, check out the integration tests: [/test/integration](./test/integration)
-* To explore the EigenLayer core contracts, check out the core repo technical docs [here][core-docs-m2].
+* To explore the EigenLayer core contracts, check out the core repo technical docs [here][core-docs-dev].
 
 ## Building and Running Tests
 
