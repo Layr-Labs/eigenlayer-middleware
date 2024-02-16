@@ -80,7 +80,7 @@ contract ECDSAStakeRegistry is
     }
 
     /**
-     * @notice Adjusts the threshold weight for valid signatures.
+     * @notice Adjusts the cumulative threshold weight for a valid message to be signed by the operator set
      * @param _thresholdWeightBps The updated threshold weight.
      */
     function updateStakeThreshold(uint256 _thresholdWeightBps) external onlyOwner {
