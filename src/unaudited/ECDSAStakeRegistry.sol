@@ -55,7 +55,7 @@ contract ECDSAStakeRegistry is
     }
 
     /**
-     * @notice Updates the StakeRegistry's view of one or more operators' stakes.
+     * @notice Updates the StakeRegistry's view of one or more operators' stakes adding a new entry in their history of stake checkpoints, 
      * @dev Queries stakes from the Eigenlayer core DelegationManager contract
      * @param _operators A list of operator addresses to update
      */
