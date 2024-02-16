@@ -142,7 +142,7 @@ contract ECDSAStakeRegistry is
         return _operatorRegistered[_operator];
     }
 
-    /// @notice Calculates the current weight of an operator based on their delegated stake in the strategies considered in the quourm
+    /// @notice Calculates the current weight of an operator based on their delegated stake in the strategies considered in the quorum
     /// @param _operator The address of the operator.
     /// @return uint256 - The current weight of the operator; returns 0 if below the threshold.
     function getOperatorWeight(address _operator) public view returns (uint256) {
