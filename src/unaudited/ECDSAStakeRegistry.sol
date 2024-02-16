@@ -15,7 +15,7 @@ import {IERC1271Upgradeable} from "@openzeppelin-upgrades/contracts/interfaces/I
 
 /// @title ECDSA Stake Registry
 /// @notice THIS CONTRACT IS NOT AUDITED
-/// @notice Manages operator registration and quorum updates for a staking system using ECDSA signatures.
+/// @notice Manages operator registration and quorum updates for an AVS using ECDSA signatures.
 /// @dev Extends OpenZeppelin's upgradeable Ownable and Pausable patterns to ensure upgradability and pause functionality.
 contract ECDSAStakeRegistry is
     IERC1271Upgradeable,
