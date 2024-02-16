@@ -203,7 +203,7 @@ contract ECDSAStakeRegistry is
     function _registerOperatorWithSig(
         address _operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature
-    ) internal {
+    ) internal virtual {
         if (_operatorRegistered[_operator]) revert OperatorAlreadyRegistered();
         _operatorRegistered[_operator] = true;
         _updateOperatorWeight(_operator);
@@ -213,7 +213,7 @@ contract ECDSAStakeRegistry is
 
     /// @notice Updates the weight of an operator and returns the previous and current weights.
     /// @param _operator The address of the operator to update the weight of.
-    function _updateOperatorWeight(address _operator) internal {
+    function _updateOperatorWeight(address _operator) internal virtual {
         int256 delta;
         uint256 oldWeight;
         uint256 newWeight;
