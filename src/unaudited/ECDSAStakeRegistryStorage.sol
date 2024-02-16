@@ -13,7 +13,7 @@ abstract contract ECDSAStakeRegistryStorage is ECDSAStakeRegistryEventsAndErrors
     uint256 internal constant BPS = 10_000;
 
     /// @notice Stores the current quorum configuration
-    Quorum internal quorum;
+    Quorum internal _quorum;
 
     /// @notice Specifies the weight required to become an operator
     uint256 public minimumWeight;

@@ -101,8 +101,8 @@ contract ECDSAStakeRegistry is
 
     /// @notice Retrieves the current stake quorum details.
     /// @return Quorum - The current quorum of strategies and weights
-    function stakeQuorum() external view returns (Quorum memory) {
-        return quorum;
+    function quorum() external view returns (Quorum memory) {
+        return _quorum;
     }
 
     /// @notice Retrieves the last recorded weight for a given operator.
@@ -146,7 +146,7 @@ contract ECDSAStakeRegistry is
     /// @param _operator The address of the operator.
     /// @return uint256 - The current weight of the operator; returns 0 if below the threshold.
     function getOperatorWeight(address _operator) public view returns (uint256) {
-        StrategyParams[] memory strategies = quorum.strategies;
+        StrategyParams[] memory strategies = _quorum.strategies;
         uint256 weight;
         uint256 sharesAmount;
         for (uint256 i; i < strategies.length; i++) {
@@ -177,15 +177,15 @@ contract ECDSAStakeRegistry is
     }
 
     /// @dev Internal function to set the quorum configuration
-    /// @param _quorum The new quorum configuration to set
-    function _updateQuorumConfig(Quorum memory _quorum) internal {
-        if (!_isValidQuorum(_quorum)) revert InvalidQuorum();
-        Quorum memory oldQuorum = quorum;
-        delete quorum;
-        for (uint256 i; i < _quorum.strategies.length; i++) {
-            quorum.strategies.push(_quorum.strategies[i]);
+    /// @param _newQuorum The new quorum configuration to set
+    function _updateQuorumConfig(Quorum memory _newQuorum) internal {
+        if (!_isValidQuorum(_newQuorum)) revert InvalidQuorum();
+        Quorum memory oldQuorum = _quorum;
+        delete _quorum;
+        for (uint256 i; i < _newQuorum.strategies.length; i++) {
+            _quorum.strategies.push(_newQuorum.strategies[i]);
         }
-        emit QuorumUpdated(oldQuorum, _quorum);
+        emit QuorumUpdated(oldQuorum, _newQuorum);
     }
 
     /// @dev Internal function to deregister an operator

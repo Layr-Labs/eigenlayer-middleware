@@ -62,7 +62,7 @@ contract UpdateQuorumConfig is ECDSAStakeRegistryTest {
     function test_Update() public {
         IStrategy mockStrategy = IStrategy(address(420));
 
-        Quorum memory oldQuorum = registry.stakeQuorum();
+        Quorum memory oldQuorum = registry.quorum();
         Quorum memory newQuorum = Quorum({strategies: new StrategyParams[](1)});
         newQuorum.strategies[0] = StrategyParams({strategy: mockStrategy, multiplier: 10000});
 
@@ -99,7 +99,7 @@ contract UpdateQuorumConfig is ECDSAStakeRegistryTest {
     }
 
     function test_RevertsWhen_SameQuorum() public {
-        Quorum memory quorum = registry.stakeQuorum();
+        Quorum memory quorum = registry.quorum();
 
         /// Showing this doesnt revert
         registry.updateQuorumConfig(quorum);
