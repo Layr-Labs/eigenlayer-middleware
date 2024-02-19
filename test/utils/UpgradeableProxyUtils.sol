@@ -40,16 +40,6 @@ library UpgradeableProxyUtils {
 
     Vm private constant vm = Vm(CHEATCODE_ADDRESS);
 
-    /// @dev Convenience function for pranking the admin in tests
-    modifier tryPrank(address _tryCaller) {
-        try vm.startPrank(_tryCaller) {
-            _;
-            vm.stopPrank();
-        } catch {
-            _;
-        }
-    }
-
     /**
      * @dev Deploys a transparent proxy using the given contract as the implementation.
      *
@@ -211,28 +201,16 @@ library UpgradeableProxyUtils {
     }
 
     /**
-     * @notice For tests only. If broadcasting in scripts, use the `--sender <ADDRESS>` option with `forge script` instead.
-     *
      * @dev Upgrades a proxy to a new implementation contract. Only supported for UUPS or transparent proxies.
      *
      * Requires that either the `referenceContract` option is set, or the new implementation contract has a `@custom:oz-upgrades-from <reference>` annotation.
      *
-     * This function provides an additional `tryCaller` parameter to test an upgrade using a specific caller address.
-     * Use this if you encounter `OwnableUnauthorizedAccount` errors in your tests.
-     *
      * @param proxy Address of the proxy to upgrade
      * @param contractName Name of the new implementation contract to upgrade to, e.g. "MyContract.sol" or "MyContract.sol:MyContract" or artifact path relative to the project root directory
      * @param data Encoded call data of an arbitrary function to call during the upgrade process, or empty if no function needs to be called during the upgrade
-     * @param tryCaller Address to use as the caller of the upgrade function. This should be the address that owns the proxy or its ProxyAdmin.
      */
-    function upgradeProxy(
-        address proxy,
-        string memory contractName,
-        bytes memory data,
-        bytes memory constructorData,
-        address tryCaller
-    ) internal tryPrank(tryCaller) {
-        upgradeProxy(proxy, contractName, data, constructorData);
+    function upgradeProxy(address proxy, string memory contractName, bytes memory data) internal {
+        upgradeProxy(proxy, contractName, data, "");
     }
 
     /**
@@ -248,29 +226,14 @@ library UpgradeableProxyUtils {
         UpgradeableBeacon(beacon).upgradeTo(newImpl);
     }
     
-    /**
-     * @notice For tests only. If broadcasting in scripts, use the `--sender <ADDRESS>` option with `forge script` instead.
-     *
-     * @dev Upgrades a beacon to a new implementation contract.
-     *
-     * Requires that either the `referenceContract` option is set, or the new implementation contract has a `@custom:oz-upgrades-from <reference>` annotation.
-     *
-     * This function provides an additional `tryCaller` parameter to test an upgrade using a specific caller address.
-     * Use this if you encounter `OwnableUnauthorizedAccount` errors in your tests.
-     *
+
+     /*
      * @param beacon Address of the beacon to upgrade
      * @param contractName Name of the new implementation contract to upgrade to, e.g. "MyContract.sol" or "MyContract.sol:MyContract" or artifact path relative to the project root directory
-     * @param tryCaller Address to use as the caller of the upgrade function. This should be the address that owns the beacon.
      */
-    function upgradeBeacon(
-        address beacon,
-        string memory contractName,
-        bytes memory constructorData,
-        address tryCaller
-    ) internal tryPrank(tryCaller) {
-        upgradeBeacon(beacon, contractName, constructorData);
+    function upgradeBeacon(address beacon, string memory contractName ) internal {
+        upgradeBeacon(beacon, contractName, "");
     }
-
     /**
      * @dev Validates a new implementation contract in comparison with a reference contract, deploys the new implementation contract,
      * and returns its address.

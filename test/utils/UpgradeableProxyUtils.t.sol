@@ -30,7 +30,7 @@ contract UpgradeableProxyUtilsTest is ProxyAdmin, Test {
         vm.stopPrank();
 
         vm.startPrank(ProxyAdmin(address(this)).owner());
-        UpgradeableProxyUtils.upgradeProxy(proxy, "GreeterV2.sol", abi.encodeCall(GreeterV2.resetGreeting, ()), abi.encode(), address(this));
+        UpgradeableProxyUtils.upgradeProxy(proxy, "GreeterV2.sol", abi.encodeCall(GreeterV2.resetGreeting, ()));
         vm.stopPrank();
 
         address implAddressV2 = UpgradeableProxyUtils.getImplementationAddress(proxy);
@@ -54,7 +54,7 @@ contract UpgradeableProxyUtilsTest is ProxyAdmin, Test {
 
         assertEq(instance.greeting(), "hello");
 
-        UpgradeableProxyUtils.upgradeBeacon(beacon, "GreeterV2.sol", abi.encode(), address(this));
+        UpgradeableProxyUtils.upgradeBeacon(beacon, "GreeterV2.sol");
         address implAddressV2 = IBeacon(beacon).implementation();
 
         GreeterV2(address(instance)).resetGreeting();
