@@ -11,7 +11,6 @@ import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import {Greeter, GreeterV2, NoInitializer, WithConstructor, GreeterProxiable, GreeterV2Proxiable} from "./ProxyTestContracts.sol";
 
 contract UpgradeableProxyUtilsTest is Test {
-    address constant internal CHEATCODE_ADDRESS = 0x7109709ECfa91a80626fF3989D68f67F5b1DD12D;
     ProxyAdmin internal admin;
 
     function setUp() public {
