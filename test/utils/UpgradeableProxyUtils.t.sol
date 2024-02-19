@@ -6,7 +6,7 @@ import {Vm} from "forge-std/Vm.sol";
 
 import {UpgradeableProxyUtils} from "./UpgradeableProxyUtils.sol";
 import {Proxy} from "@openzeppelin/contracts/proxy/Proxy.sol";
-import {ProxyAdmin} from "@openzeppelin/contracts/proxy/Transparent/ProxyAdmin.sol";
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import {Greeter, GreeterV2, NoInitializer, WithConstructor, GreeterProxiable, GreeterV2Proxiable} from "./ProxyTestContracts.sol";
 
