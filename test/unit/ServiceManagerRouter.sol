@@ -8,6 +8,7 @@ contract ServiceManagerRouter_UnitTests is MockAVSDeployer {
     ServiceManagerRouter public router;
     ServiceManagerMock public dummyServiceManager;
     address eoa = address(0xfedbad);
+    address badReturn = address(0x000000000000000000000000000000000000dEaD);
 
     function setUp() public virtual {
         _deployMockEigenLayerAndAVS();
@@ -36,13 +37,13 @@ contract ServiceManagerRouter_UnitTests is MockAVSDeployer {
     function test_getRestakeableStrategies_badImplementation() public {
         address[] memory strategies = router.getRestakeableStrategies(address(emptyContract));
         assertEq(strategies.length, 1);
-        assertEq(strategies[0], address(0xDead));
+        assertEq(strategies[0], badReturn);
     }
 
     function test_getRestakeableStrategies_eoa() public {
         address[] memory strategies = router.getRestakeableStrategies(eoa);
         assertEq(strategies.length, 1);
-        assertEq(strategies[0], address(0xDead));
+        assertEq(strategies[0], badReturn);
     }
 
     function test_getOperatorRestakedStrategies_noStrats() public {
@@ -58,12 +59,12 @@ contract ServiceManagerRouter_UnitTests is MockAVSDeployer {
     function test_getOperatorRestakedStrategies_badImplementation() public {
         address[] memory strategies = router.getOperatorRestakedStrategies(address(emptyContract), defaultOperator);
         assertEq(strategies.length, 1);
-        assertEq(strategies[0], address(0xDead));
+        assertEq(strategies[0], badReturn);
     }
 
     function test_getOperatorRestakedStrategies_eoa() public {
         address[] memory strategies = router.getOperatorRestakedStrategies(eoa, defaultOperator);
         assertEq(strategies.length, 1);
-        assertEq(strategies[0], address(0xDead));
+        assertEq(strategies[0], badReturn);
     }
 }

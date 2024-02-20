@@ -12,7 +12,7 @@ import {IServiceManager} from "./interfaces/IServiceManager.sol";
 
 contract ServiceManagerRouter {
 
-    address public constant FAILED_CALL_ADDRESS = address(0xDead);
+    address public constant FAILED_CALL_ADDRESS = address(0x000000000000000000000000000000000000dEaD);
 
     /**
      * @notice Returns the list of strategies that the AVS supports for restaking
