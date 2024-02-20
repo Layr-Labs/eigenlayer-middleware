@@ -118,7 +118,6 @@ library UpgradeableProxyUtils {
     }
     /**
      * @dev Gets the admin address of a transparent proxy from its ERC1967 admin storage slot.
-     *
      * @param proxy Address of a transparent proxy
      * @return Admin address
      */
@@ -129,7 +128,6 @@ library UpgradeableProxyUtils {
 
     /**
      * @dev Gets the implementation address of a transparent or UUPS proxy from its ERC1967 implementation storage slot.
-     *
      * @param proxy Address of a transparent or UUPS proxy
      * @return Implementation address
      */
@@ -140,13 +138,63 @@ library UpgradeableProxyUtils {
 
     /**
      * @dev Gets the beacon address of a beacon proxy from its ERC1967 beacon storage slot.
-     *
      * @param proxy Address of a beacon proxy
      * @return Beacon address
      */
     function getBeaconAddress(address proxy) internal view returns (address) {
         bytes32 beaconSlot = vm.load(proxy, _BEACON_SLOT);
         return address(uint160(uint256(beaconSlot)));
+    }
+
+        /**
+     * @dev Upgrades a proxy to a new implementation contract. 
+     * @param proxy Address of the proxy to upgrade
+     * @param contractName Name of the new implementation contract to upgrade to, e.g. "MyContract.sol" or "MyContract.sol:MyContract" or artifact path relative to the project root directory
+     * @param data Encoded call data of an arbitrary function to call during the upgrade process, or empty if no function needs to be called during the upgrade
+     * @param constructorData abi encoded constructor arguments for deploying the implementation contract 
+     */
+    function upgradeProxy(address proxy, string memory contractName, bytes memory data, bytes memory constructorData) internal {
+        address newImpl = _deploy(contractName, constructorData);
+
+        bytes32 adminSlot = vm.load(proxy, _ADMIN_SLOT);
+        if (adminSlot == bytes32(0)) {
+
+            // No admin contract: upgrade directly using interface
+            TransparentUpgradeableProxy(payable(proxy)).upgradeToAndCall(newImpl, data);
+        } else {
+            ProxyAdmin admin = ProxyAdmin(address(uint160(uint256(adminSlot))));
+            admin.upgradeAndCall(TransparentUpgradeableProxy(payable(proxy)), newImpl, data);
+        }
+    }
+
+    /**
+     * @dev Upgrades a proxy to a new implementation contract. 
+     * @param proxy Address of the proxy to upgrade
+     * @param contractName Name of the new implementation contract to upgrade to, e.g. "MyContract.sol" or "MyContract.sol:MyContract" or artifact path relative to the project root directory
+     * @param data Encoded call data of an arbitrary function to call during the upgrade process, or empty if no function needs to be called during the upgrade
+     */
+    function upgradeProxy(address proxy, string memory contractName, bytes memory data) internal {
+        upgradeProxy(proxy, contractName, data, "");
+    }
+
+    /**
+     * @dev Upgrades a beacon to a new implementation contract.
+     * @param beacon Address of the beacon to upgrade
+     * @param contractName Name of the new implementation contract to upgrade to, e.g. "MyContract.sol" or "MyContract.sol:MyContract" or artifact path relative to the project root directory
+     * @param constructorData abi encoded constructor arguments for deploying the implementation contract 
+     */
+    function upgradeBeacon(address beacon, string memory contractName, bytes memory constructorData) internal {
+        address newImpl = _deploy(contractName, constructorData);
+        UpgradeableBeacon(beacon).upgradeTo(newImpl);
+    }
+    
+
+     /*
+     * @param beacon Address of the beacon to upgrade
+     * @param contractName Name of the new implementation contract to upgrade to, e.g. "MyContract.sol" or "MyContract.sol:MyContract" or artifact path relative to the project root directory
+     */
+    function upgradeBeacon(address beacon, string memory contractName ) internal {
+        upgradeBeacon(beacon, contractName, "");
     }
 
     function _deploy(
@@ -177,77 +225,7 @@ library UpgradeableProxyUtils {
         return addr;
     }
 
-    /**
-     * @dev Upgrades a proxy to a new implementation contract. Only supported for UUPS or transparent proxies.
-     *
-     * Requires that either the `referenceContract` option is set, or the new implementation contract has a `@custom:oz-upgrades-from <reference>` annotation.
-     *
-     * @param proxy Address of the proxy to upgrade
-     * @param contractName Name of the new implementation contract to upgrade to, e.g. "MyContract.sol" or "MyContract.sol:MyContract" or artifact path relative to the project root directory
-     * @param data Encoded call data of an arbitrary function to call during the upgrade process, or empty if no function needs to be called during the upgrade
-     */
-    function upgradeProxy(address proxy, string memory contractName, bytes memory data, bytes memory constructorData) internal {
-        address newImpl = prepareUpgrade(contractName, constructorData);
 
-        bytes32 adminSlot = vm.load(proxy, _ADMIN_SLOT);
-        if (adminSlot == bytes32(0)) {
-
-            // No admin contract: upgrade directly using interface
-            TransparentUpgradeableProxy(payable(proxy)).upgradeToAndCall(newImpl, data);
-        } else {
-            ProxyAdmin admin = ProxyAdmin(address(uint160(uint256(adminSlot))));
-            admin.upgradeAndCall(TransparentUpgradeableProxy(payable(proxy)), newImpl, data);
-        }
-    }
-
-    /**
-     * @dev Upgrades a proxy to a new implementation contract. Only supported for UUPS or transparent proxies.
-     *
-     * Requires that either the `referenceContract` option is set, or the new implementation contract has a `@custom:oz-upgrades-from <reference>` annotation.
-     *
-     * @param proxy Address of the proxy to upgrade
-     * @param contractName Name of the new implementation contract to upgrade to, e.g. "MyContract.sol" or "MyContract.sol:MyContract" or artifact path relative to the project root directory
-     * @param data Encoded call data of an arbitrary function to call during the upgrade process, or empty if no function needs to be called during the upgrade
-     */
-    function upgradeProxy(address proxy, string memory contractName, bytes memory data) internal {
-        upgradeProxy(proxy, contractName, data, "");
-    }
-
-    /**
-     * @dev Upgrades a beacon to a new implementation contract.
-     *
-     * Requires that either the `referenceContract` option is set, or the new implementation contract has a `@custom:oz-upgrades-from <reference>` annotation.
-     *
-     * @param beacon Address of the beacon to upgrade
-     * @param contractName Name of the new implementation contract to upgrade to, e.g. "MyContract.sol" or "MyContract.sol:MyContract" or artifact path relative to the project root directory
-     */
-    function upgradeBeacon(address beacon, string memory contractName, bytes memory constructorData) internal {
-        address newImpl = prepareUpgrade(contractName, constructorData);
-        UpgradeableBeacon(beacon).upgradeTo(newImpl);
-    }
-    
-
-     /*
-     * @param beacon Address of the beacon to upgrade
-     * @param contractName Name of the new implementation contract to upgrade to, e.g. "MyContract.sol" or "MyContract.sol:MyContract" or artifact path relative to the project root directory
-     */
-    function upgradeBeacon(address beacon, string memory contractName ) internal {
-        upgradeBeacon(beacon, contractName, "");
-    }
-    /**
-     * @dev Validates a new implementation contract in comparison with a reference contract, deploys the new implementation contract,
-     * and returns its address.
-     *
-     * Requires that either the `referenceContract` option is set, or the contract has a `@custom:oz-upgrades-from <reference>` annotation.
-     *
-     * Use this method to prepare an upgrade to be run from an admin address you do not control directly or cannot use from your deployment environment.
-     *
-     * @param contractName Name of the contract to deploy, e.g. "MyContract.sol" or "MyContract.sol:MyContract" or artifact path relative to the project root directory
-     * @return Address of the new implementation contract
-     */
-    function prepareUpgrade(string memory contractName, bytes memory constructorData) internal returns (address) {
-        return _deploy(contractName, constructorData);
-    }
 
     /**
      * @dev Precompile proxy contracts so that they can be deployed by name via the `_deploy` function.
