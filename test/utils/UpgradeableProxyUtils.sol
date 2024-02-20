@@ -68,9 +68,9 @@ library UpgradeableProxyUtils {
         string memory contractName,
         address initialOwner,
         bytes memory initializerData,
-        bytes memory constructorData
+        bytes memory implConstructorArgs
     ) internal returns (address) {
-        address impl = deployImplementation(contractName, constructorData);
+        address impl = deployImplementation(contractName, implConstructorArgs);
         return
             address(
                 _deploy(
@@ -90,9 +90,9 @@ library UpgradeableProxyUtils {
     function deployBeacon(
         string memory contractName,
         address initialOwner,
-        bytes memory constructorData
+        bytes memory implConstructorArgs
     ) internal returns (address) {
-        address impl = deployImplementation(contractName, constructorData);
+        address impl = deployImplementation(contractName, implConstructorArgs);
         return _deploy("UpgradeableBeacon.sol:UpgradeableBeacon", abi.encode(impl, initialOwner));
     }
 
@@ -113,8 +113,8 @@ library UpgradeableProxyUtils {
      * @param contractName Name of the contract to deploy, e.g. "MyContract.sol" or "MyContract.sol:MyContract" or artifact path relative to the project root directory
      * @return Address of the implementation contract
      */
-    function deployImplementation(string memory contractName, bytes memory constructorData) internal returns (address) {
-        return _deploy(contractName, constructorData);
+    function deployImplementation(string memory contractName, bytes memory implConstructorArgs) internal returns (address) {
+        return _deploy(contractName, implConstructorArgs);
     }
     /**
      * @dev Gets the admin address of a transparent proxy from its ERC1967 admin storage slot.
@@ -151,15 +151,15 @@ library UpgradeableProxyUtils {
      * @param proxy Address of the proxy to upgrade
      * @param contractName Name of the new implementation contract to upgrade to, e.g. "MyContract.sol" or "MyContract.sol:MyContract" or artifact path relative to the project root directory
      * @param data Encoded call data of an arbitrary function to call during the upgrade process, or empty if no function needs to be called during the upgrade
-     * @param constructorData abi encoded constructor arguments for deploying the implementation contract
+     * @param implConstructorArgs abi encoded constructor arguments for deploying the implementation contract
      */
     function upgradeProxy(
         address proxy,
         string memory contractName,
         bytes memory data,
-        bytes memory constructorData
+        bytes memory implConstructorArgs
     ) internal {
-        address newImpl = _deploy(contractName, constructorData);
+        address newImpl = _deploy(contractName, implConstructorArgs);
 
         bytes32 adminSlot = vm.load(proxy, _ADMIN_SLOT);
         if (adminSlot == bytes32(0)) {
@@ -185,10 +185,10 @@ library UpgradeableProxyUtils {
      * @dev Upgrades a beacon to a new implementation contract.
      * @param beacon Address of the beacon to upgrade
      * @param contractName Name of the new implementation contract to upgrade to, e.g. "MyContract.sol" or "MyContract.sol:MyContract" or artifact path relative to the project root directory
-     * @param constructorData abi encoded constructor arguments for deploying the implementation contract
+     * @param implConstructorArgs abi encoded constructor arguments for deploying the implementation contract
      */
-    function upgradeBeacon(address beacon, string memory contractName, bytes memory constructorData) internal {
-        address newImpl = _deploy(contractName, constructorData);
+    function upgradeBeacon(address beacon, string memory contractName, bytes memory implConstructorArgs) internal {
+        address newImpl = _deploy(contractName, implConstructorArgs);
         UpgradeableBeacon(beacon).upgradeTo(newImpl);
     }
 
@@ -200,16 +200,16 @@ library UpgradeableProxyUtils {
         upgradeBeacon(beacon, contractName, "");
     }
 
-    function _deploy(string memory contractName, bytes memory constructorData) private returns (address) {
+    function _deploy(string memory contractName, bytes memory implConstructorArgs) private returns (address) {
         bytes memory creationCode = Vm(CHEATCODE_ADDRESS).getCode(contractName);
-        address deployedAddress = _deployFromBytecode(abi.encodePacked(creationCode, constructorData));
+        address deployedAddress = _deployFromBytecode(abi.encodePacked(creationCode, implConstructorArgs));
         if (deployedAddress == address(0)) {
             revert(
                 string.concat(
                     "Failed to deploy contract ",
                     contractName,
                     ' using constructor data "',
-                    string(constructorData),
+                    string(implConstructorArgs),
                     '"'
                 )
             );
