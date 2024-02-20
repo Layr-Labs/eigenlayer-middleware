@@ -10,7 +10,7 @@ import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transpa
 
 /// Modified from the Openzeppelin foundry upgrades library
 /// Modifications:
-/// - Made compatible with OZ ^4.x releases 
+/// - Made compatible with OZ ^4.x releases
 /// - Removed OZ Defender functionality
 library UpgradeableProxyUtils {
     address private constant CHEATCODE_ADDRESS = 0x7109709ECfa91a80626fF3989D68f67F5b1DD12D;
@@ -146,19 +146,23 @@ library UpgradeableProxyUtils {
         return address(uint160(uint256(beaconSlot)));
     }
 
-        /**
-     * @dev Upgrades a proxy to a new implementation contract. 
+    /**
+     * @dev Upgrades a proxy to a new implementation contract.
      * @param proxy Address of the proxy to upgrade
      * @param contractName Name of the new implementation contract to upgrade to, e.g. "MyContract.sol" or "MyContract.sol:MyContract" or artifact path relative to the project root directory
      * @param data Encoded call data of an arbitrary function to call during the upgrade process, or empty if no function needs to be called during the upgrade
-     * @param constructorData abi encoded constructor arguments for deploying the implementation contract 
+     * @param constructorData abi encoded constructor arguments for deploying the implementation contract
      */
-    function upgradeProxy(address proxy, string memory contractName, bytes memory data, bytes memory constructorData) internal {
+    function upgradeProxy(
+        address proxy,
+        string memory contractName,
+        bytes memory data,
+        bytes memory constructorData
+    ) internal {
         address newImpl = _deploy(contractName, constructorData);
 
         bytes32 adminSlot = vm.load(proxy, _ADMIN_SLOT);
         if (adminSlot == bytes32(0)) {
-
             // No admin contract: upgrade directly using interface
             TransparentUpgradeableProxy(payable(proxy)).upgradeToAndCall(newImpl, data);
         } else {
@@ -168,7 +172,7 @@ library UpgradeableProxyUtils {
     }
 
     /**
-     * @dev Upgrades a proxy to a new implementation contract. 
+     * @dev Upgrades a proxy to a new implementation contract.
      * @param proxy Address of the proxy to upgrade
      * @param contractName Name of the new implementation contract to upgrade to, e.g. "MyContract.sol" or "MyContract.sol:MyContract" or artifact path relative to the project root directory
      * @param data Encoded call data of an arbitrary function to call during the upgrade process, or empty if no function needs to be called during the upgrade
@@ -181,41 +185,37 @@ library UpgradeableProxyUtils {
      * @dev Upgrades a beacon to a new implementation contract.
      * @param beacon Address of the beacon to upgrade
      * @param contractName Name of the new implementation contract to upgrade to, e.g. "MyContract.sol" or "MyContract.sol:MyContract" or artifact path relative to the project root directory
-     * @param constructorData abi encoded constructor arguments for deploying the implementation contract 
+     * @param constructorData abi encoded constructor arguments for deploying the implementation contract
      */
     function upgradeBeacon(address beacon, string memory contractName, bytes memory constructorData) internal {
         address newImpl = _deploy(contractName, constructorData);
         UpgradeableBeacon(beacon).upgradeTo(newImpl);
     }
-    
 
-     /*
+    /*
      * @param beacon Address of the beacon to upgrade
      * @param contractName Name of the new implementation contract to upgrade to, e.g. "MyContract.sol" or "MyContract.sol:MyContract" or artifact path relative to the project root directory
      */
-    function upgradeBeacon(address beacon, string memory contractName ) internal {
+    function upgradeBeacon(address beacon, string memory contractName) internal {
         upgradeBeacon(beacon, contractName, "");
     }
 
-    function _deploy(
-        string memory contractName,
-        bytes memory constructorData
-    ) private returns (address) {
-            bytes memory creationCode = Vm(CHEATCODE_ADDRESS).getCode(contractName);
-            address deployedAddress = _deployFromBytecode(abi.encodePacked(creationCode, constructorData));
-            if (deployedAddress == address(0)) {
-                revert(
-                    string.concat(
-                        "Failed to deploy contract ",
-                        contractName,
-                        ' using constructor data "',
-                        string(constructorData),
-                        '"'
-                    )
-                );
-            }
-            return deployedAddress;
+    function _deploy(string memory contractName, bytes memory constructorData) private returns (address) {
+        bytes memory creationCode = Vm(CHEATCODE_ADDRESS).getCode(contractName);
+        address deployedAddress = _deployFromBytecode(abi.encodePacked(creationCode, constructorData));
+        if (deployedAddress == address(0)) {
+            revert(
+                string.concat(
+                    "Failed to deploy contract ",
+                    contractName,
+                    ' using constructor data "',
+                    string(constructorData),
+                    '"'
+                )
+            );
         }
+        return deployedAddress;
+    }
 
     function _deployFromBytecode(bytes memory bytecode) private returns (address) {
         address addr;
@@ -224,8 +224,6 @@ library UpgradeableProxyUtils {
         }
         return addr;
     }
-
-
 
     /**
      * @dev Precompile proxy contracts so that they can be deployed by name via the `_deploy` function.
