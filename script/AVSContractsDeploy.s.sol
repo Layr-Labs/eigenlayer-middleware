@@ -26,6 +26,127 @@ import "eigenlayer-contracts/src/test/mocks/ERC20Mock.sol";
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
+import {UpgradeableProxyUtils} from "../test/utils/UpgradeableProxyUtils.sol";
+
+abstract contract DeployUtils {
+    ProxyAdmin internal proxyAdmin;
+    address internal pauserMultisig;
+    address internal alphaMultisig;
+    address[] internal pausers;
+    IStrategy[] internal strategies;
+    uint256[] internal withdrawalDelayBlocks;
+    address internal unpauser;
+    PauserRegistry internal pauserRegistry;
+    Slasher internal slasher;
+    DelegationManager internal delegationManager;
+    StrategyManager internal strategyManager;
+    EigenPodManager internal eigenPodManager;
+    DelayedWithdrawalRouter internal delayedWithdrawalRouter;
+    UpgradeableBeacon internal eigenPodBeacon;
+    IBeaconChainOracle internal beaconChainOracle;
+    address internal posDepositContract;
+    function _deployProxyAdmin() internal virtual returns (address);
+    function _deployPauserRegistry(address[] memory pausers, address unpauser) internal virtual returns (address);
+    function _deployStrategyManager(uint256 initialPausedStatus) internal virtual returns (address);
+    function _setUpStrategies() internal virtual returns (address);
+    function _deploySlasher() internal virtual returns (address);
+    function _deployEigenPodManager(uint256 maxPods, uint256 initialPausedStatus, address initialOwner) internal virtual returns (address);
+    function _deployDelayedWithdrawalRouter(address initialOwner, uint256 initialPausedStatus, uint256 withdrawalDelayBlocks) internal virtual returns (address);
+    function _deployEigenPodBeacon() internal virtual returns (address);
+    function _deployDelegationManager(address initialOwner, uint256 initialPausedStatus, uint256 minWithdrawalDelay, IStrategy[] memory strategies, uint256[] memory strategyWithdrawalDelayBlock) internal virtual returns (address);
+    function _deployCore() internal virtual ;
+
+    function _setupStrategy(address _token) internal virtual returns (address);
+}
+
+abstract contract DeployUtilsLocal is DeployUtils{
+    function _deployProxyAdmin() internal virtual override returns (address) {
+        return address(new ProxyAdmin());
+    }
+
+    function _deployPauserRegistry(address[] memory pausers, address unpauser) internal virtual override returns (address) {
+        return address(new PauserRegistry({_pausers: pausers, _unpauser: unpauser}));
+    }
+
+    function _deployStrategyManager(uint256 initialPausedStatus) internal virtual override returns (address) {
+        return UpgradeableProxyUtils.deployTransparentProxy({
+            contractName:"StrategyManager.sol",
+            initialOwner: address (proxyAdmin),
+            initializerData: abi.encodeCall(StrategyManager.initialize, (alphaMultisig, alphaMultisig, pauserRegistry, initialPausedStatus)),
+            implConstructorArgs: abi.encode(delegationManager, eigenPodManager, slasher)
+        });
+    }
+
+    function _setUpStrategies() internal virtual override returns (address){}
+
+    function _deploySlasher() internal virtual override returns (address){
+        return UpgradeableProxyUtils.deployTransparentProxy({
+            contractName:"Slasher.sol",
+            initialOwner: address(proxyAdmin),
+            initializerData: abi.encodeCall(Slasher.initialize, (address(420), pauserRegistry, uint256(0))),
+            implConstructorArgs: abi.encode(strategyManager, delegationManager)
+        });
+    }
+
+    function _deployEigenPodManager(uint256 maxPods, uint256 initialPausedStatus, address initialOwner) internal virtual override returns (address){
+        return UpgradeableProxyUtils.deployTransparentProxy({
+            contractName:"EigenPodManager.sol",
+            initialOwner: address(proxyAdmin),
+            initializerData: abi.encodeCall(EigenPodManager.initialize, (maxPods, beaconChainOracle, initialOwner, pauserRegistry, initialPausedStatus)),
+            implConstructorArgs: abi.encode(posDepositContract, eigenPodBeacon, strategyManager, slasher, delegationManager)
+        });
+    }
+
+    function _deployDelayedWithdrawalRouter(address initialOwner, uint256 initialPausedStatus, uint256 withdrawalDelayBlocks) internal virtual override returns (address){
+        return UpgradeableProxyUtils.deployTransparentProxy({
+            contractName: "DelayedWithdrawalRouter.sol",
+            initialOwner: address(proxyAdmin),
+            initializerData: abi.encodeCall(DelayedWithdrawalRouter.initialize, (initialOwner, pauserRegistry, initialPausedStatus, withdrawalDelayBlocks)), 
+            implConstructorArgs: abi.encode(eigenPodManager)
+        });
+    }
+
+    function _deployEigenPodBeacon() internal virtual override returns (address){
+        return UpgradeableProxyUtils.deployBeacon({
+            contractName: "EigenPodBeacon.sol",
+            initialOwner: address(proxyAdmin),
+            implConstructorArgs: abi.encode()
+        });
+    }
+
+    function _deployDelegationManager(address initialOwner, uint256 initialPausedStatus, uint256 minWithdrawalDelay, IStrategy[] calldata strategies, uint256[] calldata strategyWithdrawalDelayBlocks) internal virtual override returns (address){
+        return UpgradeableProxyUtils.deployTransparentProxy({
+            contractName: "DelegationManager.sol",
+            initialOwner: address(proxyAdmin),
+            initializerData: abi.encodeCall(DelegationManager.initialize, (initialOwner, pauserRegistry, initialPausedStatus, minWithdrawalDelay, strategies, strategyWithdrawalDelayBlocks)),
+            implConstructorArgs: abi.encode(strategyManager, slasher, eigenPodManager)
+        });
+    }
+
+    function _deployCore() internal virtual override  {
+    proxyAdmin = ProxyAdmin(_deployProxyAdmin());
+    _deployPauserRegistry(pausers, unpauser) ;
+    _deployStrategyManager(0) ;
+    _setUpStrategies() ;
+    _deploySlasher() ;
+    _deployEigenPodManager(10, 0, alphaMultisig) ;
+    _deployDelayedWithdrawalRouter(alphaMultisig,0, 100) ;
+    _deployEigenPodBeacon() ;
+    _deployDelegationManager(alphaMultisig, 0, 100, strategies, withdrawalDelayBlocks) ;
+
+    }
+
+}
+
+abstract contract DeployUtilsGoerli {
+
+}
+
+abstract contract DeployUtilsMock {
+
+}
+
+
 // # To load the variables in the .env file
 // source .env
 
@@ -84,6 +205,7 @@ contract EigenLayerDeploy is Script, Test {
     uint32 STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS;
     uint32 DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS;
     string public deployConfigPath = string(bytes("script/configs/AVSContractsDeploy.json"));
+
 
     function run() external {
         // read and log the chainID
@@ -761,5 +883,9 @@ contract EigenLayerDeploy is Script, Test {
                 delayedWithdrawalRouter,
             " eigenPodImplementation: delayedWithdrawalRouter contract address not set correctly"
         );
+    }
+
+    function deploy() internal {
+
     }
 }
