@@ -48,7 +48,8 @@ abstract contract DeployUtils {
     function _deployProxyAdmin() internal virtual returns (address);
     function _deployPauserRegistry(address[] memory pausers, address unpauser) internal virtual returns (address);
     function _deployStrategyManager(uint256 initialPausedStatus) internal virtual returns (address);
-    function _setUpStrategies() internal virtual returns (address);
+    function _setUpStrategies() internal virtual;
+    function _deployAndPopulateStrategies() internal virtual;
     function _deploySlasher() internal virtual returns (address);
     function _deployEigenPodManager(uint256 maxPods, uint256 initialPausedStatus, address initialOwner) internal virtual returns (address);
     function _deployDelayedWithdrawalRouter(address initialOwner, uint256 initialPausedStatus, uint256 withdrawalDelayBlocks) internal virtual returns (address);
@@ -56,7 +57,89 @@ abstract contract DeployUtils {
     function _deployDelegationManager(address initialOwner, uint256 initialPausedStatus, uint256 minWithdrawalDelay, IStrategy[] memory strategies, uint256[] memory strategyWithdrawalDelayBlock) internal virtual returns (address);
     function _deployCore() internal virtual ;
 
-    function _setupStrategy(address _token) internal virtual returns (address);
+    function _addressFrom(address _origin, uint256 _nonce)
+        internal
+        pure
+        returns (address _address)
+    {
+    bytes memory data;
+    // Determine the prefix and encode the nonce based on its size
+    if (_nonce == 0x00)
+        data = abi.encodePacked(bytes1(0xd6), bytes1(0x94), _origin, bytes1(0x80));
+    else if (_nonce <= 0x7f)
+        data = abi.encodePacked(bytes1(0xd6), bytes1(0x94), _origin, uint8(_nonce));
+    else if (_nonce <= 0xff)
+        data = abi.encodePacked(
+            bytes1(0xd7),
+            bytes1(0x94),
+            _origin,
+            bytes1(0x81),
+            uint8(_nonce)
+        );
+    else if (_nonce <= 0xffff)
+        data = abi.encodePacked(
+            bytes1(0xd8),
+            bytes1(0x94),
+            _origin,
+            bytes1(0x82),
+            uint16(_nonce)
+        );
+    else if (_nonce <= 0xffffff)
+        data = abi.encodePacked(
+            bytes1(0xd9),
+            bytes1(0x94),
+            _origin,
+            bytes1(0x83),
+            uint24(_nonce)
+        );
+    else if (_nonce <= 0xffffffff)
+        data = abi.encodePacked(
+            bytes1(0xda),
+            bytes1(0x94),
+            _origin,
+            bytes1(0x84),
+            uint32(_nonce)
+        );
+    else if (_nonce <= 0xffffffffff)
+        data = abi.encodePacked(
+            bytes1(0xdb),
+            bytes1(0x94),
+            _origin,
+            bytes1(0x85),
+            uint40(_nonce)
+        );
+    else if (_nonce <= 0xffffffffffff)
+        data = abi.encodePacked(
+            bytes1(0xdc),
+            bytes1(0x94),
+            _origin,
+            bytes1(0x86),
+            uint48(_nonce)
+        );
+    else if (_nonce <= 0xffffffffffffff)
+        data = abi.encodePacked(
+            bytes1(0xdd),
+            bytes1(0x94),
+            _origin,
+            bytes1(0x87),
+            uint56(_nonce)
+        );
+    else
+        data = abi.encodePacked(
+            bytes1(0xde),
+            bytes1(0x94),
+            _origin,
+            bytes1(0x88),
+            uint64(_nonce)
+        );
+    // Compute and return the address from the hash of the data
+    bytes32 hash = keccak256(data);
+    assembly {
+        mstore(0, hash)
+        _address := mload(0)
+    }
+
+    }
 }
 
 abstract contract DeployUtilsLocal is DeployUtils{
@@ -77,7 +160,9 @@ abstract contract DeployUtilsLocal is DeployUtils{
         });
     }
 
-    function _setUpStrategies() internal virtual override returns (address){}
+    function _setUpStrategies() internal virtual override {}
+
+    function _deployAndPopulateStrategies() internal virtual override{}
 
     function _deploySlasher() internal virtual override returns (address){
         return UpgradeableProxyUtils.deployTransparentProxy({
