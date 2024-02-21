@@ -48,4 +48,9 @@ contract RegistryCoordinatorHarness is RegistryCoordinator {
             return false;
         }
     }
+
+    function quorumInBitmap(uint256 bitmap, uint8 numberToCheckForInclusion) public pure returns (bool) {
+        return BitmapUtils.isSet(bitmap, numberToCheckForInclusion);
+    }
+
 }

@@ -1,11 +1,14 @@
 using ServiceManagerMock as serviceManager;
-using StakeRegistry as stakeRegistry;
-using BLSApkRegistry as blsApkRegistry;
-using IndexRegistry as indexRegistry;
+using StakeRegistryHarness as stakeRegistry;
+using BLSApkRegistryHarness as blsApkRegistry;
+using IndexRegistryHarness as indexRegistry;
 using DelegationManager as delegation;
+// using BitmapUtilsWrapper as bitmapUtils;
 methods {
     // //// External Calls
-	// // external calls to StakeRegistry
+	// external calls to StakeRegistry
+    function StakeRegistryHarness.totalStakeHistory(uint8) external returns (IStakeRegistry.StakeUpdate[]) envfree;
+    function StakeRegistry._weightOfOperatorForQuorum(uint8, address) internal returns (uint96, bool) => NONDET;
     // function _.quorumCount() external => DISPATCHER(true);
     // function _.getCurrentTotalStake(uint8 quorumNumber) external => DISPATCHER(true);
     // function _.getCurrentStake(bytes32 operatorId, uint8 quorumNumber) external => DISPATCHER(true);
@@ -18,15 +21,20 @@ methods {
     // function _.registerOperator(address, bytes) external => NONDET;
     // function _.deregisterOperator(address, bytes) external => NONDET;
     // function _.pubkeyHashToOperator(bytes32) external => DISPATCHER(true);
+    function BLSApkRegistryHarness.getApkHistory(uint8) external returns (IBLSApkRegistry.ApkUpdate[]) envfree;
+    function BLSApkRegistryHarness.registerBLSPublicKey(address, IBLSApkRegistry.PubkeyRegistrationParams, BN254.G1Point) external returns (bytes32) => NONDET;
 
-    // // external calls to IndexRegistry
+    // external calls to IndexRegistry
+    function IndexRegistryHarness.operatorCountHistory(uint8) external returns (IIndexRegistry.QuorumUpdate[]) envfree;
     // // function _.registerOperator(bytes32, bytes) external => DISPATCHER(true);
     // function _.registerOperator(bytes32, bytes) external => NONDET;
     // function _.deregisterOperator(bytes32, bytes, bytes32[]) external => NONDET;
+    // function indexRegistry.currentOperatorIndex(uint8, bytes32) external returns (uint32) envfree;
+    // function indexRegistry.totalOperatorsForQuorum(uint8) external returns (uint32) envfree;
 
-	// // external calls to ServiceManager
-    // function _.registerOperatorToAVS(address, ISignatureUtils.SignatureWithSaltAndExpiry) external => DISPATCHER(true);
-    // function _.deregisterOperatorFromAVS(address) external => DISPATCHER(true);
+	// external calls to ServiceManager and DelegationManager
+    function _.registerOperatorToAVS(address, ISignatureUtils.SignatureWithSaltAndExpiry) external => DISPATCHER(true);
+    function _.deregisterOperatorFromAVS(address) external => DISPATCHER(true);
     // // function _.recordLastStakeUpdateAndRevokeSlashingAbility(address, uint256) external => DISPATCHER(true);
     // // function _.registerOperatorToAVS(address, ISignatureUtils.SignatureWithSaltAndExpiry) external => NONDET;
     // // function _.deregisterOperatorToAVS(address) external => NONDET;
@@ -39,6 +47,7 @@ methods {
     //envfree functions
     function OPERATOR_CHURN_APPROVAL_TYPEHASH() external returns (bytes32) envfree;
     function serviceManager() external returns (address) envfree;
+    
     function blsApkRegistry() external returns (address) envfree;
     function stakeRegistry() external returns (address) envfree;
     function indexRegistry() external returns (address) envfree;
@@ -53,7 +62,7 @@ methods {
     function getQuorumBitmapAtBlockNumberByIndex(bytes32 operatorId, uint32 blockNumber, uint256 index) external returns (uint192) envfree;
     function getQuorumBitmapUpdateByIndex(bytes32 operatorId, uint256 index)
         external returns (IRegistryCoordinator.QuorumBitmapUpdate) envfree;
-    function getCurrentQuorumBitmap(bytes32 operatorId) external returns (uint192) envfree;
+    // function getCurrentQuorumBitmap(bytes32 operatorId) external returns (uint192) envfree;
     function getQuorumBitmapHistoryLength(bytes32 operatorId) external returns (uint256) envfree;
     function registries(uint256) external returns (address) envfree;
     function numRegistries() external returns (uint256) envfree;
@@ -65,15 +74,21 @@ methods {
         uint256 expiry
     ) external returns (bytes32) envfree;
 
+    function StakeRegistryHarness._weightOfOperatorForQuorum(uint8, address) internal returns (uint96, bool) => NONDET;
+
+    // operator state retriever
+    // function getOperatorState(IRegistryCoordinator, bytes32, uint32) external returns (OperatorStateRetriever.Operator) envfree;
+
     // harnessed functions
     function bytesArrayContainsDuplicates(bytes bytesArray) external returns (bool) envfree;
     function bytesArrayIsSubsetOfBitmap(uint256 referenceBitmap, bytes arrayWhichShouldBeASubsetOfTheReference) external returns (bool) envfree;
+    function quorumInBitmap(uint256 bitmap, uint8 numberToCheckForInclusion) external returns (bool) envfree;
 }
 
 // If my Operator status is REGISTERED ⇔ my quorum bitmap MUST BE nonzero
-invariant registeredOperatorsHaveNonzeroBitmaps(address operator)
+invariant registeredOperatorsHaveNonzeroBitmaps(env e, address operator)
     getOperatorStatus(operator) == IRegistryCoordinator.OperatorStatus.REGISTERED <=>
-        getCurrentQuorumBitmap(getOperatorId(operator)) != 0;
+        getCurrentQuorumBitmap(e, getOperatorId(operator)) != 0;
 
 // if two operators have different addresses, then they have different IDs
 // excludes the case in which the operator is not registered, since then they can both have ID zero (the default)
@@ -81,9 +96,19 @@ invariant operatorIdIsUnique(address operator1, address operator2)
     operator1 != operator2 =>
         (getOperatorStatus(operator1) == IRegistryCoordinator.OperatorStatus.REGISTERED => getOperatorId(operator1) != getOperatorId(operator2));
 
-invariant initializedQuorumHistories(uint8 quorumNumber)
-    quorumNumber < currentContract.quorumCount <=> stakeRegistry._totalStakeHistory[quorumNumber].length != 0 && 
-    indexRegistry._operatorCountHistory[quorumNumber].length != 0 && blsApkRegistry.apkHistory[quorumNumber].length != 0;
+// invariant initializedQuorumHistories(uint8 quorumNumber)
+//     quorumNumber < currentContract.quorumCount <=> 
+//         stakeRegistry._totalStakeHistory[quorumNumber].length != 0 && 
+//         indexRegistry._operatorCountHistory[quorumNumber].length != 0 &&
+//         blsApkRegistry.apkHistory[quorumNumber].length != 0;
+
+// If operator is registered and in the quorum => operator index should be in the range [0, totalOperatorsForQuorum - 1]
+invariant operatorIndexWithinRange(env e, address operator, uint8 quorumNumber, uint256 blocknumber, uint256 index)
+    getOperatorStatus(operator) == IRegistryCoordinator.OperatorStatus.REGISTERED && 
+    quorumInBitmap(assert_uint256(getCurrentQuorumBitmap(e, getOperatorId(operator))), quorumNumber) =>
+        indexRegistry.currentOperatorIndex(e, quorumNumber, getOperatorId(operator)) < indexRegistry.totalOperatorsForQuorum(e, quorumNumber);
+        // indexRegistry.currentOperatorIndex[quorumNumber][getOperatorId(operator)] < indexRegistry.totalOperatorsForQuorum(quorumNumber);
+
 
 definition methodCanModifyBitmap(method f) returns bool =
     f.selector == sig:registerOperator(
@@ -130,18 +155,19 @@ definition methodCanRemoveFromBitmap(method f) returns bool =
     || f.selector == sig:deregisterOperator(bytes).selector
     || f.selector == sig:ejectOperator(address, bytes).selector;
 
+
 // verify that quorumNumbers provided as an input to deregister operator MUST BE a subset of the operator’s current quorums
 rule canOnlyDeregisterFromExistingQuorums(address operator) {
-    requireInvariant registeredOperatorsHaveNonzeroBitmaps(operator);
+    env e;
+
+    requireInvariant registeredOperatorsHaveNonzeroBitmaps(e, operator);
 
     // TODO: store this status, verify that all calls to `deregisterOperator` *fail* if the operator is not registered first!
     require(getOperatorStatus(operator) == IRegistryCoordinator.OperatorStatus.REGISTERED);
 
-    uint256 bitmapBefore = getCurrentQuorumBitmap(getOperatorId(operator));
+    uint256 bitmapBefore = getCurrentQuorumBitmap(e, getOperatorId(operator));
 
     bytes quorumNumbers;
-    env e;
-
     deregisterOperator(e, quorumNumbers);
 
     // if deregistration is successful, verify that `quorumNumbers` input was proper
