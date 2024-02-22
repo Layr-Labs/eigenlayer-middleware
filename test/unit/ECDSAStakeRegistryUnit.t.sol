@@ -6,6 +6,7 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISi
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {ECDSAStakeRegistry} from "../../src/unaudited/ECDSAStakeRegistry.sol";
 import {ECDSAStakeRegistryEventsAndErrors, Quorum, StrategyParams} from "../../src/interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
+import {ECDSAStakeRegistryEqualWeight} from "../../src/unaudited/examples/ECDSAStakeRegistryEqualWeight.sol";
 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
@@ -86,10 +87,7 @@ contract UpdateQuorumConfig is ECDSAStakeRegistryTest {
 
     function test_RevertsWhen_NotOwner() public {
         Quorum memory validQuorum = Quorum({strategies: new StrategyParams[](1)});
-        validQuorum.strategies[0] = StrategyParams({
-            strategy: IStrategy(address(420)),
-            multiplier: 10000
-        });
+        validQuorum.strategies[0] = StrategyParams({strategy: IStrategy(address(420)), multiplier: 10000});
 
         address nonOwner = address(0x123);
         vm.prank(nonOwner);
@@ -107,40 +105,25 @@ contract UpdateQuorumConfig is ECDSAStakeRegistryTest {
 
     function test_RevertSWhen_Duplicate() public {
         Quorum memory validQuorum = Quorum({strategies: new StrategyParams[](2)});
-        validQuorum.strategies[0] = StrategyParams({
-            strategy: IStrategy(address(420)),
-            multiplier: 5_000
-        });
+        validQuorum.strategies[0] = StrategyParams({strategy: IStrategy(address(420)), multiplier: 5_000});
 
-        validQuorum.strategies[1] = StrategyParams({
-            strategy: IStrategy(address(420)),
-            multiplier: 5_000
-        });
+        validQuorum.strategies[1] = StrategyParams({strategy: IStrategy(address(420)), multiplier: 5_000});
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
         registry.updateQuorumConfig(validQuorum);
     }
 
     function test_RevertSWhen_NotSorted() public {
         Quorum memory validQuorum = Quorum({strategies: new StrategyParams[](2)});
-        validQuorum.strategies[0] = StrategyParams({
-            strategy: IStrategy(address(420)),
-            multiplier: 5_000
-        });
+        validQuorum.strategies[0] = StrategyParams({strategy: IStrategy(address(420)), multiplier: 5_000});
 
-        validQuorum.strategies[1] = StrategyParams({
-            strategy: IStrategy(address(419)),
-            multiplier: 5_000
-        });
+        validQuorum.strategies[1] = StrategyParams({strategy: IStrategy(address(419)), multiplier: 5_000});
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
         registry.updateQuorumConfig(validQuorum);
     }
 
     function test_RevertSWhen_OverMultiplierTotal() public {
         Quorum memory validQuorum = Quorum({strategies: new StrategyParams[](1)});
-        validQuorum.strategies[0] = StrategyParams({
-            strategy: IStrategy(address(420)),
-            multiplier: 10001
-        });
+        validQuorum.strategies[0] = StrategyParams({strategy: IStrategy(address(420)), multiplier: 10001});
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InvalidQuorum.selector);
         registry.updateQuorumConfig(validQuorum);
@@ -283,11 +266,7 @@ contract UpdateOperators is ECDSAStakeRegistryTest {
 
         vm.mockCall(
             address(mockDelegationManager),
-            abi.encodeWithSelector(
-                MockDelegationManager.operatorShares.selector,
-                operator1,
-                address(mockStrategy2)
-            ),
+            abi.encodeWithSelector(MockDelegationManager.operatorShares.selector, operator1, address(mockStrategy2)),
             abi.encode(50)
         );
 
@@ -437,10 +416,7 @@ contract CheckSignatures is ECDSAStakeRegistryTest {
 
         vm.mockCall(
             address(registry),
-            abi.encodeWithSelector(
-                ECDSAStakeRegistry.getLastCheckpointOperatorWeight.selector,
-                operator1
-            ),
+            abi.encodeWithSelector(ECDSAStakeRegistry.getLastCheckpointOperatorWeight.selector, operator1),
             abi.encode(50)
         );
 
@@ -506,15 +482,61 @@ contract CheckSignatures is ECDSAStakeRegistryTest {
 
         vm.mockCall(
             address(registry),
-            abi.encodeWithSelector(
-                ECDSAStakeRegistry.getOperatorWeightAtBlock.selector,
-                operator1,
-                referenceBlock
-            ),
+            abi.encodeWithSelector(ECDSAStakeRegistry.getOperatorWeightAtBlock.selector, operator1, referenceBlock),
             abi.encode(50)
         );
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InsufficientSignedStake.selector);
         registry.isValidSignature(msgHash, abi.encode(signers, signatures, referenceBlock));
+    }
+}
+
+contract EqualWeightECDSARegistry is ECDSAStakeRegistryTest {
+    ECDSAStakeRegistryEqualWeight internal fixedWeightRegistry;
+    function setUp() public virtual override {
+        super.setUp();
+        fixedWeightRegistry = new ECDSAStakeRegistryEqualWeight(IDelegationManager(address(mockDelegationManager)));
+        IStrategy mockStrategy = IStrategy(address(0x1234));
+        Quorum memory quorum = Quorum({strategies: new StrategyParams[](1)});
+        quorum.strategies[0] = StrategyParams({strategy: mockStrategy, multiplier: 10000});
+        fixedWeightRegistry.initialize(address(mockServiceManager), 100, quorum);
+
+        fixedWeightRegistry.permitOperator(operator1);
+        fixedWeightRegistry.permitOperator(operator2);
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        fixedWeightRegistry.registerOperatorWithSignature(operator1, operatorSignature);
+        fixedWeightRegistry.registerOperatorWithSignature(operator2, operatorSignature);
+    }
+
+    function test_FixedStakeUpdates() public {
+        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator1), 1);
+        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator2), 1);
+        assertEq(fixedWeightRegistry.getLastCheckpointTotalWeight(), 2);
+
+        vm.roll(block.number + 1);
+        vm.prank(operator1);
+        fixedWeightRegistry.deregisterOperator();
+
+        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator1), 0);
+        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator2), 1);
+        assertEq(fixedWeightRegistry.getLastCheckpointTotalWeight(), 1);
+
+        vm.roll(block.number + 1);
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        fixedWeightRegistry.registerOperatorWithSignature(operator1, operatorSignature);
+
+        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator1), 1);
+        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator2), 1);
+        assertEq(fixedWeightRegistry.getLastCheckpointTotalWeight(), 2);
+
+        vm.roll(block.number + 1);
+        address[] memory operators = new address[](2);
+        operators[0] = operator1;
+        operators[1] = operator2;
+        fixedWeightRegistry.updateOperators(operators);
+
+        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator1), 1);
+        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator2), 1);
+        assertEq(fixedWeightRegistry.getLastCheckpointTotalWeight(), 2);
     }
 }
