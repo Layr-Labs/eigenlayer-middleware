@@ -6,10 +6,21 @@ import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/
 import {SimpleLinearWeightQuorum} from "./SimpleLinearWeightQuorum.sol";
 import {IOperatorQualityOracle} from "./IOperatorQualityOracle.sol";
 
+/**
+ * @notice Builds on top of the SimpleLinearWeightQuorum, adding an OperatorQualityOracle, that it references
+ * to get an operator quality score.
+ * Operator quality scores are expected to be on the scale of ether (1e18), and are used as an additional multiplier
+ * on top of the calculation performed by the `SimpleLinearWeightQuorum.weightOfOperator` function,
+ * with subsequent division by `OPERATOR_QUALITY_SCORE_DIVISOR` (1e18).
+ * Operator quality scores and are allowed to modify the operator's weight by a factor in the range of
+ * [MIN_OPERATOR_QUALITY_SCORE / OPERATOR_QUALITY_SCORE_DIVISOR, MAX_OPERATOR_QUALITY_SCORE / OPERATOR_QUALITY_SCORE_DIVISOR].
+ * @dev If the `operatorQualityOracle` returns a value outside of this range, then it is adjusted up or down to meet
+ * the nearest end of the valid range, rather than reverting.
+ */
 abstract contract LinearWeightQuorumWithOracle is SimpleLinearWeightQuorum {
     
     // constants used to constrain the scale of weight modifications made by the `operatorQualityOracle`
-    uint256 public constant MIN_OPERATOR_QUALITY_SCORE = 1e18;
+    uint256 public constant MIN_OPERATOR_QUALITY_SCORE = 5e17;
     uint256 public constant MAX_OPERATOR_QUALITY_SCORE = 10e18;
     uint256 public constant OPERATOR_QUALITY_SCORE_DIVISOR = 1e18;
 

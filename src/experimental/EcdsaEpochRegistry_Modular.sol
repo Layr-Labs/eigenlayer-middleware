@@ -9,6 +9,10 @@ import {SimpleLinearWeightQuorum} from "./SimpleLinearWeightQuorum.sol";
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
+/** 
+ * @notice ~Equivalent to the `EcdsaEpochRegistry` contract, but built from modular pieces instead of
+ * a more monolithic construction.
+ */
 contract EcdsaEpochRegistry_Modular is SimpleLinearWeightQuorum {
     /// @notice the ServiceManager for this AVS, which forwards calls onto EigenLayer's core contracts
     IServiceManager public immutable serviceManager;

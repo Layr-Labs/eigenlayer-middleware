@@ -8,6 +8,19 @@ import {IServiceManager} from "../interfaces/IServiceManager.sol";
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
+/**
+ * @notice A simplified AVS 'Registry' contract, which uses the concept of epochs, somewhat analagously to
+ * a tendermint blockchain.
+ * Operators can register or deregister *at any time*, which sets a flag and passes a call onto the ServiceManager.
+ * Regardless of these actions, the operator set (you can think of this as the "active" operators) for an epoch does
+ * not change -- it is established once for the epoch, and after that the set and the weights of operators are fixed
+ * for the remainder of the epoch.
+ * @dev For establishing the operator set:
+ * The call is permissioned, which is perhaps one of the main shortcomings of this design.
+ * At the start of each epoch, the contract owner provides a list of operator addresses, and a minimum weight requirement.
+ * Any operators in that list which are actively registered + meet the requirement go into the set of operators for the epoch.
+ * See the `evaluateOperatorSet` function for more details.
+ */
 contract EcdsaEpochRegistry is OwnableUpgradeable {
     
     /// @notice Constant used as a divisor in calculating weights.
