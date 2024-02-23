@@ -86,17 +86,13 @@ abstract contract SimpleLinearWeightQuorum is OwnableUpgradeable {
      * @return `uint256` The weighted sum of the operator's shares across each strategy considered
      */
     function weightOfOperator(address operator) public virtual view returns (uint256) {
-        uint256 weight;
-        uint256 stratsLength = quorumLength();
+        uint256[] memory sharesAmounts = delegation.getOperatorShares(operator, _quorum.strategies);
 
-        // TODO: update to use new DelegationManager method which queries + returns an array
-        for (uint256 i = 0; i < stratsLength; i++) {
-            // shares of the operator in the i-th strategy
-            uint256 sharesAmount = delegation.operatorShares(operator, _quorum.strategies[i]);
-
+        uint256 weight = 0;
+        for (uint256 i = 0; i < sharesAmounts.length; i++) {
             // add the weight from the shares for this strategy to the total weight
-            if (sharesAmount > 0) {
-                weight += (sharesAmount * _quorum.weights[i]) / WEIGHTING_DIVISOR;
+            if (sharesAmounts[i] > 0) {
+                weight += (sharesAmounts[i] * _quorum.weights[i]) / WEIGHTING_DIVISOR;
             }
         }
         return weight;
