@@ -4,10 +4,7 @@ pragma solidity =0.8.12;
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
 import {SimpleLinearWeightQuorum} from "./SimpleLinearWeightQuorum.sol";
-
-interface IOperatorQualityOracle {
-    function operatorQualityScore(address operator) external view returns (uint256);
-}
+import {IOperatorQualityOracle} from "./IOperatorQualityOracle.sol";
 
 abstract contract LinearWeightQuorumWithOracle is SimpleLinearWeightQuorum {
     
