@@ -6,6 +6,13 @@ import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
+/**
+ * @notice Allows the contract owner to define a single weighing function for evaluating members of a "quorum".
+ * In weighing a particular strategy, the amount of delegated shares for that strategy is multiplied by its weight,
+ * then divided by WEIGHTING_DIVISOR.
+ * The main function of interest is `weightOfOperator`, with other auxiliary getter + admin functions provided.
+ * @dev The contract owner is allowed to modify the quorum config at any time, via the `setQuorumConfig` function.
+ */
 abstract contract SimpleLinearWeightQuorum is OwnableUpgradeable {
     
     /// @notice Constant used as a divisor in calculating weights.

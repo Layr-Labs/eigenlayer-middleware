@@ -10,6 +10,12 @@ import {EcdsaEpochRegistry_Permissionless} from "./EcdsaEpochRegistry_Permission
 
 import {EIP1271SignatureUtils} from "eigenlayer-contracts/src/contracts/libraries/EIP1271SignatureUtils.sol";
 
+/**
+ * @notice An example AVS contract that builds on top of the `EcdsaEpochRegistry_Permissionless`.
+ * This contract adds minimal signature-checking logic, but lacks any logic related to task confirmation per se.
+ * @dev To extend this contract, e.g. to confirm tasks based on a simple percentage check, one could add a function
+ *  which calls the `checkSignatures` function and compares the return value to `totalStakeHistory[epoch]`.
+ */
 contract EcdsaEpochBase is EcdsaEpochRegistry_Permissionless {
     /** 
      * @dev setting the `_epochZeroStart` to be in the past is disallowed.
@@ -71,7 +77,7 @@ contract EcdsaEpochBase is EcdsaEpochRegistry_Permissionless {
             }
 
             // check the operator's signature
-            // TODO: any modifications to msgHash?
+            // TODO: any modifications to msgHash? e.g. hashing the 'msgHash' with the address whose sig is being checked
             EIP1271SignatureUtils.checkSignature_EIP1271(operators[i], msgHash, signatures[i]);
 
             totalSignedAmount += _operatorStakeHistory[operators[i]][epoch];

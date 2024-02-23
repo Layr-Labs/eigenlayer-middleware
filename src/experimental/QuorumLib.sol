@@ -17,7 +17,7 @@ library QuorumLib {
     uint256 constant WEIGHTING_DIVISOR = 1e18;
 
     // constants used to constrain the scale of weight modifications made by an `operatorQualityOracle`
-    uint256 constant MIN_OPERATOR_QUALITY_SCORE = 1e18;
+    uint256 constant MIN_OPERATOR_QUALITY_SCORE = 5e17;
     uint256 constant MAX_OPERATOR_QUALITY_SCORE = 10e18;
     uint256 constant OPERATOR_QUALITY_SCORE_DIVISOR = 1e18;
 

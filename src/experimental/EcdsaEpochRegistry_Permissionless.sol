@@ -8,6 +8,17 @@ import {IServiceManager} from "../interfaces/IServiceManager.sol";
 
 import {EcdsaEpochRegistry_Modular} from "./EcdsaEpochRegistry_Modular.sol";
 
+/**
+ * @notice Builds on top of `EcdsaEpochRegistry_Modular` to enable a more "permissionless" approach, which
+ * requires less active management from the contract's owner.
+ * Adds an exponential retargeting mechanism (a la EIP 1559) — the `minimumWeightRequirement` is adjusted every epoch,
+ * using a `retargetingFactorWei` and the real number of registered operators vs. the `targetOperatorSetSize`.
+ * Any operator which meets the current minimumWeightRequirement can register, up to maxRegisteredOperators.
+ * At the start of each epoch, anyone (*not just the contract owner*) can perform the operation to find the validator set
+ * for the epoch, and kick out any operators that no longer meet the minimumWeightRequirement, via calling the `evaluateOperatorSet`
+ * function. At the end of this process, the retargeting is performed.
+ */
+// TODO: I am 1000% sure that the retargeting algorithm can be improved.
 contract EcdsaEpochRegistry_Permissionless is EcdsaEpochRegistry_Modular {
     // @notice unordered list of all currently-registered operators
     address[] public registeredOperators;
