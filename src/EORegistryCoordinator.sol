@@ -360,7 +360,7 @@ contract EORegistryCoordinator is
                             EXTERNAL FUNCTIONS - OWNER
     *******************************************************************************/
     /**
-     * @notice Sets the EOChainManager, which is used to register validators on the custom chain
+     * @notice Sets the EOChainManager, which is used to register validators on the  EOchain
      * @param _EOChainManager the new EOChainManager
      * @dev only callable by the owner
      */
