@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "../../src/RegistryCoordinator.sol";
+import "../../src/EORegistryCoordinator.sol";
 
 import "forge-std/Test.sol";
 
-// wrapper around the RegistryCoordinator contract that exposes the internal functions for unit testing.
-contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
+// wrapper around the EORegistryCoordinator contract that exposes the internal functions for unit testing.
+contract EORegistryCoordinatorHarness is EORegistryCoordinator, Test {
     constructor(
         IServiceManager _serviceManager,
         IStakeRegistry _stakeRegistry,
         IBLSApkRegistry _blsApkRegistry,
         IIndexRegistry _indexRegistry
-    ) RegistryCoordinator(_serviceManager, _stakeRegistry, _blsApkRegistry, _indexRegistry) {
+    ) EORegistryCoordinator(_serviceManager, _stakeRegistry, _blsApkRegistry, _indexRegistry) {
         _transferOwnership(msg.sender);
     }
 
@@ -29,10 +29,9 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         address operator, 
         bytes32 operatorId,
         bytes calldata quorumNumbers,
-        string memory socket,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external returns (RegisterResults memory results) {
-        return _registerOperator(operator, operatorId, quorumNumbers, socket, operatorSignature);
+        return _registerOperator(operator, operatorId, quorumNumbers, operatorSignature);
     }
 
     // @notice exposes the internal `_deregisterOperator` function, overriding all access controls

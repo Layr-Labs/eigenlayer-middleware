@@ -10,7 +10,7 @@ import {BN254} from "../libraries/BN254.sol";
  * @title Interface for a contract that coordinates between various registries for an AVS.
  * @author Layr Labs, Inc.
  */
-interface IRegistryCoordinator {
+interface IEORegistryCoordinator {
     // EVENTS
 
     /// Emits when an operator is registered
@@ -113,7 +113,7 @@ interface IRegistryCoordinator {
     function getOperatorFromId(bytes32 operatorId) external view returns (address operator);
 
     /// @notice Returns the status for the given `operator`
-    function getOperatorStatus(address operator) external view returns (IRegistryCoordinator.OperatorStatus);
+    function getOperatorStatus(address operator) external view returns (IEORegistryCoordinator.OperatorStatus);
 
     /// @notice Returns the indices of the quorumBitmaps for the provided `operatorIds` at the given `blockNumber`
     function getQuorumBitmapIndicesAtBlockNumber(uint32 blockNumber, bytes32[] memory operatorIds) external view returns (uint32[] memory);

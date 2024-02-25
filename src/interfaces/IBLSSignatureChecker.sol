@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {IRegistryCoordinator} from "./IRegistryCoordinator.sol";
+import {IEORegistryCoordinator} from "./IEORegistryCoordinator.sol";
 import {IBLSApkRegistry} from "./IBLSApkRegistry.sol";
 import {IStakeRegistry, IDelegationManager} from "./IStakeRegistry.sol";
 
 import {BN254} from "../libraries/BN254.sol";
 
 /**
- * @title Used for checking BLS aggregate signatures from the operators of a EigenLayer AVS with the RegistryCoordinator/BLSApkRegistry/StakeRegistry architechture.
+ * @title Used for checking BLS aggregate signatures from the operators of a EigenLayer AVS with the EORegistryCoordinator/BLSApkRegistry/StakeRegistry architechture.
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This is the contract for checking the validity of aggregate operator signatures.
@@ -46,7 +46,7 @@ interface IBLSSignatureChecker {
     
     // CONSTANTS & IMMUTABLES
 
-    function registryCoordinator() external view returns (IRegistryCoordinator);
+    function registryCoordinator() external view returns (IEORegistryCoordinator);
     function stakeRegistry() external view returns (IStakeRegistry);
     function blsApkRegistry() external view returns (IBLSApkRegistry);
     function delegation() external view returns (IDelegationManager);

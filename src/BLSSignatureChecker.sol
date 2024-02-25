@@ -2,7 +2,7 @@
 pragma solidity =0.8.12;
 
 import {IBLSSignatureChecker} from "./interfaces/IBLSSignatureChecker.sol";
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
 import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry, IDelegationManager} from "./interfaces/IStakeRegistry.sol";
 
@@ -23,7 +23,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
     // gas cost of multiplying 2 pairings
     uint256 internal constant PAIRING_EQUALITY_CHECK_GAS = 120000;
 
-    IRegistryCoordinator public immutable registryCoordinator;
+    IEORegistryCoordinator public immutable registryCoordinator;
     IStakeRegistry public immutable stakeRegistry;
     IBLSApkRegistry public immutable blsApkRegistry;
     IDelegationManager public immutable delegation;
@@ -35,7 +35,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         _;
     }
 
-    constructor(IRegistryCoordinator _registryCoordinator) {
+    constructor(IEORegistryCoordinator _registryCoordinator) {
         registryCoordinator = _registryCoordinator;
         stakeRegistry = _registryCoordinator.stakeRegistry();
         blsApkRegistry = _registryCoordinator.blsApkRegistry();
@@ -45,7 +45,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
     }
 
     /**
-     * RegistryCoordinator owner can either enforce or not that operator stakes are staler
+     * EORegistryCoordinator owner can either enforce or not that operator stakes are staler
      * than the delegation.minWithdrawalDelayBlocks() window.
      * @param value to toggle staleStakesForbidden
      */

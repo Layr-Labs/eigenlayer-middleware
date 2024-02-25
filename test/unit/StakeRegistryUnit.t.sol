@@ -44,7 +44,7 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
 
         // Make registryCoordinatorOwner the owner of the registryCoordinator contract
         cheats.startPrank(registryCoordinatorOwner);
-        registryCoordinator = new RegistryCoordinatorHarness(
+        registryCoordinator = new EORegistryCoordinatorHarness(
             serviceManager,
             stakeRegistry,
             IBLSApkRegistry(blsApkRegistry),
@@ -52,7 +52,7 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
         );
 
         stakeRegistryImplementation = new StakeRegistryHarness(
-            IRegistryCoordinator(address(registryCoordinator)),
+            IEORegistryCoordinator(address(registryCoordinator)),
             delegationMock
         );
 
@@ -526,12 +526,12 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
                             initializeQuorum
     *******************************************************************************/
 
-    function testFuzz_initializeQuorum_Revert_WhenNotRegistryCoordinator(
+    function testFuzz_initializeQuorum_Revert_WhenNotEORegistryCoordinator(
         uint8 quorumNumber,
         uint96 minimumStake,
         IStakeRegistry.StrategyParams[] memory strategyParams
     ) public {
-        cheats.expectRevert("StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator");
+        cheats.expectRevert("StakeRegistry.onlyEORegistryCoordinator: caller is not the EORegistryCoordinator");
         stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
     }
 
@@ -608,7 +608,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
                             setMinimumStakeForQuorum
     *******************************************************************************/
 
-    function testFuzz_setMinimumStakeForQuorum_Revert_WhenNotRegistryCoordinatorOwner(
+    function testFuzz_setMinimumStakeForQuorum_Revert_WhenNotEORegistryCoordinatorOwner(
         uint8 quorumNumber,
         uint96 minimumStakeForQuorum
     ) public fuzzOnlyInitializedQuorums(quorumNumber) {
@@ -641,7 +641,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
                             addStrategies
     *******************************************************************************/
 
-    function testFuzz_addStrategies_Revert_WhenNotRegistryCoordinatorOwner(
+    function testFuzz_addStrategies_Revert_WhenNotEORegistryCoordinatorOwner(
         uint8 quorumNumber,
         IStakeRegistry.StrategyParams[] memory strategyParams
     ) public fuzzOnlyInitializedQuorums(quorumNumber) {
@@ -737,7 +737,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
     /*******************************************************************************
                             removeStrategies
     *******************************************************************************/
-    function testFuzz_removeStrategies_Revert_WhenNotRegistryCoordinatorOwner(
+    function testFuzz_removeStrategies_Revert_WhenNotEORegistryCoordinatorOwner(
         uint8 quorumNumber,
         uint256[] memory indicesToRemove
     ) public fuzzOnlyInitializedQuorums(quorumNumber) {
@@ -835,7 +835,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
     /*******************************************************************************
                             modifyStrategyParams
     *******************************************************************************/
-    function testFuzz_modifyStrategyParams_Revert_WhenNotRegistryCoordinatorOwner(
+    function testFuzz_modifyStrategyParams_Revert_WhenNotEORegistryCoordinatorOwner(
         uint8 quorumNumber,
         uint256[] calldata strategyIndices,
         uint96[] calldata newMultipliers
@@ -929,10 +929,10 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
                               registerOperator
     *******************************************************************************/
 
-    function test_registerOperator_Revert_WhenNotRegistryCoordinator() public {
+    function test_registerOperator_Revert_WhenNotEORegistryCoordinator() public {
         (address operator, bytes32 operatorId) = _selectNewOperator();
 
-        cheats.expectRevert("StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator");
+        cheats.expectRevert("StakeRegistry.onlyEORegistryCoordinator: caller is not the EORegistryCoordinator");
         stakeRegistry.registerOperator(operator, operatorId, initializedQuorumBytes);
     }
 
@@ -1176,14 +1176,14 @@ contract StakeRegistryUnitTests_Deregister is StakeRegistryUnitTests {
                               deregisterOperator
     *******************************************************************************/
 
-    function test_deregisterOperator_Revert_WhenNotRegistryCoordinator() public {
+    function test_deregisterOperator_Revert_WhenNotEORegistryCoordinator() public {
         DeregisterSetup memory setup = _fuzz_setupDeregisterOperator({
             registeredFor: initializedQuorumBitmap,
             fuzzy_toRemove: initializedQuorumBitmap,
             fuzzy_addtlStake: 0
         });
 
-        cheats.expectRevert("StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator");
+        cheats.expectRevert("StakeRegistry.onlyEORegistryCoordinator: caller is not the EORegistryCoordinator");
         stakeRegistry.deregisterOperator(setup.operatorId, setup.quorumsToRemove);
     }
 
@@ -1447,13 +1447,13 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
 
     using BitmapUtils for *;
 
-    function test_updateOperatorStake_Revert_WhenNotRegistryCoordinator() public {
+    function test_updateOperatorStake_Revert_WhenNotEORegistryCoordinator() public {
         UpdateSetup memory setup = _fuzz_setupUpdateOperatorStake({
             registeredFor: initializedQuorumBitmap,
             fuzzy_Delta: 0
         });
 
-        cheats.expectRevert("StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator");
+        cheats.expectRevert("StakeRegistry.onlyEORegistryCoordinator: caller is not the EORegistryCoordinator");
         stakeRegistry.updateOperatorStake(setup.operator, setup.operatorId, setup.quorumNumbers);
     }
 

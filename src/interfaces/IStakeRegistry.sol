@@ -59,7 +59,7 @@ interface IStakeRegistry is IRegistry {
      * @param operatorId The id of the operator to register.
      * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
      * @return The operator's current stake for each quorum, and the total stake for each quorum
-     * @dev access restricted to the RegistryCoordinator
+     * @dev access restricted to the EORegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0
@@ -76,7 +76,7 @@ interface IStakeRegistry is IRegistry {
      * @notice Deregisters the operator with `operatorId` for the specified `quorumNumbers`.
      * @param operatorId The id of the operator to deregister.
      * @param quorumNumbers The quorum numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
-     * @dev access restricted to the RegistryCoordinator
+     * @dev access restricted to the EORegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0

@@ -13,8 +13,8 @@ import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
 import {BN254} from "../../src/libraries/BN254.sol";
 
 import {OperatorStateRetriever} from "../../src/OperatorStateRetriever.sol";
-import {RegistryCoordinator} from "../../src/RegistryCoordinator.sol";
-import {RegistryCoordinatorHarness} from "../harnesses/RegistryCoordinatorHarness.t.sol";
+import {EORegistryCoordinator} from "../../src/EORegistryCoordinator.sol";
+import {EORegistryCoordinatorHarness} from "../harnesses/EORegistryCoordinatorHarness.t.sol";
 import {BLSApkRegistry} from "../../src/BLSApkRegistry.sol";
 import {ServiceManagerMock} from "../mocks/ServiceManagerMock.sol";
 import {StakeRegistry} from "../../src/StakeRegistry.sol";
@@ -22,7 +22,7 @@ import {IndexRegistry} from "../../src/IndexRegistry.sol";
 import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
-import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
+import {IEORegistryCoordinator} from "../../src/interfaces/IEORegistryCoordinator.sol";
 import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
 
 
@@ -55,14 +55,14 @@ contract MockAVSDeployer is Test {
 
     EmptyContract public emptyContract;
 
-    RegistryCoordinatorHarness public registryCoordinatorImplementation;
+    EORegistryCoordinatorHarness public registryCoordinatorImplementation;
     StakeRegistryHarness public stakeRegistryImplementation;
     IBLSApkRegistry public blsApkRegistryImplementation;
     IIndexRegistry public indexRegistryImplementation;
     ServiceManagerMock public serviceManagerImplementation;
 
     OperatorStateRetriever public operatorStateRetriever;
-    RegistryCoordinatorHarness public registryCoordinator;
+    EORegistryCoordinatorHarness public registryCoordinator;
     StakeRegistryHarness public stakeRegistry;
     BLSApkRegistryHarness public blsApkRegistry;
     IIndexRegistry public indexRegistry;
@@ -101,7 +101,7 @@ contract MockAVSDeployer is Test {
     uint16 defaultKickBIPsOfTotalStake = 150;
     uint8 numQuorums = 192;
 
-    IRegistryCoordinator.OperatorSetParam[] operatorSetParams;
+    IEORegistryCoordinator.OperatorSetParam[] operatorSetParams;
 
     uint8 maxQuorumsToRegisterFor = 4;
     uint256 maxOperatorsToRegister = 4;
@@ -171,7 +171,7 @@ contract MockAVSDeployer is Test {
         cheats.stopPrank();
 
         cheats.startPrank(registryCoordinatorOwner);
-        registryCoordinator = RegistryCoordinatorHarness(address(
+        registryCoordinator = EORegistryCoordinatorHarness(address(
             new TransparentUpgradeableProxy(
                 address(emptyContract),
                 address(proxyAdmin),
@@ -224,7 +224,7 @@ contract MockAVSDeployer is Test {
         cheats.startPrank(proxyAdminOwner);
 
         stakeRegistryImplementation = new StakeRegistryHarness(
-            IRegistryCoordinator(registryCoordinator),
+            IEORegistryCoordinator(registryCoordinator),
             delegationMock
         );
 
@@ -284,7 +284,7 @@ contract MockAVSDeployer is Test {
             );
         }
 
-        registryCoordinatorImplementation = new RegistryCoordinatorHarness(
+        registryCoordinatorImplementation = new EORegistryCoordinatorHarness(
             serviceManager,
             stakeRegistry,
             blsApkRegistry,
@@ -294,7 +294,7 @@ contract MockAVSDeployer is Test {
             delete operatorSetParams;
             for (uint i = 0; i < numQuorumsToAdd; i++) {
                 // hard code these for now
-                operatorSetParams.push(IRegistryCoordinator.OperatorSetParam({
+                operatorSetParams.push(IEORegistryCoordinator.OperatorSetParam({
                     maxOperatorCount: defaultMaxOperatorCount,
                     kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
                     kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
@@ -305,7 +305,7 @@ contract MockAVSDeployer is Test {
                 TransparentUpgradeableProxy(payable(address(registryCoordinator))),
                 address(registryCoordinatorImplementation),
                 abi.encodeWithSelector(
-                    RegistryCoordinator.initialize.selector,
+                    EORegistryCoordinator.initialize.selector,
                     registryCoordinatorOwner,
                     churnApprover,
                     ejector,
@@ -346,7 +346,7 @@ contract MockAVSDeployer is Test {
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
         cheats.prank(operator);
-        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySignatureAndExpiry);
+        registryCoordinator.registerOperator(quorumNumbers, pubkeyRegistrationParams, emptySignatureAndExpiry);
     }
 
     /**
@@ -365,7 +365,7 @@ contract MockAVSDeployer is Test {
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
         cheats.prank(operator);
-        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySignatureAndExpiry);
+        registryCoordinator.registerOperator(quorumNumbers, pubkeyRegistrationParams, emptySignatureAndExpiry);
     }
 
     function _registerRandomOperators(uint256 pseudoRandomNumber) internal returns(OperatorMetadata[] memory, uint256[][] memory) {
@@ -434,7 +434,7 @@ contract MockAVSDeployer is Test {
         return bytes32(uint256(start) + inc);
     }
 
-    function _signOperatorChurnApproval(address registeringOperator, bytes32 registeringOperatorId, IRegistryCoordinator.OperatorKickParam[] memory operatorKickParams, bytes32 salt,  uint256 expiry) internal view returns(ISignatureUtils.SignatureWithSaltAndExpiry memory) {
+    function _signOperatorChurnApproval(address registeringOperator, bytes32 registeringOperatorId, IEORegistryCoordinator.OperatorKickParam[] memory operatorKickParams, bytes32 salt,  uint256 expiry) internal view returns(ISignatureUtils.SignatureWithSaltAndExpiry memory) {
         bytes32 digestHash = registryCoordinator.calculateOperatorChurnApprovalDigestHash(
             registeringOperator,
             registeringOperatorId,

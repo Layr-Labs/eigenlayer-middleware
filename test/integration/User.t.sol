@@ -15,7 +15,7 @@ import "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
 import "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 
 // Middleware
-import "src/RegistryCoordinator.sol";
+import "src/EORegistryCoordinator.sol";
 import "src/BLSApkRegistry.sol";
 import "src/IndexRegistry.sol";
 import "src/StakeRegistry.sol";
@@ -29,7 +29,7 @@ import "test/integration/utils/BitmapStrings.t.sol";
 
 
 interface IUserDeployer {
-    function registryCoordinator() external view returns (RegistryCoordinator);
+    function registryCoordinator() external view returns (EORegistryCoordinator);
     function avsDirectory() external view returns (AVSDirectory);
     function timeMachine() external view returns (TimeMachine);
     function churnApproverPrivateKey() external view returns (uint);
@@ -51,7 +51,7 @@ contract User is Test {
     AVSDirectory avsDirectory;
 
     // Middleware contracts
-    RegistryCoordinator registryCoordinator;
+    EORegistryCoordinator registryCoordinator;
     ServiceManagerBase serviceManager;
     BLSApkRegistry blsApkRegistry;
     StakeRegistry stakeRegistry;
@@ -119,7 +119,6 @@ contract User is Test {
 
         registryCoordinator.registerOperator({
             quorumNumbers: quorums,
-            socket: NAME,
             params: pubkeyParams,
             operatorSignature: _genAVSRegistrationSig()
         });
@@ -150,8 +149,8 @@ contract User is Test {
                 .plus(standardBitmap)
                 .bitmapToBytesArray();
 
-        IRegistryCoordinator.OperatorKickParam[] memory kickParams 
-            = new IRegistryCoordinator.OperatorKickParam[](allQuorums.length);
+        IEORegistryCoordinator.OperatorKickParam[] memory kickParams 
+            = new IEORegistryCoordinator.OperatorKickParam[](allQuorums.length);
 
         // this constructs OperatorKickParam[] in ascending quorum order
         // (yikes)
@@ -159,19 +158,19 @@ contract User is Test {
         uint stdIdx;
         while (churnIdx + stdIdx < allQuorums.length) {
             if (churnIdx == churnQuorums.length) {
-                kickParams[churnIdx + stdIdx] = IRegistryCoordinator.OperatorKickParam({
+                kickParams[churnIdx + stdIdx] = IEORegistryCoordinator.OperatorKickParam({
                     quorumNumber: 0,
                     operator: address(0)
                 });
                 stdIdx++;
             } else if (stdIdx == standardQuorums.length || churnQuorums[churnIdx] < standardQuorums[stdIdx]) {
-                kickParams[churnIdx + stdIdx] = IRegistryCoordinator.OperatorKickParam({
+                kickParams[churnIdx + stdIdx] = IEORegistryCoordinator.OperatorKickParam({
                     quorumNumber: uint8(churnQuorums[churnIdx]),
                     operator: address(churnTargets[churnIdx])
                 });
                 churnIdx++;
             } else if (standardQuorums[stdIdx] < churnQuorums[churnIdx]) {
-                kickParams[churnIdx + stdIdx] = IRegistryCoordinator.OperatorKickParam({
+                kickParams[churnIdx + stdIdx] = IEORegistryCoordinator.OperatorKickParam({
                     quorumNumber: 0,
                     operator: address(0)
                 });
@@ -210,7 +209,6 @@ contract User is Test {
 
         registryCoordinator.registerOperatorWithChurn({
             quorumNumbers: allQuorums,
-            socket: NAME,
             params: pubkeyParams,
             operatorKickParams: kickParams,
             churnApproverSignature: churnApproverSignature,

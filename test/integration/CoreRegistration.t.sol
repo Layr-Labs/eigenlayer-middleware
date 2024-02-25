@@ -64,14 +64,14 @@ contract Test_CoreRegistration is MockAVSDeployer {
         );
 
 
-        // Deploy New ServiceManager & RegistryCoordinator implementations
+        // Deploy New ServiceManager & EORegistryCoordinator implementations
         serviceManagerImplementation = new ServiceManagerMock(
             avsDirectory,
             registryCoordinator,
             stakeRegistry
         );
 
-        registryCoordinatorImplementation = new RegistryCoordinatorHarness(
+        registryCoordinatorImplementation = new EORegistryCoordinatorHarness(
             serviceManager,
             stakeRegistry,
             blsApkRegistry,
@@ -129,7 +129,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
 
         // Register operator
         cheats.prank(operator);
-        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, operatorSignature);
+        registryCoordinator.registerOperator(quorumNumbers, pubkeyRegistrationParams, operatorSignature);
 
         // Check operator is registered
         IAVSDirectory.OperatorAVSRegistrationStatus operatorStatus = avsDirectory.avsOperatorStatus(address(serviceManager), operator);
@@ -199,7 +199,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
 
         // Register operator
         cheats.prank(operator);
-        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, operatorSignature);
+        registryCoordinator.registerOperator(quorumNumbers, pubkeyRegistrationParams, operatorSignature);
     }
 
     function _getOperatorSignature(

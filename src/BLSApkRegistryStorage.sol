@@ -2,7 +2,7 @@
 pragma solidity =0.8.12;
 
 import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
 
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
@@ -29,7 +29,7 @@ abstract contract BLSApkRegistryStorage is Initializable, IBLSApkRegistry {
     /// @notice maps quorumNumber => current aggregate pubkey of quorum
     mapping(uint8 => BN254.G1Point) public currentApk;
 
-    constructor(IRegistryCoordinator _registryCoordinator) {
+    constructor(IEORegistryCoordinator _registryCoordinator) {
         registryCoordinator = address(_registryCoordinator);
         // disable initializers so that the implementation contract cannot be initialized
         _disableInitializers();

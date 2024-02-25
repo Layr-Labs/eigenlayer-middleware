@@ -12,7 +12,7 @@ contract BLSApkRegistryFFITests is G2Operations {
     Vm cheats = Vm(HEVM_ADDRESS);
 
     BLSApkRegistry blsApkRegistry;
-    IRegistryCoordinator registryCoordinator;
+    IEORegistryCoordinator registryCoordinator;
 
     uint256 privKey;
     IBLSApkRegistry.PubkeyRegistrationParams pubkeyRegistrationParams;

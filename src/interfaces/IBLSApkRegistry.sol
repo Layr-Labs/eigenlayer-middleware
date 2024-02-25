@@ -53,7 +53,7 @@ interface IBLSApkRegistry is IRegistry {
      * @notice Registers the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to register.
      * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
-     * @dev access restricted to the RegistryCoordinator
+     * @dev access restricted to the EORegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0
@@ -66,7 +66,7 @@ interface IBLSApkRegistry is IRegistry {
      * @notice Deregisters the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to deregister.
      * @param quorumNumbers The quorum numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
-     * @dev access restricted to the RegistryCoordinator
+     * @dev access restricted to the EORegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0
@@ -96,7 +96,7 @@ interface IBLSApkRegistry is IRegistry {
     function pubkeyHashToOperator(bytes32 pubkeyHash) external view returns (address);
 
     /**
-     * @notice Called by the RegistryCoordinator register an operator as the owner of a BLS public key.
+     * @notice Called by the EORegistryCoordinator register an operator as the owner of a BLS public key.
      * @param operator is the operator for whom the key is being registered
      * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership
      * @param pubkeyRegistrationMessageHash is a hash that the operator must sign to prove key ownership

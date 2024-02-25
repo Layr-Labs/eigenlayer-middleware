@@ -3,7 +3,7 @@ pragma solidity =0.8.12;
 
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 
 /**
@@ -16,7 +16,7 @@ abstract contract IndexRegistryStorage is Initializable, IIndexRegistry {
     /// @notice The value that is returned when an operator does not exist at an index at a certain block
     bytes32 public constant OPERATOR_DOES_NOT_EXIST_ID = bytes32(0);
 
-    /// @notice The RegistryCoordinator contract for this middleware
+    /// @notice The EORegistryCoordinator contract for this middleware
     address public immutable registryCoordinator;
 
     /// @notice maps quorumNumber => operator id => current operatorIndex
@@ -31,7 +31,7 @@ abstract contract IndexRegistryStorage is Initializable, IIndexRegistry {
     mapping(uint8 => QuorumUpdate[]) internal _operatorCountHistory;
 
     constructor(
-        IRegistryCoordinator _registryCoordinator
+        IEORegistryCoordinator _registryCoordinator
     ){
         registryCoordinator = address(_registryCoordinator);
         // disable initializers so that the implementation contract cannot be initialized

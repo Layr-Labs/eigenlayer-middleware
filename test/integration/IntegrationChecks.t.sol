@@ -18,7 +18,7 @@ contract IntegrationChecks is IntegrationBase {
     ) internal {
         _log("check_Never_Registered",  operator);
 
-        // RegistryCoordinator
+        // EORegistryCoordinator
         assert_HasNoOperatorInfo(operator,
             "operator should have empty id and NEVER_REGISTERED status");
         assert_EmptyQuorumBitmap(operator,
@@ -43,7 +43,7 @@ contract IntegrationChecks is IntegrationBase {
     ) internal {
         _log("check_Register_State", operator);
 
-        // RegistryCoordinator
+        // EORegistryCoordinator
         assert_HasOperatorInfoWithId(operator, 
             "operatorInfo should have operatorId");
         assert_HasRegisteredStatus(operator,
@@ -92,7 +92,7 @@ contract IntegrationChecks is IntegrationBase {
                 .plus(standardQuorums.orderedBytesArrayToBitmap())
                 .bitmapToBytesArray();
 
-        // RegistryCoordinator
+        // EORegistryCoordinator
         assert_HasOperatorInfoWithId(incomingOperator, 
             "operatorInfo should have operatorId");
         assert_HasRegisteredStatus(incomingOperator,
@@ -139,7 +139,7 @@ contract IntegrationChecks is IntegrationBase {
             bytes memory churnedQuorum = new bytes(1);
             churnedQuorum[0] = churnedQuorums[i];
 
-            // RegistryCoordinator
+            // EORegistryCoordinator
             assert_HasOperatorInfoWithId(churnedOperator, 
                 "churned operatorInfo should still have operatorId");
             assert_NotRegisteredForQuorums(churnedOperator, churnedQuorum,
@@ -172,7 +172,7 @@ contract IntegrationChecks is IntegrationBase {
     ) internal {
         _log("check_Deposit_State", operator);
 
-        // RegistryCoordinator
+        // EORegistryCoordinator
         assert_Snap_Unchanged_OperatorInfo(operator,
             "operator info should not have changed");
         assert_Snap_Unchanged_QuorumBitmap(operator,
@@ -211,7 +211,7 @@ contract IntegrationChecks is IntegrationBase {
     ) internal {
         _log("check_DepositUpdate_State", operator);
 
-        // RegistryCoordinator
+        // EORegistryCoordinator
         assert_Snap_Unchanged_OperatorInfo(operator,
             "operator info should not have changed");
         assert_Snap_Unchanged_QuorumBitmap(operator,
@@ -249,7 +249,7 @@ contract IntegrationChecks is IntegrationBase {
     ) internal {
         _log("check_Withdraw_State", operator);
 
-        // RegistryCoordinator
+        // EORegistryCoordinator
         assert_Snap_Unchanged_OperatorInfo(operator,
             "operator info should not have changed");
         assert_Snap_Unchanged_QuorumBitmap(operator,
@@ -287,7 +287,7 @@ contract IntegrationChecks is IntegrationBase {
     ) internal {
         _log("check_WithdrawUpdate_State", operator);
 
-        // RegistryCoordinator
+        // EORegistryCoordinator
         assert_HasOperatorInfoWithId(operator, 
             "operatorInfo should still have operatorId");
         assert_EmptyQuorumBitmap(operator,
@@ -327,7 +327,7 @@ contract IntegrationChecks is IntegrationBase {
     ) internal {
         _log("check_NoChangeUpdate_State", operator);
 
-        // RegistryCoordinator
+        // EORegistryCoordinator
         assert_Snap_Unchanged_OperatorInfo(operator,
             "operator info should not have changed");
         assert_Snap_Unchanged_QuorumBitmap(operator,
@@ -363,7 +363,7 @@ contract IntegrationChecks is IntegrationBase {
     ) internal {
         _log("check_Deregister_State", operator);
 
-        // RegistryCoordinator
+        // EORegistryCoordinator
         assert_HasOperatorInfoWithId(operator, 
             "operatorInfo should still have operatorId");
         assert_NotRegisteredForQuorums(operator, quorums,
@@ -396,7 +396,7 @@ contract IntegrationChecks is IntegrationBase {
     ) internal {
         _log("check_CompleteDeregister_State", operator);
 
-        // RegistryCoordinator
+        // EORegistryCoordinator
         assert_EmptyQuorumBitmap(operator,
             "operator should not have any bits in bitmap");
         assert_HasOperatorInfoWithId(operator, 

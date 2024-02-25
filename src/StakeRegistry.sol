@@ -5,7 +5,7 @@ import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/
 
 import {StakeRegistryStorage, IStrategy} from "./StakeRegistryStorage.sol";
 
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
@@ -23,16 +23,16 @@ contract StakeRegistry is StakeRegistryStorage {
 
     using BitmapUtils for *;
     
-    modifier onlyRegistryCoordinator() {
+    modifier onlyEORegistryCoordinator() {
         require(
             msg.sender == address(registryCoordinator),
-            "StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator"
+            "StakeRegistry.onlyEORegistryCoordinator: caller is not the EORegistryCoordinator"
         );
         _;
     }
 
     modifier onlyCoordinatorOwner() {
-        require(msg.sender == IRegistryCoordinator(registryCoordinator).owner(), "StakeRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator");
+        require(msg.sender == IEORegistryCoordinator(registryCoordinator).owner(), "StakeRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator");
         _;
     }
 
@@ -42,7 +42,7 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     constructor(
-        IRegistryCoordinator _registryCoordinator,
+        IEORegistryCoordinator _registryCoordinator,
         IDelegationManager _delegationManager
     ) StakeRegistryStorage(_registryCoordinator, _delegationManager) {}
 
@@ -56,7 +56,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param operatorId The id of the operator to register.
      * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
      * @return The operator's current stake for each quorum, and the total stake for each quorum
-     * @dev access restricted to the RegistryCoordinator
+     * @dev access restricted to the EORegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0
@@ -67,7 +67,7 @@ contract StakeRegistry is StakeRegistryStorage {
         address operator,
         bytes32 operatorId,
         bytes calldata quorumNumbers
-    ) public virtual onlyRegistryCoordinator returns (uint96[] memory, uint96[] memory) {
+    ) public virtual onlyEORegistryCoordinator returns (uint96[] memory, uint96[] memory) {
 
         uint96[] memory currentStakes = new uint96[](quorumNumbers.length);
         uint96[] memory totalStakes = new uint96[](quorumNumbers.length);
@@ -103,7 +103,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @notice Deregisters the operator with `operatorId` for the specified `quorumNumbers`.
      * @param operatorId The id of the operator to deregister.
      * @param quorumNumbers The quorum numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
-     * @dev access restricted to the RegistryCoordinator
+     * @dev access restricted to the EORegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0
@@ -114,7 +114,7 @@ contract StakeRegistry is StakeRegistryStorage {
     function deregisterOperator(
         bytes32 operatorId,
         bytes calldata quorumNumbers
-    ) public virtual onlyRegistryCoordinator {
+    ) public virtual onlyEORegistryCoordinator {
         /**
          * For each quorum, remove the operator's stake for the quorum and update
          * the quorum's total stake to account for the removal
@@ -148,7 +148,7 @@ contract StakeRegistry is StakeRegistryStorage {
         address operator, 
         bytes32 operatorId, 
         bytes calldata quorumNumbers
-    ) external onlyRegistryCoordinator returns (uint192) {
+    ) external onlyEORegistryCoordinator returns (uint192) {
         uint192 quorumsToRemove;
 
         /**
@@ -193,7 +193,7 @@ contract StakeRegistry is StakeRegistryStorage {
         uint8 quorumNumber,
         uint96 minimumStake,
         StrategyParams[] memory _strategyParams
-    ) public virtual onlyRegistryCoordinator {
+    ) public virtual onlyEORegistryCoordinator {
         require(!_quorumExists(quorumNumber), "StakeRegistry.initializeQuorum: quorum already exists");
         _addStrategyParams(quorumNumber, _strategyParams);
         _setMinimumStakeForQuorum(quorumNumber, minimumStake);

@@ -4,7 +4,7 @@ pragma solidity =0.8.12;
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategyManager, IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
 import {IStakeRegistry} from  "./interfaces/IStakeRegistry.sol";
 
 /**
@@ -46,7 +46,7 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
 
 
     constructor(
-        IRegistryCoordinator _registryCoordinator, 
+        IEORegistryCoordinator _registryCoordinator, 
         IDelegationManager _delegationManager
     ) {
         registryCoordinator = address(_registryCoordinator);

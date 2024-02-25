@@ -26,7 +26,7 @@ import "eigenlayer-contracts/src/test/mocks/ETHDepositMock.sol";
 import "test/integration/mocks/BeaconChainOracleMock.t.sol";
 
 // Middleware contracts
-import "src/RegistryCoordinator.sol";
+import "src/EORegistryCoordinator.sol";
 import "src/StakeRegistry.sol";
 import "src/IndexRegistry.sol";
 import "src/BLSApkRegistry.sol";
@@ -64,7 +64,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     StrategyBase baseStrategyImplementation;
 
     // Middleware contracts to deploy
-    RegistryCoordinator public registryCoordinator;
+    EORegistryCoordinator public registryCoordinator;
     ServiceManagerMock serviceManager;
     BLSApkRegistry blsApkRegistry;
     StakeRegistry stakeRegistry;
@@ -248,7 +248,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         timeMachine = new TimeMachine();
 
         cheats.startPrank(registryCoordinatorOwner);
-        registryCoordinator = RegistryCoordinator(address(
+        registryCoordinator = EORegistryCoordinator(address(
             new TransparentUpgradeableProxy(
                 address(emptyContract),
                 address(proxyAdmin),
@@ -297,10 +297,10 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
         cheats.stopPrank();
 
-        StakeRegistry stakeRegistryImplementation = new StakeRegistry(IRegistryCoordinator(registryCoordinator), IDelegationManager(delegationManager));
-        BLSApkRegistry blsApkRegistryImplementation = new BLSApkRegistry(IRegistryCoordinator(registryCoordinator));
-        IndexRegistry indexRegistryImplementation = new IndexRegistry(IRegistryCoordinator(registryCoordinator));
-        ServiceManagerMock serviceManagerImplementation = new ServiceManagerMock(IAVSDirectory(avsDirectory), IRegistryCoordinator(registryCoordinator), stakeRegistry);
+        StakeRegistry stakeRegistryImplementation = new StakeRegistry(IEORegistryCoordinator(registryCoordinator), IDelegationManager(delegationManager));
+        BLSApkRegistry blsApkRegistryImplementation = new BLSApkRegistry(IEORegistryCoordinator(registryCoordinator));
+        IndexRegistry indexRegistryImplementation = new IndexRegistry(IEORegistryCoordinator(registryCoordinator));
+        ServiceManagerMock serviceManagerImplementation = new ServiceManagerMock(IAVSDirectory(avsDirectory), IEORegistryCoordinator(registryCoordinator), stakeRegistry);
 
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(stakeRegistry))),
@@ -324,18 +324,18 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
         serviceManager.initialize({initialOwner: registryCoordinatorOwner});
 
-        RegistryCoordinator registryCoordinatorImplementation = new RegistryCoordinator(serviceManager, stakeRegistry, blsApkRegistry, indexRegistry);
+        EORegistryCoordinator registryCoordinatorImplementation = new EORegistryCoordinator(serviceManager, stakeRegistry, blsApkRegistry, indexRegistry);
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(registryCoordinator))),
             address(registryCoordinatorImplementation),
             abi.encodeWithSelector(
-                RegistryCoordinator.initialize.selector,
+                EORegistryCoordinator.initialize.selector,
                 registryCoordinatorOwner,
                 churnApprover,
                 ejector,
                 pauserRegistry,
                 0/*initialPausedStatus*/,
-                new IRegistryCoordinator.OperatorSetParam[](0),
+                new IEORegistryCoordinator.OperatorSetParam[](0),
                 new uint96[](0),
                 new IStakeRegistry.StrategyParams[][](0)
             )

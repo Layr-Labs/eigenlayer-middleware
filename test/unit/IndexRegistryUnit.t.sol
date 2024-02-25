@@ -412,13 +412,13 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
                             UNIT TESTS - REGISTRATION
     *******************************************************************************/
 
-    function testFuzz_Revert_WhenNonRegistryCoordinator(address nonRegistryCoordinator) public {
-        cheats.assume(nonRegistryCoordinator != address(registryCoordinator));
-        cheats.assume(nonRegistryCoordinator != proxyAdminOwner);
+    function testFuzz_Revert_WhenNonEORegistryCoordinator(address nonEORegistryCoordinator) public {
+        cheats.assume(nonEORegistryCoordinator != address(registryCoordinator));
+        cheats.assume(nonEORegistryCoordinator != proxyAdminOwner);
         bytes memory quorumNumbers = new bytes(defaultQuorumNumber);
 
-        cheats.prank(nonRegistryCoordinator);
-        cheats.expectRevert("IndexRegistry.onlyRegistryCoordinator: caller is not the registry coordinator");
+        cheats.prank(nonEORegistryCoordinator);
+        cheats.expectRevert("IndexRegistry.onlyEORegistryCoordinator: caller is not the registry coordinator");
         indexRegistry.registerOperator(bytes32(0), quorumNumbers);
     }
 
@@ -444,7 +444,7 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
     }
 
     /**
-     * Preconditions for registration -> checks in BLSRegistryCoordinator
+     * Preconditions for registration -> checks in BLSEORegistryCoordinator
      * 1. quorumNumbers has no duplicates
      * 2. quorumNumbers ordered in ascending order
      * 3. quorumBitmap is <= uint192.max
@@ -579,7 +579,7 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
     }
 
     /**
-     * Preconditions for registration -> checks in BLSRegistryCoordinator
+     * Preconditions for registration -> checks in BLSEORegistryCoordinator
      * 1. quorumNumbers has no duplicates
      * 2. quorumNumbers ordered in ascending order
      * 3. quorumBitmap is <= uint192.max
@@ -692,14 +692,14 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
     /*******************************************************************************
                             UNIT TESTS - DEREGISTRATION
     *******************************************************************************/
-    function testFuzz_Revert_WhenNonRegistryCoordinator(address nonRegistryCoordinator) public {
-        cheats.assume(nonRegistryCoordinator != address(registryCoordinator));
-        cheats.assume(nonRegistryCoordinator != proxyAdminOwner);
+    function testFuzz_Revert_WhenNonEORegistryCoordinator(address nonEORegistryCoordinator) public {
+        cheats.assume(nonEORegistryCoordinator != address(registryCoordinator));
+        cheats.assume(nonEORegistryCoordinator != proxyAdminOwner);
         // de-register an operator
         bytes memory quorumNumbers = new bytes(defaultQuorumNumber);
 
-        cheats.prank(nonRegistryCoordinator);
-        cheats.expectRevert("IndexRegistry.onlyRegistryCoordinator: caller is not the registry coordinator");
+        cheats.prank(nonEORegistryCoordinator);
+        cheats.expectRevert("IndexRegistry.onlyEORegistryCoordinator: caller is not the registry coordinator");
         indexRegistry.deregisterOperator(bytes32(0), quorumNumbers);
     }
 

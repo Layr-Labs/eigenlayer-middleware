@@ -3,13 +3,12 @@ pragma solidity =0.8.12;
 
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {ISocketUpdater} from "./interfaces/ISocketUpdater.sol";
 import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
-
+import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
+import {ICustomChainManager} from "./interfaces/ICustomChainManager.sol";
 import {EIP1271SignatureUtils} from "eigenlayer-contracts/src/contracts/libraries/EIP1271SignatureUtils.sol";
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {BN254} from "./libraries/BN254.sol";
@@ -19,30 +18,29 @@ import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initia
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 
 import {Pausable} from "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
-import {RegistryCoordinatorStorage} from "./RegistryCoordinatorStorage.sol";
+import {EORegistryCoordinatorStorage} from "./EORegistryCoordinatorStorage.sol";
 
 /**
- * @title A `RegistryCoordinator` that has three registries:
+ * @title A `EORegistryCoordinator` that has three registries:
  *      1) a `StakeRegistry` that keeps track of operators' stakes
  *      2) a `BLSApkRegistry` that keeps track of operators' BLS public keys and aggregate BLS public keys for each quorum
  *      3) an `IndexRegistry` that keeps track of an ordered list of operators for each quorum
  * 
  * @author Layr Labs, Inc.
  */
-contract RegistryCoordinator is 
+contract EORegistryCoordinator is 
     EIP712, 
     Initializable, 
     Pausable,
     OwnableUpgradeable,
-    RegistryCoordinatorStorage, 
-    ISocketUpdater, 
+    EORegistryCoordinatorStorage, 
     ISignatureUtils
 {
     using BitmapUtils for *;
     using BN254 for BN254.G1Point;
 
     modifier onlyEjector {
-        require(msg.sender == ejector, "RegistryCoordinator.onlyEjector: caller is not the ejector");
+        require(msg.sender == ejector, "EORegistryCoordinator.onlyEjector: caller is not the ejector");
         _;
     }
 
@@ -51,19 +49,19 @@ contract RegistryCoordinator is
     modifier quorumExists(uint8 quorumNumber) {
         require(
             quorumNumber < quorumCount, 
-            "RegistryCoordinator.quorumExists: quorum does not exist"
+            "EORegistryCoordinator.quorumExists: quorum does not exist"
         );
         _;
     }
-
+    ICustomChainManager public customChainManager;
     constructor(
         IServiceManager _serviceManager,
         IStakeRegistry _stakeRegistry,
         IBLSApkRegistry _blsApkRegistry,
         IIndexRegistry _indexRegistry
     ) 
-        RegistryCoordinatorStorage(_serviceManager, _stakeRegistry, _blsApkRegistry, _indexRegistry)
-        EIP712("AVSRegistryCoordinator", "v0.0.1") 
+        EORegistryCoordinatorStorage(_serviceManager, _stakeRegistry, _blsApkRegistry, _indexRegistry)
+        EIP712("eoracleEORegistryCoordinator", "v0.0.1") 
     {
         _disableInitializers();
     }
@@ -91,7 +89,7 @@ contract RegistryCoordinator is
     ) external initializer {
         require(
             _operatorSetParams.length == _minimumStakes.length && _minimumStakes.length == _strategyParams.length,
-            "RegistryCoordinator.initialize: input length mismatch"
+            "EORegistryCoordinator.initialize: input length mismatch"
         );
         
         // Initialize roles
@@ -119,7 +117,6 @@ contract RegistryCoordinator is
      * @notice Registers msg.sender as an operator for one or more quorums. If any quorum exceeds its maximum
      * operator capacity after the operator is registered, this method will fail.
      * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for
-     * @param socket is the socket of the operator (typically an IP address)
      * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership
      * @param operatorSignature is the signature of the operator used by the AVS to register the operator in the delegation manager
      * @dev `params` is ignored if the caller has previously registered a public key
@@ -127,7 +124,6 @@ contract RegistryCoordinator is
      */
     function registerOperator(
         bytes calldata quorumNumbers,
-        string calldata socket,
         IBLSApkRegistry.PubkeyRegistrationParams calldata params,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
@@ -140,13 +136,10 @@ contract RegistryCoordinator is
          */
         bytes32 operatorId = _getOrCreateOperatorId(msg.sender, params);
 
-        // Register the operator in each of the registry contracts and update the operator's
-        // quorum bitmap and registration status
-        uint32[] memory numOperatorsPerQuorum = _registerOperator({
+         uint32[] memory numOperatorsPerQuorum = _registerOperator({
             operator: msg.sender, 
             operatorId: operatorId,
             quorumNumbers: quorumNumbers, 
-            socket: socket,
             operatorSignature: operatorSignature
         }).numOperatorsPerQuorum;
 
@@ -157,7 +150,7 @@ contract RegistryCoordinator is
 
             require(
                 numOperatorsPerQuorum[i] <= _quorumParams[quorumNumber].maxOperatorCount,
-                "RegistryCoordinator.registerOperator: operator count exceeds maximum"
+                "EORegistryCoordinator.registerOperator: operator count exceeds maximum"
             );
         }
     }
@@ -176,13 +169,12 @@ contract RegistryCoordinator is
      */
     function registerOperatorWithChurn(
         bytes calldata quorumNumbers, 
-        string calldata socket,
         IBLSApkRegistry.PubkeyRegistrationParams calldata params,
         OperatorKickParam[] calldata operatorKickParams,
         SignatureWithSaltAndExpiry memory churnApproverSignature,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        require(operatorKickParams.length == quorumNumbers.length, "RegistryCoordinator.registerOperatorWithChurn: input length mismatch");
+        require(operatorKickParams.length == quorumNumbers.length, "EORegistryCoordinator.registerOperatorWithChurn: input length mismatch");
         
         /**
          * If the operator has NEVER registered a pubkey before, use `params` to register
@@ -207,7 +199,6 @@ contract RegistryCoordinator is
             operator: msg.sender,
             operatorId: operatorId,
             quorumNumbers: quorumNumbers,
-            socket: socket,
             operatorSignature: operatorSignature
         });
 
@@ -292,11 +283,11 @@ contract RegistryCoordinator is
         uint192 quorumBitmap = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         require(
             _quorumsAllExist(quorumBitmap), 
-            "RegistryCoordinator.updateOperatorsForQuorum: some quorums do not exist"
+            "EORegistryCoordinator.updateOperatorsForQuorum: some quorums do not exist"
         );
         require(
             operatorsPerQuorum.length == quorumNumbers.length,
-            "RegistryCoordinator.updateOperatorsForQuorum: input length mismatch"
+            "EORegistryCoordinator.updateOperatorsForQuorum: input length mismatch"
         );
 
         // For each quorum, update ALL registered operators
@@ -307,7 +298,7 @@ contract RegistryCoordinator is
             address[] calldata currQuorumOperators = operatorsPerQuorum[i];
             require(
                 currQuorumOperators.length == indexRegistry.totalOperatorsForQuorum(quorumNumber),
-                "RegistryCoordinator.updateOperatorsForQuorum: number of updated operators does not match quorum total"
+                "EORegistryCoordinator.updateOperatorsForQuorum: number of updated operators does not match quorum total"
             );
 
             address prevOperatorAddress = address(0);
@@ -326,12 +317,12 @@ contract RegistryCoordinator is
                     // Check that the operator is registered
                     require(
                         BitmapUtils.isSet(currentBitmap, quorumNumber),
-                        "RegistryCoordinator.updateOperatorsForQuorum: operator not in quorum"
+                        "EORegistryCoordinator.updateOperatorsForQuorum: operator not in quorum"
                     );
                     // Prevent duplicate operators
                     require(
                         operator > prevOperatorAddress,
-                        "RegistryCoordinator.updateOperatorsForQuorum: operators array must be sorted in ascending address order"
+                        "EORegistryCoordinator.updateOperatorsForQuorum: operators array must be sorted in ascending address order"
                     );
                 }
                 
@@ -344,15 +335,6 @@ contract RegistryCoordinator is
             quorumUpdateBlockNumber[quorumNumber] = block.number;
             emit QuorumBlockNumberUpdated(quorumNumber, block.number);
         }
-    }
-
-    /**
-     * @notice Updates the socket of the msg.sender given they are a registered operator
-     * @param socket is the new socket of the operator
-     */
-    function updateSocket(string memory socket) external {
-        require(_operatorInfo[msg.sender].status == OperatorStatus.REGISTERED, "RegistryCoordinator.updateSocket: operator is not registered");
-        emit OperatorSocketUpdate(_operatorInfo[msg.sender].operatorId, socket);
     }
 
     /*******************************************************************************
@@ -377,6 +359,14 @@ contract RegistryCoordinator is
     /*******************************************************************************
                             EXTERNAL FUNCTIONS - OWNER
     *******************************************************************************/
+    /**
+     * @notice Sets the customChainManager, which is used to register validators on the custom chain
+     * @param _customChainManager the new customChainManager
+     * @dev only callable by the owner
+     */
+    function setCustomChainManager(ICustomChainManager _customChainManager) external onlyOwner {
+        customChainManager = _customChainManager;
+    }
 
     /**
      * @notice Creates a quorum and initializes it in each registry contract
@@ -439,13 +429,12 @@ contract RegistryCoordinator is
 
     /** 
      * @notice Register the operator for one or more quorums. This method updates the
-     * operator's quorum bitmap, socket, and status, then registers them with each registry.
+     * operator's quorum bitmap, and status, then registers them with each registry.
      */
     function _registerOperator(
         address operator, 
         bytes32 operatorId,
         bytes calldata quorumNumbers,
-        string memory socket,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) internal virtual returns (RegisterResults memory results) {
         /**
@@ -456,13 +445,13 @@ contract RegistryCoordinator is
          */
         uint192 quorumsToAdd = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         uint192 currentBitmap = _currentOperatorBitmap(operatorId);
-        require(!quorumsToAdd.isEmpty(), "RegistryCoordinator._registerOperator: bitmap cannot be 0");
-        require(_quorumsAllExist(quorumsToAdd), "RegistryCoordinator._registerOperator: some quorums do not exist");
-        require(quorumsToAdd.noBitsInCommon(currentBitmap), "RegistryCoordinator._registerOperator: operator already registered for some quorums being registered for");
+        require(!quorumsToAdd.isEmpty(), "EORegistryCoordinator._registerOperator: bitmap cannot be 0");
+        require(_quorumsAllExist(quorumsToAdd), "EORegistryCoordinator._registerOperator: some quorums do not exist");
+        require(quorumsToAdd.noBitsInCommon(currentBitmap), "EORegistryCoordinator._registerOperator: operator already registered for some quorums being registered for");
         uint192 newBitmap = uint192(currentBitmap.plus(quorumsToAdd));
 
         /**
-         * Update operator's bitmap, socket, and status. Only update operatorInfo if needed:
+         * Update operator's bitmap, and status. Only update operatorInfo if needed:
          * if we're `REGISTERED`, the operatorId and status are already correct.
          */
         _updateOperatorBitmap({
@@ -470,7 +459,6 @@ contract RegistryCoordinator is
             newBitmap: newBitmap
         });
 
-        emit OperatorSocketUpdate(operatorId, socket);
 
         // If the operator wasn't registered for any quorums, update their status
         // and register them with this AVS in EigenLayer core (DelegationManager)
@@ -491,7 +479,9 @@ contract RegistryCoordinator is
         (results.operatorStakes, results.totalStakes) = 
             stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
         results.numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
-
+        if (address(customChainManager) != address(0)){
+            customChainManager.registerValidator(operator, results.operatorStakes);
+        }
         return results;
     }
 
@@ -542,18 +532,18 @@ contract RegistryCoordinator is
     ) internal view {
         address operatorToKick = kickParams.operator;
         bytes32 idToKick = _operatorInfo[operatorToKick].operatorId;
-        require(newOperator != operatorToKick, "RegistryCoordinator._validateChurn: cannot churn self");
-        require(kickParams.quorumNumber == quorumNumber, "RegistryCoordinator._validateChurn: quorumNumber not the same as signed");
+        require(newOperator != operatorToKick, "EORegistryCoordinator._validateChurn: cannot churn self");
+        require(kickParams.quorumNumber == quorumNumber, "EORegistryCoordinator._validateChurn: quorumNumber not the same as signed");
 
         // Get the target operator's stake and check that it is below the kick thresholds
         uint96 operatorToKickStake = stakeRegistry.getCurrentStake(idToKick, quorumNumber);
         require(
             newOperatorStake > _individualKickThreshold(operatorToKickStake, setParams),
-            "RegistryCoordinator._validateChurn: incoming operator has insufficient stake for churn"
+            "EORegistryCoordinator._validateChurn: incoming operator has insufficient stake for churn"
         );
         require(
             operatorToKickStake < _totalKickThreshold(totalQuorumStake, setParams),
-            "RegistryCoordinator._validateChurn: cannot kick operator with more than kickBIPsOfTotalStake"
+            "EORegistryCoordinator._validateChurn: cannot kick operator with more than kickBIPsOfTotalStake"
         );
     }
 
@@ -569,7 +559,7 @@ contract RegistryCoordinator is
         // Fetch the operator's info and ensure they are registered
         OperatorInfo storage operatorInfo = _operatorInfo[operator];
         bytes32 operatorId = operatorInfo.operatorId;
-        require(operatorInfo.status == OperatorStatus.REGISTERED, "RegistryCoordinator._deregisterOperator: operator is not registered");
+        require(operatorInfo.status == OperatorStatus.REGISTERED, "EORegistryCoordinator._deregisterOperator: operator is not registered");
         
         /**
          * Get bitmap of quorums to deregister from and operator's current bitmap. Validate that:
@@ -579,9 +569,9 @@ contract RegistryCoordinator is
          */
         uint192 quorumsToRemove = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         uint192 currentBitmap = _currentOperatorBitmap(operatorId);
-        require(!quorumsToRemove.isEmpty(), "RegistryCoordinator._deregisterOperator: bitmap cannot be 0");
-        require(_quorumsAllExist(quorumsToRemove), "RegistryCoordinator._deregisterOperator: some quorums do not exist");
-        require(quorumsToRemove.isSubsetOf(currentBitmap), "RegistryCoordinator._deregisterOperator: operator is not registered for specified quorums");
+        require(!quorumsToRemove.isEmpty(), "EORegistryCoordinator._deregisterOperator: bitmap cannot be 0");
+        require(_quorumsAllExist(quorumsToRemove), "EORegistryCoordinator._deregisterOperator: some quorums do not exist");
+        require(quorumsToRemove.isSubsetOf(currentBitmap), "EORegistryCoordinator._deregisterOperator: operator is not registered for specified quorums");
         uint192 newBitmap = uint192(currentBitmap.minus(quorumsToRemove));
 
         // Update operator's bitmap and status
@@ -602,6 +592,9 @@ contract RegistryCoordinator is
         blsApkRegistry.deregisterOperator(operator, quorumNumbers);
         stakeRegistry.deregisterOperator(operatorId, quorumNumbers);
         indexRegistry.deregisterOperator(operatorId, quorumNumbers);
+        if (address(customChainManager) != address(0)){
+            customChainManager.deregisterValidator(operator);
+        }
     }
 
     /**
@@ -653,8 +646,8 @@ contract RegistryCoordinator is
         SignatureWithSaltAndExpiry memory churnApproverSignature
     ) internal {
         // make sure the salt hasn't been used already
-        require(!isChurnApproverSaltUsed[churnApproverSignature.salt], "RegistryCoordinator._verifyChurnApproverSignature: churnApprover salt already used");
-        require(churnApproverSignature.expiry >= block.timestamp, "RegistryCoordinator._verifyChurnApproverSignature: churnApprover signature expired");   
+        require(!isChurnApproverSaltUsed[churnApproverSignature.salt], "EORegistryCoordinator._verifyChurnApproverSignature: churnApprover salt already used");
+        require(churnApproverSignature.expiry >= block.timestamp, "EORegistryCoordinator._verifyChurnApproverSignature: churnApprover signature expired");   
 
         // set salt used to true
         isChurnApproverSaltUsed[churnApproverSignature.salt] = true;    
@@ -682,7 +675,7 @@ contract RegistryCoordinator is
     ) internal {
         // Increment the total quorum count. Fails if we're already at the max
         uint8 prevQuorumCount = quorumCount;
-        require(prevQuorumCount < MAX_QUORUM_COUNT, "RegistryCoordinator.createQuorum: max quorums reached");
+        require(prevQuorumCount < MAX_QUORUM_COUNT, "EORegistryCoordinator.createQuorum: max quorums reached");
         quorumCount = prevQuorumCount + 1;
         
         // The previous count is the new quorum's number
@@ -772,7 +765,7 @@ contract RegistryCoordinator is
         }
 
         revert(
-            "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number"
+            "EORegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number"
         );
     }
 
@@ -816,7 +809,7 @@ contract RegistryCoordinator is
     }
 
     /// @notice Returns the status for the given `operator`
-    function getOperatorStatus(address operator) external view returns (IRegistryCoordinator.OperatorStatus) {
+    function getOperatorStatus(address operator) external view returns (IEORegistryCoordinator.OperatorStatus) {
         return _operatorInfo[operator].status;
     }
 
@@ -856,11 +849,11 @@ contract RegistryCoordinator is
          */
         require(
             blockNumber >= quorumBitmapUpdate.updateBlockNumber, 
-            "RegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber"
+            "EORegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber"
         );
         require(
             quorumBitmapUpdate.nextUpdateBlockNumber == 0 || blockNumber < quorumBitmapUpdate.nextUpdateBlockNumber,
-            "RegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from before blockNumber"
+            "EORegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from before blockNumber"
         );
 
         return quorumBitmapUpdate.quorumBitmap;
@@ -923,7 +916,7 @@ contract RegistryCoordinator is
     function owner()
         public
         view
-        override(OwnableUpgradeable, IRegistryCoordinator)
+        override(OwnableUpgradeable, IEORegistryCoordinator)
         returns (address)
     {
         return OwnableUpgradeable.owner();

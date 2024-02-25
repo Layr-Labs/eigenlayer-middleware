@@ -5,9 +5,9 @@ import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
 
-abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
+abstract contract EORegistryCoordinatorStorage is IEORegistryCoordinator {
 
     /*******************************************************************************
                                CONSTANTS AND IMMUTABLES 

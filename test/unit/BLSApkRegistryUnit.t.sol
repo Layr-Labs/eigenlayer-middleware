@@ -3,7 +3,7 @@ pragma solidity =0.8.12;
 
 import "forge-std/Test.sol";
 import "../harnesses/BLSApkRegistryHarness.sol";
-import "../mocks/RegistryCoordinatorMock.sol";
+import "../mocks/EORegistryCoordinatorMock.sol";
 import "../harnesses/BitmapUtilsWrapper.sol";
 import "../utils/BLSMockAVSDeployer.sol";
 
@@ -263,14 +263,14 @@ contract BLSApkRegistryUnitTests_configAndGetters is BLSApkRegistryUnitTests {
         );
     }
 
-    function testFuzz_initializeQuorum_Revert_WhenNotRegistryCoordinator(
+    function testFuzz_initializeQuorum_Revert_WhenNotEORegistryCoordinator(
         address nonCoordinatorAddress
     ) public filterFuzzedAddressInputs(nonCoordinatorAddress) {
         cheats.assume(nonCoordinatorAddress != address(registryCoordinator));
 
         cheats.prank(address(nonCoordinatorAddress));
         cheats.expectRevert(
-            "BLSApkRegistry.onlyRegistryCoordinator: caller is not the registry coordinator"
+            "BLSApkRegistry.onlyEORegistryCoordinator: caller is not the registry coordinator"
         );
         blsApkRegistry.initializeQuorum(defaultQuorumNumber);
     }
@@ -280,7 +280,7 @@ contract BLSApkRegistryUnitTests_configAndGetters is BLSApkRegistryUnitTests {
 contract BLSApkRegistryUnitTests_registerBLSPublicKey is BLSApkRegistryUnitTests {
     using BN254 for BN254.G1Point;
 
-    function testFuzz_registerOperator_Revert_WhenNotRegistryCoordinator(
+    function testFuzz_registerOperator_Revert_WhenNotEORegistryCoordinator(
         address nonCoordinatorAddress
     ) public filterFuzzedAddressInputs(nonCoordinatorAddress) {
         cheats.assume(nonCoordinatorAddress != address(registryCoordinator));
@@ -291,7 +291,7 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is BLSApkRegistryUnitTests
 
         cheats.prank(address(nonCoordinatorAddress));
         cheats.expectRevert(
-            "BLSApkRegistry.onlyRegistryCoordinator: caller is not the registry coordinator"
+            "BLSApkRegistry.onlyEORegistryCoordinator: caller is not the registry coordinator"
         );
         blsApkRegistry.registerBLSPublicKey(defaultOperator, pubkeyRegistrationParams, messageHash);
     }
@@ -420,14 +420,14 @@ contract BLSApkRegistryUnitTests_registerOperator is BLSApkRegistryUnitTests {
     using BN254 for BN254.G1Point;
     using BitmapUtils for *;
 
-    function testFuzz_registerOperator_Revert_WhenNotRegistryCoordinator(
+    function testFuzz_registerOperator_Revert_WhenNotEORegistryCoordinator(
         address nonCoordinatorAddress
     ) public filterFuzzedAddressInputs(nonCoordinatorAddress) {
         cheats.assume(nonCoordinatorAddress != address(registryCoordinator));
 
         cheats.prank(nonCoordinatorAddress);
         cheats.expectRevert(
-            "BLSApkRegistry.onlyRegistryCoordinator: caller is not the registry coordinator"
+            "BLSApkRegistry.onlyEORegistryCoordinator: caller is not the registry coordinator"
         );
         blsApkRegistry.registerOperator(nonCoordinatorAddress, new bytes(0));
     }
@@ -525,14 +525,14 @@ contract BLSApkRegistryUnitTests_deregisterOperator is BLSApkRegistryUnitTests {
     using BN254 for BN254.G1Point;
     using BitmapUtils for *;
 
-    function testFuzz_deregisterOperator_Revert_WhenNotRegistryCoordinator(
+    function testFuzz_deregisterOperator_Revert_WhenNotEORegistryCoordinator(
         address nonCoordinatorAddress
     ) public filterFuzzedAddressInputs(nonCoordinatorAddress) {
         cheats.assume(nonCoordinatorAddress != address(registryCoordinator));
 
         cheats.prank(nonCoordinatorAddress);
         cheats.expectRevert(
-            "BLSApkRegistry.onlyRegistryCoordinator: caller is not the registry coordinator"
+            "BLSApkRegistry.onlyEORegistryCoordinator: caller is not the registry coordinator"
         );
         blsApkRegistry.deregisterOperator(nonCoordinatorAddress, new bytes(0));
     }

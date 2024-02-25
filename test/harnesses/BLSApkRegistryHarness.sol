@@ -7,7 +7,7 @@ import "../../src/BLSApkRegistry.sol";
 contract BLSApkRegistryHarness is BLSApkRegistry {
 
     constructor(
-        IRegistryCoordinator _registryCoordinator
+        IEORegistryCoordinator _registryCoordinator
     ) BLSApkRegistry(_registryCoordinator) {}
 
     function setBLSPublicKey(address account, BN254.G1Point memory pk) external {

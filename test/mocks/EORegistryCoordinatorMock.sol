@@ -2,10 +2,10 @@
 pragma solidity =0.8.12;
 
 
-import "../../src/interfaces/IRegistryCoordinator.sol";
+import "../../src/interfaces/IEORegistryCoordinator.sol";
 
 
-contract RegistryCoordinatorMock is IRegistryCoordinator {
+contract EORegistryCoordinatorMock is IEORegistryCoordinator {
     function blsApkRegistry() external view returns (IBLSApkRegistry) {}
 
     function ejectOperator(
@@ -32,7 +32,7 @@ contract RegistryCoordinatorMock is IRegistryCoordinator {
     function getOperatorFromId(bytes32 operatorId) external view returns (address) {}
 
     /// @notice Returns the status for the given `operator`
-    function getOperatorStatus(address operator) external view returns (IRegistryCoordinator.OperatorStatus){}
+    function getOperatorStatus(address operator) external view returns (IEORegistryCoordinator.OperatorStatus){}
 
     /// @notice Returns task number from when `operator` has been registered.
     function getFromTaskNumberForOperator(address operator) external view returns (uint32){}

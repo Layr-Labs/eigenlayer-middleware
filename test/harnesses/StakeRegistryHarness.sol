@@ -6,7 +6,7 @@ import "../../src/StakeRegistry.sol";
 // wrapper around the StakeRegistry contract that exposes the internal functions for unit testing.
 contract StakeRegistryHarness is StakeRegistry {
     constructor(
-        IRegistryCoordinator _registryCoordinator,
+        IEORegistryCoordinator _registryCoordinator,
         IDelegationManager _delegationManager
     ) StakeRegistry(_registryCoordinator, _delegationManager) {
     }

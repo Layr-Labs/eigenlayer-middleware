@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
 import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
@@ -38,7 +38,7 @@ contract OperatorStateRetriever {
      *            was a part of at `blockNumber`, an ordered list of operators.
      */
     function getOperatorState(
-        IRegistryCoordinator registryCoordinator, 
+        IEORegistryCoordinator registryCoordinator, 
         bytes32 operatorId, 
         uint32 blockNumber
     ) external view returns (uint256, Operator[][] memory) {
@@ -62,7 +62,7 @@ contract OperatorStateRetriever {
      * @return 2d array of Operators. For each quorum, an ordered list of Operators
      */
     function getOperatorState(
-        IRegistryCoordinator registryCoordinator, 
+        IEORegistryCoordinator registryCoordinator, 
         bytes memory quorumNumbers, 
         uint32 blockNumber
     ) public view returns(Operator[][] memory) {
@@ -102,7 +102,7 @@ contract OperatorStateRetriever {
      *         4) the indices of the quorum apks for each of the provided quorums at the given blocknumber
      */
     function getCheckSignaturesIndices(
-        IRegistryCoordinator registryCoordinator,
+        IEORegistryCoordinator registryCoordinator,
         uint32 referenceBlockNumber, 
         bytes calldata quorumNumbers, 
         bytes32[] calldata nonSignerOperatorIds

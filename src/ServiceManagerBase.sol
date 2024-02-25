@@ -8,7 +8,7 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISi
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 
 /**
@@ -19,15 +19,15 @@ import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
     using BitmapUtils for *;
 
-    IRegistryCoordinator internal immutable _registryCoordinator;
+    IEORegistryCoordinator internal immutable _registryCoordinator;
     IStakeRegistry internal immutable _stakeRegistry;
     IAVSDirectory internal immutable _avsDirectory;
 
-    /// @notice when applied to a function, only allows the RegistryCoordinator to call it
-    modifier onlyRegistryCoordinator() {
+    /// @notice when applied to a function, only allows the EORegistryCoordinator to call it
+    modifier onlyEORegistryCoordinator() {
         require(
             msg.sender == address(_registryCoordinator),
-            "ServiceManagerBase.onlyRegistryCoordinator: caller is not the registry coordinator"
+            "ServiceManagerBase.onlyEORegistryCoordinator: caller is not the registry coordinator"
         );
         _;
     }
@@ -35,7 +35,7 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
     /// @notice Sets the (immutable) `_registryCoordinator` address
     constructor(
         IAVSDirectory __avsDirectory,
-        IRegistryCoordinator __registryCoordinator,
+        IEORegistryCoordinator __registryCoordinator,
         IStakeRegistry __stakeRegistry
     ) {
         _avsDirectory = __avsDirectory;
@@ -65,7 +65,7 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
     function registerOperatorToAVS(
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) public virtual onlyRegistryCoordinator {
+    ) public virtual onlyEORegistryCoordinator {
         _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
     }
 
@@ -73,7 +73,7 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
      * @notice Forwards a call to EigenLayer's AVSDirectory contract to confirm operator deregistration from the AVS
      * @param operator The address of the operator to deregister.
      */
-    function deregisterOperatorFromAVS(address operator) public virtual onlyRegistryCoordinator {
+    function deregisterOperatorFromAVS(address operator) public virtual onlyEORegistryCoordinator {
         _avsDirectory.deregisterOperatorFromAVS(operator);
     }
 
