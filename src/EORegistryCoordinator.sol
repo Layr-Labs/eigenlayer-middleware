@@ -8,7 +8,7 @@ import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
-import {ICustomChainManager} from "./interfaces/ICustomChainManager.sol";
+import {IEOChainManager} from "./interfaces/IEOChainManager.sol";
 import {EIP1271SignatureUtils} from "eigenlayer-contracts/src/contracts/libraries/EIP1271SignatureUtils.sol";
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {BN254} from "./libraries/BN254.sol";
@@ -53,7 +53,7 @@ contract EORegistryCoordinator is
         );
         _;
     }
-    ICustomChainManager public customChainManager;
+    IEOChainManager public EOChainManager;
     constructor(
         IServiceManager _serviceManager,
         IStakeRegistry _stakeRegistry,
@@ -360,12 +360,12 @@ contract EORegistryCoordinator is
                             EXTERNAL FUNCTIONS - OWNER
     *******************************************************************************/
     /**
-     * @notice Sets the customChainManager, which is used to register validators on the custom chain
-     * @param _customChainManager the new customChainManager
+     * @notice Sets the EOChainManager, which is used to register validators on the custom chain
+     * @param _EOChainManager the new EOChainManager
      * @dev only callable by the owner
      */
-    function setCustomChainManager(ICustomChainManager _customChainManager) external onlyOwner {
-        customChainManager = _customChainManager;
+    function setEOChainManager(IEOChainManager _EOChainManager) external onlyOwner {
+        EOChainManager = _EOChainManager;
     }
 
     /**
@@ -479,8 +479,8 @@ contract EORegistryCoordinator is
         (results.operatorStakes, results.totalStakes) = 
             stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
         results.numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
-        if (address(customChainManager) != address(0)){
-            customChainManager.registerValidator(operator, results.operatorStakes);
+        if (address(EOChainManager) != address(0)){
+            EOChainManager.registerValidator(operator, results.operatorStakes);
         }
         return results;
     }
@@ -592,8 +592,8 @@ contract EORegistryCoordinator is
         blsApkRegistry.deregisterOperator(operator, quorumNumbers);
         stakeRegistry.deregisterOperator(operatorId, quorumNumbers);
         indexRegistry.deregisterOperator(operatorId, quorumNumbers);
-        if (address(customChainManager) != address(0)){
-            customChainManager.deregisterValidator(operator);
+        if (address(EOChainManager) != address(0)){
+            EOChainManager.deregisterValidator(operator);
         }
     }
 
