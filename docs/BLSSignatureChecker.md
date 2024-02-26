@@ -1,9 +1,7 @@
-[core-docs-m2]: https://github.com/Layr-Labs/eigenlayer-contracts/tree/m2-mainnet/docs
-[core-dmgr-docs]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/m2-mainnet/docs/core/DelegationManager.md
-[core-dmgr-register]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/m2-mainnet/docs/core/DelegationManager.md#registeroperatortoavs
-[core-dmgr-deregister]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/m2-mainnet/docs/core/DelegationManager.md#deregisteroperatorfromavs
+[core-docs-dev]: https://github.com/Layr-Labs/eigenlayer-contracts/tree/dev/docs
+[core-dmgr-docs]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/dev/docs/core/DelegationManager.md
 
-[eigenda-service-manager]: https://github.com/Layr-Labs/eigenda/blob/m2-mainnet-contracts/contracts/src/core/EigenDAServiceManager.sol
+[eigenda-service-manager]: https://github.com/Layr-Labs/eigenda/blob/dev-contracts/contracts/src/core/EigenDAServiceManager.sol
 
 ## BLSSignatureChecker
 
@@ -92,7 +90,7 @@ This method performs the following steps. Note that each step involves lookups o
     * `quorumNumbers` MUST be an ordered list of valid, initialized quorums
     * `params.nonSignerPubkeys` MUST ONLY contain unique pubkeys, in ascending order of their pubkey hash
 * For each quorum:
-    * If stale stakes are forbidden (see [`BLSSignatureChecker.setStaleStakesForbidden`](#blssignaturecheckersetstalestakesforbidden)), check the last `quorumUpdateBlockNumber` is within `DelegationManager.minWithdrawalDelayBlocks` of `referenceBlockNumber`. This references a value in the EigenLayer core contracts - see [EigenLayer core docs][core-docs-m2] for more info.
+    * If stale stakes are forbidden (see [`BLSSignatureChecker.setStaleStakesForbidden`](#blssignaturecheckersetstalestakesforbidden)), check the last `quorumUpdateBlockNumber` is within `DelegationManager.minWithdrawalDelayBlocks` of `referenceBlockNumber`. This references a value in the EigenLayer core contracts - see [EigenLayer core docs][core-docs-dev] for more info.
     * Validate that each `params.quorumApks` corresponds to the quorum's apk at the `referenceBlockNumber`
 * For each historical state lookup, the `referenceBlockNumber` and provided index MUST point to a valid historical entry: 
     * `referenceBlockNumber` MUST come after the entry's `updateBlockNumber`
