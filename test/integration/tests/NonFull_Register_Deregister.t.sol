@@ -11,6 +11,52 @@ contract Integration_NonFull_Register_Deregister is IntegrationChecks {
 
     // 1. Register for all quorums
     // 2. Deregister from all quorums
+    function test_GET_REG_PARAMS(uint24 _random) public {
+        _configRand({
+            _randomSeed: _random,
+            _userTypes: DEFAULT | ALT_METHODS,
+            _quorumConfig: QuorumConfig({
+                numQuorums: ONE | TWO | MANY,
+                numStrategies: ONE | TWO | MANY,
+                minimumStake: NO_MINIMUM | HAS_MINIMUM,
+                fillTypes: EMPTY | SOME_FILL
+            })
+        });
+
+        User operator = _newRandomOperator();
+        bytes memory quorums = quorumArray;
+
+        check_Never_Registered(operator);
+
+        // 1. Register for all quorums
+        operator.registerOperator(quorums);
+        check_Register_State(operator, quorums);
+
+        // We've successfully registered, query user key info
+        (uint privKey, IBLSApkRegistry.PubkeyRegistrationParams memory pubkeyParams)
+            = operator.getKeyInfo();
+
+        emit log_named_uint("privKey", privKey);
+
+        emit log("pubkeyRegistrationSignature:");
+        emit log_named_uint("X", pubkeyParams.pubkeyRegistrationSignature.X);
+        emit log_named_uint("Y", pubkeyParams.pubkeyRegistrationSignature.Y);
+
+        emit log("pubkeyG1:");
+        emit log_named_uint("X", pubkeyParams.pubkeyG1.X);
+        emit log_named_uint("Y", pubkeyParams.pubkeyG1.Y);
+
+        emit log("pubkeyG2:");
+        emit log_named_uint("X[0]", pubkeyParams.pubkeyG2.X[0]);
+        emit log_named_uint("X[1]", pubkeyParams.pubkeyG2.X[1]);
+        emit log_named_uint("Y[0]", pubkeyParams.pubkeyG2.Y[0]);
+        emit log_named_uint("Y[1]", pubkeyParams.pubkeyG2.Y[1]);
+
+        revert("hi");
+    }
+    
+    // 1. Register for all quorums
+    // 2. Deregister from all quorums
     function testFuzz_registerAll_deregisterAll(uint24 _random) public {
         _configRand({
             _randomSeed: _random,

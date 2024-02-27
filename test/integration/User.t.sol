@@ -110,6 +110,10 @@ contract User is Test {
         _;
     }
 
+    function getKeyInfo() public view returns (uint _privKey, IBLSApkRegistry.PubkeyRegistrationParams memory params) {
+        return (privKey, pubkeyParams);
+    }
+
     /**
      * Middleware contracts:
      */
