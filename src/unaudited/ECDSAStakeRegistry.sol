@@ -26,12 +26,18 @@ contract ECDSAStakeRegistry is
     using SignatureCheckerUpgradeable for address;
     using CheckpointsUpgradeable for CheckpointsUpgradeable.History;
 
+    /// @dev Constructor to create ECDSAStakeRegistry.
+    /// @param _delegationManager Address of the DelegationManager contract that this registry interacts with.
     constructor(
         IDelegationManager _delegationManager
     ) ECDSAStakeRegistryStorage(_delegationManager) {
         // _disableInitializers();
     }
 
+    /// @notice Initializes the contract with the given parameters.
+    /// @param _serviceManager The address of the service manager.
+    /// @param _thresholdWeightBps The threshold weight in basis points.
+    /// @param _quorum The quorum struct containing the details of the quorum thresholds.
     function initialize(
         address _serviceManager,
         uint256 _thresholdWeightBps,
@@ -87,6 +93,10 @@ contract ECDSAStakeRegistry is
         _updateStakeThreshold(_thresholdWeightBps);
     }
 
+    /// @notice Verifies if the provided signature data is valid for the given data hash.
+    /// @param _dataHash The hash of the data that was signed.
+    /// @param _signatureData Encoded signature data consisting of an array of signers, an array of signatures, and a reference block number.
+    /// @return The function selector that indicates the signature is valid according to ERC1271 standard.
     function isValidSignature(
         bytes32 _dataHash,
         bytes memory _signatureData
@@ -340,6 +350,10 @@ contract ECDSAStakeRegistry is
         }
     }
 
+    /// @notice Retrieve the total stake weight at a specific block or the latest if not specified.
+    /// @dev If the `_referenceBlock` is the maximum value for uint32, the latest total weight is returned.
+    /// @param _referenceBlock The block number to retrieve the total stake weight from.
+    /// @return The total stake weight at the given block or the latest if the given block is the max uint32 value.
     function _getTotalWeight(uint32 _referenceBlock) internal view returns (uint256) {
         if (_referenceBlock == type(uint32).max) {
             return _totalWeightHistory.latest();
@@ -348,6 +362,10 @@ contract ECDSAStakeRegistry is
         }
     }
 
+    /// @notice Retrieves the threshold stake for a given reference block.
+    /// @param _referenceBlock The block number to query the threshold stake for.
+    /// If set to the maximum uint32 value, it retrieves the latest threshold stake.
+    /// @return The threshold stake in basis points for the reference block.
     function _getThresholdStake(uint32 _referenceBlock) internal view returns (uint256) {
         if (_referenceBlock == type(uint32).max) {
             return _thresholdWeightBpsHistory.latest();
