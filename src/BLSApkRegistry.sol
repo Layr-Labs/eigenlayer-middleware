@@ -205,19 +205,19 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         uint256 blockNumber
     ) external view returns (uint32[] memory) {
         uint32[] memory indices = new uint32[](quorumNumbers.length);
-        for (uint i = 0; i < quorumNumbers.length; i++) {
+        
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            uint32 quorumApkUpdatesLength = uint32(apkHistory[quorumNumber].length);
-
+            
+            uint256 quorumApkUpdatesLength = apkHistory[quorumNumber].length;
             if (quorumApkUpdatesLength == 0 || blockNumber < apkHistory[quorumNumber][0].updateBlockNumber) {
-                revert(
-                    "BLSApkRegistry.getApkIndicesAtBlockNumber: blockNumber is before the first update"
-                );
+                revert("BLSApkRegistry.getApkIndicesAtBlockNumber: blockNumber is before the first update");
             }
 
-            for (uint32 j = 0; j < quorumApkUpdatesLength; j++) {
-                if (apkHistory[quorumNumber][quorumApkUpdatesLength - j - 1].updateBlockNumber <= blockNumber) {
-                    indices[i] = quorumApkUpdatesLength - j - 1;
+            // Loop backward through apkHistory until we find an entry that preceeds `blockNumber`
+            for (uint256 j = quorumApkUpdatesLength; j > 0; j--) {
+                if (apkHistory[quorumNumber][j - 1].updateBlockNumber <= blockNumber) {
+                    indices[i] = uint32(j - 1);
                     break;
                 }
             }

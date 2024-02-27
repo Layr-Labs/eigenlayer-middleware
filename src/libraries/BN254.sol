@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BUSL-1.1 AND MIT
+// SPDX-License-Identifier: MIT
 // several functions are taken or adapted from https://github.com/HarryR/solcrypto/blob/master/contracts/altbn128.sol (MIT license):
 // Copyright 2017 Christian Reitwiessner
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -17,7 +17,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-// The remainder of the code is written by LayrLabs Inc. and is under the BUSL-1.1 license
+// The remainder of the code in this library is written by LayrLabs Inc. and is also under an MIT license
 
 pragma solidity =0.8.12;
 

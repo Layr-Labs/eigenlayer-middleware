@@ -1,4 +1,4 @@
-[core-docs-m2]: https://github.com/Layr-Labs/eigenlayer-contracts/tree/m2-mainnet/docs
+[core-docs-dev]: https://github.com/Layr-Labs/eigenlayer-contracts/tree/dev/docs
 
 ## StakeRegistry
 
@@ -26,7 +26,7 @@ For a given quorum, an Operator's stake weight is determined by iterating over t
 
 Note that the `RegistryCoordinator` Owner also configures a "minimum stake" for each quorum, which an Operator must meet in order to register for (or remain registered for) a quorum.
 
-For more information on the `DelegationManager`, strategies, and shares, see the [EigenLayer core docs][core-docs-m2].
+For more information on the `DelegationManager`, strategies, and shares, see the [EigenLayer core docs][core-docs-dev].
 
 #### High-level Concepts
 

@@ -163,18 +163,18 @@ abstract contract IntegrationBase is IntegrationConfig {
         }
     }
 
-    /// DelegationManager:
+    /// AVSDirectory:
     
     function assert_NotRegisteredToAVS(User operator, string memory err) internal {
-        IDelegationManager.OperatorAVSRegistrationStatus status = delegationManager.avsOperatorStatus(address(serviceManager), address(operator));
+        IAVSDirectory.OperatorAVSRegistrationStatus status = avsDirectory.avsOperatorStatus(address(serviceManager), address(operator));
 
-        assertTrue(status == IDelegationManager.OperatorAVSRegistrationStatus.UNREGISTERED, err);
+        assertTrue(status == IAVSDirectory.OperatorAVSRegistrationStatus.UNREGISTERED, err);
     }
 
     function assert_IsRegisteredToAVS(User operator, string memory err) internal {
-        IDelegationManager.OperatorAVSRegistrationStatus status = delegationManager.avsOperatorStatus(address(serviceManager), address(operator));
+        IAVSDirectory.OperatorAVSRegistrationStatus status = avsDirectory.avsOperatorStatus(address(serviceManager), address(operator));
 
-        assertTrue(status == IDelegationManager.OperatorAVSRegistrationStatus.REGISTERED, err);
+        assertTrue(status == IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED, err);
     }
 
     /*******************************************************************************

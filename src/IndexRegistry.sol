@@ -253,13 +253,11 @@ contract IndexRegistry is IndexRegistryStorage {
         uint32 blockNumber
     ) internal view returns (uint32){
         uint256 historyLength = _operatorCountHistory[quorumNumber].length;
-        require(historyLength != 0, "IndexRegistry._operatorCountAtBlockNumber: quorum does not exist");
 
-        // Loop backwards through the total operator history
-        for (uint256 i = 0; i < historyLength; i++) {
-            uint256 listIndex = (historyLength - 1) - i;
-            QuorumUpdate memory quorumUpdate = _operatorCountHistory[quorumNumber][listIndex];
-            // Look for the first update that began before or at `blockNumber`
+        // Loop backwards through _operatorCountHistory until we find an entry that preceeds `blockNumber`
+        for (uint256 i = historyLength; i > 0; i--) {
+            QuorumUpdate memory quorumUpdate = _operatorCountHistory[quorumNumber][i - 1];
+
             if (quorumUpdate.fromBlockNumber <= blockNumber) {
                 return quorumUpdate.numOperators;
             }
@@ -278,18 +276,18 @@ contract IndexRegistry is IndexRegistryStorage {
         uint32 blockNumber
     ) internal view returns(bytes32) {
         uint256 historyLength = _operatorIndexHistory[quorumNumber][operatorIndex].length;
-        // Loop backward through operatorIndex history
-        for (uint256 i = 0; i < historyLength; i++) {
-            uint256 listIndex = (historyLength - 1) - i;
-            OperatorUpdate memory operatorIndexUpdate = _operatorIndexHistory[quorumNumber][operatorIndex][listIndex];
-            // Look for the first update that began before or at `blockNumber`
+
+        // Loop backward through _operatorIndexHistory until we find an entry that preceeds `blockNumber`
+        for (uint256 i = historyLength; i > 0; i--) {
+            OperatorUpdate memory operatorIndexUpdate = _operatorIndexHistory[quorumNumber][operatorIndex][i - 1];
+
             if (operatorIndexUpdate.fromBlockNumber <= blockNumber) {
                 // Special case: this will be OPERATOR_DOES_NOT_EXIST_ID if this operatorIndex was not used at the block number
                 return operatorIndexUpdate.operatorId;
             }
         }
 
-        // we should only it this if the operatorIndex was never used before blockNumber
+        // we should only hit this if the operatorIndex was never used before blockNumber
         return OPERATOR_DOES_NOT_EXIST_ID;
     }
 

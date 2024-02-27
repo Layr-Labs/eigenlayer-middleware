@@ -8,7 +8,9 @@ on:
   push:
     branches:
       - master
-      - m2-mainnet
+      - mainnet
+      - testnet-goerli
+      - dev
   pull_request:
 
 env:
