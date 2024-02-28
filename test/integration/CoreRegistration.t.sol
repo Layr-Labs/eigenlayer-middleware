@@ -6,7 +6,6 @@ import { AVSDirectory } from "eigenlayer-contracts/src/contracts/core/AVSDirecto
 import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import { DelegationManager } from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import { IDelegationManager } from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
-import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 contract Test_CoreRegistration is MockAVSDeployer {
     // Contracts
@@ -15,7 +14,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
     // Operator info
     uint256 operatorPrivateKey = 420;
     address operator;
-    
+
     // Dummy vals used across tests
     bytes32 emptySalt;
     uint256 maxExpiry = type(uint256).max;
@@ -175,8 +174,8 @@ contract Test_CoreRegistration is MockAVSDeployer {
 
     event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
 
-    function test_setMetadataURI() public {  
-        address toPrankFrom = serviceManager.owner();      
+    function test_setMetadataURI() public {
+        address toPrankFrom = serviceManager.owner();
         cheats.prank(toPrankFrom);
         cheats.expectEmit(true, true, true, true);
         emit AVSMetadataURIUpdated(address(serviceManager), "Test MetadataURI");

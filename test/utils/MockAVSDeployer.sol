@@ -34,7 +34,6 @@ import {AVSDirectory} from "eigenlayer-contracts/src/contracts/core/AVSDirectory
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 
-import {AVSDirectoryMock} from "../mocks/AVSDirectoryMock.sol";
 import {BLSApkRegistryHarness} from "../harnesses/BLSApkRegistryHarness.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 
@@ -88,7 +87,7 @@ contract MockAVSDeployer is Test {
     bytes32 defaultSalt = bytes32(uint256(keccak256("defaultSalt")));
 
     address ejector = address(uint160(uint256(keccak256("ejector"))));
-    
+
     address defaultOperator = address(uint160(uint256(keccak256("defaultOperator"))));
     bytes32 defaultOperatorId;
     BN254.G1Point internal defaultPubKey =  BN254.G1Point(18260007818883133054078754218619977578772505796600400998181738095793040006897,3432351341799135763167709827653955074218841517684851694584291831827675065899);
@@ -324,14 +323,14 @@ contract MockAVSDeployer is Test {
     }
 
     /**
-     * @notice registers operator with coordinator 
+     * @notice registers operator with coordinator
      */
     function _registerOperatorWithCoordinator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubKey) internal {
         _registerOperatorWithCoordinator(operator, quorumBitmap, pubKey, defaultStake);
     }
 
     /**
-     * @notice registers operator with coordinator 
+     * @notice registers operator with coordinator
      */
     function _registerOperatorWithCoordinator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubKey, uint96 stake) internal {
         // quorumBitmap can only have 192 least significant bits
@@ -350,7 +349,7 @@ contract MockAVSDeployer is Test {
     }
 
     /**
-     * @notice registers operator with coordinator 
+     * @notice registers operator with coordinator
      */
     function _registerOperatorWithCoordinator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubKey, uint96[] memory stakes) internal {
         // quorumBitmap can only have 192 least significant bits
@@ -405,7 +404,7 @@ contract MockAVSDeployer is Test {
         // register operators
         for (uint i = 0; i < operatorMetadatas.length; i++) {
             cheats.roll(registrationBlockNumber + blocksBetweenRegistrations * i);
-            
+
             _registerOperatorWithCoordinator(operatorMetadatas[i].operator, operatorMetadatas[i].quorumBitmap, operatorMetadatas[i].pubkey, operatorMetadatas[i].stakes);
         }
 
