@@ -22,8 +22,7 @@ import "eigenlayer-contracts/src/contracts/pods/EigenPod.sol";
 import "eigenlayer-contracts/src/contracts/pods/DelayedWithdrawalRouter.sol";
 import "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import "eigenlayer-contracts/src/test/mocks/ETHDepositMock.sol";
-// import "eigenlayer-contracts/src/test/integration/mocks/BeaconChainOracleMock.t.sol";
-import "test/integration/mocks/BeaconChainOracleMock.t.sol";
+import {BeaconChainOracleMock} from "eigenlayer-contracts/src/test/integration/mocks/BeaconChainOracleMock.t.sol";
 
 // Middleware contracts
 import "src/RegistryCoordinator.sol";
@@ -306,7 +305,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             TransparentUpgradeableProxy(payable(address(stakeRegistry))),
             address(stakeRegistryImplementation)
         );
-        
+
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(blsApkRegistry))),
             address(blsApkRegistryImplementation)
@@ -347,7 +346,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist
     /// strategy in strategyManager
     function _newStrategyAndToken(string memory tokenName, string memory tokenSymbol, uint initialSupply, address owner) internal {
-        IERC20 underlyingToken = new ERC20PresetFixedSupply(tokenName, tokenSymbol, initialSupply, owner); 
+        IERC20 underlyingToken = new ERC20PresetFixedSupply(tokenName, tokenSymbol, initialSupply, owner);
         StrategyBase strategy = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
