@@ -7,7 +7,9 @@ import {SimpleLinearWeightQuorum} from "./SimpleLinearWeightQuorum.sol";
 
 /**
  * @notice This contract is similar to SimpleLinearWeightQuorum but with a staleness measure, `maxWeightStalenessBlocks`.
- * Provides
+ * Provides a few main methods: `getOperatorWeight`, `updateWeightOfOperatorIfNecessary`, and `forceOperatorWeightUpdate`
+ * -- see these functions for more details on usage & behavior.
+ * Adds one owner-only function for modifying the value of `maxWeightStalenessBlocks`.
  */
 contract StandaloneQuorum is SimpleLinearWeightQuorum {
 
@@ -86,6 +88,7 @@ contract StandaloneQuorum is SimpleLinearWeightQuorum {
     /*******************************************************************************
                             VIEW FUNCTIONS
     *******************************************************************************/
+    // @notice Returns `0` if the operator's weight is stale, and their most recent weight update otherwise.
     function getOperatorWeight(address operator) public virtual view returns (uint256) {
         if (_operatorWeightEntries[operator].updateBlockNumber + maxWeightStalenessBlocks < block.number) {
             return 0;
