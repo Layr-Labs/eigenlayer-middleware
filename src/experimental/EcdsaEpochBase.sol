@@ -12,11 +12,26 @@ import {EIP1271SignatureUtils} from "eigenlayer-contracts/src/contracts/librarie
 
 /**
  * @notice An example AVS contract that builds on top of the `EcdsaEpochRegistry_Permissionless`.
- * This contract adds minimal signature-checking logic, but lacks any logic related to task confirmation per se.
- * @dev To extend this contract, e.g. to confirm tasks based on a simple percentage check, one could add a function
- *  which calls the `checkSignatures` function and compares the return value to `totalStakeHistory[epoch]`.
+ * This contract adds minimal signature-checking logic, as well as minimal task-confirmation logic
  */
 contract EcdsaEpochBase is EcdsaEpochRegistry_Permissionless {
+
+    // @notice Constant used when calculating whether or not signatures meet the task confirmation threshold
+    uint256 public constant BASIS_POINTS_DIVISOR = 10000;
+
+    // @notice Signature threshold that must be met for task confirmation
+    uint256 public confirmationThresholdBips;
+
+    // @notice Mapping: msgHash => timestamp of confirmation
+    mapping(bytes32 => uint256) public confirmedTaskTimestamps;
+
+    // storage gap for upgradeability
+    // slither-disable-next-line shadowing-state
+    uint256[49] private __GAP;
+
+    event ConfirmationThresholdBipsSet(uint256 previousValue, uint256 newValue);
+    event TaskConfirmed(bytes32 indexed msgHash, uint256 timestamp);
+
     /** 
      * @dev setting the `_epochZeroStart` to be in the past is disallowed.
      * If you try to do so, the current block.timestamp will be used instead.
@@ -31,7 +46,8 @@ contract EcdsaEpochBase is EcdsaEpochRegistry_Permissionless {
         uint256 _targetOperatorSetSize,
         uint256 _maxRegisteredOperators,
         uint256 _defaultWeightRequirement,
-        uint256 _retargettingFactorWei
+        uint256 _retargettingFactorWei,
+        uint256 _confirmationThresholdBips
     )
         EcdsaEpochRegistry_Permissionless(
             _serviceManager,
@@ -45,13 +61,56 @@ contract EcdsaEpochBase is EcdsaEpochRegistry_Permissionless {
             _retargettingFactorWei
         )
     {
+        _setConfirmationThresholdBips(_confirmationThresholdBips);
+    }
+
+    /*******************************************************************************
+                    EXTERNAL FUNCTIONS - permissioned
+    *******************************************************************************/
+    function setConfirmationThresholdBips(uint256 _confirmationThresholdBips) external virtual onlyOwner {
+        _setConfirmationThresholdBips(_confirmationThresholdBips);
     }
 
     /*******************************************************************************
                     EXTERNAL FUNCTIONS - unpermissioned
     *******************************************************************************/
+
+    /**
+     * @notice Confirms a task for the current epoch. Checks the provided signatures + ensures that they meet the
+     * `confirmationThresholdBips` as a fraction of the total stake for the epoch.
+     */
+    function confirmTask(
+        bytes32 msgHash,
+        address[] memory operators,
+        bytes[] memory signatures
+    )
+        public
+        virtual
+    {
+        uint256 _currentEpoch = currentEpoch();
+        uint256 totalSignedAmount = checkSignatures(msgHash, operators, signatures, _currentEpoch);
+        uint256 totalStakeForEpoch = totalStakeHistory[_currentEpoch];
+        require((totalSignedAmount * BASIS_POINTS_DIVISOR) >= (totalStakeForEpoch * confirmationThresholdBips),
+            "signature threshold not met");
+        confirmedTaskTimestamps[msgHash] = block.timestamp;
+        emit TaskConfirmed(msgHash, block.timestamp);
+    }
+
+    /*******************************************************************************
+                            INTERNAL FUNCTIONS
+    *******************************************************************************/
+    function _setConfirmationThresholdBips(uint256 _confirmationThresholdBips) internal {
+        require(_confirmationThresholdBips <= BASIS_POINTS_DIVISOR, "cannot require more than 100% confirmation");
+        require(_confirmationThresholdBips != 0, "cannot require 0% confirmation");
+        emit ConfirmationThresholdBipsSet(confirmationThresholdBips, _confirmationThresholdBips);
+        confirmationThresholdBips = _confirmationThresholdBips;
+    }
+
+    /*******************************************************************************
+                            VIEW FUNCTIONS
+    *******************************************************************************/
     function checkSignatures(
-        bytes32 msgHash, 
+        bytes32 msgHash,
         address[] memory operators,
         bytes[] memory signatures,
         uint256 epoch
@@ -84,5 +143,9 @@ contract EcdsaEpochBase is EcdsaEpochRegistry_Permissionless {
         }
 
         return totalSignedAmount;
+    }
+
+    function isTaskConfirmed(bytes32 msgHash) external view virtual returns (bool) {
+        return confirmedTaskTimestamps[msgHash] != 0;
     }
 }
