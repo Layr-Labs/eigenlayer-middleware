@@ -525,6 +525,11 @@ contract StakeRegistry is StakeRegistryStorage {
         return strategyParams[quorumNumber][index];
     }
 
+    /// @notice Returns the entire list of strategies and multipliers used for a quorum
+    function getStrategyParams(uint8 quorum) public view returns (StrategyParams[] memory) {
+        return strategyParams[quorum];
+    }
+
     /*******************************************************************************
                       VIEW FUNCTIONS - Operator Stake History
     *******************************************************************************/
