@@ -26,7 +26,7 @@ contract Integration_AVS_Sync_GasCosts_FFI is IntegrationChecks {
         // READ JSON CONFIG DATA
         string memory config_data = vm.readFile(keysConfigPath);
         for (uint256 i = 0; i < MAX_OPERATOR_COUNT; i++) {
-            IBLSApkRegistry.PubkeyRegistrationParams memory pubkey;
+            IEOBLSApkRegistry.PubkeyRegistrationParams memory pubkey;
             uint256 privateKey = privateKeys[i];
             // G1
             pubkey.pubkeyG1.X = stdJson.readUint(
@@ -61,7 +61,7 @@ contract Integration_AVS_Sync_GasCosts_FFI is IntegrationChecks {
 
     function _generateOperatorKeys() internal {
         for (uint256 i = 0; i < 200; i++) {
-            IBLSApkRegistry.PubkeyRegistrationParams memory pubkey;
+            IEOBLSApkRegistry.PubkeyRegistrationParams memory pubkey;
             uint256 privateKey = privateKeys[i];
             pubkey.pubkeyG1 = BN254.generatorG1().scalar_mul(privateKey);
             pubkey.pubkeyG2 = G2Operations.mul(privateKey);

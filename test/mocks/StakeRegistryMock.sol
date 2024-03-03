@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "../../src/interfaces/IStakeRegistry.sol";
+import "../../src/interfaces/IEOStakeRegistry.sol";
 import "../../src/interfaces/IEORegistryCoordinator.sol";
 
 /**
  * @title Interface for a `Registry` that keeps track of stakes of operators for up to 256 quorums.
  * @author Layr Labs, Inc.
  */
-contract StakeRegistryMock is IStakeRegistry {
+contract EOStakeRegistryMock is IEOStakeRegistry {
     // bitmap returned by the mocked `updateOperatorStake` function
     uint192 updateOperatorStakeReturnBitmap;
 

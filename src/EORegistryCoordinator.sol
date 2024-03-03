@@ -3,9 +3,9 @@ pragma solidity =0.8.12;
 
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
-import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
-import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
+import {IEOBLSApkRegistry} from "./interfaces/IEOBLSApkRegistry.sol";
+import {IEOStakeRegistry} from "./interfaces/IEOStakeRegistry.sol";
+import {IEOIndexRegistry} from "./interfaces/IEOIndexRegistry.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
 import {IEOChainManager} from "./interfaces/IEOChainManager.sol";
@@ -22,9 +22,9 @@ import {EORegistryCoordinatorStorage} from "./EORegistryCoordinatorStorage.sol";
 
 /**
  * @title A `EORegistryCoordinator` that has three registries:
- *      1) a `StakeRegistry` that keeps track of operators' stakes
- *      2) a `BLSApkRegistry` that keeps track of operators' BLS public keys and aggregate BLS public keys for each quorum
- *      3) an `IndexRegistry` that keeps track of an ordered list of operators for each quorum
+ *      1) a `EOStakeRegistry` that keeps track of operators' stakes
+ *      2) a `EOBLSApkRegistry` that keeps track of operators' BLS public keys and aggregate BLS public keys for each quorum
+ *      3) an `EOIndexRegistry` that keeps track of an ordered list of operators for each quorum
  * 
  * @author Layr Labs, Inc.
  */
@@ -56,9 +56,9 @@ contract EORegistryCoordinator is
     IEOChainManager public EOChainManager;
     constructor(
         IServiceManager _serviceManager,
-        IStakeRegistry _stakeRegistry,
-        IBLSApkRegistry _blsApkRegistry,
-        IIndexRegistry _indexRegistry
+        IEOStakeRegistry _stakeRegistry,
+        IEOBLSApkRegistry _blsApkRegistry,
+        IEOIndexRegistry _indexRegistry
     ) 
         EORegistryCoordinatorStorage(_serviceManager, _stakeRegistry, _blsApkRegistry, _indexRegistry)
         EIP712("eoracleEORegistryCoordinator", "v0.0.1") 
@@ -85,7 +85,7 @@ contract EORegistryCoordinator is
         uint256 _initialPausedStatus,
         OperatorSetParam[] memory _operatorSetParams,
         uint96[] memory _minimumStakes,
-        IStakeRegistry.StrategyParams[][] memory _strategyParams
+        IEOStakeRegistry.StrategyParams[][] memory _strategyParams
     ) external initializer {
         require(
             _operatorSetParams.length == _minimumStakes.length && _minimumStakes.length == _strategyParams.length,
@@ -124,7 +124,7 @@ contract EORegistryCoordinator is
      */
     function registerOperator(
         bytes calldata quorumNumbers,
-        IBLSApkRegistry.PubkeyRegistrationParams calldata params,
+        IEOBLSApkRegistry.PubkeyRegistrationParams calldata params,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         /**
@@ -169,7 +169,7 @@ contract EORegistryCoordinator is
      */
     function registerOperatorWithChurn(
         bytes calldata quorumNumbers, 
-        IBLSApkRegistry.PubkeyRegistrationParams calldata params,
+        IEOBLSApkRegistry.PubkeyRegistrationParams calldata params,
         OperatorKickParam[] calldata operatorKickParams,
         SignatureWithSaltAndExpiry memory churnApproverSignature,
         SignatureWithSaltAndExpiry memory operatorSignature
@@ -240,7 +240,7 @@ contract EORegistryCoordinator is
     }
 
     /**
-     * @notice Updates the StakeRegistry's view of one or more operators' stakes. If any operator
+     * @notice Updates the EOStakeRegistry's view of one or more operators' stakes. If any operator
      * is found to be below the minimum stake for the quorum, they are deregistered.
      * @dev stakes are queried from the Eigenlayer core DelegationManager contract
      * @param operators a list of operator addresses to update
@@ -259,7 +259,7 @@ contract EORegistryCoordinator is
     }
 
     /**
-     * @notice For each quorum in `quorumNumbers`, updates the StakeRegistry's view of ALL its registered operators' stakes.
+     * @notice For each quorum in `quorumNumbers`, updates the EOStakeRegistry's view of ALL its registered operators' stakes.
      * Each quorum's `quorumUpdateBlockNumber` is also updated, which tracks the most recent block number when ALL registered
      * operators were updated.
      * @dev stakes are queried from the Eigenlayer core DelegationManager contract
@@ -267,7 +267,7 @@ contract EORegistryCoordinator is
      * @dev Each list of operator addresses MUST be sorted in ascending order
      * @dev Each list of operator addresses MUST represent the entire list of registered operators for the corresponding quorum
      * @param quorumNumbers is an ordered byte array containing the quorum numbers being updated
-     * @dev invariant: Each list of `operatorsPerQuorum` MUST be a sorted version of `IndexRegistry.getOperatorListAtBlockNumber`
+     * @dev invariant: Each list of `operatorsPerQuorum` MUST be a sorted version of `EOIndexRegistry.getOperatorListAtBlockNumber`
      * for the corresponding quorum.
      * @dev note on race condition: if an operator registers/deregisters for any quorum in `quorumNumbers` after a txn to 
      * this method is broadcast (but before it is executed), the method will fail
@@ -373,13 +373,13 @@ contract EORegistryCoordinator is
      * @param operatorSetParams configures the quorum's max operator count and churn parameters
      * @param minimumStake sets the minimum stake required for an operator to register or remain
      * registered
-     * @param strategyParams a list of strategies and multipliers used by the StakeRegistry to
+     * @param strategyParams a list of strategies and multipliers used by the EOStakeRegistry to
      * calculate an operator's stake weight for the quorum
      */
     function createQuorum(
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
-        IStakeRegistry.StrategyParams[] memory strategyParams
+        IEOStakeRegistry.StrategyParams[] memory strategyParams
     ) external virtual onlyOwner {
         _createQuorum(operatorSetParams, minimumStake, strategyParams);
     }
@@ -474,7 +474,7 @@ contract EORegistryCoordinator is
             emit OperatorRegistered(operator, operatorId);
         }
 
-        // Register the operator with the BLSApkRegistry, StakeRegistry, and IndexRegistry
+        // Register the operator with the EOBLSApkRegistry, EOStakeRegistry, and EOIndexRegistry
         blsApkRegistry.registerOperator(operator, quorumNumbers);
         (results.operatorStakes, results.totalStakes) = 
             stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
@@ -486,16 +486,16 @@ contract EORegistryCoordinator is
     }
 
     /**
-     * @notice Fetches an operator's pubkey hash from the BLSApkRegistry. If the
+     * @notice Fetches an operator's pubkey hash from the EOBLSApkRegistry. If the
      * operator has not registered a pubkey, attempts to register a pubkey using
      * `params`
-     * @param operator the operator whose pubkey to query from the BLSApkRegistry
+     * @param operator the operator whose pubkey to query from the EOBLSApkRegistry
      * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership
-     * @dev `params` can be empty if the operator has already registered a pubkey in the BLSApkRegistry
+     * @dev `params` can be empty if the operator has already registered a pubkey in the EOBLSApkRegistry
      */
     function _getOrCreateOperatorId(
         address operator,
-        IBLSApkRegistry.PubkeyRegistrationParams calldata params
+        IEOBLSApkRegistry.PubkeyRegistrationParams calldata params
     ) internal returns (bytes32 operatorId) {
         operatorId = blsApkRegistry.getOperatorId(operator);
         if (operatorId == 0) {
@@ -550,7 +550,7 @@ contract EORegistryCoordinator is
     /**
      * @dev Deregister the operator from one or more quorums
      * This method updates the operator's quorum bitmap and status, then deregisters
-     * the operator with the BLSApkRegistry, IndexRegistry, and StakeRegistry
+     * the operator with the EOBLSApkRegistry, EOIndexRegistry, and EOStakeRegistry
      */
     function _deregisterOperator(
         address operator, 
@@ -598,8 +598,8 @@ contract EORegistryCoordinator is
     }
 
     /**
-     * @notice Updates the StakeRegistry's view of the operator's stake in one or more quorums.
-     * For any quorums where the StakeRegistry finds the operator is under the configured minimum
+     * @notice Updates the EOStakeRegistry's view of the operator's stake in one or more quorums.
+     * For any quorums where the EOStakeRegistry finds the operator is under the configured minimum
      * stake, `quorumsToRemove` is returned and used to deregister the operator from those quorums
      * @dev does nothing if operator is not registered for any quorums.
      */
@@ -665,13 +665,13 @@ contract EORegistryCoordinator is
      * @param operatorSetParams configures the quorum's max operator count and churn parameters
      * @param minimumStake sets the minimum stake required for an operator to register or remain
      * registered
-     * @param strategyParams a list of strategies and multipliers used by the StakeRegistry to
+     * @param strategyParams a list of strategies and multipliers used by the EOStakeRegistry to
      * calculate an operator's stake weight for the quorum
      */
     function _createQuorum(
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
-        IStakeRegistry.StrategyParams[] memory strategyParams
+        IEOStakeRegistry.StrategyParams[] memory strategyParams
     ) internal {
         // Increment the total quorum count. Fails if we're already at the max
         uint8 prevQuorumCount = quorumCount;
@@ -936,7 +936,7 @@ contract EORegistryCoordinator is
      */
     function registerOperator(
         bytes calldata quorumNumbers,
-        IBLSApkRegistry.PubkeyRegistrationParams calldata params,
+        IEOBLSApkRegistry.PubkeyRegistrationParams calldata params,
         SignatureWithSaltAndExpiry memory operatorSignature,
         uint256[2] memory _chainValidatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
@@ -1020,7 +1020,7 @@ contract EORegistryCoordinator is
             emit OperatorRegistered(operator, operatorId);
         }
 
-        // Register the operator with the BLSApkRegistry, StakeRegistry, and IndexRegistry
+        // Register the operator with the EOBLSApkRegistry, EOStakeRegistry, and EOIndexRegistry
         blsApkRegistry.registerOperator(operator, quorumNumbers);
         (results.operatorStakes, results.totalStakes) = 
             stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);

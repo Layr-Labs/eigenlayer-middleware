@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "../../src/StakeRegistry.sol";
+import "../../src/EOStakeRegistry.sol";
 
-// wrapper around the StakeRegistry contract that exposes the internal functions for unit testing.
-contract StakeRegistryHarness is StakeRegistry {
+// wrapper around the EOStakeRegistry contract that exposes the internal functions for unit testing.
+contract EOStakeRegistryHarness is EOStakeRegistry {
     constructor(
         IEORegistryCoordinator _registryCoordinator,
         IDelegationManager _delegationManager
-    ) StakeRegistry(_registryCoordinator, _delegationManager) {
+    ) EOStakeRegistry(_registryCoordinator, _delegationManager) {
     }
 
     function recordOperatorStakeUpdate(bytes32 operatorId, uint8 quorumNumber, uint96 newStake) external returns(int256) {

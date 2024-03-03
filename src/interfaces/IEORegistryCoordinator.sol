@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {IBLSApkRegistry} from "./IBLSApkRegistry.sol";
-import {IStakeRegistry} from "./IStakeRegistry.sol";
-import {IIndexRegistry} from "./IIndexRegistry.sol";
+import {IEOBLSApkRegistry} from "./IEOBLSApkRegistry.sol";
+import {IEOStakeRegistry} from "./IEOStakeRegistry.sol";
+import {IEOIndexRegistry} from "./IEOIndexRegistry.sol";
 import {BN254} from "../libraries/BN254.sol";
 
 /**
@@ -84,11 +84,11 @@ interface IEORegistryCoordinator {
     /// @notice Returns the operator set params for the given `quorumNumber`
     function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory);
     /// @notice the Stake registry contract that will keep track of operators' stakes
-    function stakeRegistry() external view returns (IStakeRegistry);
+    function stakeRegistry() external view returns (IEOStakeRegistry);
     /// @notice the BLS Aggregate Pubkey Registry contract that will keep track of operators' BLS aggregate pubkeys per quorum
-    function blsApkRegistry() external view returns (IBLSApkRegistry);
+    function blsApkRegistry() external view returns (IEOBLSApkRegistry);
     /// @notice the index Registry contract that will keep track of operators' indexes
-    function indexRegistry() external view returns (IIndexRegistry);
+    function indexRegistry() external view returns (IEOIndexRegistry);
 
     /**
      * @notice Ejects the provided operator from the provided quorums from the AVS

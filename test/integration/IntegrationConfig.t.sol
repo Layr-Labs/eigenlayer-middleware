@@ -75,7 +75,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
     /// (See _fetchKeypair)
     uint fetchIdx = 0;
     uint[] privKeys;
-    IBLSApkRegistry.PubkeyRegistrationParams[] pubkeys;
+    IEOBLSApkRegistry.PubkeyRegistrationParams[] pubkeys;
 
     /// @dev Current initialized quorums are tracked here:
     uint quorumCount;
@@ -95,7 +95,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
      */
     constructor() {
         for (uint i = 0; i < NUM_GENERATED_OPERATORS; i++) {            
-            IBLSApkRegistry.PubkeyRegistrationParams memory pubkey;
+            IEOBLSApkRegistry.PubkeyRegistrationParams memory pubkey;
             uint privKey = uint(keccak256(abi.encodePacked(i + 1)));
             
             pubkey.pubkeyG1 = BN254.generatorG1().scalar_mul(privKey);
@@ -166,7 +166,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
 
         // Initialize each quorum
         for (uint i = 0; i < quorumCount; i++) {
-            IStakeRegistry.StrategyParams[] memory strategyParams = _randStrategyParams();
+            IEOStakeRegistry.StrategyParams[] memory strategyParams = _randStrategyParams();
             uint96 minimumStake = _randMinStake();
 
             emit log_named_uint("_configRand: creating quorum", i);
@@ -223,7 +223,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
     /// @dev Create a new user with token balances in ALL core-whitelisted strategies
     function _randUser(string memory name) internal returns (User, IStrategy[] memory, uint[] memory) {
         // Create User contract and give it a unique BLS keypair
-        (uint privKey, IBLSApkRegistry.PubkeyRegistrationParams memory pubkey) = _fetchKeypair();
+        (uint privKey, IEOBLSApkRegistry.PubkeyRegistrationParams memory pubkey) = _fetchKeypair();
 
         // Use userFlags to pick the kind of user to generate
         User user;
@@ -389,14 +389,14 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
         return User(blsApkRegistry.getOperatorFromPubkeyHash(randId));
     }
 
-    function _fetchKeypair() internal returns (uint, IBLSApkRegistry.PubkeyRegistrationParams memory) {
+    function _fetchKeypair() internal returns (uint, IEOBLSApkRegistry.PubkeyRegistrationParams memory) {
         // should probably just generate another keypair at this point
         if (fetchIdx == privKeys.length) {
             revert("_fetchKeypair: not enough generated keys. Check IntegrationDeployer.constructor");
         }
 
         uint privKey = privKeys[fetchIdx];
-        IBLSApkRegistry.PubkeyRegistrationParams memory pubkey = pubkeys[fetchIdx];
+        IEOBLSApkRegistry.PubkeyRegistrationParams memory pubkey = pubkeys[fetchIdx];
         fetchIdx++;
 
         return (privKey, pubkey);
@@ -488,7 +488,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
     /// NOTE: This should only be used when creating a quorum for the first time. If you're
     /// selecting strategies to add after the quorum has been initialized, this is likely to
     /// return duplicates.
-    function _randStrategyParams() private returns (IStakeRegistry.StrategyParams[] memory) {
+    function _randStrategyParams() private returns (IEOStakeRegistry.StrategyParams[] memory) {
         uint strategyFlag = _randValue(numStrategyFlags);
         uint strategyCount;
 
@@ -508,10 +508,10 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
             revert("_randStrategyCount: flag not recognized");
         }
 
-        IStakeRegistry.StrategyParams[] memory params = new IStakeRegistry.StrategyParams[](strategyCount);
+        IEOStakeRegistry.StrategyParams[] memory params = new IEOStakeRegistry.StrategyParams[](strategyCount);
 
         for (uint i = 0; i < params.length; i++) {
-            params[i] = IStakeRegistry.StrategyParams({
+            params[i] = IEOStakeRegistry.StrategyParams({
                 strategy: allStrats[i],
                 multiplier: DEFAULT_STRATEGY_MULTIPLIER
             });

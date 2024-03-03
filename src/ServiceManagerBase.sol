@@ -9,7 +9,7 @@ import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSD
 
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
-import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
+import {IEOStakeRegistry} from "./interfaces/IEOStakeRegistry.sol";
 
 /**
  * @title Minimal implementation of a ServiceManager-type contract.
@@ -20,7 +20,7 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
     using BitmapUtils for *;
 
     IEORegistryCoordinator internal immutable _registryCoordinator;
-    IStakeRegistry internal immutable _stakeRegistry;
+    IEOStakeRegistry internal immutable _stakeRegistry;
     IAVSDirectory internal immutable _avsDirectory;
 
     /// @notice when applied to a function, only allows the EORegistryCoordinator to call it
@@ -36,7 +36,7 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
     constructor(
         IAVSDirectory __avsDirectory,
         IEORegistryCoordinator __registryCoordinator,
-        IStakeRegistry __stakeRegistry
+        IEOStakeRegistry __stakeRegistry
     ) {
         _avsDirectory = __avsDirectory;
         _registryCoordinator = __registryCoordinator;

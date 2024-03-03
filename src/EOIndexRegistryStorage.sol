@@ -4,14 +4,14 @@ pragma solidity =0.8.12;
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
 import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
-import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
+import {IEOIndexRegistry} from "./interfaces/IEOIndexRegistry.sol";
 
 /**
- * @title Storage variables for the `IndexRegistry` contract.
+ * @title Storage variables for the `EOIndexRegistry` contract.
  * @author Layr Labs, Inc.
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
-abstract contract IndexRegistryStorage is Initializable, IIndexRegistry {
+abstract contract EOIndexRegistryStorage is Initializable, IEOIndexRegistry {
 
     /// @notice The value that is returned when an operator does not exist at an index at a certain block
     bytes32 public constant OPERATOR_DOES_NOT_EXIST_ID = bytes32(0);

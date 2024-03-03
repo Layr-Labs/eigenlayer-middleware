@@ -55,7 +55,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
     }
 
     function test_getOperatorState_revert_quorumNotCreatedAtCallTime() public {
-        cheats.expectRevert("IndexRegistry._operatorCountAtBlockNumber: quorum does not exist");
+        cheats.expectRevert("EOIndexRegistry._operatorCountAtBlockNumber: quorum does not exist");
         operatorStateRetriever.getOperatorState(registryCoordinator, BitmapUtils.bitmapToBytesArray(1 << numQuorums), uint32(block.number));
     }
 
@@ -68,9 +68,9 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
                     kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
             });
         uint96 minimumStake = 1;
-        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
+        IEOStakeRegistry.StrategyParams[] memory strategyParams = new IEOStakeRegistry.StrategyParams[](1);
         strategyParams[0] =
-            IStakeRegistry.StrategyParams({
+            IEOStakeRegistry.StrategyParams({
                 strategy: IStrategy(address(1000)),
                 multiplier: 1e16
             });
@@ -78,7 +78,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         cheats.prank(registryCoordinator.owner());
         registryCoordinator.createQuorum(operatorSetParams, minimumStake, strategyParams);
 
-        cheats.expectRevert("IndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number");
+        cheats.expectRevert("EOIndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number");
         operatorStateRetriever.getOperatorState(registryCoordinator, BitmapUtils.bitmapToBytesArray(1 << numQuorums), uint32(registrationBlockNumber - 1));
     }
 
@@ -150,7 +150,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
 
         _registerOperatorWithCoordinator(defaultOperator, 1, defaultPubKey);
 
-        cheats.expectRevert("StakeRegistry.getTotalStakeIndicesAtBlockNumber: quorum does not exist");
+        cheats.expectRevert("EOStakeRegistry.getTotalStakeIndicesAtBlockNumber: quorum does not exist");
         operatorStateRetriever.getCheckSignaturesIndices(registryCoordinator, uint32(block.number), BitmapUtils.bitmapToBytesArray(1 << numQuorums), nonSignerOperatorIds);
     }
 
@@ -169,9 +169,9 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
                     kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
             });
         uint96 minimumStake = 1;
-        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
+        IEOStakeRegistry.StrategyParams[] memory strategyParams = new IEOStakeRegistry.StrategyParams[](1);
         strategyParams[0] =
-            IStakeRegistry.StrategyParams({
+            IEOStakeRegistry.StrategyParams({
                 strategy: IStrategy(address(1000)),
                 multiplier: 1e16
             });
@@ -179,7 +179,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         cheats.prank(registryCoordinator.owner());
         registryCoordinator.createQuorum(operatorSetParams, minimumStake, strategyParams);
 
-        cheats.expectRevert("StakeRegistry.getTotalStakeIndicesAtBlockNumber: quorum has no stake history at blockNumber");
+        cheats.expectRevert("EOStakeRegistry.getTotalStakeIndicesAtBlockNumber: quorum has no stake history at blockNumber");
         operatorStateRetriever.getCheckSignaturesIndices(registryCoordinator, registrationBlockNumber + 5, BitmapUtils.bitmapToBytesArray(1 << numQuorums), nonSignerOperatorIds);
     }
 

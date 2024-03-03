@@ -6,7 +6,7 @@ import "../../src/interfaces/IEORegistryCoordinator.sol";
 
 
 contract EORegistryCoordinatorMock is IEORegistryCoordinator {
-    function blsApkRegistry() external view returns (IBLSApkRegistry) {}
+    function blsApkRegistry() external view returns (IEOBLSApkRegistry) {}
 
     function ejectOperator(
         address operator, 
@@ -15,9 +15,9 @@ contract EORegistryCoordinatorMock is IEORegistryCoordinator {
 
     function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory) {}
 
-    function indexRegistry() external view returns (IIndexRegistry) {}
+    function indexRegistry() external view returns (IEOIndexRegistry) {}
 
-    function stakeRegistry() external view returns (IStakeRegistry) {}
+    function stakeRegistry() external view returns (IEOStakeRegistry) {}
 
     function quorumCount() external view returns (uint8) {}
     /// @notice Returns the bitmap of the quorums the operator is registered for.

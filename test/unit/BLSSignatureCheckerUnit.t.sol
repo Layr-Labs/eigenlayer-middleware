@@ -326,7 +326,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         referenceBlockNumber += 1;
         // roll forward to make the reference block number valid
         cheats.roll(referenceBlockNumber);
-        cheats.expectRevert("BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within withdrawalDelayBlocks window");
+        cheats.expectRevert("BLSSignatureChecker.checkSignatures: EOStakeRegistry updates must be within withdrawalDelayBlocks window");
         blsSignatureChecker.checkSignatures(
             msgHash, 
             quorumNumbers,
@@ -369,7 +369,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         // set the totalStakeIndices to a different value
         nonSignerStakesAndSignature.totalStakeIndices[0] = 0;
 
-        cheats.expectRevert("StakeRegistry._validateOperatorStakeAtBlockNumber: there is a newer operatorStakeUpdate available before blockNumber");
+        cheats.expectRevert("EOStakeRegistry._validateOperatorStakeAtBlockNumber: there is a newer operatorStakeUpdate available before blockNumber");
         blsSignatureChecker.checkSignatures(
             msgHash, 
             quorumNumbers,
@@ -398,7 +398,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         // set the nonSignerStakeIndices to a different value
         nonSignerStakesAndSignature.nonSignerStakeIndices[0][0] = 1;
 
-        cheats.expectRevert("StakeRegistry._validateOperatorStakeAtBlockNumber: operatorStakeUpdate is from after blockNumber");
+        cheats.expectRevert("EOStakeRegistry._validateOperatorStakeAtBlockNumber: operatorStakeUpdate is from after blockNumber");
         blsSignatureChecker.checkSignatures(
             msgHash, 
             quorumNumbers,
@@ -419,7 +419,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         // set the quorumApkIndices to a different value
         nonSignerStakesAndSignature.quorumApkIndices[0] = 0;
 
-        cheats.expectRevert("BLSApkRegistry._validateApkHashAtBlockNumber: not latest apk update");
+        cheats.expectRevert("EOBLSApkRegistry._validateApkHashAtBlockNumber: not latest apk update");
         blsSignatureChecker.checkSignatures(
             msgHash, 
             quorumNumbers,

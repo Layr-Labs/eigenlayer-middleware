@@ -9,9 +9,9 @@ import "forge-std/Test.sol";
 contract EORegistryCoordinatorHarness is EORegistryCoordinator, Test {
     constructor(
         IServiceManager _serviceManager,
-        IStakeRegistry _stakeRegistry,
-        IBLSApkRegistry _blsApkRegistry,
-        IIndexRegistry _indexRegistry
+        IEOStakeRegistry _stakeRegistry,
+        IEOBLSApkRegistry _blsApkRegistry,
+        IEOIndexRegistry _indexRegistry
     ) EORegistryCoordinator(_serviceManager, _stakeRegistry, _blsApkRegistry, _indexRegistry) {
         _transferOwnership(msg.sender);
     }

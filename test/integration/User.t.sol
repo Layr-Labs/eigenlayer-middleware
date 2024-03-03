@@ -16,9 +16,9 @@ import "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 
 // Middleware
 import "src/EORegistryCoordinator.sol";
-import "src/BLSApkRegistry.sol";
-import "src/IndexRegistry.sol";
-import "src/StakeRegistry.sol";
+import "src/EOBLSApkRegistry.sol";
+import "src/EOIndexRegistry.sol";
+import "src/EOStakeRegistry.sol";
 import "src/ServiceManagerBase.sol";
 
 import "src/libraries/BN254.sol";
@@ -53,9 +53,9 @@ contract User is Test {
     // Middleware contracts
     EORegistryCoordinator registryCoordinator;
     ServiceManagerBase serviceManager;
-    BLSApkRegistry blsApkRegistry;
-    StakeRegistry stakeRegistry;
-    IndexRegistry indexRegistry;
+    EOBLSApkRegistry blsApkRegistry;
+    EOStakeRegistry stakeRegistry;
+    EOIndexRegistry indexRegistry;
     
     TimeMachine timeMachine;
 
@@ -67,22 +67,22 @@ contract User is Test {
 
     // BLS keypair:
     uint privKey;
-    IBLSApkRegistry.PubkeyRegistrationParams pubkeyParams;
+    IEOBLSApkRegistry.PubkeyRegistrationParams pubkeyParams;
 
     // EIP1271 sigs:
     mapping(bytes32 => bool) digests;
     uint salt = 0;
 
-    constructor(string memory name, uint _privKey, IBLSApkRegistry.PubkeyRegistrationParams memory _pubkeyParams) {
+    constructor(string memory name, uint _privKey, IEOBLSApkRegistry.PubkeyRegistrationParams memory _pubkeyParams) {
         IUserDeployer deployer = IUserDeployer(msg.sender);
 
         registryCoordinator = deployer.registryCoordinator();
         avsDirectory = deployer.avsDirectory();
         serviceManager = ServiceManagerBase(address(registryCoordinator.serviceManager()));
 
-        blsApkRegistry = BLSApkRegistry(address(registryCoordinator.blsApkRegistry()));
-        stakeRegistry = StakeRegistry(address(registryCoordinator.stakeRegistry()));
-        indexRegistry = IndexRegistry(address(registryCoordinator.indexRegistry()));
+        blsApkRegistry = EOBLSApkRegistry(address(registryCoordinator.blsApkRegistry()));
+        stakeRegistry = EOStakeRegistry(address(registryCoordinator.stakeRegistry()));
+        indexRegistry = EOIndexRegistry(address(registryCoordinator.indexRegistry()));
 
         delegationManager = DelegationManager(address(stakeRegistry.delegation()));
         strategyManager = StrategyManager(address(delegationManager.strategyManager()));
@@ -364,7 +364,7 @@ contract User_AltMethods is User {
         _;
     }
 
-    constructor(string memory name, uint _privKey, IBLSApkRegistry.PubkeyRegistrationParams memory _pubkeyParams) 
+    constructor(string memory name, uint _privKey, IEOBLSApkRegistry.PubkeyRegistrationParams memory _pubkeyParams) 
         User(name, _privKey, _pubkeyParams) {}
 
     /// @dev Rather than calling deregisterOperator, this pranks the ejector and calls

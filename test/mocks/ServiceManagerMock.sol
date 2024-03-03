@@ -7,7 +7,7 @@ contract ServiceManagerMock is ServiceManagerBase {
     constructor(
         IAVSDirectory _avsDirectory,
         IEORegistryCoordinator _registryCoordinator,
-        IStakeRegistry _stakeRegistry
+        IEOStakeRegistry _stakeRegistry
     ) ServiceManagerBase(_avsDirectory, _registryCoordinator, _stakeRegistry) {}
 
     function initialize(address initialOwner) public virtual initializer {

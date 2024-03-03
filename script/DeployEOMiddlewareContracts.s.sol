@@ -21,14 +21,14 @@ import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/Pau
 import {
     EORegistryCoordinator,
     IEORegistryCoordinator,
-    IBLSApkRegistry,
-    IIndexRegistry,
-    IStakeRegistry,
+    IEOBLSApkRegistry,
+    IEOIndexRegistry,
+    IEOStakeRegistry,
     IServiceManager
 } from "../src/EORegistryCoordinator.sol";
-import {BLSApkRegistry} from "../src/BLSApkRegistry.sol";
-import {IndexRegistry} from "../src/IndexRegistry.sol";
-import {StakeRegistry} from "../src/StakeRegistry.sol";
+import {EOBLSApkRegistry} from "../src/EOBLSApkRegistry.sol";
+import {EOIndexRegistry} from "../src/EOIndexRegistry.sol";
+import {EOStakeRegistry} from "../src/EOStakeRegistry.sol";
 //import {EOServiceManager} from "../src/EOServiceManager.sol";
 // Remove mock when EOServiceManager is implemented
 import {ServiceManagerMock} from "../test/mocks/ServiceManagerMock.sol";
@@ -40,9 +40,9 @@ contract DeployEOMiddlewareContracts is Script, Utils {
     // Middleware contracts to deploy
     EORegistryCoordinator public registryCoordinator;
     ServiceManagerMock serviceManager;
-    BLSApkRegistry blsApkRegistry;
-    StakeRegistry stakeRegistry;
-    IndexRegistry indexRegistry;
+    EOBLSApkRegistry blsApkRegistry;
+    EOStakeRegistry stakeRegistry;
+    EOIndexRegistry indexRegistry;
     OperatorStateRetriever operatorStateRetriever;
 
     // ProxyAdmin
@@ -56,9 +56,9 @@ contract DeployEOMiddlewareContracts is Script, Utils {
         returns (
             EORegistryCoordinator,
             ServiceManagerMock,
-            StakeRegistry,
-            BLSApkRegistry,
-            IndexRegistry,
+            EOStakeRegistry,
+            EOBLSApkRegistry,
+            EOIndexRegistry,
             OperatorStateRetriever,
             ProxyAdmin
         )
@@ -98,9 +98,9 @@ contract DeployEOMiddlewareContracts is Script, Utils {
         string memory deployed_addresses = "addresses";
         vm.serializeAddress(deployed_addresses, "EORegistryCoordinator", address(registryCoordinator));
         vm.serializeAddress(deployed_addresses, "EOServiceManager", address(serviceManager));
-        vm.serializeAddress(deployed_addresses, "EOStakeRegistry", address(stakeRegistry));
-        vm.serializeAddress(deployed_addresses, "EOBLSApkRegistry", address(blsApkRegistry));
-        vm.serializeAddress(deployed_addresses, "EOIndexRegistry", address(indexRegistry));
+        vm.serializeAddress(deployed_addresses, "EOEOStakeRegistry", address(stakeRegistry));
+        vm.serializeAddress(deployed_addresses, "EOEOBLSApkRegistry", address(blsApkRegistry));
+        vm.serializeAddress(deployed_addresses, "EOEOIndexRegistry", address(indexRegistry));
         vm.serializeAddress(deployed_addresses, "operatorStateRetriever", address(operatorStateRetriever));
         vm.serializeAddress(deployed_addresses, "proxyAdmin", address(proxyAdmin));
         string memory finalJson = vm.serializeAddress(deployed_addresses, "deployer", msg.sender);
@@ -128,9 +128,9 @@ contract DeployEOMiddlewareContracts is Script, Utils {
         returns (
             EORegistryCoordinator,
             ServiceManagerMock,
-            StakeRegistry,
-            BLSApkRegistry,
-            IndexRegistry,
+            EOStakeRegistry,
+            EOBLSApkRegistry,
+            EOIndexRegistry,
             OperatorStateRetriever,
             ProxyAdmin
         )
@@ -157,19 +157,19 @@ contract DeployEOMiddlewareContracts is Script, Utils {
             )
         );
 
-        stakeRegistry = StakeRegistry(
+        stakeRegistry = EOStakeRegistry(
             address(
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
 
-        indexRegistry = IndexRegistry(
+        indexRegistry = EOIndexRegistry(
             address(
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
 
-        blsApkRegistry = BLSApkRegistry(
+        blsApkRegistry = EOBLSApkRegistry(
             address(
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
@@ -182,12 +182,12 @@ contract DeployEOMiddlewareContracts is Script, Utils {
         );
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        StakeRegistry stakeRegistryImplementation =
-            new StakeRegistry(IEORegistryCoordinator(registryCoordinator), delegationManager);
-        BLSApkRegistry blsApkRegistryImplementation =
-            new BLSApkRegistry(IEORegistryCoordinator(registryCoordinator));
-        IndexRegistry indexRegistryImplementation =
-            new IndexRegistry(IEORegistryCoordinator(registryCoordinator));
+        EOStakeRegistry stakeRegistryImplementation =
+            new EOStakeRegistry(IEORegistryCoordinator(registryCoordinator), delegationManager);
+        EOBLSApkRegistry blsApkRegistryImplementation =
+            new EOBLSApkRegistry(IEORegistryCoordinator(registryCoordinator));
+        EOIndexRegistry indexRegistryImplementation =
+            new EOIndexRegistry(IEORegistryCoordinator(registryCoordinator));
         ServiceManagerMock serviceManagerImplementation = new ServiceManagerMock(
             IAVSDirectory(avsDirectory), IEORegistryCoordinator(registryCoordinator), stakeRegistry
         );
@@ -230,7 +230,7 @@ contract DeployEOMiddlewareContracts is Script, Utils {
                 0, /*initialPausedStatus*/
                 new IEORegistryCoordinator.OperatorSetParam[](0),
                 new uint96[](0),
-                new IStakeRegistry.StrategyParams[][](0)
+                new IEOStakeRegistry.StrategyParams[][](0)
             )
         );
 

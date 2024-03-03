@@ -12,10 +12,10 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import {DeployEOMiddlewareContracts} from "../../../script/DeployEOMiddlewareContracts.s.sol";
 
 // Middleware contracts
-import {EORegistryCoordinator, IEORegistryCoordinator, IBLSApkRegistry, IIndexRegistry, IStakeRegistry, IServiceManager} from "../../../src/EORegistryCoordinator.sol";
-import {BLSApkRegistry} from "../../../src/BLSApkRegistry.sol";
-import {IndexRegistry} from "../../../src/IndexRegistry.sol";
-import {StakeRegistry} from "../../../src/StakeRegistry.sol";
+import {EORegistryCoordinator, IEORegistryCoordinator, IEOBLSApkRegistry, IEOIndexRegistry, IEOStakeRegistry, IServiceManager} from "../../../src/EORegistryCoordinator.sol";
+import {EOBLSApkRegistry} from "../../../src/EOBLSApkRegistry.sol";
+import {EOIndexRegistry} from "../../../src/EOIndexRegistry.sol";
+import {EOStakeRegistry} from "../../../src/EOStakeRegistry.sol";
 //import {EOServiceManager} from "../src/EOServiceManager.sol";
 // Remove mock when EOServiceManager is implemented
 import {ServiceManagerMock} from "../../mocks/ServiceManagerMock.sol";
@@ -26,9 +26,9 @@ contract DeployEOMiddlewareContractsTest is Test, Script {
 
     EORegistryCoordinator public registryCoordinator;
     ServiceManagerMock public serviceManager;
-    StakeRegistry public stakeRegistry;
-    BLSApkRegistry public blsApkRegistry;
-    IndexRegistry public indexRegistry;
+    EOStakeRegistry public stakeRegistry;
+    EOBLSApkRegistry public blsApkRegistry;
+    EOIndexRegistry public indexRegistry;
     OperatorStateRetriever public operatorStateRetriever;
     ProxyAdmin public proxyAdmin;
 

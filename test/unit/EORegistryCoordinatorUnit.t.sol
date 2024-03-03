@@ -127,7 +127,7 @@ contract EORegistryCoordinatorUnitTests_Initialization_Setters is EORegistryCoor
             0/*initialPausedStatus*/, 
             operatorSetParams, 
             new uint96[](0), 
-            new IStakeRegistry.StrategyParams[][](0)
+            new IEOStakeRegistry.StrategyParams[][](0)
         );
     }
 
@@ -181,7 +181,7 @@ contract EORegistryCoordinatorUnitTests_Initialization_Setters is EORegistryCoor
     function test_createQuorum_revert_notOwner() public {
         IEORegistryCoordinator.OperatorSetParam memory operatorSetParams;
         uint96 minimumStake;
-        IStakeRegistry.StrategyParams[] memory strategyParams;
+        IEOStakeRegistry.StrategyParams[] memory strategyParams;
 
         cheats.expectRevert("Ownable: caller is not the owner");
         cheats.prank(defaultOperator);
@@ -200,9 +200,9 @@ contract EORegistryCoordinatorUnitTests_Initialization_Setters is EORegistryCoor
                     kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
             });
         uint96 minimumStake = 1;
-        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
+        IEOStakeRegistry.StrategyParams[] memory strategyParams = new IEOStakeRegistry.StrategyParams[](1);
         strategyParams[0] =
-            IStakeRegistry.StrategyParams({
+            IEOStakeRegistry.StrategyParams({
                 strategy: IStrategy(address(1000)),
                 multiplier: 1e16
             });
@@ -1510,7 +1510,7 @@ contract EORegistryCoordinatorUnitTests_UpdateOperators is EORegistryCoordinator
     }
 
     // @notice tests the `updateOperators` function with a single registered operator as input
-    // @dev also sets up return data from the StakeRegistry
+    // @dev also sets up return data from the EOStakeRegistry
     function testFuzz_updateOperators_singleOperator(uint192 registrationBitmap, uint192 mockReturnData) public {
         // filter fuzzed inputs to only valid inputs
         cheats.assume(registrationBitmap != 0);
