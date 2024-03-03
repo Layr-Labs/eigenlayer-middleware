@@ -3,7 +3,6 @@ pragma solidity =0.8.12;
 
 import "forge-std/Script.sol";
 import "forge-std/StdJson.sol";
-import "forge-std/console.sol";
 
 import {Utils} from "./utils/Utils.s.sol";
 

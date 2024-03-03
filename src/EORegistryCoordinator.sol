@@ -53,7 +53,7 @@ contract EORegistryCoordinator is
         );
         _;
     }
-    IEOChainManager public EOChainManager;
+    IEOChainManager public chainManager;
     constructor(
         IServiceManager _serviceManager,
         IEOStakeRegistry _stakeRegistry,
@@ -364,12 +364,12 @@ contract EORegistryCoordinator is
                             EXTERNAL FUNCTIONS - OWNER
     *******************************************************************************/
     /**
-     * @notice Sets the EOChainManager, which is used to register validators on the  EOchain
-     * @param _EOChainManager the new EOChainManager
+     * @notice Sets the chainManager, which is used to register validators on the  EOchain
+     * @param _chainManager the new chainManager
      * @dev only callable by the owner
      */
-    function setEOChainManager(IEOChainManager _EOChainManager) external onlyOwner {
-        EOChainManager = _EOChainManager;
+    function setChainManager(IEOChainManager _chainManager) external onlyOwner {
+        chainManager = _chainManager;
     }
 
     /**
@@ -485,12 +485,14 @@ contract EORegistryCoordinator is
         (results.operatorStakes, results.totalStakes) = 
             stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
         results.numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
-        if (address(EOChainManager) != address(0)){
+        if (address(chainManager) != address(0)){
+            // check if is a valid chain validator signature. if not register as a data validator
             if ( chainValidatorSignature.X != 0 && chainValidatorSignature.Y != 0 && chainValidatorG2Signature.X[0] != 0 && chainValidatorG2Signature.X[1] != 0 && chainValidatorG2Signature.Y[0] != 0 && chainValidatorG2Signature.Y[1] != 0){
-                EOChainManager.registerChainValidator(operator, results.operatorStakes, [chainValidatorSignature.X ,chainValidatorSignature.Y],[chainValidatorG2Signature.X[0],chainValidatorG2Signature.X[1],chainValidatorG2Signature.Y[0],chainValidatorG2Signature.Y[1]]);
+                // chain validator expects the sig and pubkey spread as arrays.
+                chainManager.registerChainValidator(operator, results.operatorStakes, [chainValidatorSignature.X ,chainValidatorSignature.Y],[chainValidatorG2Signature.X[0],chainValidatorG2Signature.X[1],chainValidatorG2Signature.Y[0],chainValidatorG2Signature.Y[1]]);
             }
             else{
-                EOChainManager.registerDataValidator(operator, results.operatorStakes);
+                chainManager.registerDataValidator(operator, results.operatorStakes);
             }
         }
         return results;
@@ -603,8 +605,8 @@ contract EORegistryCoordinator is
         blsApkRegistry.deregisterOperator(operator, quorumNumbers);
         stakeRegistry.deregisterOperator(operatorId, quorumNumbers);
         indexRegistry.deregisterOperator(operatorId, quorumNumbers);
-        if (address(EOChainManager) != address(0)){
-            EOChainManager.deregisterValidator(operator);
+        if (address(chainManager) != address(0)){
+            chainManager.deregisterValidator(operator);
         }
     }
 
