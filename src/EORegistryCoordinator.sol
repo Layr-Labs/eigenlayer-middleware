@@ -921,4 +921,113 @@ contract EORegistryCoordinator is
     {
         return OwnableUpgradeable.owner();
     }
+    /*******************************************************************************
+                            EORACLE EXTERNAL FUNCTIONS 
+    *******************************************************************************/
+
+    /**
+     * @notice Registers msg.sender as an operator for one or more quorums. If any quorum exceeds its maximum
+     * operator capacity after the operator is registered, this method will fail.
+     * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for
+     * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership
+     * @param operatorSignature is the signature of the operator used by the AVS to register the operator in the delegation manager
+     * @dev `params` is ignored if the caller has previously registered a public key
+     * @dev `operatorSignature` is ignored if the operator's status is already REGISTERED
+     */
+    function registerOperator(
+        bytes calldata quorumNumbers,
+        IBLSApkRegistry.PubkeyRegistrationParams calldata params,
+        SignatureWithSaltAndExpiry memory operatorSignature,
+        uint256[2] memory _chainValidatorSignature
+    ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
+        /**
+         * If the operator has NEVER registered a pubkey before, use `params` to register
+         * their pubkey in blsApkRegistry
+         *
+         * If the operator HAS registered a pubkey, `params` is ignored and the pubkey hash
+         * (operatorId) is fetched instead
+         */
+        bytes32 operatorId = _getOrCreateOperatorId(msg.sender, params);
+
+         uint32[] memory numOperatorsPerQuorum = _registerOperator({
+            operator: msg.sender, 
+            operatorId: operatorId,
+            quorumNumbers: quorumNumbers, 
+            operatorSignature: operatorSignature,
+            chainValidatorSignature: _chainValidatorSignature
+        }).numOperatorsPerQuorum;
+
+        // For each quorum, validate that the new operator count does not exceed the maximum
+        // (If it does, an operator needs to be replaced -- see `registerOperatorWithChurn`)
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+
+            require(
+                numOperatorsPerQuorum[i] <= _quorumParams[quorumNumber].maxOperatorCount,
+                "EORegistryCoordinator.registerOperator: operator count exceeds maximum"
+            );
+        }
+    }
+    /*******************************************************************************
+                            EORACLE INTERNAL FUNCTIONS
+    *******************************************************************************/
+
+    /** 
+     * @notice Register the operator for one or more quorums. This method updates the
+     * operator's quorum bitmap, and status, then registers them with each registry.
+     */
+    function _registerOperator(
+        address operator, 
+        bytes32 operatorId,
+        bytes calldata quorumNumbers,
+        SignatureWithSaltAndExpiry memory operatorSignature,
+        uint256[2] memory chainValidatorSignature
+    ) internal virtual returns (RegisterResults memory results) {
+        /**
+         * Get bitmap of quorums to register for and operator's current bitmap. Validate that:
+         * - we're trying to register for at least 1 quorum
+         * - the operator is not currently registered for any quorums we're registering for
+         * Then, calculate the operator's new bitmap after registration
+         */
+        uint192 quorumsToAdd = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
+        uint192 currentBitmap = _currentOperatorBitmap(operatorId);
+        require(!quorumsToAdd.isEmpty(), "EORegistryCoordinator._registerOperator: bitmap cannot be 0");
+        require(_quorumsAllExist(quorumsToAdd), "EORegistryCoordinator._registerOperator: some quorums do not exist");
+        require(quorumsToAdd.noBitsInCommon(currentBitmap), "EORegistryCoordinator._registerOperator: operator already registered for some quorums being registered for");
+        uint192 newBitmap = uint192(currentBitmap.plus(quorumsToAdd));
+
+        /**
+         * Update operator's bitmap, and status. Only update operatorInfo if needed:
+         * if we're `REGISTERED`, the operatorId and status are already correct.
+         */
+        _updateOperatorBitmap({
+            operatorId: operatorId,
+            newBitmap: newBitmap
+        });
+
+
+        // If the operator wasn't registered for any quorums, update their status
+        // and register them with this AVS in EigenLayer core (DelegationManager)
+        if (_operatorInfo[operator].status != OperatorStatus.REGISTERED) {
+            _operatorInfo[operator] = OperatorInfo({
+                operatorId: operatorId,
+                status: OperatorStatus.REGISTERED
+            });
+
+            // Register the operator with the EigenLayer core contracts via this AVS's ServiceManager
+            serviceManager.registerOperatorToAVS(operator, operatorSignature);
+
+            emit OperatorRegistered(operator, operatorId);
+        }
+
+        // Register the operator with the BLSApkRegistry, StakeRegistry, and IndexRegistry
+        blsApkRegistry.registerOperator(operator, quorumNumbers);
+        (results.operatorStakes, results.totalStakes) = 
+            stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
+        results.numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
+        if (address(EOChainManager) != address(0)){
+            EOChainManager.registerValidator(operator, results.operatorStakes,chainValidatorSignature);
+        }
+        return results;
+    }
 }
