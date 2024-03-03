@@ -2,7 +2,7 @@
 cache/
 out/
 node_modules/
-
+script/output/5/eoracle_middleware_contracts_deployment_data.json
 # Ignores development broadcast logs
 !/broadcast
 /broadcast/*/31337/
