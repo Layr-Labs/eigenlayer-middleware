@@ -13,7 +13,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
     }
 
     function test_getOperatorState_revert_neverRegistered() public {
-        cheats.expectRevert("EORegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number");
+        cheats.expectRevert("getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number");
         operatorStateRetriever.getOperatorState(registryCoordinator, defaultOperatorId, uint32(block.number));
     }
 
@@ -22,7 +22,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         _registerOperatorWithCoordinator(defaultOperator, 1, defaultPubKey);
 
         // should revert because the operator was registered for the first time after the reference block number
-        cheats.expectRevert("EORegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number");
+        cheats.expectRevert("getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number");
         operatorStateRetriever.getOperatorState(registryCoordinator, defaultOperatorId, registrationBlockNumber - 1);
     }
 
@@ -112,7 +112,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         bytes32[] memory nonSignerOperatorIds = new bytes32[](1);
         nonSignerOperatorIds[0] = defaultOperatorId;
 
-        cheats.expectRevert("EORegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number");
+        cheats.expectRevert("getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number");
         operatorStateRetriever.getCheckSignaturesIndices(registryCoordinator, uint32(block.number), BitmapUtils.bitmapToBytesArray(1), nonSignerOperatorIds);
     }
 
@@ -124,7 +124,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         _registerOperatorWithCoordinator(defaultOperator, 1, defaultPubKey);
 
         // should revert because the operator was registered for the first time after the reference block number
-        cheats.expectRevert("EORegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number");
+        cheats.expectRevert("getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number");
         operatorStateRetriever.getCheckSignaturesIndices(registryCoordinator, registrationBlockNumber - 1, BitmapUtils.bitmapToBytesArray(1), nonSignerOperatorIds);
     }
 
