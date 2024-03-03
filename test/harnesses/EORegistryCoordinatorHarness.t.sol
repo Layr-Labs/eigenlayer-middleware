@@ -32,7 +32,8 @@ contract EORegistryCoordinatorHarness is EORegistryCoordinator, Test {
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external returns (RegisterResults memory results) {
         BN254.G1Point memory emptySignature; 
-        return _registerOperator(operator, operatorId, quorumNumbers, operatorSignature,emptySignature);
+        BN254.G2Point memory emptyG2Point;
+        return _registerOperator(operator, operatorId, quorumNumbers, operatorSignature,emptySignature,emptyG2Point);
     }
 
     // @notice exposes the internal `_deregisterOperator` function, overriding all access controls

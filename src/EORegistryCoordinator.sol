@@ -141,7 +141,8 @@ contract EORegistryCoordinator is
             operatorId: operatorId,
             quorumNumbers: quorumNumbers, 
             operatorSignature: operatorSignature,
-            chainValidatorSignature : params.chainValidatorSignature
+            chainValidatorSignature : params.chainValidatorSignature,
+            chainValidatorG2Signature: params.pubkeyG2
         }).numOperatorsPerQuorum;
 
         // For each quorum, validate that the new operator count does not exceed the maximum
@@ -201,7 +202,8 @@ contract EORegistryCoordinator is
             operatorId: operatorId,
             quorumNumbers: quorumNumbers,
             operatorSignature: operatorSignature,
-            chainValidatorSignature: params.chainValidatorSignature
+            chainValidatorSignature: params.chainValidatorSignature,
+            chainValidatorG2Signature: params.pubkeyG2
         });
 
         // Check that each quorum's operator count is below the configured maximum. If the max
@@ -438,7 +440,8 @@ contract EORegistryCoordinator is
         bytes32 operatorId,
         bytes calldata quorumNumbers,
         SignatureWithSaltAndExpiry memory operatorSignature,
-        BN254.G1Point memory chainValidatorSignature
+        BN254.G1Point memory chainValidatorSignature,
+        BN254.G2Point memory chainValidatorG2Signature
     ) internal virtual returns (RegisterResults memory results) {
         /**
          * Get bitmap of quorums to register for and operator's current bitmap. Validate that:
@@ -483,11 +486,8 @@ contract EORegistryCoordinator is
             stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
         results.numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
         if (address(EOChainManager) != address(0)){
-            uint256 x = chainValidatorSignature.X; 
-            uint256 y = chainValidatorSignature.Y;  
-            if ( x != 0 && y != 0){
-                uint256[2] memory _chainValidatorSignature = [x,y];
-                EOChainManager.registerValidator(operator, results.operatorStakes, _chainValidatorSignature);
+            if ( chainValidatorSignature.X != 0 && chainValidatorSignature.Y != 0 && chainValidatorG2Signature.X[0] != 0 && chainValidatorG2Signature.X[1] != 0 && chainValidatorG2Signature.Y[0] != 0 && chainValidatorG2Signature.Y[1] != 0){
+                EOChainManager.registerValidator(operator, results.operatorStakes, [chainValidatorSignature.X ,chainValidatorSignature.Y],[chainValidatorG2Signature.X[0],chainValidatorG2Signature.X[1],chainValidatorG2Signature.Y[0],chainValidatorG2Signature.Y[1]]);
             }
             else{
                 EOChainManager.registerValidator(operator, results.operatorStakes);
