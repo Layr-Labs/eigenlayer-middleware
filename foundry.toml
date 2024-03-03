@@ -19,4 +19,7 @@ number_underscore = "thousands"
 quote_style = "double"
 tab_width = 4
 
+[rpc_endpoints]
+goerli = "${RPC_GOERLI}"
+
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
