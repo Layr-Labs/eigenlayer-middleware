@@ -29,6 +29,7 @@ interface IEOBLSApkRegistry is IRegistry {
      */     
     struct PubkeyRegistrationParams {
         BN254.G1Point pubkeyRegistrationSignature;
+        BN254.G1Point chainValidatorSignature;
         BN254.G1Point pubkeyG1;
         BN254.G2Point pubkeyG2;
     }
