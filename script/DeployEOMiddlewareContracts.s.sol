@@ -223,9 +223,9 @@ contract DeployEOMiddlewareContracts is Script, Utils {
             address(registryCoordinatorImplementation),
             abi.encodeWithSelector(
                 EORegistryCoordinator.initialize.selector,
-                msg.sender,
-                msg.sender,
-                msg.sender,
+                msg.sender, // _initialOwner
+                msg.sender, // _churnApprover
+                msg.sender, // _ejector
                 pauserRegistry,
                 0, /*initialPausedStatus*/
                 new IEORegistryCoordinator.OperatorSetParam[](0),

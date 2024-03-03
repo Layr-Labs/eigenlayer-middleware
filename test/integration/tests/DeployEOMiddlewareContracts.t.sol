@@ -39,23 +39,15 @@ contract DeployEOMiddlewareContractsTest is Test, Script {
 
     function testDeployEOMiddlewareContracts() public {
         (registryCoordinator, serviceManager, stakeRegistry, blsApkRegistry, indexRegistry, operatorStateRetriever, proxyAdmin) = deployEOMiddlewareContracts.run();
-        console.log("registryCoordinator: ", address(registryCoordinator));
-        console.log("serviceManager: ", address(serviceManager));
-        console.log("stakeRegistry: ", address(stakeRegistry));
-        console.log("blsApkRegistry: ", address(blsApkRegistry));
-        console.log("indexRegistry: ", address(indexRegistry));
-        console.log("operatorStateRetriever: ", address(operatorStateRetriever));
-        console.log("blocknumber: ", block.number);
-
-        address owner = serviceManager.owner();
-        console.log("serviceManager owner: ", owner);
 
         address admin = proxyAdmin.getProxyAdmin(TransparentUpgradeableProxy(payable(address(registryCoordinator))));
-        console.log("registryCoordinator admin: ", admin);
+        assertEq(admin, address(proxyAdmin));
 
-        address proxyAdminOwner = proxyAdmin.owner();
-        console.log("proxyAdmin owner: ", proxyAdminOwner);
-        console.log("msg.sender: ", msg.sender);
+        assertEq(proxyAdmin.owner(), msg.sender);
+
+        assertEq(registryCoordinator.registries(0), address(stakeRegistry));
+        assertEq(registryCoordinator.registries(1), address(blsApkRegistry));
+        assertEq(registryCoordinator.registries(2), address(indexRegistry));
 
     }
 }
