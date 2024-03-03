@@ -98,9 +98,9 @@ contract DeployEOMiddlewareContracts is Script, Utils {
         string memory deployed_addresses = "addresses";
         vm.serializeAddress(deployed_addresses, "EORegistryCoordinator", address(registryCoordinator));
         vm.serializeAddress(deployed_addresses, "EOServiceManager", address(serviceManager));
-        vm.serializeAddress(deployed_addresses, "EOEOStakeRegistry", address(stakeRegistry));
-        vm.serializeAddress(deployed_addresses, "EOEOBLSApkRegistry", address(blsApkRegistry));
-        vm.serializeAddress(deployed_addresses, "EOEOIndexRegistry", address(indexRegistry));
+        vm.serializeAddress(deployed_addresses, "EOStakeRegistry", address(stakeRegistry));
+        vm.serializeAddress(deployed_addresses, "EOBLSApkRegistry", address(blsApkRegistry));
+        vm.serializeAddress(deployed_addresses, "EOIndexRegistry", address(indexRegistry));
         vm.serializeAddress(deployed_addresses, "operatorStateRetriever", address(operatorStateRetriever));
         vm.serializeAddress(deployed_addresses, "proxyAdmin", address(proxyAdmin));
         string memory finalJson = vm.serializeAddress(deployed_addresses, "deployer", msg.sender);
