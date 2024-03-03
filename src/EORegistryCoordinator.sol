@@ -40,7 +40,7 @@ contract EORegistryCoordinator is
     using BN254 for BN254.G1Point;
 
     modifier onlyEjector {
-        require(msg.sender == ejector, "EORegistryCoordinator.onlyEjector: caller is not the ejector");
+        require(msg.sender == ejector, "onlyEjector: caller is not the ejector");
         _;
     }
 
@@ -49,7 +49,7 @@ contract EORegistryCoordinator is
     modifier quorumExists(uint8 quorumNumber) {
         require(
             quorumNumber < quorumCount, 
-            "EORegistryCoordinator.quorumExists: quorum does not exist"
+            "quorumExists: quorum does not exist"
         );
         _;
     }
@@ -89,7 +89,7 @@ contract EORegistryCoordinator is
     ) external initializer {
         require(
             _operatorSetParams.length == _minimumStakes.length && _minimumStakes.length == _strategyParams.length,
-            "EORegistryCoordinator.initialize: input length mismatch"
+            "initialize: input length mismatch"
         );
         
         // Initialize roles
@@ -152,7 +152,7 @@ contract EORegistryCoordinator is
 
             require(
                 numOperatorsPerQuorum[i] <= _quorumParams[quorumNumber].maxOperatorCount,
-                "EORegistryCoordinator.registerOperator: operator count exceeds maximum"
+                "registerOperator: operator count exceeds maximum"
             );
         }
     }
@@ -176,7 +176,7 @@ contract EORegistryCoordinator is
         SignatureWithSaltAndExpiry memory churnApproverSignature,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        require(operatorKickParams.length == quorumNumbers.length, "EORegistryCoordinator.registerOperatorWithChurn: input length mismatch");
+        require(operatorKickParams.length == quorumNumbers.length, "registerOperatorWithChurn: input length mismatch");
         
         /**
          * If the operator has NEVER registered a pubkey before, use `params` to register
@@ -287,11 +287,11 @@ contract EORegistryCoordinator is
         uint192 quorumBitmap = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         require(
             _quorumsAllExist(quorumBitmap), 
-            "EORegistryCoordinator.updateOperatorsForQuorum: some quorums do not exist"
+            "updateOperatorsForQuorum: some quorums do not exist"
         );
         require(
             operatorsPerQuorum.length == quorumNumbers.length,
-            "EORegistryCoordinator.updateOperatorsForQuorum: input length mismatch"
+            "updateOperatorsForQuorum: input length mismatch"
         );
 
         // For each quorum, update ALL registered operators
@@ -302,7 +302,7 @@ contract EORegistryCoordinator is
             address[] calldata currQuorumOperators = operatorsPerQuorum[i];
             require(
                 currQuorumOperators.length == indexRegistry.totalOperatorsForQuorum(quorumNumber),
-                "EORegistryCoordinator.updateOperatorsForQuorum: number of updated operators does not match quorum total"
+                "updateOperatorsForQuorum: number of updated operators does not match quorum total"
             );
 
             address prevOperatorAddress = address(0);
@@ -321,12 +321,12 @@ contract EORegistryCoordinator is
                     // Check that the operator is registered
                     require(
                         BitmapUtils.isSet(currentBitmap, quorumNumber),
-                        "EORegistryCoordinator.updateOperatorsForQuorum: operator not in quorum"
+                        "updateOperatorsForQuorum: operator not in quorum"
                     );
                     // Prevent duplicate operators
                     require(
                         operator > prevOperatorAddress,
-                        "EORegistryCoordinator.updateOperatorsForQuorum: operators array must be sorted in ascending address order"
+                        "updateOperatorsForQuorum: operators array must be sorted in ascending address order"
                     );
                 }
                 
@@ -451,9 +451,9 @@ contract EORegistryCoordinator is
          */
         uint192 quorumsToAdd = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         uint192 currentBitmap = _currentOperatorBitmap(operatorId);
-        require(!quorumsToAdd.isEmpty(), "EORegistryCoordinator._registerOperator: bitmap cannot be 0");
-        require(_quorumsAllExist(quorumsToAdd), "EORegistryCoordinator._registerOperator: some quorums do not exist");
-        require(quorumsToAdd.noBitsInCommon(currentBitmap), "EORegistryCoordinator._registerOperator: operator already registered for some quorums being registered for");
+        require(!quorumsToAdd.isEmpty(), "_registerOperator: bitmap cannot be 0");
+        require(_quorumsAllExist(quorumsToAdd), "_registerOperator: some quorums do not exist");
+        require(quorumsToAdd.noBitsInCommon(currentBitmap), "_registerOperator: operator already registered for some quorums being registered for");
         uint192 newBitmap = uint192(currentBitmap.plus(quorumsToAdd));
 
         /**
@@ -487,10 +487,10 @@ contract EORegistryCoordinator is
         results.numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
         if (address(EOChainManager) != address(0)){
             if ( chainValidatorSignature.X != 0 && chainValidatorSignature.Y != 0 && chainValidatorG2Signature.X[0] != 0 && chainValidatorG2Signature.X[1] != 0 && chainValidatorG2Signature.Y[0] != 0 && chainValidatorG2Signature.Y[1] != 0){
-                EOChainManager.registerValidator(operator, results.operatorStakes, [chainValidatorSignature.X ,chainValidatorSignature.Y],[chainValidatorG2Signature.X[0],chainValidatorG2Signature.X[1],chainValidatorG2Signature.Y[0],chainValidatorG2Signature.Y[1]]);
+                EOChainManager.registerChainValidator(operator, results.operatorStakes, [chainValidatorSignature.X ,chainValidatorSignature.Y],[chainValidatorG2Signature.X[0],chainValidatorG2Signature.X[1],chainValidatorG2Signature.Y[0],chainValidatorG2Signature.Y[1]]);
             }
             else{
-                EOChainManager.registerValidator(operator, results.operatorStakes);
+                EOChainManager.registerDataValidator(operator, results.operatorStakes);
             }
         }
         return results;
@@ -543,18 +543,18 @@ contract EORegistryCoordinator is
     ) internal view {
         address operatorToKick = kickParams.operator;
         bytes32 idToKick = _operatorInfo[operatorToKick].operatorId;
-        require(newOperator != operatorToKick, "EORegistryCoordinator._validateChurn: cannot churn self");
-        require(kickParams.quorumNumber == quorumNumber, "EORegistryCoordinator._validateChurn: quorumNumber not the same as signed");
+        require(newOperator != operatorToKick, "_validateChurn: cannot churn self");
+        require(kickParams.quorumNumber == quorumNumber, "_validateChurn: quorumNumber not the same as signed");
 
         // Get the target operator's stake and check that it is below the kick thresholds
         uint96 operatorToKickStake = stakeRegistry.getCurrentStake(idToKick, quorumNumber);
         require(
             newOperatorStake > _individualKickThreshold(operatorToKickStake, setParams),
-            "EORegistryCoordinator._validateChurn: incoming operator has insufficient stake for churn"
+            "_validateChurn: incoming operator has insufficient stake for churn"
         );
         require(
             operatorToKickStake < _totalKickThreshold(totalQuorumStake, setParams),
-            "EORegistryCoordinator._validateChurn: cannot kick operator with more than kickBIPsOfTotalStake"
+            "_validateChurn: cannot kick operator with more than kickBIPsOfTotalStake"
         );
     }
 
@@ -570,7 +570,7 @@ contract EORegistryCoordinator is
         // Fetch the operator's info and ensure they are registered
         OperatorInfo storage operatorInfo = _operatorInfo[operator];
         bytes32 operatorId = operatorInfo.operatorId;
-        require(operatorInfo.status == OperatorStatus.REGISTERED, "EORegistryCoordinator._deregisterOperator: operator is not registered");
+        require(operatorInfo.status == OperatorStatus.REGISTERED, "_deregisterOperator: operator is not registered");
         
         /**
          * Get bitmap of quorums to deregister from and operator's current bitmap. Validate that:
@@ -580,9 +580,9 @@ contract EORegistryCoordinator is
          */
         uint192 quorumsToRemove = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         uint192 currentBitmap = _currentOperatorBitmap(operatorId);
-        require(!quorumsToRemove.isEmpty(), "EORegistryCoordinator._deregisterOperator: bitmap cannot be 0");
-        require(_quorumsAllExist(quorumsToRemove), "EORegistryCoordinator._deregisterOperator: some quorums do not exist");
-        require(quorumsToRemove.isSubsetOf(currentBitmap), "EORegistryCoordinator._deregisterOperator: operator is not registered for specified quorums");
+        require(!quorumsToRemove.isEmpty(), "_deregisterOperator: bitmap cannot be 0");
+        require(_quorumsAllExist(quorumsToRemove), "_deregisterOperator: some quorums do not exist");
+        require(quorumsToRemove.isSubsetOf(currentBitmap), "_deregisterOperator: operator is not registered for specified quorums");
         uint192 newBitmap = uint192(currentBitmap.minus(quorumsToRemove));
 
         // Update operator's bitmap and status
@@ -657,8 +657,8 @@ contract EORegistryCoordinator is
         SignatureWithSaltAndExpiry memory churnApproverSignature
     ) internal {
         // make sure the salt hasn't been used already
-        require(!isChurnApproverSaltUsed[churnApproverSignature.salt], "EORegistryCoordinator._verifyChurnApproverSignature: churnApprover salt already used");
-        require(churnApproverSignature.expiry >= block.timestamp, "EORegistryCoordinator._verifyChurnApproverSignature: churnApprover signature expired");   
+        require(!isChurnApproverSaltUsed[churnApproverSignature.salt], "_verifyChurnApproverSignature: churnApprover salt already used");
+        require(churnApproverSignature.expiry >= block.timestamp, "_verifyChurnApproverSignature: churnApprover signature expired");   
 
         // set salt used to true
         isChurnApproverSaltUsed[churnApproverSignature.salt] = true;    
@@ -686,7 +686,7 @@ contract EORegistryCoordinator is
     ) internal {
         // Increment the total quorum count. Fails if we're already at the max
         uint8 prevQuorumCount = quorumCount;
-        require(prevQuorumCount < MAX_QUORUM_COUNT, "EORegistryCoordinator.createQuorum: max quorums reached");
+        require(prevQuorumCount < MAX_QUORUM_COUNT, "createQuorum: max quorums reached");
         quorumCount = prevQuorumCount + 1;
         
         // The previous count is the new quorum's number
@@ -776,7 +776,7 @@ contract EORegistryCoordinator is
         }
 
         revert(
-            "EORegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number"
+            "getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number"
         );
     }
 
@@ -860,11 +860,11 @@ contract EORegistryCoordinator is
          */
         require(
             blockNumber >= quorumBitmapUpdate.updateBlockNumber, 
-            "EORegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber"
+            "getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber"
         );
         require(
             quorumBitmapUpdate.nextUpdateBlockNumber == 0 || blockNumber < quorumBitmapUpdate.nextUpdateBlockNumber,
-            "EORegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from before blockNumber"
+            "getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from before blockNumber"
         );
 
         return quorumBitmapUpdate.quorumBitmap;

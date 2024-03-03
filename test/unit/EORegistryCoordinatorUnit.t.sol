@@ -245,7 +245,7 @@ contract EORegistryCoordinatorUnitTests_RegisterOperator is EORegistryCoordinato
         bytes memory emptyQuorumNumbers = new bytes(0);
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
 
-        cheats.expectRevert("EORegistryCoordinator._registerOperator: bitmap cannot be 0");
+        cheats.expectRevert("_registerOperator: bitmap cannot be 0");
         cheats.prank(defaultOperator);
         registryCoordinator.registerOperator(emptyQuorumNumbers, pubkeyRegistrationParams, emptySig);
     }
@@ -456,7 +456,7 @@ contract EORegistryCoordinatorUnitTests_RegisterOperator is EORegistryCoordinato
         _setOperatorWeight(operatorToRegister, defaultQuorumNumber, defaultStake);
 
         cheats.prank(operatorToRegister);
-        cheats.expectRevert("EORegistryCoordinator.registerOperator: operator count exceeds maximum");
+        cheats.expectRevert("registerOperator: operator count exceeds maximum");
         registryCoordinator.registerOperator(quorumNumbers, pubkeyRegistrationParams, emptySig);
     }
 
@@ -476,7 +476,7 @@ contract EORegistryCoordinatorUnitTests_RegisterOperator is EORegistryCoordinato
 
         cheats.prank(defaultOperator);
         cheats.roll(nextRegistrationBlockNumber);
-        cheats.expectRevert("EORegistryCoordinator._registerOperator: operator already registered for some quorums being registered for");
+        cheats.expectRevert("_registerOperator: operator already registered for some quorums being registered for");
 
         registryCoordinator.registerOperator(quorumNumbers, pubkeyRegistrationParams, emptySig);
     }
@@ -486,7 +486,7 @@ contract EORegistryCoordinatorUnitTests_RegisterOperator is EORegistryCoordinato
         bytes memory emptyQuorumNumbers = new bytes(0);
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
 
-        cheats.expectRevert("EORegistryCoordinator._registerOperator: bitmap cannot be 0");
+        cheats.expectRevert("_registerOperator: bitmap cannot be 0");
         registryCoordinator._registerOperatorExternal(defaultOperator, defaultOperatorId, emptyQuorumNumbers, emptySig);
     }
 
@@ -508,7 +508,7 @@ contract EORegistryCoordinatorUnitTests_RegisterOperator is EORegistryCoordinato
         _setOperatorWeight(defaultOperator, uint8(quorumNumbers[0]), defaultStake);
         registryCoordinator._registerOperatorExternal(defaultOperator, defaultOperatorId, quorumNumbers, emptySig);
 
-        cheats.expectRevert("EORegistryCoordinator._registerOperator: operator already registered for some quorums being registered for");
+        cheats.expectRevert("_registerOperator: operator already registered for some quorums being registered for");
         registryCoordinator._registerOperatorExternal(defaultOperator, defaultOperatorId, quorumNumbers, emptySig);
     }
 
@@ -573,7 +573,7 @@ contract EORegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is EORe
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
-        cheats.expectRevert("EORegistryCoordinator._deregisterOperator: operator is not registered");
+        cheats.expectRevert("_deregisterOperator: operator is not registered");
         cheats.prank(defaultOperator);
         registryCoordinator.deregisterOperator(quorumNumbers);
     }
@@ -589,7 +589,7 @@ contract EORegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is EORe
         quorumNumbers[0] = bytes1(defaultQuorumNumber + 1);
         quorumNumbers[1] = bytes1(defaultQuorumNumber + 2);
 
-        cheats.expectRevert("EORegistryCoordinator._deregisterOperator: operator is not registered for specified quorums");
+        cheats.expectRevert("_deregisterOperator: operator is not registered for specified quorums");
         cheats.prank(defaultOperator);
         registryCoordinator.deregisterOperator(quorumNumbers);
     }
@@ -929,13 +929,13 @@ contract EORegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is EORe
         bytes memory emptyQuorumNumbers = new bytes(0);
 
         cheats.roll(deregistrationBlockNumber);
-        cheats.expectRevert("EORegistryCoordinator._deregisterOperator: bitmap cannot be 0");
+        cheats.expectRevert("_deregisterOperator: bitmap cannot be 0");
         registryCoordinator._deregisterOperatorExternal(defaultOperator, emptyQuorumNumbers);
     }
 
     function test_deregisterOperatorExternal_revert_notRegistered() public {
         bytes memory emptyQuorumNumbers = new bytes(0);
-        cheats.expectRevert("EORegistryCoordinator._deregisterOperator: operator is not registered");
+        cheats.expectRevert("_deregisterOperator: operator is not registered");
         registryCoordinator._deregisterOperatorExternal(defaultOperator, emptyQuorumNumbers);
     }
 
@@ -957,7 +957,7 @@ contract EORegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is EORe
         incorrectQuorum[0] = bytes1(defaultQuorumNumber + 1);
 
         cheats.roll(deregistrationBlockNumber);
-        cheats.expectRevert("EORegistryCoordinator._deregisterOperator: operator is not registered for specified quorums");
+        cheats.expectRevert("_deregisterOperator: operator is not registered for specified quorums");
         registryCoordinator._deregisterOperatorExternal(defaultOperator, incorrectQuorum);
     }
 
@@ -1130,7 +1130,7 @@ contract EORegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is EORe
         cheats.prank(defaultOperator);
         registryCoordinator.registerOperator(quorumNumbers, pubkeyRegistrationParams, emptySig);
         
-        cheats.expectRevert("EORegistryCoordinator.onlyEjector: caller is not the ejector");
+        cheats.expectRevert("onlyEjector: caller is not the ejector");
         cheats.prank(defaultOperator);
         registryCoordinator.ejectOperator(defaultOperator, quorumNumbers);
     }
@@ -1138,7 +1138,7 @@ contract EORegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is EORe
     function test_getQuorumBitmapIndicesAtBlockNumber_revert_notRegistered() public {
         uint32 blockNumber;
         bytes32[] memory operatorIds = new bytes32[](1);
-        cheats.expectRevert("EORegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number");
+        cheats.expectRevert("getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number");
         registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
     }
 
@@ -1159,7 +1159,7 @@ contract EORegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is EORe
         operatorIds[0] = defaultOperatorId;
 
         uint32[] memory returnArray;
-        cheats.expectRevert("EORegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number");
+        cheats.expectRevert("getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number");
         registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
 
         blockNumber = registrationBlockNumber;
@@ -1181,7 +1181,7 @@ contract EORegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is EORe
         operatorIds[0] = defaultOperatorId;
 
         uint32[] memory returnArray;
-        cheats.expectRevert("EORegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number");
+        cheats.expectRevert("getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number");
         registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
 
         blockNumber = registrationBlockNumber;
@@ -1214,7 +1214,7 @@ contract EORegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is EORe
         uint192 emptyBitmap = 0;
 
         // try an incorrect blockNumber input and confirm reversion
-        cheats.expectRevert("EORegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber");
+        cheats.expectRevert("getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber");
         uint192 returnVal = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
 
         blockNumber = registrationBlockNumber;
@@ -1227,7 +1227,7 @@ contract EORegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is EORe
 
         // try an incorrect index input and confirm reversion
         index = 1;
-        cheats.expectRevert("EORegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber");
+        cheats.expectRevert("getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber");
         returnVal = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
 
         blockNumber = deregistrationBlockNumber;
@@ -1240,7 +1240,7 @@ contract EORegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is EORe
 
         // try an incorrect index input and confirm reversion
         index = 0;
-        cheats.expectRevert("EORegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from before blockNumber");
+        cheats.expectRevert("getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from before blockNumber");
         returnVal = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
     }
 }
@@ -1377,7 +1377,7 @@ contract EORegistryCoordinatorUnitTests_RegisterOperatorWithChurn is EORegistryC
         ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry =
             _signOperatorChurnApproval(operatorToRegister, operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp + 10);
         cheats.prank(operatorToRegister);
-        cheats.expectRevert("EORegistryCoordinator._validateChurn: incoming operator has insufficient stake for churn");
+        cheats.expectRevert("_validateChurn: incoming operator has insufficient stake for churn");
         registryCoordinator.registerOperatorWithChurn(
             quorumNumbers, 
             pubkeyRegistrationParams,
@@ -1408,7 +1408,7 @@ contract EORegistryCoordinatorUnitTests_RegisterOperatorWithChurn is EORegistryC
         ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry =
             _signOperatorChurnApproval(operatorToRegister, operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp + 10);
         cheats.prank(operatorToRegister);
-        cheats.expectRevert("EORegistryCoordinator._validateChurn: cannot kick operator with more than kickBIPsOfTotalStake");
+        cheats.expectRevert("_validateChurn: cannot kick operator with more than kickBIPsOfTotalStake");
         registryCoordinator.registerOperatorWithChurn(
             quorumNumbers, 
             pubkeyRegistrationParams,
@@ -1468,7 +1468,7 @@ contract EORegistryCoordinatorUnitTests_RegisterOperatorWithChurn is EORegistryC
         ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry =
             _signOperatorChurnApproval(operatorToRegister, operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp - 1);
         cheats.prank(operatorToRegister);
-        cheats.expectRevert("EORegistryCoordinator._verifyChurnApproverSignature: churnApprover signature expired");
+        cheats.expectRevert("_verifyChurnApproverSignature: churnApprover signature expired");
         registryCoordinator.registerOperatorWithChurn(
             quorumNumbers, 
             pubkeyRegistrationParams,
@@ -1588,7 +1588,7 @@ contract EORegistryCoordinatorUnitTests_UpdateOperators is EORegistryCoordinator
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
-        cheats.expectRevert(bytes("EORegistryCoordinator.updateOperatorsForQuorum: input length mismatch"));
+        cheats.expectRevert(bytes("updateOperatorsForQuorum: input length mismatch"));
         registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
     }
 
@@ -1600,7 +1600,7 @@ contract EORegistryCoordinatorUnitTests_UpdateOperators is EORegistryCoordinator
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
-        cheats.expectRevert(bytes("EORegistryCoordinator.updateOperatorsForQuorum: number of updated operators does not match quorum total"));
+        cheats.expectRevert(bytes("updateOperatorsForQuorum: number of updated operators does not match quorum total"));
         registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
     }
 
@@ -1621,7 +1621,7 @@ contract EORegistryCoordinatorUnitTests_UpdateOperators is EORegistryCoordinator
         operatorArray[0] =  _incrementAddress(defaultOperator, 1);
         operatorsToUpdate[0] = operatorArray;
 
-        cheats.expectRevert(bytes("EORegistryCoordinator.updateOperatorsForQuorum: operator not in quorum"));
+        cheats.expectRevert(bytes("updateOperatorsForQuorum: operator not in quorum"));
         registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
     }
 
@@ -1649,7 +1649,7 @@ contract EORegistryCoordinatorUnitTests_UpdateOperators is EORegistryCoordinator
         operatorsToUpdate[0] = operatorArray;
 
         // note: there is not an explicit check for duplicates, as checking for explicit ordering covers this
-        cheats.expectRevert(bytes("EORegistryCoordinator.updateOperatorsForQuorum: operators array must be sorted in ascending address order"));
+        cheats.expectRevert(bytes("updateOperatorsForQuorum: operators array must be sorted in ascending address order"));
         registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
     }
 
@@ -1675,7 +1675,7 @@ contract EORegistryCoordinatorUnitTests_UpdateOperators is EORegistryCoordinator
         operatorArray[1] =  defaultOperator;
         operatorsToUpdate[0] = operatorArray;
 
-        cheats.expectRevert(bytes("EORegistryCoordinator.updateOperatorsForQuorum: operators array must be sorted in ascending address order"));
+        cheats.expectRevert(bytes("updateOperatorsForQuorum: operators array must be sorted in ascending address order"));
         registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
     }
 
