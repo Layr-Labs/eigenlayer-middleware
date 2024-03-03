@@ -16,16 +16,14 @@ import {EORegistryCoordinator, IEORegistryCoordinator, IEOBLSApkRegistry, IEOInd
 import {EOBLSApkRegistry} from "../../../src/EOBLSApkRegistry.sol";
 import {EOIndexRegistry} from "../../../src/EOIndexRegistry.sol";
 import {EOStakeRegistry} from "../../../src/EOStakeRegistry.sol";
-//import {EOServiceManager} from "../src/EOServiceManager.sol";
-// Remove mock when EOServiceManager is implemented
-import {ServiceManagerMock} from "../../mocks/ServiceManagerMock.sol";
+import {EOServiceManager} from "../../../src/EOServiceManager.sol";
 import {OperatorStateRetriever} from "../../../src/OperatorStateRetriever.sol";
 
 contract DeployEOMiddlewareContractsTest is Test, Script {
     DeployEOMiddlewareContracts public deployEOMiddlewareContracts;
 
     EORegistryCoordinator public registryCoordinator;
-    ServiceManagerMock public serviceManager;
+    EOServiceManager public serviceManager;
     EOStakeRegistry public stakeRegistry;
     EOBLSApkRegistry public blsApkRegistry;
     EOIndexRegistry public indexRegistry;
