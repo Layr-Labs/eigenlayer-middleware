@@ -489,6 +489,9 @@ contract EORegistryCoordinator is
                 uint256[2] memory _chainValidatorSignature = [x,y];
                 EOChainManager.registerValidator(operator, results.operatorStakes, _chainValidatorSignature);
             }
+            else{
+                EOChainManager.registerValidator(operator, results.operatorStakes);
+            }
         }
         return results;
     }
