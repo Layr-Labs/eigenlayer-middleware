@@ -6,7 +6,6 @@ import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/
 import {EOStakeRegistryStorage, IStrategy} from "./EOStakeRegistryStorage.sol";
 
 import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
-import {IEOStakeRegistry} from "./interfaces/IEOStakeRegistry.sol";
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 

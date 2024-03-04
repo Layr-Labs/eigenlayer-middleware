@@ -45,6 +45,8 @@ contract EORegistryCoordinatorUnitTests is MockAVSDeployer {
 
     event EjectorUpdated(address prevEjector, address newEjector);
 
+    event ChainManagerUpdated(address prevChainManager, address newChainManager);
+
     event QuorumBlockNumberUpdated(uint8 indexed quorumNumber, uint256 blocknumber);
 
     function setUp() virtual public {
@@ -176,6 +178,23 @@ contract EORegistryCoordinatorUnitTests_Initialization_Setters is EORegistryCoor
         cheats.expectRevert("Ownable: caller is not the owner");
         cheats.prank(defaultOperator);
         registryCoordinator.setEjector(newEjector);
+    }
+
+    function test_setChainManager() public {
+        address chainManager = address(registryCoordinator.chainManager());
+        address newChainManager = address(uint160(uint256(keccak256("newChainManager"))));
+        cheats.prank(registryCoordinatorOwner);
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit ChainManagerUpdated(chainManager, newChainManager);
+        registryCoordinator.setChainManager(IEOChainManager(newChainManager));
+        assertEq(address(registryCoordinator.chainManager()), newChainManager);
+    }
+
+    function test_setChainManager_revert_notOwner() public {
+        address newChainManager = address(uint160(uint256(keccak256("newChainManager"))));
+        cheats.expectRevert("Ownable: caller is not the owner");
+        cheats.prank(defaultOperator);
+        registryCoordinator.setChainManager(IEOChainManager(newChainManager));
     }
 
     function test_createQuorum_revert_notOwner() public {

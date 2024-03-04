@@ -25,6 +25,8 @@ interface IEORegistryCoordinator {
 
     event EjectorUpdated(address prevEjector, address newEjector);
 
+    event ChainManagerUpdated(address prevChainManager, address newChainManager);
+
     /// @notice emitted when all the operators for a quorum are updated at once
     event QuorumBlockNumberUpdated(uint8 indexed quorumNumber, uint256 blocknumber);
 

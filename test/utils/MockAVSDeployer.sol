@@ -23,6 +23,7 @@ import {IEOBLSApkRegistry} from "../../src/interfaces/IEOBLSApkRegistry.sol";
 import {IEOStakeRegistry} from "../../src/interfaces/IEOStakeRegistry.sol";
 import {IEOIndexRegistry} from "../../src/interfaces/IEOIndexRegistry.sol";
 import {IEORegistryCoordinator} from "../../src/interfaces/IEORegistryCoordinator.sol";
+import {IEOChainManager} from "../../src/interfaces/IEOChainManager.sol";
 import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
 
 

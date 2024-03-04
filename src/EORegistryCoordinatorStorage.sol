@@ -6,6 +6,7 @@ import {IEOStakeRegistry} from "./interfaces/IEOStakeRegistry.sol";
 import {IEOIndexRegistry} from "./interfaces/IEOIndexRegistry.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
+import {IEOChainManager} from "./interfaces/IEOChainManager.sol";
 
 abstract contract EORegistryCoordinatorStorage is IEORegistryCoordinator {
 
@@ -63,6 +64,8 @@ abstract contract EORegistryCoordinatorStorage is IEORegistryCoordinator {
     address public churnApprover;
     /// @notice the address of the entity allowed to eject operators from the AVS
     address public ejector;
+    /// @notice the Chain Manager contract which forwards calls onto EOracle's contracts
+    IEOChainManager public chainManager;
 
     constructor(
         IServiceManager _serviceManager,
