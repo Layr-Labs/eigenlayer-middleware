@@ -194,6 +194,15 @@ function test_UpdateQuorumConfig() public {
         registry.updateOperators(operators);
     }
 
+    function test_RevertsWhen_OperatorNotRegistered_UpdateOperators() public {
+        address[] memory operators = new address[](1);
+        address operator3;
+        operators[0] = operator3;
+        vm.expectRevert();
+        registry.updateOperators(operators);
+
+    }
+
     function test_When_SingleOperator_UpdateOperators() public {
         address[] memory operators = new address[](1);
         operators[0] = operator1;
