@@ -6,10 +6,10 @@ import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 import {ECDSAStakeRegistryEventsAndErrors, Quorum, StrategyParams} from "../../src/interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
-import {ECDSAStakeRegistryTest} from "./ECDSAStakeRegistryUnit.t.sol";
+import {ECDSAStakeRegistrySetup} from "./ECDSAStakeRegistryUnit.t.sol";
 import {ECDSAStakeRegistryEqualWeight} from "../../src/unaudited/examples/ECDSAStakeRegistryEqualWeight.sol";
 
-contract EqualWeightECDSARegistry is ECDSAStakeRegistryTest {
+contract EqualWeightECDSARegistry is ECDSAStakeRegistrySetup {
     ECDSAStakeRegistryEqualWeight internal fixedWeightRegistry;
     function setUp() public virtual override {
         super.setUp();
