@@ -82,7 +82,7 @@ contract ECDSAStakeRegistry is
     /// @dev Access controlled to the contract owner
     /// @param _newMinimumWeight The new weight an operator must have to join the operator set
     function updateMinimumWeight(uint256 _newMinimumWeight) external onlyOwner {
-        minimumWeight = _newMinimumWeight;
+        _updateMinimumWeight(_newMinimumWeight);
     }
 
     /**
@@ -184,6 +184,14 @@ contract ECDSAStakeRegistry is
     function _updateStakeThreshold(uint256 _thresholdWeightBps) internal {
         _thresholdWeightBpsHistory.push(_thresholdWeightBps);
         emit ThresholdWeightUpdated(_thresholdWeightBps);
+    }
+
+    /// @dev Updates the weight an operator must have to join the operator set
+    /// @param _newMinimumWeight The new weight an operator must have to join the operator set
+    function _updateMinimumWeight(uint256 _newMinimumWeight) internal {
+        uint256 oldMinimumWeight = minimumWeight;
+        minimumWeight = _newMinimumWeight;
+        emit MinimumWeightUpdated(oldMinimumWeight, _newMinimumWeight);
     }
 
     /// @dev Internal function to set the quorum configuration

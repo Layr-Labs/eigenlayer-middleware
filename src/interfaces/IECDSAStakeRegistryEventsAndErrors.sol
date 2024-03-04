@@ -28,6 +28,11 @@ interface ECDSAStakeRegistryEventsAndErrors {
     /// @param _new The new quorum configuration
     event QuorumUpdated(Quorum _old, Quorum _new);
 
+    /// @notice Emitted when the weight to join the operator set updates
+    /// @param _old The previous minimum weight
+    /// @param _new The new minimumWeight
+    event MinimumWeightUpdated(uint256 _old, uint256 _new);
+
     /// @notice Emitted when the weight required to be an operator changes
     /// @param oldMinimumWeight The previous weight
     /// @param newMinimumWeight The updated weight
