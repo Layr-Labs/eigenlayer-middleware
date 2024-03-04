@@ -159,4 +159,17 @@ contract OperatorStateRetriever {
 
         return checkSignaturesIndices;
     }
+
+    function getQuorumBitmapsAtBlockNumber(
+        IRegistryCoordinator registryCoordinator,
+        bytes32[] memory operatorIds,
+        uint32 blockNumber
+    ) external view returns (uint256[] memory) {
+        uint32[] memory quorumBitmapIndices = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
+        uint256[] memory quorumBitmaps = new uint256[](operatorIds.length);
+        for (uint256 i = 0; i < operatorIds.length; i++) {
+            quorumBitmaps[i] = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorIds[i], blockNumber, quorumBitmapIndices[i]);
+        }
+        return quorumBitmaps;
+    }
 }
