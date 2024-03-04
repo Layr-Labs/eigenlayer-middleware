@@ -3,8 +3,8 @@ pragma solidity =0.8.12;
 
 import {IBLSSignatureChecker} from "./interfaces/IBLSSignatureChecker.sol";
 import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
-import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
-import {IStakeRegistry, IDelegationManager} from "./interfaces/IStakeRegistry.sol";
+import {IEOBLSApkRegistry} from "./interfaces/IEOBLSApkRegistry.sol";
+import {IEOStakeRegistry, IDelegationManager} from "./interfaces/IEOStakeRegistry.sol";
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {BN254} from "./libraries/BN254.sol";
@@ -24,8 +24,8 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
     uint256 internal constant PAIRING_EQUALITY_CHECK_GAS = 120000;
 
     IEORegistryCoordinator public immutable registryCoordinator;
-    IStakeRegistry public immutable stakeRegistry;
-    IBLSApkRegistry public immutable blsApkRegistry;
+    IEOStakeRegistry public immutable stakeRegistry;
+    IEOBLSApkRegistry public immutable blsApkRegistry;
     IDelegationManager public immutable delegation;
     /// @notice If true, check the staleness of the operator stakes and that its within the delegation withdrawalDelayBlocks window.
     bool public staleStakesForbidden;
@@ -188,7 +188,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                 if (_staleStakesForbidden) {
                     require(
                         registryCoordinator.quorumUpdateBlockNumber(uint8(quorumNumbers[i])) + withdrawalDelayBlocks >= referenceBlockNumber,
-                        "BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within withdrawalDelayBlocks window"
+                        "BLSSignatureChecker.checkSignatures: EOStakeRegistry updates must be within withdrawalDelayBlocks window"
                     );
                 }
 

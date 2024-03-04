@@ -1,25 +1,25 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {IndexRegistryStorage} from "./IndexRegistryStorage.sol";
+import {EOIndexRegistryStorage} from "./EOIndexRegistryStorage.sol";
 import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
 
 /**
  * @title A `Registry` that keeps track of an ordered list of operators for each quorum
  * @author Layr Labs, Inc.
  */
-contract IndexRegistry is IndexRegistryStorage {
+contract EOIndexRegistry is EOIndexRegistryStorage {
 
     /// @notice when applied to a function, only allows the EORegistryCoordinator to call it
     modifier onlyEORegistryCoordinator() {
-        require(msg.sender == address(registryCoordinator), "IndexRegistry.onlyEORegistryCoordinator: caller is not the registry coordinator");
+        require(msg.sender == address(registryCoordinator), "EOIndexRegistry.onlyEORegistryCoordinator: caller is not the registry coordinator");
         _;
     }
 
     /// @notice sets the (immutable) `registryCoordinator` address
     constructor(
         IEORegistryCoordinator _registryCoordinator
-    ) IndexRegistryStorage(_registryCoordinator) {}
+    ) EOIndexRegistryStorage(_registryCoordinator) {}
 
     /*******************************************************************************
                       EXTERNAL FUNCTIONS - REGISTRY COORDINATOR
@@ -47,7 +47,7 @@ contract IndexRegistry is IndexRegistryStorage {
             // Validate quorum exists and get current operator count
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             uint256 historyLength = _operatorCountHistory[quorumNumber].length;
-            require(historyLength != 0, "IndexRegistry.registerOperator: quorum does not exist");
+            require(historyLength != 0, "EOIndexRegistry.registerOperator: quorum does not exist");
 
             /**
              * Increase the number of operators currently active for this quorum,
@@ -87,7 +87,7 @@ contract IndexRegistry is IndexRegistryStorage {
             // Validate quorum exists and get the operatorIndex of the operator being deregistered
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             uint256 historyLength = _operatorCountHistory[quorumNumber].length;
-            require(historyLength != 0, "IndexRegistry.registerOperator: quorum does not exist");
+            require(historyLength != 0, "EOIndexRegistry.registerOperator: quorum does not exist");
             uint32 operatorIndexToRemove = currentOperatorIndex[quorumNumber][operatorId];
 
             /**
@@ -113,7 +113,7 @@ contract IndexRegistry is IndexRegistryStorage {
      * @param quorumNumber The number of the new quorum
      */
     function initializeQuorum(uint8 quorumNumber) public virtual onlyEORegistryCoordinator {
-        require(_operatorCountHistory[quorumNumber].length == 0, "IndexRegistry.createQuorum: quorum already exists");
+        require(_operatorCountHistory[quorumNumber].length == 0, "EOIndexRegistry.createQuorum: quorum already exists");
 
         _operatorCountHistory[quorumNumber].push(QuorumUpdate({
             numOperators: 0,
@@ -253,7 +253,7 @@ contract IndexRegistry is IndexRegistryStorage {
         uint32 blockNumber
     ) internal view returns (uint32){
         uint256 historyLength = _operatorCountHistory[quorumNumber].length;
-        require(historyLength != 0, "IndexRegistry._operatorCountAtBlockNumber: quorum does not exist");
+        require(historyLength != 0, "EOIndexRegistry._operatorCountAtBlockNumber: quorum does not exist");
 
         // Loop backwards through the total operator history
         for (uint256 i = 0; i < historyLength; i++) {
@@ -265,7 +265,7 @@ contract IndexRegistry is IndexRegistryStorage {
             }
         }
         
-        revert("IndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number");
+        revert("EOIndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number");
     }
     
     /**
@@ -331,7 +331,7 @@ contract IndexRegistry is IndexRegistryStorage {
             operatorList[i] = _operatorIdForIndexAtBlockNumber(quorumNumber, uint32(i), blockNumber);
             require(
                 operatorList[i] != OPERATOR_DOES_NOT_EXIST_ID, 
-                "IndexRegistry.getOperatorListAtBlockNumber: operator does not exist at the given block number"
+                "EOIndexRegistry.getOperatorListAtBlockNumber: operator does not exist at the given block number"
             );
         }
         return operatorList;

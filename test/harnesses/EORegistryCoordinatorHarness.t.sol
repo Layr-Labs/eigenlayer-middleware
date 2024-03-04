@@ -9,9 +9,9 @@ import "forge-std/Test.sol";
 contract EORegistryCoordinatorHarness is EORegistryCoordinator, Test {
     constructor(
         IServiceManager _serviceManager,
-        IStakeRegistry _stakeRegistry,
-        IBLSApkRegistry _blsApkRegistry,
-        IIndexRegistry _indexRegistry
+        IEOStakeRegistry _stakeRegistry,
+        IEOBLSApkRegistry _blsApkRegistry,
+        IEOIndexRegistry _indexRegistry
     ) EORegistryCoordinator(_serviceManager, _stakeRegistry, _blsApkRegistry, _indexRegistry) {
         _transferOwnership(msg.sender);
     }
@@ -31,7 +31,9 @@ contract EORegistryCoordinatorHarness is EORegistryCoordinator, Test {
         bytes calldata quorumNumbers,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external returns (RegisterResults memory results) {
-        return _registerOperator(operator, operatorId, quorumNumbers, operatorSignature);
+        BN254.G1Point memory emptySignature; 
+        BN254.G2Point memory emptyG2Point;
+        return _registerOperator(operator, operatorId, quorumNumbers, operatorSignature,emptySignature,emptyG2Point);
     }
 
     // @notice exposes the internal `_deregisterOperator` function, overriding all access controls

@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
-import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
-import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
+import {IEOBLSApkRegistry} from "./interfaces/IEOBLSApkRegistry.sol";
+import {IEOStakeRegistry} from "./interfaces/IEOStakeRegistry.sol";
+import {IEOIndexRegistry} from "./interfaces/IEOIndexRegistry.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
+import {IEOChainManager} from "./interfaces/IEOChainManager.sol";
 
 abstract contract EORegistryCoordinatorStorage is IEORegistryCoordinator {
 
@@ -34,11 +35,11 @@ abstract contract EORegistryCoordinatorStorage is IEORegistryCoordinator {
     /// @notice the ServiceManager for this AVS, which forwards calls onto EigenLayer's core contracts
     IServiceManager public immutable serviceManager;
     /// @notice the BLS Aggregate Pubkey Registry contract that will keep track of operators' aggregate BLS public keys per quorum
-    IBLSApkRegistry public immutable blsApkRegistry;
+    IEOBLSApkRegistry public immutable blsApkRegistry;
     /// @notice the Stake Registry contract that will keep track of operators' stakes
-    IStakeRegistry public immutable stakeRegistry;
+    IEOStakeRegistry public immutable stakeRegistry;
     /// @notice the Index Registry contract that will keep track of operators' indexes
-    IIndexRegistry public immutable indexRegistry;
+    IEOIndexRegistry public immutable indexRegistry;
 
     /*******************************************************************************
                                        STATE 
@@ -63,12 +64,14 @@ abstract contract EORegistryCoordinatorStorage is IEORegistryCoordinator {
     address public churnApprover;
     /// @notice the address of the entity allowed to eject operators from the AVS
     address public ejector;
+    /// @notice the Chain Manager contract which forwards calls onto EOracle's contracts
+    IEOChainManager public chainManager;
 
     constructor(
         IServiceManager _serviceManager,
-        IStakeRegistry _stakeRegistry,
-        IBLSApkRegistry _blsApkRegistry,
-        IIndexRegistry _indexRegistry
+        IEOStakeRegistry _stakeRegistry,
+        IEOBLSApkRegistry _blsApkRegistry,
+        IEOIndexRegistry _indexRegistry
     ) {
         serviceManager = _serviceManager;
         stakeRegistry = _stakeRegistry;

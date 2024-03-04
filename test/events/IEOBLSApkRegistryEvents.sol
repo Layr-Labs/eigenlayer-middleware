@@ -3,7 +3,7 @@ pragma solidity =0.8.12;
 
 import {BN254} from "../../src/libraries/BN254.sol";
 
-interface IBLSApkRegistryEvents {
+interface IEOBLSApkRegistryEvents {
     // EVENTS
     /// @notice Emitted when `operator` registers with the public keys `pubkeyG1` and `pubkeyG2`.
     event NewPubkeyRegistration(address indexed operator, BN254.G1Point pubkeyG1, BN254.G2Point pubkeyG2);

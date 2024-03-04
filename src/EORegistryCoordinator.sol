@@ -3,9 +3,9 @@ pragma solidity =0.8.12;
 
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
-import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
-import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
+import {IEOBLSApkRegistry} from "./interfaces/IEOBLSApkRegistry.sol";
+import {IEOStakeRegistry} from "./interfaces/IEOStakeRegistry.sol";
+import {IEOIndexRegistry} from "./interfaces/IEOIndexRegistry.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
 import {IEOChainManager} from "./interfaces/IEOChainManager.sol";
@@ -22,9 +22,9 @@ import {EORegistryCoordinatorStorage} from "./EORegistryCoordinatorStorage.sol";
 
 /**
  * @title A `EORegistryCoordinator` that has three registries:
- *      1) a `StakeRegistry` that keeps track of operators' stakes
- *      2) a `BLSApkRegistry` that keeps track of operators' BLS public keys and aggregate BLS public keys for each quorum
- *      3) an `IndexRegistry` that keeps track of an ordered list of operators for each quorum
+ *      1) a `EOStakeRegistry` that keeps track of operators' stakes
+ *      2) a `EOBLSApkRegistry` that keeps track of operators' BLS public keys and aggregate BLS public keys for each quorum
+ *      3) an `EOIndexRegistry` that keeps track of an ordered list of operators for each quorum
  * 
  * @author Layr Labs, Inc.
  */
@@ -40,7 +40,7 @@ contract EORegistryCoordinator is
     using BN254 for BN254.G1Point;
 
     modifier onlyEjector {
-        require(msg.sender == ejector, "EORegistryCoordinator.onlyEjector: caller is not the ejector");
+        require(msg.sender == ejector, "onlyEjector: caller is not the ejector");
         _;
     }
 
@@ -49,16 +49,16 @@ contract EORegistryCoordinator is
     modifier quorumExists(uint8 quorumNumber) {
         require(
             quorumNumber < quorumCount, 
-            "EORegistryCoordinator.quorumExists: quorum does not exist"
+            "quorumExists: quorum does not exist"
         );
         _;
     }
-    IEOChainManager public EOChainManager;
+    
     constructor(
         IServiceManager _serviceManager,
-        IStakeRegistry _stakeRegistry,
-        IBLSApkRegistry _blsApkRegistry,
-        IIndexRegistry _indexRegistry
+        IEOStakeRegistry _stakeRegistry,
+        IEOBLSApkRegistry _blsApkRegistry,
+        IEOIndexRegistry _indexRegistry
     ) 
         EORegistryCoordinatorStorage(_serviceManager, _stakeRegistry, _blsApkRegistry, _indexRegistry)
         EIP712("eoracleEORegistryCoordinator", "v0.0.1") 
@@ -85,11 +85,11 @@ contract EORegistryCoordinator is
         uint256 _initialPausedStatus,
         OperatorSetParam[] memory _operatorSetParams,
         uint96[] memory _minimumStakes,
-        IStakeRegistry.StrategyParams[][] memory _strategyParams
+        IEOStakeRegistry.StrategyParams[][] memory _strategyParams
     ) external initializer {
         require(
             _operatorSetParams.length == _minimumStakes.length && _minimumStakes.length == _strategyParams.length,
-            "EORegistryCoordinator.initialize: input length mismatch"
+            "initialize: input length mismatch"
         );
         
         // Initialize roles
@@ -124,7 +124,7 @@ contract EORegistryCoordinator is
      */
     function registerOperator(
         bytes calldata quorumNumbers,
-        IBLSApkRegistry.PubkeyRegistrationParams calldata params,
+        IEOBLSApkRegistry.PubkeyRegistrationParams calldata params,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         /**
@@ -140,7 +140,9 @@ contract EORegistryCoordinator is
             operator: msg.sender, 
             operatorId: operatorId,
             quorumNumbers: quorumNumbers, 
-            operatorSignature: operatorSignature
+            operatorSignature: operatorSignature,
+            chainValidatorSignature : params.chainValidatorSignature,
+            chainValidatorG2Signature: params.pubkeyG2
         }).numOperatorsPerQuorum;
 
         // For each quorum, validate that the new operator count does not exceed the maximum
@@ -150,7 +152,7 @@ contract EORegistryCoordinator is
 
             require(
                 numOperatorsPerQuorum[i] <= _quorumParams[quorumNumber].maxOperatorCount,
-                "EORegistryCoordinator.registerOperator: operator count exceeds maximum"
+                "registerOperator: operator count exceeds maximum"
             );
         }
     }
@@ -169,12 +171,12 @@ contract EORegistryCoordinator is
      */
     function registerOperatorWithChurn(
         bytes calldata quorumNumbers, 
-        IBLSApkRegistry.PubkeyRegistrationParams calldata params,
+        IEOBLSApkRegistry.PubkeyRegistrationParams calldata params,
         OperatorKickParam[] calldata operatorKickParams,
         SignatureWithSaltAndExpiry memory churnApproverSignature,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        require(operatorKickParams.length == quorumNumbers.length, "EORegistryCoordinator.registerOperatorWithChurn: input length mismatch");
+        require(operatorKickParams.length == quorumNumbers.length, "registerOperatorWithChurn: input length mismatch");
         
         /**
          * If the operator has NEVER registered a pubkey before, use `params` to register
@@ -199,7 +201,9 @@ contract EORegistryCoordinator is
             operator: msg.sender,
             operatorId: operatorId,
             quorumNumbers: quorumNumbers,
-            operatorSignature: operatorSignature
+            operatorSignature: operatorSignature,
+            chainValidatorSignature: params.chainValidatorSignature,
+            chainValidatorG2Signature: params.pubkeyG2
         });
 
         // Check that each quorum's operator count is below the configured maximum. If the max
@@ -240,7 +244,7 @@ contract EORegistryCoordinator is
     }
 
     /**
-     * @notice Updates the StakeRegistry's view of one or more operators' stakes. If any operator
+     * @notice Updates the EOStakeRegistry's view of one or more operators' stakes. If any operator
      * is found to be below the minimum stake for the quorum, they are deregistered.
      * @dev stakes are queried from the Eigenlayer core DelegationManager contract
      * @param operators a list of operator addresses to update
@@ -259,7 +263,7 @@ contract EORegistryCoordinator is
     }
 
     /**
-     * @notice For each quorum in `quorumNumbers`, updates the StakeRegistry's view of ALL its registered operators' stakes.
+     * @notice For each quorum in `quorumNumbers`, updates the EOStakeRegistry's view of ALL its registered operators' stakes.
      * Each quorum's `quorumUpdateBlockNumber` is also updated, which tracks the most recent block number when ALL registered
      * operators were updated.
      * @dev stakes are queried from the Eigenlayer core DelegationManager contract
@@ -267,7 +271,7 @@ contract EORegistryCoordinator is
      * @dev Each list of operator addresses MUST be sorted in ascending order
      * @dev Each list of operator addresses MUST represent the entire list of registered operators for the corresponding quorum
      * @param quorumNumbers is an ordered byte array containing the quorum numbers being updated
-     * @dev invariant: Each list of `operatorsPerQuorum` MUST be a sorted version of `IndexRegistry.getOperatorListAtBlockNumber`
+     * @dev invariant: Each list of `operatorsPerQuorum` MUST be a sorted version of `EOIndexRegistry.getOperatorListAtBlockNumber`
      * for the corresponding quorum.
      * @dev note on race condition: if an operator registers/deregisters for any quorum in `quorumNumbers` after a txn to 
      * this method is broadcast (but before it is executed), the method will fail
@@ -283,11 +287,11 @@ contract EORegistryCoordinator is
         uint192 quorumBitmap = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         require(
             _quorumsAllExist(quorumBitmap), 
-            "EORegistryCoordinator.updateOperatorsForQuorum: some quorums do not exist"
+            "updateOperatorsForQuorum: some quorums do not exist"
         );
         require(
             operatorsPerQuorum.length == quorumNumbers.length,
-            "EORegistryCoordinator.updateOperatorsForQuorum: input length mismatch"
+            "updateOperatorsForQuorum: input length mismatch"
         );
 
         // For each quorum, update ALL registered operators
@@ -298,7 +302,7 @@ contract EORegistryCoordinator is
             address[] calldata currQuorumOperators = operatorsPerQuorum[i];
             require(
                 currQuorumOperators.length == indexRegistry.totalOperatorsForQuorum(quorumNumber),
-                "EORegistryCoordinator.updateOperatorsForQuorum: number of updated operators does not match quorum total"
+                "updateOperatorsForQuorum: number of updated operators does not match quorum total"
             );
 
             address prevOperatorAddress = address(0);
@@ -317,12 +321,12 @@ contract EORegistryCoordinator is
                     // Check that the operator is registered
                     require(
                         BitmapUtils.isSet(currentBitmap, quorumNumber),
-                        "EORegistryCoordinator.updateOperatorsForQuorum: operator not in quorum"
+                        "updateOperatorsForQuorum: operator not in quorum"
                     );
                     // Prevent duplicate operators
                     require(
                         operator > prevOperatorAddress,
-                        "EORegistryCoordinator.updateOperatorsForQuorum: operators array must be sorted in ascending address order"
+                        "updateOperatorsForQuorum: operators array must be sorted in ascending address order"
                     );
                 }
                 
@@ -360,12 +364,13 @@ contract EORegistryCoordinator is
                             EXTERNAL FUNCTIONS - OWNER
     *******************************************************************************/
     /**
-     * @notice Sets the EOChainManager, which is used to register validators on the  EOchain
-     * @param _EOChainManager the new EOChainManager
+     * @notice Sets the chainManager, which is used to register validators on the  EOchain
+     * @param newChainManager the new chainManager
      * @dev only callable by the owner
      */
-    function setEOChainManager(IEOChainManager _EOChainManager) external onlyOwner {
-        EOChainManager = _EOChainManager;
+    function setChainManager(IEOChainManager newChainManager) external onlyOwner {
+        emit ChainManagerUpdated(address(chainManager), address(newChainManager));
+        chainManager = newChainManager;
     }
 
     /**
@@ -373,13 +378,13 @@ contract EORegistryCoordinator is
      * @param operatorSetParams configures the quorum's max operator count and churn parameters
      * @param minimumStake sets the minimum stake required for an operator to register or remain
      * registered
-     * @param strategyParams a list of strategies and multipliers used by the StakeRegistry to
+     * @param strategyParams a list of strategies and multipliers used by the EOStakeRegistry to
      * calculate an operator's stake weight for the quorum
      */
     function createQuorum(
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
-        IStakeRegistry.StrategyParams[] memory strategyParams
+        IEOStakeRegistry.StrategyParams[] memory strategyParams
     ) external virtual onlyOwner {
         _createQuorum(operatorSetParams, minimumStake, strategyParams);
     }
@@ -435,7 +440,9 @@ contract EORegistryCoordinator is
         address operator, 
         bytes32 operatorId,
         bytes calldata quorumNumbers,
-        SignatureWithSaltAndExpiry memory operatorSignature
+        SignatureWithSaltAndExpiry memory operatorSignature,
+        BN254.G1Point memory chainValidatorSignature,
+        BN254.G2Point memory chainValidatorG2Signature
     ) internal virtual returns (RegisterResults memory results) {
         /**
          * Get bitmap of quorums to register for and operator's current bitmap. Validate that:
@@ -445,9 +452,9 @@ contract EORegistryCoordinator is
          */
         uint192 quorumsToAdd = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         uint192 currentBitmap = _currentOperatorBitmap(operatorId);
-        require(!quorumsToAdd.isEmpty(), "EORegistryCoordinator._registerOperator: bitmap cannot be 0");
-        require(_quorumsAllExist(quorumsToAdd), "EORegistryCoordinator._registerOperator: some quorums do not exist");
-        require(quorumsToAdd.noBitsInCommon(currentBitmap), "EORegistryCoordinator._registerOperator: operator already registered for some quorums being registered for");
+        require(!quorumsToAdd.isEmpty(), "_registerOperator: bitmap cannot be 0");
+        require(_quorumsAllExist(quorumsToAdd), "_registerOperator: some quorums do not exist");
+        require(quorumsToAdd.noBitsInCommon(currentBitmap), "_registerOperator: operator already registered for some quorums being registered for");
         uint192 newBitmap = uint192(currentBitmap.plus(quorumsToAdd));
 
         /**
@@ -474,28 +481,35 @@ contract EORegistryCoordinator is
             emit OperatorRegistered(operator, operatorId);
         }
 
-        // Register the operator with the BLSApkRegistry, StakeRegistry, and IndexRegistry
+        // Register the operator with the EOBLSApkRegistry, EOStakeRegistry, and EOIndexRegistry
         blsApkRegistry.registerOperator(operator, quorumNumbers);
         (results.operatorStakes, results.totalStakes) = 
             stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
         results.numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
-        if (address(EOChainManager) != address(0)){
-            EOChainManager.registerValidator(operator, results.operatorStakes);
+        if (address(chainManager) != address(0)){
+            // check if is a valid chain validator signature. if not register as a data validator
+            if ( chainValidatorSignature.X != 0 && chainValidatorSignature.Y != 0 && chainValidatorG2Signature.X[0] != 0 && chainValidatorG2Signature.X[1] != 0 && chainValidatorG2Signature.Y[0] != 0 && chainValidatorG2Signature.Y[1] != 0){
+                // chain validator expects the sig and pubkey spread as arrays.
+                chainManager.registerChainValidator(operator, results.operatorStakes, [chainValidatorSignature.X ,chainValidatorSignature.Y],[chainValidatorG2Signature.X[0],chainValidatorG2Signature.X[1],chainValidatorG2Signature.Y[0],chainValidatorG2Signature.Y[1]]);
+            }
+            else{
+                chainManager.registerDataValidator(operator, results.operatorStakes);
+            }
         }
         return results;
     }
 
     /**
-     * @notice Fetches an operator's pubkey hash from the BLSApkRegistry. If the
+     * @notice Fetches an operator's pubkey hash from the EOBLSApkRegistry. If the
      * operator has not registered a pubkey, attempts to register a pubkey using
      * `params`
-     * @param operator the operator whose pubkey to query from the BLSApkRegistry
+     * @param operator the operator whose pubkey to query from the EOBLSApkRegistry
      * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership
-     * @dev `params` can be empty if the operator has already registered a pubkey in the BLSApkRegistry
+     * @dev `params` can be empty if the operator has already registered a pubkey in the EOBLSApkRegistry
      */
     function _getOrCreateOperatorId(
         address operator,
-        IBLSApkRegistry.PubkeyRegistrationParams calldata params
+        IEOBLSApkRegistry.PubkeyRegistrationParams calldata params
     ) internal returns (bytes32 operatorId) {
         operatorId = blsApkRegistry.getOperatorId(operator);
         if (operatorId == 0) {
@@ -532,25 +546,25 @@ contract EORegistryCoordinator is
     ) internal view {
         address operatorToKick = kickParams.operator;
         bytes32 idToKick = _operatorInfo[operatorToKick].operatorId;
-        require(newOperator != operatorToKick, "EORegistryCoordinator._validateChurn: cannot churn self");
-        require(kickParams.quorumNumber == quorumNumber, "EORegistryCoordinator._validateChurn: quorumNumber not the same as signed");
+        require(newOperator != operatorToKick, "_validateChurn: cannot churn self");
+        require(kickParams.quorumNumber == quorumNumber, "_validateChurn: quorumNumber not the same as signed");
 
         // Get the target operator's stake and check that it is below the kick thresholds
         uint96 operatorToKickStake = stakeRegistry.getCurrentStake(idToKick, quorumNumber);
         require(
             newOperatorStake > _individualKickThreshold(operatorToKickStake, setParams),
-            "EORegistryCoordinator._validateChurn: incoming operator has insufficient stake for churn"
+            "_validateChurn: incoming operator has insufficient stake for churn"
         );
         require(
             operatorToKickStake < _totalKickThreshold(totalQuorumStake, setParams),
-            "EORegistryCoordinator._validateChurn: cannot kick operator with more than kickBIPsOfTotalStake"
+            "_validateChurn: cannot kick operator with more than kickBIPsOfTotalStake"
         );
     }
 
     /**
      * @dev Deregister the operator from one or more quorums
      * This method updates the operator's quorum bitmap and status, then deregisters
-     * the operator with the BLSApkRegistry, IndexRegistry, and StakeRegistry
+     * the operator with the EOBLSApkRegistry, EOIndexRegistry, and EOStakeRegistry
      */
     function _deregisterOperator(
         address operator, 
@@ -559,7 +573,7 @@ contract EORegistryCoordinator is
         // Fetch the operator's info and ensure they are registered
         OperatorInfo storage operatorInfo = _operatorInfo[operator];
         bytes32 operatorId = operatorInfo.operatorId;
-        require(operatorInfo.status == OperatorStatus.REGISTERED, "EORegistryCoordinator._deregisterOperator: operator is not registered");
+        require(operatorInfo.status == OperatorStatus.REGISTERED, "_deregisterOperator: operator is not registered");
         
         /**
          * Get bitmap of quorums to deregister from and operator's current bitmap. Validate that:
@@ -569,9 +583,9 @@ contract EORegistryCoordinator is
          */
         uint192 quorumsToRemove = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         uint192 currentBitmap = _currentOperatorBitmap(operatorId);
-        require(!quorumsToRemove.isEmpty(), "EORegistryCoordinator._deregisterOperator: bitmap cannot be 0");
-        require(_quorumsAllExist(quorumsToRemove), "EORegistryCoordinator._deregisterOperator: some quorums do not exist");
-        require(quorumsToRemove.isSubsetOf(currentBitmap), "EORegistryCoordinator._deregisterOperator: operator is not registered for specified quorums");
+        require(!quorumsToRemove.isEmpty(), "_deregisterOperator: bitmap cannot be 0");
+        require(_quorumsAllExist(quorumsToRemove), "_deregisterOperator: some quorums do not exist");
+        require(quorumsToRemove.isSubsetOf(currentBitmap), "_deregisterOperator: operator is not registered for specified quorums");
         uint192 newBitmap = uint192(currentBitmap.minus(quorumsToRemove));
 
         // Update operator's bitmap and status
@@ -592,14 +606,14 @@ contract EORegistryCoordinator is
         blsApkRegistry.deregisterOperator(operator, quorumNumbers);
         stakeRegistry.deregisterOperator(operatorId, quorumNumbers);
         indexRegistry.deregisterOperator(operatorId, quorumNumbers);
-        if (address(EOChainManager) != address(0)){
-            EOChainManager.deregisterValidator(operator);
+        if (address(chainManager) != address(0)){
+            chainManager.deregisterValidator(operator);
         }
     }
 
     /**
-     * @notice Updates the StakeRegistry's view of the operator's stake in one or more quorums.
-     * For any quorums where the StakeRegistry finds the operator is under the configured minimum
+     * @notice Updates the EOStakeRegistry's view of the operator's stake in one or more quorums.
+     * For any quorums where the EOStakeRegistry finds the operator is under the configured minimum
      * stake, `quorumsToRemove` is returned and used to deregister the operator from those quorums
      * @dev does nothing if operator is not registered for any quorums.
      */
@@ -646,8 +660,8 @@ contract EORegistryCoordinator is
         SignatureWithSaltAndExpiry memory churnApproverSignature
     ) internal {
         // make sure the salt hasn't been used already
-        require(!isChurnApproverSaltUsed[churnApproverSignature.salt], "EORegistryCoordinator._verifyChurnApproverSignature: churnApprover salt already used");
-        require(churnApproverSignature.expiry >= block.timestamp, "EORegistryCoordinator._verifyChurnApproverSignature: churnApprover signature expired");   
+        require(!isChurnApproverSaltUsed[churnApproverSignature.salt], "_verifyChurnApproverSignature: churnApprover salt already used");
+        require(churnApproverSignature.expiry >= block.timestamp, "_verifyChurnApproverSignature: churnApprover signature expired");   
 
         // set salt used to true
         isChurnApproverSaltUsed[churnApproverSignature.salt] = true;    
@@ -665,17 +679,17 @@ contract EORegistryCoordinator is
      * @param operatorSetParams configures the quorum's max operator count and churn parameters
      * @param minimumStake sets the minimum stake required for an operator to register or remain
      * registered
-     * @param strategyParams a list of strategies and multipliers used by the StakeRegistry to
+     * @param strategyParams a list of strategies and multipliers used by the EOStakeRegistry to
      * calculate an operator's stake weight for the quorum
      */
     function _createQuorum(
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
-        IStakeRegistry.StrategyParams[] memory strategyParams
+        IEOStakeRegistry.StrategyParams[] memory strategyParams
     ) internal {
         // Increment the total quorum count. Fails if we're already at the max
         uint8 prevQuorumCount = quorumCount;
-        require(prevQuorumCount < MAX_QUORUM_COUNT, "EORegistryCoordinator.createQuorum: max quorums reached");
+        require(prevQuorumCount < MAX_QUORUM_COUNT, "createQuorum: max quorums reached");
         quorumCount = prevQuorumCount + 1;
         
         // The previous count is the new quorum's number
@@ -765,7 +779,7 @@ contract EORegistryCoordinator is
         }
 
         revert(
-            "EORegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number"
+            "getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number"
         );
     }
 
@@ -849,11 +863,11 @@ contract EORegistryCoordinator is
          */
         require(
             blockNumber >= quorumBitmapUpdate.updateBlockNumber, 
-            "EORegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber"
+            "getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber"
         );
         require(
             quorumBitmapUpdate.nextUpdateBlockNumber == 0 || blockNumber < quorumBitmapUpdate.nextUpdateBlockNumber,
-            "EORegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from before blockNumber"
+            "getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from before blockNumber"
         );
 
         return quorumBitmapUpdate.quorumBitmap;

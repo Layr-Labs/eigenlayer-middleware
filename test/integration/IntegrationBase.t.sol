@@ -82,7 +82,7 @@ abstract contract IntegrationBase is IntegrationConfig {
         }
     }
 
-    /// BLSApkRegistry:
+    /// EOBLSApkRegistry:
 
     function assert_NoRegisteredPubkey(User user, string memory err) internal {
         (uint pubkeyX, uint pubkeyY) = blsApkRegistry.operatorToPubkey(address(user));
@@ -108,7 +108,7 @@ abstract contract IntegrationBase is IntegrationConfig {
         assertEq(address(user), reverseLookup, err);
     }
 
-    /// StakeRegistry:
+    /// EOStakeRegistry:
 
     function assert_NoExistingStake(User user, bytes memory quorums, string memory err) internal {
         bytes32 operatorId = user.operatorId();
@@ -148,7 +148,7 @@ abstract contract IntegrationBase is IntegrationConfig {
         }
     }
 
-    /// IndexRegistry:
+    /// EOIndexRegistry:
 
     /// @dev Checks that we're specifically UNDER the max operator count, i.e. we are allowing
     /// at least one more operator to register
@@ -805,7 +805,7 @@ abstract contract IntegrationBase is IntegrationConfig {
         return _getQuorumBitmap(operatorId);
     }
 
-    /// BLSApkRegistry:
+    /// EOBLSApkRegistry:
 
     function _getQuorumApks(bytes memory quorums) internal view returns (BN254.G1Point[] memory) {
         BN254.G1Point[] memory apks = new BN254.G1Point[](quorums.length);
@@ -821,7 +821,7 @@ abstract contract IntegrationBase is IntegrationConfig {
         return _getQuorumApks(quorums);
     }
 
-    /// StakeRegistry:
+    /// EOStakeRegistry:
 
     function _getStakes(User user, bytes memory quorums) internal view returns (uint96[] memory) {
         bytes32 operatorId = user.operatorId();
@@ -888,7 +888,7 @@ abstract contract IntegrationBase is IntegrationConfig {
         return _getTotalStakes(quorums);
     }
 
-    /// IndexRegistry:
+    /// EOIndexRegistry:
 
     function _getOperatorCounts(bytes memory quorums) internal view returns (uint32[] memory) {
         uint32[] memory operatorCounts = new uint32[](quorums.length);

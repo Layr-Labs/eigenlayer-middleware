@@ -2,13 +2,13 @@
 pragma solidity =0.8.12;
 
 import {IEORegistryCoordinator} from "./IEORegistryCoordinator.sol";
-import {IBLSApkRegistry} from "./IBLSApkRegistry.sol";
-import {IStakeRegistry, IDelegationManager} from "./IStakeRegistry.sol";
+import {IEOBLSApkRegistry} from "./IEOBLSApkRegistry.sol";
+import {IEOStakeRegistry, IDelegationManager} from "./IEOStakeRegistry.sol";
 
 import {BN254} from "../libraries/BN254.sol";
 
 /**
- * @title Used for checking BLS aggregate signatures from the operators of a EigenLayer AVS with the EORegistryCoordinator/BLSApkRegistry/StakeRegistry architechture.
+ * @title Used for checking BLS aggregate signatures from the operators of a EigenLayer AVS with the EORegistryCoordinator/EOBLSApkRegistry/EOStakeRegistry architechture.
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This is the contract for checking the validity of aggregate operator signatures.
@@ -47,8 +47,8 @@ interface IBLSSignatureChecker {
     // CONSTANTS & IMMUTABLES
 
     function registryCoordinator() external view returns (IEORegistryCoordinator);
-    function stakeRegistry() external view returns (IStakeRegistry);
-    function blsApkRegistry() external view returns (IBLSApkRegistry);
+    function stakeRegistry() external view returns (IEOStakeRegistry);
+    function blsApkRegistry() external view returns (IEOBLSApkRegistry);
     function delegation() external view returns (IDelegationManager);
 
     /**
