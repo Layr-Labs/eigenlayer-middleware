@@ -3,6 +3,7 @@ pragma solidity =0.8.12;
 
 import "forge-std/Script.sol";
 import "forge-std/StdJson.sol";
+import "forge-std/console.sol";
 
 import {Utils} from "./utils/Utils.s.sol";
 
@@ -29,7 +30,9 @@ import {
 import {EOBLSApkRegistry} from "../src/EOBLSApkRegistry.sol";
 import {EOIndexRegistry} from "../src/EOIndexRegistry.sol";
 import {EOStakeRegistry} from "../src/EOStakeRegistry.sol";
-import {EOServiceManager} from "../src/EOServiceManager.sol";
+//import {EOServiceManager} from "../src/EOServiceManager.sol";
+// Remove mock when EOServiceManager is implemented
+import {ServiceManagerMock} from "../test/mocks/ServiceManagerMock.sol";
 import {OperatorStateRetriever} from "src/OperatorStateRetriever.sol";
 
 // # To deploy and verify our contract
@@ -41,7 +44,7 @@ contract DeployEOMiddlewareContracts is Script, Utils {
 
     // Middleware contracts to deploy
     EORegistryCoordinator public registryCoordinator;
-    EOServiceManager serviceManager;
+    ServiceManagerMock serviceManager;
     EOBLSApkRegistry blsApkRegistry;
     EOStakeRegistry stakeRegistry;
     EOIndexRegistry indexRegistry;
@@ -60,7 +63,7 @@ contract DeployEOMiddlewareContracts is Script, Utils {
         external
         returns (
             EORegistryCoordinator,
-            EOServiceManager,
+            ServiceManagerMock,
             EOStakeRegistry,
             EOBLSApkRegistry,
             EOIndexRegistry,
@@ -132,7 +135,7 @@ contract DeployEOMiddlewareContracts is Script, Utils {
         internal
         returns (
             EORegistryCoordinator,
-            EOServiceManager,
+            ServiceManagerMock,
             EOStakeRegistry,
             EOBLSApkRegistry,
             EOIndexRegistry,
@@ -181,7 +184,7 @@ contract DeployEOMiddlewareContracts is Script, Utils {
             )
         );
 
-        serviceManager = EOServiceManager(
+        serviceManager = ServiceManagerMock(
             address(
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
@@ -194,7 +197,7 @@ contract DeployEOMiddlewareContracts is Script, Utils {
             new EOBLSApkRegistry(IEORegistryCoordinator(registryCoordinator));
         EOIndexRegistry indexRegistryImplementation =
             new EOIndexRegistry(IEORegistryCoordinator(registryCoordinator));
-        EOServiceManager serviceManagerImplementation = new EOServiceManager(
+        ServiceManagerMock serviceManagerImplementation = new ServiceManagerMock(
             IAVSDirectory(avsDirectory), IEORegistryCoordinator(registryCoordinator), stakeRegistry
         );
 
