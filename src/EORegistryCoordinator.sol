@@ -53,7 +53,7 @@ contract EORegistryCoordinator is
         );
         _;
     }
-    IEOChainManager public chainManager;
+    
     constructor(
         IServiceManager _serviceManager,
         IEOStakeRegistry _stakeRegistry,
@@ -365,11 +365,12 @@ contract EORegistryCoordinator is
     *******************************************************************************/
     /**
      * @notice Sets the chainManager, which is used to register validators on the  EOchain
-     * @param _chainManager the new chainManager
+     * @param newChainManager the new chainManager
      * @dev only callable by the owner
      */
-    function setChainManager(IEOChainManager _chainManager) external onlyOwner {
-        chainManager = _chainManager;
+    function setChainManager(IEOChainManager newChainManager) external onlyOwner {
+        emit ChainManagerUpdated(address(chainManager), address(newChainManager));
+        chainManager = newChainManager;
     }
 
     /**
