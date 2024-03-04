@@ -15,6 +15,7 @@ import {IDelegationManager} from "eigenlayer-contracts/src/contracts/core/Delega
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
+import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 // Middleware contracts
 import {
@@ -34,6 +35,10 @@ import {OperatorStateRetriever} from "src/OperatorStateRetriever.sol";
 // # To deploy and verify our contract
 // forge script script/DeployEOMiddlewareContracts.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast -vvvv
 contract DeployEOMiddlewareContracts is Script, Utils {
+    
+    IStrategy constant STRATEGY_BASE_TVL_LIMITS = IStrategy(0x879944A8cB437a5f8061361f82A6d4EED59070b5);
+    IStrategy[1] private deployedStrategyArray = [STRATEGY_BASE_TVL_LIMITS];
+
     // Middleware contracts to deploy
     EORegistryCoordinator public registryCoordinator;
     EOServiceManager serviceManager;
@@ -47,6 +52,9 @@ contract DeployEOMiddlewareContracts is Script, Utils {
 
     // PauserRegistry
     PauserRegistry pauserRegistry;
+
+    uint numQuorums = 1;
+    uint numStrategies = deployedStrategyArray.length;
 
     function run()
         external
@@ -132,6 +140,7 @@ contract DeployEOMiddlewareContracts is Script, Utils {
             ProxyAdmin
         )
     {
+
         // Deploy empty contract to be used as the initial implementation for the proxy contracts
         EmptyContract emptyContract = new EmptyContract();
 
@@ -214,22 +223,8 @@ contract DeployEOMiddlewareContracts is Script, Utils {
 
         EORegistryCoordinator registryCoordinatorImplementation =
             new EORegistryCoordinator(serviceManager, stakeRegistry, blsApkRegistry, indexRegistry);
-
-        proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(registryCoordinator))),
-            address(registryCoordinatorImplementation),
-            abi.encodeWithSelector(
-                EORegistryCoordinator.initialize.selector,
-                msg.sender, // _initialOwner
-                msg.sender, // _churnApprover
-                msg.sender, // _ejector
-                pauserRegistry,
-                0, /*initialPausedStatus*/
-                new IEORegistryCoordinator.OperatorSetParam[](0),
-                new uint96[](0),
-                new IEOStakeRegistry.StrategyParams[][](0)
-            )
-        );
+        
+        _initEORegistryCoordinator(proxyAdmin, registryCoordinator, registryCoordinatorImplementation, pauserRegistry);
 
         operatorStateRetriever = new OperatorStateRetriever();
 
@@ -250,6 +245,60 @@ contract DeployEOMiddlewareContracts is Script, Utils {
             "/script/output/",
             vm.toString(block.chainid),
             "/eoracle_middleware_contracts_deployment_data.json"
+        );
+    }
+
+    function _initEORegistryCoordinator(ProxyAdmin _proxyAdmin, IEORegistryCoordinator _registryCoordinator, EORegistryCoordinator _registryCoordinatorImplementation, PauserRegistry _pauserRegistry) internal{
+        IEORegistryCoordinator.OperatorSetParam[]
+            memory quorumsOperatorSetParams = new IEORegistryCoordinator.OperatorSetParam[](
+                numQuorums
+            );
+        uint96[] memory quorumsMinimumStake = new uint96[](numQuorums);
+        IEOStakeRegistry.StrategyParams[][]
+        memory quorumsStrategyParams = new IEOStakeRegistry.StrategyParams[][](
+            numQuorums
+        );
+        
+        // for each quorum to setup, we need to define
+        // QuorumOperatorSetParam, minimumStakeForQuorum, and strategyParams
+        for (uint i = 0; i < numQuorums; i++) {
+            // hard code these for now
+            quorumsOperatorSetParams[i] = IEORegistryCoordinator
+                .OperatorSetParam({
+                    maxOperatorCount: 10000,
+                    kickBIPsOfOperatorStake: 15000,
+                    kickBIPsOfTotalStake: 100
+                });
+            quorumsStrategyParams[i] = new IEOStakeRegistry.StrategyParams[](
+                numStrategies
+            );
+            for (uint j = 0; j < numStrategies; j++) {
+                quorumsStrategyParams[i][j] = IEOStakeRegistry
+                    .StrategyParams({
+                        strategy: deployedStrategyArray[j],
+                        // setting this to 1 ether since the divisor is also 1 ether
+                        // therefore this allows an operator to register with even just 1 token
+                        // see https://github.com/Layr-Labs/eigenlayer-middleware/blob/m2-mainnet/src/StakeRegistry.sol#L484
+                        //    weight += uint96(sharesAmount * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR);
+                        multiplier: 1 ether
+                    });
+            }
+        }
+
+        _proxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(_registryCoordinator))),
+            address(_registryCoordinatorImplementation),
+            abi.encodeWithSelector(
+                EORegistryCoordinator.initialize.selector,
+                msg.sender, // _initialOwner
+                msg.sender, // _churnApprover
+                msg.sender, // _ejector
+                _pauserRegistry,
+                0, /*initialPausedStatus*/
+                quorumsOperatorSetParams,
+                quorumsMinimumStake,
+                quorumsStrategyParams
+            )
         );
     }
 }
