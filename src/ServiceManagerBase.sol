@@ -21,7 +21,11 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
 
     IRegistryCoordinator internal immutable _registryCoordinator;
     IStakeRegistry internal immutable _stakeRegistry;
+    IIndexRegistry internal immutable _indexRegistry;
+    IBLSApkRegistry internal immutable _blsApkRegistry;
     IAVSDirectory internal immutable _avsDirectory;
+
+    IClaimingManager internal immutable claimingManager;
 
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
     modifier onlyRegistryCoordinator() {
@@ -75,6 +79,125 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
      */
     function deregisterOperatorFromAVS(address operator) public virtual onlyRegistryCoordinator {
         _avsDirectory.deregisterOperatorFromAVS(operator);
+    }
+
+    enum Payee {
+        INVALID,
+        REGISTERED_OPERATORS,
+        FROM_CALLBACK,
+        ALL_OPERATORS
+    }
+
+    struct Range {
+        uint startTime;
+        uint numDays;
+    }
+
+    struct Payment {
+        IERC20 token;
+        uint amount;
+    }
+
+    struct Weight {
+        IStrategy strategy;
+        uint96 multiplier;
+    }
+
+    struct PaymentRequest {
+        Payee payee;
+        Range range;
+        Payment payment;
+        StrategyParams[] weights;
+    }
+
+    /**
+     * Submit a payment to be processed by the core claimingManager. 
+     *
+     * Payments are made out to any operator registered for this AVS holding shares
+     * in any of the restakable strategies accepted by `quorum`.
+     *
+     * @param quorum Used to pull strategies/multipliers to weigh payment amounts
+     * @param payFrom The address from which the tokens will be transferred
+     * @param range The startTime and numDays
+     */
+    function payRegisteredOperators(
+        uint8 quorum,
+        address payFrom,
+        IClaimingManager.Range memory range,
+        IClaimingManager.Payment memory payment
+    ) public onlyOwner {
+        StrategyParams[] memory strategyParams = _stakeRegistry.getStrategyParams(quorum);
+        require(strategyParams.length != 0, "invalid quorum selected");
+
+        require(payment.token.transferFrom({
+            from: payFrom,
+            to: address(claimingManager),
+            amount: payment.amount
+        }), "token transfer failed");
+
+        /// Send payment request to offchain service
+        claimingManager.payForRange(IClaimingManager.PaymentRequest({
+            payee: IClaimingManager.Payee.REGISTERED_OPERATORS,
+            timeRange: range,
+            payment: payment,
+            weights: strategyParams
+        }));
+    }
+
+    /**
+     * Submit a payment to be processed by the core claimingManager.
+     * 
+     * Payments are made out to operators registered to a specific quorum at block numbers
+     * determined by our offchain infra that span the date range given by `range`
+     *
+     * Our offchain infra can get these weighted operator sets by calling the
+     * `getWeightedOperatorSet` method below and passing in the `callbackData`
+     * supplied with the request
+     */
+    function payQuorumOperators(
+        uint8 quorum,
+        address payFrom,
+        IClaimingManager.Range memory range,
+        IClaimingManager.Payment memory payment
+    ) public onlyOwner {
+        require(payment.paymentToken.transferFrom({
+            from: payFrom,
+            to: address(claimingManager),
+            amount: payment.paymentAmount
+        }), "token transfer failed");
+
+        /// Sends payment request to offchain service
+        claimingManager.payForRange(IClaimingManager.PaymentRequest({
+            payee: IClaimingManager.Payee.FROM_CALLBACK,
+            callbackData: abi.encode(quorum),
+            timeRange: range,
+            payment: payment
+        }));
+    }
+
+    interface IPayeeQuery {
+        function getWeightedOperatorSet(bytes memory query) public view returns (address[] memory, uint96[] memory);
+    }
+
+    /// Callback used by offchain code to retrieve weighted operator set at a specific block number
+    function getWeightedOperatorSet(uint blockNumber, bytes memory data) public view returns (address[] memory, uint96[] memory) {
+        uint8 quorum = abi.decode(data, (uint8));
+
+        bytes32[] memory operatorIds = _indexRegistry.getOperatorListAtBlockNumber(quorum, blockNumber);
+
+        address[] memory operators = new address[](operatorIds.length);
+        uint96[] memory weights = new uint96[](operatorIds.length);
+
+        for (uint i = 0; i < operators.length; i++) {
+            operators[i] = _blsApkRegistry.getOperatorFromPubkeyHash(operatorsIds[i]);
+            weights[i] = _stakeRegistry.getStakeAtBlockNumber({
+                operatorId: operatorIds[i],
+                quorumNumber: quorum,
+                blockNumber: blockNumber
+            });
+        }
+
+        return (operators, weights);
     }
 
     /**
