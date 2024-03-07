@@ -49,7 +49,7 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
     }
 
     /**
-     * @notice Sets the metadata URI for the AVS
+     * @notice Updates the metadata URI for the AVS
      * @param _metadataURI is the metadata URI for the AVS
      * @dev only callable by the owner
      */
