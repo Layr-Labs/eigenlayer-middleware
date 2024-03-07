@@ -449,8 +449,8 @@ contract EORegistryCoordinator is
          */
         uint192 quorumsToAdd = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         uint192 currentBitmap = _currentOperatorBitmap(operatorId);
-        require(!quorumsToAdd.isEmpty(), "EORegistryCoordinator._registerOperator: bitmap cannot be 0");
-        require(quorumsToAdd.noBitsInCommon(currentBitmap), "EORegistryCoordinator._registerOperator: operator already registered for some quorums being registered for");
+        require(!quorumsToAdd.isEmpty(), "_registerOperator: bitmap cannot be 0");
+        require(quorumsToAdd.noBitsInCommon(currentBitmap), "_registerOperator: operator already registered for some quorums being registered for");
         uint192 newBitmap = uint192(currentBitmap.plus(quorumsToAdd));
 
         /**
@@ -580,8 +580,8 @@ contract EORegistryCoordinator is
          */
         uint192 quorumsToRemove = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         uint192 currentBitmap = _currentOperatorBitmap(operatorId);
-        require(!quorumsToRemove.isEmpty(), "EORegistryCoordinator._deregisterOperator: bitmap cannot be 0");
-        require(quorumsToRemove.isSubsetOf(currentBitmap), "EORegistryCoordinator._deregisterOperator: operator is not registered for specified quorums");
+        require(!quorumsToRemove.isEmpty(), "_deregisterOperator: bitmap cannot be 0");
+        require(quorumsToRemove.isSubsetOf(currentBitmap), "_deregisterOperator: operator is not registered for specified quorums");
         uint192 newBitmap = uint192(currentBitmap.minus(quorumsToRemove));
 
         // Update operator's bitmap and status
