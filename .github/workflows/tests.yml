@@ -39,12 +39,13 @@ jobs:
           forge build --sizes
         id: build
 
-      - name: Run tests
+        - name: Run tests
         shell: bash
         run: |
-          forge test --no-match-contract FFI
-
+        forge test --no-match-contract FFI
+        
         env:
           RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
+          RPC_GOERLI: ${{ secrets.RPC_GOERLI }}
           CHAIN_ID: ${{ secrets.CHAIN_ID }}
         id: test
