@@ -45,9 +45,10 @@ contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         permissionedRegistry.revokeOperator(operator1);
     }
 
-    function test_RevertsWhen_NotOperator_RevokeOperator() public {
+    function test_When_NotOperator_RevokeOperator() public {
         address notOperator=address(0xBEEF);
-        vm.expectRevert(abi.encodeWithSelector(OperatorNotRegistered.selector));
+        permissionedRegistry.permitOperator(notOperator);
+
         permissionedRegistry.revokeOperator(notOperator);
     }
 
@@ -89,7 +90,6 @@ contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     }
 
     function test_DeregisterOperator() public {
-
         address operator3 = address(0xBEEF);
         permissionedRegistry.permitOperator(operator3);
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;

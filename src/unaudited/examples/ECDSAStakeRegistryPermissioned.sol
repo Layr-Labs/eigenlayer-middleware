@@ -28,7 +28,9 @@ contract ECDSAStakeRegistryPermissioned is ECDSAStakeRegistry {
     /// @param _operator The address of the operator to remove from the allowlist and deregistered.
     function revokeOperator(address _operator) external onlyOwner {
         delete allowlistedOperators[_operator];
-        _deregisterOperator(_operator);
+        if (_operatorRegistered[_operator]){
+            _deregisterOperator(_operator);
+        }
     }
 
     /// @notice Directly deregisters an operator without removing from the allowlist
