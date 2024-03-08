@@ -27,47 +27,76 @@ contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     }
 
     function test_RevertsWhen_NotOwner_PermitOperator() public {
-        vm.skip(true);
+        address notOwner=address(0xBEEF);
+        vm.prank(notOwner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        permissionedRegistry.permitOperator(operator1);
     }
 
     function test_When_Owner_PermitOperator() public {
-        vm.skip(true);
+        address operator3 = address(0xBEEF);
+        permissionedRegistry.permitOperator(operator3);
     }
 
     function test_RevertsWhen_NotOwner_RevokeOperator() public {
-        vm.skip(true);
+        address notOwner=address(0xBEEF);
+        vm.prank(notOwner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        permissionedRegistry.revokeOperator(operator1);
     }
 
     function test_RevertsWhen_NotOperator_RevokeOperator() public {
-        vm.skip(true);
+        address notOperator=address(0xBEEF);
+        vm.expectRevert(abi.encodeWithSelector(OperatorNotRegistered.selector));
+        permissionedRegistry.revokeOperator(notOperator);
     }
 
     function test_When_Owner_RevokeOperator() public {
-        vm.skip(true);
+        permissionedRegistry.revokeOperator(operator1);
     }
 
     function test_RevertsWhen_NotOwner_EjectOperator() public {
-        vm.skip(true);
+        address notOwner=address(0xBEEF);
+        vm.prank(notOwner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        permissionedRegistry.ejectOperator(operator1);
     }
 
     function test_RevertsWhen_NotOperator_EjectOperator() public {
-        vm.skip(true);
+        address notOperator=address(0xBEEF);
+        vm.expectRevert(abi.encodeWithSelector(OperatorNotRegistered.selector));
+        permissionedRegistry.ejectOperator(notOperator);
     }
 
     function test_When_Owner_EjectOperator() public {
-        vm.skip(true);
+        permissionedRegistry.ejectOperator(operator1);
     }
 
     function test_RevertsWhen_NotAllowlisted_RegisterOperatorWithSig() public {
-        vm.skip(true);
+        address operator3 = address(0xBEEF);
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        vm.expectRevert(abi.encodeWithSelector(ECDSAStakeRegistryPermissioned.OperatorNotAllowlisted.selector));
+        permissionedRegistry.registerOperatorWithSignature(operator3, operatorSignature);
+
     }
 
     function test_WhenAllowlisted_RegisterOperatorWithSig() public {
-        vm.skip(true);
+        address operator3 = address(0xBEEF);
+        permissionedRegistry.permitOperator(operator3);
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        permissionedRegistry.registerOperatorWithSignature(operator3, operatorSignature);
     }
 
     function test_DeregisterOperator() public {
-        vm.skip(true);
+
+        address operator3 = address(0xBEEF);
+        permissionedRegistry.permitOperator(operator3);
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        permissionedRegistry.registerOperatorWithSignature(operator3, operatorSignature);
+
+        vm.prank(operator3);
+        permissionedRegistry.deregisterOperator();
     }
 
 }
