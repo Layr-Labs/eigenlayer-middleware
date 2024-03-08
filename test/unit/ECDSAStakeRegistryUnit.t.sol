@@ -25,6 +25,14 @@ contract MockDelegationManager {
     function operatorShares(address, address) external pure returns (uint256) {
         return 1000; // Return a dummy value for simplicity
     }
+
+    function getOperatorShares(address, address[] memory strategies) external pure returns (uint256[] memory) {
+        uint256[] memory response = new uint256[](strategies.length); 
+        for (uint256 i; i < strategies.length; i++){
+            response[i] = 1000;
+        }
+        return response; // Return a dummy value for simplicity
+    }
 }
 
 contract ECDSAStakeRegistrySetup is Test, ECDSAStakeRegistryEventsAndErrors {
@@ -270,10 +278,16 @@ function test_UpdateQuorumConfig() public {
         operators[0] = operator1;
         operators[1] = operator2;
 
+        address[] memory strategies = new address[](2);
+        uint256[] memory shares = new uint256[](2);
+        strategies[0]=address(mockStrategy);
+        strategies[1]=address(mockStrategy2);
+        shares[0] = 50;
+        shares[1] = 1000;
         vm.mockCall(
             address(mockDelegationManager),
-            abi.encodeWithSelector(MockDelegationManager.operatorShares.selector, operator1, address(mockStrategy2)),
-            abi.encode(50)
+            abi.encodeWithSelector(MockDelegationManager.getOperatorShares.selector, operator1, strategies),
+            abi.encode(shares)
         );
 
         registry.updateOperators(operators);

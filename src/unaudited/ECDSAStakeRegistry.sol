@@ -156,12 +156,17 @@ contract ECDSAStakeRegistry is
     /// @param _operator The address of the operator.
     /// @return uint256 - The current weight of the operator; returns 0 if below the threshold.
     function getOperatorWeight(address _operator) public view returns (uint256) {
-        StrategyParams[] memory strategies = _quorum.strategies;
+        StrategyParams[] memory strategyParams = _quorum.strategies;
         uint256 weight;
-        uint256 sharesAmount;
-        for (uint256 i; i < strategies.length; i++) {
-            sharesAmount = DELEGATION_MANAGER.operatorShares(_operator, strategies[i].strategy);
-            weight += sharesAmount * strategies[i].multiplier;
+        IStrategy[] memory strategies = new IStrategy[](strategyParams.length);
+        for (uint256 i; i < strategyParams.length; i++) {
+            strategies[i]=strategyParams[i].strategy;
+
+        }
+        uint256[] memory shares = DELEGATION_MANAGER.getOperatorShares(_operator, strategies);
+        for (uint256 i; i<strategyParams.length; i++){
+            weight += shares[i] * strategyParams[i].multiplier;
+
         }
         weight = weight / BPS;
         return weight >= minimumWeight ? weight : 0;
