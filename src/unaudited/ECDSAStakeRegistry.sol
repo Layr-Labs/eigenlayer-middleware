@@ -392,6 +392,7 @@ contract ECDSAStakeRegistry is
     /// @param _referenceBlock The block number to verify the stake threshold for
     function _validateThresholdStake(uint256 _signedWeight, uint32 _referenceBlock) internal view {
         uint256 totalWeight = _getTotalWeight(_referenceBlock);
+        if (_signedWeight > totalWeight) revert InvalidSignedWeight();
         if (_getThresholdStake(_referenceBlock) > (_signedWeight * BPS) / totalWeight)
             revert InsufficientSignedStake();
     }

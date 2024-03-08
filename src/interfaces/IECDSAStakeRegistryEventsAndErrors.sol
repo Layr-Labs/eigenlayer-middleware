@@ -61,6 +61,9 @@ interface ECDSAStakeRegistryEventsAndErrors {
     /// @notice Indicates encountering an invalid signature.
     error InvalidSignature();
 
+    /// @notice Indicates operator weights were out of sync and the signed weight exceed the total
+    error InvalidSignedWeight();
+
     /// @notice Indicates the total signed stake fails to meet the required threshold.
     error InsufficientSignedStake();
 
