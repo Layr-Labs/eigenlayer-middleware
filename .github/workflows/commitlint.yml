@@ -2,9 +2,6 @@ name: CI
 
 on: 
   pull_request:
-    dev
-    master
-    testnet-goerli
   push:
     branches-ignore:
       master
