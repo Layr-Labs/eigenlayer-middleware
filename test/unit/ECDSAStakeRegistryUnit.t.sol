@@ -559,6 +559,26 @@ function test_UpdateQuorumConfig() public {
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InsufficientSignedStake.selector);
         registry.isValidSignature(msgHash, abi.encode(signers, signatures, referenceBlock));
     }
+
+    function test_Gas_UpdateOperators() public {
+        uint256 before = gasleft();
+        vm.pauseGasMetering();
+        vm.prank(operator1);
+        registry.deregisterOperator();
+        vm.prank(operator2);
+        registry.deregisterOperator();
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        address[] memory operators = new address[](200);
+        for (uint256 i; i< operators.length;i++) {
+            operators[i]=address(uint160(i));
+            registry.registerOperatorWithSignature(operators[i], operatorSignature);
+        }
+        vm.resumeGasMetering();
+        registry.updateOperators(operators);
+
+        emit log_named_uint("Gas consumed",before - gasleft());
+    }
 }
 
 

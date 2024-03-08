@@ -188,9 +188,11 @@ contract ECDSAStakeRegistry is
 
     function _updateOperators(address[] memory _operators) internal {
         if (_operators.length != _totalOperators) revert MustUpdateAllOperators();
+        int256 delta;
         for (uint256 i; i < _operators.length; i++) {
-            _updateOperatorWeight(_operators[i]);
+            delta += _updateOperatorWeight(_operators[i]);
         }
+        _updateTotalWeight(delta);
     }
 
     function _updateStakeThreshold(uint256 _thresholdWeightBps) internal {
@@ -224,7 +226,8 @@ contract ECDSAStakeRegistry is
         if (!_operatorRegistered[_operator]) revert OperatorNotRegistered();
         _totalOperators--;
         delete _operatorRegistered[_operator];
-        _updateOperatorWeight(_operator);
+        int256 delta = _updateOperatorWeight(_operator);
+        _updateTotalWeight(delta);
         IServiceManager(serviceManager).deregisterOperatorFromAVS(_operator);
         emit OperatorDeregistered(_operator, address(serviceManager));
     }
@@ -238,14 +241,15 @@ contract ECDSAStakeRegistry is
         if (_operatorRegistered[_operator]) revert OperatorAlreadyRegistered();
         _totalOperators++;
         _operatorRegistered[_operator] = true;
-        _updateOperatorWeight(_operator);
+        int256 delta = _updateOperatorWeight(_operator);
+        _updateTotalWeight(delta);
         IServiceManager(serviceManager).registerOperatorToAVS(_operator, _operatorSignature);
         emit OperatorRegistered(_operator, serviceManager);
     }
 
     /// @notice Updates the weight of an operator and returns the previous and current weights.
     /// @param _operator The address of the operator to update the weight of.
-    function _updateOperatorWeight(address _operator) internal virtual {
+    function _updateOperatorWeight(address _operator) internal virtual returns (int256){
         int256 delta;
         uint256 oldWeight;
         uint256 newWeight;
@@ -257,8 +261,8 @@ contract ECDSAStakeRegistry is
             (oldWeight, ) = _operatorWeightHistory[_operator].push(newWeight);
             delta = int256(newWeight) - int256(oldWeight);
         }
-        _updateTotalWeight(delta);
         emit OperatorWeightUpdated(_operator, oldWeight, newWeight);
+        return delta;
     }
 
     /// @dev Internal function to update the total weight of the stake
