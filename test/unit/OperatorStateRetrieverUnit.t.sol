@@ -435,6 +435,27 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         }
     }
 
+    function test_getQuorumBitmapsAtBlockNumber_returnsCorrect() public {
+        uint256 quorumBitmapOne = 1;
+        uint256 quorumBitmapThree = 3;
+        cheats.roll(registrationBlockNumber);
+        _registerOperatorWithCoordinator(defaultOperator, quorumBitmapOne, defaultPubKey);
+
+        address otherOperator = _incrementAddress(defaultOperator, 1);
+        BN254.G1Point memory otherPubKey = BN254.G1Point(1, 2);
+        bytes32 otherOperatorId = BN254.hashG1Point(otherPubKey);
+        _registerOperatorWithCoordinator(otherOperator, quorumBitmapThree, otherPubKey, defaultStake -1);
+
+        bytes32[] memory operatorIds = new bytes32[](2);
+        operatorIds[0] = defaultOperatorId;
+        operatorIds[1] = otherOperatorId;
+        uint256[] memory quorumBitmaps = operatorStateRetriever.getQuorumBitmapsAtBlockNumber(registryCoordinator, operatorIds, uint32(block.number));
+
+        assertEq(quorumBitmaps.length, 2);
+        assertEq(quorumBitmaps[0], quorumBitmapOne);
+        assertEq(quorumBitmaps[1], quorumBitmapThree);
+    }
+
     function _assertExpectedOperators(
         bytes memory quorumNumbers,
         OperatorStateRetriever.Operator[][] memory operators,
