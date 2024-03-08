@@ -53,4 +53,7 @@ contract RegistryCoordinatorHarness is RegistryCoordinator {
         return BitmapUtils.isSet(bitmap, numberToCheckForInclusion);
     }
 
+    function hashToG1Harness(bytes32 x) public pure returns (BN254.G1Point memory) {
+        return BN254.G1Point(uint256(keccak256(abi.encodePacked(x))), 2);
+    }
 }

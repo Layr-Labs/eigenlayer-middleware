@@ -3,6 +3,7 @@ using StakeRegistryHarness as stakeRegistry;
 using BLSApkRegistryHarness as blsApkRegistry;
 using IndexRegistryHarness as indexRegistry;
 // using DelegationManager as delegation;
+// using BN254;
 use builtin rule sanity;
 
 methods {
@@ -12,14 +13,16 @@ methods {
     
     // BN254 Library
     function BN254.pairing(BN254.G1Point memory, BN254.G2Point memory, BN254.G1Point memory, BN254.G2Point memory) internal returns (bool) => NONDET;
+    function BN254.hashToG1(bytes32 x) internal returns (BN254.G1Point memory) => hashToG1Ghost(x);
+    // function BN254.pairing(BN254.G1Point memory, BN254.G2Point memory, BN254.G1Point memory, BN254.G2Point memory) internal returns (bool) => NONDET;
 
     // external calls to ServiceManager
-    function _.registerOperatorToAVS(address, ISignatureUtils.SignatureWithSaltAndExpiry) external => DISPATCHER(true);
-    function _.deregisterOperatorFromAVS(address) external => DISPATCHER(true);
+    function _.registerOperatorToAVS(address, ISignatureUtils.SignatureWithSaltAndExpiry) external => NONDET;
+    function _.deregisterOperatorFromAVS(address) external => NONDET;
 
     // Registry contracts
     function StakeRegistryHarness.totalStakeHistory(uint8) external returns (IStakeRegistry.StakeUpdate[]) envfree;
-    function StakeRegistry._weightOfOperatorForQuorum(uint8, address) internal returns (uint96, bool) => NONDET;
+    function StakeRegistry._weightOfOperatorForQuorum(uint8 quorumNumber, address operator) internal returns (uint96, bool) => weightOfOperatorGhost(quorumNumber, operator);
 
     function IndexRegistryHarness.operatorCountHistory(uint8) external returns (IIndexRegistry.QuorumUpdate[]) envfree;
     
@@ -37,18 +40,29 @@ methods {
     function bytesArrayContainsDuplicates(bytes bytesArray) external returns (bool) envfree;
     function bytesArrayIsSubsetOfBitmap(uint256 referenceBitmap, bytes arrayWhichShouldBeASubsetOfTheReference) external returns (bool) envfree;
     function quorumInBitmap(uint256 bitmap, uint8 numberToCheckForInclusion) external returns (bool) envfree;
+    function hashToG1Harness(bytes32 x) external returns (BN254.G1Point memory) envfree;
 }
 ghost address unpauser;
 ghost mapping(address => bool) pausers;
+ghost mapping(uint8 => mapping(address => uint96)) operatorWeight;
+
 function isPauserCVL(address user) returns bool {
     return pausers[user];
 }
 
-// invariant initializedQuorumHistories(uint8 quorumNumber)
-//     quorumNumber < currentContract.quorumCount <=> 
-//         stakeRegistry._totalStakeHistory[quorumNumber].length != 0 && 
-//         indexRegistry._operatorCountHistory[quorumNumber].length != 0 &&
-//         blsApkRegistry.apkHistory[quorumNumber].length != 0;
+function hashToG1Ghost(bytes32 x) returns BN254.G1Point {
+    return hashToG1Harness(x);
+}
+
+function weightOfOperatorGhost(uint8 quorumNumber, address operator) returns (uint96, bool) {
+    bool val;
+    return (operatorWeight[quorumNumber][operator], val);
+}
+
+// If my Operator status is REGISTERED ⇔ my quorum bitmap MUST BE nonzero
+invariant registeredOperatorsHaveNonzeroBitmaps(env e, address operator)
+    getOperatorStatus(operator) == IRegistryCoordinator.OperatorStatus.REGISTERED <=>
+        getCurrentQuorumBitmap(e, getOperatorId(operator)) != 0;
 
 invariant initializedQuorumHistories(uint8 quorumNumber)
     quorumNumber < currentContract.quorumCount <=> 
@@ -58,7 +72,8 @@ invariant initializedQuorumHistories(uint8 quorumNumber)
 
 /// @notice unique address <=> unique operatorId
 invariant oneIdPerOperator(address operator1, address operator2)
-    operator1 != operator2 => getOperatorId(operator1) != getOperatorId(operator2);
+    operator1 != operator2 && getOperatorId(operator1) != to_bytes32(0)
+        => getOperatorId(operator1) != getOperatorId(operator2);
 
 /// @notice one way implication as IndexRegistry.currentOperatorIndex does not get updated on operator deregistration
 invariant operatorIndexWithinRange(env e, address operator, uint8 quorumNumber, uint256 blocknumber, uint256 index)
@@ -66,7 +81,25 @@ invariant operatorIndexWithinRange(env e, address operator, uint8 quorumNumber, 
     quorumInBitmap(assert_uint256(getCurrentQuorumBitmap(e, getOperatorId(operator))), quorumNumber) =>
         indexRegistry.currentOperatorIndex(e, quorumNumber, getOperatorId(operator)) < indexRegistry.totalOperatorsForQuorum(e, quorumNumber)
     {
-        preserved deregisterOperator(bytes quorumNumbers) with (e) {
-            requireInvariant oneIdPerOperator(operator, e.msg.sender);
+        preserved deregisterOperator(bytes quorumNumbers) with (env e2) {
+            requireInvariant oneIdPerOperator(operator, e2.msg.sender);
         }
     }
+
+// Operator cant go from registered to NEVER_REGISTERED. Can write some parametric rule
+rule registeredOperatorCantBeNeverRegistered(address operator) {
+    require(getOperatorStatus(operator) != IRegistryCoordinator.OperatorStatus.NEVER_REGISTERED);
+
+    calldataarg arg;
+    env e;
+    method f;
+    f(e, arg);
+
+    assert(getOperatorStatus(operator) != IRegistryCoordinator.OperatorStatus.NEVER_REGISTERED);
+}
+
+// if operator is registered for quorum number then 
+// operator has stake weight >= minStakeWeight(quorumNumber)
+invariant operatorHasNonZeroStakeWeight(env e, address operator, uint8 quorumNumber)
+    quorumInBitmap(assert_uint256(getCurrentQuorumBitmap(e, getOperatorId(operator))), quorumNumber) =>
+        stakeRegistry.weightOfOperatorForQuorum(e, quorumNumber, operator) >= stakeRegistry.minimumStakeForQuorum(e, quorumNumber);
