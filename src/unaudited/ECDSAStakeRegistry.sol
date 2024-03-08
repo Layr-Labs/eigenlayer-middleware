@@ -73,16 +73,16 @@ contract ECDSAStakeRegistry is
     /// @dev Access controlled to the contract owner
     /// @param _quorum The new quorum configuration
     function updateQuorumConfig(Quorum memory _quorum, address[] memory _operators) external onlyOwner {
-        _updateOperators(_operators);
         _updateQuorumConfig(_quorum);
+        _updateOperators(_operators);
     }
 
     /// @notice Updates the weight an operator must have to join the operator set
     /// @dev Access controlled to the contract owner
     /// @param _newMinimumWeight The new weight an operator must have to join the operator set
     function updateMinimumWeight(uint256 _newMinimumWeight, address[] memory _operators) external onlyOwner {
-        _updateOperators(_operators);
         _updateMinimumWeight(_newMinimumWeight);
+        _updateOperators(_operators);
     }
 
     /**
