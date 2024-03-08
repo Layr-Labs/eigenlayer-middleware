@@ -399,6 +399,24 @@ function test_UpdateQuorumConfig() public {
         registry.isValidSignature(msgHash, abi.encode(signers, signatures, type(uint32).max));
     }
 
+    function test_RevertsWhen_Duplicates_CheckSignatures() public {
+        msgHash = keccak256("data");
+        signers = new address[](2);
+        signers[1]=operator1;
+        signers[0]=operator1;
+
+        /// Duplicate
+        assertEq(signers[0], signers[1]);
+        registry.updateOperators(signers);
+        signatures = new bytes[](2);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(operator1Pk, msgHash);
+        signatures[0] = abi.encodePacked(r, s, v);
+        signatures[1] = abi.encodePacked(r, s, v);
+
+        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
+        registry.isValidSignature(msgHash, abi.encode(signers, signatures, type(uint32).max));
+    }
+
     function test_RevetsWhen_InvalidSignature_CheckSignatures() public {
         bytes32 dataHash = keccak256("data");
         address[] memory signers = new address[](1);
