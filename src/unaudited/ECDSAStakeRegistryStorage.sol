@@ -12,6 +12,9 @@ abstract contract ECDSAStakeRegistryStorage is ECDSAStakeRegistryEventsAndErrors
     /// @dev The total amount of multipliers to weigh stakes
     uint256 internal constant BPS = 10_000;
 
+    /// @notice The size of the current operator set
+    uint256 internal _totalOperators;
+
     /// @notice Stores the current quorum configuration
     Quorum internal _quorum;
 

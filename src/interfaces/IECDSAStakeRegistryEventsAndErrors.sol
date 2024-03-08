@@ -61,6 +61,9 @@ interface ECDSAStakeRegistryEventsAndErrors {
     /// @notice Indicates encountering an invalid signature.
     error InvalidSignature();
 
+    /// @notice Thrown when missing operators in an update 
+    error MustUpdateAllOperators();
+
     /// @notice Indicates operator weights were out of sync and the signed weight exceed the total
     error InvalidSignedWeight();
 
@@ -76,7 +79,9 @@ interface ECDSAStakeRegistryEventsAndErrors {
     /// @notice Indicates the system finds a list of items unsorted
     error NotSorted();
 
+    /// @notice Thrown when registering an already registered operator
     error OperatorAlreadyRegistered();
 
+    /// @notice Thrown when de-registering or updating the stake for an unregisted operator
     error OperatorNotRegistered();
 }

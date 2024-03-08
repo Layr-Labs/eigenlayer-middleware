@@ -66,22 +66,22 @@ contract ECDSAStakeRegistry is
      * @param _operators A list of operator addresses to update
      */
     function updateOperators(address[] memory _operators) external {
-        for (uint256 i; i < _operators.length; i++) {
-            _updateOperatorWeight(_operators[i]);
-        }
+        _updateOperators(_operators);
     }
 
     /// @notice Updates the strategies and their weights for the quourum
     /// @dev Access controlled to the contract owner
     /// @param _quorum The new quorum configuration
-    function updateQuorumConfig(Quorum memory _quorum) external onlyOwner {
+    function updateQuorumConfig(Quorum memory _quorum, address[] memory _operators) external onlyOwner {
+        _updateOperators(_operators);
         _updateQuorumConfig(_quorum);
     }
 
     /// @notice Updates the weight an operator must have to join the operator set
     /// @dev Access controlled to the contract owner
     /// @param _newMinimumWeight The new weight an operator must have to join the operator set
-    function updateMinimumWeight(uint256 _newMinimumWeight) external onlyOwner {
+    function updateMinimumWeight(uint256 _newMinimumWeight, address[] memory _operators) external onlyOwner {
+        _updateOperators(_operators);
         _updateMinimumWeight(_newMinimumWeight);
     }
 
@@ -186,6 +186,13 @@ contract ECDSAStakeRegistry is
         __Pausable_init();
     }
 
+    function _updateOperators(address[] memory _operators) internal {
+        if (_operators.length != _totalOperators) revert MustUpdateAllOperators();
+        for (uint256 i; i < _operators.length; i++) {
+            _updateOperatorWeight(_operators[i]);
+        }
+    }
+
     function _updateStakeThreshold(uint256 _thresholdWeightBps) internal {
         _thresholdWeightBpsHistory.push(_thresholdWeightBps);
         emit ThresholdWeightUpdated(_thresholdWeightBps);
@@ -215,6 +222,7 @@ contract ECDSAStakeRegistry is
     /// @param _operator The operator's address to deregister
     function _deregisterOperator(address _operator) internal {
         if (!_operatorRegistered[_operator]) revert OperatorNotRegistered();
+        _totalOperators--;
         delete _operatorRegistered[_operator];
         _updateOperatorWeight(_operator);
         IServiceManager(serviceManager).deregisterOperatorFromAVS(_operator);
@@ -228,6 +236,7 @@ contract ECDSAStakeRegistry is
         ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature
     ) internal virtual {
         if (_operatorRegistered[_operator]) revert OperatorAlreadyRegistered();
+        _totalOperators++;
         _operatorRegistered[_operator] = true;
         _updateOperatorWeight(_operator);
         IServiceManager(serviceManager).registerOperatorToAVS(_operator, _operatorSignature);
@@ -329,6 +338,7 @@ contract ECDSAStakeRegistry is
         if (_signersLength == 0) revert InvalidLength();
     }
 
+
     /// @notice Ensures that signers are sorted in ascending order by address.
     /// @param _lastSigner The address of the last signer.
     /// @param _currentSigner The address of the current signer.
@@ -347,6 +357,7 @@ contract ECDSAStakeRegistry is
     ) internal view {
         if (!_signer.isValidSignatureNow(_dataHash, _signature)) revert InvalidSignature();
     }
+
 
     /// @notice Retrieves the operator weight for a signer, either at the last checkpoint or a specified block.
     /// @param _signer The address of the signer whose weight is returned.

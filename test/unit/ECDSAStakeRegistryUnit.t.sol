@@ -79,11 +79,14 @@ function test_UpdateQuorumConfig() public {
         Quorum memory oldQuorum = registry.quorum();
         Quorum memory newQuorum = Quorum({strategies: new StrategyParams[](1)});
         newQuorum.strategies[0] = StrategyParams({strategy: mockStrategy, multiplier: 10000});
+        address[] memory operators  = new address[](2);
+        operators[0] = operator1;
+        operators[1] = operator2;
 
         vm.expectEmit(true, true, false, true);
         emit QuorumUpdated(oldQuorum, newQuorum);
 
-        registry.updateQuorumConfig(newQuorum);
+        registry.updateQuorumConfig(newQuorum, operators);
     }
 
     function test_RevertsWhen_InvalidQuorum_UpdateQuourmConfig() public {
@@ -93,53 +96,72 @@ function test_UpdateQuorumConfig() public {
             strategy: IStrategy(address(420)),
             multiplier: 5000 // This should cause the update to revert as it's not the total required
         });
+        address[] memory operators  = new address[](2);
+        operators[0] = operator1;
+        operators[1] = operator2;
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InvalidQuorum.selector);
-        registry.updateQuorumConfig(invalidQuorum);
+        registry.updateQuorumConfig(invalidQuorum, operators);
     }
 
     function test_RevertsWhen_NotOwner_UpdateQuorumConfig() public {
         Quorum memory validQuorum = Quorum({strategies: new StrategyParams[](1)});
         validQuorum.strategies[0] = StrategyParams({strategy: IStrategy(address(420)), multiplier: 10000});
 
+        address[] memory operators  = new address[](2);
+        operators[0] = operator1;
+        operators[1] = operator2;
+
         address nonOwner = address(0x123);
         vm.prank(nonOwner);
 
         vm.expectRevert("Ownable: caller is not the owner");
-        registry.updateQuorumConfig(validQuorum);
+        registry.updateQuorumConfig(validQuorum, operators);
     }
 
     function test_RevertsWhen_SameQuorum_UpdateQuorumConfig() public {
         Quorum memory quorum = registry.quorum();
+        address[] memory operators  = new address[](2);
+        operators[0] = operator1;
+        operators[1] = operator2;
 
         /// Showing this doesnt revert
-        registry.updateQuorumConfig(quorum);
+        registry.updateQuorumConfig(quorum, operators);
     }
 
     function test_RevertSWhen_Duplicate_UpdateQuorumConfig() public {
         Quorum memory validQuorum = Quorum({strategies: new StrategyParams[](2)});
         validQuorum.strategies[0] = StrategyParams({strategy: IStrategy(address(420)), multiplier: 5_000});
+        address[] memory operators  = new address[](2);
+        operators[0] = operator1;
+        operators[1] = operator2;
 
         validQuorum.strategies[1] = StrategyParams({strategy: IStrategy(address(420)), multiplier: 5_000});
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
-        registry.updateQuorumConfig(validQuorum);
+        registry.updateQuorumConfig(validQuorum, operators);
     }
 
     function test_RevertSWhen_NotSorted_UpdateQuorumConfig() public {
         Quorum memory validQuorum = Quorum({strategies: new StrategyParams[](2)});
         validQuorum.strategies[0] = StrategyParams({strategy: IStrategy(address(420)), multiplier: 5_000});
+        address[] memory operators  = new address[](2);
+        operators[0] = operator1;
+        operators[1] = operator2;
 
         validQuorum.strategies[1] = StrategyParams({strategy: IStrategy(address(419)), multiplier: 5_000});
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
-        registry.updateQuorumConfig(validQuorum);
+        registry.updateQuorumConfig(validQuorum, operators);
     }
 
     function test_RevertSWhen_OverMultiplierTotal_UpdateQuorumConfig() public {
         Quorum memory validQuorum = Quorum({strategies: new StrategyParams[](1)});
         validQuorum.strategies[0] = StrategyParams({strategy: IStrategy(address(420)), multiplier: 10001});
+        address[] memory operators  = new address[](2);
+        operators[0] = operator1;
+        operators[1] = operator2;
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InvalidQuorum.selector);
-        registry.updateQuorumConfig(validQuorum);
+        registry.updateQuorumConfig(validQuorum,operators);
     }
 
     function test_RegisterOperatorWithSignature() public {
@@ -197,15 +219,19 @@ function test_UpdateQuorumConfig() public {
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.OperatorNotRegistered.selector);
         registry.deregisterOperator();
     }
-    function test_When_Empty_UpdateOperators() public {
+    function test_RevertsWhen_Empty_UpdateOperators() public {
         address[] memory operators = new address[](0);
+        vm.expectRevert(abi.encodeWithSelector(MustUpdateAllOperators.selector));
         registry.updateOperators(operators);
     }
 
-    function test_When_OperatorNotRegistered_UpdateOperators() public {
-        address[] memory operators = new address[](1);
-        address operator3;
-        operators[0] = operator3;
+    function test_RevertsWhen_OperatorNotRegistered_UpdateOperators() public {
+        address[] memory operators = new address[](3);
+        address operator3 = address(0xBEEF);
+        operators[0] = operator1;
+        operators[1] = operator2;
+        operators[2] = operator3;
+        vm.expectRevert(abi.encodeWithSelector(MustUpdateAllOperators.selector));
         registry.updateOperators(operators);
         assertEq(registry.getLastCheckpointOperatorWeight(operator3), 0);
 
@@ -215,6 +241,7 @@ function test_UpdateQuorumConfig() public {
         address[] memory operators = new address[](1);
         operators[0] = operator1;
 
+        vm.expectRevert(abi.encodeWithSelector(MustUpdateAllOperators.selector));
         registry.updateOperators(operators);
         uint256 updatedWeight = registry.getLastCheckpointOperatorWeight(operator1);
         assertEq(updatedWeight, 1000);
@@ -273,10 +300,11 @@ function test_UpdateQuorumConfig() public {
         quorum.strategies[0] = StrategyParams({strategy: mockStrategy, multiplier: 5_000});
         quorum.strategies[1] = StrategyParams({strategy: mockStrategy2, multiplier: 5_000});
 
-        registry.updateQuorumConfig(quorum);
         address[] memory operators = new address[](2);
         operators[0] = operator1;
         operators[1] = operator2;
+
+        registry.updateQuorumConfig(quorum, operators);
 
         address[] memory strategies = new address[](2);
         uint256[] memory shares = new uint256[](2);
@@ -305,7 +333,10 @@ function test_UpdateQuorumConfig() public {
 
         assertEq(initialMinimumWeight, 0); // Assuming initial state is 0
 
-        registry.updateMinimumWeight(newMinimumWeight);
+        address[] memory operators  = new address[](2);
+        operators[0] = operator1;
+        operators[1] = operator2;
+        registry.updateMinimumWeight(newMinimumWeight, operators);
 
         uint256 updatedMinimumWeight = registry.minimumWeight();
         assertEq(updatedMinimumWeight, newMinimumWeight);
@@ -313,14 +344,20 @@ function test_UpdateQuorumConfig() public {
 
     function test_RevertsWhen_NotOwner_UpdateMinimumWeight() public {
         uint256 newMinimumWeight = 5000;
+        address[] memory operators  = new address[](2);
+        operators[0] = operator1;
+        operators[1] = operator2;
         vm.prank(address(0xBEEF)); // An arbitrary non-owner address
         vm.expectRevert("Ownable: caller is not the owner");
-        registry.updateMinimumWeight(newMinimumWeight);
+        registry.updateMinimumWeight(newMinimumWeight, operators);
     }
 
     function test_When_SameWeight_UpdateMinimumWeight() public {
         uint256 initialMinimumWeight = 5000;
-        registry.updateMinimumWeight(initialMinimumWeight);
+        address[] memory operators  = new address[](2);
+        operators[0] = operator1;
+        operators[1] = operator2;
+        registry.updateMinimumWeight(initialMinimumWeight, operators);
 
         uint256 updatedMinimumWeight = registry.minimumWeight();
         assertEq(updatedMinimumWeight, initialMinimumWeight);
@@ -328,11 +365,14 @@ function test_UpdateQuorumConfig() public {
 
     function test_When_Weight0_UpdateMinimumWeight() public {
         uint256 initialMinimumWeight = 5000;
-        registry.updateMinimumWeight(initialMinimumWeight);
+        address[] memory operators  = new address[](2);
+        operators[0] = operator1;
+        operators[1] = operator2;
+        registry.updateMinimumWeight(initialMinimumWeight, operators);
 
         uint256 newMinimumWeight = 0;
 
-        registry.updateMinimumWeight(newMinimumWeight);
+        registry.updateMinimumWeight(newMinimumWeight, operators);
 
         uint256 updatedMinimumWeight = registry.minimumWeight();
         assertEq(updatedMinimumWeight, newMinimumWeight);
