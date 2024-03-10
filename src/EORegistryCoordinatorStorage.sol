@@ -81,5 +81,5 @@ abstract contract EORegistryCoordinatorStorage is IEORegistryCoordinator {
 
     // storage gap for upgradeability
     // slither-disable-next-line shadowing-state
-    uint256[41] private __GAP;
+    uint256[40] private __GAP;
 }
