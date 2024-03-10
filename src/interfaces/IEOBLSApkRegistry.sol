@@ -23,7 +23,8 @@ interface IEOBLSApkRegistry is IRegistry {
 
     /**
      * @notice Struct used when registering a new public key
-     * @param signedMessageHash is the registration message hash signed by the private key of the operator
+     * @param pubkeyRegistrationSignature is a registration message hash signed by the private key of the operator
+     * @param chainValidatorSignature is a signature of a chain validator on a registration message hash
      * @param pubkeyG1 is the corresponding G1 public key of the operator 
      * @param pubkeyG2 is the corresponding G2 public key of the operator
      */     

@@ -142,7 +142,7 @@ contract EORegistryCoordinator is
             quorumNumbers: quorumNumbers, 
             operatorSignature: operatorSignature,
             chainValidatorSignature : params.chainValidatorSignature,
-            chainValidatorG2Signature: params.pubkeyG2
+            pubkeyG2: params.pubkeyG2
         }).numOperatorsPerQuorum;
 
         // For each quorum, validate that the new operator count does not exceed the maximum
@@ -203,7 +203,7 @@ contract EORegistryCoordinator is
             quorumNumbers: quorumNumbers,
             operatorSignature: operatorSignature,
             chainValidatorSignature: params.chainValidatorSignature,
-            chainValidatorG2Signature: params.pubkeyG2
+            pubkeyG2: params.pubkeyG2
         });
 
         // Check that each quorum's operator count is below the configured maximum. If the max
@@ -438,7 +438,7 @@ contract EORegistryCoordinator is
         bytes calldata quorumNumbers,
         SignatureWithSaltAndExpiry memory operatorSignature,
         BN254.G1Point memory chainValidatorSignature,
-        BN254.G2Point memory chainValidatorG2Signature
+        BN254.G2Point memory pubkeyG2
     ) internal virtual returns (RegisterResults memory results) {
         /**
          * Get bitmap of quorums to register for and operator's current bitmap. Validate that:
@@ -484,9 +484,9 @@ contract EORegistryCoordinator is
         results.numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
         if (address(chainManager) != address(0)){
             // check if is a valid chain validator signature. if not register as a data validator
-            if ( chainValidatorSignature.X != 0 && chainValidatorSignature.Y != 0 && chainValidatorG2Signature.X[0] != 0 && chainValidatorG2Signature.X[1] != 0 && chainValidatorG2Signature.Y[0] != 0 && chainValidatorG2Signature.Y[1] != 0){
+            if ( chainValidatorSignature.X != 0 && chainValidatorSignature.Y != 0 && pubkeyG2.X[0] != 0 && pubkeyG2.X[1] != 0 && pubkeyG2.Y[0] != 0 && pubkeyG2.Y[1] != 0){
                 // chain validator expects the sig and pubkey spread as arrays.
-                chainManager.registerChainValidator(operator, results.operatorStakes, [chainValidatorSignature.X ,chainValidatorSignature.Y],[chainValidatorG2Signature.X[0],chainValidatorG2Signature.X[1],chainValidatorG2Signature.Y[0],chainValidatorG2Signature.Y[1]]);
+                chainManager.registerChainValidator(operator, results.operatorStakes, [chainValidatorSignature.X ,chainValidatorSignature.Y],[pubkeyG2.X[0],pubkeyG2.X[1],pubkeyG2.Y[0],pubkeyG2.Y[1]]);
             }
             else{
                 chainManager.registerDataValidator(operator, results.operatorStakes);
