@@ -13,7 +13,7 @@ import {IEOStakeRegistry} from "./interfaces/IEOStakeRegistry.sol";
 
 /**
  * @title Minimal implementation of a ServiceManager-type contract.
- * This contract can inherited from or simply used as a point-of-reference.
+ * This contract can be inherited from or simply used as a point-of-reference.
  * @author Layr Labs, Inc.
  */
 abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {

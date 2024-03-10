@@ -62,12 +62,9 @@ library BitmapUtils {
     function orderedBytesArrayToBitmap(bytes memory orderedBytesArray, uint8 bitUpperBound) internal pure returns (uint256) {
         uint256 bitmap = orderedBytesArrayToBitmap(orderedBytesArray);
 
-        if (bitmap != 0) {
-            require(
-                uint8(orderedBytesArray[orderedBytesArray.length - 1]) < bitUpperBound, 
-                "BitmapUtils.orderedBytesArrayToBitmap: bitmap exceeds max value"
-            );
-        }
+        require((1 << bitUpperBound) > bitmap, 
+            "BitmapUtils.orderedBytesArrayToBitmap: bitmap exceeds max value"
+        );
 
         return bitmap;
     }
@@ -80,32 +77,29 @@ library BitmapUtils {
      * It also returns 'false' early for arrays with length in excess of MAX_BYTE_ARRAY_LENGTH (i.e. so long that they cannot be strictly ordered)
      */
     function isArrayStrictlyAscendingOrdered(bytes calldata bytesArray) internal pure returns (bool) {
-        // return 'false' early for too-long (i.e. unorderable) arrays
+        // Return early if the array is too long, or has a length of 0
         if (bytesArray.length > MAX_BYTE_ARRAY_LENGTH) {
             return false;
         }
 
-        // return 'true' early if length of array is 0
         if (bytesArray.length == 0) {
             return true;
         }
 
-        // initialize an empty byte object, to be re-used inside the loop
-        bytes1 singleByte;
+        // Perform the 0-th loop iteration by pulling the 0th byte out of the array
+        bytes1 singleByte = bytesArray[0];
 
-        // perform the 0-th loop iteration with the ordering check *omitted* (otherwise it will break with an out-of-bounds error)
-        // pull the 0th byte out of the array
-        singleByte = bytesArray[0];
-
-        // loop through each byte in the array to construct the bitmap
+        // For each byte, validate that each entry is *strictly greater than* the previous
+        // If it isn't, return false as the array is not ordered
         for (uint256 i = 1; i < bytesArray.length; ++i) {
-            // check if the entry is *less than or equal to* the previous entry. if it is, then the array isn't strictly ordered!
             if (uint256(uint8(bytesArray[i])) <= uint256(uint8(singleByte))) {
                 return false;
             }
-            // pull the next byte out of the array
+            
+            // Pull the next byte out of the array
             singleByte = bytesArray[i];
         }
+        
         return true;
     }
 

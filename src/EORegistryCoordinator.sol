@@ -281,14 +281,10 @@ contract EORegistryCoordinator is
         bytes calldata quorumNumbers
     ) external onlyWhenNotPaused(PAUSED_UPDATE_OPERATOR) {
         // Input validation 
-        // - all quorums should exist
+        // - all quorums should exist (checked against `quorumCount` in orderedBytesArrayToBitmap)
         // - there should be no duplicates in `quorumNumbers`
         // - there should be one list of operators per quorum
         uint192 quorumBitmap = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
-        require(
-            _quorumsAllExist(quorumBitmap), 
-            "updateOperatorsForQuorum: some quorums do not exist"
-        );
         require(
             operatorsPerQuorum.length == quorumNumbers.length,
             "updateOperatorsForQuorum: input length mismatch"
@@ -447,13 +443,13 @@ contract EORegistryCoordinator is
         /**
          * Get bitmap of quorums to register for and operator's current bitmap. Validate that:
          * - we're trying to register for at least 1 quorum
+         * - the quorums we're registering for exist (checked against `quorumCount` in orderedBytesArrayToBitmap)
          * - the operator is not currently registered for any quorums we're registering for
          * Then, calculate the operator's new bitmap after registration
          */
         uint192 quorumsToAdd = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         uint192 currentBitmap = _currentOperatorBitmap(operatorId);
         require(!quorumsToAdd.isEmpty(), "_registerOperator: bitmap cannot be 0");
-        require(_quorumsAllExist(quorumsToAdd), "_registerOperator: some quorums do not exist");
         require(quorumsToAdd.noBitsInCommon(currentBitmap), "_registerOperator: operator already registered for some quorums being registered for");
         uint192 newBitmap = uint192(currentBitmap.plus(quorumsToAdd));
 
@@ -578,13 +574,13 @@ contract EORegistryCoordinator is
         /**
          * Get bitmap of quorums to deregister from and operator's current bitmap. Validate that:
          * - we're trying to deregister from at least 1 quorum
+         * - the quorums we're deregistering from exist (checked against `quorumCount` in orderedBytesArrayToBitmap)
          * - the operator is currently registered for any quorums we're trying to deregister from
          * Then, calculate the operator's new bitmap after deregistration
          */
         uint192 quorumsToRemove = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         uint192 currentBitmap = _currentOperatorBitmap(operatorId);
         require(!quorumsToRemove.isEmpty(), "_deregisterOperator: bitmap cannot be 0");
-        require(_quorumsAllExist(quorumsToRemove), "_deregisterOperator: some quorums do not exist");
         require(quorumsToRemove.isSubsetOf(currentBitmap), "_deregisterOperator: operator is not registered for specified quorums");
         uint192 newBitmap = uint192(currentBitmap.minus(quorumsToRemove));
 
@@ -736,14 +732,6 @@ contract EORegistryCoordinator is
                 }));
             }
         }
-    }
-
-    /**
-     * @notice Returns true iff all of the bits in `quorumBitmap` belong to initialized quorums
-     */
-     function _quorumsAllExist(uint192 quorumBitmap) internal view returns (bool) {
-        uint192 initializedQuorumBitmap = uint192((1 << quorumCount) - 1);
-        return quorumBitmap.isSubsetOf(initializedQuorumBitmap);
     }
 
     /// @notice Get the most recent bitmap for the operator, returning an empty bitmap if
