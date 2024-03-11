@@ -170,7 +170,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         require(operator != serviceManager.owner(), "bad test setup");
         cheats.prank(operator);
         cheats.expectRevert("Ownable: caller is not the owner");
-        serviceManager.setMetadataURI("Test MetadataURI");
+        serviceManager.updateAVSMetadataURI("Test MetadataURI");
     }
 
     event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
@@ -180,7 +180,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         cheats.prank(toPrankFrom);
         cheats.expectEmit(true, true, true, true);
         emit AVSMetadataURIUpdated(address(serviceManager), "Test MetadataURI");
-        serviceManager.setMetadataURI("Test MetadataURI");
+        serviceManager.updateAVSMetadataURI("Test MetadataURI");
     }
 
     // Utils
