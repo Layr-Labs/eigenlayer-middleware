@@ -186,6 +186,15 @@ contract ECDSAStakeRegistry is
         __Pausable_init();
     }
 
+    function updateOperatorsForQuorum(address[][] memory operatorsPerQuorum, bytes memory) external {
+        _updateAllOperators(operatorsPerQuorum[0]);
+    }
+
+    function _updateAllOperators (address[] memory _operators) internal {
+        if (_operators.length != _totalOperators) revert MustUpdateAllOperators();
+        _updateOperators(_operators);
+    }
+
     function _updateOperators(address[] memory _operators) internal {
         if (_operators.length != _totalOperators) revert MustUpdateAllOperators();
         int256 delta;
