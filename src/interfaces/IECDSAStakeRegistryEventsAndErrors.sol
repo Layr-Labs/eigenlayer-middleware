@@ -61,6 +61,9 @@ interface ECDSAStakeRegistryEventsAndErrors {
     /// @notice Indicates encountering an invalid signature.
     error InvalidSignature();
 
+    /// @notice Thrown when the threshold update is greater than BPS
+    error InvalidThreshold();
+
     /// @notice Thrown when missing operators in an update 
     error MustUpdateAllOperators();
 
