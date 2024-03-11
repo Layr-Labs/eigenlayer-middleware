@@ -88,19 +88,5 @@ contract ExistingDeploymentParser is Script, Test {
         baseStrategyImplementation = StrategyBase(stdJson.readAddress(existingDeploymentData, ".addresses.baseStrategyImplementation"));
         emptyContract = EmptyContract(stdJson.readAddress(existingDeploymentData, ".addresses.emptyContract"));
 
-        /*
-        commented out -- needs JSON formatting of the form:
-        strategies": [
-      {"WETH": "0x7CA911E83dabf90C90dD3De5411a10F1A6112184"},
-      {"rETH": "0x879944A8cB437a5f8061361f82A6d4EED59070b5"},
-      {"tsETH": "0xcFA9da720682bC4BCb55116675f16F503093ba13"},
-      {"wstETH": "0x13760F50a9d7377e4F20CB8CF9e4c26586c658ff"}]
-        // load strategy list
-        bytes memory strategyListRaw = stdJson.parseRaw(existingDeploymentData, ".addresses.strategies");
-        address[] memory strategyList = abi.decode(strategyListRaw, (address[]));
-        for (uint256 i = 0; i < strategyList.length; ++i) {
-            deployedStrategyArray.push(StrategyBase(strategyList[i]));
-        }
-        */
     }
 }
