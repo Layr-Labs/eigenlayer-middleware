@@ -9,18 +9,15 @@ import {IServiceManager} from "../interfaces/IServiceManager.sol";
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {CheckpointsUpgradeable} from "@openzeppelin-upgrades/contracts/utils/CheckpointsUpgradeable.sol";
-import {PausableUpgradeable} from "@openzeppelin-upgrades/contracts/security/PausableUpgradeable.sol";
 import {SignatureCheckerUpgradeable} from "@openzeppelin-upgrades/contracts/utils/cryptography/SignatureCheckerUpgradeable.sol";
 import {IERC1271Upgradeable} from "@openzeppelin-upgrades/contracts/interfaces/IERC1271Upgradeable.sol";
 
 /// @title ECDSA Stake Registry
 /// @notice THIS CONTRACT IS NOT AUDITED
 /// @notice Manages operator registration and quorum updates for an AVS using ECDSA signatures.
-/// @dev Extends OpenZeppelin's upgradeable Ownable and Pausable patterns to ensure upgradability and pause functionality.
 contract ECDSAStakeRegistry is
     IERC1271Upgradeable,
     OwnableUpgradeable,
-    PausableUpgradeable,
     ECDSAStakeRegistryStorage
 {
     using SignatureCheckerUpgradeable for address;
@@ -183,7 +180,6 @@ contract ECDSAStakeRegistry is
         _updateStakeThreshold(_thresholdWeightBps);
         _updateQuorumConfig(_quorum);
         __Ownable_init();
-        __Pausable_init();
     }
 
     function updateOperatorsForQuorum(address[][] memory operatorsPerQuorum, bytes memory) external {
