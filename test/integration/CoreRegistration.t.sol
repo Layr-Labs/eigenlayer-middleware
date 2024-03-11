@@ -7,11 +7,14 @@ import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAV
 import { DelegationManager } from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import { IDelegationManager } from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { RewardsCoordinator } from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
 import { IRewardsCoordinator } from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 =======
 import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 >>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
+=======
+>>>>>>> chore: remove duplicate imports (#197)
 
 contract Test_CoreRegistration is MockAVSDeployer {
     // Contracts
@@ -210,6 +213,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
     event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     function test_setMetadataURI() public {
         address toPrankFrom = serviceManager.owner();
         cheats.prank(toPrankFrom);
@@ -219,6 +223,10 @@ contract Test_CoreRegistration is MockAVSDeployer {
 =======
     function test_setMetadataURI() public {  
         address toPrankFrom = serviceManager.owner();      
+=======
+    function test_setMetadataURI() public {
+        address toPrankFrom = serviceManager.owner();
+>>>>>>> chore: remove duplicate imports (#197)
         cheats.prank(toPrankFrom);
         cheats.expectEmit(true, true, true, true);
         emit AVSMetadataURIUpdated(address(serviceManager), "Test MetadataURI");

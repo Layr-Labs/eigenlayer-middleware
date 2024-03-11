@@ -40,8 +40,11 @@ import { IRewardsCoordinator } from "eigenlayer-contracts/src/contracts/interfac
 
 =======
 
+<<<<<<< HEAD
 import {AVSDirectoryMock} from "../mocks/AVSDirectoryMock.sol";
 >>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
+=======
+>>>>>>> chore: remove duplicate imports (#197)
 import {BLSApkRegistryHarness} from "../harnesses/BLSApkRegistryHarness.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 
@@ -449,12 +452,16 @@ contract MockAVSDeployer is Test {
         for (uint256 i = 0; i < operatorMetadatas.length; i++) {
             cheats.roll(registrationBlockNumber + blocksBetweenRegistrations * i);
 
+<<<<<<< HEAD
             _registerOperatorWithCoordinator(
                 operatorMetadatas[i].operator,
                 operatorMetadatas[i].quorumBitmap,
                 operatorMetadatas[i].pubkey,
                 operatorMetadatas[i].stakes
             );
+=======
+            _registerOperatorWithCoordinator(operatorMetadatas[i].operator, operatorMetadatas[i].quorumBitmap, operatorMetadatas[i].pubkey, operatorMetadatas[i].stakes);
+>>>>>>> chore: remove duplicate imports (#197)
         }
 
         return (operatorMetadatas, expectedOperatorOverallIndices);
