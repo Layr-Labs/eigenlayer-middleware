@@ -35,7 +35,7 @@ import {EOServiceManager} from "../../../src/EOServiceManager.sol";
 import {OperatorStateRetriever} from "src/OperatorStateRetriever.sol";
 
 // # To deploy and verify our contract
-// forge script script/DeployEOMiddlewareContracts.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast -vvvv
+// forge script script/deploy/goerli/Goerli_DeployEOMiddlewareContracts.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY //--broadcast -vvvv
 contract Goerli_DeployEOMiddlewareContracts is Utils, ExistingDeploymentParser {
     
     string public existingDeploymentInfoPath  = string(bytes("./script/deploy/goerli/config/eigenlayer_deployment_goerli.json"));
@@ -108,17 +108,21 @@ contract Goerli_DeployEOMiddlewareContracts is Utils, ExistingDeploymentParser {
 
         vm.stopBroadcast();
 
-        // WRITE JSON DATA
-        string memory deployed_addresses = "addresses";
-        vm.serializeAddress(deployed_addresses, "EORegistryCoordinator", address(registryCoordinator));
-        vm.serializeAddress(deployed_addresses, "EOServiceManager", address(serviceManager));
-        vm.serializeAddress(deployed_addresses, "EOStakeRegistry", address(stakeRegistry));
-        vm.serializeAddress(deployed_addresses, "EOBLSApkRegistry", address(blsApkRegistry));
-        vm.serializeAddress(deployed_addresses, "EOIndexRegistry", address(indexRegistry));
-        vm.serializeAddress(deployed_addresses, "operatorStateRetriever", address(operatorStateRetriever));
-        vm.serializeAddress(deployed_addresses, "proxyAdmin", address(proxyAdmin));
-        string memory finalJson = vm.serializeAddress(deployed_addresses, "deployer", msg.sender);
-        vm.writeJson(finalJson, outputFileName());
+        // sanity checks
+        _verifyContractPointers(
+            blsApkRegistry,
+            serviceManager,
+            registryCoordinator,
+            indexRegistry,
+            stakeRegistry
+        );
+
+        _verifyImplementations();
+
+        _verifyInitalizations(config_data);
+
+        //write output
+        _writeOutput(config_data);
 
         return (
             registryCoordinator,
@@ -200,13 +204,13 @@ contract Goerli_DeployEOMiddlewareContracts is Utils, ExistingDeploymentParser {
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         stakeRegistryImplementation =
-            new EOStakeRegistry(IEORegistryCoordinator(registryCoordinator), delegationManager);
+            new EOStakeRegistry(registryCoordinator, delegationManager);
         blsApkRegistryImplementation =
-            new EOBLSApkRegistry(IEORegistryCoordinator(registryCoordinator));
+            new EOBLSApkRegistry(registryCoordinator);
         indexRegistryImplementation =
-            new EOIndexRegistry(IEORegistryCoordinator(registryCoordinator));
+            new EOIndexRegistry(registryCoordinator);
         serviceManagerImplementation = new EOServiceManager(
-            IAVSDirectory(_avsDirectory), IEORegistryCoordinator(registryCoordinator), stakeRegistry
+            _avsDirectory, registryCoordinator, stakeRegistry
         );
 
         // Third, upgrade the proxy contracts to point to the implementations
@@ -241,6 +245,9 @@ contract Goerli_DeployEOMiddlewareContracts is Utils, ExistingDeploymentParser {
 
         operatorStateRetriever = new OperatorStateRetriever();
 
+        // transfer ownership of proxy admin to upgrader
+        proxyAdmin.transferOwnership(eoracleUpgrader);
+
         return (
             registryCoordinator,
             serviceManager,
@@ -249,15 +256,6 @@ contract Goerli_DeployEOMiddlewareContracts is Utils, ExistingDeploymentParser {
             indexRegistry,
             operatorStateRetriever,
             proxyAdmin
-        );
-    }
-
-    function outputFileName() internal view returns (string memory) {
-        return string.concat(
-            vm.projectRoot(),
-            "/script/output/",
-            vm.toString(block.chainid),
-            "/eoracle_middleware_contracts_deployment_data.json"
         );
     }
 
@@ -304,5 +302,117 @@ contract Goerli_DeployEOMiddlewareContracts is Utils, ExistingDeploymentParser {
 
         churner = stdJson.readAddress(config_data, ".permissions.churner");
         ejector = stdJson.readAddress(config_data, ".permissions.ejector");
+    }
+
+    function _verifyContractPointers(
+        EOBLSApkRegistry _apkRegistry,
+        EOServiceManager _serviceManager,
+        EORegistryCoordinator _registryCoordinator,
+        EOIndexRegistry _indexRegistry,
+        EOStakeRegistry _stakeRegistry
+    ) internal view {
+        require(address(_apkRegistry.registryCoordinator()) == address(registryCoordinator), "blsApkRegistry.registryCoordinator() != registryCoordinator");
+
+        require(address(_indexRegistry.registryCoordinator()) == address(registryCoordinator), "indexRegistry.registryCoordinator() != registryCoordinator");
+
+        require(address(_stakeRegistry.registryCoordinator()) == address(registryCoordinator), "stakeRegistry.registryCoordinator() != registryCoordinator");
+        require(address(_stakeRegistry.delegation()) == address(delegation), "stakeRegistry.delegationManager() != delegation");
+
+        require(address(_registryCoordinator.serviceManager()) == address(_serviceManager), "registryCoordinator.serviceManager() != _serviceManager");
+        require(address(_registryCoordinator.stakeRegistry()) == address(stakeRegistry), "registryCoordinator.stakeRegistry() != stakeRegistry");
+        require(address(_registryCoordinator.blsApkRegistry()) == address(_apkRegistry), "registryCoordinator.blsApkRegistry() != _apkRegistry");
+        require(address(_registryCoordinator.indexRegistry()) == address(indexRegistry), "registryCoordinator.indexRegistry() != indexRegistry");
+    }
+
+    function _verifyImplementations() internal view {
+        require(proxyAdmin.getProxyImplementation(
+            TransparentUpgradeableProxy(payable(address(serviceManager)))) == address(serviceManagerImplementation),
+            "EOServiceManager: implementation set incorrectly");
+        require(proxyAdmin.getProxyImplementation(
+            TransparentUpgradeableProxy(payable(address(registryCoordinator)))) == address(registryCoordinatorImplementation),
+            "registryCoordinator: implementation set incorrectly");
+        require(proxyAdmin.getProxyImplementation(
+            TransparentUpgradeableProxy(payable(address(blsApkRegistry)))) == address(blsApkRegistryImplementation),
+            "blsApkRegistry: implementation set incorrectly");
+        require(proxyAdmin.getProxyImplementation(
+            TransparentUpgradeableProxy(payable(address(indexRegistry)))) == address(indexRegistryImplementation),
+            "indexRegistry: implementation set incorrectly");
+        require(proxyAdmin.getProxyImplementation(
+            TransparentUpgradeableProxy(payable(address(stakeRegistry)))) == address(stakeRegistryImplementation),
+            "stakeRegistry: implementation set incorrectly");
+    }
+
+    function _verifyInitalizations(string memory config_data) internal {
+        (
+            uint96[] memory minimumStakeForQuourm, 
+            IEOStakeRegistry.StrategyParams[][] memory strategyAndWeightingMultipliers
+        ) = _parseStakeRegistryParams(config_data);
+        (
+            IEORegistryCoordinator.OperatorSetParam[] memory operatorSetParams, 
+            address churner, 
+            address ejector
+        ) = _parseRegistryCoordinatorParams(config_data);
+
+        require(serviceManager.owner() == eoracleOwner, "serviceManager.owner() != eoracleOwner");
+
+        require(registryCoordinator.owner() == eoracleOwner, "registryCoordinator.owner() != eoracleOwner");
+        require(registryCoordinator.churnApprover() == churner, "registryCoordinator.churner() != churner");
+        require(registryCoordinator.ejector() == ejector, "registryCoordinator.ejector() != ejector");
+        require(registryCoordinator.pauserRegistry() == IPauserRegistry(pauserRegistry), "registryCoordinator: pauser registry not set correctly");
+        require(registryCoordinator.paused() == initalPausedStatus, "registryCoordinator: init paused status set incorrectly");
+        
+        for (uint8 i = 0; i < operatorSetParams.length; ++i) {
+            require(keccak256(abi.encode(registryCoordinator.getOperatorSetParams(i))) == keccak256(abi.encode(operatorSetParams[i])), "registryCoordinator.operatorSetParams != operatorSetParams");
+        }
+
+        for (uint8 i = 0; i < minimumStakeForQuourm.length; ++i) {
+            require(stakeRegistry.minimumStakeForQuorum(i) == minimumStakeForQuourm[i], "stakeRegistry.minimumStakeForQuourm != minimumStakeForQuourm");
+        }
+
+        for (uint8 i = 0; i < strategyAndWeightingMultipliers.length; ++i) {
+            for(uint8 j = 0; j < strategyAndWeightingMultipliers[i].length; ++j) {
+                IEOStakeRegistry.StrategyParams memory strategyParams = stakeRegistry.strategyParamsByIndex(i, j);
+                require(address(strategyParams.strategy) == address(strategyAndWeightingMultipliers[i][j].strategy), "stakeRegistry.strategyAndWeightingMultipliers != strategyAndWeightingMultipliers");
+                require(strategyParams.multiplier == strategyAndWeightingMultipliers[i][j].multiplier, "stakeRegistry.strategyAndWeightingMultipliers != strategyAndWeightingMultipliers");
+            }
+        }
+
+        require(operatorSetParams.length == strategyAndWeightingMultipliers.length && operatorSetParams.length == minimumStakeForQuourm.length, "operatorSetParams, strategyAndWeightingMultipliers, and minimumStakeForQuourm must be the same length");
+    }
+
+    function _writeOutput(string memory config_data) internal {
+        string memory parent_object = "parent object";
+
+        string memory deployed_addresses = "addresses";
+        vm.serializeAddress(deployed_addresses, "proxyAdmin", address(proxyAdmin));
+        vm.serializeAddress(deployed_addresses, "operatorStateRetriever", address(operatorStateRetriever));
+        vm.serializeAddress(deployed_addresses, "serviceManager", address(serviceManager));
+        vm.serializeAddress(deployed_addresses, "serviceManagerImplementation", address(serviceManagerImplementation));
+        vm.serializeAddress(deployed_addresses, "registryCoordinator", address(registryCoordinator));
+        vm.serializeAddress(deployed_addresses, "registryCoordinatorImplementation", address(registryCoordinatorImplementation));
+        vm.serializeAddress(deployed_addresses, "blsApkRegistry", address(blsApkRegistry));
+        vm.serializeAddress(deployed_addresses, "blsApkRegistryImplementation", address(blsApkRegistryImplementation));
+        vm.serializeAddress(deployed_addresses, "indexRegistry", address(indexRegistry));
+        vm.serializeAddress(deployed_addresses, "indexRegistryImplementation", address(indexRegistryImplementation));
+        vm.serializeAddress(deployed_addresses, "stakeRegistry", address(stakeRegistry));
+        string memory deployed_addresses_output = vm.serializeAddress(deployed_addresses, "stakeRegistryImplementation", address(stakeRegistryImplementation));
+
+        string memory chain_info = "chainInfo";
+        vm.serializeUint(chain_info, "deploymentBlock", block.number);
+        string memory chain_info_output = vm.serializeUint(chain_info, "chainId", block.chainid);
+
+        address churner = stdJson.readAddress(config_data, ".permissions.churner");
+        address ejector = stdJson.readAddress(config_data, ".permissions.ejector");
+        string memory permissions = "permissions";
+        vm.serializeAddress(permissions, "eoracleOwner", eoracleOwner);
+        vm.serializeAddress(permissions, "eoracleUpgrader", eoracleUpgrader);
+        vm.serializeAddress(permissions, "churner", churner);
+        vm.serializeAddress(permissions, "pauserRegistry", address(pauserRegistry));
+        string memory permissions_output = vm.serializeAddress(permissions, "ejector", ejector);
+        
+        vm.serializeString(parent_object, chain_info, chain_info_output);
+        vm.serializeString(parent_object, deployed_addresses, deployed_addresses_output);
+        string memory finalJson = vm.serializeString(parent_object, permissions, permissions_output);
+        vm.writeJson(finalJson, outputPath);
     }
 }

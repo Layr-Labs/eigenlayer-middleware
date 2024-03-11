@@ -22,6 +22,8 @@ import {OperatorStateRetriever} from "../../../src/OperatorStateRetriever.sol";
 contract DeployEOMiddlewareContractsTest is Test, Script {
     Goerli_DeployEOMiddlewareContracts public deployEOMiddlewareContracts;
 
+    address public EORACLE_OWNER = 0xeA96Fa8F6a185D6B97eCDeb9805178F6C2829eeE;
+
     EORegistryCoordinator public registryCoordinator;
     EOServiceManager public serviceManager;
     EOStakeRegistry public stakeRegistry;
@@ -41,7 +43,7 @@ contract DeployEOMiddlewareContractsTest is Test, Script {
         address admin = proxyAdmin.getProxyAdmin(TransparentUpgradeableProxy(payable(address(registryCoordinator))));
         assertEq(admin, address(proxyAdmin));
 
-        assertEq(proxyAdmin.owner(), msg.sender);
+        assertEq(proxyAdmin.owner(), EORACLE_OWNER);
 
         assertEq(registryCoordinator.registries(0), address(stakeRegistry));
         assertEq(registryCoordinator.registries(1), address(blsApkRegistry));
