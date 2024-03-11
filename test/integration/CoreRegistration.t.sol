@@ -222,8 +222,12 @@ contract Test_CoreRegistration is MockAVSDeployer {
         cheats.prank(toPrankFrom);
         cheats.expectEmit(true, true, true, true);
         emit AVSMetadataURIUpdated(address(serviceManager), "Test MetadataURI");
+<<<<<<< HEAD
         serviceManager.setMetadataURI("Test MetadataURI");
 >>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
+=======
+        serviceManager.updateAVSMetadataURI("Test MetadataURI");
+>>>>>>> Fix metadata uri signature (#205)
     }
 
     // Utils

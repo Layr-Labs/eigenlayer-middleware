@@ -101,6 +101,7 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
      * @dev only callable by the owner
      */
 <<<<<<< HEAD
+<<<<<<< HEAD
     function updateAVSMetadataURI(string memory _metadataURI) public virtual onlyOwner {
         _avsDirectory.updateAVSMetadataURI(_metadataURI);
     }
@@ -135,6 +136,9 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
         _rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
 =======
     function setMetadataURI(string memory _metadataURI) public virtual onlyOwner {
+=======
+    function updateAVSMetadataURI(string memory _metadataURI) public virtual onlyOwner {
+>>>>>>> Fix metadata uri signature (#205)
         _avsDirectory.updateAVSMetadataURI(_metadataURI);
 >>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
     }

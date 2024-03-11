@@ -12,6 +12,7 @@ import {BN254} from "../libraries/BN254.sol";
  */
 interface IServiceManager is IServiceManagerUI {
     /**
+<<<<<<< HEAD
      * @notice Creates a new rewards submission to the EigenLayer RewardsCoordinator contract, to be split amongst the
      * set of stakers delegated to operators who are registered to this `avs`
      * @param rewardsSubmissions The rewards submissions being created
@@ -23,6 +24,12 @@ interface IServiceManager is IServiceManagerUI {
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
     function createAVSRewardsSubmission(IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions) external;
+=======
+     * @notice Updates the metadata URI for the AVS
+     * @param _metadataURI is the metadata URI for the AVS
+     */
+    function updateAVSMetadataURI(string memory _metadataURI) external;
+>>>>>>> Fix metadata uri signature (#205)
 
 <<<<<<< HEAD
     // EVENTS
