@@ -23,7 +23,7 @@ interface IBLSApkRegistry is IRegistry {
 
     /**
      * @notice Struct used when registering a new public key
-     * @param signedMessageHash is the registration message hash signed by the private key of the operator
+     * @param pubkeyRegistrationSignature is the registration message signed by the private key of the operator
      * @param pubkeyG1 is the corresponding G1 public key of the operator 
      * @param pubkeyG2 is the corresponding G2 public key of the operator
      */     
