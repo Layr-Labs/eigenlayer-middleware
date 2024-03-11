@@ -37,6 +37,7 @@ import {OperatorStateRetriever} from "src/OperatorStateRetriever.sol";
 // forge script script/DeployEOMiddlewareContracts.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast -vvvv
 contract DeployEOMiddlewareContracts is Script, Utils {
     
+    uint256 constant NUM_QUORUMS = 1;
     IStrategy constant STRATEGY_BASE_TVL_LIMITS = IStrategy(0x879944A8cB437a5f8061361f82A6d4EED59070b5);
     IStrategy[1] private deployedStrategyArray = [STRATEGY_BASE_TVL_LIMITS];
 
@@ -54,7 +55,6 @@ contract DeployEOMiddlewareContracts is Script, Utils {
     // PauserRegistry
     PauserRegistry pauserRegistry;
 
-    uint numQuorums = 1;
     uint numStrategies = deployedStrategyArray.length;
 
     function run()
@@ -252,17 +252,17 @@ contract DeployEOMiddlewareContracts is Script, Utils {
     function _initEORegistryCoordinator(ProxyAdmin _proxyAdmin, IEORegistryCoordinator _registryCoordinator, EORegistryCoordinator _registryCoordinatorImplementation, PauserRegistry _pauserRegistry) internal{
         IEORegistryCoordinator.OperatorSetParam[]
             memory quorumsOperatorSetParams = new IEORegistryCoordinator.OperatorSetParam[](
-                numQuorums
+                NUM_QUORUMS
             );
-        uint96[] memory quorumsMinimumStake = new uint96[](numQuorums);
+        uint96[] memory quorumsMinimumStake = new uint96[](NUM_QUORUMS);
         IEOStakeRegistry.StrategyParams[][]
         memory quorumsStrategyParams = new IEOStakeRegistry.StrategyParams[][](
-            numQuorums
+            NUM_QUORUMS
         );
         
         // for each quorum to setup, we need to define
         // QuorumOperatorSetParam, minimumStakeForQuorum, and strategyParams
-        for (uint i = 0; i < numQuorums; i++) {
+        for (uint i = 0; i < NUM_QUORUMS; i++) {
             // hard code these for now
             quorumsOperatorSetParams[i] = IEORegistryCoordinator
                 .OperatorSetParam({
