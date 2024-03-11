@@ -9,7 +9,7 @@ import "forge-std/console.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import {DeployEOMiddlewareContracts} from "../../../script/DeployEOMiddlewareContracts.s.sol";
+import {Goerli_DeployEOMiddlewareContracts} from "../../../script/deploy/goerli/Goerli_DeployEOMiddlewareContracts.s.sol";
 
 // Middleware contracts
 import {EORegistryCoordinator, IEORegistryCoordinator, IEOBLSApkRegistry, IEOIndexRegistry, IEOStakeRegistry, IServiceManager} from "../../../src/EORegistryCoordinator.sol";
@@ -20,7 +20,7 @@ import {EOServiceManager} from "../../../src/EOServiceManager.sol";
 import {OperatorStateRetriever} from "../../../src/OperatorStateRetriever.sol";
 
 contract DeployEOMiddlewareContractsTest is Test, Script {
-    DeployEOMiddlewareContracts public deployEOMiddlewareContracts;
+    Goerli_DeployEOMiddlewareContracts public deployEOMiddlewareContracts;
 
     EORegistryCoordinator public registryCoordinator;
     EOServiceManager public serviceManager;
@@ -32,7 +32,7 @@ contract DeployEOMiddlewareContractsTest is Test, Script {
 
     function setUp() public {
         vm.createSelectFork(vm.rpcUrl('goerli'), 10619764);
-        deployEOMiddlewareContracts = new DeployEOMiddlewareContracts();
+        deployEOMiddlewareContracts = new Goerli_DeployEOMiddlewareContracts();
     }
 
     function testDeployEOMiddlewareContracts() public {

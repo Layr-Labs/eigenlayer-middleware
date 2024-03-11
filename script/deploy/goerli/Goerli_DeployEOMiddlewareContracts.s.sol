@@ -4,8 +4,9 @@ pragma solidity =0.8.12;
 import "forge-std/Script.sol";
 import "forge-std/StdJson.sol";
 import "forge-std/console.sol";
+import "eigenlayer-contracts/script/utils/ExistingDeploymentParser.sol";
 
-import {Utils} from "./utils/Utils.s.sol";
+import {Utils} from "../../utils/Utils.s.sol";
 
 // OpenZeppelin
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
@@ -26,21 +27,28 @@ import {
     IEOIndexRegistry,
     IEOStakeRegistry,
     IServiceManager
-} from "../src/EORegistryCoordinator.sol";
-import {EOBLSApkRegistry} from "../src/EOBLSApkRegistry.sol";
-import {EOIndexRegistry} from "../src/EOIndexRegistry.sol";
-import {EOStakeRegistry} from "../src/EOStakeRegistry.sol";
-import {EOServiceManager} from "../src/EOServiceManager.sol";
+} from "../../../src/EORegistryCoordinator.sol";
+import {EOBLSApkRegistry} from "../../../src/EOBLSApkRegistry.sol";
+import {EOIndexRegistry} from "../../../src/EOIndexRegistry.sol";
+import {EOStakeRegistry} from "../../../src/EOStakeRegistry.sol";
+import {EOServiceManager} from "../../../src/EOServiceManager.sol";
 import {OperatorStateRetriever} from "src/OperatorStateRetriever.sol";
 
 // # To deploy and verify our contract
 // forge script script/DeployEOMiddlewareContracts.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast -vvvv
-contract DeployEOMiddlewareContracts is Script, Utils {
+contract Goerli_DeployEOMiddlewareContracts is Utils, ExistingDeploymentParser {
     
-    uint256 constant NUM_QUORUMS = 1;
-    IStrategy constant STRATEGY_BASE_TVL_LIMITS = IStrategy(0x879944A8cB437a5f8061361f82A6d4EED59070b5);
-    IStrategy[1] private deployedStrategyArray = [STRATEGY_BASE_TVL_LIMITS];
+    string public existingDeploymentInfoPath  = string(bytes("./script/deploy/goerli/config/eigenlayer_deployment_goerli.json"));
+    string public deployConfigPath = string(bytes("./script/deploy/goerli/config/middleware_config.json"));
+    string public outputPath = string.concat("script/deploy/goerli/output/eoracle_middleware_deployment_data.json");
 
+    ProxyAdmin public proxyAdmin;
+    PauserRegistry pauserRegistry;
+    address public eoracleOwner;
+    address public eoracleUpgrader;
+    address public pauser;
+    uint256 public initalPausedStatus;
+    
     // Middleware contracts to deploy
     EORegistryCoordinator public registryCoordinator;
     EOServiceManager serviceManager;
@@ -49,13 +57,13 @@ contract DeployEOMiddlewareContracts is Script, Utils {
     EOIndexRegistry indexRegistry;
     OperatorStateRetriever operatorStateRetriever;
 
-    // ProxyAdmin
-    ProxyAdmin proxyAdmin;
+    EORegistryCoordinator registryCoordinatorImplementation;
+    EOStakeRegistry stakeRegistryImplementation;
+    EOBLSApkRegistry blsApkRegistryImplementation;
+    EOIndexRegistry indexRegistryImplementation;
+    EOServiceManager serviceManagerImplementation;
 
-    // PauserRegistry
-    PauserRegistry pauserRegistry;
-
-    uint numStrategies = deployedStrategyArray.length;
+    uint256 numStrategies = deployedStrategyArray.length;
 
     function run()
         external
@@ -69,23 +77,23 @@ contract DeployEOMiddlewareContracts is Script, Utils {
             ProxyAdmin
         )
     {
-        // get eigenlayer deployment data
-        string memory eigenlayerDeployedContracts;
-        if(block.chainid == 5){ // Goerli
-            eigenlayerDeployedContracts = readOutput(
-                "eigenlayer_deployment_output"
-            );
-        } else {
-            revert("Unsupported chain ID");
-        }
+        // get info on all the already-deployed contracts
+        _parseDeployedContracts(existingDeploymentInfoPath);
 
-        IDelegationManager delegationManager = IDelegationManager(
-            stdJson.readAddress(eigenlayerDeployedContracts, ".addresses.delegation")
-        );
+        // READ JSON CONFIG DATA
+        string memory config_data = vm.readFile(deployConfigPath);
 
-        IAVSDirectory avsDirectory = IAVSDirectory(
-            stdJson.readAddress(eigenlayerDeployedContracts, ".addresses.avsDirectory")
-        );
+        // check that the chainID matches the one in the config
+        uint256 currentChainId = block.chainid;
+        uint256 configChainId = stdJson.readUint(config_data, ".chainInfo.chainId");
+        emit log_named_uint("You are deploying on ChainID", currentChainId);
+        require(configChainId == currentChainId, "You are on the wrong chain for this config");
+
+        // parse the addresses of permissioned roles
+        eoracleOwner = stdJson.readAddress(config_data, ".permissions.owner");
+        eoracleUpgrader = stdJson.readAddress(config_data, ".permissions.upgrader");
+        pauser = stdJson.readAddress(config_data, ".permissions.pauser");
+        initalPausedStatus = stdJson.readUint(config_data, ".permissions.initalPausedStatus");
 
         vm.startBroadcast();
         (
@@ -96,7 +104,7 @@ contract DeployEOMiddlewareContracts is Script, Utils {
             indexRegistry,
             operatorStateRetriever,
             proxyAdmin
-        ) = _deployEOMiddlewareContracts(delegationManager, avsDirectory);
+        ) = _deployEOMiddlewareContracts(delegation, avsDirectory, config_data);
 
         vm.stopBroadcast();
 
@@ -128,7 +136,8 @@ contract DeployEOMiddlewareContracts is Script, Utils {
      */
     function _deployEOMiddlewareContracts(
         IDelegationManager delegationManager,
-        IAVSDirectory avsDirectory
+        IAVSDirectory _avsDirectory,
+        string memory config_data
     )
         internal
         returns (
@@ -142,17 +151,18 @@ contract DeployEOMiddlewareContracts is Script, Utils {
         )
     {
 
-        // Deploy empty contract to be used as the initial implementation for the proxy contracts
-        EmptyContract emptyContract = new EmptyContract();
-
         // Deploy proxy admin for ability to upgrade proxy contracts
         proxyAdmin = new ProxyAdmin();
 
-        // Deploy PauserRegistry
-        address[] memory pausers = new address[](1);
-        pausers[0] = msg.sender;
-        address unpauser = msg.sender;
-        pauserRegistry = new PauserRegistry(pausers, unpauser);
+        if(pauser == address(0)) {
+            // Deploy PauserRegistry with msg.sender as the initial pauser
+            address[] memory pausers = new address[](1);
+            pausers[0] = eoracleOwner;
+            address unpauser = eoracleOwner;
+            pauserRegistry = new PauserRegistry(pausers, unpauser);
+        } else {
+            pauserRegistry = PauserRegistry(pauser);
+        }
 
         /**
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
@@ -189,14 +199,14 @@ contract DeployEOMiddlewareContracts is Script, Utils {
         );
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        EOStakeRegistry stakeRegistryImplementation =
+        stakeRegistryImplementation =
             new EOStakeRegistry(IEORegistryCoordinator(registryCoordinator), delegationManager);
-        EOBLSApkRegistry blsApkRegistryImplementation =
+        blsApkRegistryImplementation =
             new EOBLSApkRegistry(IEORegistryCoordinator(registryCoordinator));
-        EOIndexRegistry indexRegistryImplementation =
+        indexRegistryImplementation =
             new EOIndexRegistry(IEORegistryCoordinator(registryCoordinator));
-        EOServiceManager serviceManagerImplementation = new EOServiceManager(
-            IAVSDirectory(avsDirectory), IEORegistryCoordinator(registryCoordinator), stakeRegistry
+        serviceManagerImplementation = new EOServiceManager(
+            IAVSDirectory(_avsDirectory), IEORegistryCoordinator(registryCoordinator), stakeRegistry
         );
 
         // Third, upgrade the proxy contracts to point to the implementations
@@ -215,17 +225,19 @@ contract DeployEOMiddlewareContracts is Script, Utils {
             address(indexRegistryImplementation)
         );
 
-        proxyAdmin.upgrade(
+        proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(serviceManager))),
-            address(serviceManagerImplementation)
+            address(serviceManagerImplementation),
+            abi.encodeWithSelector(
+                EOServiceManager.initialize.selector,
+                eoracleOwner // _initialOwner
+            )
         );
 
-        serviceManager.initialize({initialOwner: msg.sender});
-
-        EORegistryCoordinator registryCoordinatorImplementation =
+        registryCoordinatorImplementation =
             new EORegistryCoordinator(serviceManager, stakeRegistry, blsApkRegistry, indexRegistry);
         
-        _initEORegistryCoordinator(proxyAdmin, registryCoordinator, registryCoordinatorImplementation, pauserRegistry);
+        _initEORegistryCoordinator(proxyAdmin, registryCoordinator, registryCoordinatorImplementation, pauserRegistry, config_data);
 
         operatorStateRetriever = new OperatorStateRetriever();
 
@@ -249,57 +261,48 @@ contract DeployEOMiddlewareContracts is Script, Utils {
         );
     }
 
-    function _initEORegistryCoordinator(ProxyAdmin _proxyAdmin, IEORegistryCoordinator _registryCoordinator, EORegistryCoordinator _registryCoordinatorImplementation, PauserRegistry _pauserRegistry) internal{
-        IEORegistryCoordinator.OperatorSetParam[]
-            memory quorumsOperatorSetParams = new IEORegistryCoordinator.OperatorSetParam[](
-                NUM_QUORUMS
-            );
-        uint96[] memory quorumsMinimumStake = new uint96[](NUM_QUORUMS);
-        IEOStakeRegistry.StrategyParams[][]
-        memory quorumsStrategyParams = new IEOStakeRegistry.StrategyParams[][](
-            NUM_QUORUMS
-        );
-        
-        // for each quorum to setup, we need to define
-        // QuorumOperatorSetParam, minimumStakeForQuorum, and strategyParams
-        for (uint i = 0; i < NUM_QUORUMS; i++) {
-            // hard code these for now
-            quorumsOperatorSetParams[i] = IEORegistryCoordinator
-                .OperatorSetParam({
-                    maxOperatorCount: 10000,
-                    kickBIPsOfOperatorStake: 15000,
-                    kickBIPsOfTotalStake: 100
-                });
-            quorumsStrategyParams[i] = new IEOStakeRegistry.StrategyParams[](
-                numStrategies
-            );
-            for (uint j = 0; j < numStrategies; j++) {
-                quorumsStrategyParams[i][j] = IEOStakeRegistry
-                    .StrategyParams({
-                        strategy: deployedStrategyArray[j],
-                        // setting this to 1 ether since the divisor is also 1 ether
-                        // therefore this allows an operator to register with even just 1 token
-                        // see https://github.com/Layr-Labs/eigenlayer-middleware/blob/m2-mainnet/src/StakeRegistry.sol#L484
-                        //    weight += uint96(sharesAmount * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR);
-                        multiplier: 1 ether
-                    });
-            }
-        }
+    function _initEORegistryCoordinator(ProxyAdmin _proxyAdmin, IEORegistryCoordinator _registryCoordinator, EORegistryCoordinator _registryCoordinatorImplementation, PauserRegistry _pauserRegistry, string memory config_data) internal{
+        // parse initalization params and permissions from config data
+        (
+            uint96[] memory minimumStakeForQuourm, 
+            IEOStakeRegistry.StrategyParams[][] memory strategyAndWeightingMultipliers
+        ) = _parseStakeRegistryParams(config_data);
+        (
+            IEORegistryCoordinator.OperatorSetParam[] memory operatorSetParams, 
+            address churner, 
+            address ejector
+        ) = _parseRegistryCoordinatorParams(config_data);
 
         _proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(_registryCoordinator))),
             address(_registryCoordinatorImplementation),
             abi.encodeWithSelector(
                 EORegistryCoordinator.initialize.selector,
-                msg.sender, // _initialOwner
-                msg.sender, // _churnApprover
-                msg.sender, // _ejector
+                eoracleOwner,
+                churner,
+                ejector,
                 _pauserRegistry,
-                0, /*initialPausedStatus*/
-                quorumsOperatorSetParams,
-                quorumsMinimumStake,
-                quorumsStrategyParams
+                initalPausedStatus,
+                operatorSetParams,
+                minimumStakeForQuourm,
+                strategyAndWeightingMultipliers
             )
         );
+    }
+
+    function _parseStakeRegistryParams(string memory config_data) internal pure returns (uint96[] memory minimumStakeForQuourm, IEOStakeRegistry.StrategyParams[][] memory strategyAndWeightingMultipliers) {
+        bytes memory stakesConfigsRaw = stdJson.parseRaw(config_data, ".minimumStakes");
+        minimumStakeForQuourm = abi.decode(stakesConfigsRaw, (uint96[]));
+        
+        bytes memory strategyConfigsRaw = stdJson.parseRaw(config_data, ".strategyWeights");
+        strategyAndWeightingMultipliers = abi.decode(strategyConfigsRaw, (IEOStakeRegistry.StrategyParams[][]));
+    }
+
+    function _parseRegistryCoordinatorParams(string memory config_data) internal pure returns (IEORegistryCoordinator.OperatorSetParam[] memory operatorSetParams, address churner, address ejector) {
+        bytes memory operatorConfigsRaw = stdJson.parseRaw(config_data, ".operatorSetParams");
+        operatorSetParams = abi.decode(operatorConfigsRaw, (IEORegistryCoordinator.OperatorSetParam[]));
+
+        churner = stdJson.readAddress(config_data, ".permissions.churner");
+        ejector = stdJson.readAddress(config_data, ".permissions.ejector");
     }
 }
