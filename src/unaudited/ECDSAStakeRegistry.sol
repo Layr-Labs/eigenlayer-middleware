@@ -196,7 +196,6 @@ contract ECDSAStakeRegistry is
     }
 
     function _updateStakeThreshold(uint256 _thresholdWeightBps) internal {
-        if (_thresholdWeightBps > BPS) revert InvalidThreshold();
         _thresholdWeightBpsHistory.push(_thresholdWeightBps);
         emit ThresholdWeightUpdated(_thresholdWeightBps);
     }
