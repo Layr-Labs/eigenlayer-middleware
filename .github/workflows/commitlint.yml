@@ -1,6 +1,12 @@
 name: CI
 
-on: [push, pull_request]
+on: 
+  pull_request:
+  push:
+    branches-ignore:
+      mainnet
+      dev
+      testnet-goerli
 
 jobs:
   commitlint:
