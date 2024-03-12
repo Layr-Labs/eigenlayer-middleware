@@ -22,7 +22,7 @@ import {OperatorStateRetriever} from "../../../src/OperatorStateRetriever.sol";
 contract DeployEOMiddlewareContractsTest is Test, Script {
     Goerli_DeployEOMiddlewareContracts public deployEOMiddlewareContracts;
 
-    address public EORACLE_OWNER = 0xeA96Fa8F6a185D6B97eCDeb9805178F6C2829eeE;
+    address public EORACLE_OWNER = 0x119156A81E4f3d891cBd106a4AedEA916A0A9C4b;
 
     EORegistryCoordinator public registryCoordinator;
     EOServiceManager public serviceManager;

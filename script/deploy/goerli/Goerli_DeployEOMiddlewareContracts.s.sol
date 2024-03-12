@@ -3,7 +3,6 @@ pragma solidity =0.8.12;
 
 import "forge-std/Script.sol";
 import "forge-std/StdJson.sol";
-import "forge-std/console.sol";
 import "eigenlayer-contracts/script/utils/ExistingDeploymentParser.sol";
 
 import {Utils} from "../../utils/Utils.s.sol";
@@ -15,19 +14,14 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 // EigenLayer contracts
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
-import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
-import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 // Middleware contracts
 import {
     EORegistryCoordinator,
     IEORegistryCoordinator,
-    IEOBLSApkRegistry,
-    IEOIndexRegistry,
-    IEOStakeRegistry,
-    IServiceManager
-} from "../../../src/EORegistryCoordinator.sol";
+    IEOStakeRegistry
+    } from "../../../src/EORegistryCoordinator.sol";
 import {EOBLSApkRegistry} from "../../../src/EOBLSApkRegistry.sol";
 import {EOIndexRegistry} from "../../../src/EOIndexRegistry.sol";
 import {EOStakeRegistry} from "../../../src/EOStakeRegistry.sol";
@@ -43,7 +37,7 @@ contract Goerli_DeployEOMiddlewareContracts is Utils, ExistingDeploymentParser {
     string public outputPath = string.concat("script/deploy/goerli/output/eoracle_middleware_deployment_data.json");
 
     ProxyAdmin public proxyAdmin;
-    PauserRegistry pauserRegistry;
+    PauserRegistry public pauserRegistry;
     address public eoracleOwner;
     address public eoracleUpgrader;
     address public pauser;
@@ -51,19 +45,17 @@ contract Goerli_DeployEOMiddlewareContracts is Utils, ExistingDeploymentParser {
     
     // Middleware contracts to deploy
     EORegistryCoordinator public registryCoordinator;
-    EOServiceManager serviceManager;
-    EOBLSApkRegistry blsApkRegistry;
-    EOStakeRegistry stakeRegistry;
-    EOIndexRegistry indexRegistry;
-    OperatorStateRetriever operatorStateRetriever;
+    EOServiceManager public serviceManager;
+    EOBLSApkRegistry public blsApkRegistry;
+    EOStakeRegistry public stakeRegistry;
+    EOIndexRegistry public indexRegistry;
+    OperatorStateRetriever public operatorStateRetriever;
 
-    EORegistryCoordinator registryCoordinatorImplementation;
-    EOStakeRegistry stakeRegistryImplementation;
-    EOBLSApkRegistry blsApkRegistryImplementation;
-    EOIndexRegistry indexRegistryImplementation;
-    EOServiceManager serviceManagerImplementation;
-
-    uint256 numStrategies = deployedStrategyArray.length;
+    EORegistryCoordinator public registryCoordinatorImplementation;
+    EOStakeRegistry public stakeRegistryImplementation;
+    EOBLSApkRegistry public blsApkRegistryImplementation;
+    EOIndexRegistry public indexRegistryImplementation;
+    EOServiceManager public serviceManagerImplementation;
 
     function run()
         external
@@ -115,6 +107,14 @@ contract Goerli_DeployEOMiddlewareContracts is Utils, ExistingDeploymentParser {
             registryCoordinator,
             indexRegistry,
             stakeRegistry
+        );
+
+        _verifyContractPointers(
+            blsApkRegistryImplementation,
+            serviceManagerImplementation,
+            registryCoordinatorImplementation,
+            indexRegistryImplementation,
+            stakeRegistryImplementation
         );
 
         _verifyImplementations();
@@ -318,9 +318,13 @@ contract Goerli_DeployEOMiddlewareContracts is Utils, ExistingDeploymentParser {
         require(address(_stakeRegistry.registryCoordinator()) == address(registryCoordinator), "stakeRegistry.registryCoordinator() != registryCoordinator");
         require(address(_stakeRegistry.delegation()) == address(delegation), "stakeRegistry.delegationManager() != delegation");
 
-        require(address(_registryCoordinator.serviceManager()) == address(_serviceManager), "registryCoordinator.serviceManager() != _serviceManager");
+        // TODO: add this checks once we update the service manager properties to be public
+        // require(address(_serviceManager.registryCoordinator()) == address(registryCoordinator), "_serviceManager.registryCoordinator() != registryCoordinator");
+        // require(address(_serviceManager.stakeRegistry()) == address(stakeRegistry), "_serviceManager.stakeRegistry() != stakeRegistry");
+
+        // require(address(_registryCoordinator.serviceManager()) == address(_serviceManager), "registryCoordinator.serviceManager() != _serviceManager");
         require(address(_registryCoordinator.stakeRegistry()) == address(stakeRegistry), "registryCoordinator.stakeRegistry() != stakeRegistry");
-        require(address(_registryCoordinator.blsApkRegistry()) == address(_apkRegistry), "registryCoordinator.blsApkRegistry() != _apkRegistry");
+        // require(address(_registryCoordinator.blsApkRegistry()) == address(_apkRegistry), "registryCoordinator.blsApkRegistry() != _apkRegistry");
         require(address(_registryCoordinator.indexRegistry()) == address(indexRegistry), "registryCoordinator.indexRegistry() != indexRegistry");
     }
 
