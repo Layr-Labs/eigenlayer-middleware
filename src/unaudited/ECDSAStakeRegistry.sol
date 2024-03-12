@@ -33,14 +33,14 @@ contract ECDSAStakeRegistry is
 
     /// @notice Initializes the contract with the given parameters.
     /// @param _serviceManager The address of the service manager.
-    /// @param _thresholdWeightBps The threshold weight in basis points.
+    /// @param _thresholdWeight The threshold weight in basis points.
     /// @param _quorum The quorum struct containing the details of the quorum thresholds.
     function initialize(
         address _serviceManager,
-        uint256 _thresholdWeightBps,
+        uint256 _thresholdWeight,
         Quorum memory _quorum
     ) external initializer {
-        __ECDSAStakeRegistry_init(_serviceManager, _thresholdWeightBps, _quorum);
+        __ECDSAStakeRegistry_init(_serviceManager, _thresholdWeight, _quorum);
     }
 
     /// @notice Registers a new operator using a provided signature
@@ -84,10 +84,10 @@ contract ECDSAStakeRegistry is
 
     /**
      * @notice Adjusts the cumulative threshold weight for a valid message to be signed by the operator set
-     * @param _thresholdWeightBps The updated threshold weight.
+     * @param _thresholdWeight The updated threshold weight.
      */
-    function updateStakeThreshold(uint256 _thresholdWeightBps) external onlyOwner {
-        _updateStakeThreshold(_thresholdWeightBps);
+    function updateStakeThreshold(uint256 _thresholdWeight) external onlyOwner {
+        _updateStakeThreshold(_thresholdWeight);
     }
 
     /// @notice Verifies if the provided signature data is valid for the given data hash.
@@ -125,6 +125,12 @@ contract ECDSAStakeRegistry is
         return _totalWeightHistory.latest();
     }
 
+    /// @notice Retrieves the last recorded threshold weight 
+    /// @return uint256 - The latest threshold weight.
+    function getLastCheckpointThresholdWeight() external view returns (uint256) {
+        return _thresholdWeightHistory.latest();
+    }
+
     /// @notice Retrieves the operator's weight at a specific block number.
     /// @param _operator The address of the operator.
     /// @param _blockNumber The block number to get the operator weight for the quorum
@@ -143,6 +149,15 @@ contract ECDSAStakeRegistry is
         uint32 _blockNumber
     ) external view returns (uint256) {
         return _totalWeightHistory.getAtBlock(_blockNumber);
+    }
+
+    /// @notice Retrieves the threshold weight at a specific block number.
+    /// @param _blockNumber The block number to get the threshold weight for the quorum
+    /// @return uint256 - The threshold weight the given block.
+    function getLastCheckpointThresholdWeightAtBlock(
+        uint32 _blockNumber
+    ) external view returns (uint256) {
+        return _thresholdWeightHistory.getAtBlock(_blockNumber);
     }
 
     function operatorRegistered(address _operator) external view returns (bool) {
@@ -173,11 +188,11 @@ contract ECDSAStakeRegistry is
     /// @param _serviceManager The AVS' ServiceManager contract's address
     function __ECDSAStakeRegistry_init(
         address _serviceManager,
-        uint256 _thresholdWeightBps,
+        uint256 _thresholdWeight,
         Quorum memory _quorum
     ) internal onlyInitializing {
         serviceManager = _serviceManager;
-        _updateStakeThreshold(_thresholdWeightBps);
+        _updateStakeThreshold(_thresholdWeight);
         _updateQuorumConfig(_quorum);
         __Ownable_init();
     }
@@ -200,9 +215,9 @@ contract ECDSAStakeRegistry is
         _updateTotalWeight(delta);
     }
 
-    function _updateStakeThreshold(uint256 _thresholdWeightBps) internal {
-        _thresholdWeightBpsHistory.push(_thresholdWeightBps);
-        emit ThresholdWeightUpdated(_thresholdWeightBps);
+    function _updateStakeThreshold(uint256 _thresholdWeight) internal {
+        _thresholdWeightHistory.push(_thresholdWeight);
+        emit ThresholdWeightUpdated(_thresholdWeight);
     }
 
     /// @dev Updates the weight an operator must have to join the operator set
@@ -401,9 +416,9 @@ contract ECDSAStakeRegistry is
     /// @return The threshold stake in basis points for the reference block.
     function _getThresholdStake(uint32 _referenceBlock) internal view returns (uint256) {
         if (_referenceBlock == type(uint32).max) {
-            return _thresholdWeightBpsHistory.latest();
+            return _thresholdWeightHistory.latest();
         } else {
-            return _thresholdWeightBpsHistory.getAtBlock(_referenceBlock);
+            return _thresholdWeightHistory.getAtBlock(_referenceBlock);
         }
     }
 
@@ -413,7 +428,8 @@ contract ECDSAStakeRegistry is
     function _validateThresholdStake(uint256 _signedWeight, uint32 _referenceBlock) internal view {
         uint256 totalWeight = _getTotalWeight(_referenceBlock);
         if (_signedWeight > totalWeight) revert InvalidSignedWeight();
-        if (_getThresholdStake(_referenceBlock) > (_signedWeight * BPS) / totalWeight)
+        uint256 thresholdStake = _getThresholdStake(_referenceBlock);
+        if ((thresholdStake *BPS)/totalWeight > (_signedWeight * BPS) / totalWeight)
             revert InsufficientSignedStake();
     }
 }

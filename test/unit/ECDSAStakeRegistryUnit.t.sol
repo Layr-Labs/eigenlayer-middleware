@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-import {Test} from "forge-std/Test.sol";
+import {Test, console} from "forge-std/Test.sol";
 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
@@ -198,10 +198,6 @@ function test_UpdateQuorumConfig() public {
         );
     }
 
-    function test_RevertsWhen_InsufficientStake_RegisterOperatorWithSignature() public {
-        /// TODO: Missing implementation for this check
-        vm.skip(true);
-    }
     function test_DeregisterOperator() public {
         assertEq(registry.getLastCheckpointOperatorWeight(operator1), 1000);
         assertEq(registry.getLastCheckpointTotalWeight(), 2000);
@@ -400,6 +396,10 @@ function test_UpdateQuorumConfig() public {
         (v, r, s) = vm.sign(operator2Pk, msgHash);
         signatures[1] = abi.encodePacked(r, s, v);
 
+        console.log(registry.getOperatorWeight(signers[0]));
+        console.log(registry.getOperatorWeight(signers[1]));
+        console.log(registry.getLastCheckpointTotalWeight());
+        console.log(registry.getLastCheckpointThresholdWeight());
         registry.isValidSignature(msgHash, abi.encode(signers, signatures, type(uint32).max));
     }
 

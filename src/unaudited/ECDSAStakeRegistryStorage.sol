@@ -31,7 +31,7 @@ abstract contract ECDSAStakeRegistryStorage is ECDSAStakeRegistryEventsAndErrors
     CheckpointsUpgradeable.History internal _totalWeightHistory;
 
     /// @notice Tracks the threshold bps history using checkpoints
-    CheckpointsUpgradeable.History internal _thresholdWeightBpsHistory;
+    CheckpointsUpgradeable.History internal _thresholdWeightHistory;
 
     /// @notice Maps operator addresses to their respective stake histories using checkpoints
     mapping(address => CheckpointsUpgradeable.History) internal _operatorWeightHistory;
