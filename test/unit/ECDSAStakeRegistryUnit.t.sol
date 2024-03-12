@@ -569,7 +569,7 @@ function test_UpdateQuorumConfig() public {
         registry.deregisterOperator();
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
-        address[] memory operators = new address[](200);
+        address[] memory operators = new address[](100);
         for (uint256 i; i< operators.length;i++) {
             operators[i]=address(uint160(i));
             registry.registerOperatorWithSignature(operators[i], operatorSignature);
@@ -579,6 +579,58 @@ function test_UpdateQuorumConfig() public {
 
         emit log_named_uint("Gas consumed",before - gasleft());
     }
+
+    function test_Gas_CheckSignatures() public {
+        uint256 before = gasleft();
+        vm.pauseGasMetering();
+        vm.prank(operator1);
+        registry.deregisterOperator();
+        vm.prank(operator2);
+        registry.deregisterOperator();
+        msgHash = keccak256("data");
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        address[] memory operators = new address[](100);
+        bytes[] memory signatures = new bytes[](100);
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+        for (uint256 i=1; i< operators.length+1;i++) {
+            operators[i-1]=address(vm.addr(i));
+            registry.registerOperatorWithSignature(operators[i-1], operatorSignature);
+            (v, r, s) = vm.sign(i, msgHash);
+            signatures[i-1] = abi.encodePacked(r, s, v);
+        }
+        (operators, signatures) = _sort(operators, signatures);
+        registry.updateOperators(operators);
+        vm.resumeGasMetering();
+        registry.isValidSignature(msgHash, abi.encode(operators, signatures, type(uint32).max));
+
+        emit log_named_uint("Gas consumed",before - gasleft());
+    }
+
+    function _sort(address[] memory operators, bytes[] memory signatures) internal pure returns (address[] memory, bytes[] memory) {
+        require(operators.length == signatures.length, "Operators and signatures length mismatch");
+    
+        uint256 length = operators.length;
+        for (uint256 i = 0; i < length - 1; i++) {
+            uint256 minIndex = i;
+            for (uint256 j = i + 1; j < length; j++) {
+                if (operators[j] < operators[minIndex]) {
+                    minIndex = j;
+                }
+            }
+            if (minIndex != i) {
+                // Swap operators
+                address tempOperator = operators[i];
+                operators[i] = operators[minIndex];
+                operators[minIndex] = tempOperator;
+                // Swap corresponding signatures
+                bytes memory tempSignature = signatures[i];
+                signatures[i] = signatures[minIndex];
+                signatures[minIndex] = tempSignature;
+            }
+        }
+        return (operators, signatures);
+    }
 }
-
-
