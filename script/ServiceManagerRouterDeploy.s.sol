@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
+<<<<<<< HEAD
 pragma solidity ^0.8.12;
+=======
+pragma solidity =0.8.12;
+>>>>>>> Feat: service manager router (#193)
 
 import {ServiceManagerRouter} from "../src/ServiceManagerRouter.sol";
 import "forge-std/Script.sol";
@@ -12,4 +16,8 @@ contract ServiceManagerRouterDeploy is Script {
 
         vm.stopBroadcast();
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> Feat: service manager router (#193)

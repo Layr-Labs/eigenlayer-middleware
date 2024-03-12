@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
+<<<<<<< HEAD
 pragma solidity ^0.8.12;
+=======
+pragma solidity =0.8.12;
+>>>>>>> Feat: service manager router (#193)
 
 import {ServiceManagerRouter} from "../../src/ServiceManagerRouter.sol";
 import "../utils/MockAVSDeployer.sol";
@@ -17,7 +21,10 @@ contract ServiceManagerRouter_UnitTests is MockAVSDeployer {
         // Deploy dummy serviceManager
         dummyServiceManager = new ServiceManagerMock(
             avsDirectory,
+<<<<<<< HEAD
             rewardsCoordinatorImplementation,
+=======
+>>>>>>> Feat: service manager router (#193)
             registryCoordinatorImplementation,
             stakeRegistryImplementation
         );
@@ -68,4 +75,8 @@ contract ServiceManagerRouter_UnitTests is MockAVSDeployer {
         assertEq(strategies.length, 1);
         assertEq(strategies[0], badReturn);
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> Feat: service manager router (#193)
