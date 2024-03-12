@@ -1,26 +1,26 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "../../src/BLSApkRegistry.sol";
+import "../../src/EOBLSApkRegistry.sol";
 import "../ffi/util/G2Operations.sol";
-import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
+import {IEOBLSApkRegistry} from "../../src/interfaces/IEOBLSApkRegistry.sol";
 
-contract BLSApkRegistryFFITests is G2Operations {
+contract EOBLSApkRegistryFFITests is G2Operations {
     using BN254 for BN254.G1Point;
     using Strings for uint256;
 
     Vm cheats = Vm(HEVM_ADDRESS);
 
-    BLSApkRegistry blsApkRegistry;
-    IRegistryCoordinator registryCoordinator;
+    EOBLSApkRegistry blsApkRegistry;
+    IEORegistryCoordinator registryCoordinator;
 
     uint256 privKey;
-    IBLSApkRegistry.PubkeyRegistrationParams pubkeyRegistrationParams;
+    IEOBLSApkRegistry.PubkeyRegistrationParams pubkeyRegistrationParams;
 
     address alice = address(0x69);
 
     function setUp() public {
-        blsApkRegistry = new BLSApkRegistry(registryCoordinator);
+        blsApkRegistry = new EOBLSApkRegistry(registryCoordinator);
     }
 
     function testRegisterBLSPublicKey(uint256 _privKey) public {

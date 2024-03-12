@@ -3,10 +3,9 @@ pragma solidity =0.8.12;
 
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
-import {StakeRegistryStorage, IStrategy} from "./StakeRegistryStorage.sol";
+import {EOStakeRegistryStorage, IStrategy} from "./EOStakeRegistryStorage.sol";
 
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
-import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
+import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 
@@ -19,32 +18,32 @@ import {BitmapUtils} from "./libraries/BitmapUtils.sol";
  * It allows an additional functionality (in addition to registering and deregistering) to update the stake of an operator.
  * @author Layr Labs, Inc.
  */
-contract StakeRegistry is StakeRegistryStorage {
+contract EOStakeRegistry is EOStakeRegistryStorage {
 
     using BitmapUtils for *;
     
-    modifier onlyRegistryCoordinator() {
+    modifier onlyEORegistryCoordinator() {
         require(
             msg.sender == address(registryCoordinator),
-            "StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator"
+            "EOStakeRegistry.onlyEORegistryCoordinator: caller is not the EORegistryCoordinator"
         );
         _;
     }
 
     modifier onlyCoordinatorOwner() {
-        require(msg.sender == IRegistryCoordinator(registryCoordinator).owner(), "StakeRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator");
+        require(msg.sender == IEORegistryCoordinator(registryCoordinator).owner(), "EOStakeRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator");
         _;
     }
 
     modifier quorumExists(uint8 quorumNumber) {
-        require(_quorumExists(quorumNumber), "StakeRegistry.quorumExists: quorum does not exist");
+        require(_quorumExists(quorumNumber), "EOStakeRegistry.quorumExists: quorum does not exist");
         _;
     }
 
     constructor(
-        IRegistryCoordinator _registryCoordinator,
+        IEORegistryCoordinator _registryCoordinator,
         IDelegationManager _delegationManager
-    ) StakeRegistryStorage(_registryCoordinator, _delegationManager) {}
+    ) EOStakeRegistryStorage(_registryCoordinator, _delegationManager) {}
 
     /*******************************************************************************
                       EXTERNAL FUNCTIONS - REGISTRY COORDINATOR
@@ -56,7 +55,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param operatorId The id of the operator to register.
      * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
      * @return The operator's current stake for each quorum, and the total stake for each quorum
-     * @dev access restricted to the RegistryCoordinator
+     * @dev access restricted to the EORegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0
@@ -67,21 +66,21 @@ contract StakeRegistry is StakeRegistryStorage {
         address operator,
         bytes32 operatorId,
         bytes calldata quorumNumbers
-    ) public virtual onlyRegistryCoordinator returns (uint96[] memory, uint96[] memory) {
+    ) public virtual onlyEORegistryCoordinator returns (uint96[] memory, uint96[] memory) {
 
         uint96[] memory currentStakes = new uint96[](quorumNumbers.length);
         uint96[] memory totalStakes = new uint96[](quorumNumbers.length);
         for (uint256 i = 0; i < quorumNumbers.length; i++) {            
             
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            require(_quorumExists(quorumNumber), "StakeRegistry.registerOperator: quorum does not exist");
+            require(_quorumExists(quorumNumber), "EOStakeRegistry.registerOperator: quorum does not exist");
 
             // Retrieve the operator's current weighted stake for the quorum, reverting if they have not met
             // the minimum.
             (uint96 currentStake, bool hasMinimumStake) = _weightOfOperatorForQuorum(quorumNumber, operator);
             require(
                 hasMinimumStake,
-                "StakeRegistry.registerOperator: Operator does not meet minimum stake requirement for quorum"
+                "EOStakeRegistry.registerOperator: Operator does not meet minimum stake requirement for quorum"
             );
 
             // Update the operator's stake
@@ -103,7 +102,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @notice Deregisters the operator with `operatorId` for the specified `quorumNumbers`.
      * @param operatorId The id of the operator to deregister.
      * @param quorumNumbers The quorum numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
-     * @dev access restricted to the RegistryCoordinator
+     * @dev access restricted to the EORegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0
@@ -114,14 +113,14 @@ contract StakeRegistry is StakeRegistryStorage {
     function deregisterOperator(
         bytes32 operatorId,
         bytes calldata quorumNumbers
-    ) public virtual onlyRegistryCoordinator {
+    ) public virtual onlyEORegistryCoordinator {
         /**
          * For each quorum, remove the operator's stake for the quorum and update
          * the quorum's total stake to account for the removal
          */
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            require(_quorumExists(quorumNumber), "StakeRegistry.deregisterOperator: quorum does not exist");
+            require(_quorumExists(quorumNumber), "EOStakeRegistry.deregisterOperator: quorum does not exist");
 
             // Update the operator's stake for the quorum and retrieve the shares removed
             int256 stakeDelta = _recordOperatorStakeUpdate({
@@ -148,7 +147,7 @@ contract StakeRegistry is StakeRegistryStorage {
         address operator, 
         bytes32 operatorId, 
         bytes calldata quorumNumbers
-    ) external onlyRegistryCoordinator returns (uint192) {
+    ) external onlyEORegistryCoordinator returns (uint192) {
         uint192 quorumsToRemove;
 
         /**
@@ -161,7 +160,7 @@ contract StakeRegistry is StakeRegistryStorage {
          */
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            require(_quorumExists(quorumNumber), "StakeRegistry.updateOperatorStake: quorum does not exist");
+            require(_quorumExists(quorumNumber), "EOStakeRegistry.updateOperatorStake: quorum does not exist");
 
             // Fetch the operator's current stake, applying weighting parameters and checking
             // against the minimum stake requirements for the quorum.
@@ -193,8 +192,8 @@ contract StakeRegistry is StakeRegistryStorage {
         uint8 quorumNumber,
         uint96 minimumStake,
         StrategyParams[] memory _strategyParams
-    ) public virtual onlyRegistryCoordinator {
-        require(!_quorumExists(quorumNumber), "StakeRegistry.initializeQuorum: quorum already exists");
+    ) public virtual onlyEORegistryCoordinator {
+        require(!_quorumExists(quorumNumber), "EOStakeRegistry.initializeQuorum: quorum already exists");
         _addStrategyParams(quorumNumber, _strategyParams);
         _setMinimumStakeForQuorum(quorumNumber, minimumStake);
 
@@ -235,7 +234,7 @@ contract StakeRegistry is StakeRegistryStorage {
         uint256[] memory indicesToRemove
     ) public virtual onlyCoordinatorOwner quorumExists(quorumNumber) {
         uint256 toRemoveLength = indicesToRemove.length;
-        require(toRemoveLength > 0, "StakeRegistry.removeStrategies: no indices to remove provided");
+        require(toRemoveLength > 0, "EOStakeRegistry.removeStrategies: no indices to remove provided");
 
         StrategyParams[] storage _strategyParams = strategyParams[quorumNumber];
         IStrategy[] storage _strategiesPerQuorum = strategiesPerQuorum[quorumNumber];
@@ -264,8 +263,8 @@ contract StakeRegistry is StakeRegistryStorage {
         uint96[] calldata newMultipliers
     ) public virtual onlyCoordinatorOwner quorumExists(quorumNumber) {
         uint256 numStrats = strategyIndices.length;
-        require(numStrats > 0, "StakeRegistry.modifyStrategyParams: no strategy indices provided");
-        require(newMultipliers.length == numStrats, "StakeRegistry.modifyStrategyParams: input length mismatch");
+        require(numStrats > 0, "EOStakeRegistry.modifyStrategyParams: no strategy indices provided");
+        require(newMultipliers.length == numStrats, "EOStakeRegistry.modifyStrategyParams: input length mismatch");
 
         StrategyParams[] storage _strategyParams = strategyParams[quorumNumber];
 
@@ -296,7 +295,7 @@ contract StakeRegistry is StakeRegistryStorage {
 
         // If we hit this point, no stake update exists at blockNumber
         revert(
-            "StakeRegistry._getStakeUpdateIndexForOperatorAtBlockNumber: no stake update found for operatorId and quorumNumber at block number"
+            "EOStakeRegistry._getStakeUpdateIndexForOperatorAtBlockNumber: no stake update found for operatorId and quorumNumber at block number"
         );
     }
 
@@ -399,24 +398,24 @@ contract StakeRegistry is StakeRegistryStorage {
         uint8 quorumNumber,
         StrategyParams[] memory _strategyParams
     ) internal {
-        require(_strategyParams.length > 0, "StakeRegistry._addStrategyParams: no strategies provided");
+        require(_strategyParams.length > 0, "EOStakeRegistry._addStrategyParams: no strategies provided");
         uint256 numStratsToAdd = _strategyParams.length;
         uint256 numStratsExisting = strategyParams[quorumNumber].length;
         require(
             numStratsExisting + numStratsToAdd <= MAX_WEIGHING_FUNCTION_LENGTH,
-            "StakeRegistry._addStrategyParams: exceed MAX_WEIGHING_FUNCTION_LENGTH"
+            "EOStakeRegistry._addStrategyParams: exceed MAX_WEIGHING_FUNCTION_LENGTH"
         );
         for (uint256 i = 0; i < numStratsToAdd; i++) {
             // fairly gas-expensive internal loop to make sure that the *same* strategy cannot be added multiple times
             for (uint256 j = 0; j < (numStratsExisting + i); j++) {
                 require(
                     strategyParams[quorumNumber][j].strategy != _strategyParams[i].strategy,
-                    "StakeRegistry._addStrategyParams: cannot add same strategy 2x"
+                    "EOStakeRegistry._addStrategyParams: cannot add same strategy 2x"
                 );
             }
             require(
                 _strategyParams[i].multiplier > 0,
-                "StakeRegistry._addStrategyParams: cannot add strategy with zero weight"
+                "EOStakeRegistry._addStrategyParams: cannot add strategy with zero weight"
             );
             strategyParams[quorumNumber].push(_strategyParams[i]);
             strategiesPerQuorum[quorumNumber].push(_strategyParams[i].strategy);
@@ -455,11 +454,11 @@ contract StakeRegistry is StakeRegistryStorage {
          */
         require(
             blockNumber >= stakeUpdate.updateBlockNumber,
-            "StakeRegistry._validateStakeUpdateAtBlockNumber: stakeUpdate is from after blockNumber"
+            "EOStakeRegistry._validateStakeUpdateAtBlockNumber: stakeUpdate is from after blockNumber"
         );
         require(
             stakeUpdate.nextUpdateBlockNumber == 0 || blockNumber < stakeUpdate.nextUpdateBlockNumber,
-            "StakeRegistry._validateStakeUpdateAtBlockNumber: there is a newer stakeUpdate available before blockNumber"
+            "EOStakeRegistry._validateStakeUpdateAtBlockNumber: there is a newer stakeUpdate available before blockNumber"
         );
     }
 
@@ -697,10 +696,10 @@ contract StakeRegistry is StakeRegistryStorage {
         uint32[] memory indices = new uint32[](quorumNumbers.length);
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            require(_quorumExists(quorumNumber), "StakeRegistry.getTotalStakeIndicesAtBlockNumber: quorum does not exist");
+            require(_quorumExists(quorumNumber), "EOStakeRegistry.getTotalStakeIndicesAtBlockNumber: quorum does not exist");
             require(
                 _totalStakeHistory[quorumNumber][0].updateBlockNumber <= blockNumber,
-                "StakeRegistry.getTotalStakeIndicesAtBlockNumber: quorum has no stake history at blockNumber"
+                "EOStakeRegistry.getTotalStakeIndicesAtBlockNumber: quorum has no stake history at blockNumber"
             );
             uint256 length = _totalStakeHistory[quorumNumber].length;
             for (uint256 j = 0; j < length; j++) {

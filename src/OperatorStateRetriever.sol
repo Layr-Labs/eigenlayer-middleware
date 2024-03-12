@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
-import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
-import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
-import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
+import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
+import {IEOBLSApkRegistry} from "./interfaces/IEOBLSApkRegistry.sol";
+import {IEOStakeRegistry} from "./interfaces/IEOStakeRegistry.sol";
+import {IEOIndexRegistry} from "./interfaces/IEOIndexRegistry.sol";
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 
@@ -38,7 +38,7 @@ contract OperatorStateRetriever {
      *            was a part of at `blockNumber`, an ordered list of operators.
      */
     function getOperatorState(
-        IRegistryCoordinator registryCoordinator, 
+        IEORegistryCoordinator registryCoordinator, 
         bytes32 operatorId, 
         uint32 blockNumber
     ) external view returns (uint256, Operator[][] memory) {
@@ -62,13 +62,13 @@ contract OperatorStateRetriever {
      * @return 2d array of Operators. For each quorum, an ordered list of Operators
      */
     function getOperatorState(
-        IRegistryCoordinator registryCoordinator, 
+        IEORegistryCoordinator registryCoordinator, 
         bytes memory quorumNumbers, 
         uint32 blockNumber
     ) public view returns(Operator[][] memory) {
-        IStakeRegistry stakeRegistry = registryCoordinator.stakeRegistry();
-        IIndexRegistry indexRegistry = registryCoordinator.indexRegistry();
-        IBLSApkRegistry blsApkRegistry = registryCoordinator.blsApkRegistry();
+        IEOStakeRegistry stakeRegistry = registryCoordinator.stakeRegistry();
+        IEOIndexRegistry indexRegistry = registryCoordinator.indexRegistry();
+        IEOBLSApkRegistry blsApkRegistry = registryCoordinator.blsApkRegistry();
 
         Operator[][] memory operators = new Operator[][](quorumNumbers.length);
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
@@ -102,12 +102,12 @@ contract OperatorStateRetriever {
      *         4) the indices of the quorum apks for each of the provided quorums at the given blocknumber
      */
     function getCheckSignaturesIndices(
-        IRegistryCoordinator registryCoordinator,
+        IEORegistryCoordinator registryCoordinator,
         uint32 referenceBlockNumber, 
         bytes calldata quorumNumbers, 
         bytes32[] calldata nonSignerOperatorIds
     ) external view returns (CheckSignaturesIndices memory) {
-        IStakeRegistry stakeRegistry = registryCoordinator.stakeRegistry();
+        IEOStakeRegistry stakeRegistry = registryCoordinator.stakeRegistry();
         CheckSignaturesIndices memory checkSignaturesIndices;
 
         // get the indices of the quorumBitmap updates for each of the operators in the nonSignerOperatorIds array
@@ -153,7 +153,7 @@ contract OperatorStateRetriever {
             checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex] = nonSignerStakeIndicesForQuorum;
         }
 
-        IBLSApkRegistry blsApkRegistry = registryCoordinator.blsApkRegistry();
+        IEOBLSApkRegistry blsApkRegistry = registryCoordinator.blsApkRegistry();
         // get the indices of the quorum apks for each of the provided quorums at the given blocknumber
         checkSignaturesIndices.quorumApkIndices = blsApkRegistry.getApkIndicesAtBlockNumber(quorumNumbers, referenceBlockNumber);
 

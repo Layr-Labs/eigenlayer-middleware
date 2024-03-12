@@ -13,16 +13,17 @@ import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
 import {BN254} from "../../src/libraries/BN254.sol";
 
 import {OperatorStateRetriever} from "../../src/OperatorStateRetriever.sol";
-import {RegistryCoordinator} from "../../src/RegistryCoordinator.sol";
-import {RegistryCoordinatorHarness} from "../harnesses/RegistryCoordinatorHarness.t.sol";
-import {BLSApkRegistry} from "../../src/BLSApkRegistry.sol";
+import {EORegistryCoordinator} from "../../src/EORegistryCoordinator.sol";
+import {EORegistryCoordinatorHarness} from "../harnesses/EORegistryCoordinatorHarness.t.sol";
+import {EOBLSApkRegistry} from "../../src/EOBLSApkRegistry.sol";
 import {ServiceManagerMock} from "../mocks/ServiceManagerMock.sol";
-import {StakeRegistry} from "../../src/StakeRegistry.sol";
-import {IndexRegistry} from "../../src/IndexRegistry.sol";
-import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
-import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
-import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
-import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
+import {EOStakeRegistry} from "../../src/EOStakeRegistry.sol";
+import {EOIndexRegistry} from "../../src/EOIndexRegistry.sol";
+import {IEOBLSApkRegistry} from "../../src/interfaces/IEOBLSApkRegistry.sol";
+import {IEOStakeRegistry} from "../../src/interfaces/IEOStakeRegistry.sol";
+import {IEOIndexRegistry} from "../../src/interfaces/IEOIndexRegistry.sol";
+import {IEORegistryCoordinator} from "../../src/interfaces/IEORegistryCoordinator.sol";
+import {IEOChainManager} from "../../src/interfaces/IEOChainManager.sol";
 import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
 
 
@@ -34,10 +35,11 @@ import {AVSDirectory} from "eigenlayer-contracts/src/contracts/core/AVSDirectory
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 
-import {BLSApkRegistryHarness} from "../harnesses/BLSApkRegistryHarness.sol";
+import {AVSDirectoryMock} from "../mocks/AVSDirectoryMock.sol";
+import {EOBLSApkRegistryHarness} from "../harnesses/EOBLSApkRegistryHarness.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 
-import {StakeRegistryHarness} from "../harnesses/StakeRegistryHarness.sol";
+import {EOStakeRegistryHarness} from "../harnesses/EOStakeRegistryHarness.sol";
 
 import "forge-std/Test.sol";
 
@@ -54,17 +56,17 @@ contract MockAVSDeployer is Test {
 
     EmptyContract public emptyContract;
 
-    RegistryCoordinatorHarness public registryCoordinatorImplementation;
-    StakeRegistryHarness public stakeRegistryImplementation;
-    IBLSApkRegistry public blsApkRegistryImplementation;
-    IIndexRegistry public indexRegistryImplementation;
+    EORegistryCoordinatorHarness public registryCoordinatorImplementation;
+    EOStakeRegistryHarness public stakeRegistryImplementation;
+    IEOBLSApkRegistry public blsApkRegistryImplementation;
+    IEOIndexRegistry public indexRegistryImplementation;
     ServiceManagerMock public serviceManagerImplementation;
 
     OperatorStateRetriever public operatorStateRetriever;
-    RegistryCoordinatorHarness public registryCoordinator;
-    StakeRegistryHarness public stakeRegistry;
-    BLSApkRegistryHarness public blsApkRegistry;
-    IIndexRegistry public indexRegistry;
+    EORegistryCoordinatorHarness public registryCoordinator;
+    EOStakeRegistryHarness public stakeRegistry;
+    EOBLSApkRegistryHarness public blsApkRegistry;
+    IEOIndexRegistry public indexRegistry;
     ServiceManagerMock public serviceManager;
 
     StrategyManagerMock public strategyManagerMock;
@@ -74,7 +76,7 @@ contract MockAVSDeployer is Test {
     AVSDirectory public avsDirectoryImplementation;
     AVSDirectoryMock public avsDirectoryMock;
 
-    /// @notice StakeRegistry, Constant used as a divisor in calculating weights.
+    /// @notice EOStakeRegistry, Constant used as a divisor in calculating weights.
     uint256 public constant WEIGHTING_DIVISOR = 1e18;
 
     address public proxyAdminOwner = address(uint160(uint256(keccak256("proxyAdminOwner"))));
@@ -100,14 +102,14 @@ contract MockAVSDeployer is Test {
     uint16 defaultKickBIPsOfTotalStake = 150;
     uint8 numQuorums = 192;
 
-    IRegistryCoordinator.OperatorSetParam[] operatorSetParams;
+    IEORegistryCoordinator.OperatorSetParam[] operatorSetParams;
 
     uint8 maxQuorumsToRegisterFor = 4;
     uint256 maxOperatorsToRegister = 4;
     uint32 registrationBlockNumber = 100;
     uint32 blocksBetweenRegistrations = 10;
 
-    IBLSApkRegistry.PubkeyRegistrationParams pubkeyRegistrationParams;
+    IEOBLSApkRegistry.PubkeyRegistrationParams pubkeyRegistrationParams;
 
     struct OperatorMetadata {
         uint256 quorumBitmap;
@@ -170,7 +172,7 @@ contract MockAVSDeployer is Test {
         cheats.stopPrank();
 
         cheats.startPrank(registryCoordinatorOwner);
-        registryCoordinator = RegistryCoordinatorHarness(address(
+        registryCoordinator = EORegistryCoordinatorHarness(address(
             new TransparentUpgradeableProxy(
                 address(emptyContract),
                 address(proxyAdmin),
@@ -178,7 +180,7 @@ contract MockAVSDeployer is Test {
             )
         ));
 
-        stakeRegistry = StakeRegistryHarness(
+        stakeRegistry = EOStakeRegistryHarness(
             address(
                 new TransparentUpgradeableProxy(
                     address(emptyContract),
@@ -188,7 +190,7 @@ contract MockAVSDeployer is Test {
             )
         );
 
-        indexRegistry = IndexRegistry(
+        indexRegistry = EOIndexRegistry(
             address(
                 new TransparentUpgradeableProxy(
                     address(emptyContract),
@@ -198,7 +200,7 @@ contract MockAVSDeployer is Test {
             )
         );
 
-        blsApkRegistry = BLSApkRegistryHarness(
+        blsApkRegistry = EOBLSApkRegistryHarness(
             address(
                 new TransparentUpgradeableProxy(
                     address(emptyContract),
@@ -222,8 +224,8 @@ contract MockAVSDeployer is Test {
 
         cheats.startPrank(proxyAdminOwner);
 
-        stakeRegistryImplementation = new StakeRegistryHarness(
-            IRegistryCoordinator(registryCoordinator),
+        stakeRegistryImplementation = new EOStakeRegistryHarness(
+            IEORegistryCoordinator(registryCoordinator),
             delegationMock
         );
 
@@ -232,7 +234,7 @@ contract MockAVSDeployer is Test {
             address(stakeRegistryImplementation)
         );
 
-        blsApkRegistryImplementation = new BLSApkRegistryHarness(
+        blsApkRegistryImplementation = new EOBLSApkRegistryHarness(
             registryCoordinator
         );
 
@@ -241,7 +243,7 @@ contract MockAVSDeployer is Test {
             address(blsApkRegistryImplementation)
         );
 
-        indexRegistryImplementation = new IndexRegistry(
+        indexRegistryImplementation = new EOIndexRegistry(
             registryCoordinator
         );
 
@@ -273,17 +275,17 @@ contract MockAVSDeployer is Test {
         }
 
         // setup the dummy quorum strategies
-        IStakeRegistry.StrategyParams[][] memory quorumStrategiesConsideredAndMultipliers =
-            new IStakeRegistry.StrategyParams[][](numQuorumsToAdd);
+        IEOStakeRegistry.StrategyParams[][] memory quorumStrategiesConsideredAndMultipliers =
+            new IEOStakeRegistry.StrategyParams[][](numQuorumsToAdd);
         for (uint256 i = 0; i < quorumStrategiesConsideredAndMultipliers.length; i++) {
-            quorumStrategiesConsideredAndMultipliers[i] = new IStakeRegistry.StrategyParams[](1);
-            quorumStrategiesConsideredAndMultipliers[i][0] = IStakeRegistry.StrategyParams(
+            quorumStrategiesConsideredAndMultipliers[i] = new IEOStakeRegistry.StrategyParams[](1);
+            quorumStrategiesConsideredAndMultipliers[i][0] = IEOStakeRegistry.StrategyParams(
                 IStrategy(address(uint160(i))),
                 uint96(WEIGHTING_DIVISOR)
             );
         }
 
-        registryCoordinatorImplementation = new RegistryCoordinatorHarness(
+        registryCoordinatorImplementation = new EORegistryCoordinatorHarness(
             serviceManager,
             stakeRegistry,
             blsApkRegistry,
@@ -293,7 +295,7 @@ contract MockAVSDeployer is Test {
             delete operatorSetParams;
             for (uint i = 0; i < numQuorumsToAdd; i++) {
                 // hard code these for now
-                operatorSetParams.push(IRegistryCoordinator.OperatorSetParam({
+                operatorSetParams.push(IEORegistryCoordinator.OperatorSetParam({
                     maxOperatorCount: defaultMaxOperatorCount,
                     kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
                     kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
@@ -304,7 +306,7 @@ contract MockAVSDeployer is Test {
                 TransparentUpgradeableProxy(payable(address(registryCoordinator))),
                 address(registryCoordinatorImplementation),
                 abi.encodeWithSelector(
-                    RegistryCoordinator.initialize.selector,
+                    EORegistryCoordinator.initialize.selector,
                     registryCoordinatorOwner,
                     churnApprover,
                     ejector,
@@ -345,7 +347,7 @@ contract MockAVSDeployer is Test {
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
         cheats.prank(operator);
-        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySignatureAndExpiry);
+        registryCoordinator.registerOperator(quorumNumbers, pubkeyRegistrationParams, emptySignatureAndExpiry);
     }
 
     /**
@@ -364,7 +366,7 @@ contract MockAVSDeployer is Test {
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
         cheats.prank(operator);
-        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySignatureAndExpiry);
+        registryCoordinator.registerOperator(quorumNumbers, pubkeyRegistrationParams, emptySignatureAndExpiry);
     }
 
     function _registerRandomOperators(uint256 pseudoRandomNumber) internal returns(OperatorMetadata[] memory, uint256[][] memory) {
@@ -418,7 +420,7 @@ contract MockAVSDeployer is Test {
      * can give small rounding errors.
      */
     function _setOperatorWeight(address operator, uint8 quorumNumber, uint96 weight) internal returns (uint96) {
-        // Set StakeRegistry operator weight by setting DelegationManager operator shares
+        // Set EOStakeRegistry operator weight by setting DelegationManager operator shares
         (IStrategy strategy, uint96 multiplier) = stakeRegistry.strategyParams(quorumNumber, 0);
         uint256 actualWeight = ((uint256(weight) * WEIGHTING_DIVISOR) / uint256(multiplier));
         delegationMock.setOperatorShares(operator, strategy, actualWeight);
@@ -433,7 +435,7 @@ contract MockAVSDeployer is Test {
         return bytes32(uint256(start) + inc);
     }
 
-    function _signOperatorChurnApproval(address registeringOperator, bytes32 registeringOperatorId, IRegistryCoordinator.OperatorKickParam[] memory operatorKickParams, bytes32 salt,  uint256 expiry) internal view returns(ISignatureUtils.SignatureWithSaltAndExpiry memory) {
+    function _signOperatorChurnApproval(address registeringOperator, bytes32 registeringOperatorId, IEORegistryCoordinator.OperatorKickParam[] memory operatorKickParams, bytes32 salt,  uint256 expiry) internal view returns(ISignatureUtils.SignatureWithSaltAndExpiry memory) {
         bytes32 digestHash = registryCoordinator.calculateOperatorChurnApprovalDigestHash(
             registeringOperator,
             registeringOperatorId,

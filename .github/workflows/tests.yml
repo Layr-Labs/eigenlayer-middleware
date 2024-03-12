@@ -46,5 +46,6 @@ jobs:
 
         env:
           RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
+          RPC_GOERLI: ${{ secrets.RPC_GOERLI }}
           CHAIN_ID: ${{ secrets.CHAIN_ID }}
         id: test

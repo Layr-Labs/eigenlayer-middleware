@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {IBLSApkRegistry} from "./IBLSApkRegistry.sol";
-import {IStakeRegistry} from "./IStakeRegistry.sol";
-import {IIndexRegistry} from "./IIndexRegistry.sol";
+import {IEOBLSApkRegistry} from "./IEOBLSApkRegistry.sol";
+import {IEOStakeRegistry} from "./IEOStakeRegistry.sol";
+import {IEOIndexRegistry} from "./IEOIndexRegistry.sol";
 import {BN254} from "../libraries/BN254.sol";
 
 /**
  * @title Interface for a contract that coordinates between various registries for an AVS.
  * @author Layr Labs, Inc.
  */
-interface IRegistryCoordinator {
+interface IEORegistryCoordinator {
     // EVENTS
 
     /// Emits when an operator is registered
@@ -24,6 +24,8 @@ interface IRegistryCoordinator {
     event ChurnApproverUpdated(address prevChurnApprover, address newChurnApprover);
 
     event EjectorUpdated(address prevEjector, address newEjector);
+
+    event ChainManagerUpdated(address prevChainManager, address newChainManager);
 
     /// @notice emitted when all the operators for a quorum are updated at once
     event QuorumBlockNumberUpdated(uint8 indexed quorumNumber, uint256 blocknumber);
@@ -84,11 +86,11 @@ interface IRegistryCoordinator {
     /// @notice Returns the operator set params for the given `quorumNumber`
     function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory);
     /// @notice the Stake registry contract that will keep track of operators' stakes
-    function stakeRegistry() external view returns (IStakeRegistry);
+    function stakeRegistry() external view returns (IEOStakeRegistry);
     /// @notice the BLS Aggregate Pubkey Registry contract that will keep track of operators' BLS aggregate pubkeys per quorum
-    function blsApkRegistry() external view returns (IBLSApkRegistry);
+    function blsApkRegistry() external view returns (IEOBLSApkRegistry);
     /// @notice the index Registry contract that will keep track of operators' indexes
-    function indexRegistry() external view returns (IIndexRegistry);
+    function indexRegistry() external view returns (IEOIndexRegistry);
 
     /**
      * @notice Ejects the provided operator from the provided quorums from the AVS
@@ -113,7 +115,7 @@ interface IRegistryCoordinator {
     function getOperatorFromId(bytes32 operatorId) external view returns (address operator);
 
     /// @notice Returns the status for the given `operator`
-    function getOperatorStatus(address operator) external view returns (IRegistryCoordinator.OperatorStatus);
+    function getOperatorStatus(address operator) external view returns (IEORegistryCoordinator.OperatorStatus);
 
     /// @notice Returns the indices of the quorumBitmaps for the provided `operatorIds` at the given `blockNumber`
     function getQuorumBitmapIndicesAtBlockNumber(uint32 blockNumber, bytes32[] memory operatorIds) external view returns (uint32[] memory);

@@ -2,11 +2,11 @@
 pragma solidity =0.8.12;
 
 
-import "../../src/interfaces/IRegistryCoordinator.sol";
+import "../../src/interfaces/IEORegistryCoordinator.sol";
 
 
-contract RegistryCoordinatorMock is IRegistryCoordinator {
-    function blsApkRegistry() external view returns (IBLSApkRegistry) {}
+contract EORegistryCoordinatorMock is IEORegistryCoordinator {
+    function blsApkRegistry() external view returns (IEOBLSApkRegistry) {}
 
     function ejectOperator(
         address operator, 
@@ -15,9 +15,9 @@ contract RegistryCoordinatorMock is IRegistryCoordinator {
 
     function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory) {}
 
-    function indexRegistry() external view returns (IIndexRegistry) {}
+    function indexRegistry() external view returns (IEOIndexRegistry) {}
 
-    function stakeRegistry() external view returns (IStakeRegistry) {}
+    function stakeRegistry() external view returns (IEOStakeRegistry) {}
 
     function quorumCount() external view returns (uint8) {}
     /// @notice Returns the bitmap of the quorums the operator is registered for.
@@ -32,7 +32,7 @@ contract RegistryCoordinatorMock is IRegistryCoordinator {
     function getOperatorFromId(bytes32 operatorId) external view returns (address) {}
 
     /// @notice Returns the status for the given `operator`
-    function getOperatorStatus(address operator) external view returns (IRegistryCoordinator.OperatorStatus){}
+    function getOperatorStatus(address operator) external view returns (IEORegistryCoordinator.OperatorStatus){}
 
     /// @notice Returns task number from when `operator` has been registered.
     function getFromTaskNumberForOperator(address operator) external view returns (uint32){}

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "../../src/ServiceManagerBase.sol";
+import {ServiceManagerBase, IAVSDirectory, IEORegistryCoordinator, IEOStakeRegistry} from "./ServiceManagerBase.sol";
 
-contract ServiceManagerMock is ServiceManagerBase {
+contract EOServiceManager is ServiceManagerBase {
     constructor(
         IAVSDirectory _avsDirectory,
         IEORegistryCoordinator _registryCoordinator,

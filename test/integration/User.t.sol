@@ -15,10 +15,10 @@ import "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
 import "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 
 // Middleware
-import "src/RegistryCoordinator.sol";
-import "src/BLSApkRegistry.sol";
-import "src/IndexRegistry.sol";
-import "src/StakeRegistry.sol";
+import "src/EORegistryCoordinator.sol";
+import "src/EOBLSApkRegistry.sol";
+import "src/EOIndexRegistry.sol";
+import "src/EOStakeRegistry.sol";
 import "src/ServiceManagerBase.sol";
 
 import "src/libraries/BN254.sol";
@@ -29,7 +29,7 @@ import "test/integration/utils/BitmapStrings.t.sol";
 
 
 interface IUserDeployer {
-    function registryCoordinator() external view returns (RegistryCoordinator);
+    function registryCoordinator() external view returns (EORegistryCoordinator);
     function avsDirectory() external view returns (AVSDirectory);
     function timeMachine() external view returns (TimeMachine);
     function churnApproverPrivateKey() external view returns (uint);
@@ -51,11 +51,11 @@ contract User is Test {
     AVSDirectory avsDirectory;
 
     // Middleware contracts
-    RegistryCoordinator registryCoordinator;
+    EORegistryCoordinator registryCoordinator;
     ServiceManagerBase serviceManager;
-    BLSApkRegistry blsApkRegistry;
-    StakeRegistry stakeRegistry;
-    IndexRegistry indexRegistry;
+    EOBLSApkRegistry blsApkRegistry;
+    EOStakeRegistry stakeRegistry;
+    EOIndexRegistry indexRegistry;
     
     TimeMachine timeMachine;
 
@@ -67,22 +67,22 @@ contract User is Test {
 
     // BLS keypair:
     uint privKey;
-    IBLSApkRegistry.PubkeyRegistrationParams pubkeyParams;
+    IEOBLSApkRegistry.PubkeyRegistrationParams pubkeyParams;
 
     // EIP1271 sigs:
     mapping(bytes32 => bool) digests;
     uint salt = 0;
 
-    constructor(string memory name, uint _privKey, IBLSApkRegistry.PubkeyRegistrationParams memory _pubkeyParams) {
+    constructor(string memory name, uint _privKey, IEOBLSApkRegistry.PubkeyRegistrationParams memory _pubkeyParams) {
         IUserDeployer deployer = IUserDeployer(msg.sender);
 
         registryCoordinator = deployer.registryCoordinator();
         avsDirectory = deployer.avsDirectory();
         serviceManager = ServiceManagerBase(address(registryCoordinator.serviceManager()));
 
-        blsApkRegistry = BLSApkRegistry(address(registryCoordinator.blsApkRegistry()));
-        stakeRegistry = StakeRegistry(address(registryCoordinator.stakeRegistry()));
-        indexRegistry = IndexRegistry(address(registryCoordinator.indexRegistry()));
+        blsApkRegistry = EOBLSApkRegistry(address(registryCoordinator.blsApkRegistry()));
+        stakeRegistry = EOStakeRegistry(address(registryCoordinator.stakeRegistry()));
+        indexRegistry = EOIndexRegistry(address(registryCoordinator.indexRegistry()));
 
         delegationManager = DelegationManager(address(stakeRegistry.delegation()));
         strategyManager = StrategyManager(address(delegationManager.strategyManager()));
@@ -119,7 +119,6 @@ contract User is Test {
 
         registryCoordinator.registerOperator({
             quorumNumbers: quorums,
-            socket: NAME,
             params: pubkeyParams,
             operatorSignature: _genAVSRegistrationSig()
         });
@@ -150,8 +149,8 @@ contract User is Test {
                 .plus(standardBitmap)
                 .bitmapToBytesArray();
 
-        IRegistryCoordinator.OperatorKickParam[] memory kickParams 
-            = new IRegistryCoordinator.OperatorKickParam[](allQuorums.length);
+        IEORegistryCoordinator.OperatorKickParam[] memory kickParams 
+            = new IEORegistryCoordinator.OperatorKickParam[](allQuorums.length);
 
         // this constructs OperatorKickParam[] in ascending quorum order
         // (yikes)
@@ -159,19 +158,19 @@ contract User is Test {
         uint stdIdx;
         while (churnIdx + stdIdx < allQuorums.length) {
             if (churnIdx == churnQuorums.length) {
-                kickParams[churnIdx + stdIdx] = IRegistryCoordinator.OperatorKickParam({
+                kickParams[churnIdx + stdIdx] = IEORegistryCoordinator.OperatorKickParam({
                     quorumNumber: 0,
                     operator: address(0)
                 });
                 stdIdx++;
             } else if (stdIdx == standardQuorums.length || churnQuorums[churnIdx] < standardQuorums[stdIdx]) {
-                kickParams[churnIdx + stdIdx] = IRegistryCoordinator.OperatorKickParam({
+                kickParams[churnIdx + stdIdx] = IEORegistryCoordinator.OperatorKickParam({
                     quorumNumber: uint8(churnQuorums[churnIdx]),
                     operator: address(churnTargets[churnIdx])
                 });
                 churnIdx++;
             } else if (standardQuorums[stdIdx] < churnQuorums[churnIdx]) {
-                kickParams[churnIdx + stdIdx] = IRegistryCoordinator.OperatorKickParam({
+                kickParams[churnIdx + stdIdx] = IEORegistryCoordinator.OperatorKickParam({
                     quorumNumber: 0,
                     operator: address(0)
                 });
@@ -210,7 +209,6 @@ contract User is Test {
 
         registryCoordinator.registerOperatorWithChurn({
             quorumNumbers: allQuorums,
-            socket: NAME,
             params: pubkeyParams,
             operatorKickParams: kickParams,
             churnApproverSignature: churnApproverSignature,
@@ -366,7 +364,7 @@ contract User_AltMethods is User {
         _;
     }
 
-    constructor(string memory name, uint _privKey, IBLSApkRegistry.PubkeyRegistrationParams memory _pubkeyParams) 
+    constructor(string memory name, uint _privKey, IEOBLSApkRegistry.PubkeyRegistrationParams memory _pubkeyParams) 
         User(name, _privKey, _pubkeyParams) {}
 
     /// @dev Rather than calling deregisterOperator, this pranks the ejector and calls

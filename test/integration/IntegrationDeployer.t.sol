@@ -26,10 +26,10 @@ import "eigenlayer-contracts/src/test/mocks/ETHDepositMock.sol";
 import "test/integration/mocks/BeaconChainOracleMock.t.sol";
 
 // Middleware contracts
-import "src/RegistryCoordinator.sol";
-import "src/StakeRegistry.sol";
-import "src/IndexRegistry.sol";
-import "src/BLSApkRegistry.sol";
+import "src/EORegistryCoordinator.sol";
+import "src/EOStakeRegistry.sol";
+import "src/EOIndexRegistry.sol";
+import "src/EOBLSApkRegistry.sol";
 import "test/mocks/ServiceManagerMock.sol";
 import "src/OperatorStateRetriever.sol";
 
@@ -64,11 +64,11 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     StrategyBase baseStrategyImplementation;
 
     // Middleware contracts to deploy
-    RegistryCoordinator public registryCoordinator;
+    EORegistryCoordinator public registryCoordinator;
     ServiceManagerMock serviceManager;
-    BLSApkRegistry blsApkRegistry;
-    StakeRegistry stakeRegistry;
-    IndexRegistry indexRegistry;
+    EOBLSApkRegistry blsApkRegistry;
+    EOStakeRegistry stakeRegistry;
+    EOIndexRegistry indexRegistry;
     OperatorStateRetriever operatorStateRetriever;
 
     TimeMachine public timeMachine;
@@ -92,7 +92,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     uint64 constant MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 32e9;
     uint constant MIN_BALANCE = 1e6;
     uint constant MAX_BALANCE = 5e6;
-    uint constant MAX_STRATEGY_COUNT = 32; // From StakeRegistry.MAX_WEIGHING_FUNCTION_LENGTH
+    uint constant MAX_STRATEGY_COUNT = 32; // From EOStakeRegistry.MAX_WEIGHING_FUNCTION_LENGTH
     uint96 constant DEFAULT_STRATEGY_MULTIPLIER = 1e18;
 
     function setUp() public virtual {
@@ -248,7 +248,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         timeMachine = new TimeMachine();
 
         cheats.startPrank(registryCoordinatorOwner);
-        registryCoordinator = RegistryCoordinator(address(
+        registryCoordinator = EORegistryCoordinator(address(
             new TransparentUpgradeableProxy(
                 address(emptyContract),
                 address(proxyAdmin),
@@ -256,7 +256,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             )
         ));
 
-        stakeRegistry = StakeRegistry(
+        stakeRegistry = EOStakeRegistry(
             address(
                 new TransparentUpgradeableProxy(
                     address(emptyContract),
@@ -266,7 +266,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             )
         );
 
-        indexRegistry = IndexRegistry(
+        indexRegistry = EOIndexRegistry(
             address(
                 new TransparentUpgradeableProxy(
                     address(emptyContract),
@@ -276,7 +276,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             )
         );
 
-        blsApkRegistry = BLSApkRegistry(
+        blsApkRegistry = EOBLSApkRegistry(
             address(
                 new TransparentUpgradeableProxy(
                     address(emptyContract),
@@ -297,10 +297,10 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
         cheats.stopPrank();
 
-        StakeRegistry stakeRegistryImplementation = new StakeRegistry(IRegistryCoordinator(registryCoordinator), IDelegationManager(delegationManager));
-        BLSApkRegistry blsApkRegistryImplementation = new BLSApkRegistry(IRegistryCoordinator(registryCoordinator));
-        IndexRegistry indexRegistryImplementation = new IndexRegistry(IRegistryCoordinator(registryCoordinator));
-        ServiceManagerMock serviceManagerImplementation = new ServiceManagerMock(IAVSDirectory(avsDirectory), IRegistryCoordinator(registryCoordinator), stakeRegistry);
+        EOStakeRegistry stakeRegistryImplementation = new EOStakeRegistry(IEORegistryCoordinator(registryCoordinator), IDelegationManager(delegationManager));
+        EOBLSApkRegistry blsApkRegistryImplementation = new EOBLSApkRegistry(IEORegistryCoordinator(registryCoordinator));
+        EOIndexRegistry indexRegistryImplementation = new EOIndexRegistry(IEORegistryCoordinator(registryCoordinator));
+        ServiceManagerMock serviceManagerImplementation = new ServiceManagerMock(IAVSDirectory(avsDirectory), IEORegistryCoordinator(registryCoordinator), stakeRegistry);
 
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(stakeRegistry))),
@@ -324,20 +324,20 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
         serviceManager.initialize({initialOwner: registryCoordinatorOwner});
 
-        RegistryCoordinator registryCoordinatorImplementation = new RegistryCoordinator(serviceManager, stakeRegistry, blsApkRegistry, indexRegistry);
+        EORegistryCoordinator registryCoordinatorImplementation = new EORegistryCoordinator(serviceManager, stakeRegistry, blsApkRegistry, indexRegistry);
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(registryCoordinator))),
             address(registryCoordinatorImplementation),
             abi.encodeWithSelector(
-                RegistryCoordinator.initialize.selector,
+                EORegistryCoordinator.initialize.selector,
                 registryCoordinatorOwner,
                 churnApprover,
                 ejector,
                 pauserRegistry,
                 0/*initialPausedStatus*/,
-                new IRegistryCoordinator.OperatorSetParam[](0),
+                new IEORegistryCoordinator.OperatorSetParam[](0),
                 new uint96[](0),
-                new IStakeRegistry.StrategyParams[][](0)
+                new IEOStakeRegistry.StrategyParams[][](0)
             )
         );
 

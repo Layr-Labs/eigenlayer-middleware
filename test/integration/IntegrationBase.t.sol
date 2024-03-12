@@ -19,7 +19,7 @@ abstract contract IntegrationBase is IntegrationConfig {
     using BitmapUtils for *;
     using BN254 for *;
 
-    /// RegistryCoordinator:
+    /// EORegistryCoordinator:
 
     function assert_HasOperatorInfoWithId(User user, string memory err) internal {
         bytes32 expectedId = user.operatorId();
@@ -30,22 +30,22 @@ abstract contract IntegrationBase is IntegrationConfig {
 
     /// @dev Also checks that the user has NEVER_REGISTERED status
     function assert_HasNoOperatorInfo(User user, string memory err) internal {
-        IRegistryCoordinator.OperatorInfo memory info = _getOperatorInfo(user);
+        IEORegistryCoordinator.OperatorInfo memory info = _getOperatorInfo(user);
 
         assertEq(info.operatorId, bytes32(0), err);
-        assertTrue(info.status == IRegistryCoordinator.OperatorStatus.NEVER_REGISTERED, err);
+        assertTrue(info.status == IEORegistryCoordinator.OperatorStatus.NEVER_REGISTERED, err);
     }
 
     function assert_HasRegisteredStatus(User user, string memory err) internal {
-        IRegistryCoordinator.OperatorStatus status = registryCoordinator.getOperatorStatus(address(user));
+        IEORegistryCoordinator.OperatorStatus status = registryCoordinator.getOperatorStatus(address(user));
 
-        assertTrue(status == IRegistryCoordinator.OperatorStatus.REGISTERED, err);
+        assertTrue(status == IEORegistryCoordinator.OperatorStatus.REGISTERED, err);
     }
 
     function assert_HasDeregisteredStatus(User user, string memory err) internal {
-        IRegistryCoordinator.OperatorStatus status = registryCoordinator.getOperatorStatus(address(user));
+        IEORegistryCoordinator.OperatorStatus status = registryCoordinator.getOperatorStatus(address(user));
 
-        assertTrue(status == IRegistryCoordinator.OperatorStatus.DEREGISTERED, err);
+        assertTrue(status == IEORegistryCoordinator.OperatorStatus.DEREGISTERED, err);
     }
 
     function assert_EmptyQuorumBitmap(User user, string memory err) internal {
@@ -72,7 +72,7 @@ abstract contract IntegrationBase is IntegrationConfig {
         assertTrue(subsetBitmap.isSubsetOf(currentBitmap), err);
     }
 
-    /// @dev Checks whether each of the quorums has been initialized in the RegistryCoordinator
+    /// @dev Checks whether each of the quorums has been initialized in the EORegistryCoordinator
     function assert_QuorumsExist(bytes memory quorums, string memory err) internal {
         uint8 count = registryCoordinator.quorumCount();
         for (uint i = 0; i < quorums.length; i++) {
@@ -82,7 +82,7 @@ abstract contract IntegrationBase is IntegrationConfig {
         }
     }
 
-    /// BLSApkRegistry:
+    /// EOBLSApkRegistry:
 
     function assert_NoRegisteredPubkey(User user, string memory err) internal {
         (uint pubkeyX, uint pubkeyY) = blsApkRegistry.operatorToPubkey(address(user));
@@ -108,7 +108,7 @@ abstract contract IntegrationBase is IntegrationConfig {
         assertEq(address(user), reverseLookup, err);
     }
 
-    /// StakeRegistry:
+    /// EOStakeRegistry:
 
     function assert_NoExistingStake(User user, bytes memory quorums, string memory err) internal {
         bytes32 operatorId = user.operatorId();
@@ -148,7 +148,7 @@ abstract contract IntegrationBase is IntegrationConfig {
         }
     }
 
-    /// IndexRegistry:
+    /// EOIndexRegistry:
 
     /// @dev Checks that we're specifically UNDER the max operator count, i.e. we are allowing
     /// at least one more operator to register
@@ -213,8 +213,8 @@ abstract contract IntegrationBase is IntegrationConfig {
     }
 
     function assert_Snap_Unchanged_OperatorInfo(User user, string memory err) internal {
-        IRegistryCoordinator.OperatorInfo memory curInfo = _getOperatorInfo(user);
-        IRegistryCoordinator.OperatorInfo memory prevInfo = _getPrevOperatorInfo(user);
+        IEORegistryCoordinator.OperatorInfo memory curInfo = _getOperatorInfo(user);
+        IEORegistryCoordinator.OperatorInfo memory prevInfo = _getPrevOperatorInfo(user);
 
         assertEq(prevInfo.operatorId, curInfo.operatorId, err);
         assertTrue(prevInfo.status == curInfo.status, err);
@@ -787,13 +787,13 @@ abstract contract IntegrationBase is IntegrationConfig {
         return delegationManager.cumulativeWithdrawalsQueued(address(staker));
     }
     
-    /// RegistryCoordinator:
+    /// EORegistryCoordinator:
 
-    function _getOperatorInfo(User user) internal view returns (IRegistryCoordinator.OperatorInfo memory) {
+    function _getOperatorInfo(User user) internal view returns (IEORegistryCoordinator.OperatorInfo memory) {
         return registryCoordinator.getOperator(address(user));
     }
 
-    function _getPrevOperatorInfo(User user) internal timewarp() returns (IRegistryCoordinator.OperatorInfo memory) {
+    function _getPrevOperatorInfo(User user) internal timewarp() returns (IEORegistryCoordinator.OperatorInfo memory) {
         return _getOperatorInfo(user);
     }
 
@@ -805,7 +805,7 @@ abstract contract IntegrationBase is IntegrationConfig {
         return _getQuorumBitmap(operatorId);
     }
 
-    /// BLSApkRegistry:
+    /// EOBLSApkRegistry:
 
     function _getQuorumApks(bytes memory quorums) internal view returns (BN254.G1Point[] memory) {
         BN254.G1Point[] memory apks = new BN254.G1Point[](quorums.length);
@@ -821,7 +821,7 @@ abstract contract IntegrationBase is IntegrationConfig {
         return _getQuorumApks(quorums);
     }
 
-    /// StakeRegistry:
+    /// EOStakeRegistry:
 
     function _getStakes(User user, bytes memory quorums) internal view returns (uint96[] memory) {
         bytes32 operatorId = user.operatorId();
@@ -888,7 +888,7 @@ abstract contract IntegrationBase is IntegrationConfig {
         return _getTotalStakes(quorums);
     }
 
-    /// IndexRegistry:
+    /// EOIndexRegistry:
 
     function _getOperatorCounts(bytes memory quorums) internal view returns (uint32[] memory) {
         uint32[] memory operatorCounts = new uint32[](quorums.length);

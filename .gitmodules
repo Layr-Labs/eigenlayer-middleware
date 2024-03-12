@@ -3,8 +3,8 @@
 	url = https://github.com/foundry-rs/forge-std
 [submodule "lib/eigenlayer-contracts"]
 	path = lib/eigenlayer-contracts
-	url = https://github.com/Layr-labs/eigenlayer-contracts
-	branch = dev
+	url = https://github.com/Eoracle/eigenlayer-contracts
+	branch = eigenlayer-middleware-testnet-tag
 [submodule "lib/ds-test"]
 	path = lib/ds-test
 	url = https://github.com/dapphub/ds-test

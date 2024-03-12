@@ -329,7 +329,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         referenceBlockNumber += 1;
         // roll forward to reference + 1 to ensure the referenceBlockNumber is still valid
         cheats.roll(referenceBlockNumber + 1);
-        cheats.expectRevert("BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within withdrawalDelayBlocks window");
+        cheats.expectRevert("BLSSignatureChecker.checkSignatures: EOStakeRegistry updates must be within withdrawalDelayBlocks window");
         blsSignatureChecker.checkSignatures(
             msgHash, 
             quorumNumbers,
@@ -352,7 +352,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         // set the nonSignerQuorumBitmapIndices to a different value
         nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices[0] = 1;
 
-        cheats.expectRevert("RegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber");
+        cheats.expectRevert("getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber");
         blsSignatureChecker.checkSignatures(
             msgHash, 
             quorumNumbers,
@@ -372,7 +372,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         // set the totalStakeIndices to a different value
         nonSignerStakesAndSignature.totalStakeIndices[0] = 0;
 
-        cheats.expectRevert("StakeRegistry._validateStakeUpdateAtBlockNumber: there is a newer stakeUpdate available before blockNumber");
+        cheats.expectRevert("EOStakeRegistry._validateStakeUpdateAtBlockNumber: there is a newer stakeUpdate available before blockNumber");
         blsSignatureChecker.checkSignatures(
             msgHash, 
             quorumNumbers,
@@ -401,7 +401,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         // set the nonSignerStakeIndices to a different value
         nonSignerStakesAndSignature.nonSignerStakeIndices[0][0] = 1;
 
-        cheats.expectRevert("StakeRegistry._validateStakeUpdateAtBlockNumber: stakeUpdate is from after blockNumber");
+        cheats.expectRevert("EOStakeRegistry._validateStakeUpdateAtBlockNumber: stakeUpdate is from after blockNumber");
         blsSignatureChecker.checkSignatures(
             msgHash, 
             quorumNumbers,
@@ -422,7 +422,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         // set the quorumApkIndices to a different value
         nonSignerStakesAndSignature.quorumApkIndices[0] = 0;
 
-        cheats.expectRevert("BLSApkRegistry._validateApkHashAtBlockNumber: not latest apk update");
+        cheats.expectRevert("EOBLSApkRegistry._validateApkHashAtBlockNumber: not latest apk update");
         blsSignatureChecker.checkSignatures(
             msgHash, 
             quorumNumbers,

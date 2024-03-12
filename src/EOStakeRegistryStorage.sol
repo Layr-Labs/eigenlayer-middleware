@@ -4,15 +4,15 @@ pragma solidity =0.8.12;
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategyManager, IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
-import {IStakeRegistry} from  "./interfaces/IStakeRegistry.sol";
+import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
+import {IEOStakeRegistry} from  "./interfaces/IEOStakeRegistry.sol";
 
 /**
- * @title Storage variables for the `StakeRegistry` contract.
+ * @title Storage variables for the `EOStakeRegistry` contract.
  * @author Layr Labs, Inc.
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
-abstract contract StakeRegistryStorage is IStakeRegistry {
+abstract contract EOStakeRegistryStorage is IEOStakeRegistry {
     
     /// @notice Constant used as a divisor in calculating weights.
     uint256 public constant WEIGHTING_DIVISOR = 1e18;
@@ -46,7 +46,7 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
 
 
     constructor(
-        IRegistryCoordinator _registryCoordinator, 
+        IEORegistryCoordinator _registryCoordinator, 
         IDelegationManager _delegationManager
     ) {
         registryCoordinator = address(_registryCoordinator);

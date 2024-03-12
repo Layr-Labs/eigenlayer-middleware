@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {IEOBLSApkRegistry} from "./interfaces/IEOBLSApkRegistry.sol";
+import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
 
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
 import {BN254} from "./libraries/BN254.sol";
 
-abstract contract BLSApkRegistryStorage is Initializable, IBLSApkRegistry {
+abstract contract EOBLSApkRegistryStorage is Initializable, IEOBLSApkRegistry {
     /// @notice the hash of the zero pubkey aka BN254.G1Point(0,0)
     bytes32 internal constant ZERO_PK_HASH = hex"ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5";
 
@@ -29,7 +29,7 @@ abstract contract BLSApkRegistryStorage is Initializable, IBLSApkRegistry {
     /// @notice maps quorumNumber => current aggregate pubkey of quorum
     mapping(uint8 => BN254.G1Point) public currentApk;
 
-    constructor(IRegistryCoordinator _registryCoordinator) {
+    constructor(IEORegistryCoordinator _registryCoordinator) {
         registryCoordinator = address(_registryCoordinator);
         // disable initializers so that the implementation contract cannot be initialized
         _disableInitializers();

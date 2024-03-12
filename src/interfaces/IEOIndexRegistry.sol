@@ -7,7 +7,7 @@ import {IRegistry} from "./IRegistry.sol";
  * @title Interface for a `Registry`-type contract that keeps track of an ordered list of operators for up to 256 quorums.
  * @author Layr Labs, Inc.
  */
-interface IIndexRegistry is IRegistry {
+interface IEOIndexRegistry is IRegistry {
     // EVENTS
     
     // emitted when an operator's index in the ordered operator list for the quorum with number `quorumNumber` is updated
@@ -37,7 +37,7 @@ interface IIndexRegistry is IRegistry {
      * @param operatorId is the id of the operator that is being registered
      * @param quorumNumbers is the quorum numbers the operator is registered for
      * @return numOperatorsPerQuorum is a list of the number of operators (including the registering operator) in each of the quorums the operator is registered for
-     * @dev access restricted to the RegistryCoordinator
+     * @dev access restricted to the EORegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0
@@ -50,7 +50,7 @@ interface IIndexRegistry is IRegistry {
      * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumNumbers`.
      * @param operatorId is the id of the operator that is being deregistered
      * @param quorumNumbers is the quorum numbers the operator is deregistered for
-     * @dev access restricted to the RegistryCoordinator
+     * @dev access restricted to the EORegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0
