@@ -1,27 +1,27 @@
 {
   "addresses": {
-    "blsApkRegistry": "0xDEb1E9a6Be7Baf84208BB6E10aC9F9bbE1D70809",
-    "blsApkRegistryImplementation": "0x416C42991d05b31E9A6dC209e91AD22b79D87Ae6",
-    "indexRegistry": "0x62c20Aa1e0272312BC100b4e23B4DC1Ed96dD7D1",
-    "indexRegistryImplementation": "0xd21060559c9beb54fC07aFd6151aDf6cFCDDCAeB",
-    "operatorStateRetriever": "0xc7B87b2b892EA5C3CfF47168881FE168C00377FB",
-    "proxyAdmin": "0xA8452Ec99ce0C64f20701dB7dD3abDb607c00496",
-    "registryCoordinator": "0xDB8cFf278adCCF9E9b5da745B44E754fC4EE3C76",
-    "registryCoordinatorImplementation": "0x20A42a5a785622c6Ba2576B2D6e924aA82BFA11D",
-    "serviceManager": "0xD718d5A27a29FF1cD22403426084bA0d479869a0",
-    "serviceManagerImplementation": "0x4C52a6277b1B84121b3072C0c92b6Be0b7CC10F1",
-    "stakeRegistry": "0x50EEf481cae4250d252Ae577A09bF514f224C6C4",
-    "stakeRegistryImplementation": "0x4f559F30f5eB88D635FDe1548C4267DB8FaB0351"
+    "blsApkRegistry": "0x439dc9654E634cF46b8EeAf6d248B24F13BCeDA8",
+    "blsApkRegistryImplementation": "0xeb2050C3Bb9c4294FA80b8dF11f87945b5488a7c",
+    "indexRegistry": "0x7459104eFC5d8901267e193171E7BA76dbbd99a7",
+    "indexRegistryImplementation": "0xafc75CF7346684BEE627D1b35d221fF5faA89D90",
+    "operatorStateRetriever": "0xF085e41727A334C574fd491E196E707E8Cd1087E",
+    "proxyAdmin": "0x054532ecAEa23aAf2b20C87A3e5341f2056AC96f",
+    "registryCoordinator": "0x252b3855eCE87a64505343d806e8683C21ec16B1",
+    "registryCoordinatorImplementation": "0xAc37d81D249ad3bE1248e663bdeb2fD1e334442c",
+    "serviceManager": "0x444C0576ED6f6095d44b31cC83d38E509Add525B",
+    "serviceManagerImplementation": "0x6Cd346EDAbeDE533D0e75eE0Fb720De9B79D24CD",
+    "stakeRegistry": "0xFBB1DcD3A317365B6ff4184527C06756D9cD2772",
+    "stakeRegistryImplementation": "0x1555Af6B5748B4CdB69ABB14170FF05245Ce6ae5"
   },
   "chainInfo": {
     "chainId": 5,
-    "deploymentBlock": 10619764
+    "deploymentBlock": 10663080
   },
   "permissions": {
     "churner": "0x119156A81E4f3d891cBd106a4AedEA916A0A9C4b",
     "ejector": "0x119156A81E4f3d891cBd106a4AedEA916A0A9C4b",
     "eoracleOwner": "0x119156A81E4f3d891cBd106a4AedEA916A0A9C4b",
     "eoracleUpgrader": "0x119156A81E4f3d891cBd106a4AedEA916A0A9C4b",
-    "pauserRegistry": "0xBb2180ebd78ce97360503434eD37fcf4a1Df61c3"
+    "pauserRegistry": "0x75260eB120E22C941bB5429C05aF67fe970c0A0F"
   }
 }
