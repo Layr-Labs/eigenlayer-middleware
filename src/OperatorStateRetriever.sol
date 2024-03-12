@@ -178,6 +178,7 @@ contract OperatorStateRetriever {
         }
         return quorumBitmaps;
     }
+<<<<<<< HEAD
 
     /**
      * @notice This function returns the operatorIds for each of the operators in the operators array
@@ -211,4 +212,6 @@ contract OperatorStateRetriever {
         }
     }
     
+=======
+>>>>>>> feat: nonsigning rate helpers (#202)
 }

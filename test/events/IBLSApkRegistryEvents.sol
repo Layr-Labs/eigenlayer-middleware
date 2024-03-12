@@ -16,9 +16,13 @@ interface IBLSApkRegistryEvents {
     event OperatorAddedToQuorums(
         address operator,
 <<<<<<< HEAD
+<<<<<<< HEAD
         bytes32 operatorId,
 =======
 >>>>>>> test: apk registry unit tests and foundry config update (#145)
+=======
+        bytes32 operatorId,
+>>>>>>> feat: nonsigning rate helpers (#202)
         bytes quorumNumbers
     );
 
@@ -26,9 +30,13 @@ interface IBLSApkRegistryEvents {
     event OperatorRemovedFromQuorums(
         address operator, 
 <<<<<<< HEAD
+<<<<<<< HEAD
         bytes32 operatorId,
 =======
 >>>>>>> test: apk registry unit tests and foundry config update (#145)
+=======
+        bytes32 operatorId,
+>>>>>>> feat: nonsigning rate helpers (#202)
         bytes quorumNumbers
     );
 }
