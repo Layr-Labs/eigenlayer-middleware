@@ -109,14 +109,6 @@ contract Goerli_DeployEOMiddlewareContracts is Utils, ExistingDeploymentParser {
             stakeRegistry
         );
 
-        _verifyContractPointers(
-            blsApkRegistryImplementation,
-            serviceManagerImplementation,
-            registryCoordinatorImplementation,
-            indexRegistryImplementation,
-            stakeRegistryImplementation
-        );
-
         _verifyImplementations();
 
         _verifyInitalizations(config_data);
@@ -322,9 +314,9 @@ contract Goerli_DeployEOMiddlewareContracts is Utils, ExistingDeploymentParser {
         // require(address(_serviceManager.registryCoordinator()) == address(registryCoordinator), "_serviceManager.registryCoordinator() != registryCoordinator");
         // require(address(_serviceManager.stakeRegistry()) == address(stakeRegistry), "_serviceManager.stakeRegistry() != stakeRegistry");
 
-        // require(address(_registryCoordinator.serviceManager()) == address(_serviceManager), "registryCoordinator.serviceManager() != _serviceManager");
+        require(address(_registryCoordinator.serviceManager()) == address(_serviceManager), "registryCoordinator.serviceManager() != _serviceManager");
         require(address(_registryCoordinator.stakeRegistry()) == address(stakeRegistry), "registryCoordinator.stakeRegistry() != stakeRegistry");
-        // require(address(_registryCoordinator.blsApkRegistry()) == address(_apkRegistry), "registryCoordinator.blsApkRegistry() != _apkRegistry");
+        require(address(_registryCoordinator.blsApkRegistry()) == address(_apkRegistry), "registryCoordinator.blsApkRegistry() != _apkRegistry");
         require(address(_registryCoordinator.indexRegistry()) == address(indexRegistry), "registryCoordinator.indexRegistry() != indexRegistry");
     }
 
