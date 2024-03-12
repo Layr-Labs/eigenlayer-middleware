@@ -159,4 +159,23 @@ contract OperatorStateRetriever {
 
         return checkSignaturesIndices;
     }
+
+    /**
+     * @notice this function returns the quorumBitmaps for each of the operators in the operatorIds array at the given blocknumber
+     * @param registryCoordinator is the AVS registry coordinator to fetch the operator information from
+     * @param operatorIds are the ids of the operators to get the quorumBitmaps for
+     * @param blockNumber is the block number to get the quorumBitmaps for
+     */
+    function getQuorumBitmapsAtBlockNumber(
+        IRegistryCoordinator registryCoordinator,
+        bytes32[] memory operatorIds,
+        uint32 blockNumber
+    ) external view returns (uint256[] memory) {
+        uint32[] memory quorumBitmapIndices = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
+        uint256[] memory quorumBitmaps = new uint256[](operatorIds.length);
+        for (uint256 i = 0; i < operatorIds.length; i++) {
+            quorumBitmaps[i] = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorIds[i], blockNumber, quorumBitmapIndices[i]);
+        }
+        return quorumBitmaps;
+    }
 }

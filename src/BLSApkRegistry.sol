@@ -50,7 +50,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         _processQuorumApkUpdate(quorumNumbers, pubkey);
 
         // Return pubkeyHash, which will become the operator's unique id
-        emit OperatorAddedToQuorums(operator, quorumNumbers);
+        emit OperatorAddedToQuorums(operator, getOperatorId(operator), quorumNumbers);
     }
 
     /**
@@ -74,7 +74,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
 
         // Update each quorum's aggregate pubkey
         _processQuorumApkUpdate(quorumNumbers, pubkey.negate());
-        emit OperatorRemovedFromQuorums(operator, quorumNumbers);
+        emit OperatorRemovedFromQuorums(operator, getOperatorId(operator), quorumNumbers);
     }
 
     /**

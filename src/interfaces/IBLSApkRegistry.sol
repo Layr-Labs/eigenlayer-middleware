@@ -40,12 +40,14 @@ interface IBLSApkRegistry is IRegistry {
     // @notice Emitted when a new operator pubkey is registered for a set of quorums
     event OperatorAddedToQuorums(
         address operator,
+        bytes32 operatorId,
         bytes quorumNumbers
     );
 
     // @notice Emitted when an operator pubkey is removed from a set of quorums
     event OperatorRemovedFromQuorums(
         address operator, 
+        bytes32 operatorId,
         bytes quorumNumbers
     );
 
