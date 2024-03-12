@@ -129,6 +129,7 @@ function returnBytes() returns bytes {
 
 /** Properties **/
 
+/// 
 // status: verified
 invariant initializedQuorumHistories(uint8 quorumNumber)
     quorumNumber < currentContract.quorumCount <=> 
@@ -136,7 +137,8 @@ invariant initializedQuorumHistories(uint8 quorumNumber)
         indexRegistry.operatorCountHistory(quorumNumber).length != 0 &&
         blsApkRegistry.getApkHistory(quorumNumber).length != 0;
 
-// If my Operator status is REGISTERED ⇔ my quorum bitmap MUST BE nonzero
+/// If my Operator status is REGISTERED ⇔ my quorum bitmap MUST BE nonzero
+// status: violated
 invariant registeredOperatorsHaveNonzeroBitmaps(env e, address operator)
     getOperatorStatus(operator) == IRegistryCoordinator.OperatorStatus.REGISTERED <=>
         getCurrentQuorumBitmap(e, getOperatorId(operator)) != 0;
@@ -160,13 +162,14 @@ invariant operatorIndexWithinRange(env e, address operator, uint8 quorumNumber, 
         }
     }
 
-// if operator is registered for quorum number then 
-// operator has stake weight >= minStakeWeight(quorumNumber)
+/// if operator is registered for quorum number then operator has stake weight >= minStakeWeight(quorumNumber)
+// status: violated
 invariant operatorHasNonZeroStakeWeight(env e, address operator, uint8 quorumNumber)
     quorumInBitmap(assert_uint256(getCurrentQuorumBitmap(e, getOperatorId(operator))), quorumNumber) =>
         stakeRegistry.weightOfOperatorForQuorum(e, quorumNumber, operator) >= stakeRegistry.minimumStakeForQuorum(e, quorumNumber);
 
-// Operator cant go from registered to NEVER_REGISTERED. Can write some parametric rule
+/// Operator cant go from registered to NEVER_REGISTERED. Can write some parametric rule
+// status: verified
 rule registeredOperatorCantBeNeverRegistered(address operator) {
     require(getOperatorStatus(operator) != IRegistryCoordinator.OperatorStatus.NEVER_REGISTERED);
 
