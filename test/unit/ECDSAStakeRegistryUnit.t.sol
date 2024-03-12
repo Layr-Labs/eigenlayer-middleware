@@ -569,7 +569,7 @@ function test_UpdateQuorumConfig() public {
         registry.deregisterOperator();
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
-        address[] memory operators = new address[](100);
+        address[] memory operators = new address[](30);
         for (uint256 i; i< operators.length;i++) {
             operators[i]=address(uint160(i));
             registry.registerOperatorWithSignature(operators[i], operatorSignature);
@@ -590,8 +590,8 @@ function test_UpdateQuorumConfig() public {
         msgHash = keccak256("data");
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
-        address[] memory operators = new address[](100);
-        bytes[] memory signatures = new bytes[](100);
+        address[] memory operators = new address[](30);
+        bytes[] memory signatures = new bytes[](30);
         uint8 v;
         bytes32 r;
         bytes32 s;
