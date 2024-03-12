@@ -271,15 +271,17 @@ contract ECDSAStakeRegistry is
     /// @param _operator The address of the operator to update the weight of.
     function _updateOperatorWeight(address _operator) internal virtual returns (int256){
         int256 delta;
-        uint256 oldWeight;
         uint256 newWeight;
+        uint256 oldWeight = _operatorWeightHistory[_operator].latest();
         if (!_operatorRegistered[_operator]) {
-            (oldWeight, ) = _operatorWeightHistory[_operator].push(0);
             delta -= int(oldWeight);
+            if (delta == 0) return delta;
+            _operatorWeightHistory[_operator].push(0);
         } else {
             newWeight = getOperatorWeight(_operator);
-            (oldWeight, ) = _operatorWeightHistory[_operator].push(newWeight);
             delta = int256(newWeight) - int256(oldWeight);
+            if (delta == 0) return delta;
+            _operatorWeightHistory[_operator].push(newWeight);
         }
         emit OperatorWeightUpdated(_operator, oldWeight, newWeight);
         return delta;
@@ -429,7 +431,8 @@ contract ECDSAStakeRegistry is
         uint256 totalWeight = _getTotalWeight(_referenceBlock);
         if (_signedWeight > totalWeight) revert InvalidSignedWeight();
         uint256 thresholdStake = _getThresholdStake(_referenceBlock);
-        if ((thresholdStake *BPS)/totalWeight > (_signedWeight * BPS) / totalWeight)
+        if ((thresholdStake * BPS)/ totalWeight > (_signedWeight * BPS) / totalWeight){
             revert InsufficientSignedStake();
+        }
     }
 }
