@@ -19,13 +19,13 @@ abstract contract ECDSAStakeRegistryStorage is ECDSAStakeRegistryEventsAndErrors
     Quorum internal _quorum;
 
     /// @notice Specifies the weight required to become an operator
-    uint256 public minimumWeight;
+    uint256 internal _minimumWeight;
 
     /// @notice Holds the address of the service manager
-    address internal serviceManager;
+    address internal _serviceManager;
 
     /// @notice Defines the duration after which the stake's weight expires.
-    uint256 internal stakeExpiry;
+    uint256 internal _stakeExpiry;
 
     /// @notice Tracks the total stake history over time using checkpoints
     CheckpointsUpgradeable.History internal _totalWeightHistory;

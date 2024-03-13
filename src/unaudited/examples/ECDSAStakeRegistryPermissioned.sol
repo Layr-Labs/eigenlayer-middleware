@@ -73,7 +73,9 @@ contract ECDSAStakeRegistryPermissioned is ECDSAStakeRegistry {
     /// If the operator is registered, also deregisters the operator.
     /// @param _operator The address of the operator to be revoked.
     function _revokeOperator(address _operator) internal {
-        if (!allowlistedOperators[_operator]) revert OperatorNotAllowlisted();
+        if (!allowlistedOperators[_operator]){
+            revert OperatorNotAllowlisted();
+        }
         delete allowlistedOperators[_operator];
         emit OperatorRevoked(_operator);
         if (_operatorRegistered[_operator]){
@@ -87,7 +89,9 @@ contract ECDSAStakeRegistryPermissioned is ECDSAStakeRegistry {
         address _operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature
     ) internal override {
-        if (allowlistedOperators[_operator] != true) revert OperatorNotAllowlisted();
+        if (allowlistedOperators[_operator] != true){
+            revert OperatorNotAllowlisted();
+        }
         super._registerOperatorWithSig(_operator, _operatorSignature);
     }
 }

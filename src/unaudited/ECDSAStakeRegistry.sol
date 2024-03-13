@@ -163,6 +163,11 @@ contract ECDSAStakeRegistry is
     function operatorRegistered(address _operator) external view returns (bool) {
         return _operatorRegistered[_operator];
     }
+    
+    /// @notice Returns the weight an operator must have to contribute to validating an AVS
+    function minimumWeight() external view returns (uint256) {
+        return _minimumWeight;
+    }
 
     /// @notice Calculates the current weight of an operator based on their delegated stake in the strategies considered in the quorum
     /// @param _operator The address of the operator.
@@ -181,17 +186,22 @@ contract ECDSAStakeRegistry is
 
         }
         weight = weight / BPS;
-        return weight >= minimumWeight ? weight : 0;
+
+        if (weight >= _minimumWeight) {
+            return weight;
+        } else {
+            return 0;
+        }
     }
 
     /// @notice Initializes state for the StakeRegistry
-    /// @param _serviceManager The AVS' ServiceManager contract's address
+    /// @param _serviceManagerAddr The AVS' ServiceManager contract's address
     function __ECDSAStakeRegistry_init(
-        address _serviceManager,
+        address _serviceManagerAddr,
         uint256 _thresholdWeight,
         Quorum memory _quorum
     ) internal onlyInitializing {
-        serviceManager = _serviceManager;
+        _serviceManager = _serviceManagerAddr;
         _updateStakeThreshold(_thresholdWeight);
         _updateQuorumConfig(_quorum);
         __Ownable_init();
@@ -202,12 +212,16 @@ contract ECDSAStakeRegistry is
     }
 
     function _updateAllOperators (address[] memory _operators) internal {
-        if (_operators.length != _totalOperators) revert MustUpdateAllOperators();
+        if (_operators.length != _totalOperators){
+            revert MustUpdateAllOperators();
+        }
         _updateOperators(_operators);
     }
 
     function _updateOperators(address[] memory _operators) internal {
-        if (_operators.length != _totalOperators) revert MustUpdateAllOperators();
+        if (_operators.length != _totalOperators){
+            revert MustUpdateAllOperators();
+        }
         int256 delta;
         for (uint256 i; i < _operators.length; i++) {
             delta += _updateOperatorWeight(_operators[i]);
@@ -223,15 +237,17 @@ contract ECDSAStakeRegistry is
     /// @dev Updates the weight an operator must have to join the operator set
     /// @param _newMinimumWeight The new weight an operator must have to join the operator set
     function _updateMinimumWeight(uint256 _newMinimumWeight) internal {
-        uint256 oldMinimumWeight = minimumWeight;
-        minimumWeight = _newMinimumWeight;
+        uint256 oldMinimumWeight = _minimumWeight;
+        _minimumWeight = _newMinimumWeight;
         emit MinimumWeightUpdated(oldMinimumWeight, _newMinimumWeight);
     }
 
     /// @dev Internal function to set the quorum configuration
     /// @param _newQuorum The new quorum configuration to set
     function _updateQuorumConfig(Quorum memory _newQuorum) internal {
-        if (!_isValidQuorum(_newQuorum)) revert InvalidQuorum();
+        if (!_isValidQuorum(_newQuorum)){
+            revert InvalidQuorum();
+        }
         Quorum memory oldQuorum = _quorum;
         delete _quorum;
         for (uint256 i; i < _newQuorum.strategies.length; i++) {
@@ -243,13 +259,15 @@ contract ECDSAStakeRegistry is
     /// @dev Internal function to deregister an operator
     /// @param _operator The operator's address to deregister
     function _deregisterOperator(address _operator) internal {
-        if (!_operatorRegistered[_operator]) revert OperatorNotRegistered();
+        if (!_operatorRegistered[_operator]){
+            revert OperatorNotRegistered();
+        }
         _totalOperators--;
         delete _operatorRegistered[_operator];
         int256 delta = _updateOperatorWeight(_operator);
         _updateTotalWeight(delta);
-        IServiceManager(serviceManager).deregisterOperatorFromAVS(_operator);
-        emit OperatorDeregistered(_operator, address(serviceManager));
+        IServiceManager(_serviceManager).deregisterOperatorFromAVS(_operator);
+        emit OperatorDeregistered(_operator, address(_serviceManager));
     }
 
     /// @dev registers an operator through a provided signature
@@ -258,13 +276,15 @@ contract ECDSAStakeRegistry is
         address _operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature
     ) internal virtual {
-        if (_operatorRegistered[_operator]) revert OperatorAlreadyRegistered();
+        if (_operatorRegistered[_operator]){
+            revert OperatorAlreadyRegistered();
+        }
         _totalOperators++;
         _operatorRegistered[_operator] = true;
         int256 delta = _updateOperatorWeight(_operator);
         _updateTotalWeight(delta);
-        IServiceManager(serviceManager).registerOperatorToAVS(_operator, _operatorSignature);
-        emit OperatorRegistered(_operator, serviceManager);
+        IServiceManager(_serviceManager).registerOperatorToAVS(_operator, _operatorSignature);
+        emit OperatorRegistered(_operator, _serviceManager);
     }
 
     /// @notice Updates the weight of an operator and returns the previous and current weights.
@@ -275,12 +295,16 @@ contract ECDSAStakeRegistry is
         uint256 oldWeight = _operatorWeightHistory[_operator].latest();
         if (!_operatorRegistered[_operator]) {
             delta -= int(oldWeight);
-            if (delta == 0) return delta;
+            if (delta == 0){
+                return delta;
+            }
             _operatorWeightHistory[_operator].push(0);
         } else {
             newWeight = getOperatorWeight(_operator);
             delta = int256(newWeight) - int256(oldWeight);
-            if (delta == 0) return delta;
+            if (delta == 0){
+                return delta;
+            }
             _operatorWeightHistory[_operator].push(newWeight);
         }
         emit OperatorWeightUpdated(_operator, oldWeight, newWeight);
@@ -317,8 +341,11 @@ contract ECDSAStakeRegistry is
             lastStrategy = currentStrategy;
             totalMultiplier += strategies[i].multiplier;
         }
-        if (totalMultiplier != BPS) return false;
-        return true;
+        if (totalMultiplier != BPS){
+            return false;
+        } else {
+            return true;
+        }
     }
 
     /**
@@ -360,8 +387,12 @@ contract ECDSAStakeRegistry is
         uint256 _signersLength,
         uint256 _signaturesLength
     ) internal pure {
-        if (_signersLength != _signaturesLength) revert LengthMismatch();
-        if (_signersLength == 0) revert InvalidLength();
+        if (_signersLength != _signaturesLength){
+            revert LengthMismatch();
+        }
+        if (_signersLength == 0){
+            revert InvalidLength();
+        }
     }
 
 
@@ -369,7 +400,9 @@ contract ECDSAStakeRegistry is
     /// @param _lastSigner The address of the last signer.
     /// @param _currentSigner The address of the current signer.
     function _validateSortedSigners(address _lastSigner, address _currentSigner) internal pure {
-        if (_lastSigner >= _currentSigner) revert NotSorted();
+        if (_lastSigner >= _currentSigner){
+            revert NotSorted();
+        }
     }
 
     /// @notice Validates a given signature against the signer's address and data hash.
@@ -381,7 +414,9 @@ contract ECDSAStakeRegistry is
         bytes32 _dataHash,
         bytes memory _signature
     ) internal view {
-        if (!_signer.isValidSignatureNow(_dataHash, _signature)) revert InvalidSignature();
+        if (!_signer.isValidSignatureNow(_dataHash, _signature)) {
+            revert InvalidSignature();
+        }
     }
 
 
@@ -429,7 +464,9 @@ contract ECDSAStakeRegistry is
     /// @param _referenceBlock The block number to verify the stake threshold for
     function _validateThresholdStake(uint256 _signedWeight, uint32 _referenceBlock) internal view {
         uint256 totalWeight = _getTotalWeight(_referenceBlock);
-        if (_signedWeight > totalWeight) revert InvalidSignedWeight();
+        if (_signedWeight > totalWeight){
+            revert InvalidSignedWeight();
+        }
         uint256 thresholdStake = _getThresholdStake(_referenceBlock);
         if ((thresholdStake * BPS)/ totalWeight > (_signedWeight * BPS) / totalWeight){
             revert InsufficientSignedStake();
