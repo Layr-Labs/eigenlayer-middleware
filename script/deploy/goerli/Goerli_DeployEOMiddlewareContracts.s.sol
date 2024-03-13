@@ -41,7 +41,7 @@ contract Goerli_DeployEOMiddlewareContracts is Utils, ExistingDeploymentParser {
     address public eoracleOwner;
     address public eoracleUpgrader;
     address public pauser;
-    uint256 public initalPausedStatus;
+    uint256 public initialPausedStatus;
     
     // Middleware contracts to deploy
     EORegistryCoordinator public registryCoordinator;
@@ -85,7 +85,7 @@ contract Goerli_DeployEOMiddlewareContracts is Utils, ExistingDeploymentParser {
         eoracleOwner = stdJson.readAddress(config_data, ".permissions.owner");
         eoracleUpgrader = stdJson.readAddress(config_data, ".permissions.upgrader");
         pauser = stdJson.readAddress(config_data, ".permissions.pauser");
-        initalPausedStatus = stdJson.readUint(config_data, ".permissions.initalPausedStatus");
+        initialPausedStatus = stdJson.readUint(config_data, ".permissions.initialPausedStatus");
 
         vm.startBroadcast();
         (
@@ -272,7 +272,7 @@ contract Goerli_DeployEOMiddlewareContracts is Utils, ExistingDeploymentParser {
                 churner,
                 ejector,
                 _pauserRegistry,
-                initalPausedStatus,
+                initialPausedStatus,
                 operatorSetParams,
                 minimumStakeForQuourm,
                 strategyAndWeightingMultipliers
@@ -355,7 +355,7 @@ contract Goerli_DeployEOMiddlewareContracts is Utils, ExistingDeploymentParser {
         require(registryCoordinator.churnApprover() == churner, "registryCoordinator.churner() != churner");
         require(registryCoordinator.ejector() == ejector, "registryCoordinator.ejector() != ejector");
         require(registryCoordinator.pauserRegistry() == IPauserRegistry(pauserRegistry), "registryCoordinator: pauser registry not set correctly");
-        require(registryCoordinator.paused() == initalPausedStatus, "registryCoordinator: init paused status set incorrectly");
+        require(registryCoordinator.paused() == initialPausedStatus, "registryCoordinator: init paused status set incorrectly");
         
         for (uint8 i = 0; i < operatorSetParams.length; ++i) {
             require(keccak256(abi.encode(registryCoordinator.getOperatorSetParams(i))) == keccak256(abi.encode(operatorSetParams[i])), "registryCoordinator.operatorSetParams != operatorSetParams");

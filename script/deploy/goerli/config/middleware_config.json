@@ -9,7 +9,7 @@
     "churner": "0x119156A81E4f3d891cBd106a4AedEA916A0A9C4b",
     "ejector": "0x119156A81E4f3d891cBd106a4AedEA916A0A9C4b",
     "pauser": "0x0000000000000000000000000000000000000000",
-    "initalPausedStatus": 1
+    "initialPausedStatus": 1
   },
 
   "minimumStakes": [0],
