@@ -694,7 +694,7 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
     *******************************************************************************/
     function testFuzz_Revert_WhenNonRegistryCoordinator(address nonRegistryCoordinator) public {
         cheats.assume(nonRegistryCoordinator != address(registryCoordinator));
-        cheats.assume(nonRegistryCoordinator != proxyAdminOwner);
+        cheats.assume(nonRegistryCoordinator != address(proxyAdmin));
         // de-register an operator
         bytes memory quorumNumbers = new bytes(defaultQuorumNumber);
 
