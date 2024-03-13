@@ -207,10 +207,16 @@ contract ECDSAStakeRegistry is
         __Ownable_init();
     }
 
+    /// @notice Updates the set of operators for the first quorum.
+    /// @param operatorsPerQuorum An array of operator address arrays, one for each quorum.
+    /// @dev This interface maintains compatibility with avs-sync which handles multiquorums while this registry has a single quorum 
     function updateOperatorsForQuorum(address[][] memory operatorsPerQuorum, bytes memory) external {
         _updateAllOperators(operatorsPerQuorum[0]);
     }
 
+    /// @dev Updates the list of operators if the provided list has the correct number of operators.
+    /// Reverts if the provided list of operators does not match the expected total count of operators.
+    /// @param _operators The list of operator addresses to update.
     function _updateAllOperators (address[] memory _operators) internal {
         if (_operators.length != _totalOperators){
             revert MustUpdateAllOperators();
@@ -218,10 +224,9 @@ contract ECDSAStakeRegistry is
         _updateOperators(_operators);
     }
 
+    /// @dev Updates the weights for a given list of operator addresses.
+    /// @param _operators An array of addresses for which to update the weights.
     function _updateOperators(address[] memory _operators) internal {
-        if (_operators.length != _totalOperators){
-            revert MustUpdateAllOperators();
-        }
         int256 delta;
         for (uint256 i; i < _operators.length; i++) {
             delta += _updateOperatorWeight(_operators[i]);
@@ -229,6 +234,8 @@ contract ECDSAStakeRegistry is
         _updateTotalWeight(delta);
     }
 
+    /// @dev Updates the stake threshold weight and records the history.
+    /// @param _thresholdWeight The new threshold weight to set and record in the history.
     function _updateStakeThreshold(uint256 _thresholdWeight) internal {
         _thresholdWeightHistory.push(_thresholdWeight);
         emit ThresholdWeightUpdated(_thresholdWeight);
