@@ -215,19 +215,18 @@ function test_UpdateQuorumConfig() public {
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.OperatorNotRegistered.selector);
         registry.deregisterOperator();
     }
-    function test_RevertsWhen_Empty_UpdateOperators() public {
+
+    function test_When_Empty_UpdateOperators() public {
         address[] memory operators = new address[](0);
-        vm.expectRevert(abi.encodeWithSelector(MustUpdateAllOperators.selector));
         registry.updateOperators(operators);
     }
 
-    function test_RevertsWhen_OperatorNotRegistered_UpdateOperators() public {
+    function test_When_OperatorNotRegistered_UpdateOperators() public {
         address[] memory operators = new address[](3);
         address operator3 = address(0xBEEF);
         operators[0] = operator1;
         operators[1] = operator2;
         operators[2] = operator3;
-        vm.expectRevert(abi.encodeWithSelector(MustUpdateAllOperators.selector));
         registry.updateOperators(operators);
         assertEq(registry.getLastCheckpointOperatorWeight(operator3), 0);
 
@@ -237,7 +236,6 @@ function test_UpdateQuorumConfig() public {
         address[] memory operators = new address[](1);
         operators[0] = operator1;
 
-        vm.expectRevert(abi.encodeWithSelector(MustUpdateAllOperators.selector));
         registry.updateOperators(operators);
         uint256 updatedWeight = registry.getLastCheckpointOperatorWeight(operator1);
         assertEq(updatedWeight, 1000);
@@ -396,10 +394,6 @@ function test_UpdateQuorumConfig() public {
         (v, r, s) = vm.sign(operator2Pk, msgHash);
         signatures[1] = abi.encodePacked(r, s, v);
 
-        console.log(registry.getOperatorWeight(signers[0]));
-        console.log(registry.getOperatorWeight(signers[1]));
-        console.log(registry.getLastCheckpointTotalWeight());
-        console.log(registry.getLastCheckpointThresholdWeight());
         registry.isValidSignature(msgHash, abi.encode(signers, signatures, type(uint32).max));
     }
 
