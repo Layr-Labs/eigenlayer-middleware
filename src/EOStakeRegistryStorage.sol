@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategyManager, IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 
 import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
 import {IEOStakeRegistry} from  "./interfaces/IEOStakeRegistry.sol";
+import {IEOChainManager} from "./interfaces/IEOChainManager.sol";
 
 /**
  * @title Storage variables for the `EOStakeRegistry` contract.
@@ -23,6 +24,9 @@ abstract contract EOStakeRegistryStorage is IEOStakeRegistry {
 
     /// @notice The address of the Delegation contract for EigenLayer.
     IDelegationManager public immutable delegation;
+
+    /// @notice the Chain Manager contract which forwards calls onto EOracle's contracts
+    IEOChainManager public chainManager;
 
     /// @notice the coordinator contract that this registry is associated with
     address public immutable registryCoordinator;

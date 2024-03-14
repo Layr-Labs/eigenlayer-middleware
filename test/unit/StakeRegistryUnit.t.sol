@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -77,6 +77,8 @@ contract EOStakeRegistryUnitTests is MockAVSDeployer, IEOStakeRegistryEvents {
         _initializeQuorum({ minimumStake: uint96(type(uint24).max) + 1 });
         _initializeQuorum({ minimumStake: uint96(type(uint32).max) + 1 });
         _initializeQuorum({ minimumStake: uint96(type(uint64).max) + 1 });
+
+        registryCoordinator.setQuorumCount(nextQuorum);
     }
 
     /*******************************************************************************

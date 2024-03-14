@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
-import {EOStakeRegistryStorage, IStrategy} from "./EOStakeRegistryStorage.sol";
+import {EOStakeRegistryStorage, IStrategy, IEOChainManager} from "./EOStakeRegistryStorage.sol";
 
 import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";
 
@@ -149,6 +149,7 @@ contract EOStakeRegistry is EOStakeRegistryStorage {
         bytes calldata quorumNumbers
     ) external onlyEORegistryCoordinator returns (uint192) {
         uint192 quorumsToRemove;
+        uint96[] memory newStakeWeights = new uint96[](IEORegistryCoordinator(registryCoordinator).quorumCount());
 
         /**
          * For each quorum, update the operator's stake and record the delta
@@ -170,6 +171,10 @@ contract EOStakeRegistry is EOStakeRegistryStorage {
             if (!hasMinimumStake) {
                 stakeWeight = 0;
                 quorumsToRemove = uint192(quorumsToRemove.setBit(quorumNumber));
+            } else {
+                // If the quorum's stake should be updated,
+                // push the operator's new stake weight to the array
+                newStakeWeights[quorumNumber] = stakeWeight;
             }
 
             // Update the operator's stake and retrieve the delta
@@ -179,9 +184,11 @@ contract EOStakeRegistry is EOStakeRegistryStorage {
                 quorumNumber: quorumNumber,
                 newStake: stakeWeight
             });
-
             // Apply the delta to the quorum's total stake
             _recordTotalStakeUpdate(quorumNumber, stakeDelta);
+        }
+        if (address(chainManager) != address(0)){
+            chainManager.updateOperator(operator, newStakeWeights);
         }
 
         return quorumsToRemove;
@@ -202,6 +209,15 @@ contract EOStakeRegistry is EOStakeRegistryStorage {
             nextUpdateBlockNumber: 0,
             stake: 0
         }));
+    }
+
+    /**
+     * @notice Sets the chainManager, which is used to comunicate with Eoracle's contracts
+     * @param newChainManager the new chainManager
+     * @dev only callable by the registry coordinator
+     */
+    function setChainManager(IEOChainManager newChainManager) external onlyEORegistryCoordinator {
+        chainManager = newChainManager;
     }
 
     function setMinimumStakeForQuorum(

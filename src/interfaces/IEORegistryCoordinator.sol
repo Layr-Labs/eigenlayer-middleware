@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import {IEOBLSApkRegistry} from "./IEOBLSApkRegistry.sol";
 import {IEOStakeRegistry} from "./IEOStakeRegistry.sol";
 import {IEOIndexRegistry} from "./IEOIndexRegistry.sol";
+import {IEOChainManager} from "./IEOChainManager.sol";
 import {BN254} from "../libraries/BN254.sol";
 
 /**
@@ -101,6 +102,13 @@ interface IEORegistryCoordinator {
         address operator, 
         bytes calldata quorumNumbers
     ) external;
+
+    /**
+     * @notice Sets the chainManager, which is used to register validators on the  EOchain
+     * @param newChainManager the new chainManager
+     * @dev only callable by the owner
+     */
+    function setChainManager(IEOChainManager newChainManager) external;
 
     /// @notice Returns the number of quorums the registry coordinator has created
     function quorumCount() external view returns (uint8);

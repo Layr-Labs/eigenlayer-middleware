@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 
 import "../../src/interfaces/IEORegistryCoordinator.sol";
@@ -18,6 +18,13 @@ contract EORegistryCoordinatorMock is IEORegistryCoordinator {
     function indexRegistry() external view returns (IEOIndexRegistry) {}
 
     function stakeRegistry() external view returns (IEOStakeRegistry) {}
+
+    /**
+     * @notice Sets the chainManager, which is used to register validators on the  EOchain
+     * @param newChainManager the new chainManager
+     * @dev only callable by the owner
+     */
+    function setChainManager(IEOChainManager newChainManager) external {}
 
     function quorumCount() external view returns (uint8) {}
     /// @notice Returns the bitmap of the quorums the operator is registered for.

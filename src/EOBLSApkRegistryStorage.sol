@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import {IEOBLSApkRegistry} from "./interfaces/IEOBLSApkRegistry.sol";
 import {IEORegistryCoordinator} from "./interfaces/IEORegistryCoordinator.sol";

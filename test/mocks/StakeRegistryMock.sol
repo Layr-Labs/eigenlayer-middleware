@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import "../../src/interfaces/IEOStakeRegistry.sol";
 import "../../src/interfaces/IEORegistryCoordinator.sol";
@@ -55,6 +55,13 @@ contract EOStakeRegistryMock is IEOStakeRegistry {
      * @notice Initialize a new quorum created by the registry coordinator by setting strategies, weights, and minimum stake
      */
     function initializeQuorum(uint8 quorumNumber, uint96 minimumStake, StrategyParams[] memory strategyParams) external {}
+
+    /**
+     * @notice Sets the chainManager, which is used to comunicate with Eoracle's contracts
+     * @param newChainManager the new chainManager
+     * @dev only callable by the registry coordinator
+     */
+    function setChainManager(IEOChainManager newChainManager) external {}
 
     /// @notice Adds new strategies and the associated multipliers to the @param quorumNumber.
     function addStrategies(
