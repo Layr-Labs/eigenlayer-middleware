@@ -307,6 +307,11 @@ contract RegistryCoordinator is
             );
 
             address prevOperatorAddress = address(0);
+            
+            // clears the quorum root before updating stakes
+            stakeRegistry.clearQuorumRoot(quorumNumber);
+            
+            // Update stakes for each operator in this quorum
             // For each operator:
             // - check that they are registered for this quorum
             // - check that their address is strictly greater than the last operator

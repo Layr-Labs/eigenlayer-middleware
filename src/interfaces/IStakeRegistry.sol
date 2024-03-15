@@ -52,6 +52,8 @@ interface IStakeRegistry is IRegistry {
     event StrategyRemovedFromQuorum(uint8 indexed quorumNumber, IStrategy strategy);
     /// @notice emitted when `strategy` has its `multiplier` updated in the array at `strategyParams[quorumNumber]`
     event StrategyMultiplierUpdated(uint8 indexed quorumNumber, IStrategy strategy, uint256 multiplier);
+    /// @notice emitted when the `quorumOperatorSetRoot` root is cleared 
+    event QuorumOperatorSetRootCleared(uint8 indexed quorumNumber);
 
     /**
      * @notice Registers the `operator` with `operatorId` for the specified `quorumNumbers`.
@@ -117,6 +119,12 @@ interface IStakeRegistry is IRegistry {
         uint256[] calldata strategyIndices,
         uint96[] calldata newMultipliers
     ) external;
+
+    /**
+     * @notice clears the quorum root for the given quorum
+     * @dev This function is called by the registry coordinator on stake updates to consolidate the size of the storage proof
+     */
+    function clearQuorumRoot(uint8 quorumNumber) external;
 
     /// @notice Constant used as a divisor in calculating weights.
     function WEIGHTING_DIVISOR() external pure returns (uint256);

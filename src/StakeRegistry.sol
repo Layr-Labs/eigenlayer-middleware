@@ -276,6 +276,15 @@ contract StakeRegistry is StakeRegistryStorage {
         }
     }
 
+    /**
+     * @notice clears the quorum root for the given quorum
+     * @dev This function is called by the registry coordinator on stake updates to consolidate the size of the storage proof
+     */
+    function clearQuorumRoot(uint8 quorumNumber) external onlyRegistryCoordinator quorumExists(quorumNumber) {
+        quorumOperatorSetRoot[quorumNumber] = bytes32(0);
+        emit QuorumOperatorSetRootCleared(quorumNumber);
+    }
+
     /*******************************************************************************
                             INTERNAL FUNCTIONS
     *******************************************************************************/
@@ -325,6 +334,7 @@ contract StakeRegistry is StakeRegistryStorage {
                 nextUpdateBlockNumber: 0,
                 stake: newStake
             }));
+
         } else {
             // We have prior stake history - fetch our last-recorded stake
             StakeUpdate storage lastUpdate = operatorStakeHistory[operatorId][quorumNumber][historyLength-1]; 
@@ -350,6 +360,16 @@ contract StakeRegistry is StakeRegistryStorage {
                 }));
             }
         }
+
+        _updateQuorumRoot(
+            quorumNumber, 
+            operatorId, 
+            StakeUpdate({
+                updateBlockNumber: uint32(block.number),
+                nextUpdateBlockNumber: 0,
+                stake: newStake
+            })
+        );
 
         // Log update and return stake delta
         emit OperatorStakeUpdate(operatorId, quorumNumber, newStake);
@@ -493,6 +513,12 @@ contract StakeRegistry is StakeRegistryStorage {
     /// @notice Returns `true` if the quorum has been initialized
     function _quorumExists(uint8 quorumNumber) internal view returns (bool) {
         return _totalStakeHistory[quorumNumber].length != 0;
+    }
+
+    /// @notice Updates the quorum root for the given quorum 
+    /// @dev quorumRoot+1 = h(quorumRoot, {operator stake update})
+    function _updateQuorumRoot(uint8 quorumNumber, bytes32 operatorId, StakeUpdate memory operatorStakeUpdate) internal {
+        quorumOperatorSetRoot[quorumNumber] = keccak256(abi.encode(quorumOperatorSetRoot[quorumNumber], operatorId, operatorStakeUpdate));
     }
 
     /*******************************************************************************
