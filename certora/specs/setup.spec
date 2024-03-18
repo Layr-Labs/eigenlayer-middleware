@@ -20,7 +20,7 @@ methods {
     // function BN254.generatorG2() internal returns (BN254.G2Point memory) => returnG2();
     // function BN254.negGeneratorG2() internal returns (BN254.G2Point memory) => returnG2();
     // function BN254.negate(BN254.G1Point memory) internal returns (BN254.G1Point memory) => returnG1();
-    // function BN254.plus(BN254.G1Point memory, BN254.G1Point memory) internal returns (BN254.G1Point memory) => returnG1();
+    function BN254.plus(BN254.G1Point memory, BN254.G1Point memory) internal returns (BN254.G1Point memory) => returnG1();
     // function BN254.scalar_mul_tiny(BN254.G1Point memory, uint16) internal returns (BN254.G1Point memory) => returnG1();
     // function BN254.scalar_mul(BN254.G1Point memory, uint256) internal returns (BN254.G1Point memory) => returnG1();
     // function BN254.safePairing(BN254.G1Point memory, BN254.G2Point memory, BN254.G1Point memory, BN254.G2Point memory, uint256) internal returns (bool, bool) => NONDET;
@@ -40,6 +40,7 @@ methods {
     function IndexRegistryHarness.operatorCountHistory(uint8) external returns (IIndexRegistry.QuorumUpdate[]) envfree;
     
     function BLSApkRegistryHarness.getApkHistory(uint8) external returns (IBLSApkRegistry.ApkUpdate[]) envfree;
+    function BLSApkRegistryHarness.getOperatorId(address) external returns (bytes32) envfree;
     function BLSApkRegistryHarness.registerBLSPublicKey(address, IBLSApkRegistry.PubkeyRegistrationParams, BN254.G1Point) external returns (bytes32) => PER_CALLEE_CONSTANT;
 
 
@@ -53,6 +54,7 @@ methods {
     function bytesArrayContainsDuplicates(bytes bytesArray) external returns (bool) envfree;
     function bytesArrayIsSubsetOfBitmap(uint256 referenceBitmap, bytes arrayWhichShouldBeASubsetOfTheReference) external returns (bool) envfree;
     function quorumInBitmap(uint256 bitmap, uint8 numberToCheckForInclusion) external returns (bool) envfree;
+    function getQuorumBitmapHistoryLength(bytes32) external returns (uint256) envfree;
     function hashToG1Harness(bytes32 x) external returns (BN254.G1Point memory) envfree;
 
     // BitmapUtils Libraries
@@ -63,7 +65,7 @@ methods {
     function BitmapUtils.countNumOnes(uint256 a) internal returns (uint16) => numOnesCVL[a];
     function BitmapUtils.isSet(uint256 a, uint8 b) internal returns (bool) => isSetCVL[a][b];
     function BitmapUtils.setBit(uint256 a, uint8 b) internal returns (uint256) => setBitCVL[a][b];
-    function BitmapUtils.isEmpty(uint256 a) internal returns (bool) => isEmptyCVL[a];
+    // function BitmapUtils.isEmpty(uint256 a) internal returns (bool) => isEmptyCVL[a];
     function BitmapUtils.noBitsInCommon(uint256 a, uint256 b) internal returns (bool) => noBitsInCommonCVL[a][b];
     function BitmapUtils.isSubsetOf(uint256 a, uint256 b) internal returns (bool) => isSubsetOfCVL[a][b];
     function BitmapUtils.plus(uint256 a, uint256 b) internal returns (uint256) => plusCVL[a][b];
@@ -81,7 +83,7 @@ ghost mapping(uint256 => bytes) bitmapToBytesCVL;
 ghost mapping(uint256 => uint16) numOnesCVL;
 ghost mapping(uint256 => mapping(uint8 => bool)) isSetCVL;
 ghost mapping(uint256 => mapping(uint8 => uint256)) setBitCVL;
-ghost mapping(uint256 => bool) isEmptyCVL;
+// ghost mapping(uint256 => bool) isEmptyCVL;
 ghost mapping(uint256 => mapping(uint256 => bool)) noBitsInCommonCVL {
     axiom forall uint256 x. forall uint256 y. noBitsInCommonCVL[x][y] == noBitsInCommonCVL[y][x];
 }
@@ -137,17 +139,32 @@ invariant initializedQuorumHistories(uint8 quorumNumber)
         indexRegistry.operatorCountHistory(quorumNumber).length != 0 &&
         blsApkRegistry.getApkHistory(quorumNumber).length != 0;
 
+// Ensuring that RegistryCoordinator._operatorInfo and BLSApkRegistry.operatorToPubkeyHash operatorIds are consistent
+// for the same operator
+// status: verified
+invariant operatorIdandPubkeyHash(address operator)
+    getOperatorId(operator) == blsApkRegistry.getOperatorId(operator);
+
 /// If my Operator status is REGISTERED ⇔ my quorum bitmap MUST BE nonzero
+/// @notice _operatorBitmapHistory overflowing with 
 // status: violated
 invariant registeredOperatorsHaveNonzeroBitmaps(env e, address operator)
     getOperatorStatus(operator) == IRegistryCoordinator.OperatorStatus.REGISTERED <=>
-        getCurrentQuorumBitmap(e, getOperatorId(operator)) != 0;
+        getCurrentQuorumBitmap(e, getOperatorId(operator)) != 0 && getOperatorId(operator) != to_bytes32(0)
+    {
+        preserved with (env e1) {
+            require e1.msg.sender == e.msg.sender;
+            require getQuorumBitmapHistoryLength(getOperatorId(operator)) < max_uint256;
+            requireInvariant oneIdPerOperator(operator, e.msg.sender);
+            requireInvariant operatorIdandPubkeyHash(operator);
+        }
+    }
 
 /// @notice unique address <=> unique operatorId
 // status: violated
 invariant oneIdPerOperator(address operator1, address operator2)
-    operator1 != operator2 && getOperatorId(operator1) != to_bytes32(0)
-        => getOperatorId(operator1) != getOperatorId(operator2);
+    operator1 != operator2
+        => getOperatorId(operator1) != getOperatorId(operator2) || getOperatorId(operator1) == to_bytes32(0) && getOperatorId(operator2) == to_bytes32(0);
 
 /// @notice one way implication as IndexRegistry.currentOperatorIndex does not get updated on operator deregistration
 // status: violated
