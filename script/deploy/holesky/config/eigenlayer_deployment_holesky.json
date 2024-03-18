@@ -1,0 +1,37 @@
+{
+  "addresses": {
+    "avsDirectory": "0x8A5E04c1B29BF38d268d86739A0974BCa776c900",
+    "avsDirectoryImplementation": "0x2Cfc07925E2D4A1512BdCA0df832c2A7524ee283",
+    "baseStrategyImplementation": "0x50457c1324C7429Ac3Df79424f326ae228DA7995",
+    "beaconOracle": "0x4C116BB629bff7A8373c2378bBd919f8349B8f25",
+    "delayedWithdrawalRouter": "0xF37D54E0D26A04dF57a760863bF01A8F66f81453",
+    "delayedWithdrawalRouterImplementation": "0xB972ca51158d46135fEbED0D2255d36eAE08DcA4",
+    "delegationManager": "0x22480811f21C9562A5097C1A8869E98c40D98863",
+    "delegationManagerImplementation": "0x68f7E1174a687a294514E283A633310d0C82bb5f",
+    "eigenLayerPauserReg": "0x35034289440B9A571C34fb4cE3e9bbc173136652",
+    "eigenLayerProxyAdmin": "0x284D0Bb4e9E821De239b6309263800950C5dAeCe",
+    "eigenPodBeacon": "0x60014AD417FAb25a6F47D5622AF37c227fC03088",
+    "eigenPodImplementation": "0xaE05aCd3e6894327e03F5686C7Ac50172a8C01aF",
+    "eigenPodManager": "0x192BFfB53e15aEf0D3CcD44A5AeF9aBE008F858d",
+    "eigenPodManagerImplementation": "0x173e167e253a896560E6954921D10c6217CC3f4D",
+    "emptyContract": "0x1d04a90058322246134ab1b1b9AD93680A6d34F0",
+    "slasher": "0xC7940Fa4F57B9B9Fe774FedC9d0612e416ba7e90",
+    "slasherImplementation": "0x6495EA569fCe186232D0d35C44249000E5341C72",
+    "strategies": {
+      "rETH": "0x00c139b357949855B90Ed49029b9Cb60ebfA4fd5",
+      "stETH": "0x96D47307C2844fb46792BcEFC903855440b4b2ad"
+    },
+    "strategyManager": "0xA744429bf286789225308a81A5a4b8049562A362",
+    "strategyManagerImplementation": "0x3D655bE93989eeFfB6C81B1Cb472e07e92DB610a"
+  },
+  "chainInfo": {
+    "chainId": 17000,
+    "deploymentBlock": 1158509
+  },
+  "parameters": {
+    "communityMultisig": "0x5bd7D4c577A9F606f61E07194090f767339b04f3",
+    "executorMultisig": "0x5bd7D4c577A9F606f61E07194090f767339b04f3",
+    "operationsMultisig": "0x5bd7D4c577A9F606f61E07194090f767339b04f3",
+    "pauserMultisig": "0x5bd7D4c577A9F606f61E07194090f767339b04f3"
+  }
+}

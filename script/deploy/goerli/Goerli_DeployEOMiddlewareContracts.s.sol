@@ -97,7 +97,7 @@ contract Goerli_DeployEOMiddlewareContracts is Utils, ExistingDeploymentParser {
             indexRegistry,
             operatorStateRetriever,
             proxyAdmin
-        ) = _deployEOMiddlewareContracts(delegation, avsDirectory, config_data);
+        ) = _deployEOMiddlewareContracts(delegationManager, avsDirectory, config_data);
 
         vm.stopBroadcast();
 
@@ -309,7 +309,7 @@ contract Goerli_DeployEOMiddlewareContracts is Utils, ExistingDeploymentParser {
         require(address(_indexRegistry.registryCoordinator()) == address(registryCoordinator), "indexRegistry.registryCoordinator() != registryCoordinator");
 
         require(address(_stakeRegistry.registryCoordinator()) == address(registryCoordinator), "stakeRegistry.registryCoordinator() != registryCoordinator");
-        require(address(_stakeRegistry.delegation()) == address(delegation), "stakeRegistry.delegationManager() != delegation");
+        require(address(_stakeRegistry.delegation()) == address(delegationManager), "stakeRegistry.delegationManager() != delegation");
 
         // TODO: add this checks once we update the service manager properties to be public
         // require(address(_serviceManager.registryCoordinator()) == address(registryCoordinator), "_serviceManager.registryCoordinator() != registryCoordinator");
