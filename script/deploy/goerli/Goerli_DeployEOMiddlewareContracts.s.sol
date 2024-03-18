@@ -34,7 +34,7 @@ import {OperatorStateRetriever} from "src/OperatorStateRetriever.sol";
 contract Goerli_DeployEOMiddlewareContracts is Utils, ExistingDeploymentParser {
     
     string public existingDeploymentInfoPath  = string(bytes("./script/deploy/goerli/config/eigenlayer_deployment_goerli.json"));
-    string public deployConfigPath = string(bytes("./script/deploy/goerli/config/middleware_config.json"));
+    string public deployConfigPath = string(bytes("./script/deploy/goerli/config/middleware_config_goerli.json"));
     string public outputPath = string.concat("script/deploy/goerli/output/eoracle_middleware_deployment_data.json");
 
     ProxyAdmin public proxyAdmin;
