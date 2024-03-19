@@ -12,6 +12,7 @@ import "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 // Core
 import "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
+import "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 
 // Middleware
 import "src/RegistryCoordinator.sol";
@@ -29,6 +30,7 @@ import "test/integration/utils/BitmapStrings.t.sol";
 
 interface IUserDeployer {
     function registryCoordinator() external view returns (RegistryCoordinator);
+    function avsDirectory() external view returns (AVSDirectory);
     function timeMachine() external view returns (TimeMachine);
     function churnApproverPrivateKey() external view returns (uint);
     function churnApprover() external view returns (address);
@@ -46,6 +48,7 @@ contract User is Test {
     // Core contracts
     DelegationManager delegationManager;
     StrategyManager strategyManager;
+    AVSDirectory avsDirectory;
 
     // Middleware contracts
     RegistryCoordinator registryCoordinator;
@@ -74,6 +77,7 @@ contract User is Test {
         IUserDeployer deployer = IUserDeployer(msg.sender);
 
         registryCoordinator = deployer.registryCoordinator();
+        avsDirectory = deployer.avsDirectory();
         serviceManager = ServiceManagerBase(address(registryCoordinator.serviceManager()));
 
         blsApkRegistry = BLSApkRegistry(address(registryCoordinator.blsApkRegistry()));
@@ -82,6 +86,7 @@ contract User is Test {
 
         delegationManager = DelegationManager(address(stakeRegistry.delegation()));
         strategyManager = StrategyManager(address(delegationManager.strategyManager()));
+        avsDirectory = AVSDirectory(address(serviceManager.avsDirectory()));
 
         timeMachine = deployer.timeMachine();
 
@@ -180,6 +185,7 @@ contract User is Test {
         bytes32 _salt = keccak256(abi.encodePacked(++salt, address(this)));
         uint expiry = type(uint).max;
         bytes32 digest = registryCoordinator.calculateOperatorChurnApprovalDigestHash({
+            registeringOperator: address(this),
             registeringOperatorId: operatorId,
             operatorKickParams: kickParams,
             salt: _salt,
@@ -300,7 +306,7 @@ contract User is Test {
             expiry: type(uint256).max
         });
 
-        bytes32 digest = delegationManager.calculateOperatorAVSRegistrationDigestHash({
+        bytes32 digest = avsDirectory.calculateOperatorAVSRegistrationDigestHash({
             operator: address(this),
             avs: address(serviceManager),
             salt: signature.salt,

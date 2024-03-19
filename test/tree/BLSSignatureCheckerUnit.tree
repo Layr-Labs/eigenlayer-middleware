@@ -20,7 +20,7 @@
 │   ├── given that the non-signer pubkeys contain any duplicates (technically a sub-case of above)
 │   │   └── it should revert
 │   ├── given that the staleStakesForbidden flag is set and the quorumUpdateBlock number is strictly within
-│   │   `delegation.withdrawalDelayBlocks()` of the present block, for any of the quorumNumbers
+│   │   `delegation.minWithdrawalDelayBlocks()` of the present block, for any of the quorumNumbers
 │   │   └── it should revert
 │   ├── given that any of the provided nonSignerQuorumBitmapIndices is incorrect for the referenceBlockNumber
 │   │   └── ***it should revert (via bubbling up a revert from the RegistryCoordinator)

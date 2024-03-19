@@ -178,9 +178,10 @@ contract BLSApkRegistryUnitTests is BLSMockAVSDeployer, IBLSApkRegistryEvents {
      * @dev register operator, assumes operator has a registered BLS public key and that quorumNumbers are valid
      */
     function _registerOperator(address operator, bytes memory quorumNumbers) internal {
+        bytes32 operatorId = blsApkRegistry.getOperatorId(operator);
         cheats.prank(address(registryCoordinator));
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit OperatorAddedToQuorums(operator, quorumNumbers);
+        emit OperatorAddedToQuorums(operator, operatorId, quorumNumbers);
         blsApkRegistry.registerOperator(operator, quorumNumbers);
     }
 
@@ -188,9 +189,10 @@ contract BLSApkRegistryUnitTests is BLSMockAVSDeployer, IBLSApkRegistryEvents {
      * @dev deregister operator, assumes operator has a registered BLS public key and that quorumNumbers are valid
      */
     function _deregisterOperator(address operator, bytes memory quorumNumbers) internal {
+        bytes32 operatorId = blsApkRegistry.getOperatorId(operator);
         cheats.prank(address(registryCoordinator));
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit OperatorRemovedFromQuorums(operator, quorumNumbers);
+        emit OperatorRemovedFromQuorums(operator, operatorId, quorumNumbers);
         blsApkRegistry.deregisterOperator(operator, quorumNumbers);
     }
 
@@ -327,13 +329,14 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is BLSApkRegistryUnitTests
         address operator,
         address operator2
     ) public {
+        cheats.assume(operator != address(0));
         cheats.assume(operator != operator2);
         BN254.G1Point memory messageHash =
             registryCoordinator.pubkeyRegistrationMessageHash(operator);
         pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(operator);
 
         cheats.startPrank(address(registryCoordinator));
-        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
+        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);        
 
         cheats.expectRevert("BLSApkRegistry.registerBLSPublicKey: public key already registered");
         blsApkRegistry.registerBLSPublicKey(operator2, pubkeyRegistrationParams, messageHash);
@@ -481,9 +484,10 @@ contract BLSApkRegistryUnitTests_registerOperator is BLSApkRegistryUnitTests {
         }
 
         // registerOperator with expected OperatorAddedToQuorums event
+        bytes32 operatorId = blsApkRegistry.getOperatorId(operator);
         cheats.prank(address(registryCoordinator));
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit OperatorAddedToQuorums(operator, quorumNumbers);
+        emit OperatorAddedToQuorums(operator, operatorId, quorumNumbers);
         blsApkRegistry.registerOperator(operator, quorumNumbers);
 
         // check updated storage values for each quorum
@@ -590,9 +594,10 @@ contract BLSApkRegistryUnitTests_deregisterOperator is BLSApkRegistryUnitTests {
         }
 
         // registerOperator with expected OperatorAddedToQuorums event
+        bytes32 operatorId = blsApkRegistry.getOperatorId(operator);
         cheats.prank(address(registryCoordinator));
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit OperatorRemovedFromQuorums(operator, quorumNumbers);
+        emit OperatorRemovedFromQuorums(operator, operatorId, quorumNumbers);
         blsApkRegistry.deregisterOperator(operator, quorumNumbers);
 
         // check updated storage values for each quorum

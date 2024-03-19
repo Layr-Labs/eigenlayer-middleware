@@ -2,7 +2,7 @@
 pragma solidity =0.8.12;
 
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
-import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
+import {IStrategyManager, IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from  "./interfaces/IStakeRegistry.sol";
@@ -16,7 +16,7 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
     
     /// @notice Constant used as a divisor in calculating weights.
     uint256 public constant WEIGHTING_DIVISOR = 1e18;
-    /// @notice Maximum length of dynamic arrays in the `strategiesConsideredAndMultipliers` mapping.
+    /// @notice Maximum length of dynamic arrays in the `strategyParams` mapping.
     uint8 public constant MAX_WEIGHING_FUNCTION_LENGTH = 32;
     /// @notice Constant used as a divisor in dealing with BIPS amounts.
     uint256 internal constant MAX_BIPS = 10000;
@@ -42,6 +42,8 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
      * corresponding multipliers for that specific quorum
      */
     mapping(uint8 => StrategyParams[]) public strategyParams;
+    mapping(uint8 => IStrategy[]) public strategiesPerQuorum;
+
 
     constructor(
         IRegistryCoordinator _registryCoordinator, 
@@ -53,5 +55,5 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
 
     // storage gap for upgradeability
     // slither-disable-next-line shadowing-state
-    uint256[46] private __GAP;
+    uint256[45] private __GAP;
 }

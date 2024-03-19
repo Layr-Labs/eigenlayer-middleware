@@ -57,13 +57,22 @@ contract BLSMockAVSDeployer is MockAVSDeployer {
         uint256[] memory nonSignerPrivateKeys = new uint256[](numNonSigners);
         for (uint i = 0; i < numNonSigners; i++) {
             nonSignerPrivateKeys[i] = uint256(keccak256(abi.encodePacked("nonSignerPrivateKey", pseudoRandomNumber, i))) % BN254.FR_MODULUS;
-            uint256 j = 0;
-            if(i != 0) {
-                while(BN254.generatorG1().scalar_mul(nonSignerPrivateKeys[i]).hashG1Point() <= BN254.generatorG1().scalar_mul(nonSignerPrivateKeys[i-1]).hashG1Point()){
-                    nonSignerPrivateKeys[i] = uint256(keccak256(abi.encodePacked("nonSignerPrivateKey", pseudoRandomNumber, j))) % BN254.FR_MODULUS;
-                    j++;
-                }
+        }
+
+        // Sort nonSignerPrivateKeys in order of ascending pubkeyHash
+        // Uses insertion sort to sort array in place
+        for (uint i = 1; i < nonSignerPrivateKeys.length; i++) {
+            uint privateKey = nonSignerPrivateKeys[i];
+            bytes32 pubkeyHash = _toPubkeyHash(privateKey);
+            uint j = i;
+
+            // Move elements of nonSignerPrivateKeys[0..i-1] that are greater than the current key
+            // to one position ahead of their current position
+            while (j > 0 && _toPubkeyHash(nonSignerPrivateKeys[j - 1]) > pubkeyHash) {
+                nonSignerPrivateKeys[j] = nonSignerPrivateKeys[j - 1];
+                j--;
             }
+            nonSignerPrivateKeys[j] = privateKey;
         }
 
         return (signerPrivateKeys, nonSignerPrivateKeys);
@@ -134,5 +143,9 @@ contract BLSMockAVSDeployer is MockAVSDeployer {
         nonSignerStakesAndSignature.nonSignerStakeIndices = checkSignaturesIndices.nonSignerStakeIndices;
 
         return (referenceBlockNumber, nonSignerStakesAndSignature);
+    }
+
+    function _toPubkeyHash(uint privKey) internal view returns (bytes32) {
+        return BN254.generatorG1().scalar_mul(privKey).hashG1Point();
     }
 }

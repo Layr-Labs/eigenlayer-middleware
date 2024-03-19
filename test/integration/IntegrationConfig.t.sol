@@ -58,6 +58,9 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
     uint constant ONE = (FLAG << 0);
     uint constant TWO = (FLAG << 1);
     uint constant MANY = (FLAG << 2);
+    uint constant FIFTEEN = (FLAG << 3);
+    uint constant TWENTY = (FLAG << 4);
+    uint constant TWENTYFIVE = (FLAG << 5);
 
     /// @dev Flags for minimumStake
     uint constant NO_MINIMUM = (FLAG << 0);
@@ -81,6 +84,9 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
 
     /// @dev Number of operators generated so far
     uint numOperators = 0;
+    /// @dev current array of operatorIds registered so far per quorum.
+    /// does not update and remove if an operator is deregistered however, used for testing updateOperatorsForQuorum
+    mapping(uint8 => address[]) operatorsForQuorum;
 
     /**
      * Since BLS key generation uses FFI, it's pretty slow. Pregenerating keys
@@ -185,6 +191,10 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
             User operator = _newRandomOperator();
 
             operator.registerOperator(quorumArray);
+            for (uint k = 0; k < quorumArray.length; k++) {
+                uint8 quorum = uint8(quorumArray[k]);
+                operatorsForQuorum[quorum].push(address(operator));
+            }
         }
 
         emit log("=====================");
@@ -488,6 +498,12 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
             strategyCount = 2;
         } else if (strategyFlag == MANY) {
             strategyCount = _randUint({ min: 3, max: allStrats.length - 1 });
+        } else if (strategyFlag == FIFTEEN) {
+            strategyCount = 15;
+        } else if (strategyFlag == TWENTY) {
+            strategyCount = 20;
+        } else if (strategyFlag == TWENTYFIVE) {
+            strategyCount = 25;
         } else {
             revert("_randStrategyCount: flag not recognized");
         }

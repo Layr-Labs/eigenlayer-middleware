@@ -46,7 +46,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
 
     /**
      * RegistryCoordinator owner can either enforce or not that operator stakes are staler
-     * than the delegation.withdrawalDelayBlocks() window.
+     * than the delegation.minWithdrawalDelayBlocks() window.
      * @param value to toggle staleStakesForbidden
      */
     function setStaleStakesForbidden(bool value) external onlyCoordinatorOwner {
@@ -75,6 +75,9 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
      * is correct, i.e., ensure that the stake returned from the specified block number is recent enough and that the stake is either the most recent update
      * for the total stake (of the operator) or latest before the referenceBlockNumber.
      * @param msgHash is the hash being signed
+     * @dev NOTE: Be careful to ensure `msgHash` is collision-resistant! This method does not hash 
+     * `msgHash` in any way, so if an attacker is able to pass in an arbitrary value, they may be able
+     * to tamper with signature verification.
      * @param quorumNumbers is the bytes array of quorum numbers that are being signed for
      * @param referenceBlockNumber is the block number at which the stake information is being verified
      * @param params is the struct containing information on nonsigners, stakes, quorum apks, and the aggregate signature
@@ -109,7 +112,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
             "BLSSignatureChecker.checkSignatures: input nonsigner length mismatch"
         );
 
-        require(referenceBlockNumber <= uint32(block.number), "BLSSignatureChecker.checkSignatures: invalid reference block");
+        require(referenceBlockNumber < uint32(block.number), "BLSSignatureChecker.checkSignatures: invalid reference block");
 
         // This method needs to calculate the aggregate pubkey for all signing operators across
         // all signing quorums. To do that, we can query the aggregate pubkey for each quorum
@@ -179,8 +182,8 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
          * - subtract the stake for each nonsigner to calculate the stake belonging to signers
          */
         {
-            uint256 withdrawalDelayBlocks = delegation.withdrawalDelayBlocks();
             bool _staleStakesForbidden = staleStakesForbidden;
+            uint256 withdrawalDelayBlocks = _staleStakesForbidden ? delegation.minWithdrawalDelayBlocks() : 0;
 
             for (uint256 i = 0; i < quorumNumbers.length; i++) {
                 // If we're disallowing stale stake updates, check that each quorum's last update block
@@ -280,4 +283,8 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                 PAIRING_EQUALITY_CHECK_GAS
             );
     }
+
+    // storage gap for upgradeability
+    // slither-disable-next-line shadowing-state
+    uint256[49] private __GAP;
 }

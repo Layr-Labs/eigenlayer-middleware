@@ -1,6 +1,6 @@
-[core-dmgr-docs]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/m2-mainnet/docs/core/DelegationManager.md
-[core-dmgr-register]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/m2-mainnet/docs/core/DelegationManager.md#registeroperatortoavs
-[core-dmgr-deregister]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/m2-mainnet/docs/core/DelegationManager.md#deregisteroperatorfromavs
+[core-dmgr-docs]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/dev/docs/core/DelegationManager.md
+[core-dmgr-register]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/dev/docs/core/DelegationManager.md#registeroperatortoavs
+[core-dmgr-deregister]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/dev/docs/core/DelegationManager.md#deregisteroperatorfromavs
 
 ## RegistryCoordinator
 

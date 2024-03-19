@@ -2,6 +2,8 @@
 pragma solidity =0.8.12;
 
 import "../utils/MockAVSDeployer.sol";
+import { AVSDirectory } from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
+import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import { DelegationManager } from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import { IDelegationManager } from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
@@ -12,7 +14,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
     // Operator info
     uint256 operatorPrivateKey = 420;
     address operator;
-    
+
     // Dummy vals used across tests
     bytes32 emptySalt;
     uint256 maxExpiry = type(uint256).max;
@@ -23,6 +25,8 @@ contract Test_CoreRegistration is MockAVSDeployer {
 
         // Deploy New DelegationManager
         DelegationManager delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasher, eigenPodManagerMock);
+        IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
+        uint256[] memory initializeWithdrawalDelayBlocks = new uint256[](0);
         delegationManager = DelegationManager(
             address(
                 new TransparentUpgradeableProxy(
@@ -33,15 +37,35 @@ contract Test_CoreRegistration is MockAVSDeployer {
                         address(this),
                         pauserRegistry,
                         0, // 0 is initialPausedStatus
-                        50400 // Initial withdrawal delay blocks
+                        50400, // Initial withdrawal delay blocks
+                        initializeStrategiesToSetDelayBlocks,
+                        initializeWithdrawalDelayBlocks
                     )
                 )
             )
         );
 
+        // Deploy New AVS Directory
+        AVSDirectory avsDirectoryImplementation = new AVSDirectory(delegationManager);
+        avsDirectory = AVSDirectory(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(avsDirectoryImplementation),
+                    address(proxyAdmin),
+                    abi.encodeWithSelector(
+                        AVSDirectory.initialize.selector,
+                        address(this), // owner
+                        pauserRegistry,
+                        0 // 0 is initialPausedStatus
+                    )
+                )
+            )
+        );
+
+
         // Deploy New ServiceManager & RegistryCoordinator implementations
-        serviceManagerImplementation = new ServiceManagerBase(
-            delegationManager,
+        serviceManagerImplementation = new ServiceManagerMock(
+            avsDirectory,
             registryCoordinator,
             stakeRegistry
         );
@@ -84,7 +108,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(MAX_QUORUM_BITMAP);
         for (uint i = 0; i < quorumNumbers.length; i++) {
             _setOperatorWeight(operator, uint8(quorumNumbers[i]), defaultStake);
-        }    
+        }
     }
 
     function test_registerOperator_coreStateChanges() public {
@@ -99,13 +123,16 @@ contract Test_CoreRegistration is MockAVSDeployer {
             maxExpiry
         );
 
+        // set operator as registered in Eigenlayer
+        delegationMock.setIsOperator(operator, true);
+
         // Register operator
         cheats.prank(operator);
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, operatorSignature);
 
         // Check operator is registered
-        IDelegationManager.OperatorAVSRegistrationStatus operatorStatus = delegationManager.avsOperatorStatus(address(serviceManager), operator);
-        assertEq(uint8(operatorStatus), uint8(IDelegationManager.OperatorAVSRegistrationStatus.REGISTERED));
+        IAVSDirectory.OperatorAVSRegistrationStatus operatorStatus = avsDirectory.avsOperatorStatus(address(serviceManager), operator);
+        assertEq(uint8(operatorStatus), uint8(IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED));
     }
 
     function test_deregisterOperator_coreStateChanges() public {
@@ -118,8 +145,8 @@ contract Test_CoreRegistration is MockAVSDeployer {
         registryCoordinator.deregisterOperator(quorumNumbers);
 
         // Check operator is deregistered
-        IDelegationManager.OperatorAVSRegistrationStatus operatorStatus = delegationManager.avsOperatorStatus(address(serviceManager), operator);
-        assertEq(uint8(operatorStatus), uint8(IDelegationManager.OperatorAVSRegistrationStatus.UNREGISTERED));
+        IAVSDirectory.OperatorAVSRegistrationStatus operatorStatus = avsDirectory.avsOperatorStatus(address(serviceManager), operator);
+        assertEq(uint8(operatorStatus), uint8(IAVSDirectory.OperatorAVSRegistrationStatus.UNREGISTERED));
     }
 
     function test_deregisterOperator_notGloballyDeregistered() public {
@@ -134,22 +161,25 @@ contract Test_CoreRegistration is MockAVSDeployer {
         registryCoordinator.deregisterOperator(quorumNumbers);
 
         // Check operator is still registered
-        IDelegationManager.OperatorAVSRegistrationStatus operatorStatus = delegationManager.avsOperatorStatus(address(serviceManager), operator);
-        assertEq(uint8(operatorStatus), uint8(IDelegationManager.OperatorAVSRegistrationStatus.REGISTERED));
+        IAVSDirectory.OperatorAVSRegistrationStatus operatorStatus = avsDirectory.avsOperatorStatus(address(serviceManager), operator);
+        assertEq(uint8(operatorStatus), uint8(IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED));
     }
 
     function test_setMetadataURI_fail_notServiceManagerOwner() public {
         require(operator != serviceManager.owner(), "bad test setup");
         cheats.prank(operator);
         cheats.expectRevert("Ownable: caller is not the owner");
-        serviceManager.setMetadataURI("Test MetadataURI");
+        serviceManager.updateAVSMetadataURI("Test MetadataURI");
     }
 
-    function test_setMetadataURI() public {  
-        address toPrankFrom = serviceManager.owner();      
+    event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
+
+    function test_setMetadataURI() public {
+        address toPrankFrom = serviceManager.owner();
         cheats.prank(toPrankFrom);
-        serviceManager.setMetadataURI("Test MetadataURI");
-        // TODO: check effects here
+        cheats.expectEmit(true, true, true, true);
+        emit AVSMetadataURIUpdated(address(serviceManager), "Test MetadataURI");
+        serviceManager.updateAVSMetadataURI("Test MetadataURI");
     }
 
     // Utils
@@ -162,6 +192,9 @@ contract Test_CoreRegistration is MockAVSDeployer {
             emptySalt,
             maxExpiry
         );
+
+        // set operator as registered in Eigenlayer
+        delegationMock.setIsOperator(operator, true);
 
         // Register operator
         cheats.prank(operator);
@@ -178,7 +211,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         operatorSignature.salt = salt;
         operatorSignature.expiry = expiry;
         {
-            bytes32 digestHash = delegationManager.calculateOperatorAVSRegistrationDigestHash(operatorToSign, avs, salt, expiry);
+            bytes32 digestHash = avsDirectory.calculateOperatorAVSRegistrationDigestHash(operatorToSign, avs, salt, expiry);
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(_operatorPrivateKey, digestHash);
             operatorSignature.signature = abi.encodePacked(r, s, v);
         }
