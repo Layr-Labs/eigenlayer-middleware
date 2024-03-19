@@ -476,7 +476,7 @@ contract ECDSAStakeRegistry is
             revert InvalidSignedWeight();
         }
         uint256 thresholdStake = _getThresholdStake(_referenceBlock);
-        if ((thresholdStake * BPS)/ totalWeight > (_signedWeight * BPS) / totalWeight){
+        if (thresholdStake > _signedWeight){
             revert InsufficientSignedStake();
         }
     }
