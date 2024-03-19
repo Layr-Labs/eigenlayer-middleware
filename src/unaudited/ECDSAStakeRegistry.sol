@@ -66,9 +66,13 @@ contract ECDSAStakeRegistry is
         _updateOperators(_operators);
     }
 
-    /// @notice Updates the strategies and their weights for the quourum
-    /// @dev Access controlled to the contract owner
-    /// @param _quorum The new quorum configuration
+    /**
+     * @notice Updates the quorum configuration and the set of operators
+     * @dev Only callable by the contract owner. 
+     * It first updates the quorum configuration and then updates the list of operators.
+     * @param _quorum The new quorum configuration, including strategies and their new weights
+     * @param _operators The list of operator addresses to update stakes for
+     */
     function updateQuorumConfig(Quorum memory _quorum, address[] memory _operators) external onlyOwner {
         _updateQuorumConfig(_quorum);
         _updateOperators(_operators);
@@ -83,8 +87,9 @@ contract ECDSAStakeRegistry is
     }
 
     /**
-     * @notice Adjusts the cumulative threshold weight for a valid message to be signed by the operator set
-     * @param _thresholdWeight The updated threshold weight.
+     * @notice Updates the cumulative threshold weight required for a message to be considered valid when signed by the operator set.
+     * @dev Can only be called by the contract owner.
+     * @param _thresholdWeight The new threshold weight to be set.
      */
     function updateStakeThreshold(uint256 _thresholdWeight) external onlyOwner {
         _updateStakeThreshold(_thresholdWeight);
@@ -250,8 +255,11 @@ contract ECDSAStakeRegistry is
         emit MinimumWeightUpdated(oldMinimumWeight, _newMinimumWeight);
     }
 
-    /// @dev Internal function to set the quorum configuration
-    /// @param _newQuorum The new quorum configuration to set
+    /// @notice Updates the quorum configuration
+    /// @dev Replaces the current quorum configuration with `_newQuorum` if valid.
+    /// Reverts with `InvalidQuorum` if the new quorum configuration is not valid.
+    /// Emits `QuorumUpdated` event with the old and new quorum configurations.
+    /// @param _newQuorum The new quorum configuration to set.
     function _updateQuorumConfig(Quorum memory _newQuorum) internal {
         if (!_isValidQuorum(_newQuorum)){
             revert InvalidQuorum();
@@ -333,11 +341,13 @@ contract ECDSAStakeRegistry is
         emit TotalWeightUpdated(oldTotalWeight, newTotalWeight);
     }
 
-    /// @dev Verifies a quorum has:
-    ///     1. Weights that add to 10_000 basis points
-    ///     2. There are no duplicate strategies considered in the quorum
-    /// @param _quorum The new quorum configuration
-    /// @return bool Indicates if the quorum is valid
+    /**
+     * @dev Verifies that a specified quorum configuration is valid. A valid quorum has:
+     *      1. Weights that sum to exactly 10,000 basis points, ensuring proportional representation.
+     *      2. Unique strategies without duplicates to maintain quorum integrity.
+     * @param _quorum The quorum configuration to be validated.
+     * @return bool True if the quorum configuration is valid, otherwise false.
+     */
     function _isValidQuorum(Quorum memory _quorum) internal pure returns (bool) {
         StrategyParams[] memory strategies = _quorum.strategies;
         address lastStrategy;
