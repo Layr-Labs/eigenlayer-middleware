@@ -4,10 +4,10 @@
   },
 
   "permissions": {
-    "owner": "0x119156A81E4f3d891cBd106a4AedEA916A0A9C4b",
-    "upgrader": "0x119156A81E4f3d891cBd106a4AedEA916A0A9C4b",
-    "churner": "0x119156A81E4f3d891cBd106a4AedEA916A0A9C4b",
-    "ejector": "0x119156A81E4f3d891cBd106a4AedEA916A0A9C4b",
+    "owner": "0xeA96Fa8F6a185D6B97eCDeb9805178F6C2829eeE",
+    "upgrader": "0xeA96Fa8F6a185D6B97eCDeb9805178F6C2829eeE",
+    "churner": "0xeA96Fa8F6a185D6B97eCDeb9805178F6C2829eeE",
+    "ejector": "0xeA96Fa8F6a185D6B97eCDeb9805178F6C2829eeE",
     "pauser": "0x0000000000000000000000000000000000000000",
     "initialPausedStatus": 0
   },
