@@ -87,9 +87,12 @@ contract ECDSAStakeRegistry is
     }
 
     /**
-     * @notice Updates the cumulative threshold weight required for a message to be considered valid when signed by the operator set.
-     * @dev Can only be called by the contract owner.
-     * @param _thresholdWeight The new threshold weight to be set.
+     * @notice Sets a new cumulative threshold weight for message validation by operator set signatures.
+     * @dev This function can only be invoked by the owner of the contract. It delegates the update to 
+     * an internal function `_updateStakeThreshold`. 
+     * @param _thresholdWeight The updated threshold weight required to validate a message. This is the 
+     * cumulative weight that must be met or exceeded by the sum of the stakes of the signatories for 
+     * a message to be deemed valid.
      */
     function updateStakeThreshold(uint256 _thresholdWeight) external onlyOwner {
         _updateStakeThreshold(_thresholdWeight);
