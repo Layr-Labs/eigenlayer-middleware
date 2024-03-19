@@ -225,6 +225,7 @@ contract ECDSAStakeRegistry is
     }
 
     /// @dev Updates the weights for a given list of operator addresses.
+    /// When passing an operator that isn't registered, then 0 is added to their history
     /// @param _operators An array of addresses for which to update the weights.
     function _updateOperators(address[] memory _operators) internal {
         int256 delta;
