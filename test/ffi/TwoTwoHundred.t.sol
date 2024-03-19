@@ -21,7 +21,43 @@ contract TwoTwoHundred is MockAVSDeployer, G2Operations {
         blsSignatureChecker = new BLSSignatureChecker(registryCoordinator);
     }
 
-    function testTwoTwo() public {
+    function testMid() public {
+        uint64 numOperators = 300;
+        uint64 numNonSigners = 60;
+        uint64 numberOfQuorums = 2;
+
+        bytes memory message = "eigen";
+        bytes32 msgHash = _setOperators(numOperators, message);
+        
+        (
+            bytes memory quorumNumbers, 
+            uint32 referenceBlockNumber, 
+            BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
+        ) = _getNonSignerStakeAndSignatures(
+            numOperators, 
+            numNonSigners, 
+            numberOfQuorums
+        );
+
+        uint256 gasBefore = gasleft();
+        (
+            BLSSignatureChecker.QuorumStakeTotals memory quorumStakeTotals,
+            /* bytes32 signatoryRecordHash */
+        ) = blsSignatureChecker.checkSignatures(
+            msgHash, 
+            quorumNumbers,
+            referenceBlockNumber, 
+            nonSignerStakesAndSignature
+        );
+        uint256 gasAfter = gasleft();
+        uint256 gasCost = gasBefore - gasAfter;
+
+        console.log("gasCost: %s", gasCost);
+
+        assertTrue(quorumStakeTotals.signedStakeForQuorum[0] > 0);
+    }
+
+    function testWorst() public {
         uint64 numOperators = 400;
         uint64 numNonSigners = 180;
         uint64 numberOfQuorums = 2;
@@ -67,11 +103,23 @@ contract TwoTwoHundred is MockAVSDeployer, G2Operations {
             publicKeys.push(pubkey);
             operatorIds.push(pubkey.hashG1Point());
 
+            if(i < 200){
+                if (i < 100) {
+                    quorumBitmaps.push(1);
+                } else {
+                    quorumBitmaps.push(2);
+                }
+            } else {
+                quorumBitmaps.push(3);
+            }
+
+            /*
             if(i % 2 == 0) {
                 quorumBitmaps.push(1);
             } else {
                 quorumBitmaps.push(2);
             }
+            */
 
             address operator = _incrementAddress(defaultOperator, i);
             cheats.roll(registrationBlockNumber + blocksBetweenRegistrations * i);
