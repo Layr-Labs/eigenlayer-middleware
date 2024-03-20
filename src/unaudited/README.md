@@ -1,4 +1,4 @@
-> ** Note: Contracts in this directory aren't audited and should not be used in production without undergoing an independent security audit **
+> **Contracts in this directory aren't audited and should not be used in production without undergoing an independent security audit**
 
 ## Purpose
 
