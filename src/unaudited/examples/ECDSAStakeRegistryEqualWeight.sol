@@ -7,8 +7,8 @@ import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/
 import {CheckpointsUpgradeable} from "@openzeppelin-upgrades/contracts/utils/CheckpointsUpgradeable.sol";
 
 /// @title ECDSA Stake Registry with Equal Weight
+/// @dev THIS CONTRACT IS NOT AUDITED
 /// @notice A contract to manage operator stakes with equal weighting for operators
-/// @dev Inherits from ECDSAStakeRegistryPermissioned to leverage permissioned stake registry functionality.
 contract ECDSAStakeRegistryEqualWeight is ECDSAStakeRegistryPermissioned {
     using CheckpointsUpgradeable for CheckpointsUpgradeable.History;
 

@@ -6,6 +6,7 @@ import {ECDSAStakeRegistry} from "../ECDSAStakeRegistry.sol";
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
 /// @title ECDSA Stake Registry with an Operator Allowlist
+/// @dev THIS CONTRACT IS NOT AUDITED
 /// @notice This contract extends ECDSAStakeRegistry by adding functionality to allowlist and remove operators
 contract ECDSAStakeRegistryPermissioned is ECDSAStakeRegistry {
     /// @notice A mapping to keep track of whether an operator can register with this AVS or not.

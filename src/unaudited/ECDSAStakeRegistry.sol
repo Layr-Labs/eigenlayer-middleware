@@ -13,7 +13,7 @@ import {SignatureCheckerUpgradeable} from "@openzeppelin-upgrades/contracts/util
 import {IERC1271Upgradeable} from "@openzeppelin-upgrades/contracts/interfaces/IERC1271Upgradeable.sol";
 
 /// @title ECDSA Stake Registry
-/// @notice THIS CONTRACT IS NOT AUDITED
+/// @dev THIS CONTRACT IS NOT AUDITED
 /// @notice Manages operator registration and quorum updates for an AVS using ECDSA signatures.
 contract ECDSAStakeRegistry is
     IERC1271Upgradeable,
