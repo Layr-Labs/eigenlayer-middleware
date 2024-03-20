@@ -342,6 +342,53 @@ contract RegistryCoordinator is
         }
     }
 
+    function viewUpdateOperatorsForQuorum(address[] memory operators, uint8 quorum) external view returns (uint96[] memory, int256[] memory, uint192[] memory){
+            require(
+                operators.length == indexRegistry.totalOperatorsForQuorum(quorum),
+                "RegistryCoordinator.updateOperatorsForQuorum: number of updated operators does not match quorum total"
+            );
+            uint96[] memory stakes = new uint96[](operators.length);
+            int256[] memory deltas = new int256[](operators.length);
+            uint192[] memory quorumsToRemove = new uint192[](operators.length);
+
+            address prevOperatorAddress = address(0);
+            // For each operator:
+            // - check that they are registered for this quorum
+            // - check that their address is strictly greater than the last operator
+            // ... then, update their stakes
+            for (uint256 i= 0; i < operators.length; ++i) {
+                address operator = operators[i];
+                
+                OperatorInfo memory operatorInfo = _operatorInfo[operator];
+                bytes32 operatorId = operatorInfo.operatorId;
+                
+                {
+                    uint192 currentBitmap = _currentOperatorBitmap(operatorId);
+                    // Check that the operator is registered
+                    require(
+                        BitmapUtils.isSet(currentBitmap, quorum),
+                        "RegistryCoordinator.updateOperatorsForQuorum: operator not in quorum"
+                    );
+                    // Prevent duplicate operators
+                    require(
+                        operator > prevOperatorAddress,
+                        "RegistryCoordinator.updateOperatorsForQuorum: operators array must be sorted in ascending address order"
+                    );
+                }
+
+            if (operatorInfo.status != OperatorStatus.REGISTERED) {
+                    revert();
+            }
+            (stakes[i], deltas[i], quorumsToRemove[i])= stakeRegistry.viewOperatorStakeUpdate(operator, operatorId, quorum);
+
+                prevOperatorAddress = operator;
+            }
+
+            return (stakes, deltas, quorumsToRemove);
+
+
+    }
+
     /**
      * @notice Updates the socket of the msg.sender given they are a registered operator
      * @param socket is the new socket of the operator
