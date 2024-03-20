@@ -10,10 +10,10 @@ import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/
  */
 interface IServiceManager {
     /**
-     * @notice Sets the metadata URI for the AVS
+     * @notice Updates the metadata URI for the AVS
      * @param _metadataURI is the metadata URI for the AVS
      */
-    function setMetadataURI(string memory _metadataURI) external;
+    function updateAVSMetadataURI(string memory _metadataURI) external;
 
     /**
      * @notice Forwards a call to EigenLayer's DelegationManager contract to confirm operator registration with the AVS

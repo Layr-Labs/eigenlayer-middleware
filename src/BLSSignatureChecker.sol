@@ -190,7 +190,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                 // is within withdrawalDelayBlocks
                 if (_staleStakesForbidden) {
                     require(
-                        registryCoordinator.quorumUpdateBlockNumber(uint8(quorumNumbers[i])) + withdrawalDelayBlocks >= referenceBlockNumber,
+                        registryCoordinator.quorumUpdateBlockNumber(uint8(quorumNumbers[i])) + withdrawalDelayBlocks > referenceBlockNumber,
                         "BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within withdrawalDelayBlocks window"
                     );
                 }

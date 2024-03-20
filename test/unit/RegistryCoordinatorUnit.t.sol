@@ -28,12 +28,14 @@ contract RegistryCoordinatorUnitTests is MockAVSDeployer {
     // Emitted when a new operator pubkey is registered for a set of quorums
     event OperatorAddedToQuorums(
         address operator,
+        bytes32 operatorId,
         bytes quorumNumbers
     );
 
     // Emitted when an operator pubkey is removed from a set of quorums
     event OperatorRemovedFromQuorums(
         address operator, 
+        bytes32 operatorId,
         bytes quorumNumbers
     );
 
@@ -304,7 +306,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
         emit OperatorSocketUpdate(defaultOperatorId, defaultSocket);
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit OperatorAddedToQuorums(defaultOperator, quorumNumbers);
+        emit OperatorAddedToQuorums(defaultOperator, defaultOperatorId, quorumNumbers);
         cheats.expectEmit(true, true, true, true, address(stakeRegistry));
         emit OperatorStakeUpdate(defaultOperatorId, defaultQuorumNumber, actualStake);
         cheats.expectEmit(true, true, true, true, address(indexRegistry));
@@ -356,7 +358,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         emit OperatorRegistered(defaultOperator, defaultOperatorId);
 
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit OperatorAddedToQuorums(defaultOperator, quorumNumbers);
+        emit OperatorAddedToQuorums(defaultOperator, defaultOperatorId, quorumNumbers);
 
         for (uint i = 0; i < quorumNumbers.length; i++) {
             cheats.expectEmit(true, true, true, true, address(stakeRegistry));
@@ -415,7 +417,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
         emit OperatorSocketUpdate(defaultOperatorId, defaultSocket);
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit OperatorAddedToQuorums(defaultOperator, newQuorumNumbers);
+        emit OperatorAddedToQuorums(defaultOperator, defaultOperatorId, newQuorumNumbers);
         cheats.expectEmit(true, true, true, true, address(stakeRegistry));
         emit OperatorStakeUpdate(defaultOperatorId, uint8(newQuorumNumbers[0]), actualStake);
         cheats.expectEmit(true, true, true, true, address(indexRegistry));
@@ -546,7 +548,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
         emit OperatorSocketUpdate(defaultOperatorId, defaultSocket);
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit OperatorAddedToQuorums(defaultOperator, quorumNumbers);
+        emit OperatorAddedToQuorums(defaultOperator, defaultOperatorId, quorumNumbers);
         cheats.expectEmit(true, true, true, true, address(stakeRegistry));
         emit OperatorStakeUpdate(defaultOperatorId, defaultQuorumNumber, defaultStake);
         cheats.expectEmit(true, true, true, true, address(indexRegistry));
@@ -639,7 +641,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
 
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit OperatorRemovedFromQuorums(defaultOperator, quorumNumbers);
+        emit OperatorRemovedFromQuorums(defaultOperator, defaultOperatorId, quorumNumbers);
         cheats.expectEmit(true, true, true, true, address(stakeRegistry));
         emit OperatorStakeUpdate(defaultOperatorId, defaultQuorumNumber, 0);
 
@@ -691,7 +693,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
 
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit OperatorRemovedFromQuorums(defaultOperator, quorumNumbers);
+        emit OperatorRemovedFromQuorums(defaultOperator, defaultOperatorId, quorumNumbers);
         for (uint i = 0; i < quorumNumbers.length; i++) {
             cheats.expectEmit(true, true, true, true, address(stakeRegistry));
             emit OperatorStakeUpdate(defaultOperatorId, uint8(quorumNumbers[i]), 0);
@@ -753,7 +755,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         bytes memory deregistrationquorumNumbers = BitmapUtils.bitmapToBytesArray(deregistrationQuorumBitmap);
 
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit OperatorRemovedFromQuorums(defaultOperator, deregistrationquorumNumbers);
+        emit OperatorRemovedFromQuorums(defaultOperator, defaultOperatorId, deregistrationquorumNumbers);
         for (uint i = 0; i < deregistrationquorumNumbers.length; i++) {
             cheats.expectEmit(true, true, true, true, address(stakeRegistry));
             emit OperatorStakeUpdate(defaultOperatorId, uint8(deregistrationquorumNumbers[i]), 0);
@@ -855,7 +857,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         }
 
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit OperatorRemovedFromQuorums(operatorToDeregister, operatorToDeregisterQuorumNumbers);
+        emit OperatorRemovedFromQuorums(operatorToDeregister, operatorToDeregisterId, operatorToDeregisterQuorumNumbers);
         
         for (uint i = 0; i < operatorToDeregisterQuorumNumbers.length; i++) {
             cheats.expectEmit(true, true, true, true, address(stakeRegistry));
@@ -1016,7 +1018,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         bytes memory deregistrationquorumNumbers = BitmapUtils.bitmapToBytesArray(deregistrationQuorumBitmap);
 
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit OperatorRemovedFromQuorums(defaultOperator, deregistrationquorumNumbers);
+        emit OperatorRemovedFromQuorums(defaultOperator, defaultOperatorId, deregistrationquorumNumbers);
         for (uint i = 0; i < deregistrationquorumNumbers.length; i++) {
             cheats.expectEmit(true, true, true, true, address(stakeRegistry));
             emit OperatorStakeUpdate(defaultOperatorId, uint8(deregistrationquorumNumbers[i]), 0);
@@ -1081,7 +1083,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
 
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit OperatorRemovedFromQuorums(defaultOperator, quorumNumbers);
+        emit OperatorRemovedFromQuorums(defaultOperator, defaultOperatorId, quorumNumbers);
 
         cheats.expectEmit(true, true, true, true, address(stakeRegistry));
         emit OperatorStakeUpdate(defaultOperatorId, uint8(quorumNumbers[0]), 0);
@@ -1121,7 +1123,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         quorumNumbersToEject[0] = quorumNumbers[0];
 
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit OperatorRemovedFromQuorums(defaultOperator, quorumNumbersToEject);
+        emit OperatorRemovedFromQuorums(defaultOperator, defaultOperatorId, quorumNumbersToEject);
 
         cheats.expectEmit(true, true, true, true, address(stakeRegistry));
         emit OperatorStakeUpdate(defaultOperatorId, uint8(quorumNumbersToEject[0]), 0);
@@ -1328,7 +1330,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         emit OperatorRegistered(operatorToRegister, operatorToRegisterId);
 
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit OperatorAddedToQuorums(operatorToRegister, quorumNumbers);
+        emit OperatorAddedToQuorums(operatorToRegister, operatorToRegisterId, quorumNumbers);
         cheats.expectEmit(true, true, true, false, address(stakeRegistry));
         emit OperatorStakeUpdate(operatorToRegisterId, defaultQuorumNumber, registeringStake - 1);
         cheats.expectEmit(true, true, true, true, address(indexRegistry));
@@ -1338,7 +1340,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
         emit OperatorDeregistered(operatorKickParams[0].operator, operatorToKickId);
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit OperatorRemovedFromQuorums(operatorKickParams[0].operator, quorumNumbers);
+        emit OperatorRemovedFromQuorums(operatorKickParams[0].operator, operatorToKickId, quorumNumbers);
         cheats.expectEmit(true, true, true, true, address(stakeRegistry));
         emit OperatorStakeUpdate(operatorToKickId, defaultQuorumNumber, 0);
         cheats.expectEmit(true, true, true, true, address(indexRegistry));
