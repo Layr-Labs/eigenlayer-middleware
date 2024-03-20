@@ -342,13 +342,14 @@ contract RegistryCoordinator is
         }
     }
 
-    function viewUpdateOperatorsForQuorum(address[] memory operators, uint8 quorum) external view returns (uint96[] memory, int256[] memory, uint192[] memory){
+    function viewUpdateOperatorsForQuorum(address[] memory operators, uint8 quorum) external view returns (uint96[] memory, int256, uint192[] memory){
             require(
                 operators.length == indexRegistry.totalOperatorsForQuorum(quorum),
                 "RegistryCoordinator.updateOperatorsForQuorum: number of updated operators does not match quorum total"
             );
             uint96[] memory stakes = new uint96[](operators.length);
-            int256[] memory deltas = new int256[](operators.length);
+            int256 delta;
+            int256 netTotalStakeDelta;
             uint192[] memory quorumsToRemove = new uint192[](operators.length);
 
             address prevOperatorAddress = address(0);
@@ -379,13 +380,19 @@ contract RegistryCoordinator is
             if (operatorInfo.status != OperatorStatus.REGISTERED) {
                     revert();
             }
-            (stakes[i], deltas[i], quorumsToRemove[i])= stakeRegistry.viewOperatorStakeUpdate(operator, operatorId, quorum);
+                (stakes[i], delta, quorumsToRemove[i])= stakeRegistry.viewOperatorStakeUpdate(operator, operatorId, quorum);
+                netTotalStakeDelta+=delta;
 
                 prevOperatorAddress = operator;
             }
 
-            return (stakes, deltas, quorumsToRemove);
+            return (stakes, netTotalStakeDelta, quorumsToRemove);
 
+
+    }
+
+    function updateOperatorsForQuorum(address[] memory operators, uint96[] memory stakes, int256[] memory deltas, uint192[] memory quorumsToRemove) external {
+        /// TODO: takes the input returned from the view function via a zkproof
 
     }
 
