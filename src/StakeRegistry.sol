@@ -135,18 +135,13 @@ contract StakeRegistry is StakeRegistryStorage {
         }
     }
 
-    function viewOperatorStakeUpdate(address operator, bytes32 operatorId, uint8 quorumNumber) external view returns (uint96, int256, uint192){
+    function viewOperatorStakeUpdate(address operator, uint8 quorumNumber) external view returns (uint96){
         (uint96 stakeWeight, bool hasMinimumStake) = _weightOfOperatorForQuorum(quorumNumber, operator);
-
-        uint192 quorumsToRemove;
 
         if (!hasMinimumStake){
             stakeWeight = 0;
-            quorumsToRemove = uint192(quorumsToRemove.setBit(quorumNumber));
         }
-
-        int256 delta = _viewOperatorStakeUpdate(operatorId, quorumNumber, stakeWeight);
-        return (stakeWeight, delta, quorumsToRemove);
+        return stakeWeight;
     }
 
     function _viewOperatorStakeUpdate(bytes32 operatorId, uint8 quorumNumber, uint96 newStake) internal view returns (int256) {
