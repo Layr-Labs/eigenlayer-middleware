@@ -135,6 +135,35 @@ contract StakeRegistry is StakeRegistryStorage {
         }
     }
 
+    function viewOperatorStakeUpdate(address operator, uint8 quorumNumber) external view returns (uint96){
+        (uint96 stakeWeight, bool hasMinimumStake) = _weightOfOperatorForQuorum(quorumNumber, operator);
+
+        if (!hasMinimumStake){
+            stakeWeight = 0;
+        }
+        return stakeWeight;
+    }
+
+    function _viewOperatorStakeUpdate(bytes32 operatorId, uint8 quorumNumber, uint96 newStake) internal view returns (int256) {
+        uint96 prevStake;
+        uint256 historyLength = operatorStakeHistory[operatorId][quorumNumber].length;
+
+        if (historyLength == 0) {
+            prevStake=0;
+        } else {
+            // We have prior stake history - fetch our last-recorded stake
+            StakeUpdate storage lastUpdate = operatorStakeHistory[operatorId][quorumNumber][historyLength-1]; 
+            prevStake = lastUpdate.stake;
+
+            // Short-circuit in case there's no change in stake
+            if (prevStake == newStake) {
+                return 0;
+            }
+        }
+
+        return _calculateDelta({ prev: prevStake, cur: newStake });
+    }
+
     /**
      * @notice Called by the registry coordinator to update an operator's stake for one
      * or more quorums.

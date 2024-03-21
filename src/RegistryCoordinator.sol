@@ -342,6 +342,63 @@ contract RegistryCoordinator is
         }
     }
 
+    function viewUpdateOperatorsForQuorum(address[] memory operators, uint8 quorum) external view returns (address[] memory, uint8, uint96[] memory){
+            require(
+                operators.length == indexRegistry.totalOperatorsForQuorum(quorum),
+                "RegistryCoordinator.viewUpdateOperatorsForQuorum: number of updated operators does not match quorum total"
+            );
+            uint96[] memory stakes = new uint96[](operators.length);
+            address prevOperatorAddress = address(0);
+            for (uint256 i= 0; i < operators.length; ++i) {
+                address operator = operators[i];
+                OperatorInfo memory operatorInfo = _operatorInfo[operator];
+                bytes32 operatorId = operatorInfo.operatorId;
+                uint192 currentBitmap = _currentOperatorBitmap(operatorId);
+                require(
+                    BitmapUtils.isSet(currentBitmap, quorum),
+                    "RegistryCoordinator.viewUpdateOperatorsForQuorum: operator not in quorum"
+                );
+                // Prevent duplicate operators
+                require(
+                    operator > prevOperatorAddress,
+                    "RegistryCoordinator.viewUpdateOperatorsForQuorum: operators array must be sorted in ascending address order"
+                );
+                require(
+                    operatorInfo.status == OperatorStatus.REGISTERED, 
+                    "RegistryCoordinator.viewUpdateOperatorsForQuorum: Operator not registered"
+                );
+                stakes[i]= stakeRegistry.viewOperatorStakeUpdate(operator, quorum);
+
+                prevOperatorAddress = operator;
+            }
+
+            /// TODO: Total stake needs to be calculated in the circuit
+            /// TODO: Probably don't need operators, quorum in the return since will be input into the circuit
+            /// TODO: If stakes[i] == 0 then remove them from quourm
+            return (operators, quorum, stakes);
+    }
+
+    function zkUpdateOperatorsForQuorum(uint256 updateBlock, address[] memory operators, uint8 quorum, uint96[] memory stakes, uint256 totalStake, bytes32 postStateDigest, bytes calldata seal) external {
+
+        uint256 lastQuorumUpdateBlock = quorumUpdateBlockNumber[quorum];
+        require(lastQuorumUpdateBlock < updateBlock, "Update is Stale");
+        /// Check that the current update is before the lastQuorumUpdate
+
+        bytes memory journal = abi.encode(operators, quorum, stakes, totalStake);
+        _verifyJournal(journal, postStateDigest, seal);
+
+        quorumUpdateBlockNumber[quorum] = block.number;
+        _updateOperatorsForQuorum(operators, quorum, stakes);
+        _updateTotalStakeForQuorum(quorum, totalStake);
+    }
+
+    function _verifyJournal(bytes memory journal, bytes32 postStateDigest, bytes calldata seal) internal virtual {}
+
+    function _updateOperatorsForQuorum(address[] memory operators, uint8 quorum, uint96[] memory stakes) internal virtual {}
+
+    function _updateTotalStakeForQuorum(uint8 quorum, uint256 totalStake) internal virtual {}
+
+
     /**
      * @notice Updates the socket of the msg.sender given they are a registered operator
      * @param socket is the new socket of the operator

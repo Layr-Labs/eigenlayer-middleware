@@ -129,6 +129,8 @@ contract StakeRegistryMock is IStakeRegistry {
     /// @notice Returns the indices of the total stakes for the provided `quorumNumbers` at the given `blockNumber`
     function getTotalStakeIndicesAtBlockNumber(uint32 blockNumber, bytes calldata quorumNumbers) external view returns(uint32[] memory) {}
 
+    function viewOperatorStakeUpdate(address operator, uint8 quorumNumber) external view returns (uint96){}
+
     /**
      * @notice Returns the `index`-th entry in the `operatorIdToStakeHistory[operatorId][quorumNumber]` array.
      * @param quorumNumber The quorum number to get the stake for.

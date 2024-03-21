@@ -136,6 +136,9 @@ interface IStakeRegistry is IRegistry {
         uint256 index
     ) external view returns (StrategyParams memory);
 
+
+    function viewOperatorStakeUpdate(address operator, uint8 quorumNumber) external view returns (uint96);
+
     /**
      * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
      * @dev reverts in the case that `quorumNumber` is greater than or equal to `quorumCount`
