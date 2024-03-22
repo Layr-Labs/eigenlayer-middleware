@@ -215,9 +215,9 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
             }
 
             // Loop backward through apkHistory until we find an entry that preceeds `blockNumber`
-            for (uint256 j = quorumApkUpdatesLength; j > 0; j--) {
-                if (apkHistory[quorumNumber][j - 1].updateBlockNumber <= blockNumber) {
-                    indices[i] = uint32(j - 1);
+            for (uint256 j = quorumApkUpdatesLength - 1; j >= 0 ; j--) {
+                if (apkHistory[quorumNumber][j].updateBlockNumber <= blockNumber) {
+                    indices[i] = uint32(j);
                     break;
                 }
             }
