@@ -21,6 +21,15 @@ import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseStorage {
     using BitmapUtils for *;
 
+<<<<<<< HEAD
+=======
+    IRegistryCoordinator internal immutable _registryCoordinator;
+    IDelegationManager internal immutable _delegationManager;
+    IStakeRegistry internal immutable _stakeRegistry;
+
+    mapping(bytes32 => ISignatureUtils.SignatureWithSaltAndExpiry) public signatureMap;
+
+>>>>>>> Add a function to register operator with pubkey.
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
     modifier onlyRegistryCoordinator() {
         require(
@@ -114,6 +123,13 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
     ) public virtual onlyRegistryCoordinator {
         _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
     }
+
+    function registerOperatorToAVSWithPubKey(address operator,
+        bytes32 pubkey,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) public virtual onlyRegistryCoordinator {
+            signatureMap[pubkey] = operatorSignature;
+            _delegationManager.registerOperatorToAVS(operator, operatorSignature);
+        }
 
     /**
      * @notice Forwards a call to EigenLayer's AVSDirectory contract to confirm operator deregistration from the AVS

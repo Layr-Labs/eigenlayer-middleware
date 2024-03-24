@@ -503,7 +503,7 @@ contract RegistryCoordinator is
             });
 
             // Register the operator with the EigenLayer core contracts via this AVS's ServiceManager
-            serviceManager.registerOperatorToAVS(operator, operatorSignature);
+            serviceManager.registerOperatorToAVSWithPubKey(operator, operatorId, operatorSignature);
 
             emit OperatorRegistered(operator, operatorId);
         }
