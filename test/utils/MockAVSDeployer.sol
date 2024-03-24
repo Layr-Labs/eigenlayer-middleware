@@ -369,6 +369,34 @@ contract MockAVSDeployer is Test {
         registryCoordinator.registerOperator(quorumNumbers, pubkeyRegistrationParams, emptySignatureAndExpiry);
     }
 
+    /**
+     * @notice registers EO operator with coordinator 
+     */
+    function _registerEOOperatorWithCoordinator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubKey, uint96 stake, bool isChainValidator) internal {
+        // quorumBitmap can only have 192 least significant bits
+        quorumBitmap &= MAX_QUORUM_BITMAP;
+
+        blsApkRegistry.setBLSPublicKey(operator, pubKey);
+
+        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
+        for (uint i = 0; i < quorumNumbers.length; i++) {
+            _setOperatorWeight(operator, uint8(quorumNumbers[i]), stake);
+        }
+
+        IEOBLSApkRegistry.PubkeyRegistrationParams memory pubkeyRegistrationParams2;
+        pubkeyRegistrationParams2.pubkeyG1 = pubKey;
+        if (isChainValidator) {
+            pubkeyRegistrationParams2.pubkeyRegistrationSignature = BN254.G1Point(uint256(1), uint256(2));
+            pubkeyRegistrationParams2.chainValidatorSignature = BN254.G1Point(uint256(3), uint256(4));
+            pubkeyRegistrationParams2.pubkeyG2.X = [uint256(5), uint256(6)];
+            pubkeyRegistrationParams2.pubkeyG2.Y = [uint256(7), uint256(8)];
+        }
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
+        cheats.prank(operator);
+        registryCoordinator.registerOperator(quorumNumbers, pubkeyRegistrationParams2, emptySignatureAndExpiry);
+    }
+
     function _registerRandomOperators(uint256 pseudoRandomNumber) internal returns(OperatorMetadata[] memory, uint256[][] memory) {
         OperatorMetadata[] memory operatorMetadatas = new OperatorMetadata[](maxOperatorsToRegister);
         for (uint i = 0; i < operatorMetadatas.length; i++) {
