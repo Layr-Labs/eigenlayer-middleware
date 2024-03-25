@@ -17,3 +17,4 @@ node_modules/
 
 # Deployment logs
 /script/deploy/goerli/output/eoracle_middleware_deployment_data.json
+script/deploy/holesky/output/eoracle_middleware_deployment_data_holesky.json
