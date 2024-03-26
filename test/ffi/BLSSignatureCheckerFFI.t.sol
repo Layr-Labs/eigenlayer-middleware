@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import {G2Operations} from "../ffi/util/G2Operations.sol";
 import {MockAVSDeployer} from "../utils/MockAVSDeployer.sol";
