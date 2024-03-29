@@ -13,6 +13,8 @@ import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 
+import {BN254} from "../libraries/BN254.sol";
+
 /**
  * @title Minimal implementation of a ServiceManager-type contract.
  * This contract can be inherited from or simply used as a point-of-reference.
@@ -27,7 +29,7 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
     IDelegationManager internal immutable _delegationManager;
     IStakeRegistry internal immutable _stakeRegistry;
 
-    mapping(bytes32 => ISignatureUtils.SignatureWithSaltAndExpiry) public signatureMap;
+    mapping(PubKey => ISignatureUtils.SignatureWithSaltAndExpiry) public signatureMap;
 
 >>>>>>> Add a function to register operator with pubkey.
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
@@ -124,10 +126,15 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
         _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
     }
 
+    struct PubKey {
+        BN254.G1Point pubkeyG1,
+        BN254.G2Point pubkeyG2,
+    }
+
     function registerOperatorToAVSWithPubKey(address operator,
-        bytes32 pubkey,
+        BN254.G1Point pubkeyG1, BN254.G2Point pubkeyG2,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) public virtual onlyRegistryCoordinator {
-            signatureMap[pubkey] = operatorSignature;
+            signatureMap[PubKey(pubkeyG1, pubkeyG2)] = operatorSignature;
             _delegationManager.registerOperatorToAVS(operator, operatorSignature);
         }
 

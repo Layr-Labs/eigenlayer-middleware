@@ -147,7 +147,8 @@ contract RegistryCoordinator is
             operatorId: operatorId,
             quorumNumbers: quorumNumbers, 
             socket: socket,
-            operatorSignature: operatorSignature
+            operatorSignature: operatorSignature,
+            params: params
         }).numOperatorsPerQuorum;
 
         // For each quorum, validate that the new operator count does not exceed the maximum
@@ -208,7 +209,8 @@ contract RegistryCoordinator is
             operatorId: operatorId,
             quorumNumbers: quorumNumbers,
             socket: socket,
-            operatorSignature: operatorSignature
+            operatorSignature: operatorSignature,
+            params: params
         });
 
         // Check that each quorum's operator count is below the configured maximum. If the max
@@ -465,7 +467,8 @@ contract RegistryCoordinator is
         bytes32 operatorId,
         bytes calldata quorumNumbers,
         string memory socket,
-        SignatureWithSaltAndExpiry memory operatorSignature
+        SignatureWithSaltAndExpiry memory operatorSignature,
+        IBLSApkRegistry.PubkeyRegistrationParams calldata params
     ) internal virtual returns (RegisterResults memory results) {
         /**
          * Get bitmap of quorums to register for and operator's current bitmap. Validate that:
@@ -503,7 +506,7 @@ contract RegistryCoordinator is
             });
 
             // Register the operator with the EigenLayer core contracts via this AVS's ServiceManager
-            serviceManager.registerOperatorToAVSWithPubKey(operator, operatorId, operatorSignature);
+            serviceManager.registerOperatorToAVSWithPubKey(operator, params.pubkeyG1, params.pubkeyG2, operatorSignature);
 
             emit OperatorRegistered(operator, operatorId);
         }

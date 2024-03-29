@@ -4,6 +4,8 @@ pragma solidity >=0.5.0;
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {IServiceManagerUI} from "./IServiceManagerUI.sol";
 
+import {BN254} from "../libraries/BN254.sol";
+
 /**
  * @title Minimal interface for a ServiceManager-type contract that forms the single point for an AVS to push updates to EigenLayer
  * @author Layr Labs, Inc.
@@ -38,7 +40,8 @@ interface IServiceManager is IServiceManagerUI {
 
     function registerOperatorToAVSWithPubKey(
         address operator,
-        bytes32 pubkey,
+        BN254.G1Point pubkeyG1,
+        BN254.G2Point pubkeyG2,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external;
 
