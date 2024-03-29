@@ -217,7 +217,7 @@ invariant oneIdPerOperator(address operator1, address operator2)
 // status: violated
 invariant operatorIndexWithinRange(env e, address operator, uint8 quorumNumber, uint256 blocknumber, uint256 index)
     getOperatorStatus(operator) == IRegistryCoordinator.OperatorStatus.REGISTERED && 
-    quorumInBitmap(assert_uint256(getCurrentQuorumBitmap(e, getOperatorId(operator))), quorumNumber) =>
+    operatorIsRegisteredForQuorum(e, operator, quorumNumber) =>
         indexRegistry.currentOperatorIndex(e, quorumNumber, getOperatorId(operator)) < indexRegistry.totalOperatorsForQuorum(e, quorumNumber)
     {
         preserved deregisterOperator(bytes quorumNumbers) with (env e1) {
@@ -227,10 +227,26 @@ invariant operatorIndexWithinRange(env e, address operator, uint8 quorumNumber, 
     }
 
 /// if operator is registered for quorum number then operator has stake weight >= minStakeWeight(quorumNumber)
-// status: violated
 invariant operatorHasNonZeroStakeWeight(env e, address operator, uint8 quorumNumber)
     quorumInBitmap(assert_uint256(getCurrentQuorumBitmap(e, getOperatorId(operator))), quorumNumber) =>
-        stakeRegistry.weightOfOperatorForQuorum(e, quorumNumber, operator) >= stakeRegistry.minimumStakeForQuorum(e, quorumNumber);
+        stakeRegistry.weightOfOperatorForQuorum(e, quorumNumber, operator) > 0;
+
+definition operatorIsRegisteredForQuorum(env e, address operator, uint8 quorumNumber) returns bool =
+    quorumInBitmap(assert_uint256(getCurrentQuorumBitmap(e, getOperatorId(operator))), quorumNumber);
+
+rule registeringOperatorMeetsStakeRequirement(env e, address operator, uint8 quorumNumber) {
+    require(!operatorIsRegisteredForQuorum(e, operator, quorumNumber));
+    // perform arbitrary function call
+    calldataarg arg;
+    method f;
+    f(e, arg);
+
+    require(operatorIsRegisteredForQuorum(e, operator, quorumNumber));
+    assert(
+        stakeRegistry.weightOfOperatorForQuorum(e, quorumNumber, operator) >= stakeRegistry.minimumStakeForQuorum(e, quorumNumber),
+        "newly registered operator does not meet quorum weight requirement"
+    );
+}
 
 /// Operator cant go from registered to NEVER_REGISTERED. Can write some parametric rule
 // status: verified
