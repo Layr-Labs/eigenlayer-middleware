@@ -148,6 +148,7 @@ invariant operatorIdandPubkeyHash(address operator)
 /// If my Operator status is REGISTERED ⇔ my quorum bitmap MUST BE nonzero
 /// @notice _operatorBitmapHistory overflowing with 
 // status: violated
+// operator registers and has 0 quorumbitmap
 invariant registeredOperatorsHaveNonzeroBitmaps(env e, address operator)
     getOperatorStatus(operator) == IRegistryCoordinator.OperatorStatus.REGISTERED <=>
         getCurrentQuorumBitmap(e, getOperatorId(operator)) != 0 && getOperatorId(operator) != to_bytes32(0)
@@ -220,9 +221,12 @@ invariant operatorIndexWithinRange(env e, address operator, uint8 quorumNumber, 
     quorumInBitmap(assert_uint256(getCurrentQuorumBitmap(e, getOperatorId(operator))), quorumNumber) =>
         indexRegistry.currentOperatorIndex(e, quorumNumber, getOperatorId(operator)) < indexRegistry.totalOperatorsForQuorum(e, quorumNumber)
     {
-        preserved deregisterOperator(bytes quorumNumbers) with (env e1) {
+        preserved with (env e1) {
             require e1.msg.sender == e.msg.sender;
+            require getQuorumBitmapHistoryLength(getOperatorId(operator)) < max_uint256;
             requireInvariant oneIdPerOperator(operator, e.msg.sender);
+            requireInvariant operatorIdandPubkeyHash(e.msg.sender);
+            requireInvariant operatorIdandPubkeyHash(operator);
         }
     }
 
