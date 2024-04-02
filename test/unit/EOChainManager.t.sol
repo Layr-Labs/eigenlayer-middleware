@@ -26,11 +26,102 @@ contract EOChainManagerTest is Test {
         chainManager = EOChainManager(address(transparentProxy));
     }
 
+    function test_SetRegistryCoordinatorRevertIfNotOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        chainManager.setRegistryCoordinator(registryCoordinator);
+    }
+
     function test_SetRegistryCoordinator() public {
         assertEq(chainManager.registryCoordinator(), address(0));
         vm.prank(owner);
         chainManager.setRegistryCoordinator(registryCoordinator);
         assertEq(chainManager.registryCoordinator(), registryCoordinator);
+    }
+
+    function test_RegisterDataValidatorRevertIfNotRegistryCoordinator() public {
+        vm.expectRevert("NotRegistryCoordinator");
+        _registerDataValidator(operator, 1000);
+    }
+
+    function test_RegisterDataValidatorRevertIfNotWhitelisted() public {
+        vm.prank(owner);
+        chainManager.setRegistryCoordinator(registryCoordinator);
+        vm.startPrank(registryCoordinator);
+        vm.expectRevert("NotWhitelisted");
+        _registerDataValidator(operator, 1000);
+        vm.stopPrank();
+    }
+
+    function test_RegisterDataValidator() public {
+        vm.startPrank(owner);
+        chainManager.setRegistryCoordinator(registryCoordinator);
+        chainManager.grantRole(chainManager.DATA_VALIDATOR_ROLE(), operator);
+        vm.stopPrank();
+        vm.prank(registryCoordinator);
+        _registerDataValidator(operator, 1000);
+    }
+
+    function test_RegisterChainValidatorRevertIfNotRegistryCoordinator() public {
+        vm.expectRevert("NotRegistryCoordinator");
+        _registerChainValidator(operator, 999);
+    }
+
+    function test_RegisterChainValidatorRevertIfNotWhitelisted() public {
+        vm.prank(owner);
+        chainManager.setRegistryCoordinator(registryCoordinator);
+        vm.startPrank(registryCoordinator);
+        vm.expectRevert("NotWhitelisted");
+        _registerChainValidator(operator, 999);
+        vm.stopPrank();
+    }
+
+    function test_RegisterChainValidator() public {
+        vm.startPrank(owner);
+        chainManager.setRegistryCoordinator(registryCoordinator);
+        chainManager.grantRole(chainManager.CHAIN_VALIDATOR_ROLE(), operator);
+        vm.stopPrank();
+        vm.prank(registryCoordinator);
+        _registerChainValidator(operator, 999);
+    }
+
+    function test_DeregisterValidatorRevertIfNotRegistryCoordinator() public {
+        vm.startPrank(owner);
+        chainManager.setRegistryCoordinator(registryCoordinator);
+        chainManager.grantRole(chainManager.DATA_VALIDATOR_ROLE(), operator);
+        vm.stopPrank();
+
+        vm.expectRevert("NotRegistryCoordinator");
+        chainManager.deregisterValidator(operator);
+    }
+
+    function test_DeregisterValidator() public {
+        vm.startPrank(owner);
+        chainManager.setRegistryCoordinator(registryCoordinator);
+        chainManager.grantRole(chainManager.DATA_VALIDATOR_ROLE(), operator);
+        vm.stopPrank();
+
+        vm.prank(registryCoordinator);
+        chainManager.deregisterValidator(operator);
+    }
+
+    function test_UpdateOperatorRevertIfNotRegistryCoordinator() public {
+        vm.startPrank(owner);
+        chainManager.setRegistryCoordinator(registryCoordinator);
+        chainManager.grantRole(chainManager.DATA_VALIDATOR_ROLE(), operator);
+        vm.stopPrank();
+
+        vm.expectRevert("NotRegistryCoordinator");
+        chainManager.updateOperator(operator, new uint96[](0));
+    }
+
+    function test_UpdateOperator() public {
+        vm.startPrank(owner);
+        chainManager.setRegistryCoordinator(registryCoordinator);
+        chainManager.grantRole(chainManager.DATA_VALIDATOR_ROLE(), operator);
+        vm.stopPrank();
+
+        vm.prank(registryCoordinator);
+        chainManager.updateOperator(operator, new uint96[](0));
     }
 
     function _registerDataValidator(address validator, uint96 stake) internal view {
@@ -45,91 +136,5 @@ contract EOChainManagerTest is Test {
         uint96[] memory stakes = new uint96[](1);
         stakes[0] = stake;
         chainManager.registerChainValidator(validator, stakes, signature, publicKey);
-    }
-
-    function test_RegisterDataValidatorFailBecauseNotRegistryCoordinator() public {
-        vm.expectRevert("NotRegistryCoordinator");
-        _registerDataValidator(operator, 1000);
-    }
-
-    function test_RegisterDataValidatorFailBecauseNotWhitelisted() public {
-        vm.prank(owner);
-        chainManager.setRegistryCoordinator(registryCoordinator);
-        vm.startPrank(registryCoordinator);
-        vm.expectRevert("NotWhitelisted");
-        _registerDataValidator(operator, 1000);
-        vm.stopPrank();
-    }
-
-    function test_RegisterDataValidatorSuccess() public {
-        vm.startPrank(owner);
-        chainManager.setRegistryCoordinator(registryCoordinator);
-        chainManager.grantRole(chainManager.DATA_VALIDATOR_ROLE(), operator);
-        vm.stopPrank();
-        vm.prank(registryCoordinator);
-        _registerDataValidator(operator, 1000);
-    }
-
-    function test_RegisterChainValidatorFailBecauseNotRegistryCoordinator() public {
-        vm.expectRevert("NotRegistryCoordinator");
-        _registerChainValidator(operator, 999);
-    }
-
-    function test_RegisterChainValidatorFailBecauseNotWhitelisted() public {
-        vm.prank(owner);
-        chainManager.setRegistryCoordinator(registryCoordinator);
-        vm.startPrank(registryCoordinator);
-        vm.expectRevert("NotWhitelisted");
-        _registerChainValidator(operator, 999);
-        vm.stopPrank();
-    }
-
-    function test_RegisterChainValidatorSuccess() public {
-        vm.startPrank(owner);
-        chainManager.setRegistryCoordinator(registryCoordinator);
-        chainManager.grantRole(chainManager.CHAIN_VALIDATOR_ROLE(), operator);
-        vm.stopPrank();
-        vm.prank(registryCoordinator);
-        _registerChainValidator(operator, 999);
-    }
-
-    function test_DeregisterValidatorFailBecauseNotRegistryCoordinator() public {
-        vm.startPrank(owner);
-        chainManager.setRegistryCoordinator(registryCoordinator);
-        chainManager.grantRole(chainManager.DATA_VALIDATOR_ROLE(), operator);
-        vm.stopPrank();
-
-        vm.expectRevert("NotRegistryCoordinator");
-        chainManager.deregisterValidator(operator);
-    }
-
-    function test_DeregisterValidatorSuccess() public {
-        vm.startPrank(owner);
-        chainManager.setRegistryCoordinator(registryCoordinator);
-        chainManager.grantRole(chainManager.DATA_VALIDATOR_ROLE(), operator);
-        vm.stopPrank();
-
-        vm.prank(registryCoordinator);
-        chainManager.deregisterValidator(operator);
-    }
-
-    function test_UpdateOperatorFailBecauseNotRegistryCoordinator() public {
-        vm.startPrank(owner);
-        chainManager.setRegistryCoordinator(registryCoordinator);
-        chainManager.grantRole(chainManager.DATA_VALIDATOR_ROLE(), operator);
-        vm.stopPrank();
-
-        vm.expectRevert("NotRegistryCoordinator");
-        chainManager.updateOperator(operator, new uint96[](0));
-    }
-
-    function test_UpdateOperatorSuccess() public {
-        vm.startPrank(owner);
-        chainManager.setRegistryCoordinator(registryCoordinator);
-        chainManager.grantRole(chainManager.DATA_VALIDATOR_ROLE(), operator);
-        vm.stopPrank();
-
-        vm.prank(registryCoordinator);
-        chainManager.updateOperator(operator, new uint96[](0));
     }
 }

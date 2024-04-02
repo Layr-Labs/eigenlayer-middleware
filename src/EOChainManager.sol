@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-import { OwnableUpgradeable } from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import { AccessControlUpgradeable } from "@openzeppelin-upgrades/contracts/access/AccessControlUpgradeable.sol";
-import { IEOChainManager} from "./interfaces/IEOChainManager.sol";
+import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import {AccessControlUpgradeable} from
+    "@openzeppelin-upgrades/contracts/access/AccessControlUpgradeable.sol";
+import {IEOChainManager} from "./interfaces/IEOChainManager.sol";
 
 /// @title EOChainManager
 /// @notice Contract for managing the integration with the EOracle chain.
@@ -20,17 +21,17 @@ contract EOChainManager is IEOChainManager, OwnableUpgradeable, AccessControlUpg
     /// @notice Public constants for the roles
     bytes32 public constant CHAIN_VALIDATOR_ROLE = keccak256("CHAIN_VALIDATOR");
     bytes32 public constant DATA_VALIDATOR_ROLE = keccak256("DATA_VALIDATOR");
-    
+
     /*******************************************************************************
                                        STATE 
     *******************************************************************************/
-    
+
     // @notice The address of eoracle middleware RegistryCoordinator
-    address public registryCoordinator; 
+    address public registryCoordinator;
 
     /// @dev Modifier for registry coordinator
     modifier onlyRegistryCoordinator() {
-        require(msg.sender == address(registryCoordinator), "NotRegistryCoordinator");
+        require(msg.sender == registryCoordinator, "NotRegistryCoordinator");
         _;
     }
 
