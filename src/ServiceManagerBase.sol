@@ -38,6 +38,7 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     mapping(PubKey => ISignatureUtils.SignatureWithSaltAndExpiry) public signatureMap;
 
 >>>>>>> Add a function to register operator with pubkey.
@@ -49,6 +50,8 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
 
 >>>>>>> 56e7e72 (Store the pubkeyG1 and G2 to ServiceManager instead of operatorId.)
 >>>>>>> Store the pubkeyG1 and G2 to ServiceManager instead of operatorId.
+=======
+>>>>>>> Update eigenlayer-contract repo
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
     modifier onlyRegistryCoordinator() {
         require(
