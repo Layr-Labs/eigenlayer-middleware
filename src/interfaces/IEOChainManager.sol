@@ -3,10 +3,6 @@
 pragma solidity ^0.8.12;
 
 interface IEOChainManager {
-    error Unauthorized(string message);
-    error NotWhitelisted();
-    error NotRegistryCoordinator();
-
     /// @notice Registers a new data validator
     /// @param operator The address of the operator to register as a data validator
     /// @param stakes An array of stake amounts
@@ -17,7 +13,12 @@ interface IEOChainManager {
     /// @param stakes An array of stake amounts
     /// @param signature A 2-element array representing a signature
     /// @param pubkey A 4-element array representing a public key
-    function registerChainValidator(address operator, uint96[] calldata stakes, uint256[2] memory signature, uint256[4] memory pubkey) external;
+    function registerChainValidator(
+        address operator,
+        uint96[] calldata stakes,
+        uint256[2] memory signature,
+        uint256[4] memory pubkey
+    ) external;
 
     /// @notice Deregisters a validator (data validators only)
     /// @param operator The address of the operator to deregister

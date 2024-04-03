@@ -3,18 +3,19 @@ pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import { Test, console2 } from "forge-std/Test.sol";
-import { EOChainManager } from "../../src/EOChainManager.sol";
-import "../../src/interfaces/IEOChainManager.sol";
-import "../utils/MockAVSDeployer.sol";
+import {Test, console2} from "forge-std/Test.sol";
+import {EOChainManager} from "../../../src/EOChainManager.sol";
+import "../../../src/interfaces/IEOChainManager.sol";
+import "../../utils/MockAVSDeployer.sol";
 
 contract RegistrationFlowTest is MockAVSDeployer {
     using BN254 for BN254.G1Point;
 
     EOChainManager public chainManager;
-    TransparentUpgradeableProxy private transparentProxy;    
+    TransparentUpgradeableProxy private transparentProxy;
     address private whitelister = makeAddr("whitelister");
     address private operator = makeAddr("operator");
+
     constructor() {
         numQuorums = 1;
     }
@@ -36,14 +37,22 @@ contract RegistrationFlowTest is MockAVSDeployer {
         vm.deal(operator, 100 ether);
     }
 
-    function test_RegisterDataValidatorFailNotWhitelisted() public {
-        BN254.G1Point memory pubKey;
-        vm.expectRevert(); // this is an artifact of using the _registerOperatorWithCoordinator function
-        vm.expectRevert(abi.encodeWithSelector(IEOChainManager.NotWhitelisted.selector));
-        _registerEOOperatorWithCoordinator(operator, uint256(1), pubKey, 1000, false);
+    function test_RegisterDataValidatorRevertIfNotWhitelisted() public {
+        BN254.G1Point memory pubKey = BN254.hashToG1(keccak256("seed_for_hash"));
+        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(1);
+
+        blsApkRegistry.setBLSPublicKey(operator, pubKey);
+        _setOperatorWeight(operator, 0, 1000);
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory signature;
+        IEOBLSApkRegistry.PubkeyRegistrationParams memory params;
+
+        cheats.prank(operator);
+        vm.expectRevert("NotWhitelisted");
+        registryCoordinator.registerOperator(quorumNumbers, params, signature);
     }
 
-    function test_RegisterDataValidatorSuccess() public {
+    function test_RegisterDataValidator() public {
         BN254.G1Point memory pubKey;
         vm.startPrank(whitelister);
         assertEq(chainManager.hasRole(chainManager.DATA_VALIDATOR_ROLE(), operator), false);
@@ -53,11 +62,23 @@ contract RegistrationFlowTest is MockAVSDeployer {
         _registerEOOperatorWithCoordinator(operator, uint256(1), pubKey, 1000, false);
     }
 
-    function test_RegisterChainValidatorFailNotWhitelisted() public {
+    function test_RegisterChainValidatorRevertIfNotWhitelisted() public {
         BN254.G1Point memory pubKey = BN254.hashToG1(keccak256("seed_for_hash"));
-        vm.expectRevert(); // this is an artifact of using the _registerOperatorWithCoordinator function
-        vm.expectRevert(abi.encodeWithSelector(IEOChainManager.NotWhitelisted.selector));
-        _registerEOOperatorWithCoordinator(operator, uint256(1), pubKey, 1000, true);
+        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(1);
+
+        blsApkRegistry.setBLSPublicKey(operator, pubKey);
+        _setOperatorWeight(operator, 0, 1000);
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory signature;
+        IEOBLSApkRegistry.PubkeyRegistrationParams memory params;
+        params.pubkeyRegistrationSignature = BN254.G1Point(uint256(1), uint256(2));
+        params.chainValidatorSignature = BN254.G1Point(uint256(3), uint256(4));
+        params.pubkeyG2.X = [uint256(5), uint256(6)];
+        params.pubkeyG2.Y = [uint256(7), uint256(8)];
+
+        cheats.prank(operator);
+        vm.expectRevert("NotWhitelisted");
+        registryCoordinator.registerOperator(quorumNumbers, params, signature);
     }
 
     function test_RegisterChainValidatorSuccess() public {
