@@ -147,8 +147,7 @@ contract RegistryCoordinator is
             operatorId: operatorId,
             quorumNumbers: quorumNumbers, 
             socket: socket,
-            operatorSignature: operatorSignature,
-            params: params
+            operatorSignature: operatorSignature
         }).numOperatorsPerQuorum;
 
         // For each quorum, validate that the new operator count does not exceed the maximum
@@ -209,8 +208,7 @@ contract RegistryCoordinator is
             operatorId: operatorId,
             quorumNumbers: quorumNumbers,
             socket: socket,
-            operatorSignature: operatorSignature,
-            params: params
+            operatorSignature: operatorSignature
         });
 
         // Check that each quorum's operator count is below the configured maximum. If the max
@@ -467,8 +465,7 @@ contract RegistryCoordinator is
         bytes32 operatorId,
         bytes calldata quorumNumbers,
         string memory socket,
-        SignatureWithSaltAndExpiry memory operatorSignature,
-        IBLSApkRegistry.PubkeyRegistrationParams calldata params
+        SignatureWithSaltAndExpiry memory operatorSignature
     ) internal virtual returns (RegisterResults memory results) {
         /**
          * Get bitmap of quorums to register for and operator's current bitmap. Validate that:
