@@ -5,6 +5,7 @@ The following is an example of how eoracle leverages Eigenlayer integration with
 Eigenlayer operators are permissioned to register through the eoracle middleware , which forward information to the eoracle chain manager. Through a dedicated bridging contract, their Eigenlayer shares are forwarded to the eoracle chain, where they provide cryptographic trust and validation to oracle operations.  
 
 [Documentation](https://eoracle.gitbook.io/eoracle/)
+
 [eoracle middleware source code](https://github.com/Eoracle/eoracle-middleware/)
 
 ```mermaid 
@@ -50,4 +51,64 @@ flowchart LR
     OracleChainBridgingContract --> |Recieve Operator Information|AggregatorContract
     Dapp1 --> |Consume Price Feed |OracleInterface
     OracleInterface --> |Verify Threshold Signatures| OracleInterface
+```
+
+```mermaid 
+sequenceDiagram
+
+box Ethereum AVS Contracts
+
+participant Operator
+
+participant RegistryCoordinator
+
+participant IndexRegistry
+
+participant StakeRegistry
+
+participant BLSApkRegistry
+
+participant ChainManager
+
+participant StateSender
+
+end
+
+box Ethereum Eigenlayer Contracts
+
+participant DelegationManager
+
+participant StrategyManager
+
+participant AVS Directory
+
+end
+
+box eoracle Chain Contracts
+
+participant StateReciever
+
+participant Aggregator
+
+end
+
+Operator->>RegistryCoordinator: registerAsOperator
+
+RegistryCoordinator ->>StakeRegistry : Register Stake
+
+StakeRegistry ->> DelegationManager : Fetch Delegated Stake
+
+DelegationManager ->> StrategyManager: Fetch Total Stake for Operator
+
+RegistryCoordinator ->>IndexRegistry : Update Operator Set
+
+RegistryCoordinator ->>BLSApkRegistry : Update Operator Set BLS Aggregate Public Key
+
+RegistryCoordinator ->>ChainManager : Forward Operator Shares, BLS Public Key and ECDSA Address
+
+ChainManager ->> StateSender : Send Message to Chain
+
+StateSender ->> StateReciever : Message is bridged via a message signed by the current operator set
+
+StateReciever ->> Aggregator : Update operator permissions and stake
 ```
