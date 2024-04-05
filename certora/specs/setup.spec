@@ -63,13 +63,13 @@ methods {
     function BitmapUtils.isArrayStrictlyAscendingOrdered(bytes calldata a) internal returns (bool) => ascendingArrayCVL[a];
     function BitmapUtils.bitmapToBytesArray(uint256 a) internal returns (bytes memory) => returnBytes();
     function BitmapUtils.countNumOnes(uint256 a) internal returns (uint16) => numOnesCVL[a];
-    function BitmapUtils.isSet(uint256 a, uint8 b) internal returns (bool) => isSetCVL[a][b];
-    function BitmapUtils.setBit(uint256 a, uint8 b) internal returns (uint256) => setBitCVL[a][b];
+    // function BitmapUtils.isSet(uint256 a, uint8 b) internal returns (bool) => isSetCVL[a][b];
+    // function BitmapUtils.setBit(uint256 a, uint8 b) internal returns (uint256) => setBitCVL[a][b];
     // function BitmapUtils.isEmpty(uint256 a) internal returns (bool) => isEmptyCVL[a];
-    function BitmapUtils.noBitsInCommon(uint256 a, uint256 b) internal returns (bool) => noBitsInCommonCVL[a][b];
-    function BitmapUtils.isSubsetOf(uint256 a, uint256 b) internal returns (bool) => isSubsetOfCVL[a][b];
-    function BitmapUtils.plus(uint256 a, uint256 b) internal returns (uint256) => plusCVL[a][b];
-    function BitmapUtils.minus(uint256 a, uint256 b) internal returns (uint256) => minusCVL[a][b];
+    // function BitmapUtils.noBitsInCommon(uint256 a, uint256 b) internal returns (bool) => noBitsInCommonCVL[a][b];
+    // function BitmapUtils.isSubsetOf(uint256 a, uint256 b) internal returns (bool) => isSubsetOfCVL[a][b];
+    // function BitmapUtils.plus(uint256 a, uint256 b) internal returns (uint256) => plusCVL[a][b];
+    // function BitmapUtils.minus(uint256 a, uint256 b) internal returns (uint256) => minusCVL[a][b];
     
 }
 
@@ -110,7 +110,7 @@ function hashToG1Ghost(bytes32 x) returns BN254.G1Point {
 }
 
 function weightOfOperatorGhost(uint8 quorumNumber, address operator) returns (uint96, bool) {
-    bool val;
+    bool val = operatorWeight[quorumNumber][operator] >= stakeRegistry.minimumStakeForQuorum[quorumNumber];
     return (operatorWeight[quorumNumber][operator], val);
 }
 
@@ -145,62 +145,80 @@ invariant initializedQuorumHistories(uint8 quorumNumber)
 invariant operatorIdandPubkeyHash(address operator)
     getOperatorId(operator) == blsApkRegistry.getOperatorId(operator);
 
-/// If my Operator status is REGISTERED ⇔ my quorum bitmap MUST BE nonzero
-/// @notice _operatorBitmapHistory overflowing with 
+/// @notice If my Operator status is REGISTERED ⇔ my quorum bitmap MUST BE nonzero
 // status: violated
-// operator registers and has 0 quorumbitmap
 invariant registeredOperatorsHaveNonzeroBitmaps(env e, address operator)
     getOperatorStatus(operator) == IRegistryCoordinator.OperatorStatus.REGISTERED <=>
         getCurrentQuorumBitmap(e, getOperatorId(operator)) != 0 && getOperatorId(operator) != to_bytes32(0)
     {
         preserved with (env e1) {
             require e1.msg.sender == e.msg.sender;
+            // Pushing to history overflows to 0 length and 0 length returns 0 bitmap
             require getQuorumBitmapHistoryLength(getOperatorId(operator)) < max_uint256;
+            // If operator and msg.sender are not the same. msg.sender bitmap changing doesn't affect operator bitmap
             requireInvariant oneIdPerOperator(operator, e.msg.sender);
+            // We store operatorId in multiple contracts. Preserves consistency when reading from RegistryCoordinator
+            // or calling blsApkRegistry.getOperatorId(operator) in _getOrCreateOperatorId
             requireInvariant operatorIdandPubkeyHash(e.msg.sender);
             requireInvariant operatorIdandPubkeyHash(operator);
         }
+        // status: verified
         preserved ejectOperator(address operator1, bytes quorumNumbers) with (env e1) {
             requireInvariant oneIdPerOperator(operator1, operator);
             requireInvariant operatorIdandPubkeyHash(operator1);
             requireInvariant operatorIdandPubkeyHash(operator);
+            require getQuorumBitmapHistoryLength(getOperatorId(operator1)) < max_uint256;
         }
-        // preserved registerOperator(
-        //     bytes quorumNumbers,
-        //     string socket,
-        //     IBLSApkRegistry.PubkeyRegistrationParams params,
-        //     ISignatureUtils.SignatureWithSaltAndExpiry signature
-        // ) with (env e1) {
+        // status: verified
+        preserved registerOperator(
+            bytes quorumNumbers,
+            string socket,
+            IBLSApkRegistry.PubkeyRegistrationParams params,
+            ISignatureUtils.SignatureWithSaltAndExpiry signature
+        ) with (env e1) {
+            require e1.msg.sender == e.msg.sender;
+            require getQuorumBitmapHistoryLength(getOperatorId(operator)) < max_uint256;
+            requireInvariant oneIdPerOperator(operator, e.msg.sender);
+            requireInvariant operatorIdandPubkeyHash(e.msg.sender);
+            requireInvariant operatorIdandPubkeyHash(operator);
 
-        // }
-        // preserved registerOperatorWithChurn(
-        //     bytes quorumNumbers,
-        //     string socket,
-        //     IBLSApkRegistry.PubkeyRegistrationParams params,
-        //     IRegistryCoordinator.OperatorKickParam[] kickParams,
-        //     ISignatureUtils.SignatureWithSaltAndExpiry churnSignature,
-        //     ISignatureUtils.SignatureWithSaltAndExpiry operatorSignature
-        // ) with (env e1) {}
+            require getCurrentQuorumBitmap(e, getOperatorId(operator)) + bytesToBitmapCVL[quorumNumbers] <= max_uint192;
+        }
+        // status: unverified
+        preserved registerOperatorWithChurn(
+            bytes quorumNumbers,
+            string socket,
+            IBLSApkRegistry.PubkeyRegistrationParams params,
+            IRegistryCoordinator.OperatorKickParam[] kickParams,
+            ISignatureUtils.SignatureWithSaltAndExpiry churnSignature,
+            ISignatureUtils.SignatureWithSaltAndExpiry operatorSignature
+        ) with (env e1) {
+            require quorumNumbers.length == 1;
+            require e1.msg.sender == e.msg.sender;
+            require getQuorumBitmapHistoryLength(getOperatorId(operator)) < max_uint256;
+            requireInvariant oneIdPerOperator(operator, e.msg.sender);
+            requireInvariant oneIdPerOperator(operator, kickParams[0].operator);
+            requireInvariant operatorIdandPubkeyHash(e.msg.sender);
+            requireInvariant operatorIdandPubkeyHash(operator);
+            requireInvariant operatorIdandPubkeyHash(kickParams[0].operator);
+
+            require getCurrentQuorumBitmap(e, getOperatorId(operator)) + bytesToBitmapCVL[quorumNumbers] <= max_uint192;
+        }
+        // status: verified
         preserved updateOperators(address[] updatingOperators) with (env e1) {
             requireInvariant oneIdPerOperator(operator, updatingOperators[0]);
-            requireInvariant oneIdPerOperator(updatingOperators[0], updatingOperators[1]);
             requireInvariant oneIdPerOperator(updatingOperators[1], operator);
-            requireInvariant operatorIdandPubkeyHash(operator);
-            requireInvariant operatorIdandPubkeyHash(updatingOperators[0]);
-            requireInvariant operatorIdandPubkeyHash(updatingOperators[1]);
             require getQuorumBitmapHistoryLength(getOperatorId(operator)) < max_uint256;
         }
+        // status: verified
         preserved updateOperatorsForQuorum(address[][] updatingOperators, bytes quorumNumbers) with (env e1) {
             require updatingOperators.length == 1 && quorumNumbers.length == 1;
             requireInvariant oneIdPerOperator(operator, updatingOperators[0][0]);
-            requireInvariant oneIdPerOperator(updatingOperators[0][0], updatingOperators[0][1]);
             requireInvariant oneIdPerOperator(updatingOperators[0][1], operator);
-            requireInvariant operatorIdandPubkeyHash(operator);
-            requireInvariant operatorIdandPubkeyHash(updatingOperators[0][0]);
-            requireInvariant operatorIdandPubkeyHash(updatingOperators[0][1]);
             require getQuorumBitmapHistoryLength(getOperatorId(operator)) < max_uint256;
         }
     }
+
 
 /// @notice unique address <=> unique operatorId
 // status: verified
@@ -228,13 +246,117 @@ invariant operatorIndexWithinRange(env e, address operator, uint8 quorumNumber, 
             requireInvariant operatorIdandPubkeyHash(e.msg.sender);
             requireInvariant operatorIdandPubkeyHash(operator);
         }
+        preserved ejectOperator(address operator1, bytes quorumNumbers) with (env e1) {
+            requireInvariant oneIdPerOperator(operator1, operator);
+            requireInvariant operatorIdandPubkeyHash(operator1);
+            requireInvariant operatorIdandPubkeyHash(operator);
+            require getQuorumBitmapHistoryLength(getOperatorId(operator1)) < max_uint256;
+        }
+        preserved registerOperator(
+            bytes quorumNumbers,
+            string socket,
+            IBLSApkRegistry.PubkeyRegistrationParams params,
+            ISignatureUtils.SignatureWithSaltAndExpiry signature
+        ) with (env e1) {
+            require e1.msg.sender == e.msg.sender;
+            require getQuorumBitmapHistoryLength(getOperatorId(operator)) < max_uint256;
+            requireInvariant oneIdPerOperator(operator, e.msg.sender);
+            requireInvariant operatorIdandPubkeyHash(e.msg.sender);
+            requireInvariant operatorIdandPubkeyHash(operator);
+
+            require getCurrentQuorumBitmap(e, getOperatorId(operator)) + bytesToBitmapCVL[quorumNumbers] <= max_uint192;
+        }
+        preserved registerOperatorWithChurn(
+            bytes quorumNumbers,
+            string socket,
+            IBLSApkRegistry.PubkeyRegistrationParams params,
+            IRegistryCoordinator.OperatorKickParam[] kickParams,
+            ISignatureUtils.SignatureWithSaltAndExpiry churnSignature,
+            ISignatureUtils.SignatureWithSaltAndExpiry operatorSignature
+        ) with (env e1) {
+            require e1.msg.sender == e.msg.sender;
+            require getQuorumBitmapHistoryLength(getOperatorId(operator)) < max_uint256;
+            requireInvariant oneIdPerOperator(operator, e.msg.sender);
+            requireInvariant operatorIdandPubkeyHash(e.msg.sender);
+            requireInvariant operatorIdandPubkeyHash(operator);
+
+            require getCurrentQuorumBitmap(e, getOperatorId(operator)) + bytesToBitmapCVL[quorumNumbers] <= max_uint192;
+        }
+        preserved updateOperators(address[] updatingOperators) with (env e1) {
+            requireInvariant oneIdPerOperator(operator, updatingOperators[0]);
+            requireInvariant oneIdPerOperator(updatingOperators[1], operator);
+            require getQuorumBitmapHistoryLength(getOperatorId(operator)) < max_uint256;
+        }
+        preserved updateOperatorsForQuorum(address[][] updatingOperators, bytes quorumNumbers) with (env e1) {
+            require updatingOperators.length == 1 && quorumNumbers.length == 1;
+            requireInvariant oneIdPerOperator(operator, updatingOperators[0][0]);
+            requireInvariant oneIdPerOperator(updatingOperators[0][1], operator);
+            require getQuorumBitmapHistoryLength(getOperatorId(operator)) < max_uint256;
+        }
     }
 
-/// if operator is registered for quorum number then operator has stake weight >= minStakeWeight(quorumNumber)
+
+/// @notice if operator is registered for quorum number then operator has stake weight >= minStakeWeight(quorumNumber)
 // status: violated
 invariant operatorHasNonZeroStakeWeight(env e, address operator, uint8 quorumNumber)
     quorumInBitmap(assert_uint256(getCurrentQuorumBitmap(e, getOperatorId(operator))), quorumNumber) =>
-        stakeRegistry.weightOfOperatorForQuorum(e, quorumNumber, operator) >= stakeRegistry.minimumStakeForQuorum(e, quorumNumber);
+        stakeRegistry.weightOfOperatorForQuorum(e, quorumNumber, operator) >= stakeRegistry.minimumStakeForQuorum(e, quorumNumber)
+    {
+        preserved with (env e1) {
+            require e1.msg.sender == e.msg.sender;
+            require getQuorumBitmapHistoryLength(getOperatorId(operator)) < max_uint256;
+            requireInvariant oneIdPerOperator(operator, e.msg.sender);
+            requireInvariant operatorIdandPubkeyHash(e.msg.sender);
+            requireInvariant operatorIdandPubkeyHash(operator);
+        }
+        preserved ejectOperator(address operator1, bytes quorumNumbers) with (env e1) {
+            requireInvariant oneIdPerOperator(operator1, operator);
+            requireInvariant operatorIdandPubkeyHash(operator1);
+            requireInvariant operatorIdandPubkeyHash(operator);
+            require getQuorumBitmapHistoryLength(getOperatorId(operator1)) < max_uint256;
+        }
+        preserved registerOperator(
+            bytes quorumNumbers,
+            string socket,
+            IBLSApkRegistry.PubkeyRegistrationParams params,
+            ISignatureUtils.SignatureWithSaltAndExpiry signature
+        ) with (env e1) {
+            require e1.msg.sender == e.msg.sender;
+            require getQuorumBitmapHistoryLength(getOperatorId(operator)) < max_uint256;
+            requireInvariant oneIdPerOperator(operator, e.msg.sender);
+            requireInvariant operatorIdandPubkeyHash(e.msg.sender);
+            requireInvariant operatorIdandPubkeyHash(operator);
+
+            require getCurrentQuorumBitmap(e, getOperatorId(operator)) + bytesToBitmapCVL[quorumNumbers] <= max_uint192;
+        }
+        preserved registerOperatorWithChurn(
+            bytes quorumNumbers,
+            string socket,
+            IBLSApkRegistry.PubkeyRegistrationParams params,
+            IRegistryCoordinator.OperatorKickParam[] kickParams,
+            ISignatureUtils.SignatureWithSaltAndExpiry churnSignature,
+            ISignatureUtils.SignatureWithSaltAndExpiry operatorSignature
+        ) with (env e1) {
+            require e1.msg.sender == e.msg.sender;
+            require getQuorumBitmapHistoryLength(getOperatorId(operator)) < max_uint256;
+            requireInvariant oneIdPerOperator(operator, e.msg.sender);
+            requireInvariant operatorIdandPubkeyHash(e.msg.sender);
+            requireInvariant operatorIdandPubkeyHash(operator);
+
+            require getCurrentQuorumBitmap(e, getOperatorId(operator)) + bytesToBitmapCVL[quorumNumbers] <= max_uint192;
+        }
+        preserved updateOperators(address[] updatingOperators) with (env e1) {
+            requireInvariant oneIdPerOperator(operator, updatingOperators[0]);
+            requireInvariant oneIdPerOperator(updatingOperators[1], operator);
+            require getQuorumBitmapHistoryLength(getOperatorId(operator)) < max_uint256;
+        }
+        preserved updateOperatorsForQuorum(address[][] updatingOperators, bytes quorumNumbers) with (env e1) {
+            require updatingOperators.length == 1 && quorumNumbers.length == 1;
+            requireInvariant oneIdPerOperator(operator, updatingOperators[0][0]);
+            requireInvariant oneIdPerOperator(updatingOperators[0][1], operator);
+            require getQuorumBitmapHistoryLength(getOperatorId(operator)) < max_uint256;
+        }
+    }
 
 /// Operator cant go from registered to NEVER_REGISTERED. Can write some parametric rule
 // status: verified
