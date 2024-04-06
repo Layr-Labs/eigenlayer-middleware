@@ -1,8 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.9;
-
-import {IRegistryCoordinator} from "./IRegistryCoordinator.sol";
-import {IStakeRegistry} from "./IStakeRegistry.sol";
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.12;
 
 /**
  * @title Interface for a contract that ejects operators from an AVSs RegistryCoordinator
@@ -24,13 +21,13 @@ interface IEjectionManager {
 
     ///@notice Emitted when the ejector address is set
     event EjectorUpdated(address previousAddress, address newAddress);
+    ///@notice Emitted when the ratelimit parameters for a quorum are set
+    event QuorumEjectionParamsSet(uint8 quorumNumber, uint32 rateLimitWindow, uint16 ejectableStakePercent);
     ///@notice Emitted when an operator is ejected
     event OperatorEjected(bytes32 operatorId, uint8 quorumNumber);
     ///@notice Emitted when an operator ejection fails
     event FailedOperatorEjection(bytes32 operatorId, uint8 quorumNumber, bytes err);
-    ///@notice Emitted when the ratelimit parameters for a quorum are set
-    event QuorumEjectionParamsSet(uint8 quorumNumber, uint32 rateLimitWindow, uint16 ejectableStakePercent);
-
+    
    /**
      * @notice Ejects operators from the AVSs registryCoordinator under a ratelimit
      * @param _operatorIds The ids of the operators to eject for each quorum
@@ -40,16 +37,19 @@ interface IEjectionManager {
     /**
      * @notice Sets the ratelimit parameters for a quorum
      * @param _quorumNumber The quorum number to set the ratelimit parameters for
-     * @param _quorumEjectionParams The quorum bitmaps for each respective operator
+     * @param _quorumEjectionParams The quorum ratelimit parameters to set for the given quorum
      */
     function setQuorumEjectionParams(uint8 _quorumNumber, QuorumEjectionParams memory _quorumEjectionParams) external;
 
     /**
-     * @notice Sets the address permissioned to eject operators
+     * @notice Sets the address permissioned to eject operators under a ratelimit
      * @param _ejector The address to permission
      */
     function setEjector(address _ejector) external;
 
-
-    
+    /**
+     * @notice Returns the amount of stake that can be ejected for a quorum at the current block.timestamp
+     * @param _quorumNumber The quorum number to view ejectable stake for
+     */
+    function amountEjectableForQuorum(uint8 _quorumNumber) external view returns (uint256);
 }

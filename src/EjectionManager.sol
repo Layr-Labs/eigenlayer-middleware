@@ -1,14 +1,13 @@
-// SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.9;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.12;
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {IEjectionManager} from "./interfaces/IEjectionManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
-import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 
 /**
- * @title Used for automated ejection of operators from the RegistryCoordinator
+ * @title Used for automated ejection of operators from the RegistryCoordinator under a ratelimit
  * @author Layr Labs, Inc.
  */
 contract EjectionManager is IEjectionManager, OwnableUpgradeable{
@@ -16,13 +15,15 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
     /// @notice The basis point denominator for the ejectable stake percent
     uint16 internal constant BIPS_DENOMINATOR = 10000;
 
+    /// @notice the RegistryCoordinator contract that is the entry point for ejection
     IRegistryCoordinator public immutable registryCoordinator;
+    /// @notice the StakeRegistry contract that keeps track of quorum stake
     IStakeRegistry public immutable stakeRegistry;
 
     /// @notice Address permissioned to eject operators under a ratelimit
     address public ejector;
 
-    /// @notice Keeps track of the total stake ejected for a quorum within a time delta
+    /// @notice Keeps track of the total stake ejected for a quorum 
     mapping(uint8 => StakeEjection[]) public stakeEjectedForQuorum;
     /// @notice Ratelimit parameters for each quorum
     mapping(uint8 => QuorumEjectionParams) public quorumEjectionParams;
@@ -37,6 +38,11 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
         _disableInitializers();
     }
 
+    /**
+     * @param _owner will hold the owner role
+     * @param _ejector will hold the ejector role
+     * @param _quorumEjectionParams are the ratelimit parameters for the quorum at each index
+     */
     function initialize(
         address _owner, 
         address _ejector,
@@ -51,9 +57,10 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
     }
 
     /**
-     * @notice Ejects operators from the AVSs registryCoordinator under a ratelimit
-     * @dev This function will eject as many operators as possible without reverting
+     * @notice Ejects operators from the AVSs RegistryCoordinator under a ratelimit
      * @param _operatorIds The ids of the operators to eject for each quorum
+     * @dev This function will eject as many operators as possible without reverting 
+     * @dev The owner can eject operators without recording of stake ejection
      */
     function ejectOperators(bytes32[][] memory _operatorIds) external {
         require(msg.sender == ejector || msg.sender == owner(), "Ejector: Only owner or ejector can eject");
@@ -61,14 +68,14 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
         for(uint i = 0; i < _operatorIds.length; ++i) {
             uint8 quorumNumber = uint8(i);
 
-            _cleanOldEjections(quorumNumber);
-            uint256 amountEjectable = _amountEjectableForQuorum(quorumNumber);
+            uint256 amountEjectable = amountEjectableForQuorum(quorumNumber);
             uint256 stakeForEjection; 
 
             bool broke;
             for(uint8 j = 0; j < _operatorIds[i].length; ++j) {
                 uint256 operatorStake = stakeRegistry.getCurrentStake(_operatorIds[i][j], quorumNumber);
 
+                //if caller is ejector enforce ratelimit
                 if(
                     msg.sender == ejector && 
                     quorumEjectionParams[quorumNumber].rateLimitWindow > 0 &&
@@ -82,6 +89,7 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
                     break;
                 }
                 
+                //try-catch used to prevent race condition of operator deregistering before ejection
                 try registryCoordinator.ejectOperator(
                     registryCoordinator.getOperatorFromId(_operatorIds[i][j]),
                     abi.encodePacked(quorumNumber)
@@ -93,7 +101,8 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
                 }
             }
 
-            if(!broke){
+            //record the stake ejected if ejector and ratelimit enforced
+            if(!broke && msg.sender == ejector){ 
                 stakeEjectedForQuorum[quorumNumber].push(StakeEjection({
                     timestamp: block.timestamp,
                     stakeEjected: stakeForEjection
@@ -106,14 +115,14 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
     /**
      * @notice Sets the ratelimit parameters for a quorum
      * @param _quorumNumber The quorum number to set the ratelimit parameters for
-     * @param _quorumEjectionParams The quorum bitmaps for each respective operator
+     * @param _quorumEjectionParams The quorum ratelimit parameters to set for the given quorum
      */
     function setQuorumEjectionParams(uint8 _quorumNumber, QuorumEjectionParams memory _quorumEjectionParams) external onlyOwner() {
         _setQuorumEjectionParams(_quorumNumber, _quorumEjectionParams);
     }
 
     /**
-     * @notice Sets the address permissioned to eject operators
+     * @notice Sets the address permissioned to eject operators under a ratelimit
      * @param _ejector The address to permission
      */
     function setEjector(address _ejector) external onlyOwner() {
@@ -133,38 +142,22 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
     }
 
     /**
-     * @dev Removes stale ejections for a quorums history
-     * @param _quorumNumber The quorum number to clean ejections for
-     */
-    function _cleanOldEjections(uint8 _quorumNumber) internal {
-        uint256 cutoffTime = block.timestamp - quorumEjectionParams[_quorumNumber].rateLimitWindow;
-        uint256 index = 0;
-        StakeEjection[] storage stakeEjections = stakeEjectedForQuorum[_quorumNumber];
-        while (index < stakeEjections.length && stakeEjections[index].timestamp < cutoffTime) {
-            index++;
-        }
-        if (index > 0) {
-            for (uint256 i = index; i < stakeEjections.length; ++i) {
-                stakeEjections[i - index] = stakeEjections[i];
-            }
-            for (uint256 i = 0; i < index; ++i) {
-                stakeEjections.pop();
-            }
-        }
-    }
-
-    /**
-     * @notice Returns the amount of stake that can be ejected for a quorum 
-     * @dev This function only returns a valid amount after _cleanOldEjections has been called
+     * @notice Returns the amount of stake that can be ejected for a quorum at the current block.timestamp
      * @param _quorumNumber The quorum number to view ejectable stake for
      */
-    function _amountEjectableForQuorum(uint8 _quorumNumber) internal view returns (uint256) {
-        uint256 totalEjected = 0;
-        for (uint256 i = 0; i < stakeEjectedForQuorum[_quorumNumber].length; i++) {
+    function amountEjectableForQuorum(uint8 _quorumNumber) public view returns (uint256) {
+        uint256 totalEjected;
+        uint256 cutoffTime = block.timestamp - quorumEjectionParams[_quorumNumber].rateLimitWindow;
+        uint256 i = stakeEjectedForQuorum[_quorumNumber].length - 1;
+        while(stakeEjectedForQuorum[_quorumNumber][i].timestamp > cutoffTime) {
             totalEjected += stakeEjectedForQuorum[_quorumNumber][i].stakeEjected;
+            if(i == 0){
+                break;
+            } else {
+                --i;
+            }
         }
         uint256 totalEjectable = quorumEjectionParams[_quorumNumber].ejectableStakePercent * stakeRegistry.getCurrentTotalStake(_quorumNumber) / BIPS_DENOMINATOR;
         return totalEjectable - totalEjected;   
     }
-
 }
