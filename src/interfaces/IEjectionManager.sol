@@ -25,18 +25,17 @@ interface IEjectionManager {
     ///@notice Emitted when the ejector address is set
     event EjectorUpdated(address previousAddress, address newAddress);
     ///@notice Emitted when an operator is ejected
-    event OperatorEjected(bytes32 operatorId, uint256 quorumBitmap);
+    event OperatorEjected(bytes32 operatorId, uint8 quorumNumber);
     ///@notice Emitted when an operator ejection fails
-    event FailedOperatorEjection(bytes32 operatorId, uint256 quorumBitmap, bytes err);
+    event FailedOperatorEjection(bytes32 operatorId, uint8 quorumNumber, bytes err);
     ///@notice Emitted when the ratelimit parameters for a quorum are set
     event QuorumEjectionParamsSet(uint8 quorumNumber, uint32 rateLimitWindow, uint16 ejectableStakePercent);
 
-    /**
-     * @notice Ejects operators from the AVSs registryCoordinator
-     * @param _operatorIds The addresses of the operators to eject
-     * @param _quorumBitmaps The quorum bitmaps for each respective operator
+   /**
+     * @notice Ejects operators from the AVSs registryCoordinator under a ratelimit
+     * @param _operatorIds The ids of the operators to eject for each quorum
      */
-    function ejectOperators(bytes32[] memory _operatorIds, uint256[] memory _quorumBitmaps) external;
+    function ejectOperators(bytes32[][] memory _operatorIds) external;
 
     /**
      * @notice Sets the ratelimit parameters for a quorum
@@ -51,11 +50,6 @@ interface IEjectionManager {
      */
     function setEjector(address _ejector) external;
 
-    /**
-     * @notice Checks if an amount of stake can be ejected for a quorum with ratelimit
-     * @param _amount The amount of stake to eject
-     * @param _quorumNumber The quorum number to eject for
-     */
-    function canEject(uint256 _amount, uint8 _quorumNumber) external view returns (bool);
+
     
 }
