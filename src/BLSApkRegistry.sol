@@ -70,7 +70,11 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         bytes memory quorumNumbers
     ) public virtual onlyRegistryCoordinator {
         // Get the operator's pubkey. Reverts if they have not registered a key
-        (BN254.G1Point memory pubkey, ) = getRegisteredPubkey(operator);
+        (BN254.G1Point memory pubkey, bytes32 pubkeyHash) = getRegisteredPubkey(operator);
+
+        delete operatorToPubkey[operator];
+        delete operatorToPubkeyHash[operator];
+        delete pubkeyHashToOperator[pubkeyHash];
 
         // Update each quorum's aggregate pubkey
         _processQuorumApkUpdate(quorumNumbers, pubkey.negate());
