@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
@@ -160,6 +160,12 @@ contract OperatorStateRetriever {
         return checkSignaturesIndices;
     }
 
+    /**
+     * @notice this function returns the quorumBitmaps for each of the operators in the operatorIds array at the given blocknumber
+     * @param registryCoordinator is the AVS registry coordinator to fetch the operator information from
+     * @param operatorIds are the ids of the operators to get the quorumBitmaps for
+     * @param blockNumber is the block number to get the quorumBitmaps for
+     */
     function getQuorumBitmapsAtBlockNumber(
         IRegistryCoordinator registryCoordinator,
         bytes32[] memory operatorIds,
