@@ -52,7 +52,7 @@ The contracts in this repo are meant to be deployed by each AVS that wants to us
 
 ### Current Mainnet Deployment
 
-The current mainnet deployment is from our M2 mainnet release. You can view the deployed contract addresses below, or check out the code itself on the [`m2-mainnet`](https://github.com/Layr-Labs/eigenlayer-middleware/tree/m2-mainnet) branch.
+The current mainnet deployment is from our M2 mainnet release. You can view the deployed contract addresses below, or check out the code itself on the [`mainnet`](https://github.com/Layr-Labs/eigenlayer-middleware/tree/mainnet) branch.
 
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- |
