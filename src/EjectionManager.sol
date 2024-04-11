@@ -152,9 +152,9 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
         uint256 i;
         if (stakeEjectedForQuorum[_quorumNumber].length == 0) {
             return totalEjectable;
-        } else {
-            i = stakeEjectedForQuorum[_quorumNumber].length - 1;
         }
+        i = stakeEjectedForQuorum[_quorumNumber].length - 1;
+    
         while(stakeEjectedForQuorum[_quorumNumber][i].timestamp > cutoffTime) {
             totalEjected += stakeEjectedForQuorum[_quorumNumber][i].stakeEjected;
             if(i == 0){
@@ -162,6 +162,10 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
             } else {
                 --i;
             }
+        }
+
+        if(totalEjected >= totalEjectable){
+            return 0;
         }
         return totalEjectable - totalEjected;   
     }
