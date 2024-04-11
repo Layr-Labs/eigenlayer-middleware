@@ -58,8 +58,8 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
 
     /**
      * @notice Ejects operators from the AVSs RegistryCoordinator under a ratelimit
-     * @param _operatorIds The ids of the operators to eject for each quorum
-     * @dev This function will eject as many operators as possible without reverting 
+     * @param _operatorIds The ids of the operators 'j' to eject for each quorum 'i'
+     * @dev This function will eject as many operators as possible without reverting prioritizing operators at the lower index
      * @dev The owner can eject operators without recording of stake ejection
      */
     function ejectOperators(bytes32[][] memory _operatorIds) external {
