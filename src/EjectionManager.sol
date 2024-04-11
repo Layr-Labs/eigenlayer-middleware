@@ -146,9 +146,15 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
      * @param _quorumNumber The quorum number to view ejectable stake for
      */
     function amountEjectableForQuorum(uint8 _quorumNumber) public view returns (uint256) {
-        uint256 totalEjected;
         uint256 cutoffTime = block.timestamp - quorumEjectionParams[_quorumNumber].rateLimitWindow;
-        uint256 i = stakeEjectedForQuorum[_quorumNumber].length - 1;
+        uint256 totalEjectable = quorumEjectionParams[_quorumNumber].ejectableStakePercent * stakeRegistry.getCurrentTotalStake(_quorumNumber) / BIPS_DENOMINATOR;
+        uint256 totalEjected;
+        uint256 i;
+        if (stakeEjectedForQuorum[_quorumNumber].length == 0) {
+            return totalEjectable;
+        } else {
+            i = stakeEjectedForQuorum[_quorumNumber].length - 1;
+        }
         while(stakeEjectedForQuorum[_quorumNumber][i].timestamp > cutoffTime) {
             totalEjected += stakeEjectedForQuorum[_quorumNumber][i].stakeEjected;
             if(i == 0){
@@ -157,7 +163,6 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
                 --i;
             }
         }
-        uint256 totalEjectable = quorumEjectionParams[_quorumNumber].ejectableStakePercent * stakeRegistry.getCurrentTotalStake(_quorumNumber) / BIPS_DENOMINATOR;
         return totalEjectable - totalEjected;   
     }
 }
