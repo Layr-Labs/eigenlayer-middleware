@@ -44,7 +44,7 @@ contract zkRegistryUpdate is RegistryCoordinatorUnitTests {
         bytes memory seal;
         bytes32 postStateDigest;
         uint96 totalStake;
-        registryCoordinator.zkUpdateOperatorsForQuorum(updateBlock, operatorIdsOutput, defaultQuorumNumber, stakes, totalStake, postStateDigest, seal);
+        registryCoordinator.zkUpdateOperatorsForQuorum(updateBlock, operatorsOutput, operatorIdsOutput, defaultQuorumNumber, stakes, totalStake, postStateDigest, seal);
 
         uint256 quorumUpdateBlockNumberAfter = registryCoordinator.quorumUpdateBlockNumber(defaultQuorumNumber);
         assertEq(quorumUpdateBlockNumberAfter, block.number, "quorumUpdateBlockNumber not set correctly");

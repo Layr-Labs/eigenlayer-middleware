@@ -390,7 +390,7 @@ contract RegistryCoordinator is
             return (operators, operatorIds, quorum, stakes);
     }
 
-    function zkUpdateOperatorsForQuorum(uint256 updateBlock, bytes32[] memory operatorIds, uint8 quorum, uint96[] memory stakes, uint96 totalStake, bytes32 postStateDigest, bytes calldata seal) external {
+    function zkUpdateOperatorsForQuorum(uint256 updateBlock, address[] memory operators, bytes32[] memory operatorIds, uint8 quorum, uint96[] memory stakes, uint96 totalStake, bytes32 postStateDigest, bytes calldata seal) external {
 
         uint256 lastQuorumUpdateBlock = quorumUpdateBlockNumber[quorum];
         require(lastQuorumUpdateBlock < updateBlock, "Update is Stale");
@@ -401,14 +401,26 @@ contract RegistryCoordinator is
 
         quorumUpdateBlockNumber[quorum] = block.number;
         emit QuorumBlockNumberUpdated(quorum, block.number);
-        _updateOperatorsForQuorum(operatorIds, quorum, stakes);
+        _updateOperatorsForQuorum(operators, operatorIds, quorum, stakes);
     }
 
     function _verifyJournal(bytes memory journal, bytes32 postStateDigest, bytes calldata seal) internal virtual {
         IZkVerifier(zkVerifier).verify(seal, imageId, postStateDigest, keccak256(journal));
     }
 
-    function _updateOperatorsForQuorum(bytes32[] memory operatorIds, uint8 quorumNumber, uint96[] memory stakes) internal virtual {
+    function _updateOperatorsForQuorum(address[] memory operators, bytes32[] memory operatorIds, uint8 quorumNumber, uint96[] memory stakes) internal virtual {
+        bytes memory quorumNumbers; // TODO: need to convert quorumNumber to bytes
+        for (uint256 i; i < operatorIds.length; i++){
+
+            if (stakes[i] == 0) {
+
+                _deregisterOperator({
+                    operator: operators[i], 
+                    quorumNumbers: quorumNumbers
+                });
+            }
+        }
+        /// TODO: Need to iterate through stakes and if any are 0, then deregister them
         stakeRegistry.updateOperatorsStakeForQuourm(operatorIds, quorumNumber, stakes);
     }
 
