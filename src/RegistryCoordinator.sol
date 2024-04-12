@@ -351,7 +351,6 @@ contract RegistryCoordinator is
         }
     }
 
-    /// TODO: Return operatorIds instead of operator Addresses
     function viewUpdateOperatorsForQuorum(address[] memory operators, uint8 quorum) external view returns (address[] memory, bytes32[] memory operatorIds, uint8, uint96[] memory){
             require(
                 operators.length == indexRegistry.totalOperatorsForQuorum(quorum),
@@ -718,9 +717,6 @@ contract RegistryCoordinator is
             return;
         }
         bytes32 operatorId = operatorInfo.operatorId;
-        /// TODO: There checks for updating stake are oddly decoupled.  Registryation checked here, ability to update the values checked here, 
-        /// but what the change actually is isn't handled here.  If the stake registry already can't update itself the control 
-        /// for what the update is should also happen here and pass it to the stake registry.
         uint192 quorumsToRemove = stakeRegistry.updateOperatorStake(operator, operatorId, quorumsToUpdate);
 
         if (!quorumsToRemove.isEmpty()) {
