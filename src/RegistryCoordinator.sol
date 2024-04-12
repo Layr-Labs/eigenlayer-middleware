@@ -29,6 +29,11 @@ import {RegistryCoordinatorStorage} from "./RegistryCoordinatorStorage.sol";
  * 
  * @author Layr Labs, Inc.
  */
+
+interface IZkVerifier {
+    function verify(bytes calldata seal, bytes32 imageId, bytes32 postDigestState, bytes32 journalDigestState) external;
+}
+
 contract RegistryCoordinator is 
     EIP712, 
     Initializable, 
@@ -41,20 +46,7 @@ contract RegistryCoordinator is
     using BitmapUtils for *;
     using BN254 for BN254.G1Point;
 
-    modifier onlyEjector {
-        require(msg.sender == ejector, "RegistryCoordinator.onlyEjector: caller is not the ejector");
-        _;
-    }
 
-    /// @dev Checks that `quorumNumber` corresponds to a quorum that has been created
-    /// via `initialize` or `createQuorum`
-    modifier quorumExists(uint8 quorumNumber) {
-        require(
-            quorumNumber < quorumCount, 
-            "RegistryCoordinator.quorumExists: quorum does not exist"
-        );
-        _;
-    }
 
     constructor(
         IServiceManager _serviceManager,
@@ -115,6 +107,18 @@ contract RegistryCoordinator is
                             EXTERNAL FUNCTIONS 
     *******************************************************************************/
 
+
+   function updateZkVerifier(address _verifier) external {
+       _checkOwner();
+       zkVerifier = _verifier;
+   }
+
+   function updateImageId(bytes32 _imageId) external {
+       _checkOwner();
+       imageId = _imageId;
+   }
+
+
     /**
      * @notice Registers msg.sender as an operator for one or more quorums. If any quorum exceeds its maximum
      * operator capacity after the operator is registered, this method will fail.
@@ -130,7 +134,8 @@ contract RegistryCoordinator is
         string calldata socket,
         IBLSApkRegistry.PubkeyRegistrationParams calldata params,
         SignatureWithSaltAndExpiry memory operatorSignature
-    ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
+    ) external {
+        _checkPausedIndex(PAUSED_REGISTER_OPERATOR);
         /**
          * If the operator has NEVER registered a pubkey before, use `params` to register
          * their pubkey in blsApkRegistry
@@ -181,7 +186,8 @@ contract RegistryCoordinator is
         OperatorKickParam[] calldata operatorKickParams,
         SignatureWithSaltAndExpiry memory churnApproverSignature,
         SignatureWithSaltAndExpiry memory operatorSignature
-    ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
+    ) external {
+        _checkPausedIndex(PAUSED_REGISTER_OPERATOR);
         require(operatorKickParams.length == quorumNumbers.length, "RegistryCoordinator.registerOperatorWithChurn: input length mismatch");
         
         /**
@@ -241,7 +247,8 @@ contract RegistryCoordinator is
      */
     function deregisterOperator(
         bytes calldata quorumNumbers
-    ) external onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
+    ) external {
+        _checkPausedIndex(PAUSED_DEREGISTER_OPERATOR);
         _deregisterOperator({
             operator: msg.sender, 
             quorumNumbers: quorumNumbers
@@ -254,7 +261,8 @@ contract RegistryCoordinator is
      * @dev stakes are queried from the Eigenlayer core DelegationManager contract
      * @param operators a list of operator addresses to update
      */
-    function updateOperators(address[] calldata operators) external onlyWhenNotPaused(PAUSED_UPDATE_OPERATOR) {
+    function updateOperators(address[] calldata operators) external {
+        _checkPausedIndex(PAUSED_UPDATE_OPERATOR);
         for (uint256 i = 0; i < operators.length; i++) {
             address operator = operators[i];
             OperatorInfo memory operatorInfo = _operatorInfo[operator];
@@ -284,7 +292,8 @@ contract RegistryCoordinator is
     function updateOperatorsForQuorum(
         address[][] calldata operatorsPerQuorum,
         bytes calldata quorumNumbers
-    ) external onlyWhenNotPaused(PAUSED_UPDATE_OPERATOR) {
+    ) external {
+        _checkPausedIndex(PAUSED_UPDATE_OPERATOR);
         // Input validation 
         // - all quorums should exist (checked against `quorumCount` in orderedBytesArrayToBitmap)
         // - there should be no duplicates in `quorumNumbers`
@@ -342,17 +351,20 @@ contract RegistryCoordinator is
         }
     }
 
-    function viewUpdateOperatorsForQuorum(address[] memory operators, uint8 quorum) external view returns (address[] memory, uint8, uint96[] memory){
+    /// TODO: Return operatorIds instead of operator Addresses
+    function viewUpdateOperatorsForQuorum(address[] memory operators, uint8 quorum) external view returns (address[] memory, bytes32[] memory operatorIds, uint8, uint96[] memory){
             require(
                 operators.length == indexRegistry.totalOperatorsForQuorum(quorum),
                 "RegistryCoordinator.viewUpdateOperatorsForQuorum: number of updated operators does not match quorum total"
             );
             uint96[] memory stakes = new uint96[](operators.length);
+            bytes32[] memory operatorIds = new bytes32[](operators.length);
             address prevOperatorAddress = address(0);
             for (uint256 i= 0; i < operators.length; ++i) {
                 address operator = operators[i];
                 OperatorInfo memory operatorInfo = _operatorInfo[operator];
                 bytes32 operatorId = operatorInfo.operatorId;
+                operatorIds[i] = operatorId;
                 uint192 currentBitmap = _currentOperatorBitmap(operatorId);
                 require(
                     BitmapUtils.isSet(currentBitmap, quorum),
@@ -375,28 +387,30 @@ contract RegistryCoordinator is
             /// TODO: Total stake needs to be calculated in the circuit
             /// TODO: Probably don't need operators, quorum in the return since will be input into the circuit
             /// TODO: If stakes[i] == 0 then remove them from quourm
-            return (operators, quorum, stakes);
+            return (operators, operatorIds, quorum, stakes);
     }
 
-    function zkUpdateOperatorsForQuorum(uint256 updateBlock, address[] memory operators, uint8 quorum, uint96[] memory stakes, uint256 totalStake, bytes32 postStateDigest, bytes calldata seal) external {
+    function zkUpdateOperatorsForQuorum(uint256 updateBlock, bytes32[] memory operatorIds, uint8 quorum, uint96[] memory stakes, uint96 totalStake, bytes32 postStateDigest, bytes calldata seal) external {
 
         uint256 lastQuorumUpdateBlock = quorumUpdateBlockNumber[quorum];
         require(lastQuorumUpdateBlock < updateBlock, "Update is Stale");
         /// Check that the current update is before the lastQuorumUpdate
 
-        bytes memory journal = abi.encode(operators, quorum, stakes, totalStake);
+        bytes memory journal = abi.encode(operatorIds, quorum, stakes, totalStake);
         _verifyJournal(journal, postStateDigest, seal);
 
         quorumUpdateBlockNumber[quorum] = block.number;
-        _updateOperatorsForQuorum(operators, quorum, stakes);
-        _updateTotalStakeForQuorum(quorum, totalStake);
+        emit QuorumBlockNumberUpdated(quorum, block.number);
+        _updateOperatorsForQuorum(operatorIds, quorum, stakes);
     }
 
-    function _verifyJournal(bytes memory journal, bytes32 postStateDigest, bytes calldata seal) internal virtual {}
+    function _verifyJournal(bytes memory journal, bytes32 postStateDigest, bytes calldata seal) internal virtual {
+        IZkVerifier(zkVerifier).verify(seal, imageId, postStateDigest, keccak256(journal));
+    }
 
-    function _updateOperatorsForQuorum(address[] memory operators, uint8 quorum, uint96[] memory stakes) internal virtual {}
-
-    function _updateTotalStakeForQuorum(uint8 quorum, uint256 totalStake) internal virtual {}
+    function _updateOperatorsForQuorum(bytes32[] memory operatorIds, uint8 quorumNumber, uint96[] memory stakes) internal virtual {
+        stakeRegistry.updateOperatorsStakeForQuourm(operatorIds, quorumNumber, stakes);
+    }
 
 
     /**
@@ -420,7 +434,8 @@ contract RegistryCoordinator is
     function ejectOperator(
         address operator, 
         bytes calldata quorumNumbers
-    ) external onlyEjector {
+    ) external {
+        _checkEjector();
         _deregisterOperator({
             operator: operator, 
             quorumNumbers: quorumNumbers
@@ -443,7 +458,8 @@ contract RegistryCoordinator is
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
         IStakeRegistry.StrategyParams[] memory strategyParams
-    ) external virtual onlyOwner {
+    ) external virtual {
+        _checkOwner();
         _createQuorum(operatorSetParams, minimumStake, strategyParams);
     }
 
@@ -457,7 +473,9 @@ contract RegistryCoordinator is
     function setOperatorSetParams(
         uint8 quorumNumber, 
         OperatorSetParam memory operatorSetParams
-    ) external onlyOwner quorumExists(quorumNumber) {
+    ) external {
+        _checkOwner();
+        _checkQuorumExists(quorumNumber);
         _setOperatorSetParams(quorumNumber, operatorSetParams);
     }
 
@@ -467,7 +485,8 @@ contract RegistryCoordinator is
      * @param _churnApprover the new churn approver
      * @dev only callable by the owner
      */
-    function setChurnApprover(address _churnApprover) external onlyOwner {
+    function setChurnApprover(address _churnApprover) external {
+        _checkOwner();
         _setChurnApprover(_churnApprover);
     }
 
@@ -476,7 +495,8 @@ contract RegistryCoordinator is
      * @param _ejector the new ejector
      * @dev only callable by the owner
      */
-    function setEjector(address _ejector) external onlyOwner {
+    function setEjector(address _ejector) external {
+        _checkOwner();
         _setEjector(_ejector);
     }
 
@@ -548,6 +568,7 @@ contract RegistryCoordinator is
         return results;
     }
 
+
     /**
      * @notice Fetches an operator's pubkey hash from the BLSApkRegistry. If the
      * operator has not registered a pubkey, attempts to register a pubkey using
@@ -565,6 +586,18 @@ contract RegistryCoordinator is
             operatorId = blsApkRegistry.registerBLSPublicKey(operator, params, pubkeyRegistrationMessageHash(operator));
         }
         return operatorId;
+    }
+
+    function _checkEjector() internal view {
+        require(msg.sender == ejector, "RegistryCoordinator._checkEjector: caller is not the ejector");
+
+    }
+
+    function _checkQuorumExists(uint8 quorumNumber) internal view {
+        require(
+            quorumNumber < quorumCount, 
+            "RegistryCoordinator.quorumExists: quorum does not exist"
+        );
     }
 
     /**
@@ -663,6 +696,7 @@ contract RegistryCoordinator is
      * stake, `quorumsToRemove` is returned and used to deregister the operator from those quorums
      * @dev does nothing if operator is not registered for any quorums.
      */
+
     function _updateOperator(
         address operator,
         OperatorInfo memory operatorInfo,
@@ -672,6 +706,9 @@ contract RegistryCoordinator is
             return;
         }
         bytes32 operatorId = operatorInfo.operatorId;
+        /// TODO: There checks for updating stake are oddly decoupled.  Registryation checked here, ability to update the values checked here, 
+        /// but what the change actually is isn't handled here.  If the stake registry already can't update itself the control 
+        /// for what the update is should also happen here and pass it to the stake registry.
         uint192 quorumsToRemove = stakeRegistry.updateOperatorStake(operator, operatorId, quorumsToUpdate);
 
         if (!quorumsToRemove.isEmpty()) {

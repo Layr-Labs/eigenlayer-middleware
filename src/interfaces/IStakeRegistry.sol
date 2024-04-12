@@ -248,4 +248,6 @@ interface IStakeRegistry is IRegistry {
         bytes32 operatorId, 
         bytes calldata quorumNumbers
     ) external returns (uint192);
+    function updateOperatorsStakeForQuourm(bytes32[] memory operatorIds, uint8 quorumNumber, uint96 [] memory stakes) external;
+
 }

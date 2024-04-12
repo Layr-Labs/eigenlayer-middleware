@@ -1157,7 +1157,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         cheats.prank(defaultOperator);
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
         
-        cheats.expectRevert("RegistryCoordinator.onlyEjector: caller is not the ejector");
+        cheats.expectRevert("RegistryCoordinator._checkEjector: caller is not the ejector");
         cheats.prank(defaultOperator);
         registryCoordinator.ejectOperator(defaultOperator, quorumNumbers);
     }

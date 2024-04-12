@@ -26,4 +26,5 @@ contract StakeRegistryHarness is StakeRegistry {
     function applyDelta(uint96 value, int256 delta) external pure returns (uint96) {
         return _applyDelta(value, delta);
     }
+
 }

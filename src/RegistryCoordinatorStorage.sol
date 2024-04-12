@@ -64,6 +64,10 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
     /// @notice the address of the entity allowed to eject operators from the AVS
     address public ejector;
 
+    address internal zkVerifier;
+
+    bytes32 internal imageId;
+
     constructor(
         IServiceManager _serviceManager,
         IStakeRegistry _stakeRegistry,

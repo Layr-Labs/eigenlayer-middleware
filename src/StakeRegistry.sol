@@ -164,6 +164,19 @@ contract StakeRegistry is StakeRegistryStorage {
         return _calculateDelta({ prev: prevStake, cur: newStake });
     }
 
+    function updateOperatorsStakeForQuourm(bytes32[] memory operatorIds,uint8 quorumNumber,uint96[] memory stakes) external virtual {
+        int256 stakeDelta;
+        for (uint256 i; i < operatorIds.length; i++){
+            stakeDelta  +=  _recordOperatorStakeUpdate({
+                operatorId: operatorIds[i],
+                quorumNumber: quorumNumber,
+                newStake: stakes[i]
+            });
+        }
+        _recordTotalStakeUpdate(quorumNumber, stakeDelta);
+
+    }
+
     /**
      * @notice Called by the registry coordinator to update an operator's stake for one
      * or more quorums.
