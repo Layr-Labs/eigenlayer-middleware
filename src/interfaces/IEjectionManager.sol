@@ -20,14 +20,14 @@ interface IEjectionManager {
     }
 
     ///@notice Emitted when the ejector address is set
-    event EjectorUpdated(address previousAddress, address newAddress);
+    event EjectorUpdated(address ejector, bool status);
     ///@notice Emitted when the ratelimit parameters for a quorum are set
     event QuorumEjectionParamsSet(uint8 quorumNumber, uint32 rateLimitWindow, uint16 ejectableStakePercent);
     ///@notice Emitted when an operator is ejected
     event OperatorEjected(bytes32 operatorId, uint8 quorumNumber);
     ///@notice Emitted when an operator ejection fails
     event FailedOperatorEjection(bytes32 operatorId, uint8 quorumNumber, bytes err);
-    
+
    /**
      * @notice Ejects operators from the AVSs registryCoordinator under a ratelimit
      * @param _operatorIds The ids of the operators to eject for each quorum
@@ -45,7 +45,7 @@ interface IEjectionManager {
      * @notice Sets the address permissioned to eject operators under a ratelimit
      * @param _ejector The address to permission
      */
-    function setEjector(address _ejector) external;
+    function setEjector(address _ejector, bool _status) external;
 
     /**
      * @notice Returns the amount of stake that can be ejected for a quorum at the current block.timestamp
