@@ -409,18 +409,18 @@ contract RegistryCoordinator is
     }
 
     function _updateOperatorsForQuorum(address[] memory operators, bytes32[] memory operatorIds, uint8 quorumNumber, uint96[] memory stakes) internal virtual {
-        bytes memory quorumNumbers; // TODO: need to convert quorumNumber to bytes
+        bytes memory quorumsToUpdate = new bytes(1);
+        quorumsToUpdate[0] = bytes1(quorumNumber);
         for (uint256 i; i < operatorIds.length; i++){
 
             if (stakes[i] == 0) {
 
                 _deregisterOperator({
                     operator: operators[i], 
-                    quorumNumbers: quorumNumbers
+                    quorumNumbers: quorumsToUpdate
                 });
             }
         }
-        /// TODO: Need to iterate through stakes and if any are 0, then deregister them
         stakeRegistry.updateOperatorsStakeForQuourm(operatorIds, quorumNumber, stakes);
     }
 
