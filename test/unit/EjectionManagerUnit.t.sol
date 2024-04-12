@@ -8,7 +8,7 @@ import "../utils/MockAVSDeployer.sol";
 
 contract EjectionManagerUnitTests is MockAVSDeployer {
 
-    event EjectorUpdated(address previousAddress, address newAddress);
+    event EjectorUpdated(address ejector, bool status);
     event QuorumEjectionParamsSet(uint8 quorumNumber, uint32 rateLimitWindow, uint16 ejectableStakePercent);
     event OperatorEjected(bytes32 operatorId, uint8 quorumNumber);
     event FailedOperatorEjection(bytes32 operatorId, uint8 quorumNumber, bytes err);
@@ -42,6 +42,9 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
 
         ejectionManagerImplementation = new EjectionManager(registryCoordinator, stakeRegistry);
 
+        address[] memory ejectors = new address[](1);
+        ejectors[0] = ejector;
+
         cheats.prank(proxyAdminOwner);
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(ejectionManager))),
@@ -49,7 +52,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
             abi.encodeWithSelector(
                 EjectionManager.initialize.selector,
                 registryCoordinatorOwner,
-                ejector,
+                ejectors,
                 quorumEjectionParams
             )
         );
@@ -352,12 +355,12 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
 
     function testSetEjector() public {
         cheats.expectEmit(true, true, true, true, address(ejectionManager));
-        emit EjectorUpdated(ejector, address(0));
+        emit EjectorUpdated(address(0), true);
 
         cheats.prank(registryCoordinatorOwner);
-        ejectionManager.setEjector(address(0));
+        ejectionManager.setEjector(address(0), true);
 
-        assertEq(ejectionManager.ejector(), address(0));
+        assertEq(ejectionManager.isEjector(address(0)), true);
     }
 
     function test_Revert_NotPermissioned() public {
@@ -370,7 +373,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         ejectionManager.setQuorumEjectionParams(0, _quorumEjectionParams);
 
         cheats.expectRevert("Ownable: caller is not the owner");
-        ejectionManager.setEjector(address(0));
+        ejectionManager.setEjector(address(0), true);
     }
 
     function _registerOperaters(uint8 numOperators, uint96 stake) internal {
