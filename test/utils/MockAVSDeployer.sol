@@ -44,7 +44,7 @@ import "forge-std/Test.sol";
 contract MockAVSDeployer is Test {
     using BN254 for BN254.G1Point;
 
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     ProxyAdmin public proxyAdmin;
     PauserRegistry public pauserRegistry;

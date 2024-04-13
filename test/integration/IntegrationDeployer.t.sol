@@ -45,7 +45,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
     using Strings for *;
 
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     // Core contracts to deploy
     DelegationManager delegationManager;

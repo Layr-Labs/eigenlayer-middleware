@@ -7,7 +7,7 @@ import "../harnesses/BitmapUtilsWrapper.sol";
 import "forge-std/Test.sol";
 
 contract BitmapUtilsUnitTests is Test {
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     BitmapUtilsWrapper public bitmapUtilsWrapper;
 

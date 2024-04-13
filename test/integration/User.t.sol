@@ -43,7 +43,7 @@ contract User is Test {
     using BitmapStrings for *;
     using BitmapUtils for *;
 
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     // Core contracts
     DelegationManager delegationManager;
