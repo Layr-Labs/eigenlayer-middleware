@@ -20,8 +20,8 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
     /// @notice the StakeRegistry contract that keeps track of quorum stake
     IStakeRegistry public immutable stakeRegistry;
 
-    /// @notice Address permissioned to eject operators under a ratelimit
-    address public ejector;
+    /// @notice Addresses permissioned to eject operators under a ratelimit
+    mapping(address => bool) public isEjector;
 
     /// @notice Keeps track of the total stake ejected for a quorum 
     mapping(uint8 => StakeEjection[]) public stakeEjectedForQuorum;
@@ -40,17 +40,18 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
 
     /**
      * @param _owner will hold the owner role
-     * @param _ejector will hold the ejector role
+     * @param _ejectors will hold the ejector role
      * @param _quorumEjectionParams are the ratelimit parameters for the quorum at each index
      */
     function initialize(
         address _owner, 
-        address _ejector,
+        address[] memory _ejectors,
         QuorumEjectionParams[] memory _quorumEjectionParams
     ) external initializer {
         _transferOwnership(_owner);
-        _setEjector(_ejector);
-
+        for(uint8 i = 0; i < _ejectors.length; i++) {
+            _setEjector(_ejectors[i], true);
+        }
         for(uint8 i = 0; i < _quorumEjectionParams.length; i++) {
             _setQuorumEjectionParams(i, _quorumEjectionParams[i]);
         }
@@ -63,7 +64,7 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
      * @dev The owner can eject operators without recording of stake ejection
      */
     function ejectOperators(bytes32[][] memory _operatorIds) external {
-        require(msg.sender == ejector || msg.sender == owner(), "Ejector: Only owner or ejector can eject");
+        require(isEjector[msg.sender] || msg.sender == owner(), "Ejector: Only owner or ejector can eject");
 
         for(uint i = 0; i < _operatorIds.length; ++i) {
             uint8 quorumNumber = uint8(i);
@@ -77,7 +78,7 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
 
                 //if caller is ejector enforce ratelimit
                 if(
-                    msg.sender == ejector && 
+                    isEjector[msg.sender] && 
                     quorumEjectionParams[quorumNumber].rateLimitWindow > 0 &&
                     stakeForEjection + operatorStake > amountEjectable
                 ){
@@ -88,7 +89,7 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
                     broke = true;
                     break;
                 }
-                
+
                 //try-catch used to prevent race condition of operator deregistering before ejection
                 try registryCoordinator.ejectOperator(
                     registryCoordinator.getOperatorFromId(_operatorIds[i][j]),
@@ -102,7 +103,7 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
             }
 
             //record the stake ejected if ejector and ratelimit enforced
-            if(!broke && msg.sender == ejector){ 
+            if(!broke && isEjector[msg.sender]){ 
                 stakeEjectedForQuorum[quorumNumber].push(StakeEjection({
                     timestamp: block.timestamp,
                     stakeEjected: stakeForEjection
@@ -124,9 +125,10 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
     /**
      * @notice Sets the address permissioned to eject operators under a ratelimit
      * @param _ejector The address to permission
+     * @param _status The status to set for the given address
      */
-    function setEjector(address _ejector) external onlyOwner() {
-        _setEjector(_ejector);
+    function setEjector(address _ejector, bool _status) external onlyOwner() {
+        _setEjector(_ejector, _status);
     }
 
     ///@dev internal function to set the quorum ejection params
@@ -136,9 +138,9 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
     }
 
     ///@dev internal function to set the ejector
-    function _setEjector(address _ejector) internal {
-        emit EjectorUpdated(ejector, _ejector);
-        ejector = _ejector;
+    function _setEjector(address _ejector, bool _status) internal {
+        isEjector[_ejector] = _status;
+        emit EjectorUpdated(_ejector, _status);
     }
 
     /**
@@ -154,7 +156,7 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
             return totalEjectable;
         }
         i = stakeEjectedForQuorum[_quorumNumber].length - 1;
-    
+
         while(stakeEjectedForQuorum[_quorumNumber][i].timestamp > cutoffTime) {
             totalEjected += stakeEjectedForQuorum[_quorumNumber][i].stakeEjected;
             if(i == 0){
