@@ -165,8 +165,8 @@ invariant registeredOperatorsHaveNonzeroBitmaps(env e, address operator)
         // status: verified
         preserved ejectOperator(address operator1, bytes quorumNumbers) with (env e1) {
             requireInvariant oneIdPerOperator(operator1, operator);
-            requireInvariant operatorIdandPubkeyHash(operator1);
-            requireInvariant operatorIdandPubkeyHash(operator);
+            // requireInvariant operatorIdandPubkeyHash(operator1);
+            // requireInvariant operatorIdandPubkeyHash(operator);
             require getQuorumBitmapHistoryLength(getOperatorId(operator1)) < max_uint256;
         }
         // status: verified
@@ -180,9 +180,9 @@ invariant registeredOperatorsHaveNonzeroBitmaps(env e, address operator)
             require getQuorumBitmapHistoryLength(getOperatorId(operator)) < max_uint256;
             requireInvariant oneIdPerOperator(operator, e.msg.sender);
             requireInvariant operatorIdandPubkeyHash(e.msg.sender);
-            requireInvariant operatorIdandPubkeyHash(operator);
+            // requireInvariant operatorIdandPubkeyHash(operator);
 
-            require getCurrentQuorumBitmap(e, getOperatorId(operator)) + bytesToBitmapCVL[quorumNumbers] <= max_uint192;
+            // require getCurrentQuorumBitmap(e, getOperatorId(operator)) + bytesToBitmapCVL[quorumNumbers] <= max_uint192;
         }
         // status: unverified
         preserved registerOperatorWithChurn(
@@ -199,10 +199,10 @@ invariant registeredOperatorsHaveNonzeroBitmaps(env e, address operator)
             requireInvariant oneIdPerOperator(operator, e.msg.sender);
             requireInvariant oneIdPerOperator(operator, kickParams[0].operator);
             requireInvariant operatorIdandPubkeyHash(e.msg.sender);
-            requireInvariant operatorIdandPubkeyHash(operator);
-            requireInvariant operatorIdandPubkeyHash(kickParams[0].operator);
+            // requireInvariant operatorIdandPubkeyHash(operator);
+            // requireInvariant operatorIdandPubkeyHash(kickParams[0].operator);
 
-            require getCurrentQuorumBitmap(e, getOperatorId(operator)) + bytesToBitmapCVL[quorumNumbers] <= max_uint192;
+            // require getCurrentQuorumBitmap(e, getOperatorId(operator)) + bytesToBitmapCVL[quorumNumbers] <= max_uint192;
         }
         // status: verified
         preserved updateOperators(address[] updatingOperators) with (env e1) {
