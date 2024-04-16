@@ -60,17 +60,21 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
     /**
      * @notice Ejects operators from the AVSs RegistryCoordinator under a ratelimit
      * @param _operatorIds The ids of the operators 'j' to eject for each quorum 'i'
+     * @return ejectedOperatorsForQuorum The total number of operators ejected for each quorum 'i'
      * @dev This function will eject as many operators as possible without reverting prioritizing operators at the lower index
      * @dev The owner can eject operators without recording of stake ejection
      */
-    function ejectOperators(bytes32[][] memory _operatorIds) external {
+    function ejectOperators(bytes32[][] memory _operatorIds) external returns (uint256[] memory){
         require(isEjector[msg.sender] || msg.sender == owner(), "Ejector: Only owner or ejector can eject");
+
+        uint256[] memory ejectedOperatorsForQuorum = new uint256[](_operatorIds.length);
 
         for(uint i = 0; i < _operatorIds.length; ++i) {
             uint8 quorumNumber = uint8(i);
 
             uint256 amountEjectable = amountEjectableForQuorum(quorumNumber);
-            uint256 stakeForEjection; 
+            uint256 stakeForEjection;
+            uint256 ejectedOperators;
 
             bool broke;
             for(uint8 j = 0; j < _operatorIds[i].length; ++j) {
@@ -96,6 +100,7 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
                     abi.encodePacked(quorumNumber)
                 ) {
                     stakeForEjection += operatorStake;
+                    ++ejectedOperators;
                     emit OperatorEjected(_operatorIds[i][j], quorumNumber);
                 } catch (bytes memory err) {
                     emit FailedOperatorEjection(_operatorIds[i][j], quorumNumber, err);
@@ -110,7 +115,10 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
                 }));
             }
 
+            ejectedOperatorsForQuorum[i] = ejectedOperators;
         }
+
+        return ejectedOperatorsForQuorum;
     }
 
     /**
