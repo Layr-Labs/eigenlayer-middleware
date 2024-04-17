@@ -11,6 +11,7 @@ on:
       - mainnet
       - testnet-goerli
       - dev
+      - ecdsa-interface
   pull_request:
 
 env:
