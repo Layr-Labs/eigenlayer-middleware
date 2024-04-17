@@ -6,6 +6,8 @@ import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IServiceManager} from "../interfaces/IServiceManager.sol";
+import {IRegistry} from "../interfaces/IRegistry.sol";
+import {IStakeRegistry} from "../interfaces/IStakeRegistry.sol";
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {CheckpointsUpgradeable} from "@openzeppelin-upgrades/contracts/utils/CheckpointsUpgradeable.sol";
@@ -18,7 +20,9 @@ import {IERC1271Upgradeable} from "@openzeppelin-upgrades/contracts/interfaces/I
 contract ECDSAStakeRegistry is
     IERC1271Upgradeable,
     OwnableUpgradeable,
-    ECDSAStakeRegistryStorage
+    ECDSAStakeRegistryStorage,
+    IRegistry,
+    IStakeRegistry
 {
     using SignatureCheckerUpgradeable for address;
     using CheckpointsUpgradeable for CheckpointsUpgradeable.History;
