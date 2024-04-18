@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - dev
-      - update-certora-rules
+      - updated-certora-rules
   pull_request: {}
   workflow_dispatch: {}
 
