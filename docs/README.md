@@ -97,6 +97,7 @@ These histories are used by offchain code to query state at particular blocks, a
 ##### Hooking Into EigenLayer Core
 
 The main thing that links an AVS to the EigenLayer core contracts is that when EigenLayer Operators register/deregister with an AVS, the AVS calls these functions in EigenLayer core:
+
 * [`AVSDirectory.registerOperatorToAVS`][core-registerToAVS]
 * [`AVSDirectory.deregisterOperatorFromAVS`][core-deregisterFromAVS]
 
