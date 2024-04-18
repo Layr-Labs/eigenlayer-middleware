@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import "forge-std/Test.sol";
 
@@ -45,7 +45,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
     using Strings for *;
 
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     // Core contracts to deploy
     DelegationManager delegationManager;
@@ -204,7 +204,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
-                type(uint).max, // maxPods
                 address(beaconChainOracle),
                 eigenLayerReputedMultisig, // initialOwner
                 pauserRegistry,

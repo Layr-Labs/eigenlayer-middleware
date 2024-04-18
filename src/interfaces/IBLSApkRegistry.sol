@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import {IRegistry} from "./IRegistry.sol";
 
 import {BN254} from "../libraries/BN254.sol";
 
 /**
- * @title Minimal interface for a registry that keeps track of aggregate operator public keys for among many quorums.
+ * @title Minimal interface for a registry that keeps track of aggregate operator public keys across many quorums.
  * @author Layr Labs, Inc.
  */
 interface IBLSApkRegistry is IRegistry {
@@ -23,7 +23,7 @@ interface IBLSApkRegistry is IRegistry {
 
     /**
      * @notice Struct used when registering a new public key
-     * @param signedMessageHash is the registration message hash signed by the private key of the operator
+     * @param pubkeyRegistrationSignature is the registration message signed by the private key of the operator
      * @param pubkeyG1 is the corresponding G1 public key of the operator 
      * @param pubkeyG2 is the corresponding G2 public key of the operator
      */     
@@ -40,12 +40,14 @@ interface IBLSApkRegistry is IRegistry {
     // @notice Emitted when a new operator pubkey is registered for a set of quorums
     event OperatorAddedToQuorums(
         address operator,
+        bytes32 operatorId,
         bytes quorumNumbers
     );
 
     // @notice Emitted when an operator pubkey is removed from a set of quorums
     event OperatorRemovedFromQuorums(
         address operator, 
+        bytes32 operatorId,
         bytes quorumNumbers
     );
 

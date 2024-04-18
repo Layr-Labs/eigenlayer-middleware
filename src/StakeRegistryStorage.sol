@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategyManager, IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
@@ -16,7 +16,7 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
     
     /// @notice Constant used as a divisor in calculating weights.
     uint256 public constant WEIGHTING_DIVISOR = 1e18;
-    /// @notice Maximum length of dynamic arrays in the `strategiesConsideredAndMultipliers` mapping.
+    /// @notice Maximum length of dynamic arrays in the `strategyParams` mapping.
     uint8 public constant MAX_WEIGHING_FUNCTION_LENGTH = 32;
     /// @notice Constant used as a divisor in dealing with BIPS amounts.
     uint256 internal constant MAX_BIPS = 10000;

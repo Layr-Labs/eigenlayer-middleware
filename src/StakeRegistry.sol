@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
@@ -253,7 +253,7 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     /**
-     * @notice Modifys the weights of existing strategies for a specific quorum
+     * @notice Modifies the weights of existing strategies for a specific quorum
      * @param quorumNumber is the quorum number to which the strategies belong
      * @param strategyIndices are the indices of the strategies to change
      * @param newMultipliers are the new multipliers for the strategies
@@ -286,17 +286,15 @@ contract StakeRegistry is StakeRegistryStorage {
         uint32 blockNumber
     ) internal view returns (uint32) {
         uint256 length = operatorStakeHistory[operatorId][quorumNumber].length;
-        for (uint256 i = 0; i < length; i++) {
-            if (operatorStakeHistory[operatorId][quorumNumber][length - i - 1].updateBlockNumber <= blockNumber) {
-                uint32 nextUpdateBlockNumber = 
-                    operatorStakeHistory[operatorId][quorumNumber][length - i - 1].nextUpdateBlockNumber;
-                require(
-                    nextUpdateBlockNumber == 0 || nextUpdateBlockNumber > blockNumber,
-                    "StakeRegistry._getStakeUpdateIndexForOperatorAtBlockNumber: operatorId has no stake update at blockNumber"
-                );
-                return uint32(length - i - 1);
+
+        // Iterate backwards through operatorStakeHistory until we find an update that preceeds blockNumber
+        for (uint256 i = length; i > 0; i--) {
+            if (operatorStakeHistory[operatorId][quorumNumber][i - 1].updateBlockNumber <= blockNumber) {
+                return uint32(i - 1);
             }
         }
+
+        // If we hit this point, no stake update exists at blockNumber
         revert(
             "StakeRegistry._getStakeUpdateIndexForOperatorAtBlockNumber: no stake update found for operatorId and quorumNumber at block number"
         );
@@ -394,7 +392,7 @@ contract StakeRegistry is StakeRegistryStorage {
     /** 
      * @notice Adds `strategyParams` to the `quorumNumber`-th quorum.
      * @dev Checks to make sure that the *same* strategy cannot be added multiple times (checks against both against existing and new strategies).
-     * @dev This function has no check to make sure that the strategies for a single quorum have the same underlying asset. This is a concious choice,
+     * @dev This function has no check to make sure that the strategies for a single quorum have the same underlying asset. This is a conscious choice,
      * since a middleware may want, e.g., a stablecoin quorum that accepts USDC, USDT, DAI, etc. as underlying assets and trades them as "equivalent".
      */
     function _addStrategyParams(
@@ -445,23 +443,23 @@ contract StakeRegistry is StakeRegistryStorage {
         }
     }
 
-    /// @notice Validates that the `operatorStake` was accurate at the given `blockNumber`
-    function _validateOperatorStakeUpdateAtBlockNumber(
-        StakeUpdate memory operatorStakeUpdate,
+    /// @notice Checks that the `stakeUpdate` was valid at the given `blockNumber`
+    function _validateStakeUpdateAtBlockNumber(
+        StakeUpdate memory stakeUpdate,
         uint32 blockNumber
     ) internal pure {
         /**
-         * Validate that the update is valid for the given blockNumber:
+         * Check that the update is valid for the given blockNumber:
          * - blockNumber should be >= the update block number
          * - the next update block number should be either 0 or strictly greater than blockNumber
          */
         require(
-            blockNumber >= operatorStakeUpdate.updateBlockNumber,
-            "StakeRegistry._validateOperatorStakeAtBlockNumber: operatorStakeUpdate is from after blockNumber"
+            blockNumber >= stakeUpdate.updateBlockNumber,
+            "StakeRegistry._validateStakeUpdateAtBlockNumber: stakeUpdate is from after blockNumber"
         );
         require(
-            operatorStakeUpdate.nextUpdateBlockNumber == 0 || blockNumber < operatorStakeUpdate.nextUpdateBlockNumber,
-            "StakeRegistry._validateOperatorStakeAtBlockNumber: there is a newer operatorStakeUpdate available before blockNumber"
+            stakeUpdate.nextUpdateBlockNumber == 0 || blockNumber < stakeUpdate.nextUpdateBlockNumber,
+            "StakeRegistry._validateStakeUpdateAtBlockNumber: there is a newer stakeUpdate available before blockNumber"
         );
     }
 
@@ -633,7 +631,7 @@ contract StakeRegistry is StakeRegistryStorage {
         uint256 index
     ) external view returns (uint96) {
         StakeUpdate memory operatorStakeUpdate = operatorStakeHistory[operatorId][quorumNumber][index];
-        _validateOperatorStakeUpdateAtBlockNumber(operatorStakeUpdate, blockNumber);
+        _validateStakeUpdateAtBlockNumber(operatorStakeUpdate, blockNumber);
         return operatorStakeUpdate.stake;
     }
 
@@ -682,7 +680,7 @@ contract StakeRegistry is StakeRegistryStorage {
         uint256 index
     ) external view returns (uint96) {
         StakeUpdate memory totalStakeUpdate = _totalStakeHistory[quorumNumber][index];
-        _validateOperatorStakeUpdateAtBlockNumber(totalStakeUpdate, blockNumber);
+        _validateStakeUpdateAtBlockNumber(totalStakeUpdate, blockNumber);
         return totalStakeUpdate.stake;
     }
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import "../utils/MockAVSDeployer.sol";
 
@@ -55,7 +55,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
     }
 
     function test_getOperatorState_revert_quorumNotCreatedAtCallTime() public {
-        cheats.expectRevert("IndexRegistry._operatorCountAtBlockNumber: quorum does not exist");
+        cheats.expectRevert("IndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number");
         operatorStateRetriever.getOperatorState(registryCoordinator, BitmapUtils.bitmapToBytesArray(1 << numQuorums), uint32(block.number));
     }
 
@@ -433,6 +433,27 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
                 assertEq(checkSignaturesIndices.nonSignerStakeIndices[i][j], 0, "nonSignerStakeIndices should be zero because there have been no stake updates past the first one");
             }
         }
+    }
+
+    function test_getQuorumBitmapsAtBlockNumber_returnsCorrect() public {
+        uint256 quorumBitmapOne = 1;
+        uint256 quorumBitmapThree = 3;
+        cheats.roll(registrationBlockNumber);
+        _registerOperatorWithCoordinator(defaultOperator, quorumBitmapOne, defaultPubKey);
+
+        address otherOperator = _incrementAddress(defaultOperator, 1);
+        BN254.G1Point memory otherPubKey = BN254.G1Point(1, 2);
+        bytes32 otherOperatorId = BN254.hashG1Point(otherPubKey);
+        _registerOperatorWithCoordinator(otherOperator, quorumBitmapThree, otherPubKey, defaultStake -1);
+
+        bytes32[] memory operatorIds = new bytes32[](2);
+        operatorIds[0] = defaultOperatorId;
+        operatorIds[1] = otherOperatorId;
+        uint256[] memory quorumBitmaps = operatorStateRetriever.getQuorumBitmapsAtBlockNumber(registryCoordinator, operatorIds, uint32(block.number));
+
+        assertEq(quorumBitmaps.length, 2);
+        assertEq(quorumBitmaps[0], quorumBitmapOne);
+        assertEq(quorumBitmaps[1], quorumBitmapThree);
     }
 
     function _assertExpectedOperators(

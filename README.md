@@ -1,17 +1,23 @@
-[core-docs-m2]: https://github.com/Layr-Labs/eigenlayer-contracts/tree/m2-mainnet/docs
+[core-docs-dev]: https://github.com/Layr-Labs/eigenlayer-contracts/tree/dev/docs
 [core-repo]: https://github.com/Layr-Labs/eigenlayer-contracts
 
 # EigenLayer Middleware
 
 EigenLayer is a set of smart contracts deployed on Ethereum that enable restaking of assets to secure new services called AVSs (actively validated services). The core contracts that enable these features can be found in the [`eigenlayer-contracts` repo][core-repo].
 
-This repo contains smart contracts used to create an AVS that interacts with the EigenLayer core contracts.
-
 ## Getting Started
 
+* [Branching](#branching)
 * [Documentation](#documentation)
 * [Building and Running Tests](#building-and-running-tests)
 * [Deployments](#deployments)
+
+## Branching
+
+The main branches we use are:
+* [`dev (default)`](https://github.com/Layr-Labs/eigenlayer-middleware/tree/dev): The most up-to-date branch, containing the work-in-progress code for upcoming releases
+* [`testnet-holesky`](https://github.com/Layr-Labs/eigenlayer-middleware/tree/testnet-holesky): Our current testnet deployment
+* [`mainnet`](https://github.com/Layr-Labs/eigenlayer-middleware/tree/mainnet): Our current mainnet deployment
 
 ## Documentation
 
@@ -28,7 +34,7 @@ Most of this content is intro-level and describes user interactions with the Eig
 For shadowy super-coders:
 * The most up-to-date technical documentation can be found in [/docs](/docs).
 * To get an idea of how users interact with these contracts, check out the integration tests: [/test/integration](./test/integration)
-* To explore the EigenLayer core contracts, check out the core repo technical docs [here][core-docs-m2].
+* To explore the EigenLayer core contracts, check out the core repo technical docs [here][core-docs-dev].
 
 ## Building and Running Tests
 
@@ -47,20 +53,31 @@ The contracts in this repo are meant to be deployed by each AVS that wants to us
 
 ### Current Mainnet Deployment
 
-No contracts have been deployed to mainnet yet.
+The current mainnet deployment is from our M2 mainnet release. You can view the deployed contract addresses below, or check out the code itself on the [`mainnet`](https://github.com/Layr-Labs/eigenlayer-middleware/tree/mainnet) branch.
+
+| Name | Proxy | Implementation | Notes |
+| -------- | -------- | -------- | -------- |
+[`RegistryCoordinator`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/mainnet/src/RegistryCoordinator.sol) | [`0x0baac79acd45a023e19345c352d8a7a83c4e5656`](https://etherscan.io/address/0x0baac79acd45a023e19345c352d8a7a83c4e5656#readProxyContract) | [`0xd3e0...EECF`](https://etherscan.io/address/0xd3e09a0c2a9a6fdf5e92ae65d3cc090a4df8eecf#code) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+[`StakeRegistry`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/mainnet/src/StakeRegistry.sol) | [`0x006124ae7976137266feebfb3f4d2be4c073139d`](https://etherscan.io/address/0x006124ae7976137266feebfb3f4d2be4c073139d#readProxyContract) | [`0x1C46...dd96`](https://etherscan.io/address/0x1c468cf7089d263c2f53e2579b329b16abc4dd96#code) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+[`IndexRegistry`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/mainnet/src/IndexRegistry.sol) | [`0xbd35a7a1cdef403a6a99e4e8ba0974d198455030`](https://etherscan.io/address/0xbd35a7a1cdef403a6a99e4e8ba0974d198455030#readProxyContract) | [`0x1ae0...a14c`](https://etherscan.io/address/0x1ae0b73118906f39d5ed30ae4a484ce2f479a14c#code) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+[`BLSApkRegistry`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/mainnet/src/BLSApkRegistry.sol) | [`0x00a5fd09f6cee6ae9c8b0e5e33287f7c82880505`](https://etherscan.io/address/0x00a5fd09f6cee6ae9c8b0e5e33287f7c82880505#readProxyContract) | [`0x5d0B...eD2b`](https://etherscan.io/address/0x5d0b9ce2e277daf508528e9f6bf6314e79e4ed2b#code) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+[`OperatorStateRetriever`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/mainnet/src/OperatorStateRetriever.sol) | - | [`0xD5D7...8C31`](https://etherscan.io/address/0xd5d7fb4647ce79740e6e83819efdf43fa74f8c31#code) | |
+[`ServiceManagerRouter`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/mainnet/src/ServiceManagerRouter.sol) | - | [`0x518D...09eA`](https://etherscan.io/address/0x518d5140b5c935fe094f00f2dd64f2f95c4f09ea#code) | |
+[`ProxyAdmin`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0x8247...2E99`](https://etherscan.io/address/0x8247ef5705d3345516286b72bfe6d690197c2e99#code) | |
+[`eigenda/EigenDAServiceManager`](https://github.com/Layr-Labs/eigenda/blob/08d8781a2165c159ac9bb502dd61ed6ed340601c/contracts/src/core/EigenDAServiceManager.sol) | [`0x870679e138bcdf293b7ff14dd44b70fc97e12fc0`](https://etherscan.io/address/0x870679e138bcdf293b7ff14dd44b70fc97e12fc0#readProxyContract) | [`0xF5fD...899e`](https://etherscan.io/address/0xf5fd25a90902c27068cf5ebe53be8da693ac899e#code) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 
 ### Current Testnet Deployment
 
-The current testnet deployment is from our M2 beta release, which is a slightly older version of this repo. You can view the deployed contract addresses below, or check out the [`v0.1.0`](https://github.com/Layr-Labs/eigenlayer-middleware/tree/v0.1.0-m2-goerli) branch in "Releases".
+The current testnet deployment is on holesky, is from our M2 beta release. You can view the deployed contract addresses below, or check out the code itself on the [`testnet-holesky`](https://github.com/Layr-Labs/eigenlayer-middleware/tree/testnet-holesky) branch.
 
+| Name | Proxy | Implementation | Notes |
+| -------- | -------- | -------- | -------- |
+[`RegistryCoordinator`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/testnet-holesky/src/RegistryCoordinator.sol) | [`0x53012C69A189cfA2D9d29eb6F19B32e0A2EA3490`](https://holesky.etherscan.io/address/0x53012C69A189cfA2D9d29eb6F19B32e0A2EA3490) | [`0xC908...bfa0`](https://holesky.etherscan.io/address/0xC908fAFAE29B5C9F0b5E0Da1d3025b8d6D42bfa0) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+[`StakeRegistry`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/testnet-holesky/src/StakeRegistry.sol) | [`0xBDACD5998989Eec814ac7A0f0f6596088AA2a270`](https://holesky.etherscan.io/address/0xBDACD5998989Eec814ac7A0f0f6596088AA2a270) | [`0xa8d2...98E5`](https://holesky.etherscan.io/address/0xa8d25410c3e3347d93647f10FB6961069BEc98E5) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+[`IndexRegistry`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/testnet-holesky/src/IndexRegistry.sol) | [`0x2E3D6c0744b10eb0A4e6F679F71554a39Ec47a5D`](https://holesky.etherscan.io/address/0x2E3D6c0744b10eb0A4e6F679F71554a39Ec47a5D) | [`0x889B...420d`](https://holesky.etherscan.io/address/0x889B040116f453D89e9d6d692Ad70Edd7357420d) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+[`BLSApkRegistry`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/testnet-holesky/src/BLSApkRegistry.sol) | [`0x066cF95c1bf0927124DFB8B02B401bc23A79730D`](https://holesky.etherscan.io/address/0x066cF95c1bf0927124DFB8B02B401bc23A79730D) | [`0x885C...e064`](https://holesky.etherscan.io/address/0x885C0CC8118E428a2C04de58A93eB15Ed4F0e064) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+[`OperatorStateRetriever`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/testnet-holesky/src/OperatorStateRetriever.sol) | - | [`0xB4ba...6C67`](https://holesky.etherscan.io/address/0xB4baAfee917fb4449f5ec64804217bccE9f46C67) | |
+[`ServiceManagerRouter`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/testnet-holesky/src/ServiceManagerRouter.sol) | - | [`0x4463...5a37`](https://holesky.etherscan.io/address/0x44632dfBdCb6D3E21EF613B0ca8A6A0c618F5a37#code) | |
+[`ProxyAdmin`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0xB043...5c15`](https://holesky.etherscan.io/address/0xB043055dd967A382577c2f5261fA6428f2905c15) | |
+[`eigenda/EigenDAServiceManager`](https://github.com/Layr-Labs/eigenda/blob/a33b41561cc3fb4cd6d50a8738e4c5dca43ec0a5/contracts/src/core/EigenDAServiceManager.sol) | [`0xD4A7E1Bd8015057293f0D0A557088c286942e84b`](https://holesky.etherscan.io/address/0xD4A7E1Bd8015057293f0D0A557088c286942e84b) | [`0xa722...67f3`](https://holesky.etherscan.io/address/0xa7227485e6C693AC4566fe168C5E3647c5c267f3) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 
-| Name | Solidity | Proxy | Implementation | Notes |
-| -------- | -------- | -------- | -------- | -------- | 
-| RegistryCoordinator | [`BLSRegistryCoordinatorWithIndices.sol`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/v0.1.0-m2-goerli/src/BLSRegistryCoordinatorWithIndices.sol) | [`0x0b30...4C0B`](https://goerli.etherscan.io/address/0x0b30a3427765f136754368a4500bAca8d2a54C0B) | [`0x9A70...a0e4`](https://goerli.etherscan.io/address/0x9A70ED111FaFEC41856202536AFAA38841a9a0e4) | Proxy: [OpenZeppelin TUP@4.7.1](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
-| StakeRegistry | [`StakeRegistry.sol`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/v0.1.0-m2-goerli/src/StakeRegistry.sol) | [`0x5a83...A206`](https://goerli.etherscan.io/address/0x5a834d58D22742503D8f92dd2f28c866C166A206) | [`0x8741...5B98`](https://goerli.etherscan.io/address/0x8741e3a24d9517Aa19E63122A34680a9A85F5B98) | Proxy: [OpenZeppelin TUP@4.7.1](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
-| IndexRegistry | [`IndexRegistry.sol`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/v0.1.0-m2-goerli/src/IndexRegistry.sol) | [`0xa8A1...BDF7`](https://goerli.etherscan.io/address/0xa8A14B97d556cEc3f4384C186fB99d72F015BDF7) | [`0x8cd4...8117`](https://goerli.etherscan.io/address/0x8cd4c39B713B026319e35f20B7f19baE28648117) | Proxy: [OpenZeppelin TUP@4.7.1](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
-| BLSApkRegistry | [`BLSPubkeyRegistry.sol`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/v0.1.0-m2-goerli/src/BLSPubkeyRegistry.sol) | [`0xD8fC...BEcA`](https://goerli.etherscan.io/address/0xD8fCD5c9103962DE37E375EF9dB62cCf39D5BEcA) | [`0x4C9D...aFb8`](https://goerli.etherscan.io/address/0x4C9D23fd901d3d98e75BdcC6a8AC9bA81d8DaFb8) | Proxy: [OpenZeppelin TUP@4.7.1](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
-| BLSPubkeyCompendium <br />(deprecated) | [`BLSPublicKeyCompendium.sol`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/v0.1.0-m2-goerli/src/BLSPublicKeyCompendium.sol) | - | [`0xc81d...1b19`](https://goerli.etherscan.io/address/0xc81d3963087fe09316cd1e032457989c7ac91b19) | |
-| OperatorStateRetriever | [`BLSOperatorStateRetriever.sol`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/v0.1.0-m2-goerli/src/BLSOperatorStateRetriever.sol) | - | [`0x737d...a3a3`](https://goerli.etherscan.io/address/0x737dd62816a9392e84fa21c531af77c00816a3a3) | |
-| ProxyAdmin | [OpenZeppelin ProxyAdmin@4.7.1](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0xbe85...aF3e`](https://goerli.etherscan.io/address/0xbe85B38b6086A45350947DD6dA6d78cc2E4BaF3e) | |
-| EigenDAServiceManager | [`eigenda/EigenDAServiceManager.sol`](https://github.com/Layr-Labs/eigenda/blob/f599513723a17ad7bd5693287f75325007deec19/contracts/EigenDAServiceManager.sol#L4831) | [`0x9FcE...0010`](https://goerli.etherscan.io/address/0x9FcE30E01a740660189bD8CbEaA48Abd36040010) | [`0x1261...9606`](https://goerli.etherscan.io/address/0x12612f42bc1f09680c3d0c8dae72d5cd534c9606) | Proxy: [OpenZeppelin TUP@4.7.1](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |

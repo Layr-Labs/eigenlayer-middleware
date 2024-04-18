@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import "../harnesses/BitmapUtilsWrapper.sol";
 // import "../../contracts/libraries/BitmapUtils.sol";
@@ -7,7 +7,7 @@ import "../harnesses/BitmapUtilsWrapper.sol";
 import "forge-std/Test.sol";
 
 contract BitmapUtilsUnitTests is Test {
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     BitmapUtilsWrapper public bitmapUtilsWrapper;
 

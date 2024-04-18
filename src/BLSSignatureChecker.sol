@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import {IBLSSignatureChecker} from "./interfaces/IBLSSignatureChecker.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
@@ -75,6 +75,9 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
      * is correct, i.e., ensure that the stake returned from the specified block number is recent enough and that the stake is either the most recent update
      * for the total stake (of the operator) or latest before the referenceBlockNumber.
      * @param msgHash is the hash being signed
+     * @dev NOTE: Be careful to ensure `msgHash` is collision-resistant! This method does not hash 
+     * `msgHash` in any way, so if an attacker is able to pass in an arbitrary value, they may be able
+     * to tamper with signature verification.
      * @param quorumNumbers is the bytes array of quorum numbers that are being signed for
      * @param referenceBlockNumber is the block number at which the stake information is being verified
      * @param params is the struct containing information on nonsigners, stakes, quorum apks, and the aggregate signature
@@ -109,7 +112,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
             "BLSSignatureChecker.checkSignatures: input nonsigner length mismatch"
         );
 
-        require(referenceBlockNumber <= uint32(block.number), "BLSSignatureChecker.checkSignatures: invalid reference block");
+        require(referenceBlockNumber < uint32(block.number), "BLSSignatureChecker.checkSignatures: invalid reference block");
 
         // This method needs to calculate the aggregate pubkey for all signing operators across
         // all signing quorums. To do that, we can query the aggregate pubkey for each quorum
@@ -187,7 +190,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                 // is within withdrawalDelayBlocks
                 if (_staleStakesForbidden) {
                     require(
-                        registryCoordinator.quorumUpdateBlockNumber(uint8(quorumNumbers[i])) + withdrawalDelayBlocks >= referenceBlockNumber,
+                        registryCoordinator.quorumUpdateBlockNumber(uint8(quorumNumbers[i])) + withdrawalDelayBlocks > referenceBlockNumber,
                         "BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within withdrawalDelayBlocks window"
                     );
                 }

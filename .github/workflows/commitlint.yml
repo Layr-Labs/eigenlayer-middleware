@@ -1,6 +1,12 @@
 name: CI
 
-on: [push, pull_request]
+on: 
+  pull_request:
+  push:
+    branches-ignore:
+      mainnet
+      dev
+      testnet-goerli
 
 jobs:
   commitlint:
@@ -12,7 +18,7 @@ jobs:
       - name: Install node dependencies
         run: |
           npm install conventional-changelog-conventionalcommits
-          npm install commitlint@latest 
+          npm install commitlint@18.2.0
 
       - name: Validate current commit (last commit) with commitlint
         if: github.event_name == 'push'

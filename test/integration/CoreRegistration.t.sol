@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import "../utils/MockAVSDeployer.sol";
 import { AVSDirectory } from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
@@ -15,7 +15,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
     // Operator info
     uint256 operatorPrivateKey = 420;
     address operator;
-    
+
     // Dummy vals used across tests
     bytes32 emptySalt;
     uint256 maxExpiry = type(uint256).max;
@@ -170,17 +170,17 @@ contract Test_CoreRegistration is MockAVSDeployer {
         require(operator != serviceManager.owner(), "bad test setup");
         cheats.prank(operator);
         cheats.expectRevert("Ownable: caller is not the owner");
-        serviceManager.setMetadataURI("Test MetadataURI");
+        serviceManager.updateAVSMetadataURI("Test MetadataURI");
     }
 
     event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
 
-    function test_setMetadataURI() public {  
-        address toPrankFrom = serviceManager.owner();      
+    function test_setMetadataURI() public {
+        address toPrankFrom = serviceManager.owner();
         cheats.prank(toPrankFrom);
         cheats.expectEmit(true, true, true, true);
         emit AVSMetadataURIUpdated(address(serviceManager), "Test MetadataURI");
-        serviceManager.setMetadataURI("Test MetadataURI");
+        serviceManager.updateAVSMetadataURI("Test MetadataURI");
     }
 
     // Utils
