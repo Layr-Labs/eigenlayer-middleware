@@ -190,7 +190,6 @@ invariant oneIdPerOperator(address operator1, address operator2)
 /// @notice one way implication as IndexRegistry.currentOperatorIndex does not get updated on operator deregistration
 // status: violated
 invariant operatorIndexWithinRange(env e, address operator, uint8 quorumNumber, uint256 blocknumber, uint256 index)
-    getOperatorStatus(operator) == IRegistryCoordinator.OperatorStatus.REGISTERED && 
     quorumInBitmap(assert_uint256(getCurrentQuorumBitmap(e, getOperatorId(operator))), quorumNumber) =>
         indexRegistry.currentOperatorIndex(e, quorumNumber, getOperatorId(operator)) < indexRegistry.totalOperatorsForQuorum(e, quorumNumber)
     {
