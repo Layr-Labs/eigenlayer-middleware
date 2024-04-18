@@ -15,19 +15,7 @@ methods {
     // BN254 Library
     function BN254.pairing(BN254.G1Point memory, BN254.G2Point memory, BN254.G1Point memory, BN254.G2Point memory) internal returns (bool) => NONDET;
     function BN254.hashToG1(bytes32 x) internal returns (BN254.G1Point memory) => hashToG1Ghost(x);
-    // function BN254.pairing(BN254.G1Point memory, BN254.G2Point memory, BN254.G1Point memory, BN254.G2Point memory) internal returns (bool) => NONDET;
-    // function BN254.generatorG1() internal returns (BN254.G1Point memory) => returnG1();
-    // function BN254.generatorG2() internal returns (BN254.G2Point memory) => returnG2();
-    // function BN254.negGeneratorG2() internal returns (BN254.G2Point memory) => returnG2();
-    // function BN254.negate(BN254.G1Point memory) internal returns (BN254.G1Point memory) => returnG1();
     function BN254.plus(BN254.G1Point memory, BN254.G1Point memory) internal returns (BN254.G1Point memory) => returnG1();
-    // function BN254.scalar_mul_tiny(BN254.G1Point memory, uint16) internal returns (BN254.G1Point memory) => returnG1();
-    // function BN254.scalar_mul(BN254.G1Point memory, uint256) internal returns (BN254.G1Point memory) => returnG1();
-    // function BN254.safePairing(BN254.G1Point memory, BN254.G2Point memory, BN254.G1Point memory, BN254.G2Point memory, uint256) internal returns (bool, bool) => NONDET;
-    // function BN254.hashG1Point(BN254.G1Point memory) internal returns (bytes32) => NONDET;
-    // function BN254.hashG2Point(BN254.G2Point memory) internal returns (bytes32) => NONDET;
-    // function BN254.findYFromX(uint256) internal returns (uint256, uint256) => NONDET;
-    // function BN254.expMod(uint256, uint256, uint256) internal returns (uint256) => NONDET;
 
     // external calls to ServiceManager
     function _.registerOperatorToAVS(address, ISignatureUtils.SignatureWithSaltAndExpiry) external => NONDET;
@@ -63,14 +51,6 @@ methods {
     function BitmapUtils.isArrayStrictlyAscendingOrdered(bytes calldata a) internal returns (bool) => ascendingArrayCVL[a];
     function BitmapUtils.bitmapToBytesArray(uint256 a) internal returns (bytes memory) => returnBytes();
     function BitmapUtils.countNumOnes(uint256 a) internal returns (uint16) => numOnesCVL[a];
-    // function BitmapUtils.isSet(uint256 a, uint8 b) internal returns (bool) => isSetCVL[a][b];
-    // function BitmapUtils.setBit(uint256 a, uint8 b) internal returns (uint256) => setBitCVL[a][b];
-    // function BitmapUtils.isEmpty(uint256 a) internal returns (bool) => isEmptyCVL[a];
-    // function BitmapUtils.noBitsInCommon(uint256 a, uint256 b) internal returns (bool) => noBitsInCommonCVL[a][b];
-    // function BitmapUtils.isSubsetOf(uint256 a, uint256 b) internal returns (bool) => isSubsetOfCVL[a][b];
-    // function BitmapUtils.plus(uint256 a, uint256 b) internal returns (uint256) => plusCVL[a][b];
-    // function BitmapUtils.minus(uint256 a, uint256 b) internal returns (uint256) => minusCVL[a][b];
-    
 }
 
 /** Ghost variables **/
@@ -81,17 +61,6 @@ ghost mapping(bytes => mapping(uint8 => uint256)) bytesToBitmapCappedCVL;
 ghost mapping(bytes => bool) ascendingArrayCVL;
 ghost mapping(uint256 => bytes) bitmapToBytesCVL;
 ghost mapping(uint256 => uint16) numOnesCVL;
-ghost mapping(uint256 => mapping(uint8 => bool)) isSetCVL;
-ghost mapping(uint256 => mapping(uint8 => uint256)) setBitCVL;
-// ghost mapping(uint256 => bool) isEmptyCVL;
-ghost mapping(uint256 => mapping(uint256 => bool)) noBitsInCommonCVL {
-    axiom forall uint256 x. forall uint256 y. noBitsInCommonCVL[x][y] == noBitsInCommonCVL[y][x];
-}
-ghost mapping(uint256 => mapping(uint256 => bool)) isSubsetOfCVL;
-ghost mapping(uint256 => mapping(uint256 => uint256)) plusCVL {
-    axiom forall uint256 x. forall uint256 y. plusCVL[x][y] == plusCVL[y][x];
-}
-ghost mapping(uint256 => mapping(uint256 => uint256)) minusCVL;
 
 // Other ghost summaries
 ghost address unpauser;
@@ -162,14 +131,10 @@ invariant registeredOperatorsHaveNonzeroBitmaps(env e, address operator)
             requireInvariant operatorIdandPubkeyHash(e.msg.sender);
             requireInvariant operatorIdandPubkeyHash(operator);
         }
-        // status: verified
         preserved ejectOperator(address operator1, bytes quorumNumbers) with (env e1) {
             requireInvariant oneIdPerOperator(operator1, operator);
-            // requireInvariant operatorIdandPubkeyHash(operator1);
-            // requireInvariant operatorIdandPubkeyHash(operator);
             require getQuorumBitmapHistoryLength(getOperatorId(operator1)) < max_uint256;
         }
-        // status: verified
         preserved registerOperator(
             bytes quorumNumbers,
             string socket,
@@ -180,11 +145,7 @@ invariant registeredOperatorsHaveNonzeroBitmaps(env e, address operator)
             require getQuorumBitmapHistoryLength(getOperatorId(operator)) < max_uint256;
             requireInvariant oneIdPerOperator(operator, e.msg.sender);
             requireInvariant operatorIdandPubkeyHash(e.msg.sender);
-            // requireInvariant operatorIdandPubkeyHash(operator);
-
-            // require getCurrentQuorumBitmap(e, getOperatorId(operator)) + bytesToBitmapCVL[quorumNumbers] <= max_uint192;
         }
-        // status: unverified
         preserved registerOperatorWithChurn(
             bytes quorumNumbers,
             string socket,
@@ -199,18 +160,12 @@ invariant registeredOperatorsHaveNonzeroBitmaps(env e, address operator)
             requireInvariant oneIdPerOperator(operator, e.msg.sender);
             requireInvariant oneIdPerOperator(operator, kickParams[0].operator);
             requireInvariant operatorIdandPubkeyHash(e.msg.sender);
-            // requireInvariant operatorIdandPubkeyHash(operator);
-            // requireInvariant operatorIdandPubkeyHash(kickParams[0].operator);
-
-            // require getCurrentQuorumBitmap(e, getOperatorId(operator)) + bytesToBitmapCVL[quorumNumbers] <= max_uint192;
         }
-        // status: verified
         preserved updateOperators(address[] updatingOperators) with (env e1) {
             requireInvariant oneIdPerOperator(operator, updatingOperators[0]);
             requireInvariant oneIdPerOperator(updatingOperators[1], operator);
             require getQuorumBitmapHistoryLength(getOperatorId(operator)) < max_uint256;
         }
-        // status: verified
         preserved updateOperatorsForQuorum(address[][] updatingOperators, bytes quorumNumbers) with (env e1) {
             require updatingOperators.length == 1 && quorumNumbers.length == 1;
             requireInvariant oneIdPerOperator(operator, updatingOperators[0][0]);
