@@ -325,3 +325,33 @@ rule registeredOperatorCantBeNeverRegistered(address operator) {
 
     assert(getOperatorStatus(operator) != IRegistryCoordinator.OperatorStatus.NEVER_REGISTERED);
 }
+
+/* 
+Potential properties:
+
+* EigenDA wallet below X ETH in Funds
+    * potential rule: eigenDA must have >0 funds (if ensured in the constructor)
+* No successful posts of data (calls to EigenDAServiceManager.confirmBatch) in the last hour
+* Total number of operators decreases by more than 10 in the last 6 hours
+    * potential rule: operators > 0 (if added in constructor)
+* All registered operators are registered for at least one quorum i.e nonzero quorum bitmap
+    * potential rule: quorum bitmap must be nonzero
+* Batch with 1% less than max nonsigners percentage for a batch posted
+    * potential rule: A posted batch must not have more non-signers than some defined percentage
+* List of non-signers for a confirmed batch contains:
+    * Duplicate entries OR
+        * potential rule: no duplicate non-signers
+    * An entry which corresponds to a non-registered operator
+        * potential rule: no unregistered non-signers
+* A registered operator falls below the minimum stake for a quorum. Can check when an operator is deregistered for this quorum on-chain when OperatorStakeUpdate(operatorId, quorumNumber, newStake) is emitted with newStake = 0. Or monitor all registered operator stakes and calculate offchain.
+    * potential rule: registered operator must be above minimum stake
+* For all currently registered operators, each operatorIndex is in the range [0, IndexRegistry.totalOperatorsForQuorum - 1]. Currently, registered operators can be fetched by OperatorState.getOperatorState at the current block number
+* Each initialized quorum must have consistent quorum histories across registry contracts.
+* For initialized quorumNumbers
+    * StakeRegistry: _totalStakeHistory[quorumNumber].length != 0
+    * IndexRegistry: _operatorCountHistory[quorumNumber].length != 0
+    * BLSApkRegistry: apkHistory[quorumNumber].length != 0
+* For non-init quorumNumbers
+    * StakeRegistry: _totalStakeHistory[quorumNumber].length == 0
+    * IndexRegistry: _operatorCountHistory[quorumNumber].length == 0
+    * BLSApkRegistry: apkHistory[quorumNumber].length == 0
