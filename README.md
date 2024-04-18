@@ -5,7 +5,7 @@
 
 EigenLayer is a set of smart contracts deployed on Ethereum that enable restaking of assets to secure new services called AVSs (actively validated services). The core contracts that enable these features can be found in the [`eigenlayer-contracts` repo][core-repo].
 
-## Getting Started update
+## Getting Started
 
 * [Branching](#branching)
 * [Documentation](#documentation)
