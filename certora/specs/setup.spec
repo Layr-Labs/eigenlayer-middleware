@@ -146,7 +146,7 @@ invariant operatorIdandPubkeyHash(address operator)
     getOperatorId(operator) == blsApkRegistry.getOperatorId(operator);
 
 /// @notice If my Operator status is REGISTERED ⇔ my quorum bitmap MUST BE nonzero
-// status: violated
+// status: verified
 invariant registeredOperatorsHaveNonzeroBitmaps(env e, address operator)
     getOperatorStatus(operator) == IRegistryCoordinator.OperatorStatus.REGISTERED <=>
         getCurrentQuorumBitmap(e, getOperatorId(operator)) != 0 && getOperatorId(operator) != to_bytes32(0)
