@@ -507,6 +507,12 @@ contract RegistryCoordinator is
         if (operatorId == 0) {
             operatorId = blsApkRegistry.registerBLSPublicKey(operator, params, pubkeyRegistrationMessageHash(operator));
         }
+        if (_operatorInfo[operator].status == OperatorStatus.DEREGISTERED && 
+            params.pubkeyRegistrationSignature.X != 0 &&
+            params.pubkeyRegistrationSignature.Y != 0
+        ) {
+            operatorId = blsApkRegistry.registerBLSPublicKey(operator, params, pubkeyRegistrationMessageHash(operator));
+        }
         return operatorId;
     }
 

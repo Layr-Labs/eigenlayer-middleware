@@ -107,10 +107,6 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
             pubkeyHash != ZERO_PK_HASH, "BLSApkRegistry.registerBLSPublicKey: cannot register zero pubkey"
         );
         require(
-            operatorToPubkeyHash[operator] == bytes32(0),
-            "BLSApkRegistry.registerBLSPublicKey: operator already registered pubkey"
-        );
-        require(
             pubkeyHashToOperator[pubkeyHash] == address(0),
             "BLSApkRegistry.registerBLSPublicKey: public key already registered"
         );
