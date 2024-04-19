@@ -7,8 +7,9 @@ contract ServiceManagerMock is ServiceManagerBase {
     constructor(
         IAVSDirectory _avsDirectory,
         IRegistryCoordinator _registryCoordinator,
-        IStakeRegistry _stakeRegistry
-    ) ServiceManagerBase(_avsDirectory, _registryCoordinator, _stakeRegistry) {}
+        IStakeRegistry _stakeRegistry,
+        IPaymentCoordinator _paymentCoordinator
+    ) ServiceManagerBase(_avsDirectory, _registryCoordinator, _stakeRegistry, _paymentCoordinator) {}
 
     function initialize(address initialOwner) public virtual initializer {
         __ServiceManagerBase_init(initialOwner);
