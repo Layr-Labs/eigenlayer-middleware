@@ -86,7 +86,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
      */
     function checkSignatures(
         bytes32 msgHash, 
-        bytes calldata quorumNumbers,
+        bytes memory quorumNumbers,
         uint32 referenceBlockNumber, 
         NonSignerStakesAndSignature memory params
     ) 
