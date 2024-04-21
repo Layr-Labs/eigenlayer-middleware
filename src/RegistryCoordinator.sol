@@ -471,6 +471,8 @@ contract RegistryCoordinator is
         // If the operator wasn't registered for any quorums, update their status
         // and register them with this AVS in EigenLayer core (DelegationManager)
         if (_operatorInfo[operator].status != OperatorStatus.REGISTERED) {
+            require(lastDeregistrationTimestamp[operator] + REREGISTRATION_DELAY < block.timestamp, "RegistryCoordinator._registerOperator: operator cannot reregister yet");
+
             _operatorInfo[operator] = OperatorInfo({
                 operatorId: operatorId,
                 status: OperatorStatus.REGISTERED
@@ -596,6 +598,7 @@ contract RegistryCoordinator is
         // them from the AVS via the EigenLayer core contracts
         if (newBitmap.isEmpty()) {
             operatorInfo.status = OperatorStatus.DEREGISTERED;
+            lastDeregistrationTimestamp[operator] = block.timestamp;
             serviceManager.deregisterOperatorFromAVS(operator);
             emit OperatorDeregistered(operator, operatorId);
         }

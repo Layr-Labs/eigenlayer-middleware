@@ -30,6 +30,8 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
     uint8 internal constant PAUSED_UPDATE_OPERATOR = 2;
     /// @notice The maximum number of quorums this contract supports
     uint8 internal constant MAX_QUORUM_COUNT = 192;
+    /// @notice The amount of time that must pass before an operator can register after deregistering
+    uint256 internal constant REREGISTRATION_DELAY = 7 days;
 
     /// @notice the ServiceManager for this AVS, which forwards calls onto EigenLayer's core contracts
     IServiceManager public immutable serviceManager;
@@ -64,6 +66,9 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
     /// @notice the address of the entity allowed to eject operators from the AVS
     address public ejector;
 
+    /// @notice maps operator address => timestamp of last deregistration
+    mapping(address => uint256) public lastDeregistrationTimestamp;
+
     constructor(
         IServiceManager _serviceManager,
         IStakeRegistry _stakeRegistry,
@@ -78,5 +83,5 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
 
     // storage gap for upgradeability
     // slither-disable-next-line shadowing-state
-    uint256[41] private __GAP;
+    uint256[40] private __GAP;
 }
