@@ -948,6 +948,23 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         );
     }
 
+    function test_reregisterOperator_revert_reregistrationDelay() public {
+        test_deregisterOperator_singleQuorumAndSingleOperator();
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        uint32 reregistrationBlockNumber = 201;
+
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        cheats.startPrank(defaultOperator);
+        cheats.roll(reregistrationBlockNumber);
+        cheats.warp(block.timestamp + defaultReregistrationDelay - 1);
+
+        cheats.expectRevert("RegistryCoordinator._registerOperator: operator cannot reregister yet");
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
+    }
+
     // tests for the internal `_deregisterOperator` function:
     function test_deregisterOperatorExternal_revert_noQuorums() public {
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
