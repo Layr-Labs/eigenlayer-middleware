@@ -103,6 +103,9 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         BN254.G1Point calldata pubkeyRegistrationMessageHash
     ) external onlyRegistryCoordinator returns (bytes32 operatorId) {
         bytes32 pubkeyHash = BN254.hashG1Point(params.pubkeyG1);
+        if(operatorToPubkeyHash[operator] == pubkeyHash) {
+            return pubkeyHash;
+        }
         require(
             pubkeyHash != ZERO_PK_HASH, "BLSApkRegistry.registerBLSPublicKey: cannot register zero pubkey"
         );

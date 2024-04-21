@@ -511,8 +511,7 @@ contract RegistryCoordinator is
         }
         if (_operatorInfo[operator].status == OperatorStatus.DEREGISTERED && 
             params.pubkeyRegistrationSignature.X != 0 &&
-            params.pubkeyRegistrationSignature.Y != 0 &&
-            BN254.hashG1Point(params.pubkeyG1) != operatorId
+            params.pubkeyRegistrationSignature.Y != 0 
         ) {
             operatorId = blsApkRegistry.registerBLSPublicKey(operator, params, pubkeyRegistrationMessageHash(operator));
         }
