@@ -131,6 +131,15 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
             params.pubkeyG2
         ), "BLSApkRegistry.registerBLSPublicKey: either the G1 signature is wrong, or G1 and G2 private key do not match");
 
+        //if keys already registered checkpoint the previous pubkey and pubkeyHash of the operator
+        if(operatorToPubkeyHash[operator] != bytes32(0)) {
+            operatorPubkeyHistory[operator].push(PubkeyCheckpoint({
+                previousPubkeyG1: operatorToPubkey[operator],
+                previousPubkeyHash: operatorToPubkeyHash[operator],
+                blockNumber: uint32(block.number)
+            }));
+        }
+
         operatorToPubkey[operator] = params.pubkeyG1;
         operatorToPubkeyHash[operator] = pubkeyHash;
         pubkeyHashToOperator[pubkeyHash] = operator;

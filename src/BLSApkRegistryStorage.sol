@@ -29,6 +29,9 @@ abstract contract BLSApkRegistryStorage is Initializable, IBLSApkRegistry {
     /// @notice maps quorumNumber => current aggregate pubkey of quorum
     mapping(uint8 => BN254.G1Point) public currentApk;
 
+    /// @notice maps operator address to pubkey history
+    mapping(address => PubkeyCheckpoint[]) public operatorPubkeyHistory;
+
     constructor(IRegistryCoordinator _registryCoordinator) {
         registryCoordinator = address(_registryCoordinator);
         // disable initializers so that the implementation contract cannot be initialized
@@ -36,5 +39,5 @@ abstract contract BLSApkRegistryStorage is Initializable, IBLSApkRegistry {
     }
 
     // storage gap for upgradeability
-    uint256[45] private __GAP;
+    uint256[44] private __GAP;
 }

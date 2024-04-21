@@ -33,6 +33,18 @@ interface IBLSApkRegistry is IRegistry {
         BN254.G2Point pubkeyG2;
     }
 
+    /**
+     * @notice Struct used to checkpoint the previous pubkeys and their hashes for a given operator
+     * @param previousPubkeyG1 is the G1 public key of the operator
+     * @param previoudPubkeyHash is the hash of the public key of the operator
+     * @param blockNumber is the block number at which the pubkey was updated
+     */
+    struct PubkeyCheckpoint {
+        BN254.G1Point previousPubkeyG1;
+        bytes32 previousPubkeyHash;
+        uint32 blockNumber;
+    }
+
     // EVENTS
     /// @notice Emitted when `operator` registers with the public keys `pubkeyG1` and `pubkeyG2`.
     event NewPubkeyRegistration(address indexed operator, BN254.G1Point pubkeyG1, BN254.G2Point pubkeyG2);
