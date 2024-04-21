@@ -128,6 +128,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
 
         // Register operator
         cheats.prank(operator);
+        cheats.warp(block.timestamp + defaultReregistrationDelay);
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, operatorSignature);
 
         // Check operator is registered
@@ -198,6 +199,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
 
         // Register operator
         cheats.prank(operator);
+        cheats.warp(block.timestamp + defaultReregistrationDelay);
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, operatorSignature);
     }
 

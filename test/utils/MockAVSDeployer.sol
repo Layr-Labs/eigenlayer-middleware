@@ -99,6 +99,7 @@ contract MockAVSDeployer is Test {
     uint16 defaultKickBIPsOfOperatorStake = 15000;
     uint16 defaultKickBIPsOfTotalStake = 150;
     uint8 numQuorums = 192;
+    uint256 defaultReregistrationDelay = 7 days + 1;
 
     IRegistryCoordinator.OperatorSetParam[] operatorSetParams;
 
@@ -344,6 +345,7 @@ contract MockAVSDeployer is Test {
         }
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
+        cheats.warp(block.timestamp + defaultReregistrationDelay);
         cheats.prank(operator);
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySignatureAndExpiry);
     }
@@ -363,6 +365,7 @@ contract MockAVSDeployer is Test {
         }
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
+        cheats.warp(block.timestamp + defaultReregistrationDelay);
         cheats.prank(operator);
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySignatureAndExpiry);
     }

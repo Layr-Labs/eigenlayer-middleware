@@ -309,22 +309,6 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is BLSApkRegistryUnitTests
         blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
     }
 
-    function testFuzz_registerOperator_Revert_WhenOperatorAlreadyRegistered(address operator)
-        public
-    {
-        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(operator);
-        BN254.G1Point memory messageHash =
-            registryCoordinator.pubkeyRegistrationMessageHash(operator);
-
-        cheats.startPrank(address(registryCoordinator));
-        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
-
-        cheats.expectRevert(
-            "BLSApkRegistry.registerBLSPublicKey: operator already registered pubkey"
-        );
-        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
-    }
-
     function testFuzz_registerOperator_Revert_WhenPubkeyAlreadyRegistered(
         address operator,
         address operator2

@@ -64,6 +64,7 @@ contract User is Test {
 
     string public NAME;
     bytes32 public operatorId;
+    uint256 public reregistrationDelay;
 
     // BLS keypair:
     uint privKey;
@@ -94,6 +95,7 @@ contract User is Test {
         churnApprover = deployer.churnApprover();
 
         NAME = name;
+        reregistrationDelay = 7 days + 1;
 
         // Generate BN254 keypair and registration signature
         privKey = _privKey;
@@ -117,6 +119,8 @@ contract User is Test {
     function registerOperator(bytes calldata quorums) public createSnapshot virtual returns (bytes32) {
         _log("registerOperator", quorums);
 
+        uint256 deregistrationTimestamp = registryCoordinator.lastDeregistrationTimestamp(address(this));
+        vm.warp(deregistrationTimestamp + reregistrationDelay);
         registryCoordinator.registerOperator({
             quorumNumbers: quorums,
             socket: NAME,
@@ -208,6 +212,10 @@ contract User is Test {
                 expiry: expiry
             });
 
+        {
+            uint256 deregistrationTimestamp = registryCoordinator.lastDeregistrationTimestamp(address(this));
+            vm.warp(deregistrationTimestamp + reregistrationDelay);
+        }
         registryCoordinator.registerOperatorWithChurn({
             quorumNumbers: allQuorums,
             socket: NAME,
