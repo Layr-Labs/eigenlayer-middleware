@@ -74,7 +74,9 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
      * @dev This function will revert if the `rangePayment` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
-    function submitRangePayments(IPaymentCoordinator.RangePayment[] calldata rangePayments) public virtual onlyOwner {
+    function submitRangePayments(
+        IPaymentCoordinator.RangePayment[] calldata rangePayments
+    ) public virtual onlyOwner {
         for (uint256 i = 0; i < rangePayments.length; ++i) {
             // transfer token to ServiceManager and approve PaymentCoordinator to transfer again
             // in payForRange() call
