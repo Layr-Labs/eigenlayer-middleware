@@ -107,15 +107,15 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
         return restakedStrategies;
     }
 
-    function getQuorumsOfOperator(address _operator) external view returns (bytes memory){
+    function getQuorumsOfOperator(address _operator) external view returns (uint32[] memory){
         bytes32 operatorId = _registryCoordinator.getOperatorId(_operator);
         uint192 operatorQuorumBitmap = _registryCoordinator.getCurrentQuorumBitmap(operatorId);
-        return BitmapUtils.bitmapToBytesArray(operatorQuorumBitmap);
+        return bytesArrayToUint32Array(BitmapUtils.bitmapToBytesArray(operatorQuorumBitmap));
 
 
     }
 
-    function getAVSQuorums() external view returns (bytes memory){
+    function getAVSQuorums() external view returns (uint32[] memory){
        uint192 quorumCount = _registryCoordinator.quorumCount();
 
         uint192 bitmap;
@@ -123,7 +123,7 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
             bitmap |= (uint192(1) << i);
         }
 
-       return BitmapUtils.bitmapToBytesArray(bitmap);
+       return bytesArrayToUint32Array(BitmapUtils.bitmapToBytesArray(bitmap));
 
     }
 
@@ -179,6 +179,15 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
     /// @notice Returns the EigenLayer AVSDirectory contract.
     function avsDirectory() external view override returns (address) {
         return address(_avsDirectory);
+    }
+
+    function bytesArrayToUint32Array(bytes memory _bytesArray) internal pure returns (uint32[] memory){
+        uint256 length = _bytesArray.length;
+        uint32[] memory array = new uint32[](length);
+        for (uint256 i; i< length;i++){
+            array[i]=uint8(_bytesArray[i]);
+        }
+        return array;
     }
     
     // storage gap for upgradeability
