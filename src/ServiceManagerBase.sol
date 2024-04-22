@@ -107,6 +107,39 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
         return restakedStrategies;
     }
 
+    function getQuorumsOfOperator(address _operator) external view returns (bytes memory){
+        bytes32 operatorId = _registryCoordinator.getOperatorId(_operator);
+        uint192 operatorQuorumBitmap = _registryCoordinator.getCurrentQuorumBitmap(operatorId);
+        return BitmapUtils.bitmapToBytesArray(operatorQuorumBitmap);
+
+
+    }
+
+    function getAVSQuorums() external view returns (bytes memory){
+       uint192 quorumCount = _registryCoordinator.quorumCount();
+
+        uint192 bitmap;
+        for (uint192 i = 0; i < quorumCount; i++) {
+            bitmap |= (uint192(1) << i);
+        }
+
+       return BitmapUtils.bitmapToBytesArray(bitmap);
+
+    }
+
+    function getStrategiesForQuorum(uint8 quorumNumber) external view returns(address[] memory){
+        require(quorumNumber <= _registryCoordinator.quorumCount(), "Invalid Quorum");
+        uint256 strategyCount = _stakeRegistry.strategyParamsLength(quorumNumber);
+
+        address[] memory strategies = new address[](strategyCount);
+
+        for (uint256 i; i < strategyCount; i++){
+            strategies[i] = address(_stakeRegistry.strategyParamsByIndex(quorumNumber, i).strategy);
+        }
+
+        return strategies;
+    }
+
     /**
      * @notice Returns the list of strategies that the operator has potentially restaked on the AVS
      * @param operator The address of the operator to get restaked strategies for
