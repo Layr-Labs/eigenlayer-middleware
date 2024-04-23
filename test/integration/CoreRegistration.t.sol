@@ -70,9 +70,9 @@ contract Test_CoreRegistration is MockAVSDeployer {
         // Deploy New ServiceManager & RegistryCoordinator implementations
         serviceManagerImplementation = new ServiceManagerMock(
             avsDirectory,
+            paymentCoordinatorMock,
             registryCoordinator,
-            stakeRegistry,
-            paymentCoordinatorMock
+            stakeRegistry
         );
 
         registryCoordinatorImplementation = new RegistryCoordinatorHarness(

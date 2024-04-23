@@ -6,7 +6,7 @@ import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/
 
 /**
  * @title Minimal interface for a ServiceManager-type contract that AVS ServiceManager contracts must implement
- * to index their data for the V1 AVS Marketplace
+ * for eigenlabs to be able to index their data on the AVS marketplace frontend.
  * @author Layr Labs, Inc.
  */
 interface IServiceManagerUI {

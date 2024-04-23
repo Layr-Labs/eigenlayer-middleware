@@ -258,9 +258,9 @@ contract MockAVSDeployer is Test {
 
         serviceManagerImplementation = new ServiceManagerMock(
             avsDirectoryMock,
+            IPaymentCoordinator(address(paymentCoordinatorMock)),
             registryCoordinator,
-            stakeRegistry,
-            IPaymentCoordinator(address(paymentCoordinatorMock))
+            stakeRegistry
         );
 
         proxyAdmin.upgrade(

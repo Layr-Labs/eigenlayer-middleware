@@ -341,9 +341,9 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         IndexRegistry indexRegistryImplementation = new IndexRegistry(IRegistryCoordinator(registryCoordinator));
         ServiceManagerMock serviceManagerImplementation = new ServiceManagerMock(
             IAVSDirectory(avsDirectory),
+            paymentCoordinator,
             IRegistryCoordinator(registryCoordinator),
-            stakeRegistry,
-            paymentCoordinator
+            stakeRegistry
         );
 
         proxyAdmin.upgrade(

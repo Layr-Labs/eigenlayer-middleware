@@ -17,9 +17,9 @@ contract ServiceManagerRouter_UnitTests is MockAVSDeployer {
         // Deploy dummy serviceManager
         dummyServiceManager = new ServiceManagerMock(
             avsDirectory,
+            paymentCoordinatorImplementation,
             registryCoordinatorImplementation,
-            stakeRegistryImplementation,
-            paymentCoordinatorImplementation
+            stakeRegistryImplementation
         );
 
         _registerOperatorWithCoordinator(defaultOperator, MAX_QUORUM_BITMAP, defaultPubKey);

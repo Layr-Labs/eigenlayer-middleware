@@ -2,16 +2,14 @@
 pragma solidity ^0.8.12;
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-
-import {BitmapUtils} from "./libraries/BitmapUtils.sol"; 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IPaymentCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IPaymentCoordinator.sol";
 
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
-// import {IServiceManagerUI} from "./interfaces/IServiceManagerUI.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
+import {BitmapUtils} from "./libraries/BitmapUtils.sol"; 
 
 /**
  * @title Minimal implementation of a ServiceManager-type contract.
@@ -21,10 +19,10 @@ import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
     using BitmapUtils for *;
 
-    IRegistryCoordinator internal immutable _registryCoordinator;
-    IStakeRegistry internal immutable _stakeRegistry;
     IAVSDirectory internal immutable _avsDirectory;
     IPaymentCoordinator internal immutable _paymentCoordinator;
+    IRegistryCoordinator internal immutable _registryCoordinator;
+    IStakeRegistry internal immutable _stakeRegistry;
 
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
     modifier onlyRegistryCoordinator() {
@@ -38,14 +36,14 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
     /// @notice Sets the (immutable) `_registryCoordinator` address
     constructor(
         IAVSDirectory __avsDirectory,
+        IPaymentCoordinator ___paymentCoordinator,
         IRegistryCoordinator __registryCoordinator,
-        IStakeRegistry __stakeRegistry,
-        IPaymentCoordinator ___paymentCoordinator
+        IStakeRegistry __stakeRegistry
     ) {
         _avsDirectory = __avsDirectory;
+        _paymentCoordinator = ___paymentCoordinator;
         _registryCoordinator = __registryCoordinator;
         _stakeRegistry = __stakeRegistry;
-        _paymentCoordinator = ___paymentCoordinator;
         _disableInitializers();
     }
 
@@ -75,7 +73,7 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
      * @dev This function will revert if the `rangePayment` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
-    function submitRangePayments(
+    function payForRange(
         IPaymentCoordinator.RangePayment[] calldata rangePayments
     ) public virtual onlyOwner {
         for (uint256 i = 0; i < rangePayments.length; ++i) {

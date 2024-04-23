@@ -77,9 +77,9 @@ contract ServiceManagerBase_UnitTests is
         // Deploy ServiceManager
         serviceManagerImplementation = new ServiceManagerMock(
             avsDirectory,
+            paymentCoordinator,
             registryCoordinatorImplementation,
-            stakeRegistryImplementation,
-            paymentCoordinator
+            stakeRegistryImplementation
         );
         serviceManager = ServiceManagerMock(
             address(
@@ -254,7 +254,7 @@ contract ServiceManagerBase_UnitTests is
 
         cheats.prank(caller);
         cheats.expectRevert("Ownable: caller is not the owner");
-        serviceManager.submitRangePayments(rangePayments);
+        serviceManager.payForRange(rangePayments);
     }
 
     function test_submitPayments_Revert_WhenERC20NotApproved() public {
@@ -277,7 +277,7 @@ contract ServiceManagerBase_UnitTests is
 
         cheats.prank(serviceManagerOwner);
         cheats.expectRevert("ERC20: insufficient allowance");
-        serviceManager.submitRangePayments(rangePayments);
+        serviceManager.payForRange(rangePayments);
     }
 
     function test_submitPayments_SingleRangePayment(
@@ -326,7 +326,7 @@ contract ServiceManagerBase_UnitTests is
         cheats.startPrank(serviceManagerOwner);
         paymentToken.approve(address(serviceManager), amount);
 
-        // 4. call submitRangePayments() with expected event emitted
+        // 4. call payForRange() with expected event emitted
         uint256 serviceManagerOwnerBalanceBefore = paymentToken.balanceOf(
             address(serviceManagerOwner)
         );
@@ -353,7 +353,7 @@ contract ServiceManagerBase_UnitTests is
             rangePaymentHash,
             rangePayments[0]
         );
-        serviceManager.submitRangePayments(rangePayments);
+        serviceManager.payForRange(rangePayments);
         cheats.stopPrank();
 
         assertTrue(
@@ -467,9 +467,9 @@ contract ServiceManagerBase_UnitTests is
             );
         }
 
-        // 4. call submitRangePayments()
+        // 4. call payForRange()
         cheats.prank(serviceManagerOwner);
-        serviceManager.submitRangePayments(rangePayments);
+        serviceManager.payForRange(rangePayments);
 
         // 5. Check for paymentNonce() and rangePaymentHashes being set
         assertEq(

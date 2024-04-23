@@ -22,5 +22,5 @@ interface IServiceManager is IServiceManagerUI {
      * @dev This function will revert if the `rangePayment` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
-    function submitRangePayments(IPaymentCoordinator.RangePayment[] calldata rangePayments) external;
+    function payForRange(IPaymentCoordinator.RangePayment[] calldata rangePayments) external;
 }
