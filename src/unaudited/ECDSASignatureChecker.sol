@@ -7,14 +7,24 @@ import {SignatureCheckerUpgradeable} from "@openzeppelin-upgrades/contracts/util
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
 interface IECDSAStakeRegistry {
-    function getOperatorWeightAtBlock(address _operator, uint32 _blockNumber) external;
-    function getOperatorWeight(address _operator) external;
+    function getOperatorWeightAtBlock(
+        address _operator,
+        uint32 _blockNumber
+    ) external view returns (uint256);
 
-    function getTotalWeightAtBlock(uint32 _blockNumber) external;
-    function getTotalWeight() external;
+    function getOperatorWeight(address _operator) external returns (uint256);
+
+    function getTotalWeightAtBlock(
+        uint32 _blockNumber
+    ) external view returns (uint256);
+
+    function getTotalWeight() external view returns (uint256);
 }
 
-abstract contract ECDSASignatureChecker is OwnableUpgradeable, IERC1271Upgradeable{
+abstract contract ECDSASignatureChecker is
+    OwnableUpgradeable,
+    IERC1271Upgradeable
+{
     using SignatureCheckerUpgradeable for address;
     using CheckpointsUpgradeable for CheckpointsUpgradeable.History;
 
@@ -44,7 +54,7 @@ abstract contract ECDSASignatureChecker is OwnableUpgradeable, IERC1271Upgradeab
     /// @notice Tracks the threshold bps history using checkpoints
     CheckpointsUpgradeable.History internal _thresholdWeightHistory;
 
-    constructor(address _stakeRegistry){
+    constructor(address _stakeRegistry) {
         stakeRegistry = _stakeRegistry;
     }
 
@@ -56,30 +66,28 @@ abstract contract ECDSASignatureChecker is OwnableUpgradeable, IERC1271Upgradeab
 
     /**
      * @notice Sets a new cumulative threshold weight for message validation by operator set signatures.
-     * @dev This function can only be invoked by the owner of the contract. It delegates the update to 
-     * an internal function `_updateStakeThreshold`. 
-     * @param _thresholdWeight The updated threshold weight required to validate a message. This is the 
-     * cumulative weight that must be met or exceeded by the sum of the stakes of the signatories for 
+     * @dev This function can only be invoked by the owner of the contract. It delegates the update to
+     * an internal function `_updateStakeThreshold`.
+     * @param _thresholdWeight The updated threshold weight required to validate a message. This is the
+     * cumulative weight that must be met or exceeded by the sum of the stakes of the signatories for
      * a message to be deemed valid.
      */
     function updateStakeThreshold(uint256 _thresholdWeight) external onlyOwner {
         _updateStakeThreshold(_thresholdWeight);
     }
 
-
     function isValidSignature(
         bytes32 _dataHash,
         bytes memory _signatureData
     ) external view returns (bytes4) {
-
-        (address[] memory signers, bytes[] memory signatures, uint32 referenceBlock) = abi.decode(
-            _signatureData,
-            (address[], bytes[], uint32)
-        );
+        (
+            address[] memory signers,
+            bytes[] memory signatures,
+            uint32 referenceBlock
+        ) = abi.decode(_signatureData, (address[], bytes[], uint32));
         _checkSignatures(_dataHash, signers, signatures, referenceBlock);
         return IERC1271Upgradeable.isValidSignature.selector;
     }
-
 
     /**
      * @notice Common logic to verify a batch of ECDSA signatures against a hash, using either last stake weight or at a specific block.
@@ -106,7 +114,10 @@ abstract contract ECDSASignatureChecker is OwnableUpgradeable, IERC1271Upgradeab
             _validateSignature(currentSigner, _dataHash, _signatures[i]);
 
             lastSigner = currentSigner;
-            uint256 operatorWeight = _getOperatorWeight(currentSigner, _referenceBlock);
+            uint256 operatorWeight = _getOperatorWeight(
+                currentSigner,
+                _referenceBlock
+            );
             signedWeight += operatorWeight;
         }
 
@@ -116,8 +127,11 @@ abstract contract ECDSASignatureChecker is OwnableUpgradeable, IERC1271Upgradeab
     /// @notice Ensures that signers are sorted in ascending order by address.
     /// @param _lastSigner The address of the last signer.
     /// @param _currentSigner The address of the current signer.
-    function _validateSortedSigners(address _lastSigner, address _currentSigner) internal pure {
-        if (_lastSigner >= _currentSigner){
+    function _validateSortedSigners(
+        address _lastSigner,
+        address _currentSigner
+    ) internal pure {
+        if (_lastSigner >= _currentSigner) {
             revert NotSorted();
         }
     }
@@ -143,10 +157,10 @@ abstract contract ECDSASignatureChecker is OwnableUpgradeable, IERC1271Upgradeab
         uint256 _signersLength,
         uint256 _signaturesLength
     ) internal pure {
-        if (_signersLength != _signaturesLength){
+        if (_signersLength != _signaturesLength) {
             revert LengthMismatch();
         }
-        if (_signersLength == 0){
+        if (_signersLength == 0) {
             revert InvalidLength();
         }
     }
@@ -154,26 +168,27 @@ abstract contract ECDSASignatureChecker is OwnableUpgradeable, IERC1271Upgradeab
     /// @notice Validates that the cumulative stake of signed messages meets or exceeds the required threshold.
     /// @param _signedWeight The cumulative weight of the signers that have signed the message.
     /// @param _referenceBlock The block number to verify the stake threshold for
-    function _validateThresholdStake(uint256 _signedWeight, uint32 _referenceBlock) internal view {
+    function _validateThresholdStake(
+        uint256 _signedWeight,
+        uint32 _referenceBlock
+    ) internal view {
         uint256 totalWeight = _getTotalWeight(_referenceBlock);
-        if (_signedWeight > totalWeight){
+        if (_signedWeight > totalWeight) {
             revert InvalidSignedWeight();
         }
         uint256 thresholdStake = _getThresholdStake(_referenceBlock);
-        if (thresholdStake > _signedWeight){
+        if (thresholdStake > _signedWeight) {
             revert InsufficientSignedStake();
         }
     }
-
-
-
 
     /// @notice Retrieves the threshold stake for a given reference block.
     /// @param _referenceBlock The block number to query the threshold stake for.
     /// If set to the maximum uint32 value, it retrieves the latest threshold stake.
     /// @return The threshold stake in basis points for the reference block.
-    function _getThresholdStake(uint32 _referenceBlock) internal view returns (uint256) {
-        /// TODO: move threshold checkpoints to this contract
+    function _getThresholdStake(
+        uint32 _referenceBlock
+    ) internal view returns (uint256) {
         if (_referenceBlock == type(uint32).max) {
             return _thresholdWeightHistory.latest();
         } else {
@@ -189,15 +204,24 @@ abstract contract ECDSASignatureChecker is OwnableUpgradeable, IERC1271Upgradeab
         address _signer,
         uint32 _referenceBlock
     ) internal view returns (uint256) {
-        /// TODO: Call stake registry and get the stake
+        return
+            IECDSAStakeRegistry(stakeRegistry).getOperatorWeightAtBlock(
+                _signer,
+                _referenceBlock
+            );
     }
 
     /// @notice Retrieve the total stake weight at a specific block or the latest if not specified.
     /// @dev If the `_referenceBlock` is the maximum value for uint32, the latest total weight is returned.
     /// @param _referenceBlock The block number to retrieve the total stake weight from.
     /// @return The total stake weight at the given block or the latest if the given block is the max uint32 value.
-    function _getTotalWeight(uint32 _referenceBlock) internal view returns (uint256) {
-        /// TODO: Call stake registry for this info
+    function _getTotalWeight(
+        uint32 _referenceBlock
+    ) internal view returns (uint256) {
+        return
+            IECDSAStakeRegistry(stakeRegistry).getTotalWeightAtBlock(
+                _referenceBlock
+            );
     }
 
     /// @dev Updates the stake threshold weight and records the history.
