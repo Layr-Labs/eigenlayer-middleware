@@ -79,9 +79,9 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
         for (uint256 i = 0; i < rangePayments.length; ++i) {
             // transfer token to ServiceManager and approve PaymentCoordinator to transfer again
             // in payForRange() call
-    		rangePayments[i].token.transferFrom(msg.sender, address(this), rangePayments[i].amount);
+            rangePayments[i].token.transferFrom(msg.sender, address(this), rangePayments[i].amount);
             rangePayments[i].token.approve(address(_paymentCoordinator), rangePayments[i].amount);
-	    }
+        }
 
         _paymentCoordinator.payForRange(rangePayments);
     }
