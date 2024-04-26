@@ -424,6 +424,12 @@ contract RegistryCoordinator is
         _setEjector(_ejector);
     }
 
+    /**
+     * @notice Sets the reregistration delay, which is the time an operator must wait after 
+     * ejection before registering for any quorum
+     * @param _reregistrationDelay the new reregistration delay
+     * @dev only callable by the owner
+     */
     function setReregistrationDelay(uint256 _reregistrationDelay) external onlyOwner {
         reregistrationDelay = _reregistrationDelay;
     }
@@ -462,6 +468,7 @@ contract RegistryCoordinator is
         require(quorumsToAdd.noBitsInCommon(currentBitmap), "RegistryCoordinator._registerOperator: operator already registered for some quorums being registered for");
         uint192 newBitmap = uint192(currentBitmap.plus(quorumsToAdd));
 
+        // Check that the operator can reregister if ejected
         require(lastEjectionTimestamp[operator] + reregistrationDelay < block.timestamp, "RegistryCoordinator._registerOperator: operator cannot reregister yet");
 
         /**
