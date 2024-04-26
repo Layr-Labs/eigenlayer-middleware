@@ -101,11 +101,7 @@ abstract contract ECDSAServiceManagerBase is
         _deregisterOperatorFromAVS(operator);
     }
 
-    /**
-     * @notice Retrieves the addresses of all strategies that are part of the current quorum.
-     * @dev Fetches the quorum configuration from the ECDSAStakeRegistry and extracts the strategy addresses.
-     * @return strategies An array of addresses representing the strategies in the current quorum.
-     */
+    /// @inheritdoc IServiceManagerUI
     function getRestakeableStrategies()
         external
         view
@@ -114,25 +110,30 @@ abstract contract ECDSAServiceManagerBase is
         return _getRestakeableStrategies();
     }
 
-    /**
-     * @notice Retrieves the addresses of strategies where the operator has restaked.
-     * @dev This function fetches the quorum details from the ECDSAStakeRegistry, retrieves the operator's shares for each strategy,
-     * and filters out strategies with non-zero shares indicating active restaking by the operator.
-     * @param _operator The address of the operator whose restaked strategies are to be retrieved.
-     * @return restakedStrategies An array of addresses of strategies where the operator has active restakes.
-     */
+    /// @inheritdoc IServiceManagerUI
     function getOperatorRestakedStrategies(
         address _operator
     ) external view returns (address[] memory) {
         return _getOperatorRestakedStrategies(_operator);
     }
 
+    /**
+     * @notice Forwards the call to update AVS metadata URI in the AVSDirectory contract.
+     * @dev This internal function is a proxy to the `updateAVSMetadataURI` function of the AVSDirectory contract.
+     * @param _metadataURI The new metadata URI to be set.
+     */
     function _updateAVSMetadataURI(
         string memory _metadataURI
     ) internal virtual {
         IAVSDirectory(avsDirectory).updateAVSMetadataURI(_metadataURI);
     }
 
+    /**
+     * @notice Forwards the call to register an operator in the AVSDirectory contract.
+     * @dev This internal function is a proxy to the `registerOperatorToAVS` function of the AVSDirectory contract.
+     * @param operator The address of the operator to register.
+     * @param operatorSignature The signature, salt, and expiry details of the operator's registration.
+     */
     function _registerOperatorToAVS(
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
@@ -143,10 +144,20 @@ abstract contract ECDSAServiceManagerBase is
         );
     }
 
+    /**
+     * @notice Forwards the call to deregister an operator from the AVSDirectory contract.
+     * @dev This internal function is a proxy to the `deregisterOperatorFromAVS` function of the AVSDirectory contract.
+     * @param operator The address of the operator to deregister.
+     */
     function _deregisterOperatorFromAVS(address operator) internal virtual {
         IAVSDirectory(avsDirectory).deregisterOperatorFromAVS(operator);
     }
 
+    /**
+     * @notice Processes a batch of range payments by transferring the specified amounts from the sender to this contract and then approving the PaymentCoordinator to use these amounts.
+     * @dev This function handles the transfer and approval of tokens necessary for range payments. It then delegates the actual payment logic to the PaymentCoordinator contract.
+     * @param rangePayments An array of `RangePayment` structs, each representing a payment for a specific range.
+     */
     function _payForRange(
         IPaymentCoordinator.RangePayment[] calldata rangePayments
     ) internal virtual {
@@ -165,6 +176,11 @@ abstract contract ECDSAServiceManagerBase is
         IPaymentCoordinator(paymentCoordinator).payForRange(rangePayments);
     }
 
+    /**
+     * @notice Retrieves the addresses of all strategies that are part of the current quorum.
+     * @dev Fetches the quorum configuration from the ECDSAStakeRegistry and extracts the strategy addresses.
+     * @return strategies An array of addresses representing the strategies in the current quorum.
+     */
     function _getRestakeableStrategies()
         internal
         view
@@ -179,6 +195,13 @@ abstract contract ECDSAServiceManagerBase is
         return strategies;
     }
 
+    /**
+     * @notice Retrieves the addresses of strategies where the operator has restaked.
+     * @dev This function fetches the quorum details from the ECDSAStakeRegistry, retrieves the operator's shares for each strategy,
+     * and filters out strategies with non-zero shares indicating active restaking by the operator.
+     * @param _operator The address of the operator whose restaked strategies are to be retrieved.
+     * @return restakedStrategies An array of addresses of strategies where the operator has active restakes.
+     */
     function _getOperatorRestakedStrategies(
         address _operator
     ) internal view virtual returns (address[] memory) {
