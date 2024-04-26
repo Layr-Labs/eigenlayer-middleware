@@ -68,21 +68,21 @@ abstract contract ECDSAServiceManagerBase is
      */
     function __ServiceManagerBase_init(
         address initialOwner
-    ) internal onlyInitializing {
+    ) internal virtual onlyInitializing {
         _transferOwnership(initialOwner);
     }
 
     /// @inheritdoc IServiceManagerUI
     function updateAVSMetadataURI(
         string memory _metadataURI
-    ) external onlyOwner {
+    ) external virtual onlyOwner {
         _updateAVSMetadataURI(_metadataURI);
     }
 
     /// @inheritdoc IServiceManager
     function payForRange(
         IPaymentCoordinator.RangePayment[] calldata rangePayments
-    ) external onlyOwner {
+    ) external virtual onlyOwner {
         _payForRange(rangePayments);
     }
 
@@ -90,14 +90,14 @@ abstract contract ECDSAServiceManagerBase is
     function registerOperatorToAVS(
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external onlyStakeRegistry {
+    ) external virtual onlyStakeRegistry {
         _registerOperatorToAVS(operator, operatorSignature);
     }
 
     /// @inheritdoc IServiceManagerUI
     function deregisterOperatorFromAVS(
         address operator
-    ) external onlyStakeRegistry {
+    ) external virtual onlyStakeRegistry {
         _deregisterOperatorFromAVS(operator);
     }
 
@@ -105,6 +105,7 @@ abstract contract ECDSAServiceManagerBase is
     function getRestakeableStrategies()
         external
         view
+        virtual
         returns (address[] memory)
     {
         return _getRestakeableStrategies();
@@ -113,7 +114,7 @@ abstract contract ECDSAServiceManagerBase is
     /// @inheritdoc IServiceManagerUI
     function getOperatorRestakedStrategies(
         address _operator
-    ) external view returns (address[] memory) {
+    ) external view virtual returns (address[] memory) {
         return _getOperatorRestakedStrategies(_operator);
     }
 
