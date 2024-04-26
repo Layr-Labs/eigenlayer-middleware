@@ -988,6 +988,62 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         registryCoordinator._deregisterOperatorExternal(defaultOperator, incorrectQuorum);
     }
 
+    function test_reregisterOperator_revert_reregistrationDelay() public {
+        uint256 reregistrationDelay = 1 days;
+        cheats.warp(block.timestamp + reregistrationDelay);
+        cheats.prank(registryCoordinatorOwner);
+        registryCoordinator.setReregistrationDelay(reregistrationDelay);
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        uint32 registrationBlockNumber = 100;
+        uint32 reregistrationBlockNumber = 200;
+
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        _setOperatorWeight(defaultOperator, uint8(quorumNumbers[0]), defaultStake);
+
+        cheats.prank(defaultOperator);
+        cheats.roll(registrationBlockNumber);
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
+
+        cheats.prank(ejector);
+        registryCoordinator.ejectOperator(defaultOperator, quorumNumbers);
+
+        cheats.prank(defaultOperator);
+        cheats.roll(reregistrationBlockNumber);
+        cheats.expectRevert("RegistryCoordinator._registerOperator: operator cannot reregister yet");
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
+    }
+
+    function test_reregisterOperator_reregistrationDelay() public {
+        uint256 reregistrationDelay = 1 days;
+        cheats.warp(block.timestamp + reregistrationDelay);
+        cheats.prank(registryCoordinatorOwner);
+        registryCoordinator.setReregistrationDelay(reregistrationDelay);
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        uint32 registrationBlockNumber = 100;
+        uint32 reregistrationBlockNumber = 200;
+
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        _setOperatorWeight(defaultOperator, uint8(quorumNumbers[0]), defaultStake);
+
+        cheats.prank(defaultOperator);
+        cheats.roll(registrationBlockNumber);
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
+
+        cheats.prank(ejector);
+        registryCoordinator.ejectOperator(defaultOperator, quorumNumbers);
+
+        cheats.prank(defaultOperator);
+        cheats.roll(reregistrationBlockNumber);
+        cheats.warp(block.timestamp + reregistrationDelay + 1);
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
+    }
+
     // note: this is not possible to test, because there is no route to getting the operator registered for nonexistent quorums
     // function test_deregisterOperatorExternal_revert_nonexistentQuorums() public {
 
