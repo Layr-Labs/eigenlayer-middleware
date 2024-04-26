@@ -76,7 +76,14 @@ abstract contract ECDSAServiceManagerBase is
     function updateAVSMetadataURI(
         string memory _metadataURI
     ) external onlyOwner {
-        IAVSDirectory(avsDirectory).updateAVSMetadataURI(_metadataURI);
+        _updateAVSMetadataURI(_metadataURI);
+    }
+
+    /// @inheritdoc IServiceManager
+    function payForRange(
+        IPaymentCoordinator.RangePayment[] calldata rangePayments
+    ) external onlyOwner {
+        _payForRange(rangePayments);
     }
 
     /// @inheritdoc IServiceManagerUI
@@ -84,17 +91,14 @@ abstract contract ECDSAServiceManagerBase is
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyStakeRegistry {
-        IAVSDirectory(avsDirectory).registerOperatorToAVS(
-            operator,
-            operatorSignature
-        );
+        _registerOperatorToAVS(operator, operatorSignature);
     }
 
     /// @inheritdoc IServiceManagerUI
     function deregisterOperatorFromAVS(
         address operator
     ) external onlyStakeRegistry {
-        IAVSDirectory(avsDirectory).deregisterOperatorFromAVS(operator);
+        _deregisterOperatorFromAVS(operator);
     }
 
     /**
@@ -107,12 +111,7 @@ abstract contract ECDSAServiceManagerBase is
         view
         returns (address[] memory)
     {
-        Quorum memory quorum = ECDSAStakeRegistry(stakeRegistry).quorum();
-        address[] memory strategies = new address[](quorum.strategies.length);
-        for (uint256 i = 0; i < quorum.strategies.length; i++) {
-            strategies[i] = address(quorum.strategies[i].strategy);
-        }
-        return strategies;
+        return _getRestakeableStrategies();
     }
 
     /**
@@ -125,6 +124,64 @@ abstract contract ECDSAServiceManagerBase is
     function getOperatorRestakedStrategies(
         address _operator
     ) external view returns (address[] memory) {
+        return _getOperatorRestakedStrategies(_operator);
+    }
+
+    function _updateAVSMetadataURI(
+        string memory _metadataURI
+    ) internal virtual {
+        IAVSDirectory(avsDirectory).updateAVSMetadataURI(_metadataURI);
+    }
+
+    function _registerOperatorToAVS(
+        address operator,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) internal virtual {
+        IAVSDirectory(avsDirectory).registerOperatorToAVS(
+            operator,
+            operatorSignature
+        );
+    }
+
+    function _deregisterOperatorFromAVS(address operator) internal virtual {
+        IAVSDirectory(avsDirectory).deregisterOperatorFromAVS(operator);
+    }
+
+    function _payForRange(
+        IPaymentCoordinator.RangePayment[] calldata rangePayments
+    ) internal virtual {
+        for (uint256 i = 0; i < rangePayments.length; ++i) {
+            rangePayments[i].token.transferFrom(
+                msg.sender,
+                address(this),
+                rangePayments[i].amount
+            );
+            rangePayments[i].token.approve(
+                paymentCoordinator,
+                rangePayments[i].amount
+            );
+        }
+
+        IPaymentCoordinator(paymentCoordinator).payForRange(rangePayments);
+    }
+
+    function _getRestakeableStrategies()
+        internal
+        view
+        virtual
+        returns (address[] memory)
+    {
+        Quorum memory quorum = ECDSAStakeRegistry(stakeRegistry).quorum();
+        address[] memory strategies = new address[](quorum.strategies.length);
+        for (uint256 i = 0; i < quorum.strategies.length; i++) {
+            strategies[i] = address(quorum.strategies[i].strategy);
+        }
+        return strategies;
+    }
+
+    function _getOperatorRestakedStrategies(
+        address _operator
+    ) internal view virtual returns (address[] memory) {
         Quorum memory quorum = ECDSAStakeRegistry(stakeRegistry).quorum();
         uint256 count = quorum.strategies.length;
         IStrategy[] memory strategies = new IStrategy[](count);
@@ -151,25 +208,6 @@ abstract contract ECDSAServiceManagerBase is
         }
 
         return restakedStrategies;
-    }
-
-    /// @inheritdoc IServiceManager
-    function payForRange(
-        IPaymentCoordinator.RangePayment[] calldata rangePayments
-    ) public virtual onlyOwner {
-        for (uint256 i = 0; i < rangePayments.length; ++i) {
-            rangePayments[i].token.transferFrom(
-                msg.sender,
-                address(this),
-                rangePayments[i].amount
-            );
-            rangePayments[i].token.approve(
-                paymentCoordinator,
-                rangePayments[i].amount
-            );
-        }
-
-        IPaymentCoordinator(paymentCoordinator).payForRange(rangePayments);
     }
 
     // storage gap for upgradeability
