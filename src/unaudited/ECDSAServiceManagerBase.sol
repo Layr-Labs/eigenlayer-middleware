@@ -7,6 +7,7 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISi
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 import {IServiceManager} from "../interfaces/IServiceManager.sol";
+import {IServiceManagerUI} from "../interfaces/IServiceManagerUI.sol";
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IStakeRegistry} from "../interfaces/IStakeRegistry.sol";
@@ -23,6 +24,10 @@ abstract contract ECDSAServiceManagerBase is
     address internal immutable paymentCoordinator;
     address internal immutable delegationManager;
 
+    /**
+     * @dev Ensures that the function is only callable by the `stakeRegistry` contract.
+     * This is used to restrict certain registration and deregistration functionality to the `stakeRegistry`
+     */
     modifier onlyStakeRegistry() {
         require(
             msg.sender == stakeRegistry,
@@ -44,18 +49,24 @@ abstract contract ECDSAServiceManagerBase is
         _disableInitializers();
     }
 
+    /**
+     * @dev Initializes the base service manager by transferring ownership to the initial owner.
+     * @param initialOwner The address to which the ownership of the contract will be transferred.
+     */
     function __ServiceManagerBase_init(
         address initialOwner
     ) internal onlyInitializing {
         _transferOwnership(initialOwner);
     }
 
+    /// @inheritdoc IServiceManagerUI
     function updateAVSMetadataURI(
         string memory _metadataURI
     ) external onlyOwner {
         IAVSDirectory(avsDirectory).updateAVSMetadataURI(_metadataURI);
     }
 
+    /// @inheritdoc IServiceManagerUI
     function registerOperatorToAVS(
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
@@ -66,12 +77,18 @@ abstract contract ECDSAServiceManagerBase is
         );
     }
 
+    /// @inheritdoc IServiceManagerUI
     function deregisterOperatorFromAVS(
         address operator
     ) external onlyStakeRegistry {
         IAVSDirectory(avsDirectory).deregisterOperatorFromAVS(operator);
     }
 
+    /**
+     * @notice Retrieves the addresses of all strategies that are part of the current quorum.
+     * @dev Fetches the quorum configuration from the ECDSAStakeRegistry and extracts the strategy addresses.
+     * @return strategies An array of addresses representing the strategies in the current quorum.
+     */
     function getRestakeableStrategies()
         external
         view
@@ -85,6 +102,13 @@ abstract contract ECDSAServiceManagerBase is
         return strategies;
     }
 
+    /**
+     * @notice Retrieves the addresses of strategies where the operator has restaked.
+     * @dev This function fetches the quorum details from the ECDSAStakeRegistry, retrieves the operator's shares for each strategy,
+     * and filters out strategies with non-zero shares indicating active restaking by the operator.
+     * @param _operator The address of the operator whose restaked strategies are to be retrieved.
+     * @return restakedStrategies An array of addresses of strategies where the operator has active restakes.
+     */
     function getOperatorRestakedStrategies(
         address _operator
     ) external view returns (address[] memory) {
@@ -116,6 +140,7 @@ abstract contract ECDSAServiceManagerBase is
         return restakedStrategies;
     }
 
+    /// @inheritdoc IServiceManager
     function payForRange(
         IPaymentCoordinator.RangePayment[] calldata rangePayments
     ) public virtual onlyOwner {
