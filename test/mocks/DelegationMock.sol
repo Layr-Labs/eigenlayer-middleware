@@ -65,6 +65,8 @@ contract DelegationMock is IDelegationManager {
         return returnValue;
     }
 
+    function beaconChainETHStrategy() external pure returns (IStrategy) {}
+
     function earningsReceiver(address operator) external pure returns (address) {
         return operator;
     }

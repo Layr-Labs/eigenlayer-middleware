@@ -32,7 +32,9 @@ import {AVSDirectoryMock} from "../mocks/AVSDirectoryMock.sol";
 import {DelegationMock} from "../mocks/DelegationMock.sol";
 import {AVSDirectory} from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-
+import {IPaymentCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IPaymentCoordinator.sol";
+import {PaymentCoordinator} from "eigenlayer-contracts/src/contracts/core/PaymentCoordinator.sol";
+import {PaymentCoordinatorMock} from "../mocks/PaymentCoordinatorMock.sol";
 
 import {BLSApkRegistryHarness} from "../harnesses/BLSApkRegistryHarness.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
@@ -73,6 +75,9 @@ contract MockAVSDeployer is Test {
     AVSDirectory public avsDirectory;
     AVSDirectory public avsDirectoryImplementation;
     AVSDirectoryMock public avsDirectoryMock;
+    PaymentCoordinator public paymentCoordinator;
+    PaymentCoordinator public paymentCoordinatorImplementation;
+    PaymentCoordinatorMock public paymentCoordinatorMock;
 
     /// @notice StakeRegistry, Constant used as a divisor in calculating weights.
     uint256 public constant WEIGHTING_DIVISOR = 1e18;
@@ -161,6 +166,7 @@ contract MockAVSDeployer is Test {
                 )
             )
         );
+        paymentCoordinatorMock = new PaymentCoordinatorMock();
 
         strategyManagerMock.setAddresses(
             delegationMock,
@@ -252,6 +258,7 @@ contract MockAVSDeployer is Test {
 
         serviceManagerImplementation = new ServiceManagerMock(
             avsDirectoryMock,
+            IPaymentCoordinator(address(paymentCoordinatorMock)),
             registryCoordinator,
             stakeRegistry
         );

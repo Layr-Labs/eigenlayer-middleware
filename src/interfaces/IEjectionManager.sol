@@ -32,7 +32,7 @@ interface IEjectionManager {
      * @notice Ejects operators from the AVSs registryCoordinator under a ratelimit
      * @param _operatorIds The ids of the operators to eject for each quorum
      */
-    function ejectOperators(bytes32[][] memory _operatorIds) external returns (uint256[] memory);
+    function ejectOperators(bytes32[][] memory _operatorIds) external returns (uint32[] memory);
 
     /**
      * @notice Sets the ratelimit parameters for a quorum

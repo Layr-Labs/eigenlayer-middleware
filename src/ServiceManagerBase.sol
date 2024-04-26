@@ -2,14 +2,14 @@
 pragma solidity ^0.8.12;
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-
-import {BitmapUtils} from "./libraries/BitmapUtils.sol"; 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IPaymentCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IPaymentCoordinator.sol";
 
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
+import {BitmapUtils} from "./libraries/BitmapUtils.sol"; 
 
 /**
  * @title Minimal implementation of a ServiceManager-type contract.
@@ -19,9 +19,10 @@ import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
     using BitmapUtils for *;
 
+    IAVSDirectory internal immutable _avsDirectory;
+    IPaymentCoordinator internal immutable _paymentCoordinator;
     IRegistryCoordinator internal immutable _registryCoordinator;
     IStakeRegistry internal immutable _stakeRegistry;
-    IAVSDirectory internal immutable _avsDirectory;
 
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
     modifier onlyRegistryCoordinator() {
@@ -35,10 +36,12 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
     /// @notice Sets the (immutable) `_registryCoordinator` address
     constructor(
         IAVSDirectory __avsDirectory,
+        IPaymentCoordinator ___paymentCoordinator,
         IRegistryCoordinator __registryCoordinator,
         IStakeRegistry __stakeRegistry
     ) {
         _avsDirectory = __avsDirectory;
+        _paymentCoordinator = ___paymentCoordinator;
         _registryCoordinator = __registryCoordinator;
         _stakeRegistry = __stakeRegistry;
         _disableInitializers();
@@ -55,6 +58,32 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
      */
     function updateAVSMetadataURI(string memory _metadataURI) public virtual onlyOwner {
         _avsDirectory.updateAVSMetadataURI(_metadataURI);
+    }
+
+    /**
+     * @notice Creates a new range payment on behalf of an AVS, to be split amongst the
+     * set of stakers delegated to operators who are registered to the `avs`.
+     * Note that the owner calling this function must have approved the tokens to be transferred to the ServiceManager
+     * and of course has the required balances.
+     * @param rangePayments The range payments being created
+     * @dev Expected to be called by the ServiceManager of the AVS on behalf of which the payment is being made
+     * @dev The duration of the `rangePayment` cannot exceed `paymentCoordinator.MAX_PAYMENT_DURATION()`
+     * @dev The tokens are sent to the `PaymentCoordinator` contract
+     * @dev Strategies must be in ascending order of addresses to check for duplicates
+     * @dev This function will revert if the `rangePayment` is malformed,
+     * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
+     */
+    function payForRange(
+        IPaymentCoordinator.RangePayment[] calldata rangePayments
+    ) public virtual onlyOwner {
+        for (uint256 i = 0; i < rangePayments.length; ++i) {
+            // transfer token to ServiceManager and approve PaymentCoordinator to transfer again
+            // in payForRange() call
+            rangePayments[i].token.transferFrom(msg.sender, address(this), rangePayments[i].amount);
+            rangePayments[i].token.approve(address(_paymentCoordinator), rangePayments[i].amount);
+        }
+
+        _paymentCoordinator.payForRange(rangePayments);
     }
 
     /**

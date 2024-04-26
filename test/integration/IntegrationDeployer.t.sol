@@ -16,6 +16,7 @@ import "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
 import "eigenlayer-contracts/src/contracts/core/Slasher.sol";
 import "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
+import "eigenlayer-contracts/src/contracts/core/PaymentCoordinator.sol";
 import "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPodManager.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPod.sol";
@@ -52,6 +53,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     AVSDirectory public avsDirectory;
     StrategyManager strategyManager;
     EigenPodManager eigenPodManager;
+    PaymentCoordinator paymentCoordinator;
     PauserRegistry pauserRegistry;
     Slasher slasher;
     IBeacon eigenPodBeacon;
@@ -87,6 +89,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     uint256 public churnApproverPrivateKey = uint256(keccak256("churnApproverPrivateKey"));
     address public churnApprover = cheats.addr(churnApproverPrivateKey);
     address ejector = address(uint160(uint256(keccak256("ejector"))));
+    address paymentUpdater = address(uint160(uint256(keccak256("paymentUpdater"))));
 
     // Constants/Defaults
     uint64 constant MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 32e9;
@@ -94,6 +97,17 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     uint constant MAX_BALANCE = 5e6;
     uint constant MAX_STRATEGY_COUNT = 32; // From StakeRegistry.MAX_WEIGHING_FUNCTION_LENGTH
     uint96 constant DEFAULT_STRATEGY_MULTIPLIER = 1e18;
+    // PaymentCoordinator
+    uint32 MAX_PAYMENT_DURATION = 70 days;
+    uint32 MAX_RETROACTIVE_LENGTH = 84 days;
+    uint32 MAX_FUTURE_LENGTH = 28 days;
+    uint32 GENESIS_PAYMENT_TIMESTAMP = 1712092632;
+    /// @notice Delay in timestamp before a posted root can be claimed against
+    uint32 activationDelay = 7 days;
+    /// @notice intervals(epochs) are 2 weeks
+    uint32 calculationIntervalSeconds = 14 days;
+    /// @notice the commission for all operators across all avss
+    uint16 globalCommissionBips = 1000;
 
     function setUp() public virtual {
         // Deploy ProxyAdmin
@@ -131,6 +145,9 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         avsDirectory = AVSDirectory(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), ""))
         );
+        // paymentCoordinator = PaymentCoordinator(
+        //     address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), ""))
+        // );
 
         // Deploy EigenPod Contracts
         pod = new EigenPod(
@@ -156,6 +173,14 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
         DelayedWithdrawalRouter delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
         AVSDirectory avsDirectoryImplemntation = new AVSDirectory(delegationManager);
+        // PaymentCoordinator paymentCoordinatorImplementation = new PaymentCoordinator(
+        //     delegationManager,
+        //     IStrategyManager(address(strategyManager)),
+        //     MAX_PAYMENT_DURATION,
+        //     MAX_RETROACTIVE_LENGTH,
+        //     MAX_FUTURE_LENGTH,
+        //     GENESIS_PAYMENT_TIMESTAMP
+        // );
 
         // Third, upgrade the proxy contracts to point to the implementations
         uint256 minWithdrawalDelayBlocks = 7 days / 12 seconds;
@@ -233,6 +258,21 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 0 // initialPausedStatus
             )
         );
+        // // PaymentCoordinator
+        // proxyAdmin.upgradeAndCall(
+        //     TransparentUpgradeableProxy(payable(address(paymentCoordinator))),
+        //     address(paymentCoordinatorImplementation),
+        //     abi.encodeWithSelector(
+        //         PaymentCoordinator.initialize.selector,
+        //         eigenLayerReputedMultisig, // initialOwner
+        //         pauserRegistry,
+        //         0, // initialPausedStatus
+        //         paymentUpdater,
+        //         activationDelay,
+        //         calculationIntervalSeconds,
+        //         globalCommissionBips
+        //     )
+        // );
 
         // Deploy and whitelist strategies
         baseStrategyImplementation = new StrategyBase(strategyManager);
@@ -299,7 +339,12 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         StakeRegistry stakeRegistryImplementation = new StakeRegistry(IRegistryCoordinator(registryCoordinator), IDelegationManager(delegationManager));
         BLSApkRegistry blsApkRegistryImplementation = new BLSApkRegistry(IRegistryCoordinator(registryCoordinator));
         IndexRegistry indexRegistryImplementation = new IndexRegistry(IRegistryCoordinator(registryCoordinator));
-        ServiceManagerMock serviceManagerImplementation = new ServiceManagerMock(IAVSDirectory(avsDirectory), IRegistryCoordinator(registryCoordinator), stakeRegistry);
+        ServiceManagerMock serviceManagerImplementation = new ServiceManagerMock(
+            IAVSDirectory(avsDirectory),
+            paymentCoordinator,
+            IRegistryCoordinator(registryCoordinator),
+            stakeRegistry
+        );
 
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(stakeRegistry))),
