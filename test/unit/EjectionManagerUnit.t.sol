@@ -251,6 +251,8 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
 
         testEjectOperators_MultipleOperatorInsideRatelimit();
 
+        vm.warp(block.timestamp + 1);
+
         _registerOperaters(operatorsToEject, stake);
 
         vm.warp(block.timestamp + ratelimitWindow);
