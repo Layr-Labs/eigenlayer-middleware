@@ -368,6 +368,7 @@ contract RegistryCoordinator is
             operator: operator, 
             quorumNumbers: quorumNumbers
         });
+        lastEjectionTimestamp[operator] = block.timestamp;
     }
 
     /*******************************************************************************
@@ -423,6 +424,10 @@ contract RegistryCoordinator is
         _setEjector(_ejector);
     }
 
+    function setReregistrationDelay(uint256 _reregistrationDelay) external onlyOwner {
+        reregistrationDelay = _reregistrationDelay;
+    }
+
     /*******************************************************************************
                             INTERNAL FUNCTIONS
     *******************************************************************************/
@@ -456,6 +461,8 @@ contract RegistryCoordinator is
         require(!quorumsToAdd.isEmpty(), "RegistryCoordinator._registerOperator: bitmap cannot be 0");
         require(quorumsToAdd.noBitsInCommon(currentBitmap), "RegistryCoordinator._registerOperator: operator already registered for some quorums being registered for");
         uint192 newBitmap = uint192(currentBitmap.plus(quorumsToAdd));
+
+        require(lastEjectionTimestamp[operator] + reregistrationDelay < block.timestamp, "RegistryCoordinator._registerOperator: operator cannot reregister yet");
 
         /**
          * Update operator's bitmap, socket, and status. Only update operatorInfo if needed:
