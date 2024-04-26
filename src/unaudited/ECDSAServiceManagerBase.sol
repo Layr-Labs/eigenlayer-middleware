@@ -19,11 +19,17 @@ abstract contract ECDSAServiceManagerBase is
     IServiceManager,
     OwnableUpgradeable
 {
+    /// @notice Address of the stake registry contract, which manages registration and stake recording.
     address public immutable stakeRegistry;
-    address public immutable avsDirectory;
-    address internal immutable paymentCoordinator;
-    address internal immutable delegationManager;
 
+    /// @notice Address of the AVS directory contract, which manages AVS-related data for registered operators.
+    address public immutable avsDirectory;
+
+    /// @notice Address of the payment coordinator contract, which handles payment distributions.
+    address internal immutable paymentCoordinator;
+
+    /// @notice Address of the delegation manager contract, which manages staker delegations to operators.
+    address internal immutable delegationManager;
     /**
      * @dev Ensures that the function is only callable by the `stakeRegistry` contract.
      * This is used to restrict certain registration and deregistration functionality to the `stakeRegistry`
@@ -36,6 +42,13 @@ abstract contract ECDSAServiceManagerBase is
         _;
     }
 
+    /**
+     * @dev Constructor for ECDSAServiceManagerBase, initializing immutable contract addresses and disabling initializers.
+     * @param _avsDirectory The address of the AVS directory contract, managing AVS-related data for registered operators.
+     * @param _stakeRegistry The address of the stake registry contract, managing registration and stake recording.
+     * @param _paymentCoordinator The address of the payment coordinator contract, handling payment distributions.
+     * @param _delegationManager The address of the delegation manager contract, managing staker delegations to operators.
+     */
     constructor(
         address _avsDirectory,
         address _stakeRegistry,
