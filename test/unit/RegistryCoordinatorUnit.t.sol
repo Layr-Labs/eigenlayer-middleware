@@ -992,7 +992,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         uint256 reregistrationDelay = 1 days;
         cheats.warp(block.timestamp + reregistrationDelay);
         cheats.prank(registryCoordinatorOwner);
-        registryCoordinator.setReregistrationDelay(reregistrationDelay);
+        registryCoordinator.setEjectionCooldown(reregistrationDelay);
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
         uint32 registrationBlockNumber = 100;
@@ -1020,7 +1020,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         uint256 reregistrationDelay = 1 days;
         cheats.warp(block.timestamp + reregistrationDelay);
         cheats.prank(registryCoordinatorOwner);
-        registryCoordinator.setReregistrationDelay(reregistrationDelay);
+        registryCoordinator.setEjectionCooldown(reregistrationDelay);
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
         uint32 registrationBlockNumber = 100;

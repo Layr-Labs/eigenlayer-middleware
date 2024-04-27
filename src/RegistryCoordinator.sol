@@ -436,13 +436,13 @@ contract RegistryCoordinator is
     }
 
     /**
-     * @notice Sets the reregistration delay, which is the time an operator must wait after 
-     * ejection before registering for any quorum
-     * @param _reregistrationDelay the new reregistration delay
+     * @notice Sets the ejection cooldown, which is the time an operator must wait in 
+     * seconds afer ejection before registering for any quorum
+     * @param _ejectionCooldown the new ejection cooldown in seconds
      * @dev only callable by the owner
      */
-    function setReregistrationDelay(uint256 _reregistrationDelay) external onlyOwner {
-        reregistrationDelay = _reregistrationDelay;
+    function setEjectionCooldown(uint256 _ejectionCooldown) external onlyOwner {
+        ejectionCooldown = _ejectionCooldown;
     }
 
     /*******************************************************************************
@@ -480,7 +480,7 @@ contract RegistryCoordinator is
         uint192 newBitmap = uint192(currentBitmap.plus(quorumsToAdd));
 
         // Check that the operator can reregister if ejected
-        require(lastEjectionTimestamp[operator] + reregistrationDelay < block.timestamp, "RegistryCoordinator._registerOperator: operator cannot reregister yet");
+        require(lastEjectionTimestamp[operator] + ejectionCooldown < block.timestamp, "RegistryCoordinator._registerOperator: operator cannot reregister yet");
 
         /**
          * Update operator's bitmap, socket, and status. Only update operatorInfo if needed:
