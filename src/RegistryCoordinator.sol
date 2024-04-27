@@ -364,11 +364,22 @@ contract RegistryCoordinator is
         address operator, 
         bytes calldata quorumNumbers
     ) external onlyEjector {
-        _deregisterOperator({
-            operator: operator, 
-            quorumNumbers: quorumNumbers
-        });
         lastEjectionTimestamp[operator] = block.timestamp;
+
+        OperatorInfo storage operatorInfo = _operatorInfo[operator];
+        bytes32 operatorId = operatorInfo.operatorId;
+        uint192 quorumsToRemove = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
+        uint192 currentBitmap = _currentOperatorBitmap(operatorId);
+        if(
+            operatorInfo.status == OperatorStatus.REGISTERED && 
+            !quorumsToRemove.isEmpty() &&
+            quorumsToRemove.isSubsetOf(currentBitmap) 
+        ){
+            _deregisterOperator({
+                operator: operator, 
+                quorumNumbers: quorumNumbers
+            });
+        }
     }
 
     /*******************************************************************************
