@@ -93,7 +93,9 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
             updateBlockNumber: uint32(block.number),
             nextUpdateBlockNumber: 0
         }));
-        emit QuorumsAPKUpdates(bytes1(quorumNumber), bytes24(0));
+        bytes24[] memory newApkHashes = new bytes24[](1);
+        newApkHashes[0] = bytes24(0);
+        emit QuorumsAPKUpdates(abi.encodePacked(quorumNumber), newApkHashes);
     }
 
     /**
@@ -154,7 +156,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
 
     function _processQuorumApkUpdate(bytes memory quorumNumbers, BN254.G1Point memory point) internal {
         BN254.G1Point memory newApk;
-        bytes24[] memory newApkHashes;
+        bytes24[] memory newApkHashes = new bytes24[](quorumNumbers.length);
 
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             // Validate quorum exists and get history length
@@ -166,7 +168,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
             newApk = currentApk[quorumNumber].plus(point);
             currentApk[quorumNumber] = newApk;
             bytes24 newApkHash = bytes24(BN254.hashG1Point(newApk));
-            newApkHashes.push(newApkHash);
+            newApkHashes[i] = newApkHash;
 
             // Update apk history. If the last update was made in this block, update the entry
             // Otherwise, push a new historical entry and update the prev->next pointer
