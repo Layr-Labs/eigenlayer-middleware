@@ -154,7 +154,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
 
     function _processQuorumApkUpdate(bytes memory quorumNumbers, BN254.G1Point memory point) internal {
         BN254.G1Point memory newApk;
-        bytes24[] newApkHashes;
+        bytes24[] memory newApkHashes;
 
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             // Validate quorum exists and get history length
