@@ -27,7 +27,7 @@ interface IRegistryCoordinator {
 
     event QuorumCountUpdated(uint8 quorumCount);
 
-    event OperatorQuorumBitmapUpdated(uint8 quorumCount);
+    event OperatorQuorumBitmapUpdated(bytes32 operatorId, uint192 quorumBitmap);
 
     /// @notice emitted when all the operators for a quorum are updated at once
     event QuorumBlockNumberUpdated(uint8 indexed quorumNumber, uint256 blocknumber);
