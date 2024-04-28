@@ -46,6 +46,8 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
 
     /// @notice the current number of quorums supported by the registry coordinator
     uint8 public quorumCount;
+    /// @notice the current quorums supported by the registry coordinator
+    uint8[] public quorumNumbers;
     /// @notice maps quorum number => operator cap and kick params
     mapping(uint8 => OperatorSetParam) internal _quorumParams;
     /// @notice maps operator id => historical quorums they registered for

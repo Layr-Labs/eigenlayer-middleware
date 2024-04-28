@@ -42,6 +42,11 @@ interface IStakeRegistry is IRegistry {
         uint8 quorumNumber,
         uint96 stake
     );
+
+    event QuorumsTotalStakeUpdates(
+        bytes quorumNumbers, 
+        uint96[] newTotalStake
+    );
     /// @notice emitted when the minimum stake for a quorum is updated
     event MinimumStakeForQuorumUpdated(uint8 indexed quorumNumber, uint96 minimumStake);
     /// @notice emitted when a new quorum is created

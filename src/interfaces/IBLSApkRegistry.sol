@@ -51,6 +51,11 @@ interface IBLSApkRegistry is IRegistry {
         bytes quorumNumbers
     );
 
+    event QuorumsAPKUpdates(
+        bytes quorumNumbers, 
+        bytes24[] newApkHashes
+    );
+
     /**
      * @notice Registers the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to register.
