@@ -103,12 +103,11 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         BN254.G1Point calldata pubkeyRegistrationMessageHash
     ) external onlyRegistryCoordinator returns (bytes32 operatorId) {
         bytes32 pubkeyHash = BN254.hashG1Point(params.pubkeyG1);
+        if(operatorToPubkeyHash[operator] == pubkeyHash) {
+            return pubkeyHash;
+        }
         require(
             pubkeyHash != ZERO_PK_HASH, "BLSApkRegistry.registerBLSPublicKey: cannot register zero pubkey"
-        );
-        require(
-            operatorToPubkeyHash[operator] == bytes32(0),
-            "BLSApkRegistry.registerBLSPublicKey: operator already registered pubkey"
         );
         require(
             pubkeyHashToOperator[pubkeyHash] == address(0),
@@ -134,6 +133,15 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
             pubkeyRegistrationMessageHash.plus(BN254.generatorG1().scalar_mul(gamma)),
             params.pubkeyG2
         ), "BLSApkRegistry.registerBLSPublicKey: either the G1 signature is wrong, or G1 and G2 private key do not match");
+
+        //if keys already registered checkpoint the previous pubkey and pubkeyHash of the operator
+        if(operatorToPubkeyHash[operator] != bytes32(0)) {
+            operatorPubkeyHistory[operator].push(PubkeyCheckpoint({
+                previousPubkeyG1: operatorToPubkey[operator],
+                previousPubkeyHash: operatorToPubkeyHash[operator],
+                blockNumber: uint32(block.number)
+            }));
+        }
 
         operatorToPubkey[operator] = params.pubkeyG1;
         operatorToPubkeyHash[operator] = pubkeyHash;

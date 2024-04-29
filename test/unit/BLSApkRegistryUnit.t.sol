@@ -309,22 +309,6 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is BLSApkRegistryUnitTests
         blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
     }
 
-    function testFuzz_registerOperator_Revert_WhenOperatorAlreadyRegistered(address operator)
-        public
-    {
-        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(operator);
-        BN254.G1Point memory messageHash =
-            registryCoordinator.pubkeyRegistrationMessageHash(operator);
-
-        cheats.startPrank(address(registryCoordinator));
-        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
-
-        cheats.expectRevert(
-            "BLSApkRegistry.registerBLSPublicKey: operator already registered pubkey"
-        );
-        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
-    }
-
     function testFuzz_registerOperator_Revert_WhenPubkeyAlreadyRegistered(
         address operator,
         address operator2
@@ -405,6 +389,85 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is BLSApkRegistryUnitTests
         blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
 
         (BN254.G1Point memory registeredPubkey, bytes32 registeredpkHash) =
+            blsApkRegistry.getRegisteredPubkey(operator);
+        assertEq(registeredPubkey.X, defaultPubkey.X, "registeredPubkey not set correctly");
+        assertEq(registeredPubkey.Y, defaultPubkey.Y, "registeredPubkey not set correctly");
+        assertEq(registeredpkHash, defaultPubkeyHash, "registeredpkHash not set correctly");
+        assertEq(
+            blsApkRegistry.pubkeyHashToOperator(BN254.hashG1Point(defaultPubkey)),
+            operator,
+            "operator address not stored correctly"
+        );
+    }
+
+    function testFuzz_registerBLSPublicKey_RegisteringSameKey(address operator)
+        public
+        filterFuzzedAddressInputs(operator)
+    {
+        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(operator);
+        BN254.G1Point memory messageHash =
+            registryCoordinator.pubkeyRegistrationMessageHash(operator);
+
+        cheats.startPrank(address(registryCoordinator));
+        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
+
+        bytes32 operatorId = blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
+
+        assertEq(
+            blsApkRegistry.getOperatorId(operator),
+            operatorId,
+            "operatorId is not the same"
+        );
+    }
+
+    function testFuzz_registerBLSPublicKey_RegisteringNewKey(address operator)
+        public
+        filterFuzzedAddressInputs(operator)
+    {
+        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(operator);
+        BN254.G1Point memory messageHash =
+            registryCoordinator.pubkeyRegistrationMessageHash(operator);
+        cheats.prank(address(registryCoordinator));
+        cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
+        emit NewPubkeyRegistration(
+            operator, pubkeyRegistrationParams.pubkeyG1, pubkeyRegistrationParams.pubkeyG2
+        );
+        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
+
+        (BN254.G1Point memory registeredPubkey, bytes32 registeredpkHash) =
+            blsApkRegistry.getRegisteredPubkey(operator);
+        assertEq(registeredPubkey.X, defaultPubkey.X, "registeredPubkey not set correctly");
+        assertEq(registeredPubkey.Y, defaultPubkey.Y, "registeredPubkey not set correctly");
+        assertEq(registeredpkHash, defaultPubkeyHash, "registeredpkHash not set correctly");
+        assertEq(
+            blsApkRegistry.pubkeyHashToOperator(BN254.hashG1Point(defaultPubkey)),
+            operator,
+            "operator address not stored correctly"
+        );
+
+        privKey = 420;
+        pubkeyRegistrationParams.pubkeyG1 = BN254.generatorG1().scalar_mul(privKey);
+        defaultPubkey = pubkeyRegistrationParams.pubkeyG1;
+        defaultPubkeyHash = BN254.hashG1Point(defaultPubkey);
+        pubkeyRegistrationParams.pubkeyG2.X[1] =
+            uint256(0x22010BC55552F4993B17F82BCDADC5A90839B3D67E382564485A0AA07F7E1923);
+        pubkeyRegistrationParams.pubkeyG2.X[0] =
+            uint256(0x2944BFD71F3073401E9D5F9AEA081BE98B98DA48EC8EE80ECFC7E97C7254CEA9);
+        pubkeyRegistrationParams.pubkeyG2.Y[1] =
+            uint256(0x1BDC8A9DEF8E46F40008649021A65F97501E2E5988B485368053BBD4487239C6);
+        pubkeyRegistrationParams.pubkeyG2.Y[0] =
+            uint256(0x0B7D0B9ECAD9C2884453B975CC656802DE966F21793B5A0F3D2A98A37FD24540);
+
+        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(operator);
+        messageHash = registryCoordinator.pubkeyRegistrationMessageHash(operator);
+        cheats.prank(address(registryCoordinator));
+        cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
+        emit NewPubkeyRegistration(
+            operator, pubkeyRegistrationParams.pubkeyG1, pubkeyRegistrationParams.pubkeyG2
+        );
+        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
+
+        (registeredPubkey, registeredpkHash) =
             blsApkRegistry.getRegisteredPubkey(operator);
         assertEq(registeredPubkey.X, defaultPubkey.X, "registeredPubkey not set correctly");
         assertEq(registeredPubkey.Y, defaultPubkey.Y, "registeredPubkey not set correctly");

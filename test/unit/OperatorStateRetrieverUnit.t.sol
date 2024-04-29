@@ -202,6 +202,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         registryCoordinator.deregisterOperator(BitmapUtils.bitmapToBytesArray(quorumBitmapOne));
 
         cheats.roll(registrationBlockNumber + 20);
+        cheats.warp(block.timestamp + 1);
         _registerOperatorWithCoordinator(defaultOperator, quorumBitmapTwo, defaultPubKey);
 
         cheats.roll(registrationBlockNumber + 25);

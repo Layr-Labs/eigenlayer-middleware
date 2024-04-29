@@ -445,6 +445,16 @@ contract RegistryCoordinator is
         ejectionCooldown = _ejectionCooldown;
     }
 
+    /**
+     * @notice Sets the deregistration cooldown, which is the time an operator must wait in 
+     * seconds after fully deregistering before registering for any quorum
+     * @param _deregistrationCooldown the new deregistration cooldown in seconds
+     * @dev only callable by the owner
+     */
+    function setDeregistrationCooldown(uint256 _deregistrationCooldown) external onlyOwner {
+        deregistrationCooldown = _deregistrationCooldown;
+    }
+
     /*******************************************************************************
                             INTERNAL FUNCTIONS
     *******************************************************************************/
@@ -479,8 +489,12 @@ contract RegistryCoordinator is
         require(quorumsToAdd.noBitsInCommon(currentBitmap), "RegistryCoordinator._registerOperator: operator already registered for some quorums being registered for");
         uint192 newBitmap = uint192(currentBitmap.plus(quorumsToAdd));
 
-        // Check that the operator can reregister if ejected
-        require(lastEjectionTimestamp[operator] + ejectionCooldown < block.timestamp, "RegistryCoordinator._registerOperator: operator cannot reregister yet");
+        // Check that the operator can reregister 
+        require(
+            lastEjectionTimestamp[operator] + ejectionCooldown < block.timestamp &&
+            lastDeregistrationTimestamp[operator] + deregistrationCooldown < block.timestamp,
+            "RegistryCoordinator._registerOperator: operator cannot reregister yet"
+        );
 
         /**
          * Update operator's bitmap, socket, and status. Only update operatorInfo if needed:
@@ -530,6 +544,11 @@ contract RegistryCoordinator is
     ) internal returns (bytes32 operatorId) {
         operatorId = blsApkRegistry.getOperatorId(operator);
         if (operatorId == 0) {
+            operatorId = blsApkRegistry.registerBLSPublicKey(operator, params, pubkeyRegistrationMessageHash(operator));
+        } else if (_operatorInfo[operator].status == OperatorStatus.DEREGISTERED && 
+            params.pubkeyRegistrationSignature.X != 0 &&
+            params.pubkeyRegistrationSignature.Y != 0 
+        ) {
             operatorId = blsApkRegistry.registerBLSPublicKey(operator, params, pubkeyRegistrationMessageHash(operator));
         }
         return operatorId;
@@ -615,6 +634,7 @@ contract RegistryCoordinator is
         // them from the AVS via the EigenLayer core contracts
         if (newBitmap.isEmpty()) {
             operatorInfo.status = OperatorStatus.DEREGISTERED;
+            lastDeregistrationTimestamp[operator] = block.timestamp;
             serviceManager.deregisterOperatorFromAVS(operator);
             emit OperatorDeregistered(operator, operatorId);
         }

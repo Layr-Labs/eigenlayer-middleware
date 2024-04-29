@@ -898,7 +898,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
         cheats.startPrank(defaultOperator);
-        
+        cheats.warp(block.timestamp + 1);
         cheats.roll(reregistrationBlockNumber);
         
         // store data before registering, to check against later
