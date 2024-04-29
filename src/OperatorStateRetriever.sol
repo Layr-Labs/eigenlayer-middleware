@@ -178,4 +178,25 @@ contract OperatorStateRetriever {
         }
         return quorumBitmaps;
     }
+
+    function getBatchOperatorId(
+        IRegistryCoordinator registryCoordinator,
+        address[] memory operators
+    ) external view returns (bytes32[] memory operatorIds) {
+        operatorIds = new bytes32[](operators.length);
+        for (uint256 i = 0; i < operators.length; ++i) {
+            operatorIds[i] = registryCoordinator.getOperatorId(operators[i]);
+        }
+    }
+
+    function getBatchOperatorFromId(
+        IRegistryCoordinator registryCoordinator,
+        bytes32[] memory operatorIds
+    ) external view returns (address[] memory operators) {
+        operators = new address[](operatorIds.length);
+        for (uint256 i = 0; i < operatorIds.length; ++i) {
+            operators[i] = registryCoordinator.getOperatorFromId(operatorIds[i]);
+        }
+    }
+    
 }
