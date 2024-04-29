@@ -991,7 +991,7 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
         uint256 randSeed
     ) external {
         numRegistrants = bound(numRegistrants, 1, 100);
-        blockGap = bound(blockGap, 0, 10);
+        blockGap = bound(blockGap, 0, 100);
 
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
