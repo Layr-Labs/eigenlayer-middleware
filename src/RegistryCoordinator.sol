@@ -359,6 +359,7 @@ contract RegistryCoordinator is
      * @notice Forcibly deregisters an operator from one or more quorums
      * @param operator the operator to eject
      * @param quorumNumbers the quorum numbers to eject the operator from
+     * @dev possible race condition if prior to being ejected for a set of quorums the operator self deregisters from a subset
      */
     function ejectOperator(
         address operator, 
