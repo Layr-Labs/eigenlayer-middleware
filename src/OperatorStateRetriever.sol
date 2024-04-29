@@ -179,6 +179,12 @@ contract OperatorStateRetriever {
         return quorumBitmaps;
     }
 
+    /**
+     * @notice This function returns the operatorIds for each of the operators in the operators array
+     * @param registryCoordinator is the AVS registry coordinator to fetch the operator information from
+     * @param operators is the array of operator address to get corresponding operatorIds for
+     * @dev if an operator is not registered, the operatorId will be 0
+     */
     function getBatchOperatorId(
         IRegistryCoordinator registryCoordinator,
         address[] memory operators
@@ -189,6 +195,12 @@ contract OperatorStateRetriever {
         }
     }
 
+    /**
+     * @notice This function returns the operator addresses for each of the operators in the operatorIds array
+     * @param registryCoordinator is the AVS registry coordinator to fetch the operator information from
+     * @param operators is the array of operatorIds to get corresponding operator addresses for
+     * @dev if an operator is not registered, the operator address will be 0
+     */
     function getBatchOperatorFromId(
         IRegistryCoordinator registryCoordinator,
         bytes32[] memory operatorIds
