@@ -25,14 +25,14 @@ interface IEjectionManager {
     event QuorumEjectionParamsSet(uint8 quorumNumber, uint32 rateLimitWindow, uint16 ejectableStakePercent);
     ///@notice Emitted when an operator is ejected
     event OperatorEjected(bytes32 operatorId, uint8 quorumNumber);
-    ///@notice Emitted when an operator ejection fails
-    event FailedOperatorEjection(bytes32 operatorId, uint8 quorumNumber, bytes err);
+    ///@notice Emitted when operators are ejected for a quroum 
+    event QuorumEjection(uint32 ejectedOperators, bool ratelimitHit);
 
    /**
      * @notice Ejects operators from the AVSs registryCoordinator under a ratelimit
      * @param _operatorIds The ids of the operators to eject for each quorum
      */
-    function ejectOperators(bytes32[][] memory _operatorIds) external returns (uint32[] memory);
+    function ejectOperators(bytes32[][] memory _operatorIds) external;
 
     /**
      * @notice Sets the ratelimit parameters for a quorum

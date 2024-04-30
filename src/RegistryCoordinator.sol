@@ -359,15 +359,28 @@ contract RegistryCoordinator is
      * @notice Forcibly deregisters an operator from one or more quorums
      * @param operator the operator to eject
      * @param quorumNumbers the quorum numbers to eject the operator from
+     * @dev possible race condition if prior to being ejected for a set of quorums the operator self deregisters from a subset
      */
     function ejectOperator(
         address operator, 
         bytes calldata quorumNumbers
     ) external onlyEjector {
-        _deregisterOperator({
-            operator: operator, 
-            quorumNumbers: quorumNumbers
-        });
+        lastEjectionTimestamp[operator] = block.timestamp;
+
+        OperatorInfo storage operatorInfo = _operatorInfo[operator];
+        bytes32 operatorId = operatorInfo.operatorId;
+        uint192 quorumsToRemove = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
+        uint192 currentBitmap = _currentOperatorBitmap(operatorId);
+        if(
+            operatorInfo.status == OperatorStatus.REGISTERED && 
+            !quorumsToRemove.isEmpty() &&
+            quorumsToRemove.isSubsetOf(currentBitmap) 
+        ){
+            _deregisterOperator({
+                operator: operator, 
+                quorumNumbers: quorumNumbers
+            });
+        }
     }
 
     /*******************************************************************************
@@ -423,6 +436,16 @@ contract RegistryCoordinator is
         _setEjector(_ejector);
     }
 
+    /**
+     * @notice Sets the ejection cooldown, which is the time an operator must wait in 
+     * seconds afer ejection before registering for any quorum
+     * @param _ejectionCooldown the new ejection cooldown in seconds
+     * @dev only callable by the owner
+     */
+    function setEjectionCooldown(uint256 _ejectionCooldown) external onlyOwner {
+        ejectionCooldown = _ejectionCooldown;
+    }
+
     /*******************************************************************************
                             INTERNAL FUNCTIONS
     *******************************************************************************/
@@ -456,6 +479,9 @@ contract RegistryCoordinator is
         require(!quorumsToAdd.isEmpty(), "RegistryCoordinator._registerOperator: bitmap cannot be 0");
         require(quorumsToAdd.noBitsInCommon(currentBitmap), "RegistryCoordinator._registerOperator: operator already registered for some quorums being registered for");
         uint192 newBitmap = uint192(currentBitmap.plus(quorumsToAdd));
+
+        // Check that the operator can reregister if ejected
+        require(lastEjectionTimestamp[operator] + ejectionCooldown < block.timestamp, "RegistryCoordinator._registerOperator: operator cannot reregister yet");
 
         /**
          * Update operator's bitmap, socket, and status. Only update operatorInfo if needed:

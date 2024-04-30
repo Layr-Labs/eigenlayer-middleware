@@ -117,6 +117,7 @@ contract User is Test {
     function registerOperator(bytes calldata quorums) public createSnapshot virtual returns (bytes32) {
         _log("registerOperator", quorums);
 
+        vm.warp(block.timestamp + 1);
         registryCoordinator.registerOperator({
             quorumNumbers: quorums,
             socket: NAME,
@@ -208,6 +209,7 @@ contract User is Test {
                 expiry: expiry
             });
 
+        vm.warp(block.timestamp + 1);
         registryCoordinator.registerOperatorWithChurn({
             quorumNumbers: allQuorums,
             socket: NAME,
