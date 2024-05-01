@@ -13,7 +13,7 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
                                CONSTANTS AND IMMUTABLES 
     *******************************************************************************/
 
-    /// @notice The EIP-712 typehash for the `DelegationApproval` struct used by the contract
+    /// @notice The EIP-712 typehash for the `OperatorChurnApproval` struct used by the contract
     bytes32 public constant OPERATOR_CHURN_APPROVAL_TYPEHASH =
         keccak256("OperatorChurnApproval(address registeringOperator,bytes32 registeringOperatorId,OperatorKickParam[] operatorKickParams,bytes32 salt,uint256 expiry)OperatorKickParam(uint8 quorumNumber,address operator)");
     /// @notice The EIP-712 typehash used for registering BLS public keys
