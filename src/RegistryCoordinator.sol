@@ -362,13 +362,13 @@ contract RegistryCoordinator is
         Operator[][] memory operators = new Operator[][](quorumNumbers.length);
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            bytes32[] memory operatorIds = indexRegistry.getOperatorListAtBlockNumber(quorumNumber, block.number);
+            bytes32[] memory operatorIds = indexRegistry.getOperatorListAtBlockNumber(quorumNumber, uint32(block.number));
             operators[i] = new Operator[](operatorIds.length);
             for (uint256 j = 0; j < operatorIds.length; j++) {
                 operators[i][j] = Operator({
                     operator: blsApkRegistry.getOperatorFromPubkeyHash(operatorIds[j]),
                     operatorId: bytes32(operatorIds[j]),
-                    stake: stakeRegistry.getStakeAtBlockNumber(bytes32(operatorIds[j]), quorumNumber, block.number)
+                    stake: stakeRegistry.getStakeAtBlockNumber(bytes32(operatorIds[j]), quorumNumber, uint32(block.number))
                 });
             }
         }
