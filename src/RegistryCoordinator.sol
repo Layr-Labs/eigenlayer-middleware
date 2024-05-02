@@ -9,6 +9,7 @@ import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {Operator} from "./OperatorStateRetriever.sol";
 
 import {EIP1271SignatureUtils} from "eigenlayer-contracts/src/contracts/libraries/EIP1271SignatureUtils.sol";
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
