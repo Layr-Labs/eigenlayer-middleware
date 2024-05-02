@@ -9,8 +9,6 @@ import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
-import {Operator} from "./OperatorStateRetriever.sol";
-
 import {EIP1271SignatureUtils} from "eigenlayer-contracts/src/contracts/libraries/EIP1271SignatureUtils.sol";
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {BN254} from "./libraries/BN254.sol";
@@ -41,6 +39,12 @@ contract RegistryCoordinator is
 {
     using BitmapUtils for *;
     using BN254 for BN254.G1Point;
+
+    struct Operator {
+        address operator;
+        bytes32 operatorId;
+        uint96 stake;
+    }
 
     modifier onlyEjector {
         require(msg.sender == ejector, "RegistryCoordinator.onlyEjector: caller is not the ejector");
