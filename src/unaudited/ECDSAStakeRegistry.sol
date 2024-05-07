@@ -43,18 +43,33 @@ contract ECDSAStakeRegistry is
         __ECDSAStakeRegistry_init(_serviceManager, _thresholdWeight, _quorum);
     }
 
-    /// @notice Registers a new operator using a provided signature
+    /// @notice Registers a new operator using a provided signature and signing key
+    /// @param _operator The address of the operator to register
     /// @param _operatorSignature Contains the operator's signature, salt, and expiry
+    /// @param _signingKey The signing key to add to the operator's history
     function registerOperatorWithSignature(
         address _operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature
+        ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature,
+        address _signingKey
     ) external {
-        _registerOperatorWithSig(_operator, _operatorSignature);
+        _registerOperatorWithSig(_operator, _operatorSignature, _signingKey);
     }
 
     /// @notice Deregisters an existing operator
     function deregisterOperator() external {
         _deregisterOperator(msg.sender);
+    }
+
+    /**
+     * @notice Updates the signing key for an operator
+     * @dev Only callable by the operator themselves
+     * @param _newSigningKey The new signing key to set for the operator
+     */
+    function updateOperatorSigningKey(address _newSigningKey) external {
+        if (!_operatorRegistered[msg.sender]) {
+            revert OperatorNotRegistered();
+        }
+        _updateOperatorSigningKey(msg.sender, _newSigningKey);
     }
 
     /**
@@ -312,9 +327,11 @@ contract ECDSAStakeRegistry is
 
     /// @dev registers an operator through a provided signature
     /// @param _operatorSignature Contains the operator's signature, salt, and expiry
+    /// @param _signingKey The signing key to add to the operator's history
     function _registerOperatorWithSig(
         address _operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature
+        ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature,
+        address _signingKey
     ) internal virtual {
         if (_operatorRegistered[_operator]) {
             revert OperatorAlreadyRegistered();
@@ -323,11 +340,29 @@ contract ECDSAStakeRegistry is
         _operatorRegistered[_operator] = true;
         int256 delta = _updateOperatorWeight(_operator);
         _updateTotalWeight(delta);
+        _updateOperatorSigningKey(_operator, _signingKey);
         IServiceManager(_serviceManager).registerOperatorToAVS(
             _operator,
             _operatorSignature
         );
         emit OperatorRegistered(_operator, _serviceManager);
+    }
+
+    /// @dev Internal function to update an operator's signing key
+    /// @param _operator The address of the operator to update the signing key for
+    /// @param _newSigningKey The new signing key to set for the operator
+    function _updateOperatorSigningKey(
+        address _operator,
+        address _newSigningKey
+    ) internal {
+        address oldSigningKey = address(
+            uint160(_operatorSigningKeyHistory[_operator].latest())
+        );
+        if (_newSigningKey == oldSigningKey) {
+            return;
+        }
+        _operatorSigningKeyHistory[_operator].push(uint160(_newSigningKey));
+        emit SigningKeyUpdate(_operator, oldSigningKey, _newSigningKey);
     }
 
     /// @notice Updates the weight of an operator and returns the previous and current weights.
@@ -400,30 +435,33 @@ contract ECDSAStakeRegistry is
     /**
      * @notice Common logic to verify a batch of ECDSA signatures against a hash, using either last stake weight or at a specific block.
      * @param _dataHash The hash of the data the signers endorsed.
-     * @param _signers A collection of addresses that endorsed the data hash.
+     * @param _operators A collection of addresses that endorsed the data hash.
      * @param _signatures A collection of signatures matching the signers.
      * @param _referenceBlock The block number for evaluating stake weight; use max uint32 for latest weight.
      */
     function _checkSignatures(
         bytes32 _dataHash,
-        address[] memory _signers,
+        address[] memory _operators,
         bytes[] memory _signatures,
         uint32 _referenceBlock
     ) internal view {
-        uint256 signersLength = _signers.length;
-        address lastSigner;
+        uint256 signersLength = _operators.length;
+        address currentOperator;
+        address lastOperator;
+        address signer;
         uint256 signedWeight;
 
         _validateSignaturesLength(signersLength, _signatures.length);
         for (uint256 i; i < signersLength; i++) {
-            address currentSigner = _signers[i];
+            currentOperator = _operators[i];
+            signer = _getOperatorSigningKey(currentOperator, _referenceBlock);
 
-            _validateSortedSigners(lastSigner, currentSigner);
-            _validateSignature(currentSigner, _dataHash, _signatures[i]);
+            _validateSortedSigners(lastOperator, currentOperator);
+            _validateSignature(signer, _dataHash, _signatures[i]);
 
-            lastSigner = currentSigner;
+            lastOperator = currentOperator;
             uint256 operatorWeight = _getOperatorWeight(
-                currentSigner,
+                currentOperator,
                 _referenceBlock
             );
             signedWeight += operatorWeight;
@@ -470,6 +508,31 @@ contract ECDSAStakeRegistry is
     ) internal view {
         if (!_signer.isValidSignatureNow(_dataHash, _signature)) {
             revert InvalidSignature();
+        }
+    }
+
+    /// @notice Retrieves the operator weight for a signer, either at the last checkpoint or a specified block.
+    /// @param _operator The operator to query their signing key history for
+    /// @param _referenceBlock The block number to query the operator's weight at, or the maximum uint32 value for the last checkpoint.
+    /// @return The weight of the operator.
+    function _getOperatorSigningKey(
+        address _operator,
+        uint32 _referenceBlock
+    ) internal view returns (address) {
+        if (_referenceBlock == type(uint32).max) {
+            return
+                address(
+                    uint160(_operatorSigningKeyHistory[_operator].latest())
+                );
+        } else {
+            return
+                address(
+                    uint160(
+                        _operatorSigningKeyHistory[_operator].getAtBlock(
+                            _referenceBlock
+                        )
+                    )
+                );
         }
     }
 
