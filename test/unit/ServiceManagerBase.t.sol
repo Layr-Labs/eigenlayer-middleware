@@ -15,16 +15,17 @@ contract ServiceManagerBase_UnitTests is
     // PaymentCoordinator config
     address paymentUpdater =
         address(uint160(uint256(keccak256("paymentUpdater"))));
+    uint32 CALCULATION_INTERVAL_SECONDS = 7 days;
     uint32 MAX_PAYMENT_DURATION = 70 days;
     uint32 MAX_RETROACTIVE_LENGTH = 84 days;
     uint32 MAX_FUTURE_LENGTH = 28 days;
-    uint32 GENESIS_PAYMENT_TIMESTAMP = 1712092632;
+    uint32 GENESIS_PAYMENT_TIMESTAMP = 1712188800;
+    uint256 MAX_PAYMENT_AMOUNT = 1e38 - 1;
     /// @notice Delay in timestamp before a posted root can be claimed against
     uint32 activationDelay = 7 days;
-    /// @notice intervals(epochs) are 2 weeks
-    uint32 calculationIntervalSeconds = 14 days;
     /// @notice the commission for all operators across all avss
     uint16 globalCommissionBips = 1000;
+    
 
     // Testing Config and Mocks
     address serviceManagerOwner;
@@ -50,6 +51,7 @@ contract ServiceManagerBase_UnitTests is
         paymentCoordinatorImplementation = new PaymentCoordinator(
             delegationMock,
             strategyManagerMock,
+            CALCULATION_INTERVAL_SECONDS,
             MAX_PAYMENT_DURATION,
             MAX_RETROACTIVE_LENGTH,
             MAX_FUTURE_LENGTH,
@@ -68,7 +70,6 @@ contract ServiceManagerBase_UnitTests is
                         0 /*initialPausedStatus*/,
                         paymentUpdater,
                         activationDelay,
-                        calculationIntervalSeconds,
                         globalCommissionBips
                     )
                 )
@@ -250,6 +251,7 @@ contract ServiceManagerBase_UnitTests is
     function testFuzz_submitPayments_Revert_WhenNotOwner(
         address caller
     ) public filterFuzzedAddressInputs(caller) {
+        cheats.assume(caller != serviceManagerOwner);
         IPaymentCoordinator.RangePayment[] memory rangePayments;
 
         cheats.prank(caller);
@@ -292,9 +294,9 @@ contract ServiceManagerBase_UnitTests is
             mockTokenInitialSupply,
             serviceManagerOwner
         );
-        amount = bound(amount, 1, mockTokenInitialSupply);
+        amount = bound(amount, 1, MAX_PAYMENT_AMOUNT);
         duration = bound(duration, 0, MAX_PAYMENT_DURATION);
-        duration = duration - (duration % calculationIntervalSeconds);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
             uint256(
@@ -303,13 +305,13 @@ contract ServiceManagerBase_UnitTests is
                     uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH
                 )
             ) +
-                calculationIntervalSeconds -
+                CALCULATION_INTERVAL_SECONDS -
                 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
         startTimestamp =
             startTimestamp -
-            (startTimestamp % calculationIntervalSeconds);
+            (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[]
@@ -413,10 +415,10 @@ contract ServiceManagerBase_UnitTests is
         // Create multiple range payments and their expected event
         for (uint256 i = 0; i < numPayments; ++i) {
             // 1. Bound fuzz inputs to valid ranges and amounts using randSeed for each
-            amount = bound(amount + i, 1, mockTokenInitialSupply);
+            amount = bound(amount + i, 1, MAX_PAYMENT_AMOUNT);
             amounts[i] = amount;
             duration = bound(duration + i, 0, MAX_PAYMENT_DURATION);
-            duration = duration - (duration % calculationIntervalSeconds);
+            duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
             startTimestamp = bound(
                 startTimestamp + i,
                 uint256(
@@ -425,13 +427,13 @@ contract ServiceManagerBase_UnitTests is
                         uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH
                     )
                 ) +
-                    calculationIntervalSeconds -
+                    CALCULATION_INTERVAL_SECONDS -
                     1,
                 block.timestamp + uint256(MAX_FUTURE_LENGTH)
             );
             startTimestamp =
                 startTimestamp -
-                (startTimestamp % calculationIntervalSeconds);
+                (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
             // 2. Create range payment input param
             IPaymentCoordinator.RangePayment
