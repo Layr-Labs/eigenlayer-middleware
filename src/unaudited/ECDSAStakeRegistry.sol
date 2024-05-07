@@ -121,18 +121,18 @@ contract ECDSAStakeRegistry is
 
     /// @notice Verifies if the provided signature data is valid for the given data hash.
     /// @param _dataHash The hash of the data that was signed.
-    /// @param _signatureData Encoded signature data consisting of an array of signers, an array of signatures, and a reference block number.
+    /// @param _signatureData Encoded signature data consisting of an array of operators, an array of signatures, and a reference block number.
     /// @return The function selector that indicates the signature is valid according to ERC1271 standard.
     function isValidSignature(
         bytes32 _dataHash,
         bytes memory _signatureData
     ) external view returns (bytes4) {
         (
-            address[] memory signers,
+            address[] memory operators,
             bytes[] memory signatures,
             uint32 referenceBlock
         ) = abi.decode(_signatureData, (address[], bytes[], uint32));
-        _checkSignatures(_dataHash, signers, signatures, referenceBlock);
+        _checkSignatures(_dataHash, operators, signatures, referenceBlock);
         return IERC1271Upgradeable.isValidSignature.selector;
     }
 
