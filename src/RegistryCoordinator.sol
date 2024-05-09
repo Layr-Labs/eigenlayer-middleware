@@ -134,7 +134,8 @@ contract RegistryCoordinator is
         bytes calldata quorumNumbers,
         string calldata socket,
         IBLSApkRegistry.PubkeyRegistrationParams calldata params,
-        SignatureWithSaltAndExpiry memory operatorSignature
+        SignatureWithSaltAndExpiry memory operatorSignature,
+        address operatorSignatureAddr
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         /**
          * If the operator has NEVER registered a pubkey before, use `params` to register
@@ -152,7 +153,8 @@ contract RegistryCoordinator is
             operatorId: operatorId,
             quorumNumbers: quorumNumbers, 
             socket: socket,
-            operatorSignature: operatorSignature
+            operatorSignature: operatorSignature,
+            operatorSignAddr: operatorSignatureAddr
         }).numOperatorsPerQuorum;
 
         // For each quorum, validate that the new operator count does not exceed the maximum
@@ -213,7 +215,8 @@ contract RegistryCoordinator is
             operatorId: operatorId,
             quorumNumbers: quorumNumbers,
             socket: socket,
-            operatorSignature: operatorSignature
+            operatorSignature: operatorSignature,
+            operatorSignAddr: msg.sender
         });
 
         // Check that each quorum's operator count is below the configured maximum. If the max
@@ -469,7 +472,8 @@ contract RegistryCoordinator is
         bytes32 operatorId,
         bytes calldata quorumNumbers,
         string memory socket,
-        SignatureWithSaltAndExpiry memory operatorSignature
+        SignatureWithSaltAndExpiry memory operatorSignature,
+        address operatorSignAddr
     ) internal virtual returns (RegisterResults memory results) {
         /**
          * Get bitmap of quorums to register for and operator's current bitmap. Validate that:
@@ -515,7 +519,7 @@ contract RegistryCoordinator is
         // Register the operator with the BLSApkRegistry, StakeRegistry, and IndexRegistry
         blsApkRegistry.registerOperator(operator, quorumNumbers);
         (results.operatorStakes, results.totalStakes) = 
-            stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
+            stakeRegistry.registerOperator(operator, operatorId, quorumNumbers, operatorSignAddr);
         results.numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
 
         return results;

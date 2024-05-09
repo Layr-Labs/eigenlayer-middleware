@@ -375,9 +375,13 @@ contract MockAVSDeployer is Test {
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
         cheats.prank(operator);
+<<<<<<< HEAD
         registryCoordinator.registerOperator(
             quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySignatureAndExpiry
         );
+=======
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySignatureAndExpiry, operator);
+>>>>>>> Add support for ecdsa separation.
     }
 
     /**
@@ -401,9 +405,13 @@ contract MockAVSDeployer is Test {
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
         cheats.prank(operator);
+<<<<<<< HEAD
         registryCoordinator.registerOperator(
             quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySignatureAndExpiry
         );
+=======
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySignatureAndExpiry, operator);
+>>>>>>> Add support for ecdsa separation.
     }
 
     function _registerRandomOperators(uint256 pseudoRandomNumber)

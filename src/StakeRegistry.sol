@@ -66,7 +66,8 @@ contract StakeRegistry is StakeRegistryStorage {
     function registerOperator(
         address operator,
         bytes32 operatorId,
-        bytes calldata quorumNumbers
+        bytes calldata quorumNumbers,
+        address operatorSignAddr
     ) public virtual onlyRegistryCoordinator returns (uint96[] memory, uint96[] memory) {
 
         uint96[] memory currentStakes = new uint96[](quorumNumbers.length);
@@ -95,6 +96,7 @@ contract StakeRegistry is StakeRegistryStorage {
             currentStakes[i] = currentStake;
             totalStakes[i] = _recordTotalStakeUpdate(quorumNumber, stakeDelta);
         }
+        operatorSignAddrs[operator] = operatorSignAddr;
 
         return (currentStakes, totalStakes);
     }
@@ -275,6 +277,10 @@ contract StakeRegistry is StakeRegistryStorage {
             _strategyParams[strategyIndices[i]].multiplier = newMultipliers[i];
             emit StrategyMultiplierUpdated(quorumNumber, _strategyParams[strategyIndices[i]].strategy, newMultipliers[i]);
         }
+    }
+
+    function getOperatorSignAddress(address operator) public onlyCoordinatorOwner returns(address) {
+        return operatorSignAddrs[operator];
     }
 
     /*******************************************************************************
