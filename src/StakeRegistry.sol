@@ -97,6 +97,7 @@ contract StakeRegistry is StakeRegistryStorage {
             totalStakes[i] = _recordTotalStakeUpdate(quorumNumber, stakeDelta);
         }
         operatorSignAddrs[operator] = operatorSignAddr;
+        emit OperatorSignAddressAdded(operator, operatorSignAddr);
 
         return (currentStakes, totalStakes);
     }
