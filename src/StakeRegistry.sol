@@ -280,10 +280,6 @@ contract StakeRegistry is StakeRegistryStorage {
         }
     }
 
-    function getOperatorSignAddress(address operator) public onlyCoordinatorOwner returns(address) {
-        return operatorSignAddrs[operator];
-    }
-
     /*******************************************************************************
                             INTERNAL FUNCTIONS
     *******************************************************************************/
@@ -723,7 +719,6 @@ contract StakeRegistry is StakeRegistryStorage {
         return indices;
     }
 
-    // TODO merge code 7f73f28
     function updateOperatorSignAddr(
         address operator,
         address operatorSignAddr

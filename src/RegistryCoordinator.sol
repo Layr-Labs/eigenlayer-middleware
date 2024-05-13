@@ -976,7 +976,6 @@ contract RegistryCoordinator is
 
     function updateOperatorSignAddr(address signAddr) external override onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR){
         address operator = msg.sender;
-        bytes32 operatorId = blsApkRegistry.getOperatorId(operator);
         require(_operatorInfo[operator].status == OperatorStatus.REGISTERED, "RegistryCoordinator.updateOperatorSignAddr: operator is not registered");
         stakeRegistry.updateOperatorSignAddr(operator, signAddr);
     }
