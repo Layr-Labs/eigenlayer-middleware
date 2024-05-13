@@ -85,6 +85,12 @@ interface IRegistryCoordinator {
         address operator;
     }
 
+    struct OperatorBlsKeyAndSigner {
+        BN254.G1Point pubkey;
+        bytes32 pubkeyHash;
+        address signer;
+    }
+
     /// @notice Returns the operator set params for the given `quorumNumber`
     function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory);
     /// @notice the Stake registry contract that will keep track of operators' stakes
@@ -154,4 +160,10 @@ interface IRegistryCoordinator {
 
     /// @notice The owner of the registry coordinator
     function owner() external view returns (address);
+
+    function updateBLSPublicKey(IBLSApkRegistry.PubkeyRegistrationParams calldata params) external;
+
+    function updateOperatorSignAddr(address signAddr) external;
+
+    function getOperatorBlsKeyAndSignAddr(address operator) external view returns (OperatorBlsKeyAndSigner memory);
 }

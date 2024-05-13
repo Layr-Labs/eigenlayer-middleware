@@ -722,4 +722,18 @@ contract StakeRegistry is StakeRegistryStorage {
         }
         return indices;
     }
+
+    // TODO merge code 7f73f28
+    function updateOperatorSignAddr(
+        address operator,
+        address operatorSignAddr
+    ) external override onlyRegistryCoordinator {
+        require(operatorSignAddrs[operator] != address(0), "StakeRegistry.updateOperatorSignAddr: operator sign");
+        require(operatorSignAddrs[operator] != operatorSignAddr, "StakeRegistry.updateOperatorSignAddr: same signAddr");
+        operatorSignAddrs[operator] = operatorSignAddr;
+    }
+
+    function getOperatorSignAddress(address operator) external override view onlyCoordinatorOwner returns(address){
+        return operatorSignAddrs[operator];
+    }
 }

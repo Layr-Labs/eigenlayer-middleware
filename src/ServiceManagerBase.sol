@@ -16,6 +16,8 @@ import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 
+import {BN254} from "../libraries/BN254.sol";
+
 /**
  * @title Minimal implementation of a ServiceManager-type contract.
  * This contract can be inherited from or simply used as a point-of-reference.
@@ -38,6 +40,7 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     mapping(PubKey => ISignatureUtils.SignatureWithSaltAndExpiry) public signatureMap;
 
 >>>>>>> Add a function to register operator with pubkey.
@@ -53,6 +56,10 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
 >>>>>>> Update eigenlayer-contract repo
 =======
 >>>>>>> Remove redundant variable
+=======
+    mapping(PubKey => ISignatureUtils.SignatureWithSaltAndExpiry) public signatureMap;
+
+>>>>>>> Check and update BLS and ECDSA key whenever starting operator
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
     modifier onlyRegistryCoordinator() {
         require(
@@ -104,7 +111,10 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
     }
 
     function __ServiceManagerBase_init(address initialOwner) internal virtual onlyInitializing {
+<<<<<<< HEAD
 >>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
+=======
+>>>>>>> Check and update BLS and ECDSA key whenever starting operator
         _transferOwnership(initialOwner);
         _setRewardsInitiator(_rewardsInitiator);
     }
@@ -114,6 +124,7 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
      * @param _metadataURI is the metadata URI for the AVS
      * @dev only callable by the owner
      */
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
     function updateAVSMetadataURI(string memory _metadataURI) public virtual onlyOwner {
@@ -153,6 +164,9 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
 =======
     function updateAVSMetadataURI(string memory _metadataURI) public virtual onlyOwner {
 >>>>>>> Fix metadata uri signature (#205)
+=======
+    function updateAVSMetadataURI(string memory _metadataURI) public virtual onlyOwner {
+>>>>>>> Check and update BLS and ECDSA key whenever starting operator
         _avsDirectory.updateAVSMetadataURI(_metadataURI);
 >>>>>>> fixes(m2-mainnet): combined pr for all m2-mainnet fixs (#162)
     }
@@ -168,6 +182,18 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
     ) public virtual onlyRegistryCoordinator {
         _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
     }
+
+    struct PubKey {
+        BN254.G1Point pubkeyG1;
+        BN254.G2Point pubkeyG2;
+    }
+
+    function registerOperatorToAVSWithPubKey(address operator,
+        BN254.G1Point pubkeyG1, BN254.G2Point pubkeyG2,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) public virtual onlyRegistryCoordinator {
+            signatureMap[PubKey(pubkeyG1, pubkeyG2)] = operatorSignature;
+            _delegationManager.registerOperatorToAVS(operator, operatorSignature);
+        }
 
     /**
      * @notice Forwards a call to EigenLayer's AVSDirectory contract to confirm operator deregistration from the AVS
@@ -208,17 +234,24 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
         }
 
         uint256 strategyCount;
-        for (uint256 i = 0; i < quorumCount; i++) {
+        for(uint256 i = 0; i < quorumCount; i++) {
             strategyCount += _stakeRegistry.strategyParamsLength(uint8(i));
         }
 
         address[] memory restakedStrategies = new address[](strategyCount);
         uint256 index = 0;
+<<<<<<< HEAD
         for (uint256 i = 0; i < _registryCoordinator.quorumCount(); i++) {
             uint256 strategyParamsLength = _stakeRegistry.strategyParamsLength(uint8(i));
             for (uint256 j = 0; j < strategyParamsLength; j++) {
                 restakedStrategies[index] =
                     address(_stakeRegistry.strategyParamsByIndex(uint8(i), j).strategy);
+=======
+        for(uint256 i = 0; i < _registryCoordinator.quorumCount(); i++) {
+            uint256 strategyParamsLength = _stakeRegistry.strategyParamsLength(uint8(i));
+            for (uint256 j = 0; j < strategyParamsLength; j++) {
+                restakedStrategies[index] = address(_stakeRegistry.strategyParamsByIndex(uint8(i), j).strategy);
+>>>>>>> Check and update BLS and ECDSA key whenever starting operator
                 index++;
             }
         }
@@ -232,11 +265,15 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
      * @dev No guarantee is made on whether the operator has shares for a strategy in a quorum or uniqueness
      *      of each element in the returned array. The off-chain service should do that validation separately
      */
+<<<<<<< HEAD
     function getOperatorRestakedStrategies(address operator)
         external
         view
         returns (address[] memory)
     {
+=======
+    function getOperatorRestakedStrategies(address operator) external view returns (address[] memory) {
+>>>>>>> Check and update BLS and ECDSA key whenever starting operator
         bytes32 operatorId = _registryCoordinator.getOperatorId(operator);
         uint192 operatorBitmap = _registryCoordinator.getCurrentQuorumBitmap(operatorId);
 
@@ -247,19 +284,27 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
         // Get number of strategies for each quorum in operator bitmap
         bytes memory operatorRestakedQuorums = BitmapUtils.bitmapToBytesArray(operatorBitmap);
         uint256 strategyCount;
+<<<<<<< HEAD
         for (uint256 i = 0; i < operatorRestakedQuorums.length; i++) {
+=======
+        for(uint256 i = 0; i < operatorRestakedQuorums.length; i++) {
+>>>>>>> Check and update BLS and ECDSA key whenever starting operator
             strategyCount += _stakeRegistry.strategyParamsLength(uint8(operatorRestakedQuorums[i]));
         }
 
         // Get strategies for each quorum in operator bitmap
         address[] memory restakedStrategies = new address[](strategyCount);
         uint256 index = 0;
-        for (uint256 i = 0; i < operatorRestakedQuorums.length; i++) {
+        for(uint256 i = 0; i < operatorRestakedQuorums.length; i++) {
             uint8 quorum = uint8(operatorRestakedQuorums[i]);
             uint256 strategyParamsLength = _stakeRegistry.strategyParamsLength(quorum);
             for (uint256 j = 0; j < strategyParamsLength; j++) {
+<<<<<<< HEAD
                 restakedStrategies[index] =
                     address(_stakeRegistry.strategyParamsByIndex(quorum, j).strategy);
+=======
+                restakedStrategies[index] = address(_stakeRegistry.strategyParamsByIndex(quorum, j).strategy);
+>>>>>>> Check and update BLS and ECDSA key whenever starting operator
                 index++;
             }
         }

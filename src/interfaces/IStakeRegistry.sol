@@ -258,9 +258,20 @@ interface IStakeRegistry is IRegistry {
         bytes calldata quorumNumbers
     ) external returns (uint192);
 <<<<<<< HEAD
+<<<<<<< HEAD
 }
 =======
 
     function getOperatorSignAddress(address operator) external returns(address);
 }
 >>>>>>> Add support for ecdsa separation.
+=======
+
+    function updateOperatorSignAddr(
+        address operator,
+        address operatorSignAddr
+    ) external;
+
+    function getOperatorSignAddress(address operator) external view returns(address);
+}
+>>>>>>> Check and update BLS and ECDSA key whenever starting operator

@@ -37,6 +37,10 @@ interface IBLSApkRegistry is IRegistry {
     /// @notice Emitted when `operator` registers with the public keys `pubkeyG1` and `pubkeyG2`.
     event NewPubkeyRegistration(address indexed operator, BN254.G1Point pubkeyG1, BN254.G2Point pubkeyG2);
 
+    // EVENTS
+    /// @notice Emitted when `operator` update with the public keys `pubkeyG1` and `pubkeyG2`.
+    event NewPubkeyUpdate(address indexed operator, BN254.G1Point pubkeyG1, BN254.G2Point pubkeyG2);
+
     // @notice Emitted when a new operator pubkey is registered for a set of quorums
     event OperatorAddedToQuorums(
         address operator,
@@ -110,6 +114,19 @@ interface IBLSApkRegistry is IRegistry {
      */
     function registerBLSPublicKey(
         address operator,
+        PubkeyRegistrationParams calldata params,
+        BN254.G1Point calldata pubkeyRegistrationMessageHash
+    ) external returns (bytes32 operatorId);
+
+    /**
+     * @notice Called by the RegistryCoordinator update an operator as the owner of a BLS public key.
+     * @param operator is the operator for whom the key is being registered
+     * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership
+     * @param pubkeyRegistrationMessageHash is a hash that the operator must sign to prove key ownership
+     */
+    function updateBLSPublicKey(
+        address operator,
+        bytes memory quorumNumbers,
         PubkeyRegistrationParams calldata params,
         BN254.G1Point calldata pubkeyRegistrationMessageHash
     ) external returns (bytes32 operatorId);

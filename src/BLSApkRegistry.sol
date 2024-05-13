@@ -150,6 +150,66 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         return pubkeyHash;
     }
 
+
+    /**
+     * @notice Called by the RegistryCoordinator update an operator as the owner of a BLS public key.
+     * @param operator is the operator for whom the key is being registered
+     * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership
+     * @param pubkeyRegistrationMessageHash is a hash that the operator must sign to prove key ownership
+     */
+    function updateBLSPublicKey(
+        address operator,
+        bytes memory quorumNumbers,
+        PubkeyRegistrationParams calldata params,
+        BN254.G1Point calldata pubkeyRegistrationMessageHash
+    ) external onlyRegistryCoordinator returns (bytes32 operatorId) {
+        bytes32 pubkeyHash = BN254.hashG1Point(params.pubkeyG1);
+        require(
+            pubkeyHash != ZERO_PK_HASH, "BLSApkRegistry.updateBLSPublicKey: cannot update zero pubkey"
+        );
+        require(
+            operatorToPubkeyHash[operator] != pubkeyHash,
+            "BLSApkRegistry.updateBLSPublicKey: cannot update to same pubkey"
+        );
+        require(
+            operatorToPubkeyHash[operator] != bytes32(0),
+            "BLSApkRegistry.updateBLSPublicKey: operator is unRegistered pubkey"
+        );
+        require(
+            pubkeyHashToOperator[pubkeyHash] != address(0),
+            "BLSApkRegistry.updateBLSPublicKey: public key is unRegistered"
+        );
+
+        // gamma = h(sigma, P, P', H(m))
+        uint256 gamma = uint256(keccak256(abi.encodePacked(
+                params.pubkeyRegistrationSignature.X,
+                params.pubkeyRegistrationSignature.Y,
+                params.pubkeyG1.X,
+                params.pubkeyG1.Y,
+                params.pubkeyG2.X,
+                params.pubkeyG2.Y,
+                pubkeyRegistrationMessageHash.X,
+                pubkeyRegistrationMessageHash.Y
+            ))) % BN254.FR_MODULUS;
+
+        // e(sigma + P * gamma, [-1]_2) = e(H(m) + [1]_1 * gamma, P')
+        require(BN254.pairing(
+                params.pubkeyRegistrationSignature.plus(params.pubkeyG1.scalar_mul(gamma)),
+                BN254.negGeneratorG2(),
+                pubkeyRegistrationMessageHash.plus(BN254.generatorG1().scalar_mul(gamma)),
+                params.pubkeyG2
+            ), "BLSApkRegistry.updateBLSPublicKey: either the G1 signature is wrong, or G1 and G2 private key do not match");
+
+        _processQuorumApkUpdate(quorumNumbers, operatorToPubkey[operator].negate());
+        operatorToPubkey[operator] = params.pubkeyG1;
+        operatorToPubkeyHash[operator] = pubkeyHash;
+        pubkeyHashToOperator[pubkeyHash] = operator;
+        _processQuorumApkUpdate(quorumNumbers, operatorToPubkey[operator]);
+
+        emit NewPubkeyUpdate(operator, params.pubkeyG1, params.pubkeyG2);
+        return pubkeyHash;
+    }
+
     /*******************************************************************************
                             INTERNAL FUNCTIONS
     *******************************************************************************/

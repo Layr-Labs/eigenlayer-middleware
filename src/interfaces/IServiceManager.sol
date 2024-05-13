@@ -45,6 +45,13 @@ interface IServiceManager is IServiceManagerUI {
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external;
 
+    function registerOperatorToAVSWithPubKey(
+        address operator,
+        BN254.G1Point pubkeyG1,
+        BN254.G2Point pubkeyG2,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) external;
+
     /**
      * @notice Forwards a call to EigenLayer's DelegationManager contract to confirm operator deregistration from the AVS
      * @param operator The address of the operator to deregister.
