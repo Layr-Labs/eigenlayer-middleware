@@ -545,12 +545,12 @@ contract RegistryCoordinator is
     ) internal returns (bytes32 operatorId) {
         operatorId = blsApkRegistry.getOperatorId(operator);
         if (operatorId == 0) {
-            operatorId = blsApkRegistry.registerBLSPublicKey(operator, params, pubkeyRegistrationMessageHash(operator));
+            operatorId = blsApkRegistry.registerBLSPublicKey(operator, params);
         } else if (_operatorInfo[operator].status == OperatorStatus.DEREGISTERED && 
             params.pubkeyRegistrationSignature.X != 0 &&
             params.pubkeyRegistrationSignature.Y != 0 
         ) {
-            operatorId = blsApkRegistry.registerBLSPublicKey(operator, params, pubkeyRegistrationMessageHash(operator));
+            operatorId = blsApkRegistry.registerBLSPublicKey(operator, params);
         }
         return operatorId;
     }
@@ -946,11 +946,7 @@ contract RegistryCoordinator is
      * @param operator is the address of the operator registering their BLS public key
      */
     function pubkeyRegistrationMessageHash(address operator) public view returns (BN254.G1Point memory) {
-        return BN254.hashToG1(
-            _hashTypedDataV4(
-                keccak256(abi.encode(PUBKEY_REGISTRATION_TYPEHASH, operator))
-            )
-        );
+        return blsApkRegistry.pubkeyRegistrationMessageHash(operator);
     }
 
     /// @dev need to override function here since its defined in both these contracts

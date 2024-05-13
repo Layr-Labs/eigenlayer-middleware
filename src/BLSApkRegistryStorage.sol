@@ -11,6 +11,8 @@ import {BN254} from "./libraries/BN254.sol";
 abstract contract BLSApkRegistryStorage is Initializable, IBLSApkRegistry {
     /// @notice the hash of the zero pubkey aka BN254.G1Point(0,0)
     bytes32 internal constant ZERO_PK_HASH = hex"ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5";
+    /// @notice The EIP-712 typehash used for registering BLS public keys
+    bytes32 public constant PUBKEY_REGISTRATION_TYPEHASH = keccak256("BN254PubkeyRegistration(address operator)");
 
     /// @notice the registry coordinator contract
     address public immutable registryCoordinator;

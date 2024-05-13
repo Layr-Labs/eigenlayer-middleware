@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
+import {EIP712} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import {BLSApkRegistryStorage} from "./BLSApkRegistryStorage.sol";
-
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
-
 import {BN254} from "./libraries/BN254.sol";
 
-contract BLSApkRegistry is BLSApkRegistryStorage {
+contract BLSApkRegistry is BLSApkRegistryStorage, EIP712 {
     using BN254 for BN254.G1Point;
 
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
@@ -22,7 +21,10 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     /// @notice Sets the (immutable) `registryCoordinator` address
     constructor(
         IRegistryCoordinator _registryCoordinator
-    ) BLSApkRegistryStorage(_registryCoordinator) {}
+    ) 
+        BLSApkRegistryStorage(_registryCoordinator)
+        EIP712("BLSApkRegistry", "v0.0.1") 
+    {}
 
     /*******************************************************************************
                       EXTERNAL FUNCTIONS - REGISTRY COORDINATOR
@@ -95,13 +97,12 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
      * @notice Called by the RegistryCoordinator register an operator as the owner of a BLS public key.
      * @param operator is the operator for whom the key is being registered
      * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership
-     * @param pubkeyRegistrationMessageHash is a hash that the operator must sign to prove key ownership
      */
     function registerBLSPublicKey(
         address operator,
-        PubkeyRegistrationParams calldata params,
-        BN254.G1Point calldata pubkeyRegistrationMessageHash
+        PubkeyRegistrationParams calldata params
     ) external onlyRegistryCoordinator returns (bytes32 operatorId) {
+        BN254.G1Point memory _pubkeyRegistrationMessageHash = pubkeyRegistrationMessageHash(operator);
         bytes32 pubkeyHash = BN254.hashG1Point(params.pubkeyG1);
         if(operatorToPubkeyHash[operator] == pubkeyHash) {
             return pubkeyHash;
@@ -122,15 +123,15 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
             params.pubkeyG1.Y, 
             params.pubkeyG2.X, 
             params.pubkeyG2.Y, 
-            pubkeyRegistrationMessageHash.X, 
-            pubkeyRegistrationMessageHash.Y
+            _pubkeyRegistrationMessageHash.X, 
+            _pubkeyRegistrationMessageHash.Y
         ))) % BN254.FR_MODULUS;
         
         // e(sigma + P * gamma, [-1]_2) = e(H(m) + [1]_1 * gamma, P') 
         require(BN254.pairing(
             params.pubkeyRegistrationSignature.plus(params.pubkeyG1.scalar_mul(gamma)),
             BN254.negGeneratorG2(),
-            pubkeyRegistrationMessageHash.plus(BN254.generatorG1().scalar_mul(gamma)),
+            _pubkeyRegistrationMessageHash.plus(BN254.generatorG1().scalar_mul(gamma)),
             params.pubkeyG2
         ), "BLSApkRegistry.registerBLSPublicKey: either the G1 signature is wrong, or G1 and G2 private key do not match");
 
@@ -288,5 +289,17 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     /// @dev Returns zero in the event that the `operator` has never registered for the AVS
     function getOperatorId(address operator) public view returns (bytes32) {
         return operatorToPubkeyHash[operator];
+    }
+
+    /**
+     * @notice Returns the message hash that an operator must sign to register their BLS public key.
+     * @param operator is the address of the operator registering their BLS public key
+     */
+    function pubkeyRegistrationMessageHash(address operator) public view returns (BN254.G1Point memory) {
+        return BN254.hashToG1(
+            _hashTypedDataV4(
+                keccak256(abi.encode(PUBKEY_REGISTRATION_TYPEHASH, operator))
+            )
+        );
     }
 }

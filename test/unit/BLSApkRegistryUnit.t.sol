@@ -193,8 +193,7 @@ contract BLSApkRegistryUnitTests is BLSMockAVSDeployer, IBLSApkRegistryEvents {
         return
             blsApkRegistry.registerBLSPublicKey(
                 operator,
-                pubkeyRegistrationParams,
-                messageHash
+                pubkeyRegistrationParams
             );
     }
 
@@ -339,8 +338,7 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is
         );
         blsApkRegistry.registerBLSPublicKey(
             defaultOperator,
-            pubkeyRegistrationParams,
-            messageHash
+            pubkeyRegistrationParams
         );
     }
 
@@ -358,8 +356,7 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is
         );
         blsApkRegistry.registerBLSPublicKey(
             operator,
-            pubkeyRegistrationParams,
-            messageHash
+            pubkeyRegistrationParams
         );
     }
 
@@ -378,8 +375,7 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is
         cheats.startPrank(address(registryCoordinator));
         blsApkRegistry.registerBLSPublicKey(
             operator,
-            pubkeyRegistrationParams,
-            messageHash
+            pubkeyRegistrationParams
         );
 
         cheats.expectRevert(
@@ -387,8 +383,7 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is
         );
         blsApkRegistry.registerBLSPublicKey(
             operator2,
-            pubkeyRegistrationParams,
-            messageHash
+            pubkeyRegistrationParams
         );
     }
 
@@ -413,8 +408,7 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is
         );
         blsApkRegistry.registerBLSPublicKey(
             operator,
-            pubkeyRegistrationParams,
-            messageHash
+            pubkeyRegistrationParams
         );
     }
 
@@ -439,8 +433,7 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is
         );
         blsApkRegistry.registerBLSPublicKey(
             operator,
-            pubkeyRegistrationParams,
-            messageHash
+            pubkeyRegistrationParams
         );
     }
 
@@ -466,8 +459,7 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is
         );
         blsApkRegistry.registerBLSPublicKey(
             operator,
-            pubkeyRegistrationParams,
-            messageHash
+            pubkeyRegistrationParams
         );
 
         (
@@ -507,9 +499,9 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is
             registryCoordinator.pubkeyRegistrationMessageHash(operator);
 
         cheats.startPrank(address(registryCoordinator));
-        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
+        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams);
 
-        bytes32 operatorId = blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
+        bytes32 operatorId = blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams);
 
         assertEq(
             blsApkRegistry.getOperatorId(operator),
@@ -530,7 +522,7 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is
         emit NewPubkeyRegistration(
             operator, pubkeyRegistrationParams.pubkeyG1, pubkeyRegistrationParams.pubkeyG2
         );
-        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
+        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams);
 
         (BN254.G1Point memory registeredPubkey, bytes32 registeredpkHash) =
             blsApkRegistry.getRegisteredPubkey(operator);
@@ -563,7 +555,7 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is
         emit NewPubkeyRegistration(
             operator, pubkeyRegistrationParams.pubkeyG1, pubkeyRegistrationParams.pubkeyG2
         );
-        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
+        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams);
 
         (registeredPubkey, registeredpkHash) =
             blsApkRegistry.getRegisteredPubkey(operator);
