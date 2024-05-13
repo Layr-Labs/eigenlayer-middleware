@@ -35,7 +35,7 @@ interface IServiceManagerBaseEvents {
     event DistributionRootSubmitted(
         uint32 indexed rootIndex,
         bytes32 indexed root,
-        uint32 paymentCalculationEndTimestamp,
+        uint32 indexed paymentCalculationEndTimestamp,
         uint32 activatedAt
     );
     /// @notice root is one of the submitted distribution roots that was claimed against
@@ -43,7 +43,8 @@ interface IServiceManagerBaseEvents {
         bytes32 root,
         address indexed earner,
         address indexed claimer,
-        IERC20 indexed token,
+        address indexed recipient,
+        IERC20 token,
         uint256 claimedAmount
     );
 
