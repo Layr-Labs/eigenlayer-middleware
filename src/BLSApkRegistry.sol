@@ -338,8 +338,8 @@ contract BLSApkRegistry is BLSApkRegistryStorage, EIP712 {
      * @dev Will revert if `blockNumber` is greater than the current block number
      * @dev Will return the first pubkey for the provided `operator` if `blockNumber` is before the first pubkey checkpoint
      *      and additional logic is required to check if the operator was active at the given `blockNumber`
-     * @dev If an operator has no pubkey checkpoints, then the operator's current pubkey is returned
-     * @dev If the blockNumber is after the last pubkey checkpoint, then the operator's current pubkey is returned
+     * @dev If an operator has no pubkey checkpoints, then the operator's current pubkey is returned for any `blockNumber` and `index`
+     * @dev If the blockNumber is after the last pubkey checkpoint, then the operator's current pubkey is returned for any `index`
      */ 
     function getPubkeyHashAtBlockNumberByIndex(
         address operator, 
