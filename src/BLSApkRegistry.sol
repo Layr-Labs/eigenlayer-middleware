@@ -341,7 +341,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage, EIP712 {
      * @dev If an operator has no pubkey checkpoints, then the operator's current pubkey is returned for any `blockNumber` and `index`
      * @dev If the blockNumber is after the last pubkey checkpoint, then the operator's current pubkey is returned for any `index`
      */ 
-    function getdOperatorPubkeyHashAtBlockNumberByIndex(
+    function getOperatorPubkeyHashAtBlockNumberByIndex(
         address operator, 
         uint32 blockNumber, 
         uint256 index
