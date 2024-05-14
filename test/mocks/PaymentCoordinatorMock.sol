@@ -13,7 +13,7 @@ contract PaymentCoordinatorMock is IPaymentCoordinator {
      * @notice The interval in seconds at which the calculation for range payment distribution is done.
      * @dev Payment durations must be multiples of this interval.
      */
-    function calculationIntervalSeconds() external view returns (uint32) {}
+    function CALCULATION_INTERVAL_SECONDS() external view returns (uint32) {}
 
     /// @notice The maximum amount of time that a range payment can end in the future
     function MAX_PAYMENT_DURATION() external view returns (uint32) {}
@@ -39,6 +39,10 @@ contract PaymentCoordinatorMock is IPaymentCoordinator {
     /// @notice the commission for all operators across all avss
     function globalOperatorCommissionBips() external view returns (uint16) {}
 
+    /// @notice the commission for a specific operator for a specific avs
+    /// NOTE: Currently unused and simply returns the globalOperatorCommissionBips value but will be used in future release
+    function operatorCommissionBips(address operator, address avs) external view returns (uint16) {}
+
     /// @notice return the hash of the earner's leaf
     function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf) external pure returns (bytes32) {}
 
@@ -48,6 +52,12 @@ contract PaymentCoordinatorMock is IPaymentCoordinator {
     /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
     /// but will revert if not valid
     function checkClaim(PaymentMerkleClaim calldata claim) external view returns (bool) {}
+
+    /// @notice The timestamp until which payments have been calculated
+    function currPaymentCalculationEndTimestamp() external view returns (uint32) {}
+
+    /// @notice loop through distribution roots from reverse and return hash
+    function getRootIndexFromHash(bytes32 rootHash) external view returns (uint32) {}
 
     /// EXTERNAL FUNCTIONS ///
 
@@ -75,14 +85,15 @@ contract PaymentCoordinatorMock is IPaymentCoordinator {
      * @notice Claim payments against a given root (read from distributionRoots[claim.rootIndex]).
      * Earnings are cumulative so earners don't have to claim against all distribution roots they have earnings for,
      * they can simply claim against the latest root and the contract will calculate the difference between
-     * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to claimerFor[claim.earner]
+     * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to recipient address.
      * @param claim The PaymentMerkleClaim to be processed.
      * Contains the root index, earner, payment leaves, and required proofs
+     * @param recipient The address recipient that receives the ERC20 payments
      * @dev only callable by the valid claimer, that is
      * if claimerFor[claim.earner] is address(0) then only the earner can claim, otherwise only
      * claimerFor[claim.earner] can claim the payments.
      */
-    function processClaim(PaymentMerkleClaim calldata claim) external {}
+    function processClaim(PaymentMerkleClaim calldata claim, address recipient) external {}
 
     /**
      * @notice Creates a new distribution root. activatedAt is set to block.timestamp + activationDelay
@@ -122,4 +133,11 @@ contract PaymentCoordinatorMock is IPaymentCoordinator {
      */
     function setClaimerFor(address claimer) external {}
 
+    /**
+     * @notice Sets the permissioned `payAllForRangeSubmitter` address which can submit payAllForRange
+     * @dev Only callable by the contract owner
+     * @param _submitter The address of the payAllForRangeSubmitter
+     * @param _newValue The new value for isPayAllForRangeSubmitter
+     */
+    function setPayAllForRangeSubmitter(address _submitter, bool _newValue) external {}
 }
