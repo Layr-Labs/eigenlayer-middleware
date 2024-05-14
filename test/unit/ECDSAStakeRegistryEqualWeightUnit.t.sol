@@ -32,13 +32,13 @@ contract EqualWeightECDSARegistry is ECDSAStakeRegistrySetup {
         fixedWeightRegistry.permitOperator(operator1);
         fixedWeightRegistry.permitOperator(operator2);
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        vm.prank(operator1);
         fixedWeightRegistry.registerOperatorWithSignature(
-            operator1,
             operatorSignature,
             operator1
         );
+        vm.prank(operator2);
         fixedWeightRegistry.registerOperatorWithSignature(
-            operator2,
             operatorSignature,
             operator2
         );
@@ -71,8 +71,8 @@ contract EqualWeightECDSARegistry is ECDSAStakeRegistrySetup {
 
         vm.roll(block.number + 1);
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        vm.prank(operator1);
         fixedWeightRegistry.registerOperatorWithSignature(
-            operator1,
             operatorSignature,
             operator1
         );

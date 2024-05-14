@@ -44,15 +44,13 @@ contract ECDSAStakeRegistry is
     }
 
     /// @notice Registers a new operator using a provided signature and signing key
-    /// @param _operator The address of the operator to register
     /// @param _operatorSignature Contains the operator's signature, salt, and expiry
     /// @param _signingKey The signing key to add to the operator's history
     function registerOperatorWithSignature(
-        address _operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature,
         address _signingKey
     ) external {
-        _registerOperatorWithSig(_operator, _operatorSignature, _signingKey);
+        _registerOperatorWithSig(msg.sender, _operatorSignature, _signingKey);
     }
 
     /// @notice Deregisters an existing operator

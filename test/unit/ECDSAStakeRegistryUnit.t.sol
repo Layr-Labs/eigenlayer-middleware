@@ -74,16 +74,10 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         );
         registry.initialize(address(mockServiceManager), 100, quorum);
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
-        registry.registerOperatorWithSignature(
-            operator1,
-            operatorSignature,
-            operator1
-        );
-        registry.registerOperatorWithSignature(
-            operator2,
-            operatorSignature,
-            operator2
-        );
+        vm.prank(operator1);
+        registry.registerOperatorWithSignature(operatorSignature, operator1);
+        vm.prank(operator2);
+        registry.registerOperatorWithSignature(operatorSignature, operator2);
     }
 
     function test_UpdateQuorumConfig() public {
@@ -215,7 +209,8 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     function test_RegisterOperatorWithSignature() public {
         address operator3 = address(0x125);
         ISignatureUtils.SignatureWithSaltAndExpiry memory signature;
-        registry.registerOperatorWithSignature(operator3, signature, operator3);
+        vm.prank(operator3);
+        registry.registerOperatorWithSignature(signature, operator3);
         assertTrue(registry.operatorRegistered(operator3));
         assertEq(registry.getLastCheckpointOperatorWeight(operator3), 1000);
     }
@@ -230,7 +225,8 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         vm.expectRevert(
             ECDSAStakeRegistryEventsAndErrors.OperatorAlreadyRegistered.selector
         );
-        registry.registerOperatorWithSignature(operator1, signature, operator1);
+        vm.prank(operator1);
+        registry.registerOperatorWithSignature(signature, operator1);
     }
 
     function test_RevertsWhen_SignatureIsInvalid_RegisterOperatorWithSignature()
@@ -701,8 +697,8 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         address[] memory operators = new address[](30);
         for (uint256 i; i < operators.length; i++) {
             operators[i] = address(uint160(i));
+            vm.prank(operators[i]);
             registry.registerOperatorWithSignature(
-                operators[i],
                 operatorSignature,
                 operators[i]
             );
@@ -730,8 +726,8 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         bytes32 s;
         for (uint256 i = 1; i < operators.length + 1; i++) {
             operators[i - 1] = address(vm.addr(i));
+            vm.prank(operators[i - 1]);
             registry.registerOperatorWithSignature(
-                operators[i - 1],
                 operatorSignature,
                 operators[i - 1]
             );

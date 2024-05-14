@@ -32,13 +32,13 @@ contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         permissionedRegistry.permitOperator(operator1);
         permissionedRegistry.permitOperator(operator2);
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        vm.prank(operator1);
         permissionedRegistry.registerOperatorWithSignature(
-            operator1,
             operatorSignature,
             operator1
         );
+        vm.prank(operator2);
         permissionedRegistry.registerOperatorWithSignature(
-            operator2,
             operatorSignature,
             operator1
         );
@@ -100,8 +100,8 @@ contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
                 ECDSAStakeRegistryPermissioned.OperatorNotAllowlisted.selector
             )
         );
+        vm.prank(operator3);
         permissionedRegistry.registerOperatorWithSignature(
-            operator3,
             operatorSignature,
             operator3
         );
@@ -111,8 +111,8 @@ contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         address operator3 = address(0xBEEF);
         permissionedRegistry.permitOperator(operator3);
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        vm.prank(operator3);
         permissionedRegistry.registerOperatorWithSignature(
-            operator3,
             operatorSignature,
             operator3
         );
@@ -122,8 +122,8 @@ contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         address operator3 = address(0xBEEF);
         permissionedRegistry.permitOperator(operator3);
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        vm.prank(operator3);
         permissionedRegistry.registerOperatorWithSignature(
-            operator3,
             operatorSignature,
             operator3
         );
