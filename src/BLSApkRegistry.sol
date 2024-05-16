@@ -314,13 +314,14 @@ contract BLSApkRegistry is BLSApkRegistryStorage, EIP712 {
         uint32 blockNumber, 
         address operator
     ) external view returns (bytes32 pubkeyHash) {
-        require(blockNumber <= uint32(block.number), "BLSApkRegistry.getOperatorPubkeyHashAtBlockNumber: blockNumber is after current block");
+        require(blockNumber < uint32(block.number), "BLSApkRegistry.getOperatorPubkeyHashAtBlockNumber: blockNumber is after current block");
         pubkeyHash = getOperatorId(operator);
 
         uint256 historyLength = operatorPubkeyHistory[operator].length;
         for (uint256 i = 0; i < historyLength; i++) {
-            if (operatorPubkeyHistory[operator][i].blockNumber <= blockNumber) {
+            if (operatorPubkeyHistory[operator][i].blockNumber > blockNumber) {
                 pubkeyHash = operatorPubkeyHistory[operator][i].previousPubkeyHash;
+                break;
             }
         }
 
@@ -346,25 +347,29 @@ contract BLSApkRegistry is BLSApkRegistryStorage, EIP712 {
         uint32 blockNumber, 
         uint256 index
     ) external view returns (bytes32 pubkeyHash) {
-        require(blockNumber <= uint32(block.number), "BLSApkRegistry.getPubkeyHashAtBlockNumberByIndex: blockNumber is after current block");
+        require(blockNumber < uint32(block.number), "BLSApkRegistry.getPubkeyHashAtBlockNumberByIndex: blockNumber is after current block");
         uint256 historyLength = operatorPubkeyHistory[operator].length;
+        if(historyLength > 0){
+            require(index < historyLength, "BLSApkRegistry.getPubkeyHashAtBlockNumberByIndex: index is out of bounds");
+        }
+
         if (historyLength == 0) {
             pubkeyHash = getOperatorId(operator);
-        } else if (operatorPubkeyHistory[operator][historyLength - 1].blockNumber < blockNumber) {
+        } else if (operatorPubkeyHistory[operator][historyLength - 1].blockNumber <= blockNumber) {
             pubkeyHash = getOperatorId(operator);
         } else {
             PubkeyCheckpoint memory pubkeyCheckpoint = operatorPubkeyHistory[operator][index]; 
 
             require(
-                blockNumber <= pubkeyCheckpoint.blockNumber, 
-                "BLSApkRegistry.getPubkeyHashAtBlockNumberByIndex: pubkeyHash is from after blockNumber"
+                blockNumber < pubkeyCheckpoint.blockNumber, 
+                "BLSApkRegistry.getPubkeyHashAtBlockNumberByIndex: pubkeyHash is from later index"
             );
 
             if(index > 0) {
                 PubkeyCheckpoint memory previousPubkeyCheckpoint = operatorPubkeyHistory[operator][index - 1]; 
                 require(
-                    blockNumber > previousPubkeyCheckpoint.blockNumber,
-                    "BLSApkRegistry.getPubkeyHashAtBlockNumberByIndex: pubkeyHash is from before blockNumber"
+                    blockNumber >= previousPubkeyCheckpoint.blockNumber,
+                    "BLSApkRegistry.getPubkeyHashAtBlockNumberByIndex: pubkeyHash is from earlier index"
                 );
             }
 

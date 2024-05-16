@@ -497,85 +497,6 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is
             "operator address not stored correctly"
         );
     }
-
-    function testFuzz_registerBLSPublicKey_RegisteringSameKey(address operator)
-        public
-        filterFuzzedAddressInputs(operator)
-    {
-        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(operator);
-        BN254.G1Point memory messageHash =
-            registryCoordinator.pubkeyRegistrationMessageHash(operator);
-
-        cheats.startPrank(address(registryCoordinator));
-        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams);
-
-        bytes32 operatorId = blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams);
-
-        assertEq(
-            blsApkRegistry.getOperatorId(operator),
-            operatorId,
-            "operatorId is not the same"
-        );
-    }
-
-    function testFuzz_registerBLSPublicKey_RegisteringNewKey(address operator)
-        public
-        filterFuzzedAddressInputs(operator)
-    {
-        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(operator);
-        BN254.G1Point memory messageHash =
-            registryCoordinator.pubkeyRegistrationMessageHash(operator);
-        cheats.prank(address(registryCoordinator));
-        cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit NewPubkeyRegistration(
-            operator, pubkeyRegistrationParams.pubkeyG1, pubkeyRegistrationParams.pubkeyG2
-        );
-        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams);
-
-        (BN254.G1Point memory registeredPubkey, bytes32 registeredpkHash) =
-            blsApkRegistry.getRegisteredPubkey(operator);
-        assertEq(registeredPubkey.X, defaultPubkey.X, "registeredPubkey not set correctly");
-        assertEq(registeredPubkey.Y, defaultPubkey.Y, "registeredPubkey not set correctly");
-        assertEq(registeredpkHash, defaultPubkeyHash, "registeredpkHash not set correctly");
-        assertEq(
-            blsApkRegistry.pubkeyHashToOperator(BN254.hashG1Point(defaultPubkey)),
-            operator,
-            "operator address not stored correctly"
-        );
-
-        privKey = 420;
-        pubkeyRegistrationParams.pubkeyG1 = BN254.generatorG1().scalar_mul(privKey);
-        defaultPubkey = pubkeyRegistrationParams.pubkeyG1;
-        defaultPubkeyHash = BN254.hashG1Point(defaultPubkey);
-        pubkeyRegistrationParams.pubkeyG2.X[1] =
-            uint256(0x22010BC55552F4993B17F82BCDADC5A90839B3D67E382564485A0AA07F7E1923);
-        pubkeyRegistrationParams.pubkeyG2.X[0] =
-            uint256(0x2944BFD71F3073401E9D5F9AEA081BE98B98DA48EC8EE80ECFC7E97C7254CEA9);
-        pubkeyRegistrationParams.pubkeyG2.Y[1] =
-            uint256(0x1BDC8A9DEF8E46F40008649021A65F97501E2E5988B485368053BBD4487239C6);
-        pubkeyRegistrationParams.pubkeyG2.Y[0] =
-            uint256(0x0B7D0B9ECAD9C2884453B975CC656802DE966F21793B5A0F3D2A98A37FD24540);
-
-        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(operator);
-        messageHash = registryCoordinator.pubkeyRegistrationMessageHash(operator);
-        cheats.prank(address(registryCoordinator));
-        cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit NewPubkeyRegistration(
-            operator, pubkeyRegistrationParams.pubkeyG1, pubkeyRegistrationParams.pubkeyG2
-        );
-        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams);
-
-        (registeredPubkey, registeredpkHash) =
-            blsApkRegistry.getRegisteredPubkey(operator);
-        assertEq(registeredPubkey.X, defaultPubkey.X, "registeredPubkey not set correctly");
-        assertEq(registeredPubkey.Y, defaultPubkey.Y, "registeredPubkey not set correctly");
-        assertEq(registeredpkHash, defaultPubkeyHash, "registeredpkHash not set correctly");
-        assertEq(
-            blsApkRegistry.pubkeyHashToOperator(BN254.hashG1Point(defaultPubkey)),
-            operator,
-            "operator address not stored correctly"
-        );
-    }
 }
 
 /// @notice test for BLSApkRegistry.registerOperator()
@@ -1197,3 +1118,329 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
         }
     }
 }
+
+contract BLSApkRegistryUnitTests_pubkeyCheckpoints is BLSApkRegistryUnitTests {
+    using BN254 for BN254.G1Point;
+
+    function testFuzz_registerBLSPublicKey_RegisteringSameKey(address operator)
+        public
+        filterFuzzedAddressInputs(operator)
+    {
+        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(operator);
+        BN254.G1Point memory messageHash =
+            registryCoordinator.pubkeyRegistrationMessageHash(operator);
+
+        cheats.startPrank(address(registryCoordinator));
+        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams);
+
+        bytes32 operatorId = blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams);
+
+        assertEq(
+            blsApkRegistry.getOperatorId(operator),
+            operatorId,
+            "operatorId is not the same"
+        );
+    }
+
+    function testFuzz_registerBLSPublicKey_RegisteringNewKey(address operator)
+        public
+        filterFuzzedAddressInputs(operator)
+    {
+        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(operator);
+        BN254.G1Point memory messageHash =
+            registryCoordinator.pubkeyRegistrationMessageHash(operator);
+        cheats.prank(address(registryCoordinator));
+        cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
+        emit NewPubkeyRegistration(
+            operator, pubkeyRegistrationParams.pubkeyG1, pubkeyRegistrationParams.pubkeyG2
+        );
+        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams);
+
+        (BN254.G1Point memory registeredPubkey, bytes32 registeredpkHash) =
+            blsApkRegistry.getRegisteredPubkey(operator);
+        assertEq(registeredPubkey.X, defaultPubkey.X, "registeredPubkey not set correctly");
+        assertEq(registeredPubkey.Y, defaultPubkey.Y, "registeredPubkey not set correctly");
+        assertEq(registeredpkHash, defaultPubkeyHash, "registeredpkHash not set correctly");
+        assertEq(
+            blsApkRegistry.pubkeyHashToOperator(BN254.hashG1Point(defaultPubkey)),
+            operator,
+            "operator address not stored correctly"
+        );
+
+        privKey = 420;
+        pubkeyRegistrationParams.pubkeyG1 = BN254.generatorG1().scalar_mul(privKey);
+        defaultPubkey = pubkeyRegistrationParams.pubkeyG1;
+        defaultPubkeyHash = BN254.hashG1Point(defaultPubkey);
+        pubkeyRegistrationParams.pubkeyG2.X[1] =
+            uint256(0x22010BC55552F4993B17F82BCDADC5A90839B3D67E382564485A0AA07F7E1923);
+        pubkeyRegistrationParams.pubkeyG2.X[0] =
+            uint256(0x2944BFD71F3073401E9D5F9AEA081BE98B98DA48EC8EE80ECFC7E97C7254CEA9);
+        pubkeyRegistrationParams.pubkeyG2.Y[1] =
+            uint256(0x1BDC8A9DEF8E46F40008649021A65F97501E2E5988B485368053BBD4487239C6);
+        pubkeyRegistrationParams.pubkeyG2.Y[0] =
+            uint256(0x0B7D0B9ECAD9C2884453B975CC656802DE966F21793B5A0F3D2A98A37FD24540);
+
+        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(operator);
+        messageHash = registryCoordinator.pubkeyRegistrationMessageHash(operator);
+        cheats.prank(address(registryCoordinator));
+        cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
+        emit NewPubkeyRegistration(
+            operator, pubkeyRegistrationParams.pubkeyG1, pubkeyRegistrationParams.pubkeyG2
+        );
+        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams);
+
+        (registeredPubkey, registeredpkHash) =
+            blsApkRegistry.getRegisteredPubkey(operator);
+        assertEq(registeredPubkey.X, defaultPubkey.X, "registeredPubkey not set correctly");
+        assertEq(registeredPubkey.Y, defaultPubkey.Y, "registeredPubkey not set correctly");
+        assertEq(registeredpkHash, defaultPubkeyHash, "registeredpkHash not set correctly");
+        assertEq(
+            blsApkRegistry.pubkeyHashToOperator(BN254.hashG1Point(defaultPubkey)),
+            operator,
+            "operator address not stored correctly"
+        );
+    }
+
+    function testGetOperatorPubkeyCheckpointHistoryLength(address operator) 
+        public
+        filterFuzzedAddressInputs(operator)
+    {
+        testFuzz_registerBLSPublicKey_RegisteringNewKey(operator);
+        assertEq(blsApkRegistry.getOperatorPubkeyCheckpointHistoryLength(operator), 1);
+    }
+
+    function testGetOperatorPubkeyCheckpointByIndex(address operator) 
+        public
+        filterFuzzedAddressInputs(operator)
+    {
+        testFuzz_registerBLSPublicKey_RegisteringNewKey(operator);
+        IBLSApkRegistry.PubkeyCheckpoint memory pubkeyCheckpoint = blsApkRegistry.getOperatorPubkeyCheckpointByIndex(operator, 0);
+
+        privKey = 69;
+        pubkeyRegistrationParams.pubkeyG1 = BN254.generatorG1().scalar_mul(privKey);
+        defaultPubkey = pubkeyRegistrationParams.pubkeyG1;
+        defaultPubkeyHash = BN254.hashG1Point(defaultPubkey);
+
+        assertEq(pubkeyCheckpoint.previousPubkeyHash, defaultPubkeyHash);
+        assertEq(pubkeyCheckpoint.blockNumber, block.number);
+    }
+
+    function testGetOperatorPubkeyHashAtBlockNumber(address operator) 
+        public
+        filterFuzzedAddressInputs(operator)
+    {
+        uint32 startBlockNumber = 100;
+        cheats.roll(startBlockNumber);
+
+        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(operator);
+        BN254.G1Point memory messageHash =
+            registryCoordinator.pubkeyRegistrationMessageHash(operator);
+        cheats.prank(address(registryCoordinator));
+        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams);
+
+        uint32 firstRotationBlockNumber = startBlockNumber + 100;
+        cheats.roll(firstRotationBlockNumber);
+
+        privKey = 420;
+        IBLSApkRegistry.PubkeyRegistrationParams memory pubkeyRegistrationParams_2;
+        pubkeyRegistrationParams_2.pubkeyG1 = BN254.generatorG1().scalar_mul(privKey);
+        BN254.G1Point memory defaultPubkey_2 = pubkeyRegistrationParams_2.pubkeyG1;
+        bytes32 defaultPubkeyHash_2 = BN254.hashG1Point(defaultPubkey_2);
+        pubkeyRegistrationParams_2.pubkeyG2.X[1] =
+            uint256(0x22010BC55552F4993B17F82BCDADC5A90839B3D67E382564485A0AA07F7E1923);
+        pubkeyRegistrationParams_2.pubkeyG2.X[0] =
+            uint256(0x2944BFD71F3073401E9D5F9AEA081BE98B98DA48EC8EE80ECFC7E97C7254CEA9);
+        pubkeyRegistrationParams_2.pubkeyG2.Y[1] =
+            uint256(0x1BDC8A9DEF8E46F40008649021A65F97501E2E5988B485368053BBD4487239C6);
+        pubkeyRegistrationParams_2.pubkeyG2.Y[0] =
+            uint256(0x0B7D0B9ECAD9C2884453B975CC656802DE966F21793B5A0F3D2A98A37FD24540);
+
+        pubkeyRegistrationParams_2.pubkeyRegistrationSignature = _signMessage(operator);
+        cheats.prank(address(registryCoordinator));
+        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams_2);
+
+        uint32 secondRotationBlockNumber = firstRotationBlockNumber + 100;
+        cheats.roll(secondRotationBlockNumber);
+
+        privKey = 69420;
+        IBLSApkRegistry.PubkeyRegistrationParams memory pubkeyRegistrationParams_3;
+        pubkeyRegistrationParams_3.pubkeyG1 = BN254.generatorG1().scalar_mul(privKey);
+        BN254.G1Point memory defaultPubkey_3 = pubkeyRegistrationParams_3.pubkeyG1;
+        bytes32 defaultPubkeyHash_3 = BN254.hashG1Point(defaultPubkey_3);
+        pubkeyRegistrationParams_3.pubkeyG2.X[1] =
+            uint256(0x1B926587D16A1E472345C416C46301AAD2E835FC36D775CD4EC1737C0333D305);
+        pubkeyRegistrationParams_3.pubkeyG2.X[0] =
+            uint256(0x087206D4AF34E738AD9384E1E05D4B0FDA6E422624FD52DA2CB0768F8EDC22AD);
+        pubkeyRegistrationParams_3.pubkeyG2.Y[1] =
+            uint256(0x2255A62ADE238497EAB7AD273AF43D24BB5F59C1BC4BCB56BA6ACFE2EA8FBBB2);
+        pubkeyRegistrationParams_3.pubkeyG2.Y[0] =
+            uint256(0x11791601D228725F86BA5C6DF192224AD321AA4A1216D686B64D653CA6EBD61F);
+
+        pubkeyRegistrationParams_3.pubkeyRegistrationSignature = _signMessage(operator);
+        cheats.prank(address(registryCoordinator));
+        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams_3);
+
+        cheats.roll(block.number + 2);
+        assertEq(blsApkRegistry.getOperatorPubkeyHashAtBlockNumber(startBlockNumber - 1, operator), defaultPubkeyHash);
+        assertEq(blsApkRegistry.getOperatorPubkeyHashAtBlockNumber(firstRotationBlockNumber - 1, operator), defaultPubkeyHash);
+        assertEq(blsApkRegistry.getOperatorPubkeyHashAtBlockNumber(firstRotationBlockNumber, operator), defaultPubkeyHash_2);
+        assertEq(blsApkRegistry.getOperatorPubkeyHashAtBlockNumber(secondRotationBlockNumber - 1, operator), defaultPubkeyHash_2);
+        assertEq(blsApkRegistry.getOperatorPubkeyHashAtBlockNumber(secondRotationBlockNumber, operator), defaultPubkeyHash_3);
+        assertEq(blsApkRegistry.getOperatorPubkeyHashAtBlockNumber(secondRotationBlockNumber + 1, operator), defaultPubkeyHash_3);
+    }
+
+    function testGetOperatorPubkeyHashAtBlockNumber_NoCheckpoints(address operator)
+        public
+        filterFuzzedAddressInputs(operator)
+    {
+        uint32 startBlockNumber = 100;
+        cheats.roll(startBlockNumber);
+
+        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(operator);
+        BN254.G1Point memory messageHash =
+            registryCoordinator.pubkeyRegistrationMessageHash(operator);
+        cheats.prank(address(registryCoordinator));
+        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams);
+
+        cheats.roll(block.number + 2);
+        assertEq(blsApkRegistry.getOperatorPubkeyHashAtBlockNumber(startBlockNumber - 1, operator), defaultPubkeyHash);
+        assertEq(blsApkRegistry.getOperatorPubkeyHashAtBlockNumber(startBlockNumber + 1, operator), defaultPubkeyHash);
+    }
+
+    function testGetOperatorPubkeyHashAtBlockNumber_revert_FutureBlocknumber(address operator) 
+        public
+        filterFuzzedAddressInputs(operator)
+    {
+        cheats.expectRevert("BLSApkRegistry.getOperatorPubkeyHashAtBlockNumber: blockNumber is after current block");
+        blsApkRegistry.getOperatorPubkeyHashAtBlockNumber(uint32(block.number), operator);
+    }
+
+    function testGetOperatorPubkeyHashAtBlockNumber_revert_NeverRegistered(address operator) 
+        public
+        filterFuzzedAddressInputs(operator)
+    {
+        cheats.expectRevert("BLSApkRegistry.getOperatorPubkeyHashAtBlockNumber: operator has not registered a pubkey");
+        blsApkRegistry.getOperatorPubkeyHashAtBlockNumber(uint32(block.number - 1), operator);
+    }
+
+    function testGetOperatorPubkeyHashAtBlockNumberByIndex(address operator)
+        public
+        filterFuzzedAddressInputs(operator)
+    {
+        uint32 startBlockNumber = 100;
+        cheats.roll(startBlockNumber);
+
+        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(operator);
+        BN254.G1Point memory messageHash =
+            registryCoordinator.pubkeyRegistrationMessageHash(operator);
+        cheats.prank(address(registryCoordinator));
+        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams);
+
+        uint32 firstRotationBlockNumber = startBlockNumber + 100;
+        cheats.roll(firstRotationBlockNumber);
+
+        privKey = 420;
+        IBLSApkRegistry.PubkeyRegistrationParams memory pubkeyRegistrationParams_2;
+        pubkeyRegistrationParams_2.pubkeyG1 = BN254.generatorG1().scalar_mul(privKey);
+        BN254.G1Point memory defaultPubkey_2 = pubkeyRegistrationParams_2.pubkeyG1;
+        bytes32 defaultPubkeyHash_2 = BN254.hashG1Point(defaultPubkey_2);
+        pubkeyRegistrationParams_2.pubkeyG2.X[1] =
+            uint256(0x22010BC55552F4993B17F82BCDADC5A90839B3D67E382564485A0AA07F7E1923);
+        pubkeyRegistrationParams_2.pubkeyG2.X[0] =
+            uint256(0x2944BFD71F3073401E9D5F9AEA081BE98B98DA48EC8EE80ECFC7E97C7254CEA9);
+        pubkeyRegistrationParams_2.pubkeyG2.Y[1] =
+            uint256(0x1BDC8A9DEF8E46F40008649021A65F97501E2E5988B485368053BBD4487239C6);
+        pubkeyRegistrationParams_2.pubkeyG2.Y[0] =
+            uint256(0x0B7D0B9ECAD9C2884453B975CC656802DE966F21793B5A0F3D2A98A37FD24540);
+
+        pubkeyRegistrationParams_2.pubkeyRegistrationSignature = _signMessage(operator);
+        cheats.prank(address(registryCoordinator));
+        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams_2);
+
+        uint32 secondRotationBlockNumber = firstRotationBlockNumber + 100;
+        cheats.roll(secondRotationBlockNumber);
+
+        privKey = 69420;
+        IBLSApkRegistry.PubkeyRegistrationParams memory pubkeyRegistrationParams_3;
+        pubkeyRegistrationParams_3.pubkeyG1 = BN254.generatorG1().scalar_mul(privKey);
+        BN254.G1Point memory defaultPubkey_3 = pubkeyRegistrationParams_3.pubkeyG1;
+        bytes32 defaultPubkeyHash_3 = BN254.hashG1Point(defaultPubkey_3);
+        pubkeyRegistrationParams_3.pubkeyG2.X[1] =
+            uint256(0x1B926587D16A1E472345C416C46301AAD2E835FC36D775CD4EC1737C0333D305);
+        pubkeyRegistrationParams_3.pubkeyG2.X[0] =
+            uint256(0x087206D4AF34E738AD9384E1E05D4B0FDA6E422624FD52DA2CB0768F8EDC22AD);
+        pubkeyRegistrationParams_3.pubkeyG2.Y[1] =
+            uint256(0x2255A62ADE238497EAB7AD273AF43D24BB5F59C1BC4BCB56BA6ACFE2EA8FBBB2);
+        pubkeyRegistrationParams_3.pubkeyG2.Y[0] =
+            uint256(0x11791601D228725F86BA5C6DF192224AD321AA4A1216D686B64D653CA6EBD61F);
+
+        pubkeyRegistrationParams_3.pubkeyRegistrationSignature = _signMessage(operator);
+        cheats.prank(address(registryCoordinator));
+        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams_3);
+
+        cheats.roll(block.number + 2);
+
+        assertEq(blsApkRegistry.getOperatorPubkeyHashAtBlockNumberByIndex(operator, startBlockNumber - 1, 0), defaultPubkeyHash);
+        assertEq(blsApkRegistry.getOperatorPubkeyHashAtBlockNumberByIndex(operator, firstRotationBlockNumber - 1, 0), defaultPubkeyHash);
+        cheats.expectRevert("BLSApkRegistry.getPubkeyHashAtBlockNumberByIndex: pubkeyHash is from earlier index");
+        blsApkRegistry.getOperatorPubkeyHashAtBlockNumberByIndex(operator, startBlockNumber - 1, 1);
+        cheats.expectRevert("BLSApkRegistry.getPubkeyHashAtBlockNumberByIndex: pubkeyHash is from earlier index");
+        blsApkRegistry.getOperatorPubkeyHashAtBlockNumberByIndex(operator, firstRotationBlockNumber - 1, 1);
+
+        assertEq(blsApkRegistry.getOperatorPubkeyHashAtBlockNumberByIndex(operator, firstRotationBlockNumber, 1), defaultPubkeyHash_2);
+        assertEq(blsApkRegistry.getOperatorPubkeyHashAtBlockNumberByIndex(operator, secondRotationBlockNumber - 1, 1), defaultPubkeyHash_2);
+        cheats.expectRevert("BLSApkRegistry.getPubkeyHashAtBlockNumberByIndex: pubkeyHash is from later index");
+        blsApkRegistry.getOperatorPubkeyHashAtBlockNumberByIndex(operator, firstRotationBlockNumber, 0);
+        cheats.expectRevert("BLSApkRegistry.getPubkeyHashAtBlockNumberByIndex: pubkeyHash is from later index");
+        blsApkRegistry.getOperatorPubkeyHashAtBlockNumberByIndex(operator, secondRotationBlockNumber - 1, 0);
+
+        assertEq(blsApkRegistry.getOperatorPubkeyHashAtBlockNumberByIndex(operator, secondRotationBlockNumber, 0), defaultPubkeyHash_3);
+        assertEq(blsApkRegistry.getOperatorPubkeyHashAtBlockNumberByIndex(operator, secondRotationBlockNumber, 1), defaultPubkeyHash_3);
+        assertEq(blsApkRegistry.getOperatorPubkeyHashAtBlockNumberByIndex(operator, secondRotationBlockNumber + 1, 0), defaultPubkeyHash_3);
+        assertEq(blsApkRegistry.getOperatorPubkeyHashAtBlockNumberByIndex(operator, secondRotationBlockNumber + 1, 1), defaultPubkeyHash_3);
+    }
+
+    function testGetOperatorPubkeyHashAtBlockNumberByIndex_NoCheckpoints(address operator)
+        public
+        filterFuzzedAddressInputs(operator)
+    {
+        uint32 startBlockNumber = 100;
+        cheats.roll(startBlockNumber);
+
+        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(operator);
+        BN254.G1Point memory messageHash =
+            registryCoordinator.pubkeyRegistrationMessageHash(operator);
+        cheats.prank(address(registryCoordinator));
+        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams);
+
+        cheats.roll(block.number + 2);
+        assertEq(blsApkRegistry.getOperatorPubkeyHashAtBlockNumberByIndex(operator, startBlockNumber - 1, 0), defaultPubkeyHash);
+        assertEq(blsApkRegistry.getOperatorPubkeyHashAtBlockNumberByIndex(operator, startBlockNumber + 1, 0), defaultPubkeyHash);
+    }
+
+    function testGetOperatorPubkeyHashAtBlockNumberByIndex_revert_FutureBlocknumber(address operator) 
+        public
+        filterFuzzedAddressInputs(operator)
+    {
+        cheats.expectRevert("BLSApkRegistry.getPubkeyHashAtBlockNumberByIndex: blockNumber is after current block");
+        blsApkRegistry.getOperatorPubkeyHashAtBlockNumberByIndex(operator, uint32(block.number), 0);
+    }
+
+    function testGetOperatorPubkeyHashAtBlockNumberByIndex_revert_NeverRegistered(address operator) 
+        public
+        filterFuzzedAddressInputs(operator)
+    {
+        cheats.expectRevert("BLSApkRegistry.getPubkeyHashAtBlockNumberByIndex: operator has not registered a pubkey");
+        blsApkRegistry.getOperatorPubkeyHashAtBlockNumberByIndex(operator, uint32(block.number - 1), 0);
+    }
+
+    function testGetOperatorPubkeyHashAtBlockNumberByIndex_revert_IndexOOB(address operator) 
+        public
+        filterFuzzedAddressInputs(operator)
+    {
+        cheats.expectRevert("BLSApkRegistry.getPubkeyHashAtBlockNumberByIndex: operator has not registered a pubkey");
+        blsApkRegistry.getOperatorPubkeyHashAtBlockNumberByIndex(operator, uint32(block.number - 1), 1);
+    }
+
+}
+
