@@ -745,44 +745,13 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         emit log_named_uint("Gas consumed", before - gasleft());
     }
 
-    function _sort(
-        address[] memory operators,
-        bytes[] memory signatures
-    ) internal pure returns (address[] memory, bytes[] memory) {
-        require(
-            operators.length == signatures.length,
-            "Operators and signatures length mismatch"
-        );
-
-        uint256 length = operators.length;
-        for (uint256 i = 0; i < length - 1; i++) {
-            uint256 minIndex = i;
-            for (uint256 j = i + 1; j < length; j++) {
-                if (operators[j] < operators[minIndex]) {
-                    minIndex = j;
-                }
-            }
-            if (minIndex != i) {
-                // Swap operators
-                address tempOperator = operators[i];
-                operators[i] = operators[minIndex];
-                operators[minIndex] = tempOperator;
-                // Swap corresponding signatures
-                bytes memory tempSignature = signatures[i];
-                signatures[i] = signatures[minIndex];
-                signatures[minIndex] = tempSignature;
-            }
-        }
-        return (operators, signatures);
-    }
-
     // Define private and public keys for operator3 and signer
     uint256 private operator3Pk = 3;
     address private operator3 = address(vm.addr(operator3Pk));
     uint256 private signerPk = 4;
     address private signer = address(vm.addr(signerPk));
 
-    function test_SuccessfulRegistrationOfDifferentSigningKey() public {
+    function test_WhenUsingSigningKey_RegierOperatorWithSignature() public {
         address operator = operator3;
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
@@ -802,9 +771,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         );
     }
 
-    function test_SuccessfulUseOfRegisteredSigningKeyInCheckSignatures()
-        public
-    {
+    function test_WhenUsingSigningKey_CheckSignatures() public {
         address operator = operator3;
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
@@ -830,9 +797,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         );
     }
 
-    function test_SuccessfulUseOfUpdatedRegisteredSigningKeyInCheckSignaturesWithBlockIncrease()
-        public
-    {
+    function test_WhenUsingSigningKey_CheckSignaturesAtBlock() public {
         address operator = operator3;
         address initialSigningKey = address(vm.addr(signerPk));
         address updatedSigningKey = address(vm.addr(signerPk + 1));
@@ -880,9 +845,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         );
     }
 
-    function test_SuccessfulUseOfRegisteredSigningKeyInCheckSignaturesWithBlockIncreaseAndPreviousKeyCheck()
-        public
-    {
+    function test_WhenUsingPriorSigningKey_CheckSignaturesAtBlock() public {
         address operator = operator3;
         address initialSigningKey = address(vm.addr(signerPk));
         address updatedSigningKey = address(vm.addr(signerPk + 1));
@@ -918,5 +881,36 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
             dataHash,
             abi.encode(operators, signatures, block.number - 10)
         );
+    }
+
+    function _sort(
+        address[] memory operators,
+        bytes[] memory signatures
+    ) internal pure returns (address[] memory, bytes[] memory) {
+        require(
+            operators.length == signatures.length,
+            "Operators and signatures length mismatch"
+        );
+
+        uint256 length = operators.length;
+        for (uint256 i = 0; i < length - 1; i++) {
+            uint256 minIndex = i;
+            for (uint256 j = i + 1; j < length; j++) {
+                if (operators[j] < operators[minIndex]) {
+                    minIndex = j;
+                }
+            }
+            if (minIndex != i) {
+                // Swap operators
+                address tempOperator = operators[i];
+                operators[i] = operators[minIndex];
+                operators[minIndex] = tempOperator;
+                // Swap corresponding signatures
+                bytes memory tempSignature = signatures[i];
+                signatures[i] = signatures[minIndex];
+                signatures[minIndex] = tempSignature;
+            }
+        }
+        return (operators, signatures);
     }
 }
