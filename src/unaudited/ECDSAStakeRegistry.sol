@@ -391,7 +391,12 @@ contract ECDSAStakeRegistry is
             return;
         }
         _operatorSigningKeyHistory[_operator].push(uint160(_newSigningKey));
-        emit SigningKeyUpdate(_operator, oldSigningKey, _newSigningKey);
+        emit SigningKeyUpdate(
+            _operator,
+            block.number,
+            _newSigningKey,
+            oldSigningKey
+        );
     }
 
     /// @notice Updates the weight of an operator and returns the previous and current weights.

@@ -61,12 +61,14 @@ interface ECDSAStakeRegistryEventsAndErrors {
 
     /// @notice Emitted when an operator's signing key is updated
     /// @param operator The address of the operator whose signing key was updated
-    /// @param oldSigningKey The operator's signing key before the update
+    /// @param updateBlock The block number at which the signing key was updated
     /// @param newSigningKey The operator's signing key after the update
+    /// @param oldSigningKey The operator's signing key before the update
     event SigningKeyUpdate(
         address indexed operator,
-        address indexed oldSigningKey,
-        address indexed newSigningKey
+        uint256 indexed updateBlock,
+        address indexed newSigningKey,
+        address oldSigningKey
     );
     /// @notice Indicates when the lengths of the signers array and signatures array do not match.
     error LengthMismatch();
