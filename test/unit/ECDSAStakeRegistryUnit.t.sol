@@ -775,4 +775,148 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         }
         return (operators, signatures);
     }
+
+    // Define private and public keys for operator3 and signer
+    uint256 private operator3Pk = 3;
+    address private operator3 = address(vm.addr(operator3Pk));
+    uint256 private signerPk = 4;
+    address private signer = address(vm.addr(signerPk));
+
+    function test_SuccessfulRegistrationOfDifferentSigningKey() public {
+        address operator = operator3;
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+
+        // Register operator with a different signing key
+        vm.prank(operator);
+        registry.registerOperatorWithSignature(operatorSignature, signer);
+
+        // Verify that the signing key has been successfully registered for the operator
+        address registeredSigningKey = registry.getLastestOperatorSigningKey(
+            operator
+        );
+        assertEq(
+            registeredSigningKey,
+            signer,
+            "The registered signing key does not match the provided signing key"
+        );
+    }
+
+    function test_SuccessfulUseOfRegisteredSigningKeyInCheckSignatures()
+        public
+    {
+        address operator = operator3;
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+
+        // Register operator with a different signing key
+        vm.prank(operator);
+        registry.registerOperatorWithSignature(operatorSignature, signer);
+
+        // Prepare data for signature
+        bytes32 dataHash = keccak256("data");
+        address[] memory operators = new address[](1);
+        operators[0] = operator;
+        bytes[] memory signatures = new bytes[](1);
+
+        // Generate signature using the signing key
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, dataHash);
+        signatures[0] = abi.encodePacked(r, s, v);
+
+        // Check signatures using the registered signing key
+        registry.isValidSignature(
+            dataHash,
+            abi.encode(operators, signatures, type(uint32).max)
+        );
+    }
+
+    function test_SuccessfulUseOfUpdatedRegisteredSigningKeyInCheckSignaturesWithBlockIncrease()
+        public
+    {
+        address operator = operator3;
+        address initialSigningKey = address(vm.addr(signerPk));
+        address updatedSigningKey = address(vm.addr(signerPk + 1));
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+
+        // Register operator with the initial signing key
+        vm.prank(operator);
+        registry.registerOperatorWithSignature(
+            operatorSignature,
+            initialSigningKey
+        );
+
+        // Prepare data for signature with initial signing key
+        bytes32 dataHash = keccak256("data");
+        address[] memory operators = new address[](1);
+        operators[0] = operator;
+        bytes[] memory signatures = new bytes[](1);
+
+        // Generate signature using the initial signing key
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, dataHash);
+        signatures[0] = abi.encodePacked(r, s, v);
+
+        // Check signatures using the initial registered signing key
+        registry.isValidSignature(
+            dataHash,
+            abi.encode(operators, signatures, type(uint32).max)
+        );
+
+        // Increase block number
+        vm.roll(block.number + 10);
+
+        // Update operator's signing key
+        vm.prank(operator);
+        registry.updateOperatorSigningKey(updatedSigningKey);
+
+        // Generate signature using the updated signing key
+        (v, r, s) = vm.sign(signerPk + 1, dataHash);
+        signatures[0] = abi.encodePacked(r, s, v);
+
+        // Check signatures using the updated registered signing key
+        registry.isValidSignature(
+            dataHash,
+            abi.encode(operators, signatures, type(uint32).max)
+        );
+    }
+
+    function test_SuccessfulUseOfRegisteredSigningKeyInCheckSignaturesWithBlockIncreaseAndPreviousKeyCheck()
+        public
+    {
+        address operator = operator3;
+        address initialSigningKey = address(vm.addr(signerPk));
+        address updatedSigningKey = address(vm.addr(signerPk + 1));
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+
+        // Register operator with the initial signing key
+        vm.prank(operator);
+        registry.registerOperatorWithSignature(
+            operatorSignature,
+            initialSigningKey
+        );
+
+        // Prepare data for signature with initial signing key
+        bytes32 dataHash = keccak256("data");
+        address[] memory operators = new address[](1);
+        operators[0] = operator;
+        bytes[] memory signatures = new bytes[](1);
+
+        // Generate signature using the initial signing key
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, dataHash);
+        signatures[0] = abi.encodePacked(r, s, v);
+
+        // Increase block number
+        vm.roll(block.number + 10);
+
+        // Update operator's signing key
+        vm.prank(operator);
+        registry.updateOperatorSigningKey(updatedSigningKey);
+
+        // Check signatures using the initial registered signing key at the previous block
+        registry.isValidSignature(
+            dataHash,
+            abi.encode(operators, signatures, block.number - 10)
+        );
+    }
 }

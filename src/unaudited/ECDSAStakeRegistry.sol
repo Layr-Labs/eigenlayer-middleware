@@ -140,6 +140,37 @@ contract ECDSAStakeRegistry is
         return _quorum;
     }
 
+    /**
+     * @notice Retrieves the latest signing key for a given operator.
+     * @param _operator The address of the operator.
+     * @return The latest signing key of the operator.
+     */
+    function getLastestOperatorSigningKey(
+        address _operator
+    ) external view returns (address) {
+        return address(uint160(_operatorSigningKeyHistory[_operator].latest()));
+    }
+
+    /**
+     * @notice Retrieves the latest signing key for a given operator at a specific block number.
+     * @param _operator The address of the operator.
+     * @param _blockNumber The block number to get the operator's signing key.
+     * @return The signing key of the operator at the given block.
+     */
+    function getLastestOperatorSigningKeyAtBlock(
+        address _operator,
+        uint256 _blockNumber
+    ) external view returns (address) {
+        return
+            address(
+                uint160(
+                    _operatorSigningKeyHistory[_operator].getAtBlock(
+                        _blockNumber
+                    )
+                )
+            );
+    }
+
     /// @notice Retrieves the last recorded weight for a given operator.
     /// @param _operator The address of the operator.
     /// @return uint256 - The latest weight of the operator.
