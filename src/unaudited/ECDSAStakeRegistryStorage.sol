@@ -54,5 +54,5 @@ abstract contract ECDSAStakeRegistryStorage is
     // slither-disable-next-line shadowing-state
     /// @dev Reserves storage slots for future upgrades
     // solhint-disable-next-line
-    uint256[42] private __gap;
+    uint256[39] private __gap;
 }
