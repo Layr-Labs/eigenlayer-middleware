@@ -920,11 +920,52 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         );
     }
 
-    function test_RevertsWhen_SigningCurrentBlock_IsValidSignature() public {}
+    function test_RevertsWhen_SigningCurrentBlock_IsValidSignature() public {
+        address operator = operator1;
+        address signingKey = address(vm.addr(signerPk));
+        bytes32 dataHash = keccak256(abi.encodePacked("test data"));
+        uint256 currentBlock = block.number;
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, dataHash);
+        bytes memory signature = abi.encodePacked(r, s, v);
+        address[] memory operators = new address[](1);
+        operators[0] = operator;
+        bytes[] memory signatures = new bytes[](1);
+        signatures[0] = signature;
+
+        vm.expectRevert(abi.encodeWithSignature("InvalidReferenceBlock()"));
+        registry.isValidSignature(
+            dataHash,
+            abi.encode(operators, signatures, currentBlock)
+        );
+    }
 
     function test_RevertsWhen_SigningKeyNotValidAtBlock_IsValidSignature()
         public
-    {}
+    {
+        address operator = operator1;
+        uint256 invalidSignerPk = signerPk + 1;
+        address updatedSigningKey = address(vm.addr(invalidSignerPk)); /// Different key to simulate invalid signing key
+        bytes32 dataHash = keccak256(abi.encodePacked("test data"));
+        uint256 referenceBlock = block.number; /// Past reference block where the signer update won't be valid
+        vm.roll(block.number + 1);
+
+        vm.prank(operator);
+        registry.updateOperatorSigningKey(address(updatedSigningKey));
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(invalidSignerPk, dataHash);
+        bytes memory signature = abi.encodePacked(r, s, v);
+        address[] memory operators = new address[](1);
+        operators[0] = operator;
+        bytes[] memory signatures = new bytes[](1);
+        signatures[0] = signature;
+
+        vm.expectRevert(abi.encodeWithSignature("InvalidSignature()"));
+        registry.isValidSignature(
+            dataHash,
+            abi.encode(operators, signatures, referenceBlock)
+        );
+    }
 
     function _sort(
         address[] memory operators,
