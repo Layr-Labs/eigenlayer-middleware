@@ -553,21 +553,17 @@ contract ECDSAStakeRegistry is
         address _operator,
         uint32 _referenceBlock
     ) internal view returns (address) {
-        if (_referenceBlock == type(uint32).max) {
-            return
-                address(
-                    uint160(_operatorSigningKeyHistory[_operator].latest())
-                );
-        } else {
-            return
-                address(
-                    uint160(
-                        _operatorSigningKeyHistory[_operator].getAtBlock(
-                            _referenceBlock
-                        )
-                    )
-                );
+        if (_referenceBlock >= block.number) {
+            revert InvalidReferenceBlock();
         }
+        return
+            address(
+                uint160(
+                    _operatorSigningKeyHistory[_operator].getAtBlock(
+                        _referenceBlock
+                    )
+                )
+            );
     }
 
     /// @notice Retrieves the operator weight for a signer, either at the last checkpoint or a specified block.
@@ -578,11 +574,10 @@ contract ECDSAStakeRegistry is
         address _signer,
         uint32 _referenceBlock
     ) internal view returns (uint256) {
-        if (_referenceBlock == type(uint32).max) {
-            return _operatorWeightHistory[_signer].latest();
-        } else {
-            return _operatorWeightHistory[_signer].getAtBlock(_referenceBlock);
+        if (_referenceBlock >= block.number) {
+            revert InvalidReferenceBlock();
         }
+        return _operatorWeightHistory[_signer].getAtBlock(_referenceBlock);
     }
 
     /// @notice Retrieve the total stake weight at a specific block or the latest if not specified.
@@ -592,11 +587,10 @@ contract ECDSAStakeRegistry is
     function _getTotalWeight(
         uint32 _referenceBlock
     ) internal view returns (uint256) {
-        if (_referenceBlock == type(uint32).max) {
-            return _totalWeightHistory.latest();
-        } else {
-            return _totalWeightHistory.getAtBlock(_referenceBlock);
+        if (_referenceBlock >= block.number) {
+            revert InvalidReferenceBlock();
         }
+        return _totalWeightHistory.getAtBlock(_referenceBlock);
     }
 
     /// @notice Retrieves the threshold stake for a given reference block.
@@ -606,11 +600,10 @@ contract ECDSAStakeRegistry is
     function _getThresholdStake(
         uint32 _referenceBlock
     ) internal view returns (uint256) {
-        if (_referenceBlock == type(uint32).max) {
-            return _thresholdWeightHistory.latest();
-        } else {
-            return _thresholdWeightHistory.getAtBlock(_referenceBlock);
+        if (_referenceBlock >= block.number) {
+            revert InvalidReferenceBlock();
         }
+        return _thresholdWeightHistory.getAtBlock(_referenceBlock);
     }
 
     /// @notice Validates that the cumulative stake of signed messages meets or exceeds the required threshold.

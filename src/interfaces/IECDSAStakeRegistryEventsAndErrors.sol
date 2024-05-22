@@ -85,6 +85,9 @@ interface ECDSAStakeRegistryEventsAndErrors {
     /// @notice Thrown when missing operators in an update
     error MustUpdateAllOperators();
 
+    /// @notice Reference blocks must be for blocks that have already been confirmed
+    error InvalidReferenceBlock();
+
     /// @notice Indicates operator weights were out of sync and the signed weight exceed the total
     error InvalidSignedWeight();
 

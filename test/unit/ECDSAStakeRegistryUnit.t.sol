@@ -78,6 +78,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         registry.registerOperatorWithSignature(operatorSignature, operator1);
         vm.prank(operator2);
         registry.registerOperatorWithSignature(operatorSignature, operator2);
+        vm.roll(block.number + 1);
     }
 
     function test_UpdateQuorumConfig() public {
@@ -471,7 +472,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
         registry.isValidSignature(
             msgHash,
-            abi.encode(signers, signatures, type(uint32).max)
+            abi.encode(signers, signatures, block.number - 1)
         );
     }
 
@@ -488,7 +489,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         );
         registry.isValidSignature(
             msgHash,
-            abi.encode(signers, signatures, type(uint32).max)
+            abi.encode(signers, signatures, block.number - 1)
         );
     }
 
@@ -502,7 +503,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         );
         registry.isValidSignature(
             dataHash,
-            abi.encode(signers, signatures, type(uint32).max)
+            abi.encode(signers, signatures, block.number - 1)
         );
     }
 
@@ -520,7 +521,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
         registry.isValidSignature(
             msgHash,
-            abi.encode(signers, signatures, type(uint32).max)
+            abi.encode(signers, signatures, block.number - 1)
         );
     }
 
@@ -541,7 +542,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
         registry.isValidSignature(
             msgHash,
-            abi.encode(signers, signatures, type(uint32).max)
+            abi.encode(signers, signatures, block.number - 1)
         );
     }
 
@@ -557,7 +558,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         );
         registry.isValidSignature(
             dataHash,
-            abi.encode(signers, signatures, type(uint32).max)
+            abi.encode(signers, signatures, block.number - 1)
         );
     }
 
@@ -591,7 +592,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         );
         registry.isValidSignature(
             msgHash,
-            abi.encode(signers, signatures, type(uint32).max)
+            abi.encode(signers, signatures, block.number - 1)
         );
     }
 
@@ -736,10 +737,12 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         }
         (operators, signatures) = _sort(operators, signatures);
         registry.updateOperators(operators);
+        vm.roll(block.number + 1);
         vm.resumeGasMetering();
+
         registry.isValidSignature(
             msgHash,
-            abi.encode(operators, signatures, type(uint32).max)
+            abi.encode(operators, signatures, block.number - 1)
         );
 
         emit log_named_uint("Gas consumed", before - gasleft());
@@ -771,6 +774,36 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         );
     }
 
+    function test_Twice_RegierOperatorWithSignature() public {
+        address operator = operator3;
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+
+        // Register operator with a different signing key
+        vm.prank(operator);
+        registry.registerOperatorWithSignature(operatorSignature, signer);
+
+        /// Register a second time
+        vm.prank(operator);
+        registry.updateOperatorSigningKey(address(420));
+
+        // Verify that the signing key has been successfully registered for the operator
+        address registeredSigningKey = registry.getLastestOperatorSigningKey(
+            operator
+        );
+
+        vm.roll(block.number + 1);
+        registeredSigningKey = registry.getLastestOperatorSigningKeyAtBlock(
+            operator,
+            uint32(block.number - 1)
+        );
+        assertEq(
+            registeredSigningKey,
+            address(420),
+            "The registered signing key does not match the provided signing key"
+        );
+    }
+
     function test_WhenUsingSigningKey_CheckSignatures() public {
         address operator = operator3;
 
@@ -779,6 +812,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         // Register operator with a different signing key
         vm.prank(operator);
         registry.registerOperatorWithSignature(operatorSignature, signer);
+        vm.roll(block.number + 1);
 
         // Prepare data for signature
         bytes32 dataHash = keccak256("data");
@@ -793,7 +827,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         // Check signatures using the registered signing key
         registry.isValidSignature(
             dataHash,
-            abi.encode(operators, signatures, type(uint32).max)
+            abi.encode(operators, signatures, block.number - 1)
         );
     }
 
@@ -810,6 +844,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
             operatorSignature,
             initialSigningKey
         );
+        vm.roll(block.number + 1);
 
         // Prepare data for signature with initial signing key
         bytes32 dataHash = keccak256("data");
@@ -824,7 +859,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         // Check signatures using the initial registered signing key
         registry.isValidSignature(
             dataHash,
-            abi.encode(operators, signatures, type(uint32).max)
+            abi.encode(operators, signatures, block.number - 1)
         );
 
         // Increase block number
@@ -833,6 +868,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         // Update operator's signing key
         vm.prank(operator);
         registry.updateOperatorSigningKey(updatedSigningKey);
+        vm.roll(block.number + 1);
 
         // Generate signature using the updated signing key
         (v, r, s) = vm.sign(signerPk + 1, dataHash);
@@ -841,7 +877,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         // Check signatures using the updated registered signing key
         registry.isValidSignature(
             dataHash,
-            abi.encode(operators, signatures, type(uint32).max)
+            abi.encode(operators, signatures, block.number - 1)
         );
     }
 
@@ -858,6 +894,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
             operatorSignature,
             initialSigningKey
         );
+        vm.roll(block.number + 1);
 
         // Prepare data for signature with initial signing key
         bytes32 dataHash = keccak256("data");
@@ -882,6 +919,12 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
             abi.encode(operators, signatures, block.number - 10)
         );
     }
+
+    function test_RevertsWhen_SigningCurrentBlock_IsValidSignature() public {}
+
+    function test_RevertsWhen_SigningKeyNotValidAtBlock_IsValidSignature()
+        public
+    {}
 
     function _sort(
         address[] memory operators,
