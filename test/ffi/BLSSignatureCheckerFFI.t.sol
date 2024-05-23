@@ -44,8 +44,7 @@ contract BLSSignatureCheckerFFITests is MockAVSDeployer, G2Operations {
             BLSSignatureChecker.QuorumStakeTotals memory quorumStakeTotals,
             /* bytes32 signatoryRecordHash */
         ) = blsSignatureChecker.checkSignatures(
-            msgHash, 
-            quorumNumbers,
+            msgHash,
             referenceBlockNumber, 
             nonSignerStakesAndSignature
         );
@@ -76,8 +75,7 @@ contract BLSSignatureCheckerFFITests is MockAVSDeployer, G2Operations {
 
         uint256 gasBefore = gasleft();
         blsSignatureChecker.checkSignatures(
-            msgHash, 
-            quorumNumbers,
+            msgHash,
             referenceBlockNumber, 
             nonSignerStakesAndSignature
         );
