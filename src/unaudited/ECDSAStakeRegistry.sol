@@ -43,18 +43,31 @@ contract ECDSAStakeRegistry is
         __ECDSAStakeRegistry_init(_serviceManager, _thresholdWeight, _quorum);
     }
 
-    /// @notice Registers a new operator using a provided signature
+    /// @notice Registers a new operator using a provided signature and signing key
     /// @param _operatorSignature Contains the operator's signature, salt, and expiry
+    /// @param _signingKey The signing key to add to the operator's history
     function registerOperatorWithSignature(
-        address _operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature
+        ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature,
+        address _signingKey
     ) external {
-        _registerOperatorWithSig(_operator, _operatorSignature);
+        _registerOperatorWithSig(msg.sender, _operatorSignature, _signingKey);
     }
 
     /// @notice Deregisters an existing operator
     function deregisterOperator() external {
         _deregisterOperator(msg.sender);
+    }
+
+    /**
+     * @notice Updates the signing key for an operator
+     * @dev Only callable by the operator themselves
+     * @param _newSigningKey The new signing key to set for the operator
+     */
+    function updateOperatorSigningKey(address _newSigningKey) external {
+        if (!_operatorRegistered[msg.sender]) {
+            revert OperatorNotRegistered();
+        }
+        _updateOperatorSigningKey(msg.sender, _newSigningKey);
     }
 
     /**
@@ -106,18 +119,18 @@ contract ECDSAStakeRegistry is
 
     /// @notice Verifies if the provided signature data is valid for the given data hash.
     /// @param _dataHash The hash of the data that was signed.
-    /// @param _signatureData Encoded signature data consisting of an array of signers, an array of signatures, and a reference block number.
+    /// @param _signatureData Encoded signature data consisting of an array of operators, an array of signatures, and a reference block number.
     /// @return The function selector that indicates the signature is valid according to ERC1271 standard.
     function isValidSignature(
         bytes32 _dataHash,
         bytes memory _signatureData
     ) external view returns (bytes4) {
         (
-            address[] memory signers,
+            address[] memory operators,
             bytes[] memory signatures,
             uint32 referenceBlock
         ) = abi.decode(_signatureData, (address[], bytes[], uint32));
-        _checkSignatures(_dataHash, signers, signatures, referenceBlock);
+        _checkSignatures(_dataHash, operators, signatures, referenceBlock);
         return IERC1271Upgradeable.isValidSignature.selector;
     }
 
@@ -125,6 +138,37 @@ contract ECDSAStakeRegistry is
     /// @return Quorum - The current quorum of strategies and weights
     function quorum() external view returns (Quorum memory) {
         return _quorum;
+    }
+
+    /**
+     * @notice Retrieves the latest signing key for a given operator.
+     * @param _operator The address of the operator.
+     * @return The latest signing key of the operator.
+     */
+    function getLastestOperatorSigningKey(
+        address _operator
+    ) external view returns (address) {
+        return address(uint160(_operatorSigningKeyHistory[_operator].latest()));
+    }
+
+    /**
+     * @notice Retrieves the latest signing key for a given operator at a specific block number.
+     * @param _operator The address of the operator.
+     * @param _blockNumber The block number to get the operator's signing key.
+     * @return The signing key of the operator at the given block.
+     */
+    function getOperatorSigningKeyAtBlock(
+        address _operator,
+        uint256 _blockNumber
+    ) external view returns (address) {
+        return
+            address(
+                uint160(
+                    _operatorSigningKeyHistory[_operator].getAtBlock(
+                        _blockNumber
+                    )
+                )
+            );
     }
 
     /// @notice Retrieves the last recorded weight for a given operator.
@@ -312,9 +356,11 @@ contract ECDSAStakeRegistry is
 
     /// @dev registers an operator through a provided signature
     /// @param _operatorSignature Contains the operator's signature, salt, and expiry
+    /// @param _signingKey The signing key to add to the operator's history
     function _registerOperatorWithSig(
         address _operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature
+        ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature,
+        address _signingKey
     ) internal virtual {
         if (_operatorRegistered[_operator]) {
             revert OperatorAlreadyRegistered();
@@ -323,11 +369,34 @@ contract ECDSAStakeRegistry is
         _operatorRegistered[_operator] = true;
         int256 delta = _updateOperatorWeight(_operator);
         _updateTotalWeight(delta);
+        _updateOperatorSigningKey(_operator, _signingKey);
         IServiceManager(_serviceManager).registerOperatorToAVS(
             _operator,
             _operatorSignature
         );
         emit OperatorRegistered(_operator, _serviceManager);
+    }
+
+    /// @dev Internal function to update an operator's signing key
+    /// @param _operator The address of the operator to update the signing key for
+    /// @param _newSigningKey The new signing key to set for the operator
+    function _updateOperatorSigningKey(
+        address _operator,
+        address _newSigningKey
+    ) internal {
+        address oldSigningKey = address(
+            uint160(_operatorSigningKeyHistory[_operator].latest())
+        );
+        if (_newSigningKey == oldSigningKey) {
+            return;
+        }
+        _operatorSigningKeyHistory[_operator].push(uint160(_newSigningKey));
+        emit SigningKeyUpdate(
+            _operator,
+            block.number,
+            _newSigningKey,
+            oldSigningKey
+        );
     }
 
     /// @notice Updates the weight of an operator and returns the previous and current weights.
@@ -339,7 +408,7 @@ contract ECDSAStakeRegistry is
         uint256 newWeight;
         uint256 oldWeight = _operatorWeightHistory[_operator].latest();
         if (!_operatorRegistered[_operator]) {
-            delta -= int(oldWeight);
+            delta -= int256(oldWeight);
             if (delta == 0) {
                 return delta;
             }
@@ -400,30 +469,33 @@ contract ECDSAStakeRegistry is
     /**
      * @notice Common logic to verify a batch of ECDSA signatures against a hash, using either last stake weight or at a specific block.
      * @param _dataHash The hash of the data the signers endorsed.
-     * @param _signers A collection of addresses that endorsed the data hash.
+     * @param _operators A collection of addresses that endorsed the data hash.
      * @param _signatures A collection of signatures matching the signers.
      * @param _referenceBlock The block number for evaluating stake weight; use max uint32 for latest weight.
      */
     function _checkSignatures(
         bytes32 _dataHash,
-        address[] memory _signers,
+        address[] memory _operators,
         bytes[] memory _signatures,
         uint32 _referenceBlock
     ) internal view {
-        uint256 signersLength = _signers.length;
-        address lastSigner;
+        uint256 signersLength = _operators.length;
+        address currentOperator;
+        address lastOperator;
+        address signer;
         uint256 signedWeight;
 
         _validateSignaturesLength(signersLength, _signatures.length);
         for (uint256 i; i < signersLength; i++) {
-            address currentSigner = _signers[i];
+            currentOperator = _operators[i];
+            signer = _getOperatorSigningKey(currentOperator, _referenceBlock);
 
-            _validateSortedSigners(lastSigner, currentSigner);
-            _validateSignature(currentSigner, _dataHash, _signatures[i]);
+            _validateSortedSigners(lastOperator, currentOperator);
+            _validateSignature(signer, _dataHash, _signatures[i]);
 
-            lastSigner = currentSigner;
+            lastOperator = currentOperator;
             uint256 operatorWeight = _getOperatorWeight(
-                currentSigner,
+                currentOperator,
                 _referenceBlock
             );
             signedWeight += operatorWeight;
@@ -474,6 +546,27 @@ contract ECDSAStakeRegistry is
     }
 
     /// @notice Retrieves the operator weight for a signer, either at the last checkpoint or a specified block.
+    /// @param _operator The operator to query their signing key history for
+    /// @param _referenceBlock The block number to query the operator's weight at, or the maximum uint32 value for the last checkpoint.
+    /// @return The weight of the operator.
+    function _getOperatorSigningKey(
+        address _operator,
+        uint32 _referenceBlock
+    ) internal view returns (address) {
+        if (_referenceBlock >= block.number) {
+            revert InvalidReferenceBlock();
+        }
+        return
+            address(
+                uint160(
+                    _operatorSigningKeyHistory[_operator].getAtBlock(
+                        _referenceBlock
+                    )
+                )
+            );
+    }
+
+    /// @notice Retrieves the operator weight for a signer, either at the last checkpoint or a specified block.
     /// @param _signer The address of the signer whose weight is returned.
     /// @param _referenceBlock The block number to query the operator's weight at, or the maximum uint32 value for the last checkpoint.
     /// @return The weight of the operator.
@@ -481,11 +574,10 @@ contract ECDSAStakeRegistry is
         address _signer,
         uint32 _referenceBlock
     ) internal view returns (uint256) {
-        if (_referenceBlock == type(uint32).max) {
-            return _operatorWeightHistory[_signer].latest();
-        } else {
-            return _operatorWeightHistory[_signer].getAtBlock(_referenceBlock);
+        if (_referenceBlock >= block.number) {
+            revert InvalidReferenceBlock();
         }
+        return _operatorWeightHistory[_signer].getAtBlock(_referenceBlock);
     }
 
     /// @notice Retrieve the total stake weight at a specific block or the latest if not specified.
@@ -495,11 +587,10 @@ contract ECDSAStakeRegistry is
     function _getTotalWeight(
         uint32 _referenceBlock
     ) internal view returns (uint256) {
-        if (_referenceBlock == type(uint32).max) {
-            return _totalWeightHistory.latest();
-        } else {
-            return _totalWeightHistory.getAtBlock(_referenceBlock);
+        if (_referenceBlock >= block.number) {
+            revert InvalidReferenceBlock();
         }
+        return _totalWeightHistory.getAtBlock(_referenceBlock);
     }
 
     /// @notice Retrieves the threshold stake for a given reference block.
@@ -509,11 +600,10 @@ contract ECDSAStakeRegistry is
     function _getThresholdStake(
         uint32 _referenceBlock
     ) internal view returns (uint256) {
-        if (_referenceBlock == type(uint32).max) {
-            return _thresholdWeightHistory.latest();
-        } else {
-            return _thresholdWeightHistory.getAtBlock(_referenceBlock);
+        if (_referenceBlock >= block.number) {
+            revert InvalidReferenceBlock();
         }
+        return _thresholdWeightHistory.getAtBlock(_referenceBlock);
     }
 
     /// @notice Validates that the cumulative stake of signed messages meets or exceeds the required threshold.
