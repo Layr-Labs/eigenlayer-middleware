@@ -57,7 +57,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
             BLSSignatureChecker.QuorumStakeTotals memory quorumStakeTotals,
             bytes32 signatoryRecordHash
         ) = blsSignatureChecker.checkSignatures(
-            msgHash,
+            msgHash, 
+            quorumNumbers,
             referenceBlockNumber, 
             nonSignerStakesAndSignature
         );
@@ -91,7 +92,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
             BLSSignatureChecker.QuorumStakeTotals memory quorumStakeTotals,
             bytes32 signatoryRecordHash
         ) = blsSignatureChecker.checkSignatures(
-            msgHash,
+            msgHash, 
+            quorumNumbers,
             referenceBlockNumber, 
             nonSignerStakesAndSignature
         );
@@ -130,7 +132,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
             BLSSignatureChecker.QuorumStakeTotals memory quorumStakeTotals,
             bytes32 signatoryRecordHash
         ) = blsSignatureChecker.checkSignatures(
-            msgHash,
+            msgHash, 
+            quorumNumbers,
             referenceBlockNumber, 
             nonSignerStakesAndSignature
         );
@@ -165,7 +168,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
 
         cheats.expectRevert("BLSSignatureChecker.checkSignatures: input quorum length mismatch");
         blsSignatureChecker.checkSignatures(
-            msgHash,
+            msgHash, 
+            quorumNumbers,
             referenceBlockNumber, 
             incorrectLengthInputs
         );
@@ -176,7 +180,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         incorrectLengthInputs.quorumApkIndices = new uint32[](5);
         cheats.expectRevert("BLSSignatureChecker.checkSignatures: input quorum length mismatch");
         blsSignatureChecker.checkSignatures(
-            msgHash,
+            msgHash, 
+            quorumNumbers,
             referenceBlockNumber, 
             incorrectLengthInputs
         );
@@ -187,7 +192,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         incorrectLengthInputs.totalStakeIndices = new uint32[](5);
         cheats.expectRevert("BLSSignatureChecker.checkSignatures: input quorum length mismatch");
         blsSignatureChecker.checkSignatures(
-            msgHash,
+            msgHash, 
+            quorumNumbers,
             referenceBlockNumber, 
             incorrectLengthInputs
         );
@@ -198,7 +204,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         incorrectLengthInputs.nonSignerStakeIndices = new uint32[][](5);
         cheats.expectRevert("BLSSignatureChecker.checkSignatures: input quorum length mismatch");
         blsSignatureChecker.checkSignatures(
-            msgHash,
+            msgHash, 
+            quorumNumbers,
             referenceBlockNumber, 
             incorrectLengthInputs
         );
@@ -209,7 +216,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         incorrectLengthInputs.nonSignerQuorumBitmapIndices = new uint32[](nonSignerStakesAndSignature.nonSignerPubkeys.length + 1);
         cheats.expectRevert("BLSSignatureChecker.checkSignatures: input nonsigner length mismatch");
         blsSignatureChecker.checkSignatures(
-            msgHash,
+            msgHash, 
+            quorumNumbers,
             referenceBlockNumber, 
             incorrectLengthInputs
         );
@@ -218,7 +226,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         incorrectLengthInputs.nonSignerQuorumBitmapIndices = nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices;
         // sanity check for call passing with the correct values
         blsSignatureChecker.checkSignatures(
-            msgHash,
+            msgHash, 
+            quorumNumbers,
             referenceBlockNumber, 
             incorrectLengthInputs
         );
@@ -236,7 +245,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         uint32 invalidReferenceBlock = uint32(block.number + (pseudoRandomNumber % 20));
         cheats.expectRevert("BLSSignatureChecker.checkSignatures: invalid reference block");
         blsSignatureChecker.checkSignatures(
-            msgHash,
+            msgHash, 
+            quorumNumbers,
             invalidReferenceBlock, 
             nonSignerStakesAndSignature
         );
@@ -255,7 +265,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         nonSignerStakesAndSignature.nonSignerPubkeys[1] = nonSignerStakesAndSignature.nonSignerPubkeys[0];
         cheats.expectRevert("BLSSignatureChecker.checkSignatures: nonSignerPubkeys not sorted");
         blsSignatureChecker.checkSignatures(
-            msgHash,
+            msgHash, 
+            quorumNumbers,
             referenceBlockNumber, 
             nonSignerStakesAndSignature
         );
@@ -275,7 +286,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
             (nonSignerStakesAndSignature.nonSignerPubkeys[1], nonSignerStakesAndSignature.nonSignerPubkeys[0]);
         cheats.expectRevert("BLSSignatureChecker.checkSignatures: nonSignerPubkeys not sorted");
         blsSignatureChecker.checkSignatures(
-            msgHash,
+            msgHash, 
+            quorumNumbers,
             referenceBlockNumber, 
             nonSignerStakesAndSignature
         );
@@ -308,7 +320,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
 
         cheats.roll(referenceBlockNumber + 1);
         blsSignatureChecker.checkSignatures(
-            msgHash,
+            msgHash, 
+            quorumNumbers,
             referenceBlockNumber,
             nonSignerStakesAndSignature
         );
@@ -319,7 +332,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         cheats.roll(referenceBlockNumber + 1);
         cheats.expectRevert("BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within withdrawalDelayBlocks window");
         blsSignatureChecker.checkSignatures(
-            msgHash,
+            msgHash, 
+            quorumNumbers,
             referenceBlockNumber, 
             nonSignerStakesAndSignature
         );
@@ -341,7 +355,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
 
         cheats.expectRevert("RegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber");
         blsSignatureChecker.checkSignatures(
-            msgHash,
+            msgHash, 
+            quorumNumbers,
             referenceBlockNumber, 
             nonSignerStakesAndSignature
         );
@@ -360,7 +375,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
 
         cheats.expectRevert("StakeRegistry._validateStakeUpdateAtBlockNumber: there is a newer stakeUpdate available before blockNumber");
         blsSignatureChecker.checkSignatures(
-            msgHash,
+            msgHash, 
+            quorumNumbers,
             referenceBlockNumber, 
             nonSignerStakesAndSignature
         );
@@ -388,7 +404,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
 
         cheats.expectRevert("StakeRegistry._validateStakeUpdateAtBlockNumber: stakeUpdate is from after blockNumber");
         blsSignatureChecker.checkSignatures(
-            msgHash,
+            msgHash, 
+            quorumNumbers,
             referenceBlockNumber, 
             nonSignerStakesAndSignature
         );
@@ -408,7 +425,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
 
         cheats.expectRevert("BLSApkRegistry._validateApkHashAtBlockNumber: not latest apk update");
         blsSignatureChecker.checkSignatures(
-            msgHash,
+            msgHash, 
+            quorumNumbers,
             referenceBlockNumber, 
             nonSignerStakesAndSignature
         );
@@ -427,7 +445,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
 
         cheats.expectRevert("BLSSignatureChecker.checkSignatures: quorumApk hash in storage does not match provided quorum apk");
         blsSignatureChecker.checkSignatures(
-            msgHash,
+            msgHash, 
+            quorumNumbers,
             referenceBlockNumber, 
             nonSignerStakesAndSignature
         );
@@ -446,7 +465,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
 
         cheats.expectRevert("BLSSignatureChecker.checkSignatures: signature is invalid");
         blsSignatureChecker.checkSignatures(
-            msgHash,
+            msgHash, 
+            quorumNumbers,
             referenceBlockNumber, 
             nonSignerStakesAndSignature
         );
@@ -466,7 +486,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         // expect a non-specific low-level revert, since this call will ultimately fail as part of the precompile call
         cheats.expectRevert();
         blsSignatureChecker.checkSignatures(
-            msgHash,
+            msgHash, 
+            quorumNumbers,
             referenceBlockNumber, 
             nonSignerStakesAndSignature
         );
@@ -486,7 +507,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         // expect a non-specific low-level revert, since this call will ultimately fail as part of the precompile call
         cheats.expectRevert("BLSSignatureChecker.checkSignatures: empty quorum input");
         blsSignatureChecker.checkSignatures(
-            msgHash,
+            msgHash, 
+            quorumNumbers,
             referenceBlockNumber, 
             nonSignerStakesAndSignature
         );
