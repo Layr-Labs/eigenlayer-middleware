@@ -115,10 +115,10 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     }
 
     function test_RevertsWhen_NotOwner_UpdateQuorumConfig() public {
-        Quorum memory invalidQuorum = Quorum({
+        Quorum memory validQuorum = Quorum({
             strategies: new StrategyParams[](1)
         });
-        invalidQuorum.strategies[0] = StrategyParams({
+        validQuorum.strategies[0] = StrategyParams({
             strategy: IStrategy(address(420)),
             multiplier: 10_000
         });
@@ -131,7 +131,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         vm.prank(nonOwner);
 
         vm.expectRevert("Ownable: caller is not the owner");
-        registry.updateQuorumConfig(invalidQuorum, operators);
+        registry.updateQuorumConfig(validQuorum, operators);
     }
 
     function test_RevertsWhen_SameQuorum_UpdateQuorumConfig() public {
