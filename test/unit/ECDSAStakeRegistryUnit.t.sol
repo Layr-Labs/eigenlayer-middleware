@@ -115,10 +115,10 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     }
 
     function test_RevertsWhen_NotOwner_UpdateQuorumConfig() public {
-        Quorum memory validQuorum = Quorum({
+        Quorum memory invalidQuorum = Quorum({
             strategies: new StrategyParams[](1)
         });
-        validQuorum.strategies[0] = StrategyParams({
+        invalidQuorum.strategies[0] = StrategyParams({
             strategy: IStrategy(address(420)),
             multiplier: 10_000
         });
@@ -131,7 +131,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         vm.prank(nonOwner);
 
         vm.expectRevert("Ownable: caller is not the owner");
-        registry.updateQuorumConfig(validQuorum, operators);
+        registry.updateQuorumConfig(invalidQuorum, operators);
     }
 
     function test_RevertsWhen_SameQuorum_UpdateQuorumConfig() public {
@@ -145,10 +145,10 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     }
 
     function test_RevertSWhen_Duplicate_UpdateQuorumConfig() public {
-        Quorum memory validQuorum = Quorum({
+        Quorum memory invalidQuorum = Quorum({
             strategies: new StrategyParams[](2)
         });
-        validQuorum.strategies[0] = StrategyParams({
+        invalidQuorum.strategies[0] = StrategyParams({
             strategy: IStrategy(address(420)),
             multiplier: 5000
         });
@@ -156,19 +156,19 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         operators[0] = operator1;
         operators[1] = operator2;
 
-        validQuorum.strategies[1] = StrategyParams({
+        invalidQuorum.strategies[1] = StrategyParams({
             strategy: IStrategy(address(420)),
             multiplier: 5000
         });
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
-        registry.updateQuorumConfig(validQuorum, operators);
+        registry.updateQuorumConfig(invalidQuorum, operators);
     }
 
     function test_RevertSWhen_NotSorted_UpdateQuorumConfig() public {
-        Quorum memory validQuorum = Quorum({
+        Quorum memory invalidQuorum = Quorum({
             strategies: new StrategyParams[](2)
         });
-        validQuorum.strategies[0] = StrategyParams({
+        invalidQuorum.strategies[0] = StrategyParams({
             strategy: IStrategy(address(420)),
             multiplier: 5000
         });
@@ -176,19 +176,19 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         operators[0] = operator1;
         operators[1] = operator2;
 
-        validQuorum.strategies[1] = StrategyParams({
+        invalidQuorum.strategies[1] = StrategyParams({
             strategy: IStrategy(address(419)),
             multiplier: 5000
         });
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
-        registry.updateQuorumConfig(validQuorum, operators);
+        registry.updateQuorumConfig(invalidQuorum, operators);
     }
 
     function test_RevertSWhen_OverMultiplierTotal_UpdateQuorumConfig() public {
-        Quorum memory validQuorum = Quorum({
+        Quorum memory invalidQuorum = Quorum({
             strategies: new StrategyParams[](1)
         });
-        validQuorum.strategies[0] = StrategyParams({
+        invalidQuorum.strategies[0] = StrategyParams({
             strategy: IStrategy(address(420)),
             multiplier: 10_001
         });
@@ -199,7 +199,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         vm.expectRevert(
             ECDSAStakeRegistryEventsAndErrors.InvalidQuorum.selector
         );
-        registry.updateQuorumConfig(validQuorum, operators);
+        registry.updateQuorumConfig(invalidQuorum, operators);
     }
 
     function test_RegisterOperatorWithSignature() public {
