@@ -157,7 +157,7 @@ contract ECDSAStakeRegistry is
      * @param _blockNumber The block number to get the operator's signing key.
      * @return The signing key of the operator at the given block.
      */
-    function getLastestOperatorSigningKeyAtBlock(
+    function getOperatorSigningKeyAtBlock(
         address _operator,
         uint256 _blockNumber
     ) external view returns (address) {
@@ -408,7 +408,7 @@ contract ECDSAStakeRegistry is
         uint256 newWeight;
         uint256 oldWeight = _operatorWeightHistory[_operator].latest();
         if (!_operatorRegistered[_operator]) {
-            delta -= int(oldWeight);
+            delta -= int256(oldWeight);
             if (delta == 0) {
                 return delta;
             }

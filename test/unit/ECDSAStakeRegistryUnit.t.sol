@@ -67,7 +67,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         Quorum memory quorum = Quorum({strategies: new StrategyParams[](1)});
         quorum.strategies[0] = StrategyParams({
             strategy: mockStrategy,
-            multiplier: 10000
+            multiplier: 10_000
         });
         registry = new ECDSAStakeRegistry(
             IDelegationManager(address(mockDelegationManager))
@@ -88,7 +88,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         Quorum memory newQuorum = Quorum({strategies: new StrategyParams[](1)});
         newQuorum.strategies[0] = StrategyParams({
             strategy: mockStrategy,
-            multiplier: 10000
+            multiplier: 10_000
         });
         address[] memory operators = new address[](2);
         operators[0] = operator1;
@@ -125,7 +125,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         });
         validQuorum.strategies[0] = StrategyParams({
             strategy: IStrategy(address(420)),
-            multiplier: 10000
+            multiplier: 10_000
         });
 
         address[] memory operators = new address[](2);
@@ -155,7 +155,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         });
         validQuorum.strategies[0] = StrategyParams({
             strategy: IStrategy(address(420)),
-            multiplier: 5_000
+            multiplier: 5000
         });
         address[] memory operators = new address[](2);
         operators[0] = operator1;
@@ -163,7 +163,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
         validQuorum.strategies[1] = StrategyParams({
             strategy: IStrategy(address(420)),
-            multiplier: 5_000
+            multiplier: 5000
         });
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
         registry.updateQuorumConfig(validQuorum, operators);
@@ -175,7 +175,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         });
         validQuorum.strategies[0] = StrategyParams({
             strategy: IStrategy(address(420)),
-            multiplier: 5_000
+            multiplier: 5000
         });
         address[] memory operators = new address[](2);
         operators[0] = operator1;
@@ -183,7 +183,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
         validQuorum.strategies[1] = StrategyParams({
             strategy: IStrategy(address(419)),
-            multiplier: 5_000
+            multiplier: 5000
         });
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
         registry.updateQuorumConfig(validQuorum, operators);
@@ -195,7 +195,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         });
         validQuorum.strategies[0] = StrategyParams({
             strategy: IStrategy(address(420)),
-            multiplier: 10001
+            multiplier: 10_001
         });
         address[] memory operators = new address[](2);
         operators[0] = operator1;
@@ -353,11 +353,11 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         Quorum memory quorum = Quorum({strategies: new StrategyParams[](2)});
         quorum.strategies[0] = StrategyParams({
             strategy: mockStrategy,
-            multiplier: 5_000
+            multiplier: 5000
         });
         quorum.strategies[1] = StrategyParams({
             strategy: mockStrategy2,
-            multiplier: 5_000
+            multiplier: 5000
         });
 
         address[] memory operators = new address[](2);
@@ -447,13 +447,13 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     }
 
     function testUpdateThresholdStake_UpdateThresholdStake() public {
-        uint256 thresholdWeight = 10000000000;
+        uint256 thresholdWeight = 10_000_000_000;
         vm.prank(registry.owner());
         registry.updateStakeThreshold(thresholdWeight);
     }
 
     function test_RevertsWhen_NotOwner_UpdateThresholdStake() public {
-        uint256 thresholdWeight = 10000000000;
+        uint256 thresholdWeight = 10_000_000_000;
         address notOwner = address(0x123);
         vm.prank(notOwner);
         vm.expectRevert("Ownable: caller is not the owner");
@@ -573,7 +573,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         (v, r, s) = vm.sign(operator2Pk, msgHash);
         signatures[1] = abi.encodePacked(r, s, v);
 
-        uint256 thresholdWeight = 10000000000;
+        uint256 thresholdWeight = 10_000_000_000;
         vm.prank(registry.owner());
         registry.updateStakeThreshold(thresholdWeight);
         vm.roll(block.number + 1);
@@ -662,7 +662,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         (v, r, s) = vm.sign(operator2Pk, msgHash);
         signatures[1] = abi.encodePacked(r, s, v);
 
-        uint256 thresholdWeight = 10000000000;
+        uint256 thresholdWeight = 10_000_000_000;
         vm.prank(registry.owner());
         registry.updateStakeThreshold(thresholdWeight);
         vm.roll(referenceBlock + 1);
@@ -793,7 +793,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         );
 
         vm.roll(block.number + 1);
-        registeredSigningKey = registry.getLastestOperatorSigningKeyAtBlock(
+        registeredSigningKey = registry.getOperatorSigningKeyAtBlock(
             operator,
             uint32(block.number - 1)
         );
@@ -945,9 +945,11 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     {
         address operator = operator1;
         uint256 invalidSignerPk = signerPk + 1;
-        address updatedSigningKey = address(vm.addr(invalidSignerPk)); /// Different key to simulate invalid signing key
+        address updatedSigningKey = address(vm.addr(invalidSignerPk));
+        /// Different key to simulate invalid signing key
         bytes32 dataHash = keccak256(abi.encodePacked("test data"));
-        uint256 referenceBlock = block.number; /// Past reference block where the signer update won't be valid
+        uint256 referenceBlock = block.number;
+        /// Past reference block where the signer update won't be valid
         vm.roll(block.number + 1);
 
         vm.prank(operator);
