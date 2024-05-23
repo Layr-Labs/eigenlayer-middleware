@@ -268,7 +268,6 @@ interface IStakeRegistry is IRegistry {
 =======
 
     function updateOperatorSignAddr(
-        address operator,
         address operatorSignAddr
     ) external;
 

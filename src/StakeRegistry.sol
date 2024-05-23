@@ -720,15 +720,16 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     function updateOperatorSignAddr(
-        address operator,
         address operatorSignAddr
-    ) external override onlyRegistryCoordinator {
-        require(operatorSignAddrs[operator] != address(0), "StakeRegistry.updateOperatorSignAddr: operator sign");
-        require(operatorSignAddrs[operator] != operatorSignAddr, "StakeRegistry.updateOperatorSignAddr: same signAddr");
-        operatorSignAddrs[operator] = operatorSignAddr;
+    ) external override {
+        require(operatorSignAddr != address(0), "StakeRegistry.updateOperatorSignAddr: not zero address");
+        require(operatorSignAddrs[msg.sender] != address(0), "StakeRegistry.updateOperatorSignAddr: not registered operator");
+        require(operatorSignAddrs[msg.sender] != operatorSignAddr, "StakeRegistry.updateOperatorSignAddr: same signAddr");
+        operatorSignAddrs[msg.sender] = operatorSignAddr;
+        emit OperatorSignAddressAdded(msg.sender, operatorSignAddr);
     }
 
-    function getOperatorSignAddress(address operator) external override view onlyCoordinatorOwner returns(address){
+    function getOperatorSignAddress(address operator) external override view returns(address){
         return operatorSignAddrs[operator];
     }
 }
