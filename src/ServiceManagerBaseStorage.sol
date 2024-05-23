@@ -48,5 +48,5 @@ abstract contract ServiceManagerBaseStorage is IServiceManager {
     }
 
     // storage gap for upgradeability
-    uint256[50] private __GAP;
+    uint256[49] private __GAP;
 }

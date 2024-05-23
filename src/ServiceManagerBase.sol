@@ -19,11 +19,7 @@ import {BitmapUtils} from "./libraries/BitmapUtils.sol";
  * This contract can be inherited from or simply used as a point-of-reference.
  * @author Layr Labs, Inc.
  */
-abstract contract ServiceManagerBase is
-    ServiceManagerBaseStorage,
-    Initializable,
-    OwnableUpgradeable
-{
+abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseStorage {
     using BitmapUtils for *;
 
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
@@ -219,8 +215,4 @@ abstract contract ServiceManagerBase is
     function avsDirectory() external view override returns (address) {
         return address(_avsDirectory);
     }
-
-    // storage gap for upgradeability
-    // slither-disable-next-line shadowing-state
-    uint256[50] private __GAP;
 }
