@@ -40,6 +40,7 @@ contract MockDelegationManager {
 contract ECDSAStakeRegistrySetup is Test, ECDSAStakeRegistryEventsAndErrors {
     MockDelegationManager public mockDelegationManager;
     MockServiceManager public mockServiceManager;
+    ECDSAStakeRegistry public registry;
     address internal operator1;
     address internal operator2;
     uint256 internal operator1Pk;
@@ -55,14 +56,6 @@ contract ECDSAStakeRegistrySetup is Test, ECDSAStakeRegistryEventsAndErrors {
         (operator2, operator2Pk) = makeAddrAndKey("Signer 2");
         mockDelegationManager = new MockDelegationManager();
         mockServiceManager = new MockServiceManager();
-    }
-}
-
-contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
-    ECDSAStakeRegistry public registry;
-
-    function setUp() public virtual override {
-        super.setUp();
         IStrategy mockStrategy = IStrategy(address(0x1234));
         Quorum memory quorum = Quorum({strategies: new StrategyParams[](1)});
         quorum.strategies[0] = StrategyParams({
@@ -80,7 +73,9 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         registry.registerOperatorWithSignature(operatorSignature, operator2);
         vm.roll(block.number + 1);
     }
+}
 
+contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     function test_UpdateQuorumConfig() public {
         IStrategy mockStrategy = IStrategy(address(420));
 
