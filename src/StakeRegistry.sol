@@ -723,7 +723,6 @@ contract StakeRegistry is StakeRegistryStorage {
         address operatorSignAddr
     ) external override {
         require(operatorSignAddr != address(0), "StakeRegistry.updateOperatorSignAddr: not zero address");
-        require(operatorSignAddrs[msg.sender] != address(0), "StakeRegistry.updateOperatorSignAddr: not registered operator");
         require(operatorSignAddrs[msg.sender] != operatorSignAddr, "StakeRegistry.updateOperatorSignAddr: same signAddr");
         operatorSignAddrs[msg.sender] = operatorSignAddr;
         emit OperatorSignAddressAdded(msg.sender, operatorSignAddr);

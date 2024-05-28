@@ -171,14 +171,6 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
             operatorToPubkeyHash[operator] != pubkeyHash,
             "BLSApkRegistry.updateBLSPublicKey: cannot update to same pubkey"
         );
-        require(
-            operatorToPubkeyHash[operator] != bytes32(0),
-            "BLSApkRegistry.updateBLSPublicKey: operator is unRegistered pubkey"
-        );
-        require(
-            pubkeyHashToOperator[pubkeyHash] != address(0),
-            "BLSApkRegistry.updateBLSPublicKey: public key is unRegistered"
-        );
 
         // gamma = h(sigma, P, P', H(m))
         uint256 gamma = uint256(keccak256(abi.encodePacked(
