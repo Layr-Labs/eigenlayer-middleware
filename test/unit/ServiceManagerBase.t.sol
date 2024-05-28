@@ -3,24 +3,24 @@ pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import {
-    PaymentCoordinator,
-    IPaymentCoordinator,
+    RewardsCoordinator,
+    IRewardsCoordinator,
     IERC20
-} from "eigenlayer-contracts/src/contracts/core/PaymentCoordinator.sol";
+} from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
 import {StrategyBase} from "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import {IServiceManagerBaseEvents} from "../events/IServiceManagerBaseEvents.sol";
 
 import "../utils/MockAVSDeployer.sol";
 
 contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEvents {
-    // PaymentCoordinator config
-    address paymentUpdater = address(uint160(uint256(keccak256("paymentUpdater"))));
+    // RewardsCoordinator config
+    address rewardsUpdater = address(uint160(uint256(keccak256("rewardsUpdater"))));
     uint32 CALCULATION_INTERVAL_SECONDS = 7 days;
-    uint32 MAX_PAYMENT_DURATION = 70 days;
+    uint32 MAX_REWARDS_DURATION = 70 days;
     uint32 MAX_RETROACTIVE_LENGTH = 84 days;
     uint32 MAX_FUTURE_LENGTH = 28 days;
-    uint32 GENESIS_PAYMENT_TIMESTAMP = 1_712_188_800;
-    uint256 MAX_PAYMENT_AMOUNT = 1e38 - 1;
+    uint32 GENESIS_REWARDS_TIMESTAMP = 1_712_188_800;
+    uint256 MAX_REWARDS_AMOUNT = 1e38 - 1;
     /// @notice Delay in timestamp before a posted root can be claimed against
     uint32 activationDelay = 7 days;
     /// @notice the commission for all operators across all avss
@@ -28,13 +28,14 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
 
     // Testing Config and Mocks
     address serviceManagerOwner;
-    IERC20[] paymentTokens;
+    address rewardsInitiator = address(uint160(uint256(keccak256("rewardsInitiator"))));
+    IERC20[] rewardTokens;
     uint256 mockTokenInitialSupply = 10e50;
     IStrategy strategyMock1;
     IStrategy strategyMock2;
     IStrategy strategyMock3;
     StrategyBase strategyImplementation;
-    IPaymentCoordinator.StrategyAndMultiplier[] defaultStrategyAndMultipliers;
+    IRewardsCoordinator.StrategyAndMultiplier[] defaultStrategyAndMultipliers;
 
     // mapping to setting fuzzed inputs
     mapping(address => bool) public addressIsExcludedFromFuzzedInputs;
@@ -46,28 +47,28 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
 
     function setUp() public virtual {
         _deployMockEigenLayerAndAVS();
-        // Deploy paymentcoordinator
-        paymentCoordinatorImplementation = new PaymentCoordinator(
+        // Deploy rewards coordinator
+        rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationMock,
             strategyManagerMock,
             CALCULATION_INTERVAL_SECONDS,
-            MAX_PAYMENT_DURATION,
+            MAX_REWARDS_DURATION,
             MAX_RETROACTIVE_LENGTH,
             MAX_FUTURE_LENGTH,
-            GENESIS_PAYMENT_TIMESTAMP
+            GENESIS_REWARDS_TIMESTAMP
         );
 
-        paymentCoordinator = PaymentCoordinator(
+        rewardsCoordinator = RewardsCoordinator(
             address(
                 new TransparentUpgradeableProxy(
-                    address(paymentCoordinatorImplementation),
+                    address(rewardsCoordinatorImplementation),
                     address(proxyAdmin),
                     abi.encodeWithSelector(
-                        PaymentCoordinator.initialize.selector,
+                        RewardsCoordinator.initialize.selector,
                         msg.sender,
                         pauserRegistry,
                         0, /*initialPausedStatus*/
-                        paymentUpdater,
+                        rewardsUpdater,
                         activationDelay,
                         globalCommissionBips
                     )
@@ -77,7 +78,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         // Deploy ServiceManager
         serviceManagerImplementation = new ServiceManagerMock(
             avsDirectory,
-            paymentCoordinator,
+            rewardsCoordinator,
             registryCoordinatorImplementation,
             stakeRegistryImplementation
         );
@@ -95,22 +96,24 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         );
 
         serviceManagerOwner = serviceManager.owner();
+        cheats.prank(serviceManagerOwner);
+        serviceManager.setRewardsInitiator(rewardsInitiator);
 
         _setUpDefaultStrategiesAndMultipliers();
 
-        cheats.warp(GENESIS_PAYMENT_TIMESTAMP + 2 weeks);
+        cheats.warp(GENESIS_REWARDS_TIMESTAMP + 2 weeks);
 
         addressIsExcludedFromFuzzedInputs[address(pauserRegistry)] = true;
         addressIsExcludedFromFuzzedInputs[address(proxyAdmin)] = true;
     }
 
-    /// @notice deploy token to owner and approve ServiceManager. Used for deploying payment tokens
-    function _deployMockPaymentTokens(address owner, uint256 numTokens) internal virtual {
+    /// @notice deploy token to owner and approve ServiceManager. Used for deploying reward tokens
+    function _deployMockRewardTokens(address owner, uint256 numTokens) internal virtual {
         cheats.startPrank(owner);
         for (uint256 i = 0; i < numTokens; ++i) {
             IERC20 token =
                 new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, owner);
-            paymentTokens.push(token);
+            rewardTokens.push(token);
             token.approve(address(serviceManager), mockTokenInitialSupply);
         }
         cheats.stopPrank();
@@ -176,13 +179,13 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         strategyManagerMock.setStrategyWhitelist(strategies[2], true);
 
         defaultStrategyAndMultipliers.push(
-            IPaymentCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[0])), 1e18)
+            IRewardsCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[0])), 1e18)
         );
         defaultStrategyAndMultipliers.push(
-            IPaymentCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[1])), 2e18)
+            IRewardsCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[1])), 2e18)
         );
         defaultStrategyAndMultipliers.push(
-            IPaymentCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[2])), 3e18)
+            IRewardsCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[2])), 3e18)
         );
     }
 
@@ -205,28 +208,28 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         return timestamp1 > timestamp2 ? timestamp1 : timestamp2;
     }
 
-    function testFuzz_submitPayments_Revert_WhenNotOwner(address caller)
+    function testFuzz_createAVSRewardsSubmission_Revert_WhenNotOwner(address caller)
         public
         filterFuzzedAddressInputs(caller)
     {
-        cheats.assume(caller != serviceManagerOwner);
-        IPaymentCoordinator.RangePayment[] memory rangePayments;
+        cheats.assume(caller != rewardsInitiator);
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions;
 
         cheats.prank(caller);
         cheats.expectRevert(
-            "ServiceManagerBase.onlyPaymentInitiator: caller is not the payment initiator"
+            "ServiceManagerBase.onlyRewardsInitiator: caller is not the rewards initiator"
         );
-        serviceManager.payForRange(rangePayments);
+        serviceManager.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
-    function test_submitPayments_Revert_WhenERC20NotApproved() public {
+    function test_createAVSRewardsSubmission_Revert_WhenERC20NotApproved() public {
         IERC20 token = new ERC20PresetFixedSupply(
-            "dog wif hat", "MOCK1", mockTokenInitialSupply, serviceManagerOwner
+            "dog wif hat", "MOCK1", mockTokenInitialSupply, rewardsInitiator
         );
 
-        IPaymentCoordinator.RangePayment[] memory rangePayments =
-            new IPaymentCoordinator.RangePayment[](1);
-        rangePayments[0] = IPaymentCoordinator.RangePayment({
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions =
+            new IRewardsCoordinator.RewardsSubmission[](1);
+        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: token,
             amount: 100,
@@ -234,291 +237,291 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
             duration: uint32(1 weeks)
         });
 
-        cheats.prank(serviceManagerOwner);
+        cheats.prank(rewardsInitiator);
         cheats.expectRevert("ERC20: insufficient allowance");
-        serviceManager.payForRange(rangePayments);
+        serviceManager.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
-    function test_submitPayments_SingleRangePayment(
+    function test_createAVSRewardsSubmission_SingleSubmission(
         uint256 startTimestamp,
         uint256 duration,
         uint256 amount
     ) public {
         // 1. Bound fuzz inputs to valid ranges and amounts
-        IERC20 paymentToken = new ERC20PresetFixedSupply(
-            "dog wif hat", "MOCK1", mockTokenInitialSupply, serviceManagerOwner
+        IERC20 rewardToken = new ERC20PresetFixedSupply(
+            "dog wif hat", "MOCK1", mockTokenInitialSupply, rewardsInitiator
         );
-        amount = bound(amount, 1, MAX_PAYMENT_AMOUNT);
-        duration = bound(duration, 0, MAX_PAYMENT_DURATION);
+        amount = bound(amount, 1, MAX_REWARDS_AMOUNT);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
             uint256(
                 _maxTimestamp(
-                    GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH
+                    GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH
                 )
             ) + CALCULATION_INTERVAL_SECONDS - 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
-        // 2. Create range payment input param
-        IPaymentCoordinator.RangePayment[] memory rangePayments =
-            new IPaymentCoordinator.RangePayment[](1);
-        rangePayments[0] = IPaymentCoordinator.RangePayment({
+        // 2. Create reward submission input param
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions =
+            new IRewardsCoordinator.RewardsSubmission[](1);
+        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
-            token: paymentToken,
+            token: rewardToken,
             amount: amount,
             startTimestamp: uint32(startTimestamp),
             duration: uint32(duration)
         });
 
         // 3. Approve serviceManager for ERC20
-        cheats.startPrank(serviceManagerOwner);
-        paymentToken.approve(address(serviceManager), amount);
+        cheats.startPrank(rewardsInitiator);
+        rewardToken.approve(address(serviceManager), amount);
 
-        // 4. call payForRange() with expected event emitted
-        uint256 serviceManagerOwnerBalanceBefore =
-            paymentToken.balanceOf(address(serviceManagerOwner));
-        uint256 paymentCoordinatorBalanceBefore =
-            paymentToken.balanceOf(address(paymentCoordinator));
+        // 4. call createAVSRewardsSubmission() with expected event emitted
+        uint256 rewardsInitiatorBalanceBefore =
+            rewardToken.balanceOf(address(rewardsInitiator));
+        uint256 rewardsCoordinatorBalanceBefore =
+            rewardToken.balanceOf(address(rewardsCoordinator));
 
-        paymentToken.approve(address(paymentCoordinator), amount);
-        uint256 currPaymentNonce = paymentCoordinator.paymentNonce(address(serviceManager));
-        bytes32 rangePaymentHash =
-            keccak256(abi.encode(address(serviceManager), currPaymentNonce, rangePayments[0]));
+        rewardToken.approve(address(rewardsCoordinator), amount);
+        uint256 currSubmissionNonce = rewardsCoordinator.submissionNonce(address(serviceManager));
+        bytes32 avsSubmissionHash =
+            keccak256(abi.encode(address(serviceManager), currSubmissionNonce, rewardsSubmissions[0]));
 
-        cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
-        emit RangePaymentCreated(
-            address(serviceManager), currPaymentNonce, rangePaymentHash, rangePayments[0]
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit AVSRewardsSubmissionCreated(
+            address(serviceManager), currSubmissionNonce, avsSubmissionHash, rewardsSubmissions[0]
         );
-        serviceManager.payForRange(rangePayments);
+        serviceManager.createAVSRewardsSubmission(rewardsSubmissions);
         cheats.stopPrank();
 
         assertTrue(
-            paymentCoordinator.isRangePaymentHash(address(serviceManager), rangePaymentHash),
-            "Range payment hash not submitted"
+            rewardsCoordinator.isAVSRewardsSubmissionHash(address(serviceManager), avsSubmissionHash),
+            "reward submission hash not submitted"
         );
         assertEq(
-            currPaymentNonce + 1,
-            paymentCoordinator.paymentNonce(address(serviceManager)),
-            "Payment nonce not incremented"
+            currSubmissionNonce + 1,
+            rewardsCoordinator.submissionNonce(address(serviceManager)),
+            "submission nonce not incremented"
         );
         assertEq(
-            serviceManagerOwnerBalanceBefore - amount,
-            paymentToken.balanceOf(serviceManagerOwner),
-            "serviceManagerOwner balance not decremented by amount of range payment"
+            rewardsInitiatorBalanceBefore - amount,
+            rewardToken.balanceOf(rewardsInitiator),
+            "rewardsInitiator balance not decremented by amount of reward submission"
         );
         assertEq(
-            paymentCoordinatorBalanceBefore + amount,
-            paymentToken.balanceOf(address(paymentCoordinator)),
-            "PaymentCoordinator balance not incremented by amount of range payment"
+            rewardsCoordinatorBalanceBefore + amount,
+            rewardToken.balanceOf(address(rewardsCoordinator)),
+            "RewardsCoordinator balance not incremented by amount of reward submission"
         );
     }
 
-    function test_submitPayments_MultipleRangePayments(
+    function test_createAVSRewardsSubmission_MultipleSubmissions(
         uint256 startTimestamp,
         uint256 duration,
         uint256 amount,
-        uint256 numPayments
+        uint256 numSubmissions
     ) public {
-        cheats.assume(2 <= numPayments && numPayments <= 10);
-        cheats.prank(paymentCoordinator.owner());
+        cheats.assume(2 <= numSubmissions && numSubmissions <= 10);
+        cheats.prank(rewardsCoordinator.owner());
 
-        IPaymentCoordinator.RangePayment[] memory rangePayments =
-            new IPaymentCoordinator.RangePayment[](numPayments);
-        bytes32[] memory rangePaymentHashes = new bytes32[](numPayments);
-        uint256 startPaymentNonce = paymentCoordinator.paymentNonce(address(serviceManager));
-        _deployMockPaymentTokens(serviceManagerOwner, numPayments);
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions =
+            new IRewardsCoordinator.RewardsSubmission[](numSubmissions);
+        bytes32[] memory avsSubmissionHashes = new bytes32[](numSubmissions);
+        uint256 startSubmissionNonce = rewardsCoordinator.submissionNonce(address(serviceManager));
+        _deployMockRewardTokens(rewardsInitiator, numSubmissions);
 
         uint256[] memory avsBalancesBefore =
-            _getBalanceForTokens(paymentTokens, serviceManagerOwner);
-        uint256[] memory paymentCoordinatorBalancesBefore =
-            _getBalanceForTokens(paymentTokens, address(paymentCoordinator));
-        uint256[] memory amounts = new uint256[](numPayments);
+            _getBalanceForTokens(rewardTokens, rewardsInitiator);
+        uint256[] memory rewardsCoordinatorBalancesBefore =
+            _getBalanceForTokens(rewardTokens, address(rewardsCoordinator));
+        uint256[] memory amounts = new uint256[](numSubmissions);
 
-        // Create multiple range payments and their expected event
-        for (uint256 i = 0; i < numPayments; ++i) {
+        // Create multiple rewards submissions and their expected event
+        for (uint256 i = 0; i < numSubmissions; ++i) {
             // 1. Bound fuzz inputs to valid ranges and amounts using randSeed for each
-            amount = bound(amount + i, 1, MAX_PAYMENT_AMOUNT);
+            amount = bound(amount + i, 1, MAX_REWARDS_AMOUNT);
             amounts[i] = amount;
-            duration = bound(duration + i, 0, MAX_PAYMENT_DURATION);
+            duration = bound(duration + i, 0, MAX_REWARDS_DURATION);
             duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
             startTimestamp = bound(
                 startTimestamp + i,
                 uint256(
                     _maxTimestamp(
-                        GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH
+                        GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH
                     )
                 ) + CALCULATION_INTERVAL_SECONDS - 1,
                 block.timestamp + uint256(MAX_FUTURE_LENGTH)
             );
             startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
-            // 2. Create range payment input param
-            IPaymentCoordinator.RangePayment memory rangePayment = IPaymentCoordinator.RangePayment({
+            // 2. Create reward submission input param
+            IRewardsCoordinator.RewardsSubmission memory rewardsSubmission = IRewardsCoordinator.RewardsSubmission({
                 strategiesAndMultipliers: defaultStrategyAndMultipliers,
-                token: paymentTokens[i],
+                token: rewardTokens[i],
                 amount: amounts[i],
                 startTimestamp: uint32(startTimestamp),
                 duration: uint32(duration)
             });
-            rangePayments[i] = rangePayment;
+            rewardsSubmissions[i] = rewardsSubmission;
 
-            // 3. expected event emitted for this rangePayment
-            rangePaymentHashes[i] = keccak256(
-                abi.encode(address(serviceManager), startPaymentNonce + i, rangePayments[i])
+            // 3. expected event emitted for this rewardsSubmission
+            avsSubmissionHashes[i] = keccak256(
+                abi.encode(address(serviceManager), startSubmissionNonce + i, rewardsSubmissions[i])
             );
-            cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
-            emit RangePaymentCreated(
+            cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+            emit AVSRewardsSubmissionCreated(
                 address(serviceManager),
-                startPaymentNonce + i,
-                rangePaymentHashes[i],
-                rangePayments[i]
+                startSubmissionNonce + i,
+                avsSubmissionHashes[i],
+                rewardsSubmissions[i]
             );
         }
 
-        // 4. call payForRange()
-        cheats.prank(serviceManagerOwner);
-        serviceManager.payForRange(rangePayments);
+        // 4. call createAVSRewardsSubmission()
+        cheats.prank(rewardsInitiator);
+        serviceManager.createAVSRewardsSubmission(rewardsSubmissions);
 
-        // 5. Check for paymentNonce() and rangePaymentHashes being set
+        // 5. Check for submissionNonce() and avsSubmissionHashes being set
         assertEq(
-            startPaymentNonce + numPayments,
-            paymentCoordinator.paymentNonce(address(serviceManager)),
-            "Payment nonce not incremented properly"
+            startSubmissionNonce + numSubmissions,
+            rewardsCoordinator.submissionNonce(address(serviceManager)),
+            "avs submission nonce not incremented properly"
         );
 
-        for (uint256 i = 0; i < numPayments; ++i) {
+        for (uint256 i = 0; i < numSubmissions; ++i) {
             assertTrue(
-                paymentCoordinator.isRangePaymentHash(
-                    address(serviceManager), rangePaymentHashes[i]
+                rewardsCoordinator.isAVSRewardsSubmissionHash(
+                    address(serviceManager), avsSubmissionHashes[i]
                 ),
-                "Range payment hash not submitted"
+                "rewards submission hash not submitted"
             );
             assertEq(
                 avsBalancesBefore[i] - amounts[i],
-                paymentTokens[i].balanceOf(serviceManagerOwner),
-                "AVS balance not decremented by amount of range payment"
+                rewardTokens[i].balanceOf(rewardsInitiator),
+                "AVS balance not decremented by amount of rewards submission"
             );
             assertEq(
-                paymentCoordinatorBalancesBefore[i] + amounts[i],
-                paymentTokens[i].balanceOf(address(paymentCoordinator)),
-                "PaymentCoordinator balance not incremented by amount of range payment"
+                rewardsCoordinatorBalancesBefore[i] + amounts[i],
+                rewardTokens[i].balanceOf(address(rewardsCoordinator)),
+                "RewardsCoordinator balance not incremented by amount of rewards submission"
             );
         }
     }
 
-    function test_submitPayments_MultipleRangePaymentsSingleToken(
+    function test_createAVSRewardsSubmission_MultipleSubmissionsSingleToken(
         uint256 startTimestamp,
         uint256 duration,
         uint256 amount,
-        uint256 numPayments
+        uint256 numSubmissions
     ) public {
-        cheats.assume(2 <= numPayments && numPayments <= 10);
-        cheats.prank(paymentCoordinator.owner());
+        cheats.assume(2 <= numSubmissions && numSubmissions <= 10);
+        cheats.prank(rewardsCoordinator.owner());
 
-        IPaymentCoordinator.RangePayment[] memory rangePayments =
-            new IPaymentCoordinator.RangePayment[](numPayments);
-        bytes32[] memory rangePaymentHashes = new bytes32[](numPayments);
-        uint256 startPaymentNonce = paymentCoordinator.paymentNonce(address(serviceManager));
-        IERC20 paymentToken = new ERC20PresetFixedSupply(
-            "dog wif hat", "MOCK1", mockTokenInitialSupply, serviceManagerOwner
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions =
+            new IRewardsCoordinator.RewardsSubmission[](numSubmissions);
+        bytes32[] memory avsSubmissionHashes = new bytes32[](numSubmissions);
+        uint256 startSubmissionNonce = rewardsCoordinator.submissionNonce(address(serviceManager));
+        IERC20 rewardToken = new ERC20PresetFixedSupply(
+            "dog wif hat", "MOCK1", mockTokenInitialSupply, rewardsInitiator
         );
-        cheats.prank(serviceManagerOwner);
-        paymentToken.approve(address(serviceManager), mockTokenInitialSupply);
-        uint256 avsBalanceBefore = paymentToken.balanceOf(serviceManagerOwner);
-        uint256 paymentCoordinatorBalanceBefore =
-            paymentToken.balanceOf(address(paymentCoordinator));
+        cheats.prank(rewardsInitiator);
+        rewardToken.approve(address(serviceManager), mockTokenInitialSupply);
+        uint256 avsBalanceBefore = rewardToken.balanceOf(rewardsInitiator);
+        uint256 rewardsCoordinatorBalanceBefore =
+            rewardToken.balanceOf(address(rewardsCoordinator));
         uint256 totalAmount = 0;
 
-        uint256[] memory amounts = new uint256[](numPayments);
+        uint256[] memory amounts = new uint256[](numSubmissions);
 
-        // Create multiple range payments and their expected event
-        for (uint256 i = 0; i < numPayments; ++i) {
+        // Create multiple rewards submissions and their expected event
+        for (uint256 i = 0; i < numSubmissions; ++i) {
             // 1. Bound fuzz inputs to valid ranges and amounts using randSeed for each
-            amount = bound(amount + i, 1, MAX_PAYMENT_AMOUNT);
+            amount = bound(amount + i, 1, MAX_REWARDS_AMOUNT);
             amounts[i] = amount;
             totalAmount += amount;
-            duration = bound(duration + i, 0, MAX_PAYMENT_DURATION);
+            duration = bound(duration + i, 0, MAX_REWARDS_DURATION);
             duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
             startTimestamp = bound(
                 startTimestamp + i,
                 uint256(
                     _maxTimestamp(
-                        GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH
+                        GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH
                     )
                 ) + CALCULATION_INTERVAL_SECONDS - 1,
                 block.timestamp + uint256(MAX_FUTURE_LENGTH)
             );
             startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
-            // 2. Create range payment input param
-            IPaymentCoordinator.RangePayment memory rangePayment = IPaymentCoordinator.RangePayment({
+            // 2. Create reward submission input param
+            IRewardsCoordinator.RewardsSubmission memory rewardsSubmission = IRewardsCoordinator.RewardsSubmission({
                 strategiesAndMultipliers: defaultStrategyAndMultipliers,
-                token: paymentToken,
+                token: rewardToken,
                 amount: amounts[i],
                 startTimestamp: uint32(startTimestamp),
                 duration: uint32(duration)
             });
-            rangePayments[i] = rangePayment;
+            rewardsSubmissions[i] = rewardsSubmission;
 
-            // 3. expected event emitted for this rangePayment
-            rangePaymentHashes[i] = keccak256(
-                abi.encode(address(serviceManager), startPaymentNonce + i, rangePayments[i])
+            // 3. expected event emitted for this avs rewards submission
+            avsSubmissionHashes[i] = keccak256(
+                abi.encode(address(serviceManager), startSubmissionNonce + i, rewardsSubmissions[i])
             );
-            cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
-            emit RangePaymentCreated(
+            cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+            emit AVSRewardsSubmissionCreated(
                 address(serviceManager),
-                startPaymentNonce + i,
-                rangePaymentHashes[i],
-                rangePayments[i]
+                startSubmissionNonce + i,
+                avsSubmissionHashes[i],
+                rewardsSubmissions[i]
             );
         }
 
-        // 4. call payForRange()
-        cheats.prank(serviceManagerOwner);
-        serviceManager.payForRange(rangePayments);
+        // 4. call createAVSRewardsSubmission()
+        cheats.prank(rewardsInitiator);
+        serviceManager.createAVSRewardsSubmission(rewardsSubmissions);
 
-        // 5. Check for paymentNonce() and rangePaymentHashes being set
+        // 5. Check for submissionNonce() and avsSubmissionHashes being set
         assertEq(
-            startPaymentNonce + numPayments,
-            paymentCoordinator.paymentNonce(address(serviceManager)),
-            "Payment nonce not incremented properly"
+            startSubmissionNonce + numSubmissions,
+            rewardsCoordinator.submissionNonce(address(serviceManager)),
+            "avs submission nonce not incremented properly"
         );
         assertEq(
             avsBalanceBefore - totalAmount,
-            paymentToken.balanceOf(serviceManagerOwner),
-            "AVS balance not decremented by amount of range payments"
+            rewardToken.balanceOf(rewardsInitiator),
+            "AVS balance not decremented by amount of rewards submissions"
         );
         assertEq(
-            paymentCoordinatorBalanceBefore + totalAmount,
-            paymentToken.balanceOf(address(paymentCoordinator)),
-            "PaymentCoordinator balance not incremented by amount of range payments"
+            rewardsCoordinatorBalanceBefore + totalAmount,
+            rewardToken.balanceOf(address(rewardsCoordinator)),
+            "RewardsCoordinator balance not incremented by amount of rewards submissions"
         );
 
-        for (uint256 i = 0; i < numPayments; ++i) {
+        for (uint256 i = 0; i < numSubmissions; ++i) {
             assertTrue(
-                paymentCoordinator.isRangePaymentHash(
-                    address(serviceManager), rangePaymentHashes[i]
+                rewardsCoordinator.isAVSRewardsSubmissionHash(
+                    address(serviceManager), avsSubmissionHashes[i]
                 ),
-                "Range payment hash not submitted"
+                "rewards submission hash not submitted"
             );
         }
     }
 
-    function test_setPaymentInitiator() public {
-        address newPaymentInitiator = address(uint160(uint256(keccak256("newPaymentInitiator"))));
+    function test_setRewardsInitiator() public {
+        address newRewardsInitiator = address(uint160(uint256(keccak256("newRewardsInitiator"))));
         cheats.prank(serviceManagerOwner);
-        serviceManager.setPaymentInitiator(newPaymentInitiator);
-        assertEq(newPaymentInitiator, serviceManager.paymentInitiator());
+        serviceManager.setRewardsInitiator(newRewardsInitiator);
+        assertEq(newRewardsInitiator, serviceManager.rewardsInitiator());
     }
 
-    function test_setPaymentInitiator_revert_notOwner() public {
+    function test_setRewardsInitiator_revert_notOwner() public {
         address caller = address(uint160(uint256(keccak256("caller"))));
-        address newPaymentInitiator = address(uint160(uint256(keccak256("newPaymentInitiator"))));
+        address newRewardsInitiator = address(uint160(uint256(keccak256("newRewardsInitiator"))));
         cheats.expectRevert("Ownable: caller is not the owner");
         cheats.prank(caller);
-        serviceManager.setPaymentInitiator(newPaymentInitiator);
+        serviceManager.setRewardsInitiator(newRewardsInitiator);
     }
 }

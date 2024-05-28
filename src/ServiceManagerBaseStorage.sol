@@ -6,8 +6,7 @@ import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-import {IPaymentCoordinator} from
-    "eigenlayer-contracts/src/contracts/interfaces/IPaymentCoordinator.sol";
+import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 /**
  * @title Storage variables for the `ServiceManagerBase` contract.
@@ -21,7 +20,7 @@ abstract contract ServiceManagerBaseStorage is IServiceManager {
      *
      */
     IAVSDirectory internal immutable _avsDirectory;
-    IPaymentCoordinator internal immutable _paymentCoordinator;
+    IRewardsCoordinator internal immutable _rewardsCoordinator;
     IRegistryCoordinator internal immutable _registryCoordinator;
     IStakeRegistry internal immutable _stakeRegistry;
 
@@ -31,18 +30,18 @@ abstract contract ServiceManagerBaseStorage is IServiceManager {
      *
      */
 
-    /// @notice The address of the entity that can initiate payments
-    address public paymentInitiator;
+    /// @notice The address of the entity that can initiate rewards
+    address public rewardsInitiator;
 
-    /// @notice Sets the (immutable) `_avsDirectory`, `_paymentCoordinator`, `_registryCoordinator`, and `_stakeRegistry` addresses
+    /// @notice Sets the (immutable) `_avsDirectory`, `_rewardsCoordinator`, `_registryCoordinator`, and `_stakeRegistry` addresses
     constructor(
         IAVSDirectory __avsDirectory,
-        IPaymentCoordinator __paymentCoordinator,
+        IRewardsCoordinator __rewardsCoordinator,
         IRegistryCoordinator __registryCoordinator,
         IStakeRegistry __stakeRegistry
     ) {
         _avsDirectory = __avsDirectory;
-        _paymentCoordinator = __paymentCoordinator;
+        _rewardsCoordinator = __rewardsCoordinator;
         _registryCoordinator = __registryCoordinator;
         _stakeRegistry = __stakeRegistry;
     }
