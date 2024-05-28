@@ -2,27 +2,25 @@
 pragma solidity ^0.8.12;
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-import {IPaymentCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IPaymentCoordinator.sol";
+import {IPaymentCoordinator} from
+    "eigenlayer-contracts/src/contracts/interfaces/IPaymentCoordinator.sol";
 
+import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
-import {BitmapUtils} from "./libraries/BitmapUtils.sol"; 
+import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 
 /**
  * @title Minimal implementation of a ServiceManager-type contract.
  * This contract can be inherited from or simply used as a point-of-reference.
  * @author Layr Labs, Inc.
  */
-abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
+abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseStorage {
     using BitmapUtils for *;
-
-    IAVSDirectory internal immutable _avsDirectory;
-    IPaymentCoordinator internal immutable _paymentCoordinator;
-    IRegistryCoordinator internal immutable _registryCoordinator;
-    IStakeRegistry internal immutable _stakeRegistry;
 
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
     modifier onlyRegistryCoordinator() {
@@ -33,22 +31,37 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
         _;
     }
 
+    modifier onlyPaymentInitiator() {
+        require(
+            msg.sender == paymentInitiator,
+            "ServiceManagerBase.onlyPaymentInitiator: caller is not the payment initiator"
+        );
+        _;
+    }
+
     /// @notice Sets the (immutable) `_registryCoordinator` address
     constructor(
         IAVSDirectory __avsDirectory,
         IPaymentCoordinator ___paymentCoordinator,
         IRegistryCoordinator __registryCoordinator,
         IStakeRegistry __stakeRegistry
-    ) {
-        _avsDirectory = __avsDirectory;
-        _paymentCoordinator = ___paymentCoordinator;
-        _registryCoordinator = __registryCoordinator;
-        _stakeRegistry = __stakeRegistry;
+    )
+        ServiceManagerBaseStorage(
+            __avsDirectory,
+            ___paymentCoordinator,
+            __registryCoordinator,
+            __stakeRegistry
+        )
+    {
         _disableInitializers();
     }
 
-    function __ServiceManagerBase_init(address initialOwner) internal virtual onlyInitializing {
+    function __ServiceManagerBase_init(
+        address initialOwner,
+        address _paymentInitiator
+    ) internal virtual onlyInitializing {
         _transferOwnership(initialOwner);
+        _setPaymentInitiator(_paymentInitiator);
     }
 
     /**
@@ -73,15 +86,20 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
      * @dev This function will revert if the `rangePayment` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
-    function payForRange(
-        IPaymentCoordinator.RangePayment[] calldata rangePayments
-    ) public virtual onlyOwner {
+    function payForRange(IPaymentCoordinator.RangePayment[] calldata rangePayments)
+        public
+        virtual
+        onlyPaymentInitiator
+    {
         for (uint256 i = 0; i < rangePayments.length; ++i) {
             // transfer token to ServiceManager and approve PaymentCoordinator to transfer again
             // in payForRange() call
             rangePayments[i].token.transferFrom(msg.sender, address(this), rangePayments[i].amount);
-            uint256 allowance = rangePayments[i].token.allowance(address(this), address(_paymentCoordinator));
-            rangePayments[i].token.approve(address(_paymentCoordinator), rangePayments[i].amount + allowance);
+            uint256 allowance =
+                rangePayments[i].token.allowance(address(this), address(_paymentCoordinator));
+            rangePayments[i].token.approve(
+                address(_paymentCoordinator), rangePayments[i].amount + allowance
+            );
         }
 
         _paymentCoordinator.payForRange(rangePayments);
@@ -108,9 +126,23 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
     }
 
     /**
+     * @notice Sets the payment initiator address
+     * @param newPaymentInitiator The new payment initiator address
+     * @dev only callable by the owner
+     */
+    function setPaymentInitiator(address newPaymentInitiator) external onlyOwner {
+        _setPaymentInitiator(newPaymentInitiator);
+    }
+
+    function _setPaymentInitiator(address newPaymentInitiator) internal {
+        emit PaymentInitiatorUpdated(paymentInitiator, newPaymentInitiator);
+        paymentInitiator = newPaymentInitiator;
+    }
+
+    /**
      * @notice Returns the list of strategies that the AVS supports for restaking
      * @dev This function is intended to be called off-chain
-     * @dev No guarantee is made on uniqueness of each element in the returned array. 
+     * @dev No guarantee is made on uniqueness of each element in the returned array.
      *      The off-chain service should do that validation separately
      */
     function getRestakeableStrategies() external view returns (address[] memory) {
@@ -119,18 +151,19 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
         if (quorumCount == 0) {
             return new address[](0);
         }
-        
+
         uint256 strategyCount;
-        for(uint256 i = 0; i < quorumCount; i++) {
+        for (uint256 i = 0; i < quorumCount; i++) {
             strategyCount += _stakeRegistry.strategyParamsLength(uint8(i));
         }
 
         address[] memory restakedStrategies = new address[](strategyCount);
         uint256 index = 0;
-        for(uint256 i = 0; i < _registryCoordinator.quorumCount(); i++) {
+        for (uint256 i = 0; i < _registryCoordinator.quorumCount(); i++) {
             uint256 strategyParamsLength = _stakeRegistry.strategyParamsLength(uint8(i));
             for (uint256 j = 0; j < strategyParamsLength; j++) {
-                restakedStrategies[index] = address(_stakeRegistry.strategyParamsByIndex(uint8(i), j).strategy);
+                restakedStrategies[index] =
+                    address(_stakeRegistry.strategyParamsByIndex(uint8(i), j).strategy);
                 index++;
             }
         }
@@ -141,10 +174,14 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
      * @notice Returns the list of strategies that the operator has potentially restaked on the AVS
      * @param operator The address of the operator to get restaked strategies for
      * @dev This function is intended to be called off-chain
-     * @dev No guarantee is made on whether the operator has shares for a strategy in a quorum or uniqueness 
+     * @dev No guarantee is made on whether the operator has shares for a strategy in a quorum or uniqueness
      *      of each element in the returned array. The off-chain service should do that validation separately
      */
-    function getOperatorRestakedStrategies(address operator) external view returns (address[] memory) {
+    function getOperatorRestakedStrategies(address operator)
+        external
+        view
+        returns (address[] memory)
+    {
         bytes32 operatorId = _registryCoordinator.getOperatorId(operator);
         uint192 operatorBitmap = _registryCoordinator.getCurrentQuorumBitmap(operatorId);
 
@@ -155,30 +192,27 @@ abstract contract ServiceManagerBase is IServiceManager, OwnableUpgradeable {
         // Get number of strategies for each quorum in operator bitmap
         bytes memory operatorRestakedQuorums = BitmapUtils.bitmapToBytesArray(operatorBitmap);
         uint256 strategyCount;
-        for(uint256 i = 0; i < operatorRestakedQuorums.length; i++) {
+        for (uint256 i = 0; i < operatorRestakedQuorums.length; i++) {
             strategyCount += _stakeRegistry.strategyParamsLength(uint8(operatorRestakedQuorums[i]));
         }
 
         // Get strategies for each quorum in operator bitmap
         address[] memory restakedStrategies = new address[](strategyCount);
         uint256 index = 0;
-        for(uint256 i = 0; i < operatorRestakedQuorums.length; i++) {
+        for (uint256 i = 0; i < operatorRestakedQuorums.length; i++) {
             uint8 quorum = uint8(operatorRestakedQuorums[i]);
             uint256 strategyParamsLength = _stakeRegistry.strategyParamsLength(quorum);
             for (uint256 j = 0; j < strategyParamsLength; j++) {
-                restakedStrategies[index] = address(_stakeRegistry.strategyParamsByIndex(quorum, j).strategy);
+                restakedStrategies[index] =
+                    address(_stakeRegistry.strategyParamsByIndex(quorum, j).strategy);
                 index++;
             }
         }
-        return restakedStrategies;        
+        return restakedStrategies;
     }
 
     /// @notice Returns the EigenLayer AVSDirectory contract.
     function avsDirectory() external view override returns (address) {
         return address(_avsDirectory);
     }
-    
-    // storage gap for upgradeability
-    // slither-disable-next-line shadowing-state
-    uint256[50] private __GAP;
 }

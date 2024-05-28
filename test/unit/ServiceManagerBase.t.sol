@@ -2,30 +2,29 @@
 pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
-import {PaymentCoordinator, IPaymentCoordinator, IERC20} from "eigenlayer-contracts/src/contracts/core/PaymentCoordinator.sol";
+import {
+    PaymentCoordinator,
+    IPaymentCoordinator,
+    IERC20
+} from "eigenlayer-contracts/src/contracts/core/PaymentCoordinator.sol";
 import {StrategyBase} from "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import {IServiceManagerBaseEvents} from "../events/IServiceManagerBaseEvents.sol";
 
 import "../utils/MockAVSDeployer.sol";
 
-contract ServiceManagerBase_UnitTests is
-    MockAVSDeployer,
-    IServiceManagerBaseEvents
-{
+contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEvents {
     // PaymentCoordinator config
-    address paymentUpdater =
-        address(uint160(uint256(keccak256("paymentUpdater"))));
+    address paymentUpdater = address(uint160(uint256(keccak256("paymentUpdater"))));
     uint32 CALCULATION_INTERVAL_SECONDS = 7 days;
     uint32 MAX_PAYMENT_DURATION = 70 days;
     uint32 MAX_RETROACTIVE_LENGTH = 84 days;
     uint32 MAX_FUTURE_LENGTH = 28 days;
-    uint32 GENESIS_PAYMENT_TIMESTAMP = 1712188800;
+    uint32 GENESIS_PAYMENT_TIMESTAMP = 1_712_188_800;
     uint256 MAX_PAYMENT_AMOUNT = 1e38 - 1;
     /// @notice Delay in timestamp before a posted root can be claimed against
     uint32 activationDelay = 7 days;
     /// @notice the commission for all operators across all avss
     uint16 globalCommissionBips = 1000;
-    
 
     // Testing Config and Mocks
     address serviceManagerOwner;
@@ -67,7 +66,7 @@ contract ServiceManagerBase_UnitTests is
                         PaymentCoordinator.initialize.selector,
                         msg.sender,
                         pauserRegistry,
-                        0 /*initialPausedStatus*/,
+                        0, /*initialPausedStatus*/
                         paymentUpdater,
                         activationDelay,
                         globalCommissionBips
@@ -82,18 +81,19 @@ contract ServiceManagerBase_UnitTests is
             registryCoordinatorImplementation,
             stakeRegistryImplementation
         );
+
         serviceManager = ServiceManagerMock(
             address(
                 new TransparentUpgradeableProxy(
                     address(serviceManagerImplementation),
                     address(proxyAdmin),
                     abi.encodeWithSelector(
-                        ServiceManagerMock.initialize.selector,
-                        msg.sender
+                        ServiceManagerMock.initialize.selector, msg.sender, msg.sender
                     )
                 )
             )
         );
+
         serviceManagerOwner = serviceManager.owner();
 
         _setUpDefaultStrategiesAndMultipliers();
@@ -105,18 +105,11 @@ contract ServiceManagerBase_UnitTests is
     }
 
     /// @notice deploy token to owner and approve ServiceManager. Used for deploying payment tokens
-    function _deployMockPaymentTokens(
-        address owner,
-        uint256 numTokens
-    ) internal virtual {
+    function _deployMockPaymentTokens(address owner, uint256 numTokens) internal virtual {
         cheats.startPrank(owner);
         for (uint256 i = 0; i < numTokens; ++i) {
-            IERC20 token = new ERC20PresetFixedSupply(
-                "dog wif hat",
-                "MOCK1",
-                mockTokenInitialSupply,
-                owner
-            );
+            IERC20 token =
+                new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, owner);
             paymentTokens.push(token);
             token.approve(address(serviceManager), mockTokenInitialSupply);
         }
@@ -137,22 +130,12 @@ contract ServiceManagerBase_UnitTests is
     function _setUpDefaultStrategiesAndMultipliers() internal virtual {
         // Deploy Mock Strategies
         IERC20 token1 = new ERC20PresetFixedSupply(
-            "dog wif hat",
-            "MOCK1",
-            mockTokenInitialSupply,
-            address(this)
+            "dog wif hat", "MOCK1", mockTokenInitialSupply, address(this)
         );
-        IERC20 token2 = new ERC20PresetFixedSupply(
-            "jeo boden",
-            "MOCK2",
-            mockTokenInitialSupply,
-            address(this)
-        );
+        IERC20 token2 =
+            new ERC20PresetFixedSupply("jeo boden", "MOCK2", mockTokenInitialSupply, address(this));
         IERC20 token3 = new ERC20PresetFixedSupply(
-            "pepe wif avs",
-            "MOCK3",
-            mockTokenInitialSupply,
-            address(this)
+            "pepe wif avs", "MOCK3", mockTokenInitialSupply, address(this)
         );
         strategyImplementation = new StrategyBase(strategyManagerMock);
         strategyMock1 = StrategyBase(
@@ -160,11 +143,7 @@ contract ServiceManagerBase_UnitTests is
                 new TransparentUpgradeableProxy(
                     address(strategyImplementation),
                     address(proxyAdmin),
-                    abi.encodeWithSelector(
-                        StrategyBase.initialize.selector,
-                        token1,
-                        pauserRegistry
-                    )
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, token1, pauserRegistry)
                 )
             )
         );
@@ -173,11 +152,7 @@ contract ServiceManagerBase_UnitTests is
                 new TransparentUpgradeableProxy(
                     address(strategyImplementation),
                     address(proxyAdmin),
-                    abi.encodeWithSelector(
-                        StrategyBase.initialize.selector,
-                        token2,
-                        pauserRegistry
-                    )
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, token2, pauserRegistry)
                 )
             )
         );
@@ -186,11 +161,7 @@ contract ServiceManagerBase_UnitTests is
                 new TransparentUpgradeableProxy(
                     address(strategyImplementation),
                     address(proxyAdmin),
-                    abi.encodeWithSelector(
-                        StrategyBase.initialize.selector,
-                        token3,
-                        pauserRegistry
-                    )
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, token3, pauserRegistry)
                 )
             )
         );
@@ -205,29 +176,18 @@ contract ServiceManagerBase_UnitTests is
         strategyManagerMock.setStrategyWhitelist(strategies[2], true);
 
         defaultStrategyAndMultipliers.push(
-            IPaymentCoordinator.StrategyAndMultiplier(
-                IStrategy(address(strategies[0])),
-                1e18
-            )
+            IPaymentCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[0])), 1e18)
         );
         defaultStrategyAndMultipliers.push(
-            IPaymentCoordinator.StrategyAndMultiplier(
-                IStrategy(address(strategies[1])),
-                2e18
-            )
+            IPaymentCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[1])), 2e18)
         );
         defaultStrategyAndMultipliers.push(
-            IPaymentCoordinator.StrategyAndMultiplier(
-                IStrategy(address(strategies[2])),
-                3e18
-            )
+            IPaymentCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[2])), 3e18)
         );
     }
 
     /// @dev Sort to ensure that the array is in ascending order for strategies
-    function _sortArrayAsc(
-        IStrategy[] memory arr
-    ) internal pure returns (IStrategy[] memory) {
+    function _sortArrayAsc(IStrategy[] memory arr) internal pure returns (IStrategy[] memory) {
         uint256 l = arr.length;
         for (uint256 i = 0; i < l; i++) {
             for (uint256 j = i + 1; j < l; j++) {
@@ -241,34 +201,31 @@ contract ServiceManagerBase_UnitTests is
         return arr;
     }
 
-    function _maxTimestamp(
-        uint32 timestamp1,
-        uint32 timestamp2
-    ) internal pure returns (uint32) {
+    function _maxTimestamp(uint32 timestamp1, uint32 timestamp2) internal pure returns (uint32) {
         return timestamp1 > timestamp2 ? timestamp1 : timestamp2;
     }
 
-    function testFuzz_submitPayments_Revert_WhenNotOwner(
-        address caller
-    ) public filterFuzzedAddressInputs(caller) {
+    function testFuzz_submitPayments_Revert_WhenNotOwner(address caller)
+        public
+        filterFuzzedAddressInputs(caller)
+    {
         cheats.assume(caller != serviceManagerOwner);
         IPaymentCoordinator.RangePayment[] memory rangePayments;
 
         cheats.prank(caller);
-        cheats.expectRevert("Ownable: caller is not the owner");
+        cheats.expectRevert(
+            "ServiceManagerBase.onlyPaymentInitiator: caller is not the payment initiator"
+        );
         serviceManager.payForRange(rangePayments);
     }
 
     function test_submitPayments_Revert_WhenERC20NotApproved() public {
         IERC20 token = new ERC20PresetFixedSupply(
-            "dog wif hat",
-            "MOCK1",
-            mockTokenInitialSupply,
-            serviceManagerOwner
+            "dog wif hat", "MOCK1", mockTokenInitialSupply, serviceManagerOwner
         );
 
-        IPaymentCoordinator.RangePayment[]
-            memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
+        IPaymentCoordinator.RangePayment[] memory rangePayments =
+            new IPaymentCoordinator.RangePayment[](1);
         rangePayments[0] = IPaymentCoordinator.RangePayment({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: token,
@@ -289,10 +246,7 @@ contract ServiceManagerBase_UnitTests is
     ) public {
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 paymentToken = new ERC20PresetFixedSupply(
-            "dog wif hat",
-            "MOCK1",
-            mockTokenInitialSupply,
-            serviceManagerOwner
+            "dog wif hat", "MOCK1", mockTokenInitialSupply, serviceManagerOwner
         );
         amount = bound(amount, 1, MAX_PAYMENT_AMOUNT);
         duration = bound(duration, 0, MAX_PAYMENT_DURATION);
@@ -301,21 +255,16 @@ contract ServiceManagerBase_UnitTests is
             startTimestamp,
             uint256(
                 _maxTimestamp(
-                    GENESIS_PAYMENT_TIMESTAMP,
-                    uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH
+                    GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH
                 )
-            ) +
-                CALCULATION_INTERVAL_SECONDS -
-                1,
+            ) + CALCULATION_INTERVAL_SECONDS - 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
-        startTimestamp =
-            startTimestamp -
-            (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create range payment input param
-        IPaymentCoordinator.RangePayment[]
-            memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
+        IPaymentCoordinator.RangePayment[] memory rangePayments =
+            new IPaymentCoordinator.RangePayment[](1);
         rangePayments[0] = IPaymentCoordinator.RangePayment({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: paymentToken,
@@ -329,40 +278,25 @@ contract ServiceManagerBase_UnitTests is
         paymentToken.approve(address(serviceManager), amount);
 
         // 4. call payForRange() with expected event emitted
-        uint256 serviceManagerOwnerBalanceBefore = paymentToken.balanceOf(
-            address(serviceManagerOwner)
-        );
-        uint256 paymentCoordinatorBalanceBefore = paymentToken.balanceOf(
-            address(paymentCoordinator)
-        );
+        uint256 serviceManagerOwnerBalanceBefore =
+            paymentToken.balanceOf(address(serviceManagerOwner));
+        uint256 paymentCoordinatorBalanceBefore =
+            paymentToken.balanceOf(address(paymentCoordinator));
 
         paymentToken.approve(address(paymentCoordinator), amount);
-        uint256 currPaymentNonce = paymentCoordinator.paymentNonce(
-            address(serviceManager)
-        );
-        bytes32 rangePaymentHash = keccak256(
-            abi.encode(
-                address(serviceManager),
-                currPaymentNonce,
-                rangePayments[0]
-            )
-        );
+        uint256 currPaymentNonce = paymentCoordinator.paymentNonce(address(serviceManager));
+        bytes32 rangePaymentHash =
+            keccak256(abi.encode(address(serviceManager), currPaymentNonce, rangePayments[0]));
 
         cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
         emit RangePaymentCreated(
-            address(serviceManager),
-            currPaymentNonce,
-            rangePaymentHash,
-            rangePayments[0]
+            address(serviceManager), currPaymentNonce, rangePaymentHash, rangePayments[0]
         );
         serviceManager.payForRange(rangePayments);
         cheats.stopPrank();
 
         assertTrue(
-            paymentCoordinator.isRangePaymentHash(
-                address(serviceManager),
-                rangePaymentHash
-            ),
+            paymentCoordinator.isRangePaymentHash(address(serviceManager), rangePaymentHash),
             "Range payment hash not submitted"
         );
         assertEq(
@@ -391,25 +325,16 @@ contract ServiceManagerBase_UnitTests is
         cheats.assume(2 <= numPayments && numPayments <= 10);
         cheats.prank(paymentCoordinator.owner());
 
-        IPaymentCoordinator.RangePayment[]
-            memory rangePayments = new IPaymentCoordinator.RangePayment[](
-                numPayments
-            );
+        IPaymentCoordinator.RangePayment[] memory rangePayments =
+            new IPaymentCoordinator.RangePayment[](numPayments);
         bytes32[] memory rangePaymentHashes = new bytes32[](numPayments);
-        uint256 startPaymentNonce = paymentCoordinator.paymentNonce(
-            address(serviceManager)
-        );
+        uint256 startPaymentNonce = paymentCoordinator.paymentNonce(address(serviceManager));
         _deployMockPaymentTokens(serviceManagerOwner, numPayments);
 
-        uint256[] memory avsBalancesBefore = _getBalanceForTokens(
-            paymentTokens,
-            serviceManagerOwner
-        );
-        uint256[]
-            memory paymentCoordinatorBalancesBefore = _getBalanceForTokens(
-                paymentTokens,
-                address(paymentCoordinator)
-            );
+        uint256[] memory avsBalancesBefore =
+            _getBalanceForTokens(paymentTokens, serviceManagerOwner);
+        uint256[] memory paymentCoordinatorBalancesBefore =
+            _getBalanceForTokens(paymentTokens, address(paymentCoordinator));
         uint256[] memory amounts = new uint256[](numPayments);
 
         // Create multiple range payments and their expected event
@@ -423,44 +348,28 @@ contract ServiceManagerBase_UnitTests is
                 startTimestamp + i,
                 uint256(
                     _maxTimestamp(
-                        GENESIS_PAYMENT_TIMESTAMP,
-                        uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH
+                        GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH
                     )
-                ) +
-                    CALCULATION_INTERVAL_SECONDS -
-                    1,
+                ) + CALCULATION_INTERVAL_SECONDS - 1,
                 block.timestamp + uint256(MAX_FUTURE_LENGTH)
             );
-            startTimestamp =
-                startTimestamp -
-                (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+            startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
             // 2. Create range payment input param
-            IPaymentCoordinator.RangePayment
-                memory rangePayment = IPaymentCoordinator.RangePayment({
-                    strategiesAndMultipliers: defaultStrategyAndMultipliers,
-                    token: paymentTokens[i],
-                    amount: amounts[i],
-                    startTimestamp: uint32(startTimestamp),
-                    duration: uint32(duration)
-                });
+            IPaymentCoordinator.RangePayment memory rangePayment = IPaymentCoordinator.RangePayment({
+                strategiesAndMultipliers: defaultStrategyAndMultipliers,
+                token: paymentTokens[i],
+                amount: amounts[i],
+                startTimestamp: uint32(startTimestamp),
+                duration: uint32(duration)
+            });
             rangePayments[i] = rangePayment;
 
             // 3. expected event emitted for this rangePayment
             rangePaymentHashes[i] = keccak256(
-                abi.encode(
-                    address(serviceManager),
-                    startPaymentNonce + i,
-                    rangePayments[i]
-                )
+                abi.encode(address(serviceManager), startPaymentNonce + i, rangePayments[i])
             );
-            cheats.expectEmit(
-                true,
-                true,
-                true,
-                true,
-                address(paymentCoordinator)
-            );
+            cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
             emit RangePaymentCreated(
                 address(serviceManager),
                 startPaymentNonce + i,
@@ -483,8 +392,7 @@ contract ServiceManagerBase_UnitTests is
         for (uint256 i = 0; i < numPayments; ++i) {
             assertTrue(
                 paymentCoordinator.isRangePaymentHash(
-                    address(serviceManager),
-                    rangePaymentHashes[i]
+                    address(serviceManager), rangePaymentHashes[i]
                 ),
                 "Range payment hash not submitted"
             );
@@ -510,24 +418,18 @@ contract ServiceManagerBase_UnitTests is
         cheats.assume(2 <= numPayments && numPayments <= 10);
         cheats.prank(paymentCoordinator.owner());
 
-        IPaymentCoordinator.RangePayment[]
-            memory rangePayments = new IPaymentCoordinator.RangePayment[](
-                numPayments
-            );
+        IPaymentCoordinator.RangePayment[] memory rangePayments =
+            new IPaymentCoordinator.RangePayment[](numPayments);
         bytes32[] memory rangePaymentHashes = new bytes32[](numPayments);
-        uint256 startPaymentNonce = paymentCoordinator.paymentNonce(
-            address(serviceManager)
-        );
+        uint256 startPaymentNonce = paymentCoordinator.paymentNonce(address(serviceManager));
         IERC20 paymentToken = new ERC20PresetFixedSupply(
-            "dog wif hat",
-            "MOCK1",
-            mockTokenInitialSupply,
-            serviceManagerOwner
+            "dog wif hat", "MOCK1", mockTokenInitialSupply, serviceManagerOwner
         );
         cheats.prank(serviceManagerOwner);
         paymentToken.approve(address(serviceManager), mockTokenInitialSupply);
         uint256 avsBalanceBefore = paymentToken.balanceOf(serviceManagerOwner);
-        uint256 paymentCoordinatorBalanceBefore = paymentToken.balanceOf(address(paymentCoordinator));
+        uint256 paymentCoordinatorBalanceBefore =
+            paymentToken.balanceOf(address(paymentCoordinator));
         uint256 totalAmount = 0;
 
         uint256[] memory amounts = new uint256[](numPayments);
@@ -544,44 +446,28 @@ contract ServiceManagerBase_UnitTests is
                 startTimestamp + i,
                 uint256(
                     _maxTimestamp(
-                        GENESIS_PAYMENT_TIMESTAMP,
-                        uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH
+                        GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH
                     )
-                ) +
-                    CALCULATION_INTERVAL_SECONDS -
-                    1,
+                ) + CALCULATION_INTERVAL_SECONDS - 1,
                 block.timestamp + uint256(MAX_FUTURE_LENGTH)
             );
-            startTimestamp =
-                startTimestamp -
-                (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+            startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
             // 2. Create range payment input param
-            IPaymentCoordinator.RangePayment
-                memory rangePayment = IPaymentCoordinator.RangePayment({
-                    strategiesAndMultipliers: defaultStrategyAndMultipliers,
-                    token: paymentToken,
-                    amount: amounts[i],
-                    startTimestamp: uint32(startTimestamp),
-                    duration: uint32(duration)
-                });
+            IPaymentCoordinator.RangePayment memory rangePayment = IPaymentCoordinator.RangePayment({
+                strategiesAndMultipliers: defaultStrategyAndMultipliers,
+                token: paymentToken,
+                amount: amounts[i],
+                startTimestamp: uint32(startTimestamp),
+                duration: uint32(duration)
+            });
             rangePayments[i] = rangePayment;
 
             // 3. expected event emitted for this rangePayment
             rangePaymentHashes[i] = keccak256(
-                abi.encode(
-                    address(serviceManager),
-                    startPaymentNonce + i,
-                    rangePayments[i]
-                )
+                abi.encode(address(serviceManager), startPaymentNonce + i, rangePayments[i])
             );
-            cheats.expectEmit(
-                true,
-                true,
-                true,
-                true,
-                address(paymentCoordinator)
-            );
+            cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
             emit RangePaymentCreated(
                 address(serviceManager),
                 startPaymentNonce + i,
@@ -614,11 +500,25 @@ contract ServiceManagerBase_UnitTests is
         for (uint256 i = 0; i < numPayments; ++i) {
             assertTrue(
                 paymentCoordinator.isRangePaymentHash(
-                    address(serviceManager),
-                    rangePaymentHashes[i]
+                    address(serviceManager), rangePaymentHashes[i]
                 ),
                 "Range payment hash not submitted"
             );
         }
+    }
+
+    function test_setPaymentInitiator() public {
+        address newPaymentInitiator = address(uint160(uint256(keccak256("newPaymentInitiator"))));
+        cheats.prank(serviceManagerOwner);
+        serviceManager.setPaymentInitiator(newPaymentInitiator);
+        assertEq(newPaymentInitiator, serviceManager.paymentInitiator());
+    }
+
+    function test_setPaymentInitiator_revert_notOwner() public {
+        address caller = address(uint160(uint256(keccak256("caller"))));
+        address newPaymentInitiator = address(uint160(uint256(keccak256("newPaymentInitiator"))));
+        cheats.expectRevert("Ownable: caller is not the owner");
+        cheats.prank(caller);
+        serviceManager.setPaymentInitiator(newPaymentInitiator);
     }
 }
