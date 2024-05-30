@@ -5,8 +5,7 @@ import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/Ownabl
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-import {IPaymentCoordinator} from
-    "eigenlayer-contracts/src/contracts/interfaces/IPaymentCoordinator.sol";
+import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
@@ -31,10 +30,11 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
         _;
     }
 
-    modifier onlyPaymentInitiator() {
+    /// @notice only rewardsInitiator can call createAVSRewardsSubmission
+    modifier onlyRewardsInitiator() {
         require(
-            msg.sender == paymentInitiator,
-            "ServiceManagerBase.onlyPaymentInitiator: caller is not the payment initiator"
+            msg.sender == rewardsInitiator,
+            "ServiceManagerBase.onlyRewardsInitiator: caller is not the rewards initiator"
         );
         _;
     }
@@ -42,13 +42,13 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
     /// @notice Sets the (immutable) `_registryCoordinator` address
     constructor(
         IAVSDirectory __avsDirectory,
-        IPaymentCoordinator ___paymentCoordinator,
+        IRewardsCoordinator __rewardsCoordinator,
         IRegistryCoordinator __registryCoordinator,
         IStakeRegistry __stakeRegistry
     )
         ServiceManagerBaseStorage(
             __avsDirectory,
-            ___paymentCoordinator,
+            __rewardsCoordinator,
             __registryCoordinator,
             __stakeRegistry
         )
@@ -58,10 +58,10 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
 
     function __ServiceManagerBase_init(
         address initialOwner,
-        address _paymentInitiator
+        address _rewardsInitiator
     ) internal virtual onlyInitializing {
         _transferOwnership(initialOwner);
-        _setPaymentInitiator(_paymentInitiator);
+        _setRewardsInitiator(_rewardsInitiator);
     }
 
     /**
@@ -74,35 +74,33 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
     }
 
     /**
-     * @notice Creates a new range payment on behalf of an AVS, to be split amongst the
-     * set of stakers delegated to operators who are registered to the `avs`.
-     * Note that the owner calling this function must have approved the tokens to be transferred to the ServiceManager
-     * and of course has the required balances.
-     * @param rangePayments The range payments being created
-     * @dev Expected to be called by the ServiceManager of the AVS on behalf of which the payment is being made
-     * @dev The duration of the `rangePayment` cannot exceed `paymentCoordinator.MAX_PAYMENT_DURATION()`
-     * @dev The tokens are sent to the `PaymentCoordinator` contract
+     * @notice Creates a new rewards submission to the EigenLayer RewardsCoordinator contract, to be split amongst the
+     * set of stakers delegated to operators who are registered to this `avs`
+     * @param rewardsSubmissions The rewards submissions being created
+     * @dev Only callabe by the permissioned rewardsInitiator address
+     * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
+     * @dev The tokens are sent to the `RewardsCoordinator` contract
      * @dev Strategies must be in ascending order of addresses to check for duplicates
-     * @dev This function will revert if the `rangePayment` is malformed,
+     * @dev This function will revert if the `rewardsSubmission` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
-    function payForRange(IPaymentCoordinator.RangePayment[] calldata rangePayments)
+    function createAVSRewardsSubmission(IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions)
         public
         virtual
-        onlyPaymentInitiator
+        onlyRewardsInitiator
     {
-        for (uint256 i = 0; i < rangePayments.length; ++i) {
-            // transfer token to ServiceManager and approve PaymentCoordinator to transfer again
-            // in payForRange() call
-            rangePayments[i].token.transferFrom(msg.sender, address(this), rangePayments[i].amount);
+        for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
+            // transfer token to ServiceManager and approve RewardsCoordinator to transfer again
+            // in createAVSRewardsSubmission() call
+            rewardsSubmissions[i].token.transferFrom(msg.sender, address(this), rewardsSubmissions[i].amount);
             uint256 allowance =
-                rangePayments[i].token.allowance(address(this), address(_paymentCoordinator));
-            rangePayments[i].token.approve(
-                address(_paymentCoordinator), rangePayments[i].amount + allowance
+                rewardsSubmissions[i].token.allowance(address(this), address(_rewardsCoordinator));
+            rewardsSubmissions[i].token.approve(
+                address(_rewardsCoordinator), rewardsSubmissions[i].amount + allowance
             );
         }
 
-        _paymentCoordinator.payForRange(rangePayments);
+        _rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
     /**
@@ -126,17 +124,17 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
     }
 
     /**
-     * @notice Sets the payment initiator address
-     * @param newPaymentInitiator The new payment initiator address
+     * @notice Sets the rewards initiator address
+     * @param newRewardsInitiator The new rewards initiator address
      * @dev only callable by the owner
      */
-    function setPaymentInitiator(address newPaymentInitiator) external onlyOwner {
-        _setPaymentInitiator(newPaymentInitiator);
+    function setRewardsInitiator(address newRewardsInitiator) external onlyOwner {
+        _setRewardsInitiator(newRewardsInitiator);
     }
 
-    function _setPaymentInitiator(address newPaymentInitiator) internal {
-        emit PaymentInitiatorUpdated(paymentInitiator, newPaymentInitiator);
-        paymentInitiator = newPaymentInitiator;
+    function _setRewardsInitiator(address newRewardsInitiator) internal {
+        emit RewardsInitiatorUpdated(rewardsInitiator, newRewardsInitiator);
+        rewardsInitiator = newRewardsInitiator;
     }
 
     /**

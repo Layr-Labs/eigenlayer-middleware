@@ -31,10 +31,11 @@ import {AVSDirectoryMock} from "../mocks/AVSDirectoryMock.sol";
 import {DelegationMock} from "../mocks/DelegationMock.sol";
 import {AVSDirectory} from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-import {IPaymentCoordinator} from
-    "eigenlayer-contracts/src/contracts/interfaces/IPaymentCoordinator.sol";
-import {PaymentCoordinator} from "eigenlayer-contracts/src/contracts/core/PaymentCoordinator.sol";
-import {PaymentCoordinatorMock} from "../mocks/PaymentCoordinatorMock.sol";
+
+import {RewardsCoordinatorMock} from "../mocks/RewardsCoordinatorMock.sol";
+
+import { RewardsCoordinator } from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
+import { IRewardsCoordinator } from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 import {BLSApkRegistryHarness} from "../harnesses/BLSApkRegistryHarness.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
@@ -75,9 +76,9 @@ contract MockAVSDeployer is Test {
     AVSDirectory public avsDirectory;
     AVSDirectory public avsDirectoryImplementation;
     AVSDirectoryMock public avsDirectoryMock;
-    PaymentCoordinator public paymentCoordinator;
-    PaymentCoordinator public paymentCoordinatorImplementation;
-    PaymentCoordinatorMock public paymentCoordinatorMock;
+    RewardsCoordinator public rewardsCoordinator;
+    RewardsCoordinator public rewardsCoordinatorImplementation;
+    RewardsCoordinatorMock public rewardsCoordinatorMock;
 
     /// @notice StakeRegistry, Constant used as a divisor in calculating weights.
     uint256 public constant WEIGHTING_DIVISOR = 1e18;
@@ -179,7 +180,7 @@ contract MockAVSDeployer is Test {
                 )
             )
         );
-        paymentCoordinatorMock = new PaymentCoordinatorMock();
+        rewardsCoordinatorMock = new RewardsCoordinatorMock();
 
         strategyManagerMock.setAddresses(delegationMock, eigenPodManagerMock, slasher);
         cheats.stopPrank();
@@ -243,7 +244,7 @@ contract MockAVSDeployer is Test {
 
         serviceManagerImplementation = new ServiceManagerMock(
             avsDirectoryMock,
-            IPaymentCoordinator(address(paymentCoordinatorMock)),
+            IRewardsCoordinator(address(rewardsCoordinatorMock)),
             registryCoordinator,
             stakeRegistry
         );
@@ -255,7 +256,7 @@ contract MockAVSDeployer is Test {
 
         serviceManager.initialize({
             initialOwner: registryCoordinatorOwner,
-            paymentInitiator: address(proxyAdminOwner)
+            rewardsInitiator: address(proxyAdminOwner)
         });
 
         // set the public key for an operator, using harnessed function to bypass checks

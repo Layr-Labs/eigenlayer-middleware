@@ -6,17 +6,17 @@ import "../../src/ServiceManagerBase.sol";
 contract ServiceManagerMock is ServiceManagerBase {
     constructor(
         IAVSDirectory _avsDirectory,
-        IPaymentCoordinator _paymentCoordinator,
+        IRewardsCoordinator _rewardsCoordinator,
         IRegistryCoordinator _registryCoordinator,
         IStakeRegistry _stakeRegistry
     )
-        ServiceManagerBase(_avsDirectory, _paymentCoordinator, _registryCoordinator, _stakeRegistry)
+        ServiceManagerBase(_avsDirectory, _rewardsCoordinator, _registryCoordinator, _stakeRegistry)
     {}
 
     function initialize(
         address initialOwner,
-        address paymentInitiator
+        address rewardsInitiator
     ) public virtual initializer {
-        __ServiceManagerBase_init(initialOwner, paymentInitiator);
+        __ServiceManagerBase_init(initialOwner, rewardsInitiator);
     }
 }
