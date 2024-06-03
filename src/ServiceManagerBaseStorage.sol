@@ -5,7 +5,7 @@ import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 
-import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IOperatorSetManager} from "./interfaces/IOperatorSetManager.sol"; // should be later changed to be import from core
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 /**
@@ -19,7 +19,7 @@ abstract contract ServiceManagerBaseStorage is IServiceManager {
      *                            CONSTANTS AND IMMUTABLES
      *
      */
-    IAVSDirectory internal immutable _avsDirectory;
+    IOperatorSetManager internal immutable _operatorSetManager;
     IRewardsCoordinator internal immutable _rewardsCoordinator;
     IRegistryCoordinator internal immutable _registryCoordinator;
     IStakeRegistry internal immutable _stakeRegistry;
@@ -33,14 +33,16 @@ abstract contract ServiceManagerBaseStorage is IServiceManager {
     /// @notice The address of the entity that can initiate rewards
     address public rewardsInitiator;
 
+    bool internal isStrategiesMigrated;
+
     /// @notice Sets the (immutable) `_avsDirectory`, `_rewardsCoordinator`, `_registryCoordinator`, and `_stakeRegistry` addresses
     constructor(
-        IAVSDirectory __avsDirectory,
+        IOperatorSetManager __operatorSetManager,
         IRewardsCoordinator __rewardsCoordinator,
         IRegistryCoordinator __registryCoordinator,
         IStakeRegistry __stakeRegistry
     ) {
-        _avsDirectory = __avsDirectory;
+        _operatorSetManager = __operatorSetManager;
         _rewardsCoordinator = __rewardsCoordinator;
         _registryCoordinator = __registryCoordinator;
         _stakeRegistry = __stakeRegistry;

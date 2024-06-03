@@ -6,6 +6,9 @@ import "../../src/interfaces/IRegistryCoordinator.sol";
 
 
 contract RegistryCoordinatorMock is IRegistryCoordinator {
+
+    function serviceManager() external view returns (IServiceManager) {}
+
     function blsApkRegistry() external view returns (IBLSApkRegistry) {}
 
     function ejectOperator(

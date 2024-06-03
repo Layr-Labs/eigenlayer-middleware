@@ -5,12 +5,12 @@ import "../../src/ServiceManagerBase.sol";
 
 contract ServiceManagerMock is ServiceManagerBase {
     constructor(
-        IAVSDirectory _avsDirectory,
+        IOperatorSetManager _operatorSetManager,
         IRewardsCoordinator _rewardsCoordinator,
         IRegistryCoordinator _registryCoordinator,
         IStakeRegistry _stakeRegistry
     )
-        ServiceManagerBase(_avsDirectory, _rewardsCoordinator, _registryCoordinator, _stakeRegistry)
+        ServiceManagerBase(_operatorSetManager, _rewardsCoordinator, _registryCoordinator, _stakeRegistry)
     {}
 
     function initialize(

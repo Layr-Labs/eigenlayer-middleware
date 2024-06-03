@@ -4,7 +4,7 @@ pragma solidity ^0.8.12;
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
 import {StakeRegistryStorage, IStrategy} from "./StakeRegistryStorage.sol";
-
+import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 
@@ -42,9 +42,10 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     constructor(
+        IServiceManager _serviceManager,
         IRegistryCoordinator _registryCoordinator,
         IDelegationManager _delegationManager
-    ) StakeRegistryStorage(_registryCoordinator, _delegationManager) {}
+    ) StakeRegistryStorage(_serviceManager, _registryCoordinator, _delegationManager) {}
 
     /*******************************************************************************
                       EXTERNAL FUNCTIONS - REGISTRY COORDINATOR
@@ -239,17 +240,20 @@ contract StakeRegistry is StakeRegistryStorage {
 
         StrategyParams[] storage _strategyParams = strategyParams[quorumNumber];
         IStrategy[] storage _strategiesPerQuorum = strategiesPerQuorum[quorumNumber];
+        IStrategy[] memory strategiesToRemove = new IStrategy[](toRemoveLength);
 
         for (uint256 i = 0; i < toRemoveLength; i++) {
             emit StrategyRemovedFromQuorum(quorumNumber, _strategyParams[indicesToRemove[i]].strategy);
             emit StrategyMultiplierUpdated(quorumNumber, _strategyParams[indicesToRemove[i]].strategy, 0);
-
+            strategiesToRemove[i] = _strategyParams[indicesToRemove[i]].strategy;
             // Replace index to remove with the last item in the list, then pop the last item
             _strategyParams[indicesToRemove[i]] = _strategyParams[_strategyParams.length - 1];
             _strategyParams.pop();
             _strategiesPerQuorum[indicesToRemove[i]] = _strategiesPerQuorum[_strategiesPerQuorum.length - 1];
             _strategiesPerQuorum.pop();
         }
+        // push the added strategies to EigenLayer through the ServiceManager
+        serviceManager.removeStrategiesFromOperatorSet(uint32(quorumNumber), strategiesToRemove);
     }
 
     /**
@@ -402,6 +406,7 @@ contract StakeRegistry is StakeRegistryStorage {
         require(_strategyParams.length > 0, "StakeRegistry._addStrategyParams: no strategies provided");
         uint256 numStratsToAdd = _strategyParams.length;
         uint256 numStratsExisting = strategyParams[quorumNumber].length;
+        IStrategy[] memory strategiesToAdd = new IStrategy[](numStratsToAdd);
         require(
             numStratsExisting + numStratsToAdd <= MAX_WEIGHING_FUNCTION_LENGTH,
             "StakeRegistry._addStrategyParams: exceed MAX_WEIGHING_FUNCTION_LENGTH"
@@ -420,6 +425,7 @@ contract StakeRegistry is StakeRegistryStorage {
             );
             strategyParams[quorumNumber].push(_strategyParams[i]);
             strategiesPerQuorum[quorumNumber].push(_strategyParams[i].strategy);
+            strategiesToAdd[i] = _strategyParams[i].strategy;
             emit StrategyAddedToQuorum(quorumNumber, _strategyParams[i].strategy);
             emit StrategyMultiplierUpdated(
                 quorumNumber,
@@ -427,6 +433,8 @@ contract StakeRegistry is StakeRegistryStorage {
                 _strategyParams[i].multiplier
             );
         }
+        // push the added strategies to EigenLayer through the ServiceManager
+        serviceManager.addStrategiesToOperatorSet(uint32(quorumNumber), strategiesToAdd);
     }
 
     /// @notice Returns the change between a previous and current value as a signed int

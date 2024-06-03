@@ -57,6 +57,6 @@ interface IServiceManagerUI {
      */
     function getRestakeableStrategies() external view returns (address[] memory);
 
-    /// @notice Returns the EigenLayer AVSDirectory contract.
-    function avsDirectory() external view returns (address);
+    /// @notice Returns the EigenLayer OperatorSetManager contract.
+    function operatorSetManager() external view returns (address);
 }

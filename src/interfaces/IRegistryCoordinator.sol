@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
+import {IServiceManager} from "./IServiceManager.sol";
 import {IBLSApkRegistry} from "./IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./IStakeRegistry.sol";
 import {IIndexRegistry} from "./IIndexRegistry.sol";
@@ -83,6 +84,8 @@ interface IRegistryCoordinator {
 
     /// @notice Returns the operator set params for the given `quorumNumber`
     function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory);
+    /// @notice the ServiceManager for this AVS, which forwards calls onto EigenLayer's core contracts
+    function serviceManager() external view returns (IServiceManager);
     /// @notice the Stake registry contract that will keep track of operators' stakes
     function stakeRegistry() external view returns (IStakeRegistry);
     /// @notice the BLS Aggregate Pubkey Registry contract that will keep track of operators' BLS aggregate pubkeys per quorum

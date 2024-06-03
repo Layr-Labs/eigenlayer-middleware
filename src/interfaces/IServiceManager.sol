@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IStrategy} from "./IOperatorSetManager.sol"; // should be later changed to be import from core
 import {IServiceManagerUI} from "./IServiceManagerUI.sol";
 
 /**
@@ -20,7 +21,21 @@ interface IServiceManager is IServiceManagerUI {
      * @dev This function will revert if the `rewardsSubmission` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
-    function createAVSRewardsSubmission(IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions) external;
+    function createAVSRewardsSubmission(
+        IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions
+    ) external;
+
+    /// TODO: natspec
+    function addStrategiesToOperatorSet(
+		uint32 operatorSetID,
+		IStrategy[] calldata strategies
+	) external;
+
+    /// TODO: natspec
+    function removeStrategiesFromOperatorSet(
+		uint32 operatorSetID,
+		IStrategy[] calldata strategies
+	) external;
 
     // EVENTS
     event RewardsInitiatorUpdated(address prevRewardsInitiator, address newRewardsInitiator);

@@ -28,6 +28,7 @@ import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
 import {EigenPodManagerMock} from "eigenlayer-contracts/src/test/mocks/EigenPodManagerMock.sol";
 import {AVSDirectoryMock} from "../mocks/AVSDirectoryMock.sol";
+import {OperatorSetManagerMock} from "../mocks/OperatorSetManagerMock.sol";
 import {DelegationMock} from "../mocks/DelegationMock.sol";
 import {AVSDirectory} from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
@@ -76,6 +77,9 @@ contract MockAVSDeployer is Test {
     AVSDirectory public avsDirectory;
     AVSDirectory public avsDirectoryImplementation;
     AVSDirectoryMock public avsDirectoryMock;
+    // OperatorSetManager public operatorSetManager;
+    // OperatorSetManager public operatorSetManagerImplementation;
+    OperatorSetManagerMock public operatorSetManagerMock;
     RewardsCoordinator public rewardsCoordinator;
     RewardsCoordinator public rewardsCoordinatorImplementation;
     RewardsCoordinatorMock public rewardsCoordinatorMock;
@@ -147,6 +151,7 @@ contract MockAVSDeployer is Test {
 
         delegationMock = new DelegationMock();
         avsDirectoryMock = new AVSDirectoryMock();
+        operatorSetManagerMock = new OperatorSetManagerMock();
         eigenPodManagerMock = new EigenPodManagerMock();
         strategyManagerMock = new StrategyManagerMock();
         slasherImplementation = new Slasher(strategyManagerMock, delegationMock);
@@ -164,7 +169,6 @@ contract MockAVSDeployer is Test {
                 )
             )
         );
-        avsDirectoryMock = new AVSDirectoryMock();
         avsDirectoryImplementation = new AVSDirectory(delegationMock);
         avsDirectory = AVSDirectory(
             address(
@@ -221,7 +225,7 @@ contract MockAVSDeployer is Test {
         cheats.startPrank(proxyAdminOwner);
 
         stakeRegistryImplementation =
-            new StakeRegistryHarness(IRegistryCoordinator(registryCoordinator), delegationMock);
+            new StakeRegistryHarness(serviceManager, IRegistryCoordinator(registryCoordinator), delegationMock);
 
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(stakeRegistry))),
@@ -243,7 +247,7 @@ contract MockAVSDeployer is Test {
         );
 
         serviceManagerImplementation = new ServiceManagerMock(
-            avsDirectoryMock,
+            operatorSetManagerMock,
             IRewardsCoordinator(address(rewardsCoordinatorMock)),
             registryCoordinator,
             stakeRegistry

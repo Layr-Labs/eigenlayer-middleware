@@ -4,6 +4,7 @@ pragma solidity ^0.8.12;
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategyManager, IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 
+import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from  "./interfaces/IStakeRegistry.sol";
 
@@ -23,6 +24,9 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
 
     /// @notice The address of the Delegation contract for EigenLayer.
     IDelegationManager public immutable delegation;
+
+    /// @notice the serviceManager contract that this registry is associated with
+    IServiceManager public immutable serviceManager;
 
     /// @notice the coordinator contract that this registry is associated with
     address public immutable registryCoordinator;
@@ -46,9 +50,15 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
 
 
     constructor(
+        IServiceManager _serviceManager,
         IRegistryCoordinator _registryCoordinator, 
         IDelegationManager _delegationManager
     ) {
+        require(
+            _registryCoordinator.serviceManager() == _serviceManager,
+            "StakeRegistryStorage: serviceManager does not match with registryCoordinator"
+        );
+        serviceManager = _serviceManager;
         registryCoordinator = address(_registryCoordinator);
         delegation = _delegationManager;
     }

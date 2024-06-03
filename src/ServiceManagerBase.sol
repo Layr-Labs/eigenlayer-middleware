@@ -4,9 +4,9 @@ pragma solidity ^0.8.12;
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
+import {IOperatorSetManager, IStrategy} from "./interfaces/IOperatorSetManager.sol"; // should be later changed to be import from core
 import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
@@ -30,6 +30,15 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
         _;
     }
 
+    /// @notice when applied to a function, only allows the StakeRegistry to call it
+    modifier onlyStakeRegistry() {
+        require(
+            msg.sender == address(_stakeRegistry),
+            "ServiceManagerBase.onlyStakeRegistry: caller is not the stake registry"
+        );
+        _;
+    }
+
     /// @notice only rewardsInitiator can call createAVSRewardsSubmission
     modifier onlyRewardsInitiator() {
         require(
@@ -41,13 +50,13 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
 
     /// @notice Sets the (immutable) `_registryCoordinator` address
     constructor(
-        IAVSDirectory __avsDirectory,
+        IOperatorSetManager __operatorSetManager,
         IRewardsCoordinator __rewardsCoordinator,
         IRegistryCoordinator __registryCoordinator,
         IStakeRegistry __stakeRegistry
     )
         ServiceManagerBaseStorage(
-            __avsDirectory,
+            __operatorSetManager,
             __rewardsCoordinator,
             __registryCoordinator,
             __stakeRegistry
@@ -62,6 +71,48 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
     ) internal virtual onlyInitializing {
         _transferOwnership(initialOwner);
         _setRewardsInitiator(_rewardsInitiator);
+        isStrategiesMigrated = true;
+    }
+
+    /// TODO: natspec
+    function addStrategiesToOperatorSet(
+		uint32 operatorSetID,
+		IStrategy[] calldata strategies
+	) external onlyStakeRegistry {
+        _operatorSetManager.addStrategiesToOperatorSet(
+            operatorSetID,
+            strategies
+        );
+    }
+
+    /// TODO: natspec
+    function removeStrategiesFromOperatorSet(
+		uint32 operatorSetID,
+		IStrategy[] calldata strategies
+	) external onlyStakeRegistry {
+        _operatorSetManager.removeStrategiesFromOperatorSet(
+            operatorSetID,
+            strategies
+        );
+    }
+
+    function migrateStrategiesToOperatorSets() external {
+        uint8 quorumCount = _registryCoordinator.quorumCount();
+        for (uint8 i = 0; i < quorumCount; ++i) {
+            uint256 numStrategies = _stakeRegistry.strategyParamsLength(i);
+            IStrategy[] memory strategies = new IStrategy[](numStrategies);
+            // get the strategies for the quorum/operator set
+            for (uint256 j = 0; j < numStrategies; ++j) {
+                IStrategy strategy = _stakeRegistry.strategyParamsByIndex(i, j).strategy;
+                strategies[j] = strategy;
+            }
+
+            _operatorSetManager.addStrategiesToOperatorSet(
+                uint32(i),
+                strategies  
+            );
+        }
+        isStrategiesMigrated = true;
     }
 
     /**
@@ -70,7 +121,7 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
      * @dev only callable by the owner
      */
     function updateAVSMetadataURI(string memory _metadataURI) public virtual onlyOwner {
-        _avsDirectory.updateAVSMetadataURI(_metadataURI);
+        _operatorSetManager.updateAVSMetadataURI(_metadataURI);
     }
 
     /**
@@ -112,7 +163,7 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) public virtual onlyRegistryCoordinator {
-        _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
+        _operatorSetManager.registerOperatorToAVS(operator, operatorSignature);
     }
 
     /**
@@ -120,7 +171,7 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
      * @param operator The address of the operator to deregister.
      */
     function deregisterOperatorFromAVS(address operator) public virtual onlyRegistryCoordinator {
-        _avsDirectory.deregisterOperatorFromAVS(operator);
+        _operatorSetManager.deregisterOperatorFromAVS(operator);
     }
 
     /**
@@ -209,8 +260,8 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
         return restakedStrategies;
     }
 
-    /// @notice Returns the EigenLayer AVSDirectory contract.
-    function avsDirectory() external view override returns (address) {
-        return address(_avsDirectory);
+    /// @notice Returns the EigenLayer OperatorSetManager contract.
+    function operatorSetManager() external view override returns (address) {
+        return address(_operatorSetManager);
     }
 }
