@@ -98,6 +98,10 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
 
     /// @notice migrates all existing operators and strategies to operator sets
     function migrateStrategiesToOperatorSets() external {
+        require(
+            !isStrategiesMigrated,
+            "ServiceManagerBase.migrateStrategiesToOperatorSets: already migrated"
+        );
         uint8 quorumCount = _registryCoordinator.quorumCount();
         for (uint8 i = 0; i < quorumCount; ++i) {
             uint256 numStrategies = _stakeRegistry.strategyParamsLength(i);
