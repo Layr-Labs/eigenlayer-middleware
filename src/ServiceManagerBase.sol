@@ -108,6 +108,7 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
             }
 
             _operatorSetManager.addStrategiesToOperatorSet(uint32(i), strategies);
+            emit OperatorSetStrategiesMigrated(uint32(i), strategies);
         }
         isStrategiesMigrated = true;
     }
@@ -117,15 +118,17 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
      * for. This can be called externally by getOperatorSetIds
      */
     function migrateOperatorToOperatorSets(
+        address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory signature
     ) external {
         require(
-            !isOperatorMigrated[msg.sender],
+            !isOperatorMigrated[operator],
             "ServiceManagerBase.migrateOperatorToOperatorSets: already migrated"
         );
-        uint32[] memory operatorSetIds = getOperatorSetIds(msg.sender);
+        uint32[] memory operatorSetIds = getOperatorSetIds(operator);
 
-        _operatorSetManager.registerOperatorToOperatorSets(msg.sender, operatorSetIds, signature);
+        _operatorSetManager.registerOperatorToOperatorSets(operator, operatorSetIds, signature);
+        emit OperatorMigratedToOperatorSets(operator, operatorSetIds);
     }
 
     /**
@@ -322,6 +325,7 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
         return operatorSetIds;
     }
 
+    /// @notice Returns the operator set IDs for the given operator address by querying the RegistryCoordinator
     function getOperatorSetIds(address operator) public view returns (uint32[] memory) {
         bytes32 operatorId = _registryCoordinator.getOperatorId(operator);
         uint192 operatorBitmap = _registryCoordinator.getCurrentQuorumBitmap(operatorId);

@@ -11,6 +11,15 @@ import {IServiceManagerUI} from "./IServiceManagerUI.sol";
  * @author Layr Labs, Inc.
  */
 interface IServiceManager is IServiceManagerUI {
+
+    /// EVENTS
+
+    event RewardsInitiatorUpdated(address prevRewardsInitiator, address newRewardsInitiator);
+    event OperatorSetStrategiesMigrated(uint32 operatorSetId, IStrategy[] strategies);
+    event OperatorMigratedToOperatorSets(address operator, uint32[] indexed operatorSetIds);
+
+    /// EXTERNAL - STATE MODIFYING
+
     /**
      * @notice Creates a new rewards submission to the EigenLayer RewardsCoordinator contract, to be split amongst the
      * set of stakers delegated to operators who are registered to this `avs`
@@ -26,26 +35,45 @@ interface IServiceManager is IServiceManagerUI {
         IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions
     ) external;
 
-    /// TODO: natspec
+    
+    /**
+     * @notice called by the AVS StakeRegistry whenever a new IStrategy
+     * is added to a quorum/operatorSet
+     * @dev calls operatorSetManager.addStrategiesToOperatorSet()
+     */
     function addStrategiesToOperatorSet(
         uint32 operatorSetID,
         IStrategy[] calldata strategies
     ) external;
 
-    /// TODO: natspec
+    /**
+     * @notice called by the AVS StakeRegistry whenever a new IStrategy
+     * is removed from a quorum/operatorSet
+     * @dev calls operatorSetManager.removeStrategiesFromOperatorSet()
+     */
     function removeStrategiesFromOperatorSet(
         uint32 operatorSetID,
         IStrategy[] calldata strategies
     ) external;
 
-    /// @notice migrates all existing operators and strategies to operator sets
+    /**
+     * @notice One-time call that migrates all existing strategies for each quorum to their respective operator sets
+     * Note: a separate migration per operator must be performed to migrate an existing operator to the operator set
+     * See migrateOperatorToOperatorSets() below
+     * @dev calls operatorSetManager.addStrategiesToOperatorSet()
+     */
     function migrateStrategiesToOperatorSets() external;
 
     /**
-     * @notice the operator needs to provide a signature over the operatorSetIds they will be registering
-     * for. This can be called externally by getOperatorSetIds
+     * @notice One-time call to migrate an existing operator to the respective operator sets.
+     * The operator needs to provide a signature over the operatorSetIds they are currently registered
+     * for. This can be retrieved externally by calling getOperatorSetIds.
+     * @param operator the address of the operator to be migrated
+     * @param signature the signature of the operator on their intent to migrate
+     * @dev calls operatorSetManager.registerOperatorToOperatorSets()
      */
     function migrateOperatorToOperatorSets(
+        address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory signature
     ) external;
 
@@ -55,11 +83,8 @@ interface IServiceManager is IServiceManagerUI {
      * @param operator the address of the operator to be added to the operator set
      * @param quorumNumbers quorums/operatorSetIds to add the operator to
      * @param signature the signature of the operator on their intent to register
-     * @dev msg.sender is used as the AVS
-     * @dev operator must not have a pending a deregistration from the operator set
-     * @dev if this is the first operator set in the AVS that the operator is
-     * registering for, a OperatorAVSRegistrationStatusUpdated event is emitted with
-     * a REGISTERED status
+     * @dev msg.sender should be the RegistryCoordinator
+     * @dev calls operatorSetManager.registerOperatorToOperatorSets()
      */
     function registerOperatorToOperatorSets(
         address operator,
@@ -74,18 +99,17 @@ interface IServiceManager is IServiceManagerUI {
      * operator set
      * @param quorumNumbers the quorumNumbers/operatorSetIds to deregister the operator for
      *
-     * @dev msg.sender is used as the AVS
-     * @dev operator must be registered for msg.sender AVS and the given
-     * operator set
-     * @dev if this removes operator from all operator sets for the msg.sender AVS
-     * then an OperatorAVSRegistrationStatusUpdated event is emitted with a DEREGISTERED
-     * status
+     * @dev msg.sender should be the RegistryCoordinator
+     * @dev operator must be registered for the given operator sets
+     * @dev calls operatorSetManager.deregisterOperatorFromOperatorSets()
      */
     function deregisterOperatorFromOperatorSets(
         address operator,
         bytes calldata quorumNumbers
     ) external;
 
-    // EVENTS
-    event RewardsInitiatorUpdated(address prevRewardsInitiator, address newRewardsInitiator);
+    /// VIEW
+
+    /// @notice Returns the operator set IDs for the given operator address by querying the RegistryCoordinator
+    function getOperatorSetIds(address operator) external view returns (uint32[] memory);
 }
