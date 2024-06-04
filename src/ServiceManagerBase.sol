@@ -121,6 +121,26 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
     }
 
     /**
+     * @notice the operator needs to provide a signature over the operatorSetIds they will be registering
+     * for. This can be called externally by getOperatorSetIds
+     */
+    function migrateOperatorToOperatorSets(
+		ISignatureUtils.SignatureWithSaltAndExpiry memory signature
+    ) external {
+        require(
+            !isOperatorMigrated[msg.sender],
+            "ServiceManagerBase.migrateOperatorToOperatorSets: already migrated"
+        );
+        uint32[] memory operatorSetIds = getOperatorSetIds(msg.sender);
+
+        _operatorSetManager.registerOperatorToOperatorSets(
+            msg.sender,
+            operatorSetIds,
+            signature
+        );
+    }
+
+    /**
      * @notice Updates the metadata URI for the AVS
      * @param _metadataURI is the metadata URI for the AVS
      * @dev only callable by the owner
@@ -221,8 +241,6 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
         );
     }
 
-
-
     /**
      * @notice Sets the rewards initiator address
      * @param newRewardsInitiator The new rewards initiator address
@@ -310,13 +328,20 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
     }
 
     /// @notice converts the quorumNumbers array to operatorSetIds array
-    function quorumsToOperatorSetIds(bytes calldata quorumNumbers) internal pure returns (uint32[] memory) {
+    function quorumsToOperatorSetIds(bytes memory quorumNumbers) internal pure returns (uint32[] memory) {
         uint256 quorumCount = quorumNumbers.length;
         uint32[] memory operatorSetIds = new uint32[](quorumCount);
         for (uint256 i = 0; i < quorumCount; i++) {
             operatorSetIds[i] = uint32(uint8(quorumNumbers[i]));
         }
         return operatorSetIds;
+    }
+
+    function getOperatorSetIds(address operator) public view returns (uint32[] memory) {
+        bytes32 operatorId = _registryCoordinator.getOperatorId(operator);
+        uint192 operatorBitmap = _registryCoordinator.getCurrentQuorumBitmap(operatorId);
+        bytes memory operatorQuorums = BitmapUtils.bitmapToBytesArray(operatorBitmap);
+        return quorumsToOperatorSetIds(operatorQuorums);
     }
 
     /// @notice Returns the EigenLayer OperatorSetManager contract.

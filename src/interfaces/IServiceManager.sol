@@ -26,6 +26,27 @@ interface IServiceManager is IServiceManagerUI {
         IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions
     ) external;
 
+    /// TODO: natspec
+    function addStrategiesToOperatorSet(
+		uint32 operatorSetID,
+		IStrategy[] calldata strategies
+	) external;
+
+    /// TODO: natspec
+    function removeStrategiesFromOperatorSet(
+		uint32 operatorSetID,
+		IStrategy[] calldata strategies
+	) external;
+
+    /// @notice migrates all existing operators and strategies to operator sets
+    function migrateStrategiesToOperatorSets() external;
+
+    /**
+     * @notice the operator needs to provide a signature over the operatorSetIds they will be registering
+     * for. This can be called externally by getOperatorSetIds
+     */
+    function migrateOperatorToOperatorSets(ISignatureUtils.SignatureWithSaltAndExpiry memory signature) external;
+
     /**
 	 * @notice Called by this AVS's RegistryCoordinator to register an operator for its registering operatorSets
 	 * 
@@ -61,18 +82,6 @@ interface IServiceManager is IServiceManagerUI {
 	function deregisterOperatorFromOperatorSets(
 		address operator,
         bytes calldata quorumNumbers
-	) external;
-
-    /// TODO: natspec
-    function addStrategiesToOperatorSet(
-		uint32 operatorSetID,
-		IStrategy[] calldata strategies
-	) external;
-
-    /// TODO: natspec
-    function removeStrategiesFromOperatorSet(
-		uint32 operatorSetID,
-		IStrategy[] calldata strategies
 	) external;
 
     // EVENTS
