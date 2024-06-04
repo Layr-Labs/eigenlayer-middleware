@@ -4,7 +4,8 @@ pragma solidity ^0.8.12;
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IRewardsCoordinator} from
+    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 import {IOperatorSetManager, IStrategy} from "./interfaces/IOperatorSetManager.sol"; // should be later changed to be import from core
 import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
@@ -76,24 +77,18 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
 
     /// TODO: natspec
     function addStrategiesToOperatorSet(
-		uint32 operatorSetID,
-		IStrategy[] calldata strategies
-	) external onlyStakeRegistry {
-        _operatorSetManager.addStrategiesToOperatorSet(
-            operatorSetID,
-            strategies
-        );
+        uint32 operatorSetID,
+        IStrategy[] calldata strategies
+    ) external onlyStakeRegistry {
+        _operatorSetManager.addStrategiesToOperatorSet(operatorSetID, strategies);
     }
 
     /// TODO: natspec
     function removeStrategiesFromOperatorSet(
-		uint32 operatorSetID,
-		IStrategy[] calldata strategies
-	) external onlyStakeRegistry {
-        _operatorSetManager.removeStrategiesFromOperatorSet(
-            operatorSetID,
-            strategies
-        );
+        uint32 operatorSetID,
+        IStrategy[] calldata strategies
+    ) external onlyStakeRegistry {
+        _operatorSetManager.removeStrategiesFromOperatorSet(operatorSetID, strategies);
     }
 
     /// @notice migrates all existing operators and strategies to operator sets
@@ -112,10 +107,7 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
                 strategies[j] = strategy;
             }
 
-            _operatorSetManager.addStrategiesToOperatorSet(
-                uint32(i),
-                strategies  
-            );
+            _operatorSetManager.addStrategiesToOperatorSet(uint32(i), strategies);
         }
         isStrategiesMigrated = true;
     }
@@ -125,7 +117,7 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
      * for. This can be called externally by getOperatorSetIds
      */
     function migrateOperatorToOperatorSets(
-		ISignatureUtils.SignatureWithSaltAndExpiry memory signature
+        ISignatureUtils.SignatureWithSaltAndExpiry memory signature
     ) external {
         require(
             !isOperatorMigrated[msg.sender],
@@ -133,11 +125,7 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
         );
         uint32[] memory operatorSetIds = getOperatorSetIds(msg.sender);
 
-        _operatorSetManager.registerOperatorToOperatorSets(
-            msg.sender,
-            operatorSetIds,
-            signature
-        );
+        _operatorSetManager.registerOperatorToOperatorSets(msg.sender, operatorSetIds, signature);
     }
 
     /**
@@ -160,15 +148,15 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
      * @dev This function will revert if the `rewardsSubmission` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
-    function createAVSRewardsSubmission(IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions)
-        public
-        virtual
-        onlyRewardsInitiator
-    {
+    function createAVSRewardsSubmission(
+        IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions
+    ) public virtual onlyRewardsInitiator {
         for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
             // transfer token to ServiceManager and approve RewardsCoordinator to transfer again
             // in createAVSRewardsSubmission() call
-            rewardsSubmissions[i].token.transferFrom(msg.sender, address(this), rewardsSubmissions[i].amount);
+            rewardsSubmissions[i].token.transferFrom(
+                msg.sender, address(this), rewardsSubmissions[i].amount
+            );
             uint256 allowance =
                 rewardsSubmissions[i].token.allowance(address(this), address(_rewardsCoordinator));
             rewardsSubmissions[i].token.approve(
@@ -192,53 +180,46 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
     }
 
     /**
-	 * @notice Called by this AVS's RegistryCoordinator to register an operator for its registering operatorSets
-	 * 
-	 * @param operator the address of the operator to be added to the operator set
-	 * @param quorumNumbers quorums/operatorSetIds to add the operator to
-	 * @param signature the signature of the operator on their intent to register
-	 * @dev msg.sender is used as the AVS
-	 * @dev operator must not have a pending a deregistration from the operator set
-	 * @dev if this is the first operator set in the AVS that the operator is 
-	 * registering for, a OperatorAVSRegistrationStatusUpdated event is emitted with 
-	 * a REGISTERED status
-	 */
-	function registerOperatorToOperatorSets(
-		address operator,
-		bytes calldata quorumNumbers,
-		ISignatureUtils.SignatureWithSaltAndExpiry memory signature
-	) external onlyRegistryCoordinator {
+     * @notice Called by this AVS's RegistryCoordinator to register an operator for its registering operatorSets
+     *
+     * @param operator the address of the operator to be added to the operator set
+     * @param quorumNumbers quorums/operatorSetIds to add the operator to
+     * @param signature the signature of the operator on their intent to register
+     * @dev msg.sender is used as the AVS
+     * @dev operator must not have a pending a deregistration from the operator set
+     * @dev if this is the first operator set in the AVS that the operator is
+     * registering for, a OperatorAVSRegistrationStatusUpdated event is emitted with
+     * a REGISTERED status
+     */
+    function registerOperatorToOperatorSets(
+        address operator,
+        bytes calldata quorumNumbers,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory signature
+    ) external onlyRegistryCoordinator {
         uint32[] memory operatorSetIds = quorumsToOperatorSetIds(quorumNumbers);
-        _operatorSetManager.registerOperatorToOperatorSets(
-            operator,
-            operatorSetIds,
-            signature
-        );
+        _operatorSetManager.registerOperatorToOperatorSets(operator, operatorSetIds, signature);
     }
 
     /**
-	 * @notice Called by this AVS's RegistryCoordinator to deregister an operator for its operatorSets
-	 * 
-	 * @param operator the address of the operator to be removed from the 
-	 * operator set
-	 * @param quorumNumbers the quorumNumbers/operatorSetIds to deregister the operator for
-	 * 
-	 * @dev msg.sender is used as the AVS
-	 * @dev operator must be registered for msg.sender AVS and the given 
-	 * operator set
+     * @notice Called by this AVS's RegistryCoordinator to deregister an operator for its operatorSets
+     *
+     * @param operator the address of the operator to be removed from the
+     * operator set
+     * @param quorumNumbers the quorumNumbers/operatorSetIds to deregister the operator for
+     *
+     * @dev msg.sender is used as the AVS
+     * @dev operator must be registered for msg.sender AVS and the given
+     * operator set
      * @dev if this removes operator from all operator sets for the msg.sender AVS
      * then an OperatorAVSRegistrationStatusUpdated event is emitted with a DEREGISTERED
      * status
-	 */
-	function deregisterOperatorFromOperatorSets(
-		address operator,
+     */
+    function deregisterOperatorFromOperatorSets(
+        address operator,
         bytes calldata quorumNumbers
-	) external onlyRegistryCoordinator {
+    ) external onlyRegistryCoordinator {
         uint32[] memory operatorSetIds = quorumsToOperatorSetIds(quorumNumbers);
-        _operatorSetManager.deregisterOperatorFromOperatorSets(
-            operator,
-            operatorSetIds
-        );
+        _operatorSetManager.deregisterOperatorFromOperatorSets(operator, operatorSetIds);
     }
 
     /**
@@ -328,7 +309,11 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
     }
 
     /// @notice converts the quorumNumbers array to operatorSetIds array
-    function quorumsToOperatorSetIds(bytes memory quorumNumbers) internal pure returns (uint32[] memory) {
+    function quorumsToOperatorSetIds(bytes memory quorumNumbers)
+        internal
+        pure
+        returns (uint32[] memory)
+    {
         uint256 quorumCount = quorumNumbers.length;
         uint32[] memory operatorSetIds = new uint32[](quorumCount);
         for (uint256 i = 0; i < quorumCount; i++) {

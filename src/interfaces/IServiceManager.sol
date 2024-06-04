@@ -28,15 +28,15 @@ interface IServiceManager is IServiceManagerUI {
 
     /// TODO: natspec
     function addStrategiesToOperatorSet(
-		uint32 operatorSetID,
-		IStrategy[] calldata strategies
-	) external;
+        uint32 operatorSetID,
+        IStrategy[] calldata strategies
+    ) external;
 
     /// TODO: natspec
     function removeStrategiesFromOperatorSet(
-		uint32 operatorSetID,
-		IStrategy[] calldata strategies
-	) external;
+        uint32 operatorSetID,
+        IStrategy[] calldata strategies
+    ) external;
 
     /// @notice migrates all existing operators and strategies to operator sets
     function migrateStrategiesToOperatorSets() external;
@@ -45,44 +45,46 @@ interface IServiceManager is IServiceManagerUI {
      * @notice the operator needs to provide a signature over the operatorSetIds they will be registering
      * for. This can be called externally by getOperatorSetIds
      */
-    function migrateOperatorToOperatorSets(ISignatureUtils.SignatureWithSaltAndExpiry memory signature) external;
+    function migrateOperatorToOperatorSets(
+        ISignatureUtils.SignatureWithSaltAndExpiry memory signature
+    ) external;
 
     /**
-	 * @notice Called by this AVS's RegistryCoordinator to register an operator for its registering operatorSets
-	 * 
-	 * @param operator the address of the operator to be added to the operator set
-	 * @param quorumNumbers quorums/operatorSetIds to add the operator to
-	 * @param signature the signature of the operator on their intent to register
-	 * @dev msg.sender is used as the AVS
-	 * @dev operator must not have a pending a deregistration from the operator set
-	 * @dev if this is the first operator set in the AVS that the operator is 
-	 * registering for, a OperatorAVSRegistrationStatusUpdated event is emitted with 
-	 * a REGISTERED status
-	 */
-	function registerOperatorToOperatorSets(
-		address operator,
-		bytes calldata quorumNumbers,
-		ISignatureUtils.SignatureWithSaltAndExpiry memory signature
-	) external;
+     * @notice Called by this AVS's RegistryCoordinator to register an operator for its registering operatorSets
+     *
+     * @param operator the address of the operator to be added to the operator set
+     * @param quorumNumbers quorums/operatorSetIds to add the operator to
+     * @param signature the signature of the operator on their intent to register
+     * @dev msg.sender is used as the AVS
+     * @dev operator must not have a pending a deregistration from the operator set
+     * @dev if this is the first operator set in the AVS that the operator is
+     * registering for, a OperatorAVSRegistrationStatusUpdated event is emitted with
+     * a REGISTERED status
+     */
+    function registerOperatorToOperatorSets(
+        address operator,
+        bytes calldata quorumNumbers,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory signature
+    ) external;
 
     /**
-	 * @notice Called by this AVS's RegistryCoordinator to deregister an operator for its operatorSets
-	 * 
-	 * @param operator the address of the operator to be removed from the 
-	 * operator set
-	 * @param quorumNumbers the quorumNumbers/operatorSetIds to deregister the operator for
-	 * 
-	 * @dev msg.sender is used as the AVS
-	 * @dev operator must be registered for msg.sender AVS and the given 
-	 * operator set
+     * @notice Called by this AVS's RegistryCoordinator to deregister an operator for its operatorSets
+     *
+     * @param operator the address of the operator to be removed from the
+     * operator set
+     * @param quorumNumbers the quorumNumbers/operatorSetIds to deregister the operator for
+     *
+     * @dev msg.sender is used as the AVS
+     * @dev operator must be registered for msg.sender AVS and the given
+     * operator set
      * @dev if this removes operator from all operator sets for the msg.sender AVS
      * then an OperatorAVSRegistrationStatusUpdated event is emitted with a DEREGISTERED
      * status
-	 */
-	function deregisterOperatorFromOperatorSets(
-		address operator,
+     */
+    function deregisterOperatorFromOperatorSets(
+        address operator,
         bytes calldata quorumNumbers
-	) external;
+    ) external;
 
     // EVENTS
     event RewardsInitiatorUpdated(address prevRewardsInitiator, address newRewardsInitiator);

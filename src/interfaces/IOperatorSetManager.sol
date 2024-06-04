@@ -4,13 +4,12 @@ pragma solidity >=0.5.0;
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 
-
 interface IOperatorSetManager is ISignatureUtils {
-
-
-    /*******************************************************************************
-                            OperatorSetManager Interface
-    *******************************************************************************/
+    /**
+     *
+     *                         OperatorSetManager Interface
+     *
+     */
 
     /// STRUCTS
 
@@ -18,7 +17,7 @@ interface IOperatorSetManager is ISignatureUtils {
         address avs;
         uint32 id;
     }
-    
+
     /**
      * @notice this struct is used by allocators in order to specify whether they want to register for particular operator sets
      * @param operatorSet the operator set to change registration parameters for
@@ -28,7 +27,7 @@ interface IOperatorSetManager is ISignatureUtils {
         OperatorSet operatorSet;
         bool allowedToRegister;
     }
-    
+
     /**
      * @notice this struct is used in SlashingMagnitudeParam in order to specify an operator's slashability for a certain operator set
      * @param operatorSet the operator set to change slashing parameters for
@@ -36,7 +35,7 @@ interface IOperatorSetManager is ISignatureUtils {
      */
     struct OperatorSetSlashingParam {
         OperatorSet operatorSet;
-        uint64 slashableMagnitude; 
+        uint64 slashableMagnitude;
     }
 
     /**
@@ -48,17 +47,21 @@ interface IOperatorSetManager is ISignatureUtils {
     struct SlashingMagnitudeParam {
         IStrategy strategy;
         uint64 totalMagnitude;
-        OperatorSetSlashingParam[] operatorSetSlashingParams; 
+        OperatorSetSlashingParam[] operatorSetSlashingParams;
     }
 
     /// EVENTS
-    
+
     event RegistrationParamsUpdated(
         address operator, OperatorSet operatorSet, bool allowedToRegister
     );
 
     event SlashableMagnitudeUpdated(
-        address operator, IStrategy strategy, OperatorSet operatorSet, uint64 slashableMagnitude, uint32 effectEpoch
+        address operator,
+        IStrategy strategy,
+        OperatorSet operatorSet,
+        uint64 slashableMagnitude,
+        uint32 effectEpoch
     );
 
     event TotalMagnitudeUpdated(
@@ -66,79 +69,79 @@ interface IOperatorSetManager is ISignatureUtils {
     );
 
     /// EXTERNAL - STATE MODIFYING
-    
-    /**
-	 * @notice Called by AVSs to add an operator to an operator set
-	 * 
-	 * @param operator the address of the operator to be added to the operator set
-	 * @param operatorSetIDs the IDs of the operator sets
-	 * @param signature the signature of the operator on their intent to register
-	 * @dev msg.sender is used as the AVS
-	 * @dev operator must not have a pending a deregistration from the operator sets
-	 * @dev if this is the first operator set in the AVS that the operator is 
-	 * registering for, a OperatorAVSRegistrationStatusUpdated event is emitted with 
-	 * a REGISTERED status
-	 */
-	function registerOperatorToOperatorSets(
-		address operator,
-		uint32[] calldata operatorSetIDs,
-		ISignatureUtils.SignatureWithSaltAndExpiry memory signature
-	) external;
 
     /**
-	 * @notice Called by AVSs or operators to remove an operator to from operator set
-	 * 
-	 * @param operator the address of the operator to be removed from the 
-	 * operator set
-	 * @param operatorSetIDs the ID of the operator set
-	 * 
-	 * @dev msg.sender is used as the AVS
-	 * @dev operator must be registered for msg.sender AVS and the given 
-	 * operator set
-         * @dev if this removes operator from all operator sets for the msg.sender AVS
-         * then an OperatorAVSRegistrationStatusUpdated event is emitted with a DEREGISTERED
-         * status
-	 */
-	function deregisterOperatorFromOperatorSets(
-		address operator, 
-		uint32[] calldata operatorSetIDs
-	) external;
+     * @notice Called by AVSs to add an operator to an operator set
+     *
+     * @param operator the address of the operator to be added to the operator set
+     * @param operatorSetIDs the IDs of the operator sets
+     * @param signature the signature of the operator on their intent to register
+     * @dev msg.sender is used as the AVS
+     * @dev operator must not have a pending a deregistration from the operator sets
+     * @dev if this is the first operator set in the AVS that the operator is
+     * registering for, a OperatorAVSRegistrationStatusUpdated event is emitted with
+     * a REGISTERED status
+     */
+    function registerOperatorToOperatorSets(
+        address operator,
+        uint32[] calldata operatorSetIDs,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory signature
+    ) external;
 
-    /**	
- 	 * @notice Called by AVSs to add a strategy to its operator set
-	 * 
-	 * @param operatorSetID the ID of the operator set
-	 * @param strategies the list strategies of the operator set to add
-	 *
-	 * @dev msg.sender is used as the AVS
-	 * @dev no storage is updated as the event is used by off-chain services
-	 */
-	function addStrategiesToOperatorSet(
-		uint32 operatorSetID,
-		IStrategy[] calldata strategies
-	) external;
+    /**
+     * @notice Called by AVSs or operators to remove an operator to from operator set
+     *
+     * @param operator the address of the operator to be removed from the
+     * operator set
+     * @param operatorSetIDs the ID of the operator set
+     *
+     * @dev msg.sender is used as the AVS
+     * @dev operator must be registered for msg.sender AVS and the given
+     * operator set
+     * @dev if this removes operator from all operator sets for the msg.sender AVS
+     * then an OperatorAVSRegistrationStatusUpdated event is emitted with a DEREGISTERED
+     * status
+     */
+    function deregisterOperatorFromOperatorSets(
+        address operator,
+        uint32[] calldata operatorSetIDs
+    ) external;
 
-    /**	
- 	 * @notice Called by AVSs to remove a strategy to its operator set
-	 * 
-	 * @param operatorSetID the ID of the operator set
-	 * @param strategies the list strategie of the operator set to remove
-	 *
-	 * @dev msg.sender is used as the AVS
-	 * @dev no storage is updated as the event is used by off-chain services
-	 */
-	function removeStrategiesFromOperatorSet(
-		uint32 operatorSetID,
-		IStrategy[] calldata strategies
-	) external;
+    /**
+     * @notice Called by AVSs to add a strategy to its operator set
+     *
+     * @param operatorSetID the ID of the operator set
+     * @param strategies the list strategies of the operator set to add
+     *
+     * @dev msg.sender is used as the AVS
+     * @dev no storage is updated as the event is used by off-chain services
+     */
+    function addStrategiesToOperatorSet(
+        uint32 operatorSetID,
+        IStrategy[] calldata strategies
+    ) external;
+
+    /**
+     * @notice Called by AVSs to remove a strategy to its operator set
+     *
+     * @param operatorSetID the ID of the operator set
+     * @param strategies the list strategie of the operator set to remove
+     *
+     * @dev msg.sender is used as the AVS
+     * @dev no storage is updated as the event is used by off-chain services
+     */
+    function removeStrategiesFromOperatorSet(
+        uint32 operatorSetID,
+        IStrategy[] calldata strategies
+    ) external;
 
     /// VIEW
-    
+
     /**
      * @param operator the operator to get allowedToRegister for
      * @param operatorSet the operator set to get allowedToRegister for
      *
-     * @return allowedToRegister whether or not operatorSet.avs is allowed to 
+     * @return allowedToRegister whether or not operatorSet.avs is allowed to
      * add them to the given operator set if they are not registered for it
      */
     function getAllowedToRegister(
@@ -162,17 +165,17 @@ interface IOperatorSetManager is ISignatureUtils {
         uint32 epoch
     ) external returns (uint16 slashableBips);
 
-    
-    /*******************************************************************************
-                            AVSDirectory Interface
-    *******************************************************************************/
-
-
+    /**
+     *
+     *                         AVSDirectory Interface
+     *
+     */
 
     /// @notice Enum representing the status of an operator's registration with an AVS
     enum OperatorAVSRegistrationStatus {
-        UNREGISTERED,       // Operator not registered to AVS
-        REGISTERED          // Operator registered to AVS
+        UNREGISTERED, // Operator not registered to AVS
+        REGISTERED // Operator registered to AVS
+
     }
 
     /**
@@ -182,7 +185,9 @@ interface IOperatorSetManager is ISignatureUtils {
     event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
 
     /// @notice Emitted when an operator's registration status for an AVS is updated
-    event OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, OperatorAVSRegistrationStatus status);
+    event OperatorAVSRegistrationStatusUpdated(
+        address indexed operator, address indexed avs, OperatorAVSRegistrationStatus status
+    );
 
     /**
      * @notice Called by an avs to register an operator with the avs.
