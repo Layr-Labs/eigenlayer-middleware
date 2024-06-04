@@ -15,10 +15,10 @@ interface IRegistryCoordinator {
     // EVENTS
 
     /// Emits when an operator is registered
-    event OperatorRegistered(address indexed operator, bytes32 indexed operatorId);
+    event OperatorRegistered(address indexed operator, bytes32 indexed operatorId, bytes indexed quorumNumbers);
 
     /// Emits when an operator is deregistered
-    event OperatorDeregistered(address indexed operator, bytes32 indexed operatorId);
+    event OperatorDeregistered(address indexed operator, bytes32 indexed operatorId, bytes indexed quorumNumbers);
 
     event OperatorSetParamsUpdated(uint8 indexed quorumNumber, OperatorSetParam operatorSetParams);
 

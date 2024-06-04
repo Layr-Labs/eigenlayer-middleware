@@ -68,51 +68,41 @@ interface IOperatorSetManager is ISignatureUtils {
     /// EXTERNAL - STATE MODIFYING
     
     /**
-     * @notice updates the registration parameters for an operator for a set of 
-     * operator sets. whether or not the AVS is allowed to add them to the given 
-     * operator set if they are not registered for it
-     *
-     * @param operator the operator whom the registration parameters are being 
-     * changed
-     * @param registrationParams the new registration parameters
-     * @param allocatorSignature if non-empty is the signature of the allocator on 
-     * the modification. if empty, the msg.sender must be the allocator for the 
-     * operator
-     *
-     * @dev changes take effect immediately
-     */
-    function updateRegistrationParams(
-        address operator,
-        RegistrationParam[] calldata registrationParams,
-        SignatureWithExpiry calldata allocatorSignature
-    ) external;
-    
+	 * @notice Called by AVSs to add an operator to an operator set
+	 * 
+	 * @param operator the address of the operator to be added to the operator set
+	 * @param operatorSetIDs the IDs of the operator sets
+	 * @param signature the signature of the operator on their intent to register
+	 * @dev msg.sender is used as the AVS
+	 * @dev operator must not have a pending a deregistration from the operator sets
+	 * @dev if this is the first operator set in the AVS that the operator is 
+	 * registering for, a OperatorAVSRegistrationStatusUpdated event is emitted with 
+	 * a REGISTERED status
+	 */
+	function registerOperatorToOperatorSets(
+		address operator,
+		uint32[] calldata operatorSetIDs,
+		ISignatureUtils.SignatureWithSaltAndExpiry memory signature
+	) external;
+
     /**
-     * @notice updates the slashing magnitudes for an operator for a set of 
-     * operator sets
-     * 
-     * @param operator the operator whom the slashing parameters are being 
-     * changed
-     * @param slashingMagnitudeParams the new slashing parameters
-     * @param allocatorSignature if non-empty is the signature of the allocator on 
-     * the modification. if empty, the msg.sender must be the allocator for the 
-     * operator
-     *
-     * @dev changes take effect in 3 epochs for when this function is called
-     */
-    function updateSlashingMagnitudes(
-        address operator,
-        SlashingMagnitudeParam[] calldata slashingMagnitudeParams,
-        SignatureWithExpiry calldata allocatorSignature
-    ) external returns(uint32 effectEpoch);
-    
-    /// @notice a batch call of updateRegistrationParams and updateSlashingMagnitudes
-    function updateRegistrationParamsAndSlashingMagnitudes(
-        address operator,
-        RegistrationParam[] calldata registrationParams,
-        SlashingMagnitudeParam[] calldata slashingMagnitudeParams,
-        SignatureWithExpiry calldata allocatorSignature
-    ) external returns(uint32 effectEpoch);
+	 * @notice Called by AVSs or operators to remove an operator to from operator set
+	 * 
+	 * @param operator the address of the operator to be removed from the 
+	 * operator set
+	 * @param operatorSetIDs the ID of the operator set
+	 * 
+	 * @dev msg.sender is used as the AVS
+	 * @dev operator must be registered for msg.sender AVS and the given 
+	 * operator set
+         * @dev if this removes operator from all operator sets for the msg.sender AVS
+         * then an OperatorAVSRegistrationStatusUpdated event is emitted with a DEREGISTERED
+         * status
+	 */
+	function deregisterOperatorFromOperatorSets(
+		address operator, 
+		uint32[] calldata operatorSetIDs
+	) external;
 
     /**	
  	 * @notice Called by AVSs to add a strategy to its operator set

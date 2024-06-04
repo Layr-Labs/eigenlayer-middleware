@@ -350,7 +350,7 @@ contract ECDSAStakeRegistry is
         delete _operatorRegistered[_operator];
         int256 delta = _updateOperatorWeight(_operator);
         _updateTotalWeight(delta);
-        IServiceManager(_serviceManager).deregisterOperatorFromAVS(_operator);
+        // IServiceManager(_serviceManager).deregisterOperatorFromAVS(_operator);
         emit OperatorDeregistered(_operator, address(_serviceManager));
     }
 
@@ -370,10 +370,10 @@ contract ECDSAStakeRegistry is
         int256 delta = _updateOperatorWeight(_operator);
         _updateTotalWeight(delta);
         _updateOperatorSigningKey(_operator, _signingKey);
-        IServiceManager(_serviceManager).registerOperatorToAVS(
-            _operator,
-            _operatorSignature
-        );
+        // IServiceManager(_serviceManager).registerOperatorToAVS(
+        //     _operator,
+        //     _operatorSignature
+        // );
         emit OperatorRegistered(_operator, _serviceManager);
     }
 

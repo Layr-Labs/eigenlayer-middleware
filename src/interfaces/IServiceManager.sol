@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
+import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {IStrategy} from "./IOperatorSetManager.sol"; // should be later changed to be import from core
 import {IServiceManagerUI} from "./IServiceManagerUI.sol";
@@ -24,6 +25,43 @@ interface IServiceManager is IServiceManagerUI {
     function createAVSRewardsSubmission(
         IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions
     ) external;
+
+    /**
+	 * @notice Called by this AVS's RegistryCoordinator to register an operator for its registering operatorSets
+	 * 
+	 * @param operator the address of the operator to be added to the operator set
+	 * @param quorumNumbers quorums/operatorSetIds to add the operator to
+	 * @param signature the signature of the operator on their intent to register
+	 * @dev msg.sender is used as the AVS
+	 * @dev operator must not have a pending a deregistration from the operator set
+	 * @dev if this is the first operator set in the AVS that the operator is 
+	 * registering for, a OperatorAVSRegistrationStatusUpdated event is emitted with 
+	 * a REGISTERED status
+	 */
+	function registerOperatorToOperatorSets(
+		address operator,
+		bytes calldata quorumNumbers,
+		ISignatureUtils.SignatureWithSaltAndExpiry memory signature
+	) external;
+
+    /**
+	 * @notice Called by this AVS's RegistryCoordinator to deregister an operator for its operatorSets
+	 * 
+	 * @param operator the address of the operator to be removed from the 
+	 * operator set
+	 * @param quorumNumbers the quorumNumbers/operatorSetIds to deregister the operator for
+	 * 
+	 * @dev msg.sender is used as the AVS
+	 * @dev operator must be registered for msg.sender AVS and the given 
+	 * operator set
+     * @dev if this removes operator from all operator sets for the msg.sender AVS
+     * then an OperatorAVSRegistrationStatusUpdated event is emitted with a DEREGISTERED
+     * status
+	 */
+	function deregisterOperatorFromOperatorSets(
+		address operator,
+        bytes calldata quorumNumbers
+	) external;
 
     /// TODO: natspec
     function addStrategiesToOperatorSet(

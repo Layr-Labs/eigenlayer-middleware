@@ -48,7 +48,7 @@ contract User is Test {
     // Core contracts
     DelegationManager delegationManager;
     StrategyManager strategyManager;
-    // AVSDirectory avsDirectory;
+    AVSDirectory avsDirectory;
 
     // Middleware contracts
     RegistryCoordinator registryCoordinator;
@@ -77,7 +77,7 @@ contract User is Test {
         IUserDeployer deployer = IUserDeployer(msg.sender);
 
         registryCoordinator = deployer.registryCoordinator();
-        // avsDirectory = deployer.avsDirectory();
+        avsDirectory = deployer.avsDirectory();
         serviceManager = ServiceManagerBase(address(registryCoordinator.serviceManager()));
 
         blsApkRegistry = BLSApkRegistry(address(registryCoordinator.blsApkRegistry()));

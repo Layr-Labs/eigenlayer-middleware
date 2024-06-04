@@ -32,6 +32,8 @@ import "src/StakeRegistry.sol";
 import "src/IndexRegistry.sol";
 import "src/BLSApkRegistry.sol";
 import "test/mocks/ServiceManagerMock.sol";
+import "src/interfaces/IOperatorSetManager.sol";
+import "test/mocks/OperatorSetManagerMock.sol";
 import "src/OperatorStateRetriever.sol";
 
 // Mocks and More
@@ -50,6 +52,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     // Core contracts to deploy
     DelegationManager delegationManager;
     AVSDirectory public avsDirectory;
+    IOperatorSetManager operatorSetManager;
     StrategyManager strategyManager;
     EigenPodManager eigenPodManager;
     RewardsCoordinator rewardsCoordinator;
@@ -119,6 +122,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         pauserRegistry = new PauserRegistry(pausers, unpauser);
 
         // Deploy mocks
+        operatorSetManager = new OperatorSetManagerMock();
         EmptyContract emptyContract = new EmptyContract();
         ethPOSDeposit = new ETHPOSDepositMock();
         beaconChainOracle = new BeaconChainOracleMock();
@@ -269,6 +273,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 0 // initialPausedStatus
             )
         );
+        
         // // RewardsCoordinator
         // proxyAdmin.upgradeAndCall(
         //     TransparentUpgradeableProxy(payable(address(rewardsCoordinator))),
@@ -330,14 +335,14 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         cheats.stopPrank();
 
         StakeRegistry stakeRegistryImplementation = new StakeRegistry(
-            IRegistryCoordinator(registryCoordinator), IDelegationManager(delegationManager)
+            serviceManager, IRegistryCoordinator(registryCoordinator), IDelegationManager(delegationManager)
         );
         BLSApkRegistry blsApkRegistryImplementation =
             new BLSApkRegistry(IRegistryCoordinator(registryCoordinator));
         IndexRegistry indexRegistryImplementation =
             new IndexRegistry(IRegistryCoordinator(registryCoordinator));
         ServiceManagerMock serviceManagerImplementation = new ServiceManagerMock(
-            IAVSDirectory(avsDirectory),
+            operatorSetManager,
             rewardsCoordinator,
             IRegistryCoordinator(registryCoordinator),
             stakeRegistry

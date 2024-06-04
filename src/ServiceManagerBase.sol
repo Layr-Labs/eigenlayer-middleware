@@ -96,6 +96,7 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
         );
     }
 
+    /// @notice migrates all existing operators and strategies to operator sets
     function migrateStrategiesToOperatorSets() external {
         uint8 quorumCount = _registryCoordinator.quorumCount();
         for (uint8 i = 0; i < quorumCount; ++i) {
@@ -167,12 +168,56 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
     }
 
     /**
-     * @notice Forwards a call to EigenLayer's AVSDirectory contract to confirm operator deregistration from the AVS
-     * @param operator The address of the operator to deregister.
-     */
-    function deregisterOperatorFromAVS(address operator) public virtual onlyRegistryCoordinator {
-        _operatorSetManager.deregisterOperatorFromAVS(operator);
+	 * @notice Called by this AVS's RegistryCoordinator to register an operator for its registering operatorSets
+	 * 
+	 * @param operator the address of the operator to be added to the operator set
+	 * @param quorumNumbers quorums/operatorSetIds to add the operator to
+	 * @param signature the signature of the operator on their intent to register
+	 * @dev msg.sender is used as the AVS
+	 * @dev operator must not have a pending a deregistration from the operator set
+	 * @dev if this is the first operator set in the AVS that the operator is 
+	 * registering for, a OperatorAVSRegistrationStatusUpdated event is emitted with 
+	 * a REGISTERED status
+	 */
+	function registerOperatorToOperatorSets(
+		address operator,
+		bytes calldata quorumNumbers,
+		ISignatureUtils.SignatureWithSaltAndExpiry memory signature
+	) external onlyRegistryCoordinator {
+        uint32[] memory operatorSetIds = quorumsToOperatorSetIds(quorumNumbers);
+        _operatorSetManager.registerOperatorToOperatorSets(
+            operator,
+            operatorSetIds,
+            signature
+        );
     }
+
+    /**
+	 * @notice Called by this AVS's RegistryCoordinator to deregister an operator for its operatorSets
+	 * 
+	 * @param operator the address of the operator to be removed from the 
+	 * operator set
+	 * @param quorumNumbers the quorumNumbers/operatorSetIds to deregister the operator for
+	 * 
+	 * @dev msg.sender is used as the AVS
+	 * @dev operator must be registered for msg.sender AVS and the given 
+	 * operator set
+     * @dev if this removes operator from all operator sets for the msg.sender AVS
+     * then an OperatorAVSRegistrationStatusUpdated event is emitted with a DEREGISTERED
+     * status
+	 */
+	function deregisterOperatorFromOperatorSets(
+		address operator,
+        bytes calldata quorumNumbers
+	) external onlyRegistryCoordinator {
+        uint32[] memory operatorSetIds = quorumsToOperatorSetIds(quorumNumbers);
+        _operatorSetManager.deregisterOperatorFromOperatorSets(
+            operator,
+            operatorSetIds
+        );
+    }
+
+
 
     /**
      * @notice Sets the rewards initiator address
@@ -258,6 +303,16 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
             }
         }
         return restakedStrategies;
+    }
+
+    /// @notice converts the quorumNumbers array to operatorSetIds array
+    function quorumsToOperatorSetIds(bytes calldata quorumNumbers) internal pure returns (uint32[] memory) {
+        uint256 quorumCount = quorumNumbers.length;
+        uint32[] memory operatorSetIds = new uint32[](quorumCount);
+        for (uint256 i = 0; i < quorumCount; i++) {
+            operatorSetIds[i] = uint32(uint8(quorumNumbers[i]));
+        }
+        return operatorSetIds;
     }
 
     /// @notice Returns the EigenLayer OperatorSetManager contract.

@@ -24,21 +24,21 @@ interface IServiceManagerUI {
      */
     function updateAVSMetadataURI(string memory _metadataURI) external;
 
-    /**
-     * @notice Forwards a call to EigenLayer's DelegationManager contract to confirm operator registration with the AVS
-     * @param operator The address of the operator to register.
-     * @param operatorSignature The signature, salt, and expiry of the operator's signature.
-     */
-    function registerOperatorToAVS(
-        address operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external;
+    // /**
+    //  * @notice Forwards a call to EigenLayer's DelegationManager contract to confirm operator registration with the AVS
+    //  * @param operator The address of the operator to register.
+    //  * @param operatorSignature The signature, salt, and expiry of the operator's signature.
+    //  */
+    // function registerOperatorToAVS(
+    //     address operator,
+    //     ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    // ) external;
 
-    /**
-     * @notice Forwards a call to EigenLayer's DelegationManager contract to confirm operator deregistration from the AVS
-     * @param operator The address of the operator to deregister.
-     */
-    function deregisterOperatorFromAVS(address operator) external;
+    // /**
+    //  * @notice Forwards a call to EigenLayer's DelegationManager contract to confirm operator deregistration from the AVS
+    //  * @param operator The address of the operator to deregister.
+    //  */
+    // function deregisterOperatorFromAVS(address operator) external;
 
     /**
      * @notice Returns the list of strategies that the operator has potentially restaked on the AVS

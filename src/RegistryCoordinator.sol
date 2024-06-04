@@ -495,18 +495,15 @@ contract RegistryCoordinator is
         emit OperatorSocketUpdate(operatorId, socket);
 
         // If the operator wasn't registered for any quorums, update their status
-        // and register them with this AVS in EigenLayer core (DelegationManager)
         if (_operatorInfo[operator].status != OperatorStatus.REGISTERED) {
             _operatorInfo[operator] = OperatorInfo({
                 operatorId: operatorId,
                 status: OperatorStatus.REGISTERED
             });
-
-            // Register the operator with the EigenLayer core contracts via this AVS's ServiceManager
-            serviceManager.registerOperatorToAVS(operator, operatorSignature);
-
-            emit OperatorRegistered(operator, operatorId);
         }
+        // Register the operator with the EigenLayer core contracts via this AVS's ServiceManager
+        serviceManager.registerOperatorToOperatorSets(operator, quorumNumbers, operatorSignature);
+        emit OperatorRegistered(operator, operatorId, quorumNumbers);
 
         // Register the operator with the BLSApkRegistry, StakeRegistry, and IndexRegistry
         blsApkRegistry.registerOperator(operator, quorumNumbers);
@@ -612,13 +609,12 @@ contract RegistryCoordinator is
             newBitmap: newBitmap
         });
 
-        // If the operator is no longer registered for any quorums, update their status and deregister 
-        // them from the AVS via the EigenLayer core contracts
+        // If the operator is no longer registered for any quorums, update their status
         if (newBitmap.isEmpty()) {
             operatorInfo.status = OperatorStatus.DEREGISTERED;
-            serviceManager.deregisterOperatorFromAVS(operator);
-            emit OperatorDeregistered(operator, operatorId);
         }
+        serviceManager.deregisterOperatorFromOperatorSets(operator, quorumNumbers);
+        emit OperatorDeregistered(operator, operatorId, quorumNumbers);
 
         // Deregister operator with each of the registry contracts
         blsApkRegistry.deregisterOperator(operator, quorumNumbers);

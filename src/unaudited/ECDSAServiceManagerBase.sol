@@ -86,20 +86,20 @@ abstract contract ECDSAServiceManagerBase is
         _createAVSRewardsSubmission(rewardsSubmissions);
     }
 
-    /// @inheritdoc IServiceManagerUI
-    function registerOperatorToAVS(
-        address operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external virtual onlyStakeRegistry {
-        _registerOperatorToAVS(operator, operatorSignature);
-    }
+    // /// @inheritdoc IServiceManagerUI
+    // function registerOperatorToAVS(
+    //     address operator,
+    //     ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    // ) external virtual onlyStakeRegistry {
+    //     _registerOperatorToAVS(operator, operatorSignature);
+    // }
 
-    /// @inheritdoc IServiceManagerUI
-    function deregisterOperatorFromAVS(
-        address operator
-    ) external virtual onlyStakeRegistry {
-        _deregisterOperatorFromAVS(operator);
-    }
+    // /// @inheritdoc IServiceManagerUI
+    // function deregisterOperatorFromAVS(
+    //     address operator
+    // ) external virtual onlyStakeRegistry {
+    //     _deregisterOperatorFromAVS(operator);
+    // }
 
     /// @inheritdoc IServiceManagerUI
     function getRestakeableStrategies()

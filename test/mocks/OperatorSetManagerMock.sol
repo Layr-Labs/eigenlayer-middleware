@@ -56,6 +56,17 @@ contract OperatorSetManagerMock is IOperatorSetManager {
         SignatureWithExpiry calldata allocatorSignature
     ) external returns(uint32 effectEpoch) {}
 
+	function registerOperatorToOperatorSets(
+		address operator,
+		uint32[] calldata operatorSetIDs,
+		ISignatureUtils.SignatureWithSaltAndExpiry memory signature
+	) external {}
+
+	function deregisterOperatorFromOperatorSets(
+		address operator, 
+		uint32[] calldata operatorSetIDs
+	) external {}
+
     /**	
  	 * @notice Called by AVSs to add a strategy to its operator set
 	 * 
