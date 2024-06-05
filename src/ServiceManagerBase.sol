@@ -154,6 +154,8 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
      * @param operators The list of operators to eject for the given OperatorSet
      * @param operatorSetId This AVS's operatorSetId to eject operators from
      * @dev The RegistryCoordinator MUST set this ServiceManager contract to be the ejector address for this call to succeed
+     * @dev Note that operatorSetId should be a valid uint8 as this migration flow is meant for backwards compatability of
+     * existing AVS quorums that are stored as single bytes1 or uint8 values
      */
     function ejectNonmigratedOperators(
         address[] calldata operators,
@@ -167,14 +169,13 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
             IOperatorSetManager.OperatorSet({avs: address(this), id: operatorSetId});
         for (uint256 i = 0; i < operators.length; ++i) {
             require(
-                _operatorSetManager.avsOperatorStatus(address(this), operator)
+                _operatorSetManager.avsOperatorStatus(address(this), operators[i])
                     == IOperatorSetManager.OperatorAVSRegistrationStatus.REGISTERED
                     && !_operatorSetManager.isOperatorInOperatorSet(operators[i], operatorSet),
                 "ServiceManagerBase.removeNonmigratedOperators: operator already registered to operator set"
             );
-            bytes32 operatorId = _registryCoordinator.getOperatorId(operators[i]);
-            uint192 quorumBitmap = _registryCoordinator.getCurrentQuorumBitmap(operatorId);
-            bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
+            bytes memory quorumNumbers = new bytes(1);
+            quorumNumbers[0] = bytes1(uint8(operatorSetId));
             _registryCoordinator.ejectOperator(operators[i], quorumNumbers);
         }
     }
