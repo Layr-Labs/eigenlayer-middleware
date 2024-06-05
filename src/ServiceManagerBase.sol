@@ -163,13 +163,13 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
             operatorSetId < _registryCoordinator.quorumCount(),
             "ServiceManagerBase.ejectNonmigratedOperators: operatorSet does not exist"
         );
-        IOperatorSetManager.OperatorSet memory operatorSet = IOperatorSetManager.OperatorSet({
-            avs: address(this),
-            id: operatorSetId
-        });
+        IOperatorSetManager.OperatorSet memory operatorSet =
+            IOperatorSetManager.OperatorSet({avs: address(this), id: operatorSetId});
         for (uint256 i = 0; i < operators.length; ++i) {
             require(
-                !_operatorSetManager.isOperatorInOperatorSet(operators[i], operatorSet),
+                _operatorSetManager.avsOperatorStatus(address(this), operator)
+                    == IOperatorSetManager.OperatorAVSRegistrationStatus.REGISTERED
+                    && !_operatorSetManager.isOperatorInOperatorSet(operators[i], operatorSet),
                 "ServiceManagerBase.removeNonmigratedOperators: operator already registered to operator set"
             );
             bytes32 operatorId = _registryCoordinator.getOperatorId(operators[i]);
