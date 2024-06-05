@@ -3,7 +3,7 @@ pragma solidity >=0.5.0;
 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
-import {IStrategy} from "./IOperatorSetManager.sol"; // should be later changed to be import from core
+import {IOperatorSetManager, IStrategy} from "./IOperatorSetManager.sol"; // should be later changed to be import from core
 import {IServiceManagerUI} from "./IServiceManagerUI.sol";
 
 /**
@@ -75,6 +75,19 @@ interface IServiceManager is IServiceManagerUI {
     function migrateOperatorToOperatorSets(
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory signature
+    ) external;
+
+    /**
+     * @notice Once strategies have been migrated and operators have been migrated to operator sets.
+     * The ServiceManager owner can eject any operators that have yet to completely migrate fully to operator sets.
+     * This final step of the migration process will ensure the full migration of all operators to operator sets.
+     * @param operators The list of operators to eject for the given OperatorSet
+     * @param operatorSet The OperatorSet to eject the operators from
+     * @dev The RegistryCoordinator MUST set this ServiceManager contract to be the ejector address for this call to succeed
+     */
+    function ejectNonmigratedOperators(
+        address[] calldata operators,
+        IOperatorSetManager.OperatorSet calldata operatorSet
     ) external;
 
     /**

@@ -123,7 +123,10 @@ contract OperatorSetManagerMock is IOperatorSetManager {
         uint32 epoch
     ) external returns (uint16 slashableBips) {}
 
-
+    function isOperatorInOperatorSet(
+		address operator, 
+		OperatorSet calldata operatorSet
+	) external view returns(bool) {}
 
     /**
      * @notice Called by an avs to register an operator with the avs.

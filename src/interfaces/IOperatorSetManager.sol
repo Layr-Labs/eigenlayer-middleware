@@ -137,6 +137,18 @@ interface IOperatorSetManager is ISignatureUtils {
 
     /// VIEW
 
+
+	/**
+	 * @param operator the operator to get the status of
+	 * @param operatorSet the operator set to check whether the operator was in
+	 * 
+	 * @return whether the operator was in a given operator set
+	 */
+	function isOperatorInOperatorSet(
+		address operator, 
+		OperatorSet calldata operatorSet
+	) external view returns(bool);
+
     /**
      * @param operator the operator to get allowedToRegister for
      * @param operatorSet the operator set to get allowedToRegister for

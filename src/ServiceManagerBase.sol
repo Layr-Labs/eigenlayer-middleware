@@ -132,6 +132,38 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
     }
 
     /**
+     * @notice Once strategies have been migrated and operators have been migrated to operator sets.
+     * The ServiceManager owner can eject any operators that have yet to completely migrate fully to operator sets.
+     * This final step of the migration process will ensure the full migration of all operators to operator sets.
+     * @param operators The list of operators to eject for the given OperatorSet
+     * @param operatorSet The OperatorSet to eject the operators from
+     * @dev The RegistryCoordinator MUST set this ServiceManager contract to be the ejector address for this call to succeed
+     */
+    function ejectNonmigratedOperators(
+        address[] calldata operators,
+        IOperatorSetManager.OperatorSet calldata operatorSet
+    ) external onlyOwner {
+        require(
+            operatorSet.avs == address(this),
+            "ServiceManagerBase.ejectNonmigratedOperators: operatorSet is not for this AVS"
+        );
+        require(
+            operatorSet.id < _registryCoordinator.quorumCount(),
+            "ServiceManagerBase.ejectNonmigratedOperators: operatorSet does not exist"
+        );
+        for (uint256 i = 0; i < operators.length; ++i) {
+            require(
+                !_operatorSetManager.isOperatorInOperatorSet(operators[i], operatorSet),
+                "ServiceManagerBase.removeNonmigratedOperators: operator already registered to operator set"
+            );
+            bytes32 operatorId = _registryCoordinator.getOperatorId(operators[i]);
+            uint192 quorumBitmap = _registryCoordinator.getCurrentQuorumBitmap(operatorId);
+            bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
+            _registryCoordinator.ejectOperator(operators[i], quorumNumbers);
+        }
+    }
+
+    /**
      * @notice Updates the metadata URI for the AVS
      * @param _metadataURI is the metadata URI for the AVS
      * @dev only callable by the owner
