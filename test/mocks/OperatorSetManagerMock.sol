@@ -95,7 +95,21 @@ contract OperatorSetManagerMock is IOperatorSetManager {
 		IStrategy[] calldata strategies
 	) external {}
 
-        /**
+    /**
+     * @notice retrieve the operator status for a given AVS, returns enum for either 
+     * DEREGISTERED or REGISTERED
+     * @param avs the AVS to get the operator status for
+     * @param operator the operator to get the status for
+     */
+    function avsOperatorStatus(address avs, address operator) external view returns (OperatorAVSRegistrationStatus) {}
+
+    /// @notice number of operatorSets the operator is registered for a given AVS
+    function operatorAVSOperatorSetCount(address avs, address operator) external view returns (uint256) {}
+
+    /// @notice mapping bool returning whether a strategy is part of an OperatorSet
+    function operatorSetStrategies(address avs, uint32 operatorSetId, IStrategy strategy) external view returns (bool) {}
+
+    /**
      * @param operator the operator to get allowedToRegister for
      * @param operatorSet the operator set to get allowedToRegister for
      *

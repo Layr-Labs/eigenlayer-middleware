@@ -50,15 +50,10 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
 
 
     constructor(
-        IServiceManager _serviceManager,
         IRegistryCoordinator _registryCoordinator, 
         IDelegationManager _delegationManager
     ) {
-        require(
-            _registryCoordinator.serviceManager() == _serviceManager,
-            "StakeRegistryStorage: serviceManager does not match with registryCoordinator"
-        );
-        serviceManager = _serviceManager;
+        serviceManager = _registryCoordinator.serviceManager();
         registryCoordinator = address(_registryCoordinator);
         delegation = _delegationManager;
     }

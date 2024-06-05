@@ -82,12 +82,12 @@ interface IServiceManager is IServiceManagerUI {
      * The ServiceManager owner can eject any operators that have yet to completely migrate fully to operator sets.
      * This final step of the migration process will ensure the full migration of all operators to operator sets.
      * @param operators The list of operators to eject for the given OperatorSet
-     * @param operatorSet The OperatorSet to eject the operators from
+     * @param operatorSetId This AVS's operatorSetId to eject operators from
      * @dev The RegistryCoordinator MUST set this ServiceManager contract to be the ejector address for this call to succeed
      */
     function ejectNonmigratedOperators(
         address[] calldata operators,
-        IOperatorSetManager.OperatorSet calldata operatorSet
+        uint32 operatorSetId
     ) external;
 
     /**

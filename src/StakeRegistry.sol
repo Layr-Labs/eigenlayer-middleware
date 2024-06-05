@@ -42,10 +42,9 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     constructor(
-        IServiceManager _serviceManager,
         IRegistryCoordinator _registryCoordinator,
         IDelegationManager _delegationManager
-    ) StakeRegistryStorage(_serviceManager, _registryCoordinator, _delegationManager) {}
+    ) StakeRegistryStorage(_registryCoordinator, _delegationManager) {}
 
     /*******************************************************************************
                       EXTERNAL FUNCTIONS - REGISTRY COORDINATOR

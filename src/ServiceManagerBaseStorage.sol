@@ -33,10 +33,6 @@ abstract contract ServiceManagerBaseStorage is IServiceManager {
     /// @notice The address of the entity that can initiate rewards
     address public rewardsInitiator;
 
-    bool internal isStrategiesMigrated;
-
-    mapping(address => bool) isOperatorMigrated;
-
     /// @notice Sets the (immutable) `_avsDirectory`, `_rewardsCoordinator`, `_registryCoordinator`, and `_stakeRegistry` addresses
     constructor(
         IOperatorSetManager __operatorSetManager,
@@ -51,5 +47,5 @@ abstract contract ServiceManagerBaseStorage is IServiceManager {
     }
 
     // storage gap for upgradeability
-    uint256[47] private __GAP;
+    uint256[49] private __GAP;
 }

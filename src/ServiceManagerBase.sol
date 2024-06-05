@@ -72,10 +72,12 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
     ) internal virtual onlyInitializing {
         _transferOwnership(initialOwner);
         _setRewardsInitiator(_rewardsInitiator);
-        isStrategiesMigrated = true;
     }
 
-    /// TODO: natspec
+    /**
+     * @notice called by the AVS StakeRegistry whenever a new IStrategy is added to a quorum/operatorSet
+     * @dev calls operatorSetManager.addStrategiesToOperatorSet()
+     */
     function addStrategiesToOperatorSet(
         uint32 operatorSetID,
         IStrategy[] calldata strategies
@@ -83,7 +85,10 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
         _operatorSetManager.addStrategiesToOperatorSet(operatorSetID, strategies);
     }
 
-    /// TODO: natspec
+    /**
+     * @notice called by the AVS StakeRegistry whenever a new IStrategy is removed from a quorum/operatorSet
+     * @dev calls operatorSetManager.removeStrategiesFromOperatorSet()
+     */
     function removeStrategiesFromOperatorSet(
         uint32 operatorSetID,
         IStrategy[] calldata strategies
@@ -91,12 +96,13 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
         _operatorSetManager.removeStrategiesFromOperatorSet(operatorSetID, strategies);
     }
 
-    /// @notice migrates all existing operators and strategies to operator sets
+    /**
+     * @notice One-time call that migrates all existing strategies for each quorum to their respective operator sets
+     * Note: a separate migration per operator must be performed to migrate an existing operator to the operator set
+     * See migrateOperatorToOperatorSets() below
+     * @dev calls operatorSetManager.addStrategiesToOperatorSet()
+     */
     function migrateStrategiesToOperatorSets() external {
-        require(
-            !isStrategiesMigrated,
-            "ServiceManagerBase.migrateStrategiesToOperatorSets: already migrated"
-        );
         uint8 quorumCount = _registryCoordinator.quorumCount();
         for (uint8 i = 0; i < quorumCount; ++i) {
             uint256 numStrategies = _stakeRegistry.strategyParamsLength(i);
@@ -105,24 +111,34 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
             for (uint256 j = 0; j < numStrategies; ++j) {
                 IStrategy strategy = _stakeRegistry.strategyParamsByIndex(i, j).strategy;
                 strategies[j] = strategy;
+                require(
+                    !_operatorSetManager.operatorSetStrategies(address(this), uint32(i), strategy),
+                    "ServiceManagerBase.migrateStrategiesToOperatorSets: strategy already part of OperatorSet"
+                );
             }
 
             _operatorSetManager.addStrategiesToOperatorSet(uint32(i), strategies);
             emit OperatorSetStrategiesMigrated(uint32(i), strategies);
         }
-        isStrategiesMigrated = true;
     }
 
     /**
-     * @notice the operator needs to provide a signature over the operatorSetIds they will be registering
-     * for. This can be called externally by getOperatorSetIds
+     * @notice One-time call to migrate an existing operator to the respective operator sets.
+     * The operator needs to provide a signature over the operatorSetIds they are currently registered for.
+     * This can be retrieved externally by calling getOperatorSetIds.
+     * @param operator the address of the operator to be migrated
+     * @param signature the signature of the operator on their intent to migrate
+     * @dev calls operatorSetManager.registerOperatorToOperatorSets()
      */
     function migrateOperatorToOperatorSets(
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory signature
     ) external {
+        // check if operator is already migrated, that is they are registered operators with 0 operatorSet count
         require(
-            !isOperatorMigrated[operator],
+            _operatorSetManager.avsOperatorStatus(address(this), operator)
+                == IOperatorSetManager.OperatorAVSRegistrationStatus.REGISTERED
+                && _operatorSetManager.operatorAVSOperatorSetCount(address(this), operator) == 0,
             "ServiceManagerBase.migrateOperatorToOperatorSets: already migrated"
         );
         uint32[] memory operatorSetIds = getOperatorSetIds(operator);
@@ -136,21 +152,21 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
      * The ServiceManager owner can eject any operators that have yet to completely migrate fully to operator sets.
      * This final step of the migration process will ensure the full migration of all operators to operator sets.
      * @param operators The list of operators to eject for the given OperatorSet
-     * @param operatorSet The OperatorSet to eject the operators from
+     * @param operatorSetId This AVS's operatorSetId to eject operators from
      * @dev The RegistryCoordinator MUST set this ServiceManager contract to be the ejector address for this call to succeed
      */
     function ejectNonmigratedOperators(
         address[] calldata operators,
-        IOperatorSetManager.OperatorSet calldata operatorSet
+        uint32 operatorSetId
     ) external onlyOwner {
         require(
-            operatorSet.avs == address(this),
-            "ServiceManagerBase.ejectNonmigratedOperators: operatorSet is not for this AVS"
-        );
-        require(
-            operatorSet.id < _registryCoordinator.quorumCount(),
+            operatorSetId < _registryCoordinator.quorumCount(),
             "ServiceManagerBase.ejectNonmigratedOperators: operatorSet does not exist"
         );
+        IOperatorSetManager.OperatorSet memory operatorSet = IOperatorSetManager.OperatorSet({
+            avs: address(this),
+            id: operatorSetId
+        });
         for (uint256 i = 0; i < operators.length; ++i) {
             require(
                 !_operatorSetManager.isOperatorInOperatorSet(operators[i], operatorSet),
