@@ -33,6 +33,18 @@ interface IBLSApkRegistry is IRegistry {
         BN254.G2Point pubkeyG2;
     }
 
+    /**
+     * @notice Struct used to checkpoint the previous pubkeys and their hashes for a given operator
+     * @param previousPubkeyG1 is the G1 public key of the operator
+     * @param previoudPubkeyHash is the hash of the public key of the operator
+     * @param blockNumber is the block number at which the pubkey was updated
+     */
+    struct PubkeyCheckpoint {
+        BN254.G1Point previousPubkeyG1;
+        bytes32 previousPubkeyHash;
+        uint32 blockNumber;
+    }
+
     // EVENTS
     /// @notice Emitted when `operator` registers with the public keys `pubkeyG1` and `pubkeyG2`.
     event NewPubkeyRegistration(address indexed operator, BN254.G1Point pubkeyG1, BN254.G2Point pubkeyG2);
@@ -101,12 +113,10 @@ interface IBLSApkRegistry is IRegistry {
      * @notice Called by the RegistryCoordinator register an operator as the owner of a BLS public key.
      * @param operator is the operator for whom the key is being registered
      * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership
-     * @param pubkeyRegistrationMessageHash is a hash that the operator must sign to prove key ownership
      */
     function registerBLSPublicKey(
         address operator,
-        PubkeyRegistrationParams calldata params,
-        BN254.G1Point calldata pubkeyRegistrationMessageHash
+        PubkeyRegistrationParams calldata params
     ) external returns (bytes32 operatorId);
 
     /**
@@ -139,4 +149,10 @@ interface IBLSApkRegistry is IRegistry {
     /// @notice returns the ID used to identify the `operator` within this AVS.
     /// @dev Returns zero in the event that the `operator` has never registered for the AVS
     function getOperatorId(address operator) external view returns (bytes32);
+
+    /**
+     * @notice Returns the message hash that an operator must sign to register their BLS public key.
+     * @param operator is the address of the operator registering their BLS public key
+     */
+    function pubkeyRegistrationMessageHash(address operator) external view returns (BN254.G1Point memory);
 }

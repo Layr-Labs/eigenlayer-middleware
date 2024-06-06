@@ -11,6 +11,8 @@ import {BN254} from "./libraries/BN254.sol";
 abstract contract BLSApkRegistryStorage is Initializable, IBLSApkRegistry {
     /// @notice the hash of the zero pubkey aka BN254.G1Point(0,0)
     bytes32 internal constant ZERO_PK_HASH = hex"ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5";
+    /// @notice The EIP-712 typehash used for registering BLS public keys
+    bytes32 public constant PUBKEY_REGISTRATION_TYPEHASH = keccak256("BN254PubkeyRegistration(address operator)");
 
     /// @notice the registry coordinator contract
     address public immutable registryCoordinator;
@@ -29,6 +31,9 @@ abstract contract BLSApkRegistryStorage is Initializable, IBLSApkRegistry {
     /// @notice maps quorumNumber => current aggregate pubkey of quorum
     mapping(uint8 => BN254.G1Point) public currentApk;
 
+    /// @notice maps operator address to pubkey history
+    mapping(address => PubkeyCheckpoint[]) public operatorPubkeyHistory;
+
     constructor(IRegistryCoordinator _registryCoordinator) {
         registryCoordinator = address(_registryCoordinator);
         // disable initializers so that the implementation contract cannot be initialized
@@ -36,5 +41,5 @@ abstract contract BLSApkRegistryStorage is Initializable, IBLSApkRegistry {
     }
 
     // storage gap for upgradeability
-    uint256[45] private __GAP;
+    uint256[44] private __GAP;
 }

@@ -30,7 +30,7 @@ contract BLSApkRegistryFFITests is G2Operations {
         pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(alice);
 
         vm.prank(address(registryCoordinator));
-        blsApkRegistry.registerBLSPublicKey(alice, pubkeyRegistrationParams, registryCoordinator.pubkeyRegistrationMessageHash(alice));
+        blsApkRegistry.registerBLSPublicKey(alice, pubkeyRegistrationParams);
 
         assertEq(blsApkRegistry.operatorToPubkeyHash(alice), BN254.hashG1Point(pubkeyRegistrationParams.pubkeyG1),
             "pubkey hash not stored correctly");

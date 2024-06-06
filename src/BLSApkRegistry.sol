@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
+import {EIP712} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import {BLSApkRegistryStorage} from "./BLSApkRegistryStorage.sol";
-
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
-
 import {BN254} from "./libraries/BN254.sol";
 
-contract BLSApkRegistry is BLSApkRegistryStorage {
+contract BLSApkRegistry is BLSApkRegistryStorage, EIP712 {
     using BN254 for BN254.G1Point;
 
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
@@ -22,7 +21,10 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     /// @notice Sets the (immutable) `registryCoordinator` address
     constructor(
         IRegistryCoordinator _registryCoordinator
-    ) BLSApkRegistryStorage(_registryCoordinator) {}
+    ) 
+        BLSApkRegistryStorage(_registryCoordinator)
+        EIP712("BLSApkRegistry", "v0.0.1") 
+    {}
 
     /*******************************************************************************
                       EXTERNAL FUNCTIONS - REGISTRY COORDINATOR
@@ -95,26 +97,24 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
      * @notice Called by the RegistryCoordinator register an operator as the owner of a BLS public key.
      * @param operator is the operator for whom the key is being registered
      * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership
-     * @param pubkeyRegistrationMessageHash is a hash that the operator must sign to prove key ownership
      */
     function registerBLSPublicKey(
         address operator,
-        PubkeyRegistrationParams calldata params,
-        BN254.G1Point calldata pubkeyRegistrationMessageHash
+        PubkeyRegistrationParams calldata params
     ) external onlyRegistryCoordinator returns (bytes32 operatorId) {
         bytes32 pubkeyHash = BN254.hashG1Point(params.pubkeyG1);
+        if(operatorToPubkeyHash[operator] == pubkeyHash) {
+            return pubkeyHash;
+        }
         require(
             pubkeyHash != ZERO_PK_HASH, "BLSApkRegistry.registerBLSPublicKey: cannot register zero pubkey"
-        );
-        require(
-            operatorToPubkeyHash[operator] == bytes32(0),
-            "BLSApkRegistry.registerBLSPublicKey: operator already registered pubkey"
         );
         require(
             pubkeyHashToOperator[pubkeyHash] == address(0),
             "BLSApkRegistry.registerBLSPublicKey: public key already registered"
         );
 
+        BN254.G1Point memory _pubkeyRegistrationMessageHash = pubkeyRegistrationMessageHash(operator);
         // gamma = h(sigma, P, P', H(m))
         uint256 gamma = uint256(keccak256(abi.encodePacked(
             params.pubkeyRegistrationSignature.X, 
@@ -123,17 +123,26 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
             params.pubkeyG1.Y, 
             params.pubkeyG2.X, 
             params.pubkeyG2.Y, 
-            pubkeyRegistrationMessageHash.X, 
-            pubkeyRegistrationMessageHash.Y
+            _pubkeyRegistrationMessageHash.X, 
+            _pubkeyRegistrationMessageHash.Y
         ))) % BN254.FR_MODULUS;
         
         // e(sigma + P * gamma, [-1]_2) = e(H(m) + [1]_1 * gamma, P') 
         require(BN254.pairing(
             params.pubkeyRegistrationSignature.plus(params.pubkeyG1.scalar_mul(gamma)),
             BN254.negGeneratorG2(),
-            pubkeyRegistrationMessageHash.plus(BN254.generatorG1().scalar_mul(gamma)),
+            _pubkeyRegistrationMessageHash.plus(BN254.generatorG1().scalar_mul(gamma)),
             params.pubkeyG2
         ), "BLSApkRegistry.registerBLSPublicKey: either the G1 signature is wrong, or G1 and G2 private key do not match");
+
+        //if keys are already registered for the operator then checkpoint the previous pubkey and pubkeyHash of the operator
+        if(operatorToPubkeyHash[operator] != bytes32(0)) {
+            operatorPubkeyHistory[operator].push(PubkeyCheckpoint({
+                previousPubkeyG1: operatorToPubkey[operator],
+                previousPubkeyHash: operatorToPubkeyHash[operator],
+                blockNumber: uint32(block.number)
+            }));
+        }
 
         operatorToPubkey[operator] = params.pubkeyG1;
         operatorToPubkeyHash[operator] = pubkeyHash;
@@ -280,5 +289,106 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     /// @dev Returns zero in the event that the `operator` has never registered for the AVS
     function getOperatorId(address operator) public view returns (bytes32) {
         return operatorToPubkeyHash[operator];
+    }
+
+    /// @notice Returns the length of the pubkey checkpoint history for the given `operator`
+    function getOperatorPubkeyCheckpointHistoryLength(address operator) external view returns (uint256) {
+        return operatorPubkeyHistory[operator].length;
+    }
+
+    /// @notice Returns the `index`th entry in the pubkey checkpoint history for the given `operator`
+    function getOperatorPubkeyCheckpointByIndex(address operator, uint256 index) external view returns (PubkeyCheckpoint memory) {
+        require(index < operatorPubkeyHistory[operator].length, "BLSApkRegistry.getPubkeyCheckpointByIndex: index out of bounds");
+        return operatorPubkeyHistory[operator][index];
+    }
+
+    /**
+     * @notice Returns the pubkey for the provided `operator` at the given `blockNumber`
+     * @dev This function is designed to find proper inputs to the `getPubkeyHashAtBlockNumberByIndex` function
+     * @dev Will revert if an operator has not ever registered a pubkey 
+     * @dev Will revert if `blockNumber` is greater than the current block number
+     * @dev Will return the first pubkey for the provided `operator` if `blockNumber` is before the first pubkey checkpoint
+     *      and additional logic is required to check if the operator was active at the given `blockNumber`
+     */
+    function getOperatorPubkeyHashAtBlockNumber(
+        uint32 blockNumber, 
+        address operator
+    ) external view returns (bytes32 pubkeyHash) {
+        require(blockNumber < uint32(block.number), "BLSApkRegistry.getOperatorPubkeyHashAtBlockNumber: blockNumber is after current block");
+        pubkeyHash = getOperatorId(operator);
+
+        uint256 historyLength = operatorPubkeyHistory[operator].length;
+        for (uint256 i = 0; i < historyLength; i++) {
+            if (operatorPubkeyHistory[operator][i].blockNumber > blockNumber) {
+                pubkeyHash = operatorPubkeyHistory[operator][i].previousPubkeyHash;
+                break;
+            }
+        }
+
+        if (pubkeyHash == bytes32(0)) {
+            revert("BLSApkRegistry.getOperatorPubkeyHashAtBlockNumber: operator has not registered a pubkey");
+        }
+    }
+
+    /**
+     * @notice Returns the pubkey for the given `operator` at the given `blockNumber` via the `index`,
+     * reverting if `index` is incorrect
+     * @dev This function is meant to be used in concert with `getOperatorPubkeyHashAtBlockNumber`, which
+     * helps off-chain processes to fetch the correct `index` input
+     * @dev Will revert if an operator has not ever registered a pubkey 
+     * @dev Will revert if `blockNumber` is greater than the current block number
+     * @dev Will return the first pubkey for the provided `operator` if `blockNumber` is before the first pubkey checkpoint
+     *      and additional logic is required to check if the operator was active at the given `blockNumber`
+     * @dev If an operator has no pubkey checkpoints, then the operator's current pubkey is returned for any `blockNumber` and `index`
+     * @dev If the blockNumber is after the last pubkey checkpoint, then the operator's current pubkey is returned for any `index`
+     */ 
+    function getOperatorPubkeyHashAtBlockNumberByIndex(
+        address operator, 
+        uint32 blockNumber, 
+        uint256 index
+    ) external view returns (bytes32 pubkeyHash) {
+        require(blockNumber < uint32(block.number), "BLSApkRegistry.getPubkeyHashAtBlockNumberByIndex: blockNumber is after current block");
+        uint256 historyLength = operatorPubkeyHistory[operator].length;
+        if(historyLength > 0){
+            require(index < historyLength, "BLSApkRegistry.getPubkeyHashAtBlockNumberByIndex: index is out of bounds");
+        }
+
+        if (historyLength == 0) {
+            pubkeyHash = getOperatorId(operator);
+        } else if (operatorPubkeyHistory[operator][historyLength - 1].blockNumber <= blockNumber) {
+            pubkeyHash = getOperatorId(operator);
+        } else {
+            PubkeyCheckpoint memory pubkeyCheckpoint = operatorPubkeyHistory[operator][index]; 
+
+            require(
+                blockNumber < pubkeyCheckpoint.blockNumber, 
+                "BLSApkRegistry.getPubkeyHashAtBlockNumberByIndex: pubkeyHash is from later index"
+            );
+
+            if(index > 0) {
+                PubkeyCheckpoint memory previousPubkeyCheckpoint = operatorPubkeyHistory[operator][index - 1]; 
+                require(
+                    blockNumber >= previousPubkeyCheckpoint.blockNumber,
+                    "BLSApkRegistry.getPubkeyHashAtBlockNumberByIndex: pubkeyHash is from earlier index"
+                );
+            }
+
+            pubkeyHash = pubkeyCheckpoint.previousPubkeyHash;
+        }        
+        if (pubkeyHash == bytes32(0)) {
+            revert("BLSApkRegistry.getPubkeyHashAtBlockNumberByIndex: operator has not registered a pubkey");
+        }
+    }
+
+    /**
+     * @notice Returns the message hash that an operator must sign to register their BLS public key.
+     * @param operator is the address of the operator registering their BLS public key
+     */
+    function pubkeyRegistrationMessageHash(address operator) public view returns (BN254.G1Point memory) {
+        return BN254.hashToG1(
+            _hashTypedDataV4(
+                keccak256(abi.encode(PUBKEY_REGISTRATION_TYPEHASH, operator))
+            )
+        );
     }
 }
