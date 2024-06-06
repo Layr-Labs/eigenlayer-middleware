@@ -15,6 +15,7 @@ import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {BN254} from "./libraries/BN254.sol";
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import {PausableUpgradeable} from "@openzeppelin-upgrades/contracts/security/PausableUpgradeable.sol";
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 
@@ -32,7 +33,7 @@ import {RegistryCoordinatorStorage} from "./RegistryCoordinatorStorage.sol";
 contract RegistryCoordinator is 
     EIP712, 
     Initializable, 
-    Pausable,
+    PausableUpgradeable,
     OwnableUpgradeable,
     RegistryCoordinatorStorage, 
     ISocketUpdater, 
@@ -72,8 +73,6 @@ contract RegistryCoordinator is
      * @param _initialOwner will hold the owner role
      * @param _churnApprover will hold the churnApprover role, which authorizes registering with churn
      * @param _ejector will hold the ejector role, which can force-eject operators from quorums
-     * @param _pauserRegistry a registry of addresses that can pause the contract
-     * @param _initialPausedStatus pause status after calling initialize
      * Config for initial quorums (see `createQuorum`):
      * @param _operatorSetParams max operator count and operator churn parameters
      * @param _minimumStakes minimum stake weight to allow an operator to register
@@ -83,8 +82,6 @@ contract RegistryCoordinator is
         address _initialOwner,
         address _churnApprover,
         address _ejector,
-        IPauserRegistry _pauserRegistry,
-        uint256 _initialPausedStatus,
         OperatorSetParam[] memory _operatorSetParams,
         uint96[] memory _minimumStakes,
         IStakeRegistry.StrategyParams[][] memory _strategyParams
@@ -96,7 +93,6 @@ contract RegistryCoordinator is
         
         // Initialize roles
         _transferOwnership(_initialOwner);
-        _initializePauser(_pauserRegistry, _initialPausedStatus);
         _setChurnApprover(_churnApprover);
         _setEjector(_ejector);
 
@@ -130,7 +126,7 @@ contract RegistryCoordinator is
         string calldata socket,
         IBLSApkRegistry.PubkeyRegistrationParams calldata params,
         SignatureWithSaltAndExpiry memory operatorSignature
-    ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
+    ) external whenNotPaused{
         /**
          * If the operator has NEVER registered a pubkey before, use `params` to register
          * their pubkey in blsApkRegistry
@@ -181,7 +177,7 @@ contract RegistryCoordinator is
         OperatorKickParam[] calldata operatorKickParams,
         SignatureWithSaltAndExpiry memory churnApproverSignature,
         SignatureWithSaltAndExpiry memory operatorSignature
-    ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
+    ) external whenNotPaused{
         require(operatorKickParams.length == quorumNumbers.length, "RegistryCoordinator.registerOperatorWithChurn: input length mismatch");
         
         /**
@@ -241,7 +237,7 @@ contract RegistryCoordinator is
      */
     function deregisterOperator(
         bytes calldata quorumNumbers
-    ) external onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
+    ) external whenNotPaused{
         _deregisterOperator({
             operator: msg.sender, 
             quorumNumbers: quorumNumbers
@@ -254,7 +250,7 @@ contract RegistryCoordinator is
      * @dev stakes are queried from the Eigenlayer core DelegationManager contract
      * @param operators a list of operator addresses to update
      */
-    function updateOperators(address[] calldata operators) external onlyWhenNotPaused(PAUSED_UPDATE_OPERATOR) {
+    function updateOperators(address[] calldata operators) external whenNotPaused{
         for (uint256 i = 0; i < operators.length; i++) {
             address operator = operators[i];
             OperatorInfo memory operatorInfo = _operatorInfo[operator];
@@ -284,7 +280,7 @@ contract RegistryCoordinator is
     function updateOperatorsForQuorum(
         address[][] calldata operatorsPerQuorum,
         bytes calldata quorumNumbers
-    ) external onlyWhenNotPaused(PAUSED_UPDATE_OPERATOR) {
+    ) external whenNotPaused{
         // Input validation 
         // - all quorums should exist (checked against `quorumCount` in orderedBytesArrayToBitmap)
         // - there should be no duplicates in `quorumNumbers`
