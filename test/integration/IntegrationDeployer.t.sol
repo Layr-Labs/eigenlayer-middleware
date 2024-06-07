@@ -378,8 +378,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 registryCoordinatorOwner,
                 churnApprover,
                 ejector,
-                pauserRegistry,
-                0, /*initialPausedStatus*/
                 new IRegistryCoordinator.OperatorSetParam[](0),
                 new uint96[](0),
                 new IStakeRegistry.StrategyParams[][](0)
