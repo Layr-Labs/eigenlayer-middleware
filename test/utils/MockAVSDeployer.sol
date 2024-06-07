@@ -302,8 +302,6 @@ contract MockAVSDeployer is Test {
                     registryCoordinatorOwner,
                     churnApprover,
                     ejector,
-                    pauserRegistry,
-                    0, /*initialPausedStatus*/
                     operatorSetParams,
                     minimumStakeForQuorum,
                     quorumStrategiesConsideredAndMultipliers
