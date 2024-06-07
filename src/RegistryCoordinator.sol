@@ -412,6 +412,23 @@ contract RegistryCoordinator is
     ) external onlyOwner quorumExists(quorumNumber) {
         _setOperatorSetParams(quorumNumber, operatorSetParams);
     }
+    
+    /**
+     * @notice Pauses the contract, preventing any further registrations or deregistrations
+     * @dev only callable by the owner
+     */
+
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /**
+     * @notice Unpauses the contract, allowing registrations and deregistrations again
+     * @dev only callable by the owner
+     */
+    function unpause() external onlyOwner {
+        _unpause();
+    }
 
     /**
      * @notice Sets the churnApprover, which approves operator registration with churn
