@@ -126,8 +126,6 @@ contract RegistryCoordinatorUnitTests_Initialization_Setters is RegistryCoordina
             registryCoordinatorOwner,
             churnApprover, 
             ejector, 
-            pauserRegistry, 
-            0/*initialPausedStatus*/, 
             operatorSetParams, 
             new uint96[](0), 
             new IStakeRegistry.StrategyParams[][](0)
@@ -256,11 +254,11 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
 
         // pause registerOperator
-        cheats.prank(pauser);
-        registryCoordinator.pause(2 ** PAUSED_REGISTER_OPERATOR);
+        cheats.prank(registryCoordinatorOwner);
+        registryCoordinator.pause();
 
         cheats.startPrank(defaultOperator);
-        cheats.expectRevert(bytes("Pausable: index is paused"));
+        cheats.expectRevert(bytes("Pausable: paused"));
         registryCoordinator.registerOperator(emptyQuorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
     }
 
@@ -588,10 +586,10 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         _registerOperatorWithCoordinator(defaultOperator, quorumBitmap, defaultPubKey);
 
         // pause deregisterOperator
-        cheats.prank(pauser);
-        registryCoordinator.pause(2 ** PAUSED_DEREGISTER_OPERATOR);
+        cheats.prank(registryCoordinatorOwner);
+        registryCoordinator.pause();
 
-        cheats.expectRevert(bytes("Pausable: index is paused"));
+        cheats.expectRevert(bytes("Pausable: paused"));
         cheats.prank(defaultOperator);
         registryCoordinator.deregisterOperator(quorumNumbers);
     }
@@ -1570,13 +1568,13 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
 
 contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnitTests {
     function test_updateOperators_revert_paused() public {
-        cheats.prank(pauser);
-        registryCoordinator.pause(2 ** PAUSED_UPDATE_OPERATOR);
+        cheats.prank(registryCoordinatorOwner);
+        registryCoordinator.pause();
 
         address[] memory operatorsToUpdate = new address[](1);
         operatorsToUpdate[0] = defaultOperator;
 
-        cheats.expectRevert(bytes("Pausable: index is paused"));
+        cheats.expectRevert(bytes("Pausable: paused"));
         registryCoordinator.updateOperators(operatorsToUpdate);
     }
 
@@ -1647,8 +1645,8 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
     }
 
     function test_updateOperatorsForQuorum_revert_paused() public {
-        cheats.prank(pauser);
-        registryCoordinator.pause(2 ** PAUSED_UPDATE_OPERATOR);
+        cheats.prank(registryCoordinatorOwner);
+        registryCoordinator.pause();
 
         address[][] memory operatorsToUpdate = new address[][](1);
         address[] memory operatorArray = new address[](1);
@@ -1657,7 +1655,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
-        cheats.expectRevert(bytes("Pausable: index is paused"));
+        cheats.expectRevert(bytes("Pausable: paused"));
         registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
     }
 
