@@ -11,7 +11,7 @@ import {IServiceManagerUI} from "../interfaces/IServiceManagerUI.sol";
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IStakeRegistry} from "../interfaces/IStakeRegistry.sol";
-import {IPaymentCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IPaymentCoordinator.sol";
+import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {Quorum} from "../interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
 import {ECDSAStakeRegistry} from "../unaudited/ECDSAStakeRegistry.sol";
 
@@ -25,8 +25,8 @@ abstract contract ECDSAServiceManagerBase is
     /// @notice Address of the AVS directory contract, which manages AVS-related data for registered operators.
     address public immutable avsDirectory;
 
-    /// @notice Address of the payment coordinator contract, which handles payment distributions.
-    address internal immutable paymentCoordinator;
+    /// @notice Address of the rewards coordinator contract, which handles rewards distributions.
+    address internal immutable rewardsCoordinator;
 
     /// @notice Address of the delegation manager contract, which manages staker delegations to operators.
     address internal immutable delegationManager;
@@ -46,18 +46,18 @@ abstract contract ECDSAServiceManagerBase is
      * @dev Constructor for ECDSAServiceManagerBase, initializing immutable contract addresses and disabling initializers.
      * @param _avsDirectory The address of the AVS directory contract, managing AVS-related data for registered operators.
      * @param _stakeRegistry The address of the stake registry contract, managing registration and stake recording.
-     * @param _paymentCoordinator The address of the payment coordinator contract, handling payment distributions.
+     * @param _rewardsCoordinator The address of the rewards coordinator contract, handling rewards distributions.
      * @param _delegationManager The address of the delegation manager contract, managing staker delegations to operators.
      */
     constructor(
         address _avsDirectory,
         address _stakeRegistry,
-        address _paymentCoordinator,
+        address _rewardsCoordinator,
         address _delegationManager
     ) {
         avsDirectory = _avsDirectory;
         stakeRegistry = _stakeRegistry;
-        paymentCoordinator = _paymentCoordinator;
+        rewardsCoordinator = _rewardsCoordinator;
         delegationManager = _delegationManager;
         _disableInitializers();
     }
@@ -80,10 +80,10 @@ abstract contract ECDSAServiceManagerBase is
     }
 
     /// @inheritdoc IServiceManager
-    function payForRange(
-        IPaymentCoordinator.RangePayment[] calldata rangePayments
+    function createAVSRewardsSubmission(
+        IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions
     ) external virtual onlyOwner {
-        _payForRange(rangePayments);
+        _createAVSRewardsSubmission(rewardsSubmissions);
     }
 
     /// @inheritdoc IServiceManagerUI
@@ -155,26 +155,26 @@ abstract contract ECDSAServiceManagerBase is
     }
 
     /**
-     * @notice Processes a batch of range payments by transferring the specified amounts from the sender to this contract and then approving the PaymentCoordinator to use these amounts.
-     * @dev This function handles the transfer and approval of tokens necessary for range payments. It then delegates the actual payment logic to the PaymentCoordinator contract.
-     * @param rangePayments An array of `RangePayment` structs, each representing a payment for a specific range.
+     * @notice Processes a batch of rewards submissions by transferring the specified amounts from the sender to this contract and then approving the RewardsCoordinator to use these amounts.
+     * @dev This function handles the transfer and approval of tokens necessary for rewards submissions. It then delegates the actual rewards logic to the RewardsCoordinator contract.
+     * @param rewardsSubmissions An array of `RewardsSubmission` structs, each representing rewards for a specific range.
      */
-    function _payForRange(
-        IPaymentCoordinator.RangePayment[] calldata rangePayments
+    function _createAVSRewardsSubmission(
+        IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions
     ) internal virtual {
-        for (uint256 i = 0; i < rangePayments.length; ++i) {
-            rangePayments[i].token.transferFrom(
+        for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
+            rewardsSubmissions[i].token.transferFrom(
                 msg.sender,
                 address(this),
-                rangePayments[i].amount
+                rewardsSubmissions[i].amount
             );
-            rangePayments[i].token.approve(
-                paymentCoordinator,
-                rangePayments[i].amount
+            rewardsSubmissions[i].token.approve(
+                rewardsCoordinator,
+                rewardsSubmissions[i].amount
             );
         }
 
-        IPaymentCoordinator(paymentCoordinator).payForRange(rangePayments);
+        IRewardsCoordinator(rewardsCoordinator).createAVSRewardsSubmission(rewardsSubmissions);
     }
 
     /**

@@ -346,7 +346,7 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is
 
     function testFuzz_registerOperator_Revert_WhenZeroPubkeyHash(
         address operator
-    ) public {
+    ) public filterFuzzedAddressInputs(operator) {
         pubkeyRegistrationParams.pubkeyG1.X = 0;
         pubkeyRegistrationParams.pubkeyG1.Y = 0;
         BN254.G1Point memory messageHash = registryCoordinator
@@ -365,7 +365,7 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is
 
     function testFuzz_registerOperator_Revert_WhenOperatorAlreadyRegistered(
         address operator
-    ) public {
+    ) public filterFuzzedAddressInputs(operator) {
         pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(
             operator
         );
@@ -392,7 +392,11 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is
     function testFuzz_registerOperator_Revert_WhenPubkeyAlreadyRegistered(
         address operator,
         address operator2
-    ) public {
+    )
+        public
+        filterFuzzedAddressInputs(operator)
+        filterFuzzedAddressInputs(operator2)
+    {
         cheats.assume(operator != address(0));
         cheats.assume(operator != operator2);
         BN254.G1Point memory messageHash = registryCoordinator
@@ -425,7 +429,11 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is
     function testFuzz_registerOperator_Revert_WhenInvalidSignature(
         address operator,
         address invalidOperator
-    ) public {
+    )
+        public
+        filterFuzzedAddressInputs(operator)
+        filterFuzzedAddressInputs(invalidOperator)
+    {
         cheats.assume(invalidOperator != operator);
         BN254.G1Point memory messageHash = registryCoordinator
             .pubkeyRegistrationMessageHash(operator);

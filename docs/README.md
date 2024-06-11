@@ -16,7 +16,7 @@ EigenLayer AVSs ("actively validated services") are protocols that make use of E
 **Currently, each AVS needs to implement one thing on-chain:** registration/deregistration conditions that define how an Operator registers for/deregisters from the AVS. This repo provides building blocks to support these functions.
 
 *Eventually,* the core contracts and this repo will be extended to cover other conditions, including:
-* payment conditions that define how an Operator is paid for the services it provides
+* reward conditions that define how an Operator is rewarded for the services it provides
 * slashing conditions that define "malicious behavior" in the context of the AVS, and the punishments for this behavior
 
 *... however, the design for these conditions is still in progress.*
@@ -102,7 +102,7 @@ The main thing that links an AVS to the EigenLayer core contracts is that when E
 
 These methods ensure that the Operator registering with the AVS is also registered as an Operator in EigenLayer core. In this repo, these methods are called by the `ServiceManagerBase`.
 
-Eventually, Operator slashing and payment for services will be part of the middleware/core relationship, but these features aren't implemented yet and their design is a work in progress.
+Eventually, Operator slashing and rewards for services will be part of the middleware/core relationship, but these features aren't implemented yet and their design is a work in progress.
 
 ### System Components
 
