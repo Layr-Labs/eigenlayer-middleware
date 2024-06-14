@@ -42,17 +42,14 @@ contract RegistryCoordinator is
     using BN254 for BN254.G1Point;
 
     modifier onlyEjector {
-        require(msg.sender == ejector, "RegistryCoordinator.onlyEjector: caller is not the ejector");
+        _checkEjector();
         _;
     }
 
     /// @dev Checks that `quorumNumber` corresponds to a quorum that has been created
     /// via `initialize` or `createQuorum`
     modifier quorumExists(uint8 quorumNumber) {
-        require(
-            quorumNumber < quorumCount, 
-            "RegistryCoordinator.quorumExists: quorum does not exist"
-        );
+        _checkQuorumExists(quorumNumber);
         _;
     }
 
@@ -515,6 +512,26 @@ contract RegistryCoordinator is
         results.numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
 
         return results;
+    }
+
+    /**
+     * @notice Checks if the caller is the ejector
+     * @dev Reverts if the caller is not the ejector
+     */
+    function _checkEjector() internal view {
+        require(msg.sender == ejector, "RegistryCoordinator.onlyEjector: caller is not the ejector");
+    }
+
+    /**
+     * @notice Checks if a quorum exists
+     * @param quorumNumber The quorum number to check
+     * @dev Reverts if the quorum does not exist
+     */
+    function _checkQuorumExists(uint8 quorumNumber) internal view {
+        require(
+            quorumNumber < quorumCount, 
+            "RegistryCoordinator.quorumExists: quorum does not exist"
+        );
     }
 
     /**
