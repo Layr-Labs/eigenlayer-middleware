@@ -265,5 +265,5 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
 
     // storage gap for upgradeability
     // slither-disable-next-line shadowing-state
-    uint256[50] private __GAP;
+    uint256[49] private __GAP;
 }
