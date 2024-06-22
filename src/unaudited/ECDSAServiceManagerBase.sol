@@ -45,11 +45,15 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
      * @dev Ensures that the function is only callable by the `rewardsInitiator`.
      */
     modifier onlyRewardsInitiator() {
+        _checkRewardsInitiator();
+        _;
+    }
+
+    function _checkRewardsInitiator() internal view {
         require(
             msg.sender == rewardsInitiator,
             "ECDSAServiceManagerBase.onlyRewardsInitiator: caller is not the rewards initiator"
         );
-        _;
     }
 
     /**

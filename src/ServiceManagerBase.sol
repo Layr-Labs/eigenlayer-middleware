@@ -32,11 +32,15 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
 
     /// @notice only rewardsInitiator can call createAVSRewardsSubmission
     modifier onlyRewardsInitiator() {
+        _checkRewardsInitiator();
+        _;
+    }
+
+    function _checkRewardsInitiator() internal view {
         require(
             msg.sender == rewardsInitiator,
-            "ServiceManagerBase.onlyRewardsInitiator: caller is not the rewards initiator"
+            "ECDSAServiceManagerBase.onlyRewardsInitiator: caller is not the rewards initiator"
         );
-        _;
     }
 
     /// @notice Sets the (immutable) `_registryCoordinator` address
