@@ -38,7 +38,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     function _checkRewardsInitiator() internal view {
         require(
             msg.sender == rewardsInitiator,
-            "ECDSAServiceManagerBase.onlyRewardsInitiator: caller is not the rewards initiator"
+            "ServiceManagerBase.onlyRewardsInitiator: caller is not the rewards initiator"
         );
     }
 
