@@ -83,9 +83,6 @@ contract MockECDSAAVSDeployer is Test {
     uint96 defaultStake = 1 ether;
     uint8 defaultQuorumNumber = 0;
 
-    uint32 defaultMaxOperatorCount = 10;
-    uint16 defaultKickBIPsOfOperatorStake = 15_000;
-    uint16 defaultKickBIPsOfTotalStake = 150;
     uint8 numQuorums = 192;
 
     StrategyParams[] strategies;
@@ -97,13 +94,10 @@ contract MockECDSAAVSDeployer is Test {
     uint32 blocksBetweenRegistrations = 10;
 
     struct OperatorMetadata {
-        uint256 quorumBitmap;
         address operator;
         bytes32 operatorId;
         uint96[] stakes; // in every quorum for simplicity
     }
-
-    uint256 MAX_QUORUM_BITMAP = type(uint192).max;
 
     function _deployMockEigenLayerAndAVS() internal {
         _deployMockEigenLayerAndAVS(numQuorums);
@@ -238,10 +232,9 @@ contract MockECDSAAVSDeployer is Test {
      * @notice registers operator with coordinator
      */
     function _registerOperatorWithCoordinator(
-        address operator,
-        uint256 quorumBitmap
+        address operator
     ) internal {
-        _registerOperatorWithCoordinator(operator, quorumBitmap, defaultStake);
+        _registerOperatorWithCoordinator(operator, defaultStake);
     }
 
     /**
@@ -249,16 +242,10 @@ contract MockECDSAAVSDeployer is Test {
      */
     function _registerOperatorWithCoordinator(
         address operator,
-        uint256 quorumBitmap,
         uint96 stake
     ) internal {
-        // quorumBitmap can only have 192 least significant bits
-        quorumBitmap &= MAX_QUORUM_BITMAP;
 
-        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
-        for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            _setOperatorWeight(operator, uint8(quorumNumbers[i]), stake);
-        }
+        _setOperatorWeight(operator, stake);
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
         cheats.prank(operator);
@@ -270,15 +257,11 @@ contract MockECDSAAVSDeployer is Test {
      */
     function _registerOperatorWithCoordinator(
         address operator,
-        uint256 quorumBitmap,
         uint96[] memory stakes
     ) internal {
-        // quorumBitmap can only have 192 least significant bits
-        quorumBitmap &= MAX_QUORUM_BITMAP;
 
-        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
-        for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            _setOperatorWeight(operator, uint8(quorumNumbers[i]), stakes[uint8(quorumNumbers[i])]);
+        for (uint256 i = 0; i < stakes.length; i++) {
+            _setOperatorWeight(operator, stakes[i]);
         }
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
@@ -292,10 +275,6 @@ contract MockECDSAAVSDeployer is Test {
     {
         OperatorMetadata[] memory operatorMetadatas = new OperatorMetadata[](maxOperatorsToRegister);
         for (uint256 i = 0; i < operatorMetadatas.length; i++) {
-            // limit to 16 quorums so we don't run out of gas, make them all register for quorum 0 as well
-            operatorMetadatas[i].quorumBitmap = uint256(
-                keccak256(abi.encodePacked("quorumBitmap", pseudoRandomNumber, i))
-            ) & (1 << maxQuorumsToRegisterFor - 1) | 1;
             operatorMetadatas[i].operator = _incrementAddress(defaultOperator, i);
             operatorMetadatas[i].operatorId = keccak256(abi.encodePacked("operatorId", pseudoRandomNumber, i));
             operatorMetadatas[i].stakes = new uint96[](maxQuorumsToRegisterFor);
@@ -312,14 +291,14 @@ contract MockECDSAAVSDeployer is Test {
             uint32 numOperatorsInQuorum;
             // for each quorumBitmap, check if the i'th bit is set
             for (uint256 j = 0; j < operatorMetadatas.length; j++) {
-                if (operatorMetadatas[j].quorumBitmap >> i & 1 == 1) {
+                if (operatorMetadatas[j].stakes[i] > 0) {
                     numOperatorsInQuorum++;
                 }
             }
             expectedOperatorOverallIndices[i] = new uint256[](numOperatorsInQuorum);
             uint256 numOperatorCounter;
             for (uint256 j = 0; j < operatorMetadatas.length; j++) {
-                if (operatorMetadatas[j].quorumBitmap >> i & 1 == 1) {
+                if (operatorMetadatas[j].stakes[i] > 0) {
                     expectedOperatorOverallIndices[i][numOperatorCounter] = j;
                     numOperatorCounter++;
                 }
@@ -332,7 +311,6 @@ contract MockECDSAAVSDeployer is Test {
 
             _registerOperatorWithCoordinator(
                 operatorMetadatas[i].operator,
-                operatorMetadatas[i].quorumBitmap,
                 operatorMetadatas[i].stakes
             );
         }
@@ -348,7 +326,6 @@ contract MockECDSAAVSDeployer is Test {
      */
     function _setOperatorWeight(
         address operator,
-        uint8 quorumNumber,
         uint96 weight
     ) internal returns (uint96) {
         delegationMock.setOperatorShares(operator, strategy, weight);
@@ -362,12 +339,4 @@ contract MockECDSAAVSDeployer is Test {
     function _incrementBytes32(bytes32 start, uint256 inc) internal pure returns (bytes32) {
         return bytes32(uint256(start) + inc);
     }
-
-    function _signOperatorChurnApproval(
-        address registeringOperator,
-        bytes32 registeringOperatorId,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature,
-        bytes32 salt,
-        uint256 expiry
-    ) internal view returns (ISignatureUtils.SignatureWithSaltAndExpiry memory) {}
 }
