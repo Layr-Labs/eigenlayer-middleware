@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
+import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
@@ -13,7 +15,7 @@ import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces
  * @author Layr Labs, Inc.
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
-abstract contract ServiceManagerBaseStorage is IServiceManager {
+abstract contract ServiceManagerBaseStorage is IServiceManager, OwnableUpgradeable {
     /**
      *
      *                            CONSTANTS AND IMMUTABLES
