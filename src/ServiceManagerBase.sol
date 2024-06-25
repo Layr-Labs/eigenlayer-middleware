@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IRewardsCoordinator} from
@@ -19,7 +18,7 @@ import {BitmapUtils} from "./libraries/BitmapUtils.sol";
  * This contract can be inherited from or simply used as a point-of-reference.
  * @author Layr Labs, Inc.
  */
-abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseStorage {
+abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     using BitmapUtils for *;
 
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
@@ -42,11 +41,15 @@ abstract contract ServiceManagerBase is OwnableUpgradeable, ServiceManagerBaseSt
 
     /// @notice only rewardsInitiator can call createAVSRewardsSubmission
     modifier onlyRewardsInitiator() {
+        _checkRewardsInitiator();
+        _;
+    }
+
+    function _checkRewardsInitiator() internal view {
         require(
             msg.sender == rewardsInitiator,
             "ServiceManagerBase.onlyRewardsInitiator: caller is not the rewards initiator"
         );
-        _;
     }
 
     /// @notice Sets the (immutable) `_registryCoordinator` address

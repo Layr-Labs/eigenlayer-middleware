@@ -12,7 +12,7 @@ contract IndexRegistry is IndexRegistryStorage {
 
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
     modifier onlyRegistryCoordinator() {
-        require(msg.sender == address(registryCoordinator), "IndexRegistry.onlyRegistryCoordinator: caller is not the registry coordinator");
+        _checkRegistryCoordinator();
         _;
     }
 
@@ -339,5 +339,9 @@ contract IndexRegistry is IndexRegistryStorage {
     /// @dev This will revert if the quorum does not exist
     function totalOperatorsForQuorum(uint8 quorumNumber) external view returns (uint32){
         return _latestQuorumUpdate(quorumNumber).numOperators;
+    }
+
+    function _checkRegistryCoordinator() internal view {
+        require(msg.sender == address(registryCoordinator), "IndexRegistry.onlyRegistryCoordinator: caller is not the registry coordinator");
     }
 }

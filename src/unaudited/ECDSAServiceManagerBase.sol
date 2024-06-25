@@ -2,10 +2,8 @@
 pragma solidity ^0.8.12;
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-
 import {IServiceManager} from "../interfaces/IServiceManager.sol";
 import {IServiceManagerUI} from "../interfaces/IServiceManagerUI.sol";
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
@@ -15,10 +13,7 @@ import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces
 import {Quorum} from "../interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
 import {ECDSAStakeRegistry} from "../unaudited/ECDSAStakeRegistry.sol";
 
-abstract contract ECDSAServiceManagerBase is
-    IServiceManager,
-    OwnableUpgradeable
-{
+abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable {
     /// @notice Address of the stake registry contract, which manages registration and stake recording.
     address public immutable stakeRegistry;
 
@@ -30,6 +25,10 @@ abstract contract ECDSAServiceManagerBase is
 
     /// @notice Address of the delegation manager contract, which manages staker delegations to operators.
     address internal immutable delegationManager;
+
+    /// @notice Address of the rewards initiator, which is allowed to create AVS rewards submissions.
+    address public rewardsInitiator;
+
     /**
      * @dev Ensures that the function is only callable by the `stakeRegistry` contract.
      * This is used to restrict certain registration and deregistration functionality to the `stakeRegistry`
@@ -40,6 +39,21 @@ abstract contract ECDSAServiceManagerBase is
             "ECDSAServiceManagerBase.onlyStakeRegistry: caller is not the stakeRegistry"
         );
         _;
+    }
+
+    /**
+     * @dev Ensures that the function is only callable by the `rewardsInitiator`.
+     */
+    modifier onlyRewardsInitiator() {
+        _checkRewardsInitiator();
+        _;
+    }
+
+    function _checkRewardsInitiator() internal view {
+        require(
+            msg.sender == rewardsInitiator,
+            "ECDSAServiceManagerBase.onlyRewardsInitiator: caller is not the rewards initiator"
+        );
     }
 
     /**
@@ -65,11 +79,14 @@ abstract contract ECDSAServiceManagerBase is
     /**
      * @dev Initializes the base service manager by transferring ownership to the initial owner.
      * @param initialOwner The address to which the ownership of the contract will be transferred.
+     * @param _rewardsInitiator The address which is allowed to create AVS rewards submissions.
      */
     function __ServiceManagerBase_init(
-        address initialOwner
+        address initialOwner,
+        address _rewardsInitiator
     ) internal virtual onlyInitializing {
         _transferOwnership(initialOwner);
+        _setRewardsInitiator(_rewardsInitiator);
     }
 
     /// @inheritdoc IServiceManagerUI
@@ -82,7 +99,7 @@ abstract contract ECDSAServiceManagerBase is
     /// @inheritdoc IServiceManager
     function createAVSRewardsSubmission(
         IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions
-    ) external virtual onlyOwner {
+    ) external virtual onlyRewardsInitiator {
         _createAVSRewardsSubmission(rewardsSubmissions);
     }
 
@@ -168,9 +185,11 @@ abstract contract ECDSAServiceManagerBase is
                 address(this),
                 rewardsSubmissions[i].amount
             );
+            uint256 allowance =
+                rewardsSubmissions[i].token.allowance(address(this), rewardsCoordinator);
             rewardsSubmissions[i].token.approve(
                 rewardsCoordinator,
-                rewardsSubmissions[i].amount
+                rewardsSubmissions[i].amount + allowance
             );
         }
 
@@ -234,7 +253,21 @@ abstract contract ECDSAServiceManagerBase is
         return restakedStrategies;
     }
 
+    /**
+     * @notice Sets the rewards initiator address.
+     * @param newRewardsInitiator The new rewards initiator address.
+     * @dev Only callable by the owner.
+     */
+    function setRewardsInitiator(address newRewardsInitiator) external onlyOwner {
+        _setRewardsInitiator(newRewardsInitiator);
+    }
+
+    function _setRewardsInitiator(address newRewardsInitiator) internal {
+        emit RewardsInitiatorUpdated(rewardsInitiator, newRewardsInitiator);
+        rewardsInitiator = newRewardsInitiator;
+    }
+
     // storage gap for upgradeability
     // slither-disable-next-line shadowing-state
-    uint256[50] private __GAP;
+    uint256[49] private __GAP;
 }
