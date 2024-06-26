@@ -2,12 +2,12 @@
 pragma solidity ^0.8.12;
 
 import "../utils/MockAVSDeployer.sol";
-import { AVSDirectory } from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
-import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-import { DelegationManager } from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
-import { IDelegationManager } from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
-import { RewardsCoordinator } from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
-import { IRewardsCoordinator } from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {AVSDirectory} from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
+import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {DelegationManager} from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
+import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {RewardsCoordinator} from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
+import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 contract Test_CoreRegistration is MockAVSDeployer {
     // Contracts
@@ -26,8 +26,13 @@ contract Test_CoreRegistration is MockAVSDeployer {
         _deployMockEigenLayerAndAVS();
 
         // Deploy New DelegationManager
-        DelegationManager delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasher, eigenPodManagerMock);
-        IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
+        DelegationManager delegationManagerImplementation = new DelegationManager(
+                strategyManagerMock,
+                slasher,
+                eigenPodManagerMock
+            );
+        IStrategy[]
+            memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
         uint256[] memory initializeWithdrawalDelayBlocks = new uint256[](0);
         delegationManager = DelegationManager(
             address(
@@ -48,7 +53,11 @@ contract Test_CoreRegistration is MockAVSDeployer {
         );
 
         // Deploy New AVS Directory
-        AVSDirectory avsDirectoryImplementation = new AVSDirectory(delegationManager);
+        AVSDirectory avsDirectoryImplementation = new AVSDirectory(
+            delegationManager,
+            /// TODO: Make sure this is necessary
+            strategyManagerMock
+        );
         avsDirectory = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(
@@ -110,7 +119,9 @@ contract Test_CoreRegistration is MockAVSDeployer {
         );
 
         // Set operator weight in single quorum
-        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(MAX_QUORUM_BITMAP);
+        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(
+            MAX_QUORUM_BITMAP
+        );
         for (uint i = 0; i < quorumNumbers.length; i++) {
             _setOperatorWeight(operator, uint8(quorumNumbers[i]), defaultStake);
         }
@@ -120,24 +131,34 @@ contract Test_CoreRegistration is MockAVSDeployer {
         bytes memory quorumNumbers = new bytes(1);
 
         // Get operator signature
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
-            operatorPrivateKey,
-            operator,
-            address(serviceManager),
-            emptySalt,
-            maxExpiry
-        );
+        ISignatureUtils.SignatureWithSaltAndExpiry
+            memory operatorSignature = _getOperatorSignature(
+                operatorPrivateKey,
+                operator,
+                address(serviceManager),
+                emptySalt,
+                maxExpiry
+            );
 
         // set operator as registered in Eigenlayer
         delegationMock.setIsOperator(operator, true);
 
         // Register operator
         cheats.prank(operator);
-        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, operatorSignature);
+        registryCoordinator.registerOperator(
+            quorumNumbers,
+            defaultSocket,
+            pubkeyRegistrationParams,
+            operatorSignature
+        );
 
         // Check operator is registered
-        IAVSDirectory.OperatorAVSRegistrationStatus operatorStatus = avsDirectory.avsOperatorStatus(address(serviceManager), operator);
-        assertEq(uint8(operatorStatus), uint8(IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED));
+        IAVSDirectory.OperatorAVSRegistrationStatus operatorStatus = avsDirectory
+                .avsOperatorStatus(address(serviceManager), operator);
+        assertEq(
+            uint8(operatorStatus),
+            uint8(IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED)
+        );
     }
 
     function test_deregisterOperator_coreStateChanges() public {
@@ -150,13 +171,19 @@ contract Test_CoreRegistration is MockAVSDeployer {
         registryCoordinator.deregisterOperator(quorumNumbers);
 
         // Check operator is deregistered
-        IAVSDirectory.OperatorAVSRegistrationStatus operatorStatus = avsDirectory.avsOperatorStatus(address(serviceManager), operator);
-        assertEq(uint8(operatorStatus), uint8(IAVSDirectory.OperatorAVSRegistrationStatus.UNREGISTERED));
+        IAVSDirectory.OperatorAVSRegistrationStatus operatorStatus = avsDirectory
+                .avsOperatorStatus(address(serviceManager), operator);
+        assertEq(
+            uint8(operatorStatus),
+            uint8(IAVSDirectory.OperatorAVSRegistrationStatus.UNREGISTERED)
+        );
     }
 
     function test_deregisterOperator_notGloballyDeregistered() public {
         // Register operator with all quorums
-        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(MAX_QUORUM_BITMAP);
+        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(
+            MAX_QUORUM_BITMAP
+        );
         emit log_named_bytes("quorumNumbers", quorumNumbers);
         _registerOperator(quorumNumbers);
 
@@ -166,8 +193,12 @@ contract Test_CoreRegistration is MockAVSDeployer {
         registryCoordinator.deregisterOperator(quorumNumbers);
 
         // Check operator is still registered
-        IAVSDirectory.OperatorAVSRegistrationStatus operatorStatus = avsDirectory.avsOperatorStatus(address(serviceManager), operator);
-        assertEq(uint8(operatorStatus), uint8(IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED));
+        IAVSDirectory.OperatorAVSRegistrationStatus operatorStatus = avsDirectory
+                .avsOperatorStatus(address(serviceManager), operator);
+        assertEq(
+            uint8(operatorStatus),
+            uint8(IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED)
+        );
     }
 
     function test_setMetadataURI_fail_notServiceManagerOwner() public {
@@ -190,20 +221,26 @@ contract Test_CoreRegistration is MockAVSDeployer {
     // Utils
     function _registerOperator(bytes memory quorumNumbers) internal {
         // Get operator signature
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
-            operatorPrivateKey,
-            operator,
-            address(serviceManager),
-            emptySalt,
-            maxExpiry
-        );
+        ISignatureUtils.SignatureWithSaltAndExpiry
+            memory operatorSignature = _getOperatorSignature(
+                operatorPrivateKey,
+                operator,
+                address(serviceManager),
+                emptySalt,
+                maxExpiry
+            );
 
         // set operator as registered in Eigenlayer
         delegationMock.setIsOperator(operator, true);
 
         // Register operator
         cheats.prank(operator);
-        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, operatorSignature);
+        registryCoordinator.registerOperator(
+            quorumNumbers,
+            defaultSocket,
+            pubkeyRegistrationParams,
+            operatorSignature
+        );
     }
 
     function _getOperatorSignature(
@@ -212,15 +249,29 @@ contract Test_CoreRegistration is MockAVSDeployer {
         address avs,
         bytes32 salt,
         uint256 expiry
-    ) internal view returns (ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) {
+    )
+        internal
+        view
+        returns (
+            ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+        )
+    {
         operatorSignature.salt = salt;
         operatorSignature.expiry = expiry;
         {
-            bytes32 digestHash = avsDirectory.calculateOperatorAVSRegistrationDigestHash(operatorToSign, avs, salt, expiry);
-            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(_operatorPrivateKey, digestHash);
+            bytes32 digestHash = avsDirectory
+                .calculateOperatorAVSRegistrationDigestHash(
+                    operatorToSign,
+                    avs,
+                    salt,
+                    expiry
+                );
+            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
+                _operatorPrivateKey,
+                digestHash
+            );
             operatorSignature.signature = abi.encodePacked(r, s, v);
         }
         return operatorSignature;
     }
-
 }

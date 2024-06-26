@@ -2,6 +2,7 @@
 pragma solidity ^0.8.12;
 
 import {IAVSDirectory, ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 contract AVSDirectoryMock is IAVSDirectory {
     /**
@@ -31,7 +32,10 @@ contract AVSDirectoryMock is IAVSDirectory {
      * @notice Returns whether or not the salt has already been used by the operator.
      * @dev Salts is used in the `registerOperatorToAVS` function.
      */
-    function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool) {}
+    function operatorSaltIsSpent(
+        address operator,
+        bytes32 salt
+    ) external view returns (bool) {}
 
     /**
      * @notice Calculates the digest hash to be signed by an operator to register with an AVS
@@ -48,5 +52,43 @@ contract AVSDirectoryMock is IAVSDirectory {
     ) external view returns (bytes32) {}
 
     /// @notice The EIP-712 typehash for the Registration struct used by the contract
-    function OPERATOR_AVS_REGISTRATION_TYPEHASH() external view returns (bytes32) {}
-} 
+    function OPERATOR_AVS_REGISTRATION_TYPEHASH()
+        external
+        view
+        returns (bytes32)
+    {}
+
+    function OPERATOR_SET_REGISTRATION_TYPEHASH()
+        external
+        view
+        returns (bytes32)
+    {}
+
+    function addStrategiesToOperatorSet(
+        uint32 operatorSetID,
+        IStrategy[] calldata strategies
+    ) external {}
+
+    function registerOperatorToOperatorSets(
+        address operator,
+        uint32[] calldata operatorSetIDs,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory signature
+    ) external {}
+
+    function deregisterOperatorFromOperatorSet(
+        address operator,
+        uint32 operatorSetID
+    ) external {}
+
+    function removeStrategiesFromOperatorSet(
+        uint32 operatorSetID,
+        IStrategy[] calldata strategies
+    ) external {}
+
+    function calculateOperatorSetRegistrationDigestHash(
+        address operator,
+        OperatorSet memory operatorSet,
+        bytes32 salt,
+        uint256 expiry
+    ) external view returns (bytes32) {}
+}
