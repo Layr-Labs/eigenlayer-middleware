@@ -126,6 +126,17 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _avsDirectory.deregisterOperatorFromAVS(operator);
     }
 
+    function deregisterOperatorFromOperatorSets(
+        address operator,
+        uint32[] calldata operatorSetIds
+    ) external onlyRegistryCoordinator{}
+
+    function registerOperatorToOperatorSets(
+        address operator,
+        uint32[] calldata operatorSetIds,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) external onlyRegistryCoordinator {}
+
     /**
      * @notice Sets the rewards initiator address
      * @param newRewardsInitiator The new rewards initiator address

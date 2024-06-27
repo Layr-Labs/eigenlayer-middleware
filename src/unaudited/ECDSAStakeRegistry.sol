@@ -376,6 +376,23 @@ contract ECDSAStakeRegistry is
         );
         emit OperatorRegistered(_operator, _serviceManager);
     }
+    function _registerOperatorToOperatorSets(
+        address operator,
+        uint32[] calldata operatorSetIds,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature,
+        address _signingKey
+    ) external {
+        /// TODO: Call service manager -> calls avs directory
+        IServiceManager(_serviceManager).registerOperatorToOperatorSets(operator, operatorSetIds, operatorSignature);
+    }
+
+    function _deregisterOperatorFromOperatorSets(
+        address operator,
+        uint32[] calldata operatorSetIds
+    ) external {
+        /// TODO: Call service manager -> calls avs directory
+        IServiceManager(_serviceManager).deregisterOperatorFromOperatorSets(operator, operatorSetIds);
+    }
 
     /// @dev Internal function to update an operator's signing key
     /// @param _operator The address of the operator to update the signing key for

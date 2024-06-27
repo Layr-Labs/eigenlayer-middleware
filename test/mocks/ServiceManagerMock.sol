@@ -19,4 +19,15 @@ contract ServiceManagerMock is ServiceManagerBase {
     ) public virtual initializer {
         __ServiceManagerBase_init(initialOwner, rewardsInitiator);
     }
+
+    function deregisterOperatorFromOperatorSets(
+        address operator,
+        uint32[] calldata operatorSetIds
+    ) external{}
+
+    function registerOperatorToOperatorSets(
+        address operator,
+        uint32[] calldata operatorSetIds,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) external {}
 }

@@ -33,6 +33,17 @@ interface IServiceManagerUI {
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external;
 
+    function registerOperatorToOperatorSets(
+        address operator,
+        uint32[] calldata operatorSetIds,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) external;
+
+    function deregisterOperatorFromOperatorSets(
+        address operator,
+        uint32[] calldata operatorSetIds
+    ) external;
+
     /**
      * @notice Forwards a call to EigenLayer's AVSDirectory contract to confirm operator deregistration from the AVS
      * @param operator The address of the operator to deregister.
