@@ -129,13 +129,20 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     function deregisterOperatorFromOperatorSets(
         address operator,
         uint32[] calldata operatorSetIds
-    ) external onlyRegistryCoordinator{}
+    ) external virtual onlyRegistryCoordinator{}
 
     function registerOperatorToOperatorSets(
         address operator,
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external onlyRegistryCoordinator {}
+    ) external virtual onlyRegistryCoordinator {}
+
+    /// TODO: Need to pull in core changes, struct doesn't exist yet
+    // function updateStandbyParams(
+    //     address operator,
+    //     IAVSDirectory.StandbyParam[] calldata standbyParams,
+    //     SignatureWithSaltAndExpiry calldata operatorSignature
+    // ) external onlyRegistryCoordinator{}
 
     /**
      * @notice Sets the rewards initiator address

@@ -118,16 +118,23 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
         _deregisterOperatorFromAVS(operator);
     }
 
-    function deregisterOperatorFromOperatorSets(
-        address operator,
-        uint32[] calldata operatorSetIds
-    ) external onlyStakeRegistry{}
-
     function registerOperatorToOperatorSets(
         address operator,
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyStakeRegistry {}
+
+    function deregisterOperatorFromOperatorSets(
+        address operator,
+        uint32[] calldata operatorSetIds
+    ) external onlyStakeRegistry{}
+
+    /// TODO: Need to pull in core changes, struct doesn't exist yet
+    // function updateStandbyParams(
+    //     address operator,
+    //     IAVSDirectory.StandbyParam[] calldata standbyParams,
+    //     SignatureWithSaltAndExpiry calldata operatorSignature
+    // ) external onlyStakeRegistry{}
 
     /// @inheritdoc IServiceManagerUI
     function getRestakeableStrategies()

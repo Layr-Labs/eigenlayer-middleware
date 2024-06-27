@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 /**
  * @title Minimal interface for a ServiceManager-type contract that AVS ServiceManager contracts must implement
@@ -49,6 +50,13 @@ interface IServiceManagerUI {
      * @param operator The address of the operator to deregister.
      */
     function deregisterOperatorFromAVS(address operator) external;
+
+    /// TODO: Need to pull in updates from core. Struct doesn't exist yet
+    // function updateStandbyParams(
+    //     address operator,
+    //     IAVSDirectory.StandbyParam[] calldata standbyParams,
+    //     SignatureWithSaltAndExpiry calldata operatorSignature
+    // ) external;
 
     /**
      * @notice Returns the list of strategies that the operator has potentially restaked on the AVS

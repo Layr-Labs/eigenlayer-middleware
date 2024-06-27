@@ -393,6 +393,15 @@ contract ECDSAStakeRegistry is
         /// TODO: Call service manager -> calls avs directory
         IServiceManager(_serviceManager).deregisterOperatorFromOperatorSets(operator, operatorSetIds);
     }
+    
+    /// TODO: Need to pull in core changes, struct doesn't exist yet
+    // function _updateOperatorStandbyParams(
+    //     address operator,
+    //     IAVSDirectory.StandbyParam[] calldata standByParams,
+    //     ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    // ) external {
+    //     IServiceManager(_serviceManager).updateStandbyParams(operator, standByParams, operatorSignature);
+    // }
 
     /// @dev Internal function to update an operator's signing key
     /// @param _operator The address of the operator to update the signing key for

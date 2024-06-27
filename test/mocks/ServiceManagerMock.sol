@@ -23,11 +23,11 @@ contract ServiceManagerMock is ServiceManagerBase {
     function deregisterOperatorFromOperatorSets(
         address operator,
         uint32[] calldata operatorSetIds
-    ) external{}
+    ) external override {}
 
     function registerOperatorToOperatorSets(
         address operator,
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external {}
+    ) external override {}
 }
