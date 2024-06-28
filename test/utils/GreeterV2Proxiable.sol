@@ -14,4 +14,3 @@ contract GreeterV2Proxiable is Proxiable {
         greeting = "resetted";
     }
 }
-

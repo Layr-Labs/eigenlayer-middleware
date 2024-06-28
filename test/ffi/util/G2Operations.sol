@@ -13,7 +13,7 @@ contract G2Operations is Test {
         inputs[0] = "go";
         inputs[1] = "run";
         inputs[2] = "test/ffi/go/g2mul.go";
-        inputs[3] = x.toString(); 
+        inputs[3] = x.toString();
 
         inputs[4] = "1";
         bytes memory res = vm.ffi(inputs);
@@ -31,5 +31,4 @@ contract G2Operations is Test {
         res = vm.ffi(inputs);
         g2Point.Y[0] = abi.decode(res, (uint256));
     }
-
 }

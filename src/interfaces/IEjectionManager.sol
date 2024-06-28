@@ -6,7 +6,6 @@ pragma solidity ^0.8.12;
  * @author Layr Labs, Inc.
  */
 interface IEjectionManager {
-
     /// @notice A quorum's ratelimit parameters
     struct QuorumEjectionParams {
         uint32 rateLimitWindow; // Time delta to track ejection over
@@ -22,13 +21,15 @@ interface IEjectionManager {
     ///@notice Emitted when the ejector address is set
     event EjectorUpdated(address ejector, bool status);
     ///@notice Emitted when the ratelimit parameters for a quorum are set
-    event QuorumEjectionParamsSet(uint8 quorumNumber, uint32 rateLimitWindow, uint16 ejectableStakePercent);
+    event QuorumEjectionParamsSet(
+        uint8 quorumNumber, uint32 rateLimitWindow, uint16 ejectableStakePercent
+    );
     ///@notice Emitted when an operator is ejected
     event OperatorEjected(bytes32 operatorId, uint8 quorumNumber);
-    ///@notice Emitted when operators are ejected for a quroum 
+    ///@notice Emitted when operators are ejected for a quroum
     event QuorumEjection(uint32 ejectedOperators, bool ratelimitHit);
 
-   /**
+    /**
      * @notice Ejects operators from the AVSs registryCoordinator under a ratelimit
      * @param _operatorIds The ids of the operators to eject for each quorum
      */
@@ -39,7 +40,10 @@ interface IEjectionManager {
      * @param _quorumNumber The quorum number to set the ratelimit parameters for
      * @param _quorumEjectionParams The quorum ratelimit parameters to set for the given quorum
      */
-    function setQuorumEjectionParams(uint8 _quorumNumber, QuorumEjectionParams memory _quorumEjectionParams) external;
+    function setQuorumEjectionParams(
+        uint8 _quorumNumber,
+        QuorumEjectionParams memory _quorumEjectionParams
+    ) external;
 
     /**
      * @notice Sets the address permissioned to eject operators under a ratelimit

@@ -3,7 +3,8 @@ pragma solidity ^0.8.12;
 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {ECDSAStakeRegistry} from "../ECDSAStakeRegistry.sol";
-import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IDelegationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
 /// @title ECDSA Stake Registry with an Operator Allowlist
 /// @dev THIS CONTRACT IS NOT AUDITED
@@ -27,9 +28,7 @@ contract ECDSAStakeRegistryPermissioned is ECDSAStakeRegistry {
     /// @dev Custom error to signal that an operator is already allowlisted.
     error OperatorAlreadyAllowlisted();
 
-    constructor(
-        IDelegationManager _delegationManager
-    ) ECDSAStakeRegistry(_delegationManager) {
+    constructor(IDelegationManager _delegationManager) ECDSAStakeRegistry(_delegationManager) {
         // _disableInitializers();
     }
 
@@ -95,10 +94,6 @@ contract ECDSAStakeRegistryPermissioned is ECDSAStakeRegistry {
         if (allowlistedOperators[_operator] != true) {
             revert OperatorNotAllowlisted();
         }
-        super._registerOperatorWithSig(
-            _operator,
-            _operatorSignature,
-            _operatorSigningKey
-        );
+        super._registerOperatorWithSig(_operator, _operatorSignature, _operatorSigningKey);
     }
 }

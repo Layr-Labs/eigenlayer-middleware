@@ -4,7 +4,6 @@ pragma solidity ^0.8.12;
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 library BitmapStrings {
-
     using Strings for *;
 
     /// @dev Given an input quorum array, returns a nice, readable string:
@@ -13,18 +12,11 @@ library BitmapStrings {
     function toString(bytes memory bitmapArr) internal pure returns (string memory) {
         string memory result = "[";
 
-        for (uint i = 0; i < bitmapArr.length; i++) {
+        for (uint256 i = 0; i < bitmapArr.length; i++) {
             if (i == bitmapArr.length - 1) {
-                result = string.concat(
-                    result, 
-                    uint(uint8(bitmapArr[i])).toString()
-                );
+                result = string.concat(result, uint256(uint8(bitmapArr[i])).toString());
             } else {
-                result = string.concat(
-                    result, 
-                    uint(uint8(bitmapArr[i])).toString(),
-                    ", "
-                );
+                result = string.concat(result, uint256(uint8(bitmapArr[i])).toString(), ", ");
             }
         }
 

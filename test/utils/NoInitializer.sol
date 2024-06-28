@@ -10,4 +10,3 @@ contract NoInitializer {
         a = _a;
     }
 }
-

@@ -6,7 +6,8 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
-import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {TransparentUpgradeableProxy} from
+    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 /// Modified from the Openzeppelin foundry upgrades library
 /// Modifications:
@@ -16,27 +17,31 @@ library UpgradeableProxyUtils {
     address private constant CHEATCODE_ADDRESS = 0x7109709ECfa91a80626fF3989D68f67F5b1DD12D;
 
     // This is the keccak-256 hash of "eip1967.proxy.rollback" subtracted by 1
-    bytes32 private constant _ROLLBACK_SLOT = 0x4910fdfa16fed3260ed0e7147f7cc6da11a60208b5b9406d12a635614ffd9143;
+    bytes32 private constant _ROLLBACK_SLOT =
+        0x4910fdfa16fed3260ed0e7147f7cc6da11a60208b5b9406d12a635614ffd9143;
 
     /**
      * @dev Storage slot with the address of the current implementation.
      * This is the keccak-256 hash of "eip1967.proxy.implementation" subtracted by 1, and is
      * validated in the constructor.
      */
-    bytes32 internal constant _IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+    bytes32 internal constant _IMPLEMENTATION_SLOT =
+        0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
 
     /**
      * @dev The storage slot of the UpgradeableBeacon contract which defines the implementation for this proxy.
      * This is bytes32(uint256(keccak256('eip1967.proxy.beacon')) - 1)) and is validated in the constructor.
      */
-    bytes32 internal constant _BEACON_SLOT = 0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50;
+    bytes32 internal constant _BEACON_SLOT =
+        0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50;
 
     /**
      * @dev Storage slot with the admin of the contract.
      * This is the keccak-256 hash of "eip1967.proxy.admin" subtracted by 1, and is
      * validated in the constructor.
      */
-    bytes32 internal constant _ADMIN_SLOT = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
+    bytes32 internal constant _ADMIN_SLOT =
+        0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
 
     Vm private constant vm = Vm(CHEATCODE_ADDRESS);
 
@@ -71,13 +76,12 @@ library UpgradeableProxyUtils {
         bytes memory implConstructorArgs
     ) internal returns (address) {
         address impl = deployImplementation(contractName, implConstructorArgs);
-        return
-            address(
-                _deploy(
-                    "TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy",
-                    abi.encode(impl, initialOwner, initializerData)
-                )
-            );
+        return address(
+            _deploy(
+                "TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy",
+                abi.encode(impl, initialOwner, initializerData)
+            )
+        );
     }
 
     /**
@@ -113,7 +117,10 @@ library UpgradeableProxyUtils {
      * @param contractName Name of the contract to deploy, e.g. "MyContract.sol" or "MyContract.sol:MyContract" or artifact path relative to the project root directory
      * @return Address of the implementation contract
      */
-    function deployImplementation(string memory contractName, bytes memory implConstructorArgs) internal returns (address) {
+    function deployImplementation(
+        string memory contractName,
+        bytes memory implConstructorArgs
+    ) internal returns (address) {
         return _deploy(contractName, implConstructorArgs);
     }
     /**
@@ -121,6 +128,7 @@ library UpgradeableProxyUtils {
      * @param proxy Address of a transparent proxy
      * @return Admin address
      */
+
     function getAdminAddress(address proxy) internal view returns (address) {
         bytes32 adminSlot = vm.load(proxy, _ADMIN_SLOT);
         return address(uint160(uint256(adminSlot)));
@@ -187,7 +195,11 @@ library UpgradeableProxyUtils {
      * @param contractName Name of the new implementation contract to upgrade to, e.g. "MyContract.sol" or "MyContract.sol:MyContract" or artifact path relative to the project root directory
      * @param implConstructorArgs abi encoded constructor arguments for deploying the implementation contract
      */
-    function upgradeBeacon(address beacon, string memory contractName, bytes memory implConstructorArgs) internal {
+    function upgradeBeacon(
+        address beacon,
+        string memory contractName,
+        bytes memory implConstructorArgs
+    ) internal {
         address newImpl = _deploy(contractName, implConstructorArgs);
         UpgradeableBeacon(beacon).upgradeTo(newImpl);
     }
@@ -200,9 +212,13 @@ library UpgradeableProxyUtils {
         upgradeBeacon(beacon, contractName, "");
     }
 
-    function _deploy(string memory contractName, bytes memory implConstructorArgs) private returns (address) {
+    function _deploy(
+        string memory contractName,
+        bytes memory implConstructorArgs
+    ) private returns (address) {
         bytes memory creationCode = Vm(CHEATCODE_ADDRESS).getCode(contractName);
-        address deployedAddress = _deployFromBytecode(abi.encodePacked(creationCode, implConstructorArgs));
+        address deployedAddress =
+            _deployFromBytecode(abi.encodePacked(creationCode, implConstructorArgs));
         if (deployedAddress == address(0)) {
             revert(
                 string.concat(

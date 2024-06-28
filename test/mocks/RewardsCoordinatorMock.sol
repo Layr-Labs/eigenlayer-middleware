@@ -3,7 +3,8 @@ pragma solidity ^0.8.12;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IRewardsCoordinator} from
+    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 contract RewardsCoordinatorMock is IRewardsCoordinator {
     /// @notice The address of the entity that can update the contract with new merkle roots
@@ -29,9 +30,17 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
 
     function operatorCommissionBips(address operator, address avs) external view returns (uint16) {}
 
-    function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf) external pure returns (bytes32) {}
+    function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf)
+        external
+        pure
+        returns (bytes32)
+    {}
 
-    function calculateTokenLeafHash(TokenTreeMerkleLeaf calldata leaf) external pure returns (bytes32) {}
+    function calculateTokenLeafHash(TokenTreeMerkleLeaf calldata leaf)
+        external
+        pure
+        returns (bytes32)
+    {}
 
     function checkClaim(RewardsMerkleClaim calldata claim) external view returns (bool) {}
 
@@ -45,14 +54,13 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
 
     function createAVSRewardsSubmission(RewardsSubmission[] calldata rewardsSubmissions) external {}
 
-    function createRewardsForAllSubmission(RewardsSubmission[] calldata rewardsSubmission) external {}
+    function createRewardsForAllSubmission(RewardsSubmission[] calldata rewardsSubmission)
+        external
+    {}
 
     function processClaim(RewardsMerkleClaim calldata claim, address recipient) external {}
 
-    function submitRoot(
-        bytes32 root,
-        uint32 rewardsCalculationEndTimestamp
-    ) external {}
+    function submitRoot(bytes32 root, uint32 rewardsCalculationEndTimestamp) external {}
 
     function setRewardsUpdater(address _rewardsUpdater) external {}
 

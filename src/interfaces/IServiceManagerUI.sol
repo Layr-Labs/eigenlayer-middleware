@@ -11,13 +11,13 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISi
 interface IServiceManagerUI {
     /**
      * Metadata should follow the format outlined by this example.
-        {
-            "name": "EigenLabs AVS 1",
-            "website": "https://www.eigenlayer.xyz/",
-            "description": "This is my 1st AVS",
-            "logo": "https://holesky-operator-metadata.s3.amazonaws.com/eigenlayer.png",
-            "twitter": "https://twitter.com/eigenlayer"
-        }
+     *     {
+     *         "name": "EigenLabs AVS 1",
+     *         "website": "https://www.eigenlayer.xyz/",
+     *         "description": "This is my 1st AVS",
+     *         "logo": "https://holesky-operator-metadata.s3.amazonaws.com/eigenlayer.png",
+     *         "twitter": "https://twitter.com/eigenlayer"
+     *     }
      * @notice Updates the metadata URI for the AVS
      * @param _metadataURI is the metadata URI for the AVS
      */
@@ -43,15 +43,18 @@ interface IServiceManagerUI {
      * @notice Returns the list of strategies that the operator has potentially restaked on the AVS
      * @param operator The address of the operator to get restaked strategies for
      * @dev This function is intended to be called off-chain
-     * @dev No guarantee is made on whether the operator has shares for a strategy in a quorum or uniqueness 
+     * @dev No guarantee is made on whether the operator has shares for a strategy in a quorum or uniqueness
      *      of each element in the returned array. The off-chain service should do that validation separately
      */
-    function getOperatorRestakedStrategies(address operator) external view returns (address[] memory);
+    function getOperatorRestakedStrategies(address operator)
+        external
+        view
+        returns (address[] memory);
 
     /**
      * @notice Returns the list of strategies that the AVS supports for restaking
      * @dev This function is intended to be called off-chain
-     * @dev No guarantee is made on uniqueness of each element in the returned array. 
+     * @dev No guarantee is made on uniqueness of each element in the returned array.
      *      The off-chain service should do that validation separately
      */
     function getRestakeableStrategies() external view returns (address[] memory);

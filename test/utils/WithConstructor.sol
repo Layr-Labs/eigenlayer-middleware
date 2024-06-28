@@ -16,4 +16,3 @@ contract WithConstructor {
         b = _b;
     }
 }
-

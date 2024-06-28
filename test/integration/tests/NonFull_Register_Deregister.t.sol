@@ -6,7 +6,6 @@ import "test/integration/User.t.sol";
 import "test/integration/IntegrationChecks.t.sol";
 
 contract Integration_NonFull_Register_Deregister is IntegrationChecks {
-
     using BitmapUtils for *;
 
     // 1. Register for all quorums
@@ -69,7 +68,7 @@ contract Integration_NonFull_Register_Deregister is IntegrationChecks {
         check_Deregister_State(operator, quorumsToRemove);
 
         // 3. Deregister from any remaining quorums
-        bytes memory quorumsRemaining = _calcRemaining({ start: quorums, removed: quorumsToRemove });
+        bytes memory quorumsRemaining = _calcRemaining({start: quorums, removed: quorumsToRemove});
         if (quorumsRemaining.length != 0) {
             operator.deregisterOperator(quorumsRemaining);
             check_Deregister_State(operator, quorumsRemaining);

@@ -6,7 +6,8 @@ interface IERC1822Proxiable {
 }
 
 contract Proxiable {
-    bytes32 internal constant _IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+    bytes32 internal constant _IMPLEMENTATION_SLOT =
+        0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
 
     string public constant UPGRADE_INTERFACE_VERSION = "5.0.0";
 
@@ -24,7 +25,7 @@ contract Proxiable {
                  * @openzeppelin/contracts-upgradeable
                  */
                 /// @custom:oz-upgrades-unsafe-allow delegatecall
-                (bool success, ) = newImplementation.delegatecall(data);
+                (bool success,) = newImplementation.delegatecall(data);
                 require(success, "upgrade call reverted");
             } else {
                 _checkNonPayable();
@@ -53,7 +54,6 @@ contract Proxiable {
     }
 }
 
-
 contract GreeterProxiable is Proxiable {
     string public greeting;
 
@@ -61,5 +61,3 @@ contract GreeterProxiable is Proxiable {
         greeting = _greeting;
     }
 }
-
-

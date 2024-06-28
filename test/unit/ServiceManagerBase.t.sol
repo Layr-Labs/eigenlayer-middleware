@@ -281,15 +281,14 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         rewardToken.approve(address(serviceManager), amount);
 
         // 4. call createAVSRewardsSubmission() with expected event emitted
-        uint256 rewardsInitiatorBalanceBefore =
-            rewardToken.balanceOf(address(rewardsInitiator));
-        uint256 rewardsCoordinatorBalanceBefore =
-            rewardToken.balanceOf(address(rewardsCoordinator));
+        uint256 rewardsInitiatorBalanceBefore = rewardToken.balanceOf(address(rewardsInitiator));
+        uint256 rewardsCoordinatorBalanceBefore = rewardToken.balanceOf(address(rewardsCoordinator));
 
         rewardToken.approve(address(rewardsCoordinator), amount);
         uint256 currSubmissionNonce = rewardsCoordinator.submissionNonce(address(serviceManager));
-        bytes32 avsSubmissionHash =
-            keccak256(abi.encode(address(serviceManager), currSubmissionNonce, rewardsSubmissions[0]));
+        bytes32 avsSubmissionHash = keccak256(
+            abi.encode(address(serviceManager), currSubmissionNonce, rewardsSubmissions[0])
+        );
 
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
         emit AVSRewardsSubmissionCreated(
@@ -299,7 +298,9 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         cheats.stopPrank();
 
         assertTrue(
-            rewardsCoordinator.isAVSRewardsSubmissionHash(address(serviceManager), avsSubmissionHash),
+            rewardsCoordinator.isAVSRewardsSubmissionHash(
+                address(serviceManager), avsSubmissionHash
+            ),
             "reward submission hash not submitted"
         );
         assertEq(
@@ -334,8 +335,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         uint256 startSubmissionNonce = rewardsCoordinator.submissionNonce(address(serviceManager));
         _deployMockRewardTokens(rewardsInitiator, numSubmissions);
 
-        uint256[] memory avsBalancesBefore =
-            _getBalanceForTokens(rewardTokens, rewardsInitiator);
+        uint256[] memory avsBalancesBefore = _getBalanceForTokens(rewardTokens, rewardsInitiator);
         uint256[] memory rewardsCoordinatorBalancesBefore =
             _getBalanceForTokens(rewardTokens, address(rewardsCoordinator));
         uint256[] memory amounts = new uint256[](numSubmissions);
@@ -359,7 +359,8 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
             startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
             // 2. Create reward submission input param
-            IRewardsCoordinator.RewardsSubmission memory rewardsSubmission = IRewardsCoordinator.RewardsSubmission({
+            IRewardsCoordinator.RewardsSubmission memory rewardsSubmission = IRewardsCoordinator
+                .RewardsSubmission({
                 strategiesAndMultipliers: defaultStrategyAndMultipliers,
                 token: rewardTokens[i],
                 amount: amounts[i],
@@ -431,8 +432,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         cheats.prank(rewardsInitiator);
         rewardToken.approve(address(serviceManager), mockTokenInitialSupply);
         uint256 avsBalanceBefore = rewardToken.balanceOf(rewardsInitiator);
-        uint256 rewardsCoordinatorBalanceBefore =
-            rewardToken.balanceOf(address(rewardsCoordinator));
+        uint256 rewardsCoordinatorBalanceBefore = rewardToken.balanceOf(address(rewardsCoordinator));
         uint256 totalAmount = 0;
 
         uint256[] memory amounts = new uint256[](numSubmissions);
@@ -457,7 +457,8 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
             startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
             // 2. Create reward submission input param
-            IRewardsCoordinator.RewardsSubmission memory rewardsSubmission = IRewardsCoordinator.RewardsSubmission({
+            IRewardsCoordinator.RewardsSubmission memory rewardsSubmission = IRewardsCoordinator
+                .RewardsSubmission({
                 strategiesAndMultipliers: defaultStrategyAndMultipliers,
                 token: rewardToken,
                 amount: amounts[i],

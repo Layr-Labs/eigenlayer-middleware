@@ -3,7 +3,8 @@ pragma solidity ^0.8.12;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IDelegationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
@@ -21,25 +22,35 @@ contract DelegationMock is IDelegationManager {
         operatorShares[operator][strategy] = shares;
     }
 
-    mapping (address => address) public delegatedTo;
+    mapping(address => address) public delegatedTo;
 
-    function registerAsOperator(OperatorDetails calldata /*registeringOperatorDetails*/, string calldata /*metadataURI*/) external pure {}
-    
-    function updateOperatorMetadataURI(string calldata /*metadataURI*/) external pure {}
+    function registerAsOperator(
+        OperatorDetails calldata, /*registeringOperatorDetails*/
+        string calldata /*metadataURI*/
+    ) external pure {}
 
-    function updateAVSMetadataURI(string calldata /*metadataURI*/) external pure {}
+    function updateOperatorMetadataURI(string calldata /*metadataURI*/ ) external pure {}
 
-    function delegateTo(address operator, SignatureWithExpiry memory /*approverSignatureAndExpiry*/, bytes32 /*approverSalt*/) external {
+    function updateAVSMetadataURI(string calldata /*metadataURI*/ ) external pure {}
+
+    function delegateTo(
+        address operator,
+        SignatureWithExpiry memory, /*approverSignatureAndExpiry*/
+        bytes32 /*approverSalt*/
+    ) external {
         delegatedTo[msg.sender] = operator;
     }
 
-    function modifyOperatorDetails(OperatorDetails calldata /*newOperatorDetails*/) external pure {}
+    function modifyOperatorDetails(OperatorDetails calldata /*newOperatorDetails*/ )
+        external
+        pure
+    {}
 
     function delegateToBySignature(
-        address /*staker*/,
-        address /*operator*/,
-        SignatureWithExpiry memory /*stakerSignatureAndExpiry*/,
-        SignatureWithExpiry memory /*approverSignatureAndExpiry*/,
+        address, /*staker*/
+        address, /*operator*/
+        SignatureWithExpiry memory, /*stakerSignatureAndExpiry*/
+        SignatureWithExpiry memory, /*approverSignatureAndExpiry*/
         bytes32 /*approverSalt*/
     ) external pure {}
 
@@ -48,17 +59,21 @@ contract DelegationMock is IDelegationManager {
         return withdrawalRoot;
     }
 
-    function increaseDelegatedShares(address /*staker*/, IStrategy /*strategy*/, uint256 /*shares*/) external pure {}
+    function increaseDelegatedShares(
+        address, /*staker*/
+        IStrategy, /*strategy*/
+        uint256 /*shares*/
+    ) external pure {}
 
     function decreaseDelegatedShares(
-        address /*staker*/,
-        IStrategy /*strategy*/,
+        address, /*staker*/
+        IStrategy, /*strategy*/
         uint256 /*shares*/
     ) external pure {}
 
     function operatorDetails(address operator) external pure returns (OperatorDetails memory) {
         OperatorDetails memory returnValue = OperatorDetails({
-           __deprecated_earningsReceiver: operator,
+            __deprecated_earningsReceiver: operator,
             delegationApprover: operator,
             stakerOptOutWindowBlocks: 0
         });
@@ -75,19 +90,23 @@ contract DelegationMock is IDelegationManager {
         return operator;
     }
 
-    function stakerOptOutWindowBlocks(address /*operator*/) external pure returns (uint256) {
+    function stakerOptOutWindowBlocks(address /*operator*/ ) external pure returns (uint256) {
         return 0;
     }
 
     function minWithdrawalDelayBlocks() external view returns (uint256) {
-        return 50400;
+        return 50_400;
     }
 
     /**
      * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
      * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
      */
-    function strategyWithdrawalDelayBlocks(IStrategy /*strategy*/) external view returns (uint256) {
+    function strategyWithdrawalDelayBlocks(IStrategy /*strategy*/ )
+        external
+        view
+        returns (uint256)
+    {
         return 0;
     }
 
@@ -102,7 +121,11 @@ contract DelegationMock is IDelegationManager {
         return shares;
     }
 
-    function getWithdrawalDelay(IStrategy[] calldata /*strategies*/) public view returns (uint256) {
+    function getWithdrawalDelay(IStrategy[] calldata /*strategies*/ )
+        public
+        view
+        returns (uint256)
+    {
         return 0;
     }
 
@@ -110,34 +133,56 @@ contract DelegationMock is IDelegationManager {
         return (delegatedTo[staker] != address(0));
     }
 
-    function isNotDelegated(address /*staker*/) external pure returns (bool) {}
+    function isNotDelegated(address /*staker*/ ) external pure returns (bool) {}
 
     // function isOperator(address /*operator*/) external pure returns (bool) {}
 
-    function stakerNonce(address /*staker*/) external pure returns (uint256) {}
+    function stakerNonce(address /*staker*/ ) external pure returns (uint256) {}
 
-    function delegationApproverSaltIsSpent(address /*delegationApprover*/, bytes32 /*salt*/) external pure returns (bool) {}
+    function delegationApproverSaltIsSpent(
+        address, /*delegationApprover*/
+        bytes32 /*salt*/
+    ) external pure returns (bool) {}
 
-    function calculateCurrentStakerDelegationDigestHash(address /*staker*/, address /*operator*/, uint256 /*expiry*/) external view returns (bytes32) {}
-
-    function calculateStakerDelegationDigestHash(address /*staker*/, uint256 /*stakerNonce*/, address /*operator*/, uint256 /*expiry*/) external view returns (bytes32) {}
-
-    function calculateDelegationApprovalDigestHash(
-        address /*staker*/,
-        address /*operator*/,
-        address /*_delegationApprover*/,
-        bytes32 /*approverSalt*/,
+    function calculateCurrentStakerDelegationDigestHash(
+        address, /*staker*/
+        address, /*operator*/
         uint256 /*expiry*/
     ) external view returns (bytes32) {}
 
-    function calculateStakerDigestHash(address /*staker*/, address /*operator*/, uint256 /*expiry*/)
-        external pure returns (bytes32 stakerDigestHash) {}
+    function calculateStakerDelegationDigestHash(
+        address, /*staker*/
+        uint256, /*stakerNonce*/
+        address, /*operator*/
+        uint256 /*expiry*/
+    ) external view returns (bytes32) {}
 
-    function calculateApproverDigestHash(address /*staker*/, address /*operator*/, uint256 /*expiry*/)
-        external pure returns (bytes32 approverDigestHash) {}
+    function calculateDelegationApprovalDigestHash(
+        address, /*staker*/
+        address, /*operator*/
+        address, /*_delegationApprover*/
+        bytes32, /*approverSalt*/
+        uint256 /*expiry*/
+    ) external view returns (bytes32) {}
 
-    function calculateOperatorAVSRegistrationDigestHash(address /*operator*/, address /*avs*/, bytes32 /*salt*/, uint256 /*expiry*/)
-        external pure returns (bytes32 digestHash) {}
+    function calculateStakerDigestHash(
+        address, /*staker*/
+        address, /*operator*/
+        uint256 /*expiry*/
+    ) external pure returns (bytes32 stakerDigestHash) {}
+
+    function calculateApproverDigestHash(
+        address, /*staker*/
+        address, /*operator*/
+        uint256 /*expiry*/
+    ) external pure returns (bytes32 approverDigestHash) {}
+
+    function calculateOperatorAVSRegistrationDigestHash(
+        address, /*operator*/
+        address, /*avs*/
+        bytes32, /*salt*/
+        uint256 /*expiry*/
+    ) external pure returns (bytes32 digestHash) {}
 
     function DOMAIN_TYPEHASH() external view returns (bytes32) {}
 
@@ -149,13 +194,18 @@ contract DelegationMock is IDelegationManager {
 
     function cumulativeWithdrawalsQueued(address staker) external view returns (uint256) {}
 
-    function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32) {}
+    function calculateWithdrawalRoot(Withdrawal memory withdrawal)
+        external
+        pure
+        returns (bytes32)
+    {}
 
     function operatorSaltIsSpent(address avs, bytes32 salt) external view returns (bool) {}
 
-   function queueWithdrawals(
-        QueuedWithdrawalParams[] calldata queuedWithdrawalParams
-    ) external returns (bytes32[] memory) {}
+    function queueWithdrawals(QueuedWithdrawalParams[] calldata queuedWithdrawalParams)
+        external
+        returns (bytes32[] memory)
+    {}
 
     function completeQueuedWithdrawal(
         Withdrawal calldata withdrawal,

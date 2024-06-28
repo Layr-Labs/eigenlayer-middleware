@@ -6,7 +6,6 @@ import "test/integration/User.t.sol";
 import "test/integration/IntegrationChecks.t.sol";
 
 contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChecks {
-
     // 1. Register for all quorums
     // 2. (core) Deposit additional tokens
     // 3. Update stakes
@@ -33,10 +32,7 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
         check_Register_State(operator, quorums);
 
         // Award operator tokens to deposit into core
-        (
-            IStrategy[] memory strategies,
-            uint[] memory tokenBalances
-        ) = _dealRandTokens(operator);
+        (IStrategy[] memory strategies, uint256[] memory tokenBalances) = _dealRandTokens(operator);
 
         // 2. (core) Deposit tokens and return the weight added in each initialized quorum
         operator.depositIntoEigenlayer(strategies, tokenBalances);
@@ -78,10 +74,7 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
         check_Register_State(operator, quorums);
 
         // Award operator tokens to deposit into core
-        (
-            IStrategy[] memory strategies,
-            uint[] memory tokenBalances
-        ) = _dealRandTokens(operator);
+        (IStrategy[] memory strategies, uint256[] memory tokenBalances) = _dealRandTokens(operator);
 
         // 2. (core) Deposit tokens
         operator.depositIntoEigenlayer(strategies, tokenBalances);
@@ -118,7 +111,7 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
         check_Register_State(operator, quorums);
 
         // 2. (core) queue full withdrawal
-        (IStrategy[] memory strategies, uint[] memory shares) = operator.exitEigenlayer();
+        (IStrategy[] memory strategies, uint256[] memory shares) = operator.exitEigenlayer();
         check_Withdraw_State(operator, quorums, strategies, shares);
 
         // 3. Update stakes
@@ -151,7 +144,7 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
         check_Register_State(operator, quorums);
 
         // 2. (core) queue full withdrawal
-        (IStrategy[] memory strategies, uint[] memory shares) = operator.exitEigenlayer();
+        (IStrategy[] memory strategies, uint256[] memory shares) = operator.exitEigenlayer();
         check_Withdraw_State(operator, quorums, strategies, shares);
 
         // 3. Deregister from all quorums

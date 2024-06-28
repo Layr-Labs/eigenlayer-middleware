@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import {IAVSDirectory, ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {
+    IAVSDirectory,
+    ISignatureUtils
+} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 contract AVSDirectoryMock is IAVSDirectory {
     /**
@@ -49,4 +52,4 @@ contract AVSDirectoryMock is IAVSDirectory {
 
     /// @notice The EIP-712 typehash for the Registration struct used by the contract
     function OPERATOR_AVS_REGISTRATION_TYPEHASH() external view returns (bytes32) {}
-} 
+}

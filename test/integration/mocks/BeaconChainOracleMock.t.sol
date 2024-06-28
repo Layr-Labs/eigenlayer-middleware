@@ -7,10 +7,9 @@ import "eigenlayer-contracts/src/contracts/interfaces/IBeaconChainOracle.sol";
 // the compiler to complain for an unfathomable reason. Apparently reimplementing it
 // here fixes the issue.
 contract BeaconChainOracleMock is IBeaconChainOracle {
-
     mapping(uint64 => bytes32) blockRoots;
 
-    function timestampToBlockRoot(uint timestamp) public view returns (bytes32) {
+    function timestampToBlockRoot(uint256 timestamp) public view returns (bytes32) {
         return blockRoots[uint64(timestamp)];
     }
 

@@ -9,13 +9,15 @@ import {IRegistry} from "./IRegistry.sol";
  */
 interface IIndexRegistry is IRegistry {
     // EVENTS
-    
+
     // emitted when an operator's index in the ordered operator list for the quorum with number `quorumNumber` is updated
-    event QuorumIndexUpdate(bytes32 indexed operatorId, uint8 quorumNumber, uint32 newOperatorIndex);
+    event QuorumIndexUpdate(
+        bytes32 indexed operatorId, uint8 quorumNumber, uint32 newOperatorIndex
+    );
 
     // DATA STRUCTURES
 
-    // struct used to give definitive ordering to operators at each blockNumber. 
+    // struct used to give definitive ordering to operators at each blockNumber.
     struct OperatorUpdate {
         // blockNumber number from which `operatorIndex` was the operators index
         // the operator's index is the first entry such that `blockNumber >= entry.fromBlockNumber`
@@ -44,7 +46,10 @@ interface IIndexRegistry is IRegistry {
      *         3) `quorumNumbers` is ordered in ascending order
      *         4) the operator is not already registered
      */
-    function registerOperator(bytes32 operatorId, bytes calldata quorumNumbers) external returns(uint32[] memory);
+    function registerOperator(
+        bytes32 operatorId,
+        bytes calldata quorumNumbers
+    ) external returns (uint32[] memory);
 
     /**
      * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumNumbers`.
@@ -74,17 +79,29 @@ interface IIndexRegistry is IRegistry {
     ) external view returns (OperatorUpdate memory);
 
     /// @notice Returns the QuorumUpdate entry for the specified `quorumNumber` at the specified `quorumIndex`
-    function getQuorumUpdateAtIndex(uint8 quorumNumber, uint32 quorumIndex) external view returns (QuorumUpdate memory);
+    function getQuorumUpdateAtIndex(
+        uint8 quorumNumber,
+        uint32 quorumIndex
+    ) external view returns (QuorumUpdate memory);
 
     /// @notice Returns the most recent OperatorUpdate entry for the specified quorumNumber and operatorIndex
-    function getLatestOperatorUpdate(uint8 quorumNumber, uint32 operatorIndex) external view returns (OperatorUpdate memory);
+    function getLatestOperatorUpdate(
+        uint8 quorumNumber,
+        uint32 operatorIndex
+    ) external view returns (OperatorUpdate memory);
 
     /// @notice Returns the most recent QuorumUpdate entry for the specified quorumNumber
-    function getLatestQuorumUpdate(uint8 quorumNumber) external view returns (QuorumUpdate memory);
+    function getLatestQuorumUpdate(uint8 quorumNumber)
+        external
+        view
+        returns (QuorumUpdate memory);
 
     /// @notice Returns the current number of operators of this service for `quorumNumber`.
     function totalOperatorsForQuorum(uint8 quorumNumber) external view returns (uint32);
 
     /// @notice Returns an ordered list of operators of the services for the given `quorumNumber` at the given `blockNumber`
-    function getOperatorListAtBlockNumber(uint8 quorumNumber, uint32 blockNumber) external view returns (bytes32[] memory);
+    function getOperatorListAtBlockNumber(
+        uint8 quorumNumber,
+        uint32 blockNumber
+    ) external view returns (bytes32[] memory);
 }
