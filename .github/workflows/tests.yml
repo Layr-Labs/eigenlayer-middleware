@@ -32,6 +32,9 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
+      - name: Format
+        run: |
+          forge fmt --check
 
       - name: Run Forge build
         run: |
