@@ -13,7 +13,10 @@ import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces
 import {Quorum} from "../interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
 import {ECDSAStakeRegistry} from "../unaudited/ECDSAStakeRegistry.sol";
 
-abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable {
+abstract contract ECDSAServiceManagerBase is
+    IServiceManager,
+    OwnableUpgradeable
+{
     /// @notice Address of the stake registry contract, which manages registration and stake recording.
     address public immutable stakeRegistry;
 
@@ -122,19 +125,35 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
         address operator,
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external onlyStakeRegistry {}
+    ) external onlyStakeRegistry {
+        IAVSDirectory(avsDirectory).registerOperatorToOperatorSets(
+            operator,
+            operatorSetIds,
+            operatorSignature
+        );
+    }
 
     function deregisterOperatorFromOperatorSets(
         address operator,
         uint32[] calldata operatorSetIds
-    ) external onlyStakeRegistry{}
+    ) external onlyStakeRegistry {
+        IAVSDirectory(avsDirectory).deregisterOperatorFromOperatorSets(
+            operator,
+            operatorSetIds
+        );
+    }
 
-    /// TODO: Need to pull in core changes, struct doesn't exist yet
-    // function updateStandbyParams(
-    //     address operator,
-    //     IAVSDirectory.StandbyParam[] calldata standbyParams,
-    //     SignatureWithSaltAndExpiry calldata operatorSignature
-    // ) external onlyStakeRegistry{}
+    function updateStandbyParams(
+        address operator,
+        IAVSDirectory.StandbyParam[] calldata standbyParams,
+        ISignatureUtils.SignatureWithSaltAndExpiry calldata operatorSignature
+    ) external onlyStakeRegistry {
+        IAVSDirectory(avsDirectory).updateStandbyParams(
+            operator,
+            standbyParams,
+            operatorSignature
+        );
+    }
 
     /// @inheritdoc IServiceManagerUI
     function getRestakeableStrategies()
@@ -203,15 +222,19 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
                 address(this),
                 rewardsSubmissions[i].amount
             );
-            uint256 allowance =
-                rewardsSubmissions[i].token.allowance(address(this), rewardsCoordinator);
+            uint256 allowance = rewardsSubmissions[i].token.allowance(
+                address(this),
+                rewardsCoordinator
+            );
             rewardsSubmissions[i].token.approve(
                 rewardsCoordinator,
                 rewardsSubmissions[i].amount + allowance
             );
         }
 
-        IRewardsCoordinator(rewardsCoordinator).createAVSRewardsSubmission(rewardsSubmissions);
+        IRewardsCoordinator(rewardsCoordinator).createAVSRewardsSubmission(
+            rewardsSubmissions
+        );
     }
 
     /**
@@ -276,7 +299,9 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
      * @param newRewardsInitiator The new rewards initiator address.
      * @dev Only callable by the owner.
      */
-    function setRewardsInitiator(address newRewardsInitiator) external onlyOwner {
+    function setRewardsInitiator(
+        address newRewardsInitiator
+    ) external onlyOwner {
         _setRewardsInitiator(newRewardsInitiator);
     }
 
