@@ -51,29 +51,33 @@ interface IServiceManagerUI {
      */
     function deregisterOperatorFromAVS(address operator) external;
 
-    /// TODO: Need to pull in updates from core. Struct doesn't exist yet
-    // function updateStandbyParams(
-    //     address operator,
-    //     IAVSDirectory.StandbyParam[] calldata standbyParams,
-    //     SignatureWithSaltAndExpiry calldata operatorSignature
-    // ) external;
+    function updateStandbyParams(
+        address operator,
+        IAVSDirectory.StandbyParam[] calldata standbyParams,
+        ISignatureUtils.SignatureWithSaltAndExpiry calldata operatorSignature
+    ) external;
 
     /**
      * @notice Returns the list of strategies that the operator has potentially restaked on the AVS
      * @param operator The address of the operator to get restaked strategies for
      * @dev This function is intended to be called off-chain
-     * @dev No guarantee is made on whether the operator has shares for a strategy in a quorum or uniqueness 
+     * @dev No guarantee is made on whether the operator has shares for a strategy in a quorum or uniqueness
      *      of each element in the returned array. The off-chain service should do that validation separately
      */
-    function getOperatorRestakedStrategies(address operator) external view returns (address[] memory);
+    function getOperatorRestakedStrategies(
+        address operator
+    ) external view returns (address[] memory);
 
     /**
      * @notice Returns the list of strategies that the AVS supports for restaking
      * @dev This function is intended to be called off-chain
-     * @dev No guarantee is made on uniqueness of each element in the returned array. 
+     * @dev No guarantee is made on uniqueness of each element in the returned array.
      *      The off-chain service should do that validation separately
      */
-    function getRestakeableStrategies() external view returns (address[] memory);
+    function getRestakeableStrategies()
+        external
+        view
+        returns (address[] memory);
 
     /// @notice Returns the EigenLayer AVSDirectory contract.
     function avsDirectory() external view returns (address);

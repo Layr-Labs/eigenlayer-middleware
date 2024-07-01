@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import {ECDSAStakeRegistryStorage, Quorum, StrategyParams} from "./ECDSAStakeRegistryStorage.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IServiceManager} from "../interfaces/IServiceManager.sol";
@@ -376,32 +377,42 @@ contract ECDSAStakeRegistry is
         );
         emit OperatorRegistered(_operator, _serviceManager);
     }
+
     function _registerOperatorToOperatorSets(
-        address operator,
-        uint32[] calldata operatorSetIds,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature,
+        address _operator,
+        uint32[] calldata _operatorSetIds,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature,
         address _signingKey
     ) external {
-        /// TODO: Call service manager -> calls avs directory
-        IServiceManager(_serviceManager).registerOperatorToOperatorSets(operator, operatorSetIds, operatorSignature);
+        _updateOperatorSigningKey(_operator, _signingKey);
+        IServiceManager(_serviceManager).registerOperatorToOperatorSets(
+            _operator,
+            _operatorSetIds,
+            _operatorSignature
+        );
     }
 
     function _deregisterOperatorFromOperatorSets(
         address operator,
         uint32[] calldata operatorSetIds
     ) external {
-        /// TODO: Call service manager -> calls avs directory
-        IServiceManager(_serviceManager).deregisterOperatorFromOperatorSets(operator, operatorSetIds);
+        IServiceManager(_serviceManager).deregisterOperatorFromOperatorSets(
+            operator,
+            operatorSetIds
+        );
     }
-    
-    /// TODO: Need to pull in core changes, struct doesn't exist yet
-    // function _updateOperatorStandbyParams(
-    //     address operator,
-    //     IAVSDirectory.StandbyParam[] calldata standByParams,
-    //     ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    // ) external {
-    //     IServiceManager(_serviceManager).updateStandbyParams(operator, standByParams, operatorSignature);
-    // }
+
+    function _updateOperatorStandbyParams(
+        address operator,
+        IAVSDirectory.StandbyParam[] calldata standByParams,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) external {
+        IServiceManager(_serviceManager).updateStandbyParams(
+            operator,
+            standByParams,
+            operatorSignature
+        );
+    }
 
     /// @dev Internal function to update an operator's signing key
     /// @param _operator The address of the operator to update the signing key for

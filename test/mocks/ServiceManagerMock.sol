@@ -10,7 +10,12 @@ contract ServiceManagerMock is ServiceManagerBase {
         IRegistryCoordinator _registryCoordinator,
         IStakeRegistry _stakeRegistry
     )
-        ServiceManagerBase(_avsDirectory, _rewardsCoordinator, _registryCoordinator, _stakeRegistry)
+        ServiceManagerBase(
+            _avsDirectory,
+            _rewardsCoordinator,
+            _registryCoordinator,
+            _stakeRegistry
+        )
     {}
 
     function initialize(
@@ -30,4 +35,10 @@ contract ServiceManagerMock is ServiceManagerBase {
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external override {}
+
+    function updateStandbyParams(
+        address operator,
+        IAVSDirectory.StandbyParam[] calldata standbyParams,
+        ISignatureUtils.SignatureWithSaltAndExpiry calldata operatorSignature
+    ) external {}
 }
