@@ -54,6 +54,24 @@ contract ECDSAStakeRegistry is
         _registerOperatorWithSig(msg.sender, _operatorSignature, _signingKey);
     }
 
+    /// @notice Registers an operator to a specific operator set (ID 1) using a provided signature and signing key
+    /// @param _operatorSignature Contains the operator's signature, salt, and expiry
+    /// @param _signingKey The signing key to add to the operator's history
+    function registerOperatorToOperatorSet(
+        ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature,
+        address _signingKey
+    ) external {
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = 1;
+
+        _registerOperatorToOperatorSets(
+            msg.sender,
+            operatorSetIds,
+            _operatorSignature,
+            _signingKey
+        );
+    }
+
     /// @notice Deregisters an existing operator
     function deregisterOperator() external {
         _deregisterOperator(msg.sender);
@@ -380,10 +398,10 @@ contract ECDSAStakeRegistry is
 
     function _registerOperatorToOperatorSets(
         address _operator,
-        uint32[] calldata _operatorSetIds,
+        uint32[] memory _operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature,
         address _signingKey
-    ) external {
+    ) internal {
         _updateOperatorSigningKey(_operator, _signingKey);
         IServiceManager(_serviceManager).registerOperatorToOperatorSets(
             _operator,
@@ -395,7 +413,7 @@ contract ECDSAStakeRegistry is
     function _deregisterOperatorFromOperatorSets(
         address operator,
         uint32[] calldata operatorSetIds
-    ) external {
+    ) internal {
         IServiceManager(_serviceManager).deregisterOperatorFromOperatorSets(
             operator,
             operatorSetIds
