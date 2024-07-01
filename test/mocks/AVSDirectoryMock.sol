@@ -86,9 +86,26 @@ contract AVSDirectoryMock is IAVSDirectory {
     ) external {}
 
     function calculateOperatorSetRegistrationDigestHash(
-        address operator,
-        OperatorSet memory operatorSet,
+        address avs,
+        uint32[] calldata operatorSetIds,
         bytes32 salt,
         uint256 expiry
     ) external view returns (bytes32) {}
+
+    function deregisterOperatorFromOperatorSets(
+        address operator,
+        uint32[] calldata operatorSetIds
+    ) external {}
+
+    function updateStandbyParams(
+        address operator,
+        StandbyParam[] calldata standbyParams,
+        SignatureWithSaltAndExpiry calldata operatorSignature
+    ) external {}
+
+    function calculateUpdateStandbyDigestHash(
+        StandbyParam[] calldata standbyParams,
+        bytes32 salt,
+        uint256 expiry
+    ) public view returns (bytes32) {}
 }

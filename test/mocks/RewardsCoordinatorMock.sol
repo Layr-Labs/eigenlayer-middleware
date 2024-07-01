@@ -23,31 +23,56 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
 
     function claimerFor(address earner) external view returns (address) {}
 
-    function cumulativeClaimed(address claimer, IERC20 token) external view returns (uint256) {}
+    function cumulativeClaimed(
+        address claimer,
+        IERC20 token
+    ) external view returns (uint256) {}
 
     function globalOperatorCommissionBips() external view returns (uint16) {}
 
-    function operatorCommissionBips(address operator, address avs) external view returns (uint16) {}
+    function operatorCommissionBips(
+        address operator,
+        address avs
+    ) external view returns (uint16) {}
 
-    function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf) external pure returns (bytes32) {}
+    function calculateEarnerLeafHash(
+        EarnerTreeMerkleLeaf calldata leaf
+    ) external pure returns (bytes32) {}
 
-    function calculateTokenLeafHash(TokenTreeMerkleLeaf calldata leaf) external pure returns (bytes32) {}
+    function calculateTokenLeafHash(
+        TokenTreeMerkleLeaf calldata leaf
+    ) external pure returns (bytes32) {}
 
-    function checkClaim(RewardsMerkleClaim calldata claim) external view returns (bool) {}
+    function checkClaim(
+        RewardsMerkleClaim calldata claim
+    ) external view returns (bool) {}
 
-    function currRewardsCalculationEndTimestamp() external view returns (uint32) {}
+    function currRewardsCalculationEndTimestamp()
+        external
+        view
+        returns (uint32)
+    {}
 
-    function getRootIndexFromHash(bytes32 rootHash) external view returns (uint32) {}
+    function getRootIndexFromHash(
+        bytes32 rootHash
+    ) external view returns (uint32) {}
 
     function getDistributionRootsLength() external view returns (uint256) {}
 
     /// EXTERNAL FUNCTIONS ///
 
-    function createAVSRewardsSubmission(RewardsSubmission[] calldata rewardsSubmissions) external {}
+    function createAVSRewardsSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external {}
 
-    function createRewardsForAllSubmission(RewardsSubmission[] calldata rewardsSubmission) external {}
+    function createRewardsForAllSubmission(
+        RewardsSubmission[] calldata rewardsSubmission
+    ) external {}
 
-    function processClaim(RewardsMerkleClaim calldata claim, address recipient) external {}
+    function processClaim(
+        RewardsMerkleClaim calldata claim,
+        address recipient
+    ) external {}
 
     function submitRoot(
         bytes32 root,
@@ -58,7 +83,9 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
 
     function setActivationDelay(uint32 _activationDelay) external {}
 
-    function setGlobalOperatorCommission(uint16 _globalCommissionBips) external {}
+    function setGlobalOperatorCommission(
+        uint16 _globalCommissionBips
+    ) external {}
 
     function setClaimerFor(address claimer) external {}
 
@@ -68,5 +95,18 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
      * @param _submitter The address of the payAllForRangeSubmitter
      * @param _newValue The new value for isPayAllForRangeSubmitter
      */
-    function setRewardsForAllSubmitter(address _submitter, bool _newValue) external {}
+    function setRewardsForAllSubmitter(
+        address _submitter,
+        bool _newValue
+    ) external {}
+
+    function getCurrentDistributionRoot()
+        external
+        view
+        returns (DistributionRoot memory)
+    {}
+
+    function getDistributionRootAtIndex(
+        uint256 index
+    ) external view returns (DistributionRoot memory) {}
 }
