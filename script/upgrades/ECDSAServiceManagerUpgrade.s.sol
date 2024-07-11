@@ -4,117 +4,50 @@ pragma solidity ^0.8.12;
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {Script} from "forge-std/Script.sol";
-import {Test} from "forge-std/Test.sol";
+import {MiddlewareBaseScript} from "./MiddlewareBaseScript.s.sol";
+import {EigenUpgradesLib} from "./EigenUpgradesLib.sol";
 
 /// Replace with your ECDSAServiceManagerBase
 contract ECDSAServiceManagerBaseV2 {
     constructor() {}
 }
 
-contract UpgradeECDSAServiceManager is Script, Test {
-    bytes32 internal constant ADMIN_SLOT =
-        0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
-
-    bytes32 internal constant IMPLEMENTATION_SLOT =
-        0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
-
-    ProxyAdmin internal serviceProxyAdmin;
-    address internal serviceManagerProxy;
-    address internal serviceImplementationV2;
-
-    function run() public virtual {
+contract UpgradeECDSAServiceManager is MiddlewareBaseScript {
+    function setUp() public virtual override {
+        super.setUp();
         string memory network = vm.envString("NETWORK");
-        string memory deploymentOutputPath = string(
-            abi.encodePacked(
-                "lib/eigenlayer-contracts/script/output/",
-                network,
-                "/deployment_output.json"
-            )
-        );
-        /// This is your local path, so you can import this script into your repo
-        string memory localDeploymentPath = string(
-            abi.encodePacked("script/output/", network, "/deployment.json")
-        );
+        string memory localDeploymentPath = EigenUpgradesLib
+            .getLocalDeploymentConfigPath(network);
 
         // Load deployment data
-        string memory deploymentOutput = vm.readFile(deploymentOutputPath);
         string memory localDeployment = vm.readFile(localDeploymentPath);
 
         // Parse deployment data
-        address serviceManager = vm.parseJsonAddress(
+        proxyAddress = vm.parseJsonAddress(
             localDeployment,
             ".addresses.serviceManager"
         );
-
-        serviceManagerProxy = serviceManager;
-        serviceProxyAdmin = ProxyAdmin(getAdminAddress(serviceManagerProxy));
-        vm.label(msg.sender, "Caller");
-        vm.label(address(serviceProxyAdmin), "Proxy Admin");
-        vm.label(serviceProxyAdmin.owner(), "Proxy Admin Owner");
-        vm.label(serviceManagerProxy, "Service Manager Upgradeable Proxy");
-
-        vm.startBroadcast();
-        serviceImplementationV2 = deployNewImplementation(
-            "ECDSAServiceManagerBaseV2",
-            ""
-        );
-        _upgradeContract(serviceManagerProxy, serviceImplementationV2);
-        vm.stopBroadcast();
     }
 
-    function _upgradeContract(
-        address proxy,
-        address newImplementation
-    ) internal {
-        address preUpgradeOwner = Ownable(proxy).owner();
-
+    function run() public {
+        newImplementation = deployNewImplementation();
+        upgradeContract();
+        address currentImplementation = EigenUpgradesLib
+            .getImplementationAddress(proxyAddress);
         require(
-            msg.sender == serviceProxyAdmin.owner(),
-            "Caller is not the owner of the proxy admin"
-        );
-        serviceProxyAdmin.upgrade({
-            proxy: TransparentUpgradeableProxy(payable(proxy)),
-            implementation: newImplementation
-        });
-
-        address postUpgradeOwner = Ownable(proxy).owner();
-
-        assertEq(
-            preUpgradeOwner,
-            postUpgradeOwner,
-            "Owner changed after upgrade"
+            currentImplementation == newImplementation,
+            "Upgrade failed: Implementation address mismatch"
         );
     }
 
-    function getAdminAddress(address proxy) internal view returns (address) {
-        bytes32 adminSlot = vm.load(proxy, ADMIN_SLOT);
-        return address(uint160(uint256(adminSlot)));
+    function getProxyAddress(
+        string memory,
+        string memory
+    ) internal view override returns (address) {
+        return proxyAddress;
     }
 
-    function getImplementationAddress(
-        address proxy
-    ) internal view returns (address) {
-        bytes32 implSlot = vm.load(proxy, IMPLEMENTATION_SLOT);
-        return address(uint160(uint256(implSlot)));
-    }
-
-    function deployNewImplementation(
-        string memory contractName,
-        bytes memory constructorArgs
-    ) internal returns (address) {
-        bytes memory bytecode = abi.encodePacked(
-            vm.getCode(contractName),
-            constructorArgs
-        );
-        address newImplementation;
-        assembly {
-            newImplementation := create(0, add(bytecode, 0x20), mload(bytecode))
-        }
-        require(
-            newImplementation != address(0),
-            "Deployment of new implementation failed"
-        );
-        return newImplementation;
+    function deployNewImplementation() internal returns (address) {
+        return deployNewImplementation("ECDSAServiceManagerBaseV2", "");
     }
 }

@@ -30,21 +30,21 @@ abstract contract MiddlewareBaseScript is Script, Test {
         vm.label(proxyAddress, "Proxy Address");
     }
 
-    function run() public virtual {
-        vm.startBroadcast();
-
-        newImplementation = deployNewImplementation();
-        upgradeContract();
-
-        vm.stopBroadcast();
-    }
-
     function getProxyAddress(
         string memory eigenlayerConfig,
         string memory localConfig
     ) internal virtual returns (address);
 
-    function deployNewImplementation() internal virtual returns (address);
+    function deployNewImplementation(
+        string memory contractName,
+        bytes memory constructorArgs
+    ) internal virtual returns (address) {
+        return
+            EigenUpgradesLib.deployNewImplementation(
+                contractName,
+                constructorArgs
+            );
+    }
 
     function upgradeContract() internal virtual {
         EigenUpgradesLib.upgradeContract(
