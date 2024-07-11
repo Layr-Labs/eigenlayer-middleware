@@ -4,16 +4,10 @@ pragma solidity ^0.8.12;
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
-import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
-import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
-import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
-
 import {Script} from "forge-std/Script.sol";
 import {Test} from "forge-std/Test.sol";
 
-contract RegistryContractsUpgrade is Script, Test {
+contract UpgradeECDSARegistry is Script, Test {
     bytes32 internal constant ADMIN_SLOT =
         0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
 
@@ -21,9 +15,6 @@ contract RegistryContractsUpgrade is Script, Test {
         0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
 
     ProxyAdmin internal proxyAdmin;
-    address internal registryCoordinatorProxy;
-    address internal blsApkRegistryProxy;
-    address internal indexRegistryProxy;
     address internal stakeRegistryProxy;
     address internal newImplementationV2;
 
@@ -47,24 +38,12 @@ contract RegistryContractsUpgrade is Script, Test {
         string memory localDeployment = vm.readFile(localDeploymentPath);
 
         // Parse deployment data
-        registryCoordinatorProxy = vm.parseJsonAddress(
-            deploymentOutput,
-            ".addresses.registryCoordinator"
-        );
-        blsApkRegistryProxy = vm.parseJsonAddress(
-            deploymentOutput,
-            ".addresses.blsApkRegistry"
-        );
-        indexRegistryProxy = vm.parseJsonAddress(
-            deploymentOutput,
-            ".addresses.indexRegistry"
-        );
         stakeRegistryProxy = vm.parseJsonAddress(
             deploymentOutput,
             ".addresses.stakeRegistry"
         );
 
-        proxyAdmin = ProxyAdmin(getAdminAddress(registryCoordinatorProxy));
+        proxyAdmin = ProxyAdmin(getAdminAddress(stakeRegistryProxy));
         vm.label(msg.sender, "Caller");
         vm.label(address(proxyAdmin), "Proxy Admin");
         vm.label(proxyAdmin.owner(), "Proxy Admin Owner");
@@ -72,9 +51,6 @@ contract RegistryContractsUpgrade is Script, Test {
         vm.startBroadcast();
         newImplementationV2 = deployNewImplementation("YourContractV2", "");
 
-        _upgradeContract(registryCoordinatorProxy, newImplementationV2);
-        _upgradeContract(blsApkRegistryProxy, newImplementationV2);
-        _upgradeContract(indexRegistryProxy, newImplementationV2);
         _upgradeContract(stakeRegistryProxy, newImplementationV2);
 
         vm.stopBroadcast();
