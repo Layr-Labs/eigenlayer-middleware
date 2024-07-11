@@ -38,6 +38,7 @@ contract UpgradeServiceManager is Script, Test {
                 "/deployment_output.json"
             )
         );
+        /// This is your local path, so you can import this script into your repo
         string memory localDeploymentPath = string(
             abi.encodePacked("script/output/", network, "/deployment.json")
         );
