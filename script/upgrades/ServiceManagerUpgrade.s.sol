@@ -68,11 +68,9 @@ contract UpgradeServiceManager is Script, Test {
         vm.label(serviceManagerProxy, "Service Manager Upgradeable Proxy");
 
         vm.startBroadcast();
-        serviceImplementationV2 = address(
-            new ServiceManagerV2(
-                IRegistryCoordinator(registryCoordinator),
-                IAVSDirectory(avsDirectory)
-            )
+        serviceImplementationV2 = deployNewImplementation(
+            "ServiceManagerV2",
+            abi.encode(registryCoordinator, avsDirectory)
         );
         _upgradeContract(serviceManagerProxy, serviceImplementationV2);
         vm.stopBroadcast();
@@ -86,7 +84,7 @@ contract UpgradeServiceManager is Script, Test {
 
         require(
             msg.sender == serviceProxyAdmin.owner(),
-            "Call with private key for owner of the proxy admin"
+            "Caller is not the owner of the proxy admin"
         );
         serviceProxyAdmin.upgrade({
             proxy: TransparentUpgradeableProxy(payable(proxy)),
@@ -95,7 +93,11 @@ contract UpgradeServiceManager is Script, Test {
 
         address postUpgradeOwner = Ownable(proxy).owner();
 
-        assertEq(preUpgradeOwner, postUpgradeOwner, "Owner changed");
+        assertEq(
+            preUpgradeOwner,
+            postUpgradeOwner,
+            "Owner changed after upgrade"
+        );
     }
 
     function getAdminAddress(address proxy) internal view returns (address) {
@@ -108,5 +110,24 @@ contract UpgradeServiceManager is Script, Test {
     ) internal view returns (address) {
         bytes32 implSlot = vm.load(proxy, IMPLEMENTATION_SLOT);
         return address(uint160(uint256(implSlot)));
+    }
+
+    function deployNewImplementation(
+        string memory contractName,
+        bytes memory constructorArgs
+    ) internal returns (address) {
+        bytes memory bytecode = abi.encodePacked(
+            vm.getCode(contractName),
+            constructorArgs
+        );
+        address newImplementation;
+        assembly {
+            newImplementation := create(0, add(bytecode, 0x20), mload(bytecode))
+        }
+        require(
+            newImplementation != address(0),
+            "Deployment of new implementation failed"
+        );
+        return newImplementation;
     }
 }

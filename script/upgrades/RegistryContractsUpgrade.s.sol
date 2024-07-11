@@ -13,11 +13,6 @@ import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
 import {Script} from "forge-std/Script.sol";
 import {Test} from "forge-std/Test.sol";
 
-/// Replace with your contract
-contract YourContractV2 {
-    constructor() {}
-}
-
 contract UpgradeContracts is Script, Test {
     bytes32 internal constant ADMIN_SLOT =
         0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
@@ -73,7 +68,7 @@ contract UpgradeContracts is Script, Test {
         vm.label(proxyAdmin.owner(), "Proxy Admin Owner");
 
         vm.startBroadcast();
-        newImplementationV2 = address(new YourContractV2());
+        newImplementationV2 = deployNewImplementation("YourContractV2", "");
 
         _upgradeContract(registryCoordinatorProxy, newImplementationV2);
         _upgradeContract(blsApkRegistryProxy, newImplementationV2);
@@ -113,5 +108,24 @@ contract UpgradeContracts is Script, Test {
     ) internal view returns (address) {
         bytes32 implSlot = vm.load(proxy, IMPLEMENTATION_SLOT);
         return address(uint160(uint256(implSlot)));
+    }
+
+    function deployNewImplementation(
+        string memory contractName,
+        bytes memory constructorArgs
+    ) internal returns (address) {
+        bytes memory bytecode = abi.encodePacked(
+            vm.getCode(contractName),
+            constructorArgs
+        );
+        address newImplementation;
+        assembly {
+            newImplementation := create(0, add(bytecode, 0x20), mload(bytecode))
+        }
+        require(
+            newImplementation != address(0),
+            "Deployment of new implementation failed"
+        );
+        return newImplementation;
     }
 }
