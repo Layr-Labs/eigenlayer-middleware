@@ -61,6 +61,8 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
 
     /// EXTERNAL FUNCTIONS ///
 
+    function disableRoot(uint32 rootIndex) external {}
+
     function createAVSRewardsSubmission(
         RewardsSubmission[] calldata rewardsSubmissions
     ) external {}

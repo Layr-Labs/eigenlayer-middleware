@@ -224,8 +224,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 eigenPodManager
             );
         AVSDirectory avsDirectoryImplemntation = new AVSDirectory(
-            delegationManager,
-            strategyManager
+            delegationManager
         );
         // RewardsCoordinator rewardsCoordinatorImplementation = new RewardsCoordinator(
         //     delegationManager,

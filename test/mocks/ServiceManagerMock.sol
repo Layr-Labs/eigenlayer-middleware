@@ -40,5 +40,5 @@ contract ServiceManagerMock is ServiceManagerBase {
         address operator,
         IAVSDirectory.StandbyParam[] calldata standbyParams,
         ISignatureUtils.SignatureWithSaltAndExpiry calldata operatorSignature
-    ) external {}
+    ) external override {}
 }

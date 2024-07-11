@@ -173,10 +173,7 @@ contract MockAVSDeployer is Test {
             )
         );
         avsDirectoryMock = new AVSDirectoryMock();
-        avsDirectoryImplementation = new AVSDirectory(
-            delegationMock,
-            strategyManagerMock
-        );
+        avsDirectoryImplementation = new AVSDirectory(delegationMock);
         avsDirectory = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(
