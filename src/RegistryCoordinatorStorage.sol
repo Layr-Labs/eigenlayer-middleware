@@ -64,6 +64,11 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
     /// @notice the address of the entity allowed to eject operators from the AVS
     address public ejector;
 
+    /// @notice the last timestamp an operator was ejected
+    mapping(address => uint256) public lastEjectionTimestamp;
+    /// @notice the delay in seconds before an operator can reregister after being ejected
+    uint256 public ejectionCooldown;
+
     constructor(
         IServiceManager _serviceManager,
         IStakeRegistry _stakeRegistry,
@@ -78,5 +83,5 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
 
     // storage gap for upgradeability
     // slither-disable-next-line shadowing-state
-    uint256[41] private __GAP;
+    uint256[39] private __GAP;
 }

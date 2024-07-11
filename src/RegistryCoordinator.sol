@@ -42,17 +42,14 @@ contract RegistryCoordinator is
     using BN254 for BN254.G1Point;
 
     modifier onlyEjector {
-        require(msg.sender == ejector, "RegistryCoordinator.onlyEjector: caller is not the ejector");
+        _checkEjector();
         _;
     }
 
     /// @dev Checks that `quorumNumber` corresponds to a quorum that has been created
     /// via `initialize` or `createQuorum`
     modifier quorumExists(uint8 quorumNumber) {
-        require(
-            quorumNumber < quorumCount, 
-            "RegistryCoordinator.quorumExists: quorum does not exist"
-        );
+        _checkQuorumExists(quorumNumber);
         _;
     }
 
@@ -359,15 +356,28 @@ contract RegistryCoordinator is
      * @notice Forcibly deregisters an operator from one or more quorums
      * @param operator the operator to eject
      * @param quorumNumbers the quorum numbers to eject the operator from
+     * @dev possible race condition if prior to being ejected for a set of quorums the operator self deregisters from a subset
      */
     function ejectOperator(
         address operator, 
         bytes calldata quorumNumbers
     ) external onlyEjector {
-        _deregisterOperator({
-            operator: operator, 
-            quorumNumbers: quorumNumbers
-        });
+        lastEjectionTimestamp[operator] = block.timestamp;
+
+        OperatorInfo storage operatorInfo = _operatorInfo[operator];
+        bytes32 operatorId = operatorInfo.operatorId;
+        uint192 quorumsToRemove = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
+        uint192 currentBitmap = _currentOperatorBitmap(operatorId);
+        if(
+            operatorInfo.status == OperatorStatus.REGISTERED && 
+            !quorumsToRemove.isEmpty() &&
+            quorumsToRemove.isSubsetOf(currentBitmap) 
+        ){
+            _deregisterOperator({
+                operator: operator, 
+                quorumNumbers: quorumNumbers
+            });
+        }
     }
 
     /*******************************************************************************
@@ -423,6 +433,16 @@ contract RegistryCoordinator is
         _setEjector(_ejector);
     }
 
+    /**
+     * @notice Sets the ejection cooldown, which is the time an operator must wait in 
+     * seconds afer ejection before registering for any quorum
+     * @param _ejectionCooldown the new ejection cooldown in seconds
+     * @dev only callable by the owner
+     */
+    function setEjectionCooldown(uint256 _ejectionCooldown) external onlyOwner {
+        ejectionCooldown = _ejectionCooldown;
+    }
+
     /*******************************************************************************
                             INTERNAL FUNCTIONS
     *******************************************************************************/
@@ -457,6 +477,9 @@ contract RegistryCoordinator is
         require(quorumsToAdd.noBitsInCommon(currentBitmap), "RegistryCoordinator._registerOperator: operator already registered for some quorums being registered for");
         uint192 newBitmap = uint192(currentBitmap.plus(quorumsToAdd));
 
+        // Check that the operator can reregister if ejected
+        require(lastEjectionTimestamp[operator] + ejectionCooldown < block.timestamp, "RegistryCoordinator._registerOperator: operator cannot reregister yet");
+
         /**
          * Update operator's bitmap, socket, and status. Only update operatorInfo if needed:
          * if we're `REGISTERED`, the operatorId and status are already correct.
@@ -489,6 +512,26 @@ contract RegistryCoordinator is
         results.numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
 
         return results;
+    }
+
+    /**
+     * @notice Checks if the caller is the ejector
+     * @dev Reverts if the caller is not the ejector
+     */
+    function _checkEjector() internal view {
+        require(msg.sender == ejector, "RegistryCoordinator.onlyEjector: caller is not the ejector");
+    }
+
+    /**
+     * @notice Checks if a quorum exists
+     * @param quorumNumber The quorum number to check
+     * @dev Reverts if the quorum does not exist
+     */
+    function _checkQuorumExists(uint8 quorumNumber) internal view {
+        require(
+            quorumNumber < quorumCount, 
+            "RegistryCoordinator.quorumExists: quorum does not exist"
+        );
     }
 
     /**
