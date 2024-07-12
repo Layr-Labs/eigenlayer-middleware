@@ -148,7 +148,6 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
 
     function updateStandbyParams(
         address operator,
-        IAVSDirectory.StandbyParam[] calldata standbyParams,
         ISignatureUtils.SignatureWithSaltAndExpiry calldata operatorSignature
     ) external virtual onlyRegistryCoordinator {}
 

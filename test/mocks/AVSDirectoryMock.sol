@@ -96,16 +96,4 @@ contract AVSDirectoryMock is IAVSDirectory {
         address operator,
         uint32[] calldata operatorSetIds
     ) external {}
-
-    function updateStandbyParams(
-        address operator,
-        StandbyParam[] calldata standbyParams,
-        SignatureWithSaltAndExpiry calldata operatorSignature
-    ) external {}
-
-    function calculateUpdateStandbyDigestHash(
-        StandbyParam[] calldata standbyParams,
-        bytes32 salt,
-        uint256 expiry
-    ) public view returns (bytes32) {}
 }

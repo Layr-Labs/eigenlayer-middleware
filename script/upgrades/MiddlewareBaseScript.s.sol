@@ -33,7 +33,7 @@ abstract contract MiddlewareBaseScript is Script, Test {
     function getProxyAddress(
         string memory eigenlayerConfig,
         string memory localConfig
-    ) internal virtual returns (address);
+    ) internal virtual returns (address) {}
 
     function deployNewImplementation(
         string memory contractName,

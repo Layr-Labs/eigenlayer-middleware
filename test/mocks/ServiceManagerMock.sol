@@ -35,10 +35,4 @@ contract ServiceManagerMock is ServiceManagerBase {
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external override {}
-
-    function updateStandbyParams(
-        address operator,
-        IAVSDirectory.StandbyParam[] calldata standbyParams,
-        ISignatureUtils.SignatureWithSaltAndExpiry calldata operatorSignature
-    ) external override {}
 }

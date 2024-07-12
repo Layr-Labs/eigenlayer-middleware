@@ -27,7 +27,10 @@ contract UpgradeECDSAStakeRegistry is MiddlewareBaseScript {
     }
 
     function run() public {
-        newImplementation = deployNewImplementation();
+        newImplementation = EigenUpgradesLib.deployNewImplementation(
+            "ECDSAStakeRegistryBaseV2",
+            ""
+        );
 
         upgradeContract();
 
@@ -37,16 +40,5 @@ contract UpgradeECDSAStakeRegistry is MiddlewareBaseScript {
             currentImplementation == newImplementation,
             "Upgrade failed: Implementation address mismatch"
         );
-    }
-
-    function getProxyAddress(
-        string memory,
-        string memory
-    ) internal view override returns (address) {
-        return proxyAddress;
-    }
-
-    function deployNewImplementation() internal returns (address) {
-        return deployNewImplementation("ECDSAStakeRegistryBaseV2", "");
     }
 }

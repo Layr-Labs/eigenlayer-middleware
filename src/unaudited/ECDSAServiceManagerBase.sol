@@ -143,18 +143,6 @@ abstract contract ECDSAServiceManagerBase is
         );
     }
 
-    function updateStandbyParams(
-        address operator,
-        IAVSDirectory.StandbyParam[] calldata standbyParams,
-        ISignatureUtils.SignatureWithSaltAndExpiry calldata operatorSignature
-    ) external onlyStakeRegistry {
-        IAVSDirectory(avsDirectory).updateStandbyParams(
-            operator,
-            standbyParams,
-            operatorSignature
-        );
-    }
-
     /// @inheritdoc IServiceManagerUI
     function getRestakeableStrategies()
         external

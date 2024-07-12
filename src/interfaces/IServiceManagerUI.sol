@@ -51,12 +51,6 @@ interface IServiceManagerUI {
      */
     function deregisterOperatorFromAVS(address operator) external;
 
-    function updateStandbyParams(
-        address operator,
-        IAVSDirectory.StandbyParam[] calldata standbyParams,
-        ISignatureUtils.SignatureWithSaltAndExpiry calldata operatorSignature
-    ) external;
-
     /**
      * @notice Returns the list of strategies that the operator has potentially restaked on the AVS
      * @param operator The address of the operator to get restaked strategies for
