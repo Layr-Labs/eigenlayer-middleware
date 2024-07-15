@@ -12,6 +12,7 @@ import "src/libraries/BN254.sol";
 import "test/integration/IntegrationConfig.t.sol";
 import "test/integration/TimeMachine.t.sol";
 import "test/integration/User.t.sol";
+import "../../lib/eigenlayer-contracts/src/contracts/core/AVSDirectoryStorage.sol";
 
 abstract contract IntegrationBase is IntegrationConfig {
     using Strings for *;
@@ -231,8 +232,10 @@ abstract contract IntegrationBase is IntegrationConfig {
         string memory err
     ) internal {
         vm.skip(true);
-        // IAVSDirectory.OperatorAVSRegistrationStatus status = avsDirectory.avsOperatorStatus(address(serviceManager), address(operator));
-        // assertTrue(status == IAVSDirectory.OperatorAVSRegistrationStatus.UNREGISTERED, err);
+        address operatorAddress = address(operator);
+        (uint248 totalSets, ) = AVSDirectoryStorage(address(avsDirectory))
+            .memberInfo(address(serviceManager), operatorAddress);
+        assertTrue(totalSets > 0, err);
     }
 
     function assert_IsRegisteredToAVS(
@@ -240,13 +243,10 @@ abstract contract IntegrationBase is IntegrationConfig {
         string memory err
     ) internal {
         vm.skip(true);
-        // IAVSDirectory.OperatorAVSRegistrationStatus status = avsDirectory
-        //     .avsOperatorStatus(address(serviceManager), address(operator));
-
-        // assertTrue(
-        //     status == IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED,
-        // err
-        // );
+        address operatorAddress = address(operator);
+        (uint248 totalSets, ) = AVSDirectoryStorage(address(avsDirectory))
+            .memberInfo(address(serviceManager), operatorAddress);
+        assertTrue(totalSets == 0, err);
     }
 
     /*******************************************************************************
