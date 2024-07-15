@@ -157,11 +157,6 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         );
     }
 
-    function updateStandbyParams(
-        address operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry calldata operatorSignature
-    ) external virtual onlyRegistryCoordinator {}
-
     /**
      * @notice Sets the rewards initiator address
      * @param newRewardsInitiator The new rewards initiator address
