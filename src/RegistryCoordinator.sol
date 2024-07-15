@@ -544,8 +544,10 @@ contract RegistryCoordinator is
 
             // Register the operator with the EigenLayer core contracts via this AVS's ServiceManager
             serviceManager.registerOperatorToAVS(operator, operatorSignature);
-            /// TODO: Need to parse the quorum numbers to a list to register and remove above legacy function
-            uint32[] memory operatorSetIds;
+            uint32[] memory operatorSetIds = new uint32[](quorumNumbers.length);
+            for (uint256 i = 0; i < quorumNumbers.length; i++) {
+                operatorSetIds[i] = uint32(uint8(quorumNumbers[i]));
+            }
             serviceManager.registerOperatorToOperatorSets(
                 operator,
                 operatorSetIds,
@@ -716,7 +718,10 @@ contract RegistryCoordinator is
             emit OperatorDeregistered(operator, operatorId);
         }
 
-        uint32[] memory operatorSetIds;
+        uint32[] memory operatorSetIds = new uint32[](quorumNumbers.length);
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            operatorSetIds[i] = uint32(uint8(quorumNumbers[i]));
+        }
         serviceManager.deregisterOperatorFromOperatorSets(
             operator,
             operatorSetIds
