@@ -138,13 +138,24 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     function deregisterOperatorFromOperatorSets(
         address operator,
         uint32[] calldata operatorSetIds
-    ) external virtual onlyRegistryCoordinator {}
+    ) external virtual onlyRegistryCoordinator {
+        _avsDirectory.deregisterOperatorFromOperatorSets(
+            operator,
+            operatorSetIds
+        );
+    }
 
     function registerOperatorToOperatorSets(
         address operator,
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external virtual onlyRegistryCoordinator {}
+    ) external virtual onlyRegistryCoordinator {
+        _avsDirectory.registerOperatorToOperatorSets(
+            operator,
+            operatorSetIds,
+            operatorSignature
+        );
+    }
 
     function updateStandbyParams(
         address operator,

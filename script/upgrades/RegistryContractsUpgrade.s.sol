@@ -27,23 +27,26 @@ contract RegistryContractsUpgrade is Script, Test {
     address internal stakeRegistryProxy;
     address internal newImplementationV2;
 
+    string internal localDeploymentPath;
+    string internal coreDeploymentPath;
+
     function run() public virtual {
         string memory network = vm.envString("NETWORK");
-        string memory deploymentOutputPath = string(
-            abi.encodePacked(
-                "lib/eigenlayer-contracts/script/output/",
-                network,
-                "/deployment_output.json"
-            )
+        coreDeploymentPath = string.concat(
+            "lib/eigenlayer-contracts/script/output/",
+            network,
+            "/deployment_output.json"
         );
 
         /// This is your local path, so you can import this script into your repo
-        string memory localDeploymentPath = string(
-            abi.encodePacked("script/output/", network, "/deployment.json")
+        localDeploymentPath = string.concat(
+            "script/output/",
+            network,
+            "/deployment.json"
         );
 
         // Load deployment data
-        string memory deploymentOutput = vm.readFile(deploymentOutputPath);
+        string memory deploymentOutput = vm.readFile(coreDeploymentPath);
         string memory localDeployment = vm.readFile(localDeploymentPath);
 
         // Parse deployment data
