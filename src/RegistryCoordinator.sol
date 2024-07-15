@@ -543,7 +543,8 @@ contract RegistryCoordinator is
             });
 
             // Register the operator with the EigenLayer core contracts via this AVS's ServiceManager
-            serviceManager.registerOperatorToAVS(operator, operatorSignature);
+            // TODO: leaving commented for easier testing
+            // serviceManager.registerOperatorToAVS(operator, operatorSignature);
             uint32[] memory operatorSetIds = new uint32[](quorumNumbers.length);
             for (uint256 i = 0; i < quorumNumbers.length; i++) {
                 operatorSetIds[i] = uint32(uint8(quorumNumbers[i]));
@@ -714,7 +715,8 @@ contract RegistryCoordinator is
         // them from the AVS via the EigenLayer core contracts
         if (newBitmap.isEmpty()) {
             operatorInfo.status = OperatorStatus.DEREGISTERED;
-            serviceManager.deregisterOperatorFromAVS(operator);
+            // TODO: Leaving for ez revert for testing
+            // serviceManager.deregisterOperatorFromAVS(operator);
             emit OperatorDeregistered(operator, operatorId);
         }
 
