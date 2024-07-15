@@ -231,7 +231,7 @@ abstract contract IntegrationBase is IntegrationConfig {
         User operator,
         string memory err
     ) internal {
-        vm.skip(true);
+        vm.skip(true); // TODO: skip for now and comeback after we update state
         address operatorAddress = address(operator);
         (uint248 totalSets, ) = AVSDirectoryStorage(address(avsDirectory))
             .memberInfo(address(serviceManager), operatorAddress);
@@ -242,7 +242,7 @@ abstract contract IntegrationBase is IntegrationConfig {
         User operator,
         string memory err
     ) internal {
-        vm.skip(true);
+        vm.skip(true); // TODO: skip for now and comeback after we update state
         address operatorAddress = address(operator);
         (uint248 totalSets, ) = AVSDirectoryStorage(address(avsDirectory))
             .memberInfo(address(serviceManager), operatorAddress);
