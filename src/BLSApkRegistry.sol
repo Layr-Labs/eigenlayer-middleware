@@ -12,10 +12,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
 
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
     modifier onlyRegistryCoordinator() {
-        require(
-            msg.sender == address(registryCoordinator),
-            "BLSApkRegistry.onlyRegistryCoordinator: caller is not the registry coordinator"
-        );
+        _checkRegistryCoordinator();
         _;
     }
 
@@ -280,5 +277,12 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     /// @dev Returns zero in the event that the `operator` has never registered for the AVS
     function getOperatorId(address operator) public view returns (bytes32) {
         return operatorToPubkeyHash[operator];
+    }
+
+    function _checkRegistryCoordinator() internal view {
+        require(
+            msg.sender == address(registryCoordinator),
+            "BLSApkRegistry.onlyRegistryCoordinator: caller is not the registry coordinator"
+        );
     }
 }

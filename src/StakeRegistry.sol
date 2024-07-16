@@ -24,20 +24,17 @@ contract StakeRegistry is StakeRegistryStorage {
     using BitmapUtils for *;
     
     modifier onlyRegistryCoordinator() {
-        require(
-            msg.sender == address(registryCoordinator),
-            "StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator"
-        );
+        _checkRegistryCoordinator();
         _;
     }
 
     modifier onlyCoordinatorOwner() {
-        require(msg.sender == IRegistryCoordinator(registryCoordinator).owner(), "StakeRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator");
+        _checkRegistryCoordinatorOwner();
         _;
     }
 
     modifier quorumExists(uint8 quorumNumber) {
-        require(_quorumExists(quorumNumber), "StakeRegistry.quorumExists: quorum does not exist");
+        _checkQuorumExists(quorumNumber);
         _;
     }
 
@@ -74,7 +71,7 @@ contract StakeRegistry is StakeRegistryStorage {
         for (uint256 i = 0; i < quorumNumbers.length; i++) {            
             
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            require(_quorumExists(quorumNumber), "StakeRegistry.registerOperator: quorum does not exist");
+            _checkQuorumExists(quorumNumber);
 
             // Retrieve the operator's current weighted stake for the quorum, reverting if they have not met
             // the minimum.
@@ -121,7 +118,7 @@ contract StakeRegistry is StakeRegistryStorage {
          */
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            require(_quorumExists(quorumNumber), "StakeRegistry.deregisterOperator: quorum does not exist");
+            _checkQuorumExists(quorumNumber);
 
             // Update the operator's stake for the quorum and retrieve the shares removed
             int256 stakeDelta = _recordOperatorStakeUpdate({
@@ -161,7 +158,7 @@ contract StakeRegistry is StakeRegistryStorage {
          */
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            require(_quorumExists(quorumNumber), "StakeRegistry.updateOperatorStake: quorum does not exist");
+            _checkQuorumExists(quorumNumber);
 
             // Fetch the operator's current stake, applying weighting parameters and checking
             // against the minimum stake requirements for the quorum.
@@ -697,7 +694,7 @@ contract StakeRegistry is StakeRegistryStorage {
         uint32[] memory indices = new uint32[](quorumNumbers.length);
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            require(_quorumExists(quorumNumber), "StakeRegistry.getTotalStakeIndicesAtBlockNumber: quorum does not exist");
+            _checkQuorumExists(quorumNumber);
             require(
                 _totalStakeHistory[quorumNumber][0].updateBlockNumber <= blockNumber,
                 "StakeRegistry.getTotalStakeIndicesAtBlockNumber: quorum has no stake history at blockNumber"
@@ -711,5 +708,20 @@ contract StakeRegistry is StakeRegistryStorage {
             }
         }
         return indices;
+    }
+
+    function _checkRegistryCoordinator() internal view {
+        require(
+            msg.sender == address(registryCoordinator),
+            "StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator"
+        );
+    }
+
+    function _checkRegistryCoordinatorOwner() internal view {
+        require(msg.sender == IRegistryCoordinator(registryCoordinator).owner(), "StakeRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator");
+    }
+
+    function _checkQuorumExists(uint8 quorumNumber) internal view {
+        require(_quorumExists(quorumNumber), "StakeRegistry.quorumExists: quorum does not exist");
     }
 }

@@ -58,12 +58,14 @@ contract DelegationMock is IDelegationManager {
 
     function operatorDetails(address operator) external pure returns (OperatorDetails memory) {
         OperatorDetails memory returnValue = OperatorDetails({
-            earningsReceiver: operator,
+           __deprecated_earningsReceiver: operator,
             delegationApprover: operator,
             stakerOptOutWindowBlocks: 0
         });
         return returnValue;
     }
+
+    function beaconChainETHStrategy() external pure returns (IStrategy) {}
 
     function earningsReceiver(address operator) external pure returns (address) {
         return operator;
@@ -169,8 +171,6 @@ contract DelegationMock is IDelegationManager {
         bool[] calldata receiveAsTokens
     ) external {}
 
-    function migrateQueuedWithdrawals(IStrategyManager.DeprecatedStruct_QueuedWithdrawal[] memory withdrawalsToQueue) external {}
-    
     // onlyDelegationManager functions in StrategyManager
     function addShares(
         IStrategyManager strategyManager,
