@@ -36,10 +36,10 @@ Protocol as further described in the documentation
 
 Change Date:  
 
-- All commits at or prior to commit f2cbfa2f53b5c9740a6d4813c04f0093cbbe9f87
+- All commits at or prior to commit 3b96cafa862902974b8c351a86f761c53453b269
 (i.e. committed to this repository on or before May 14, 2024) have a
 change date of 2025-10-16 (October 16th, 2025)
-- All commits after f2cbfa2f53b5c9740a6d4813c04f0093cbbe9f87 (i.e. committed to this
+- All commits after 3b96cafa862902974b8c351a86f761c53453b269 (i.e. committed to this
 repository after July 17, 2024) have a change date of 2027-07-01 (July 1st, 2027)
 
 Change License:       MIT
