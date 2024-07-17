@@ -169,6 +169,10 @@ contract StakeRegistry is StakeRegistryStorage {
          * in the quorum, the quorum number is added to `quorumsToRemove`, which
          * is returned to the registry coordinator.
          */
+
+        address avs = address(
+            IRegistryCoordinator(registryCoordinator).serviceManager()
+        );
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             _checkQuorumExists(quorumNumber);
@@ -191,10 +195,9 @@ contract StakeRegistry is StakeRegistryStorage {
             // Get the AVSDirectory address from the RegistryCoordinator
             // Query the AVSDirectory to check if the operator is deregistered
             /// TODO: Need to have a more accurate mock for AVSDirectory
+            /// TODO: also need to handle if they're a legacy operator || memberOfOperatorSet
             operatorRegistered = avsDirectory.isMember(
-                address(
-                    IRegistryCoordinator(registryCoordinator).serviceManager()
-                ),
+                avs,
                 operator,
                 operatorSetId
             );
