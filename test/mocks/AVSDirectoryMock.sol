@@ -96,4 +96,29 @@ contract AVSDirectoryMock is IAVSDirectory {
         address operator,
         uint32[] calldata operatorSetIds
     ) external {}
+
+    function deregisterFromAVSOperatorSets(
+        address avs,
+        uint32[] calldata operatorSetIds
+    ) external override {}
+
+    function cancelSalt(bytes32 salt) external override {}
+
+    function memberInfo(
+        address avs,
+        address operator
+    )
+        external
+        view
+        override
+        returns (uint248 inTotalSets, bool isLegacyOperator)
+    {}
+
+    function isMember(
+        address avs,
+        address operator,
+        uint32 operatorSetId
+    ) external view override returns (bool) {}
+
+    function domainSeparator() external view override returns (bytes32) {}
 }
