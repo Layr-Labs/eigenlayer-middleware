@@ -5,7 +5,7 @@ import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/
 
 import {StakeRegistryStorage, IStrategy} from "./StakeRegistryStorage.sol";
 
-import {AVSDirectory} from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
+import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 
@@ -39,9 +39,16 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     constructor(
+        IAVSDirectory _avsDirectory,
         IRegistryCoordinator _registryCoordinator,
         IDelegationManager _delegationManager
-    ) StakeRegistryStorage(_registryCoordinator, _delegationManager) {}
+    )
+        StakeRegistryStorage(
+            _avsDirectory,
+            _registryCoordinator,
+            _delegationManager
+        )
+    {}
 
     /*******************************************************************************
                       EXTERNAL FUNCTIONS - REGISTRY COORDINATOR
@@ -177,18 +184,21 @@ contract StakeRegistry is StakeRegistryStorage {
             /// TODO: Check AVSDirectory for operatorSetId to see the operator deregistered directly on the AVSDirectory
             /// Conditional correctly handles setting them to 0 for an accurate stake delta and quorumsToRemove
             /// bubbles up to the other reigstrys via registry coordinator
-            bool operatorDeregistered;
+            bool operatorRegistered;
             // Convert quorumNumber to operatorSetId
             uint32 operatorSetId = uint32(quorumNumber);
 
             // Get the AVSDirectory address from the RegistryCoordinator
-            address avsDirectoryAddress;
-            //  = registryCoordinator.getAVSDirectory();
-
             // Query the AVSDirectory to check if the operator is deregistered
-            // operatorDeregistered = AVSDirectory(avsDirectoryAddress)
-            // .isOperatorDeregistered(operatorSetId, operator);
-            if (!hasMinimumStake || operatorDeregistered) {
+            /// TODO: Need to have a more accurate mock for AVSDirectory
+            operatorRegistered = avsDirectory.isMember(
+                address(
+                    IRegistryCoordinator(registryCoordinator).serviceManager()
+                ),
+                operator,
+                operatorSetId
+            );
+            if (!hasMinimumStake || !operatorRegistered) {
                 stakeWeight = 0;
                 quorumsToRemove = uint192(quorumsToRemove.setBit(quorumNumber));
             }

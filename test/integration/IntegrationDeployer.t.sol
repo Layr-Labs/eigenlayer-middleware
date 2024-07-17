@@ -395,6 +395,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         cheats.stopPrank();
 
         StakeRegistry stakeRegistryImplementation = new StakeRegistry(
+            IAVSDirectory(avsDirectory),
             IRegistryCoordinator(registryCoordinator),
             IDelegationManager(delegationManager)
         );

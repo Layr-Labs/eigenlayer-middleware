@@ -253,6 +253,7 @@ contract MockAVSDeployer is Test {
         cheats.startPrank(proxyAdminOwner);
 
         stakeRegistryImplementation = new StakeRegistryHarness(
+            IAVSDirectory(avsDirectory),
             IRegistryCoordinator(registryCoordinator),
             delegationMock
         );
