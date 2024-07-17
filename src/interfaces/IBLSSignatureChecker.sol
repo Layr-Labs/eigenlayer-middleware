@@ -42,13 +42,16 @@ interface IBLSSignatureChecker {
     // EVENTS
 
     /// @notice Emitted when `staleStakesForbiddenUpdate` is set
-    event StaleStakesForbiddenUpdate(bool value);   
-    
+    event StaleStakesForbiddenUpdate(bool value);
+
     // CONSTANTS & IMMUTABLES
 
     function registryCoordinator() external view returns (IRegistryCoordinator);
+
     function stakeRegistry() external view returns (IStakeRegistry);
+
     function blsApkRegistry() external view returns (IBLSApkRegistry);
+
     function delegation() external view returns (IDelegationManager);
 
     /**
@@ -59,24 +62,17 @@ interface IBLSSignatureChecker {
      * The thesis of this procedure entails:
      * - getting the aggregated pubkey of all registered nodes at the time of pre-commit by the
      * disperser (represented by apk in the parameters),
-     * - subtracting the pubkeys of all the signers not in the quorum (nonSignerPubkeys) and storing 
+     * - subtracting the pubkeys of all the signers not in the quorum (nonSignerPubkeys) and storing
      * the output in apk to get aggregated pubkey of all operators that are part of quorum.
      * - use this aggregated pubkey to verify the aggregated signature under BLS scheme.
-     * 
+     *
      * @dev Before signature verification, the function verifies operator stake information.  This includes ensuring that the provided `referenceBlockNumber`
      * is correct, i.e., ensure that the stake returned from the specified block number is recent enough and that the stake is either the most recent update
      * for the total stake (or the operator) or latest before the referenceBlockNumber.
      */
     function checkSignatures(
-        bytes32 msgHash, 
-        bytes calldata quorumNumbers,
-        uint32 referenceBlockNumber, 
+        bytes32 msgHash,
+        uint32 referenceBlockNumber,
         NonSignerStakesAndSignature memory nonSignerStakesAndSignature
-    ) 
-        external 
-        view
-        returns (
-            QuorumStakeTotals memory,
-            bytes32
-        );
+    ) external view returns (QuorumStakeTotals memory, bytes32);
 }
