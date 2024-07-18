@@ -1135,4 +1135,15 @@ contract RegistryCoordinator is
     {
         return OwnableUpgradeable.owner();
     }
+
+    function _migrateOperators(
+        address[][] memory operators,
+        uint32[] memory operatorSets
+    ) internal {
+        /// For migration to be correct
+        /// 1. operator sets length must match total quorums
+        /// 2. for each quorum operaotr list length must match value in index registry
+        /// 3. operator list must not contain any duplicates
+        /// We won't assess if their stake has gone below the minimum threshold stake
+    }
 }
