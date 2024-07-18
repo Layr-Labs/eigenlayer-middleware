@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {ISocketUpdater} from "./interfaces/ISocketUpdater.sol";
 import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
@@ -1150,5 +1151,26 @@ contract RegistryCoordinator is
         /// Step 2: Call index registry getOperatorListAtBlockNumber **for quorum** at current block height
         /// Step 3: Convert to address list (confirm guarentees of function for no duplicates)
         /// Step 4: Migrate to operator set for that quorum
+
+        address avsDirectory = serviceManager.avsDirectory();
+
+        for (uint8 i = 0; i < quorumCount; i++) {
+            bytes32[] memory operatorIds = indexRegistry
+                .getOperatorListAtBlockNumber(i, uint32(block.number));
+            address[] memory operatorAddresses = new address[](
+                operatorIds.length
+            );
+
+            for (uint256 j = 0; j < operatorIds.length; j++) {
+                operatorAddresses[j] = blsApkRegistry.getOperatorFromPubkeyHash(
+                    operatorIds[j]
+                );
+                /// TODO: add this function to the avs directory once
+                // IAVSDirectory(avsDirectory).migrateOperatorToOperatorSet(
+                //     i,
+                //     operatorAddresses
+                // );
+            }
+        }
     }
 }
