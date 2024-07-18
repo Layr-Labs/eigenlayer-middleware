@@ -848,6 +848,9 @@ contract RegistryCoordinator is
 
         // Initialize the quorum here and in each registry
         _setOperatorSetParams(quorumNumber, operatorSetParams);
+        // Create an operator set in the AVS Directory for this quorum
+        /// TODO: This needs to be merged in to the release branch
+        // IAVSDirectory(avsDirectory).createOperatorSet(quorumNumber);
         stakeRegistry.initializeQuorum(
             quorumNumber,
             minimumStake,
@@ -1136,14 +1139,16 @@ contract RegistryCoordinator is
         return OwnableUpgradeable.owner();
     }
 
-    function _migrateOperators(
-        address[][] memory operators,
-        uint32[] memory operatorSets
-    ) internal {
-        /// For migration to be correct
+    function _migrateOperatorsToOperatorSets() internal {
+        /// For migration to be correct, the following must be true
         /// 1. operator sets length must match total quorums
         /// 2. for each quorum operaotr list length must match value in index registry
         /// 3. operator list must not contain any duplicates
-        /// We won't assess if their stake has gone below the minimum threshold stake
+        /// We won't assess if their stake has gone below the threshold stake
+        ///
+        /// Step 1: Iterate through quorum Numbers
+        /// Step 2: Call index registry getOperatorListAtBlockNumber **for quorum** at current block height
+        /// Step 3: Convert to address list (confirm guarentees of function for no duplicates)
+        /// Step 4: Migrate to operator set for that quorum
     }
 }
