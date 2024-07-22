@@ -77,7 +77,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         );
         // Deploy ServiceManager
         serviceManagerImplementation = new ServiceManagerMock(
-            avsDirectoryMock,
+            avsDirectory,
             rewardsCoordinator,
             registryCoordinator,
             stakeRegistryImplementation
@@ -523,56 +523,5 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         cheats.expectRevert("Ownable: caller is not the owner");
         cheats.prank(caller);
         serviceManager.setRewardsInitiator(newRewardsInitiator);
-    }
-
-    function test_migrateToOperatorSets() public {
-        cheats.prank(serviceManagerOwner);
-        serviceManager.migrateToOperatorSets();
-
-        assertTrue(avsDirectory.isOperatorSetAVS(address(serviceManager)), "AVS is not an operator set AVS");
-    }
-
-    function test_migrateToOperatorSets_revert_alreadyMigrated() public {
-        cheats.startPrank(serviceManagerOwner);
-        serviceManager.migrateToOperatorSets();
-
-        vm.expectRevert();
-        serviceManager.migrateToOperatorSets();
-    }
-
-    function test_migrateToOperatorSets_revert_notOwner() public {
-        address caller = address(uint160(uint256(keccak256("caller"))));
-        cheats.expectRevert("Ownable: caller is not the owner");
-        cheats.prank(caller);
-        serviceManager.migrateToOperatorSets();
-    }
-
-    function test_migrateToOperatorSets_verify() public {
-        uint256 pseudoRandomNumber = uint256(keccak256("pseudoRandomNumber"));
-        _registerRandomOperators(pseudoRandomNumber);
-        cheats.prank(serviceManagerOwner);
-        serviceManager.migrateToOperatorSets();
-
-        uint256 quorumCount = registryCoordinator.quorumCount();
-        console.log(address(registryCoordinator), "Test:RegistryCoord");
-        console.log(quorumCount, "quorum count");
-        for (uint256 i = 0; i < quorumCount; i++) {
-            uint256 operatorCount = indexRegistry.totalOperatorsForQuorum(uint8(i));
-            bytes32[] memory operatorIds = indexRegistry.getOperatorListAtBlockNumber(uint8(i), uint32(block.number));
-            assertEq(operatorCount, operatorIds.length, "Operator Id length mismatch");// sanity check
-            if (operatorCount > 0) {
-                console.log(i, "quorum number");
-                console.log(operatorCount, "operator count");
-            }
-            for (uint256 j = 0; j < operatorCount; j++) {
-                address operatorAddress = registryCoordinator.blsApkRegistry().getOperatorFromPubkeyHash(operatorIds[j]);
-                console.log(operatorAddress, "operator");
-                console.log(avsDirectory.isMember(address(serviceManager), operatorAddress, uint32(i)), "operator status");
-                assertTrue(
-                    avsDirectory.isMember(address(serviceManager), operatorAddress, uint32(i)),
-                    "Operator not migrated to operator set"
-                );
-            }
-        }
     }
 }

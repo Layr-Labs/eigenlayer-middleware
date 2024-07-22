@@ -209,6 +209,16 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
                 // Insert into sorted array of all operators
                 allOperators = mergeSortedArrays(allOperators, operators);
             }
+            address[] memory filteredOperators = new address[](allOperators.length);
+            uint256 count = 0;
+            for (uint256 i = 0; i < allOperators.length; i++) {
+                if (allOperators[i] != address(0)) {
+                    filteredOperators[count++] = allOperators[i];
+                }
+            }
+            // Resize array to remove empty slots
+            assembly { mstore(filteredOperators, count) }
+            allOperators = filteredOperators;
 
             operatorSetIds = new uint32[][](allOperators.length);
             // Loop through each unique operator to get the quorums they are registered for
@@ -232,12 +242,6 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         AVSDirectory(address(_avsDirectory)).migrateOperatorsToOperatorSets(allOperators, operatorSetIds);
     }
 
-    /**
-     * @notice Merges two sorted arrays of addresses into a single sorted array without duplicates
-     * @param left The first sorted array
-     * @param right The second sorted array
-     * @return The merged sorted array
-     */
     function mergeSortedArrays(address[] memory left, address[] memory right) internal pure returns (address[] memory) {
         uint256 leftLength = left.length;
         uint256 rightLength = right.length;

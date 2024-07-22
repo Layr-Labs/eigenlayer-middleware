@@ -243,7 +243,7 @@ contract MockAVSDeployer is Test {
         );
 
         serviceManagerImplementation = new ServiceManagerMock(
-            avsDirectoryMock,
+            avsDirectory,
             IRewardsCoordinator(address(rewardsCoordinatorMock)),
             registryCoordinator,
             stakeRegistry
