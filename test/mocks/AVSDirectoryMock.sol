@@ -1,9 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
+import {console} from "forge-std/Test.sol";
 import {IAVSDirectory, ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 contract AVSDirectoryMock is IAVSDirectory {
+    mapping(address => bool) public isOperatorSetAVS;
+    mapping(address => mapping(uint32 => bool)) public avsOperatorSets;
+    mapping(address => mapping(address => mapping(uint32 => bool))) public avsOperatorStatusOperatorSet;
+    mapping(address => mapping(address => IAVSDirectory.OperatorAVSRegistrationStatus)) public avsOperatorStatus;
+
     function registerOperatorToOperatorSets(
         address operator,
         uint32[] calldata operatorSetIds,
@@ -22,8 +28,10 @@ contract AVSDirectoryMock is IAVSDirectory {
 
     function registerOperatorToAVS(
         address operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external {}
+        ISignatureUtils.SignatureWithSaltAndExpiry memory 
+    ) external {
+        avsOperatorStatus[msg.sender][operator] = IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED;
+    }
 
     function deregisterOperatorFromAVS(address operator) external {}
 
@@ -51,7 +59,9 @@ contract AVSDirectoryMock is IAVSDirectory {
         address avs,
         address operator,
         uint32 operatorSetId
-    ) external view returns (bool) {}
+    ) external view returns (bool) {
+        return avsOperatorStatusOperatorSet[avs][operator][operatorSetId];
+    }
 
     function calculateOperatorAVSRegistrationDigestHash(
         address operator,
@@ -81,7 +91,9 @@ contract AVSDirectoryMock is IAVSDirectory {
         returns (bytes32)
     {}
 
-    function becomeOperatorSetAVS() external {}
+    function becomeOperatorSetAVS() external {
+        isOperatorSetAVS[msg.sender] = true;
+    }
 
     function calculateOperatorSetForceDeregistrationTypehash(
         address avs,
@@ -90,7 +102,12 @@ contract AVSDirectoryMock is IAVSDirectory {
         uint256 expiry
     ) external view returns (bytes32) {}
 
-    function createOperatorSets(uint32[] calldata operatorSetIds) external {}
+    function createOperatorSets(uint32[] calldata operatorSetIds) external {
+        require(isOperatorSetAVS[msg.sender], "AVS is not an operator set AVS");
+        for (uint256 i = 0; i < operatorSetIds.length; i++) {
+            avsOperatorSets[msg.sender][operatorSetIds[i]] = true;
+        }
+    }
 
     function forceDeregisterFromOperatorSets(
         address avs,
@@ -100,7 +117,26 @@ contract AVSDirectoryMock is IAVSDirectory {
     function migrateOperatorsToOperatorSets(
         address[] calldata operators,
         uint32[][] calldata operatorSetIds
-    ) external {}
+    ) external {
+        console.log("HERE");
+        require(isOperatorSetAVS[msg.sender], "AVS is not registered as an operator set AVS");
+        require(operators.length == operatorSetIds.length, "Mismatched input lengths");
+
+        for (uint256 i = 0; i < operators.length; i++) {
+            address operator = operators[i];
+            for (uint256 j = 0; j < operatorSetIds[i].length;j++){
+                // Check that the operatorSetId exists for the AVS
+                require(
+                    avsOperatorSets[msg.sender][operatorSetIds[i][j]],
+                    "Operator set ID does not exist for the AVS"
+                );
+                console.log(operator, "AVSDirectory:operator");
+
+                // Enable the operator for the operator set
+                avsOperatorStatusOperatorSet[msg.sender][operator][operatorSetIds[i][j]] = true;
+            }
+        }
+    }
 
     function forceDeregisterFromOperatorSets(
         address operator,

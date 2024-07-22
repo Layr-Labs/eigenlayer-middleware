@@ -7,6 +7,7 @@ import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSD
 import {AVSDirectory} from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
+import {console} from "forge-std/Test.sol";
 import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
@@ -140,28 +141,138 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _migrateToOperatorSets();
     }
 
+    /**
+     * @notice Merges two sorted arrays using the merge sort algorithm
+     * @param left The first sorted array
+     * @param right The second sorted array
+     * @return The merged sorted array
+     */
+    function mergeSortedArrays(uint256[] memory left, uint256[] memory right) internal pure returns (uint256[] memory) {
+        uint256 leftLength = left.length;
+        uint256 rightLength = right.length;
+        uint256[] memory merged = new uint256[](leftLength + rightLength);
+
+        uint256 i = 0; // Index for left array
+        uint256 j = 0; // Index for right array
+        uint256 k = 0; // Index for merged array
+
+        // Merge the two arrays into the merged array
+        while (i < leftLength && j < rightLength) {
+            if (left[i] <= right[j]) {
+                merged[k] = left[i];
+                i++;
+            } else {
+                merged[k] = right[j];
+                j++;
+            }
+            k++;
+        }
+
+        // Copy remaining elements of left, if any
+        while (i < leftLength) {
+            merged[k] = left[i];
+            i++;
+            k++;
+        }
+
+        // Copy remaining elements of right, if any
+        while (j < rightLength) {
+            merged[k] = right[j];
+            j++;
+            k++;
+        }
+
+        return merged;
+    }
+
     function _migrateToOperatorSets() internal {
         // Initiate the migration process 
         _avsDirectory.becomeOperatorSetAVS();
         uint256 quorumCount = _registryCoordinator.quorumCount();
-        // Step 1: Iterate through quorum numbers
+        console.log(address(_registryCoordinator), "ServiceManager:RegistryCoord");
+        console.log(quorumCount, "ServiceManager: quorumCount");
+
+        address[] memory allOperators = new address[](0);
+        uint32[] memory operatorSetIdsToCreate = new uint32[](quorumCount);
+        uint32[][] memory operatorSetIds;
+
+        // Step 1: Iterate through quorum numbers and get a list of unique operators
         for (uint8 quorumNumber = 0; quorumNumber < quorumCount; quorumNumber++) {
             // Step 2: Get operator list for quorum at current block
             bytes32[] memory operatorIds = _registryCoordinator.indexRegistry().getOperatorListAtBlockNumber(quorumNumber, uint32(block.number));
         
-            // Step 3: Convert to address list
+            // Step 3: Convert to address list and maintain a sorted array of operators
             address[] memory operators = new address[](operatorIds.length);
             for (uint256 i = 0; i < operatorIds.length; i++) {
                 operators[i] = _registryCoordinator.blsApkRegistry().getOperatorFromPubkeyHash(operatorIds[i]);
+                console.log(operators[i], "ServiceManager: operator");
+                // Insert into sorted array of all operators
+                allOperators = mergeSortedArrays(allOperators, operators);
             }
-            // Step 4: Migrate to operator set for this quorum
-            uint32[][] memory operatorSetIds = new uint32[][](1);
-            operatorSetIds[0] = new uint32[](1);
-            operatorSetIds[0][0] = quorumNumber;
-            AVSDirectory(address(_avsDirectory)).createOperatorSets(operatorSetIds[0]);
-            AVSDirectory(address(_avsDirectory)).migrateOperatorsToOperatorSets(operators, operatorSetIds);
+
+            operatorSetIds = new uint32[][](allOperators.length);
+            // Loop through each unique operator to get the quorums they are registered for
+            for (uint256 i = 0; i < allOperators.length; i++) {
+                address operator = allOperators[i];
+                bytes32 operatorId = _registryCoordinator.getOperatorId(operator);
+                uint192 quorumsBitmap = _registryCoordinator.getCurrentQuorumBitmap(operatorId);
+                bytes memory quorumBytesArray = BitmapUtils.bitmapToBytesArray(quorumsBitmap);
+                uint32[] memory quorums = new uint32[](quorumBytesArray.length);
+                for (uint256 j = 0; j < quorumBytesArray.length; j++) {
+                    quorums[j] = uint32(uint8(quorumBytesArray[j]));
+                }
+                operatorSetIds[i] = quorums;
+            }
+
+            operatorSetIdsToCreate[quorumNumber] = uint32(quorumNumber);
         }
-    
+
+        // Step 4: Migrate to operator set for this quorum
+        AVSDirectory(address(_avsDirectory)).createOperatorSets(operatorSetIdsToCreate);
+        AVSDirectory(address(_avsDirectory)).migrateOperatorsToOperatorSets(allOperators, operatorSetIds);
+    }
+
+    /**
+     * @notice Merges two sorted arrays of addresses into a single sorted array without duplicates
+     * @param left The first sorted array
+     * @param right The second sorted array
+     * @return The merged sorted array
+     */
+    function mergeSortedArrays(address[] memory left, address[] memory right) internal pure returns (address[] memory) {
+        uint256 leftLength = left.length;
+        uint256 rightLength = right.length;
+        address[] memory merged = new address[](leftLength + rightLength);
+
+        uint256 i = 0; // Index for left array
+        uint256 j = 0; // Index for right array
+        uint256 k = 0; // Index for merged array
+
+        // Merge the two arrays into the merged array
+        while (i < leftLength && j < rightLength) {
+            if (left[i] < right[j]) {
+                merged[k++] = left[i++];
+            } else if (left[i] > right[j]) {
+                merged[k++] = right[j++];
+            } else {
+                merged[k++] = left[i++];
+                j++;
+            }
+        }
+
+        // Copy remaining elements of left, if any
+        while (i < leftLength) {
+            merged[k++] = left[i++];
+        }
+
+        // Copy remaining elements of right, if any
+        while (j < rightLength) {
+            merged[k++] = right[j++];
+        }
+
+        // Resize the merged array to remove unused space
+        assembly { mstore(merged, k) }
+
+        return merged;
     }
 
     function _setRewardsInitiator(address newRewardsInitiator) internal {
