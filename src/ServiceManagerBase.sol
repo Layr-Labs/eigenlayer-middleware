@@ -141,6 +141,8 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     }
 
     function _migrateToOperatorSets() internal {
+        // Initiate the migration process 
+        _avsDirectory.becomeOperatorSetAVS();
         uint256 quorumCount = _registryCoordinator.quorumCount();
         // Step 1: Iterate through quorum numbers
         for (uint8 quorumNumber = 0; quorumNumber < quorumCount; quorumNumber++) {
@@ -156,11 +158,10 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
             uint32[][] memory operatorSetIds = new uint32[][](1);
             operatorSetIds[0] = new uint32[](1);
             operatorSetIds[0][0] = quorumNumber;
+            AVSDirectory(address(_avsDirectory)).createOperatorSets(operatorSetIds[0]);
             AVSDirectory(address(_avsDirectory)).migrateOperatorsToOperatorSets(operators, operatorSetIds);
         }
     
-        // After migration, set this AVS as an operator set AVS
-        _avsDirectory.becomeOperatorSetAVS();
     }
 
     function _setRewardsInitiator(address newRewardsInitiator) internal {
