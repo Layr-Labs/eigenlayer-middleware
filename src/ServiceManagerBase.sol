@@ -4,6 +4,7 @@ pragma solidity ^0.8.12;
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {AVSDirectory} from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
@@ -133,6 +134,33 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      */
     function setRewardsInitiator(address newRewardsInitiator) external onlyOwner {
         _setRewardsInitiator(newRewardsInitiator);
+    }
+
+    function migrateToOperatorSets() external onlyOwner {
+        _migrateToOperatorSets();
+    }
+
+    function _migrateToOperatorSets() internal {
+        uint256 quorumCount = _registryCoordinator.quorumCount();
+        // Step 1: Iterate through quorum numbers
+        for (uint8 quorumNumber = 0; quorumNumber < quorumCount; quorumNumber++) {
+            // Step 2: Get operator list for quorum at current block
+            bytes32[] memory operatorIds = _registryCoordinator.indexRegistry().getOperatorListAtBlockNumber(quorumNumber, uint32(block.number));
+        
+            // Step 3: Convert to address list
+            address[] memory operators = new address[](operatorIds.length);
+            for (uint256 i = 0; i < operatorIds.length; i++) {
+                operators[i] = _registryCoordinator.blsApkRegistry().getOperatorFromPubkeyHash(operatorIds[i]);
+            }
+            // Step 4: Migrate to operator set for this quorum
+            uint32[][] memory operatorSetIds = new uint32[][](1);
+            operatorSetIds[0] = new uint32[](1);
+            operatorSetIds[0][0] = quorumNumber;
+            AVSDirectory(address(_avsDirectory)).migrateOperatorsToOperatorSets(operators, operatorSetIds);
+        }
+    
+        // After migration, set this AVS as an operator set AVS
+        _avsDirectory.becomeOperatorSetAVS();
     }
 
     function _setRewardsInitiator(address newRewardsInitiator) internal {
