@@ -22,6 +22,13 @@ import {EIP712} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.so
 import {Pausable} from "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
 import {RegistryCoordinatorStorage} from "./RegistryCoordinatorStorage.sol";
 
+interface IServiceManagerMigration {
+    function migrateOperatorToOperatorSet(
+        uint32 operatorSetId,
+        address[] memory operators
+    ) external;
+}
+
 /**
  * @title A `RegistryCoordinator` that has three registries:
  *      1) a `StakeRegistry` that keeps track of operators' stakes
@@ -1165,11 +1172,9 @@ contract RegistryCoordinator is
                 operatorAddresses[j] = blsApkRegistry.getOperatorFromPubkeyHash(
                     operatorIds[j]
                 );
-                /// TODO: add this function to the avs directory once
-                // IAVSDirectory(avsDirectory).migrateOperatorToOperatorSet(
-                //     i,
-                //     operatorAddresses
-                // );
+                /// TODO: This function must be implemented on the service manager that is going to be migrated
+                IServiceManagerMigration(address(serviceManager))
+                    .migrateOperatorToOperatorSet(i, operatorAddresses);
             }
         }
     }

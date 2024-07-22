@@ -106,6 +106,8 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
 
         nextQuorum++;
 
+        /// TODO: Need to add the operator set to AVS Directory
+
         cheats.prank(address(registryCoordinator));
         stakeRegistry.initializeQuorum(
             quorumNumber,
@@ -377,6 +379,8 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
 
         // registerOperator
         cheats.prank(address(registryCoordinator));
+        /// TODO: Since this is happening outside of the Registry Coordinator the operatorSet
+        /// Isn't being created by the AVSDirectory
         stakeRegistry.registerOperator(
             registerSetup.operator,
             registerSetup.operatorId,
