@@ -210,17 +210,6 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
     }
 
     function test_migrateToOperatorSets_verify() public {
-        console.log(serviceManager.avsDirectory(), "service manager avs directory");
-        console.log(address(avsDirectory), "actual avs directory");
-        console.log(address(avsDirectoryMock), "mock avs directory");
-
-
-        vm.prank(proxyAdmin.owner());
-        proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(avsDirectory))),
-            address(avsDirectoryMock)
-        );
-
         uint256 pseudoRandomNumber = uint256(keccak256("pseudoRandomNumber"));
         _registerRandomOperators(pseudoRandomNumber);
 
@@ -231,28 +220,13 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
         );
 
         uint256 quorumCount = registryCoordinator.quorumCount();
-        console.log(address(registryCoordinator), "Test:RegistryCoord");
-        console.log(quorumCount, "quorum count");
         for (uint256 i = 0; i < quorumCount; i++) {
             uint256 operatorCount = indexRegistry.totalOperatorsForQuorum(uint8(i));
             bytes32[] memory operatorIds = indexRegistry.getOperatorListAtBlockNumber(uint8(i), uint32(block.number));
             assertEq(operatorCount, operatorIds.length, "Operator Id length mismatch");// sanity check
-            if (operatorCount > 0) {
-                console.log(i, "quorum number");
-                console.log(operatorCount, "operator count");
-            }
             for (uint256 j = 0; j < operatorCount; j++) {
                 address operatorAddress = registryCoordinator.blsApkRegistry().getOperatorFromPubkeyHash(operatorIds[j]);
-                console.log(operatorAddress, "operator");
-                console.log(uint8(avsDirectory.avsOperatorStatus(address(serviceManager), operatorAddress)), "status before ");
-
                 AVSDirectoryHarness(address(avsDirectory)).setAvsOperatorStatus(address(serviceManager), operatorAddress, IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED);
-                console.log(uint8(avsDirectory.avsOperatorStatus(address(serviceManager), operatorAddress)), "status after ");
-                // console.log(avsDirectory.isMember(address(serviceManager), operatorAddress, uint32(i)), "operator status");
-                // assertTrue(
-                //     avsDirectory.isMember(address(serviceManager), operatorAddress, uint32(i)),
-                //     "Operator not migrated to operator set"
-                // );
             }
         }
         cheats.prank(serviceManagerOwner);
