@@ -79,7 +79,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         serviceManagerImplementation = new ServiceManagerMock(
             avsDirectory,
             rewardsCoordinator,
-            registryCoordinator,
+            registryCoordinatorImplementation,
             stakeRegistryImplementation
         );
 
