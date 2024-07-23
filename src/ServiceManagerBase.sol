@@ -188,8 +188,6 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         // Initiate the migration process 
         _avsDirectory.becomeOperatorSetAVS();
         uint256 quorumCount = _registryCoordinator.quorumCount();
-        console.log(address(_registryCoordinator), "ServiceManager:RegistryCoord");
-        console.log(quorumCount, "ServiceManager: quorumCount");
 
         address[] memory allOperators = new address[](0);
         uint32[] memory operatorSetIdsToCreate = new uint32[](quorumCount);
@@ -204,7 +202,6 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
             address[] memory operators = new address[](operatorIds.length);
             for (uint256 i = 0; i < operatorIds.length; i++) {
                 operators[i] = _registryCoordinator.blsApkRegistry().getOperatorFromPubkeyHash(operatorIds[i]);
-                console.log(operators[i], "ServiceManager: operator");
                 // Insert into sorted array of all operators
                 allOperators = mergeSortedArrays(allOperators, operators);
             }
