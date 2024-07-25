@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {AVSDirectory} from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import {ISocketUpdater} from "./interfaces/ISocketUpdater.sol";
 import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
@@ -732,6 +733,14 @@ contract RegistryCoordinator is
         stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
         indexRegistry.initializeQuorum(quorumNumber);
         blsApkRegistry.initializeQuorum(quorumNumber);
+        // Check if the AVS has migrated to operator sets
+        AVSDirectory avsDirectory = AVSDirectory(serviceManager.avsDirectory());
+        if (avsDirectory.isOperatorSetAVS(address(serviceManager))){
+            // Create an operator set for the new quorum
+            uint32[] memory operatorSetIds = new uint32[](1);
+            operatorSetIds[0] = uint32(quorumNumber);
+            avsDirectory.createOperatorSets(operatorSetIds);
+        }
     }
 
     /**
