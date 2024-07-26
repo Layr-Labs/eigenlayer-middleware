@@ -377,6 +377,18 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         ejectionManager.setEjector(address(0), true);
     }
 
+    function test_Overflow_Regression() public {
+        cheats.prank(registryCoordinatorOwner);
+        ejectionManager.setQuorumEjectionParams(0, IEjectionManager.QuorumEjectionParams({
+            rateLimitWindow: 7 days,
+            ejectableStakePercent: 9999
+        }));
+
+        stakeRegistry.recordTotalStakeUpdate(1, 2_000_000_000 * 1 ether);
+
+        ejectionManager.amountEjectableForQuorum(1);
+    }
+
     function _registerOperaters(uint8 numOperators, uint96 stake) internal {
         for (uint i = 0; i < numOperators; i++) {
             BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(i)));
