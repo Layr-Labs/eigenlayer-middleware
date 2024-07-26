@@ -15,7 +15,10 @@ import {IRewardsCoordinator} from
 import {Quorum} from "../interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
 import {ECDSAStakeRegistry} from "../unaudited/ECDSAStakeRegistry.sol";
 
-abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable {
+abstract contract ECDSAServiceManagerBase is
+    IServiceManager,
+    OwnableUpgradeable
+{
     /// @notice Address of the stake registry contract, which manages registration and stake recording.
     address public immutable stakeRegistry;
 
@@ -174,14 +177,18 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
             rewardsSubmissions[i].token.transferFrom(
                 msg.sender, address(this), rewardsSubmissions[i].amount
             );
-            uint256 allowance =
-                rewardsSubmissions[i].token.allowance(address(this), rewardsCoordinator);
+            uint256 allowance = rewardsSubmissions[i].token.allowance(
+                address(this),
+                rewardsCoordinator
+            );
             rewardsSubmissions[i].token.approve(
                 rewardsCoordinator, rewardsSubmissions[i].amount + allowance
             );
         }
 
-        IRewardsCoordinator(rewardsCoordinator).createAVSRewardsSubmission(rewardsSubmissions);
+        IRewardsCoordinator(rewardsCoordinator).createAVSRewardsSubmission(
+            rewardsSubmissions
+        );
     }
 
     /**
@@ -220,7 +227,6 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
         uint256[] memory shares =
             IDelegationManager(delegationManager).getOperatorShares(_operator, strategies);
 
-        address[] memory activeStrategies = new address[](count);
         uint256 activeCount;
         for (uint256 i; i < count; i++) {
             if (shares[i] > 0) {
@@ -230,9 +236,11 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
 
         // Resize the array to fit only the active strategies
         address[] memory restakedStrategies = new address[](activeCount);
+        uint256 index;
         for (uint256 j = 0; j < count; j++) {
             if (shares[j] > 0) {
-                restakedStrategies[j] = activeStrategies[j];
+                restakedStrategies[index] = address(strategies[j]);
+                index++;
             }
         }
 
@@ -244,7 +252,9 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
      * @param newRewardsInitiator The new rewards initiator address.
      * @dev Only callable by the owner.
      */
-    function setRewardsInitiator(address newRewardsInitiator) external onlyOwner {
+    function setRewardsInitiator(
+        address newRewardsInitiator
+    ) external onlyOwner {
         _setRewardsInitiator(newRewardsInitiator);
     }
 
