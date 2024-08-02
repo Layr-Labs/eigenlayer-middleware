@@ -106,6 +106,9 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
 
         _rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
+    function createOperatorSets(uint32[] memory operatorSetIds) external onlyRegistryCoordinator{
+        _avsDirectory.createOperatorSets(operatorSetIds);
+    }
 
     /**
      * @notice Forwards a call to EigenLayer's AVSDirectory contract to confirm operator registration with the AVS

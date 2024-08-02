@@ -739,7 +739,7 @@ contract RegistryCoordinator is
             // Create an operator set for the new quorum
             uint32[] memory operatorSetIds = new uint32[](1);
             operatorSetIds[0] = uint32(quorumNumber);
-            avsDirectory.createOperatorSets(operatorSetIds);
+            serviceManager.createOperatorSets(operatorSetIds);
         }
     }
 

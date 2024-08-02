@@ -50,27 +50,26 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
         numQuorums = maxQuorumsToRegisterFor;
         _deployMockEigenLayerAndAVS();
 
+        serviceManagerImplementation = new ServiceManagerMock(
+            avsDirectory,
+            IRewardsCoordinator(address(rewardsCoordinatorMock)),
+            registryCoordinator,
+            stakeRegistry
+        );
         avsDirectoryHarness = new AVSDirectoryHarness(delegationMock);
-        // Deploy ServiceManager
+
         serviceManagerImplementation = new ServiceManagerMock(
             avsDirectory,
             rewardsCoordinatorMock,
             registryCoordinator,
             stakeRegistry
         );
-
-        serviceManager = ServiceManagerMock(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(serviceManagerImplementation),
-                    address(proxyAdmin),
-                    abi.encodeWithSelector(
-                        ServiceManagerMock.initialize.selector, msg.sender, msg.sender
-                    )
-                )
-            )
+        /// Needed to upgrade to a service manager that points to an AVS Directory that can track state
+        vm.prank(proxyAdmin.owner());
+        proxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(serviceManager))),
+            address(serviceManagerImplementation)
         );
-
 
         serviceManagerOwner = serviceManager.owner();
 
@@ -184,12 +183,8 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
             });
 
         assertFalse(avsDirectory.isOperatorSet(address(serviceManager), quorumNumber), "Operator set already existed");
-        // Call createQuorum functiono
-        /// TODO: Registry Coordinator points to AVSDirectoryMock and not the AVSDirectory itself so doesn't have accurate view of state
-        vm.mockCall(address(avsDirectory), abi.encodeWithSignature("isOperatorSetAVS(address)", address(registryCoordinator.serviceManager())), abi.encode(true));
-        vm.mockCall(address(avsDirectoryMock), abi.encodeWithSignature("isOperatorSetAVS(address)", address(registryCoordinator.serviceManager())), abi.encode(true));
-        // vm.mockCall(address(avsDirectory), abi.encodeWithSignature("isOperatorSetAVS(address)", address(serviceManagerMock)), abi.encode(true));
-        // vm.mockCall(address(avsDirectoryMock), abi.encodeWithSignature("isOperatorSetAVS(address)", address(serviceManagerMock)), abi.encode(true));
+        assertTrue(avsDirectory.isOperatorSet(address(serviceManager), quorumNumber-1), "Operator set doesn't already existed");
+
         vm.prank(registryCoordinator.owner());
         registryCoordinator.createQuorum(operatorSetParams, minimumStake, strategyParams);
 
