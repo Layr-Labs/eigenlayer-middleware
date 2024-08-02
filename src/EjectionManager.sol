@@ -150,7 +150,7 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
      */
     function amountEjectableForQuorum(uint8 _quorumNumber) public view returns (uint256) {
         uint256 cutoffTime = block.timestamp - quorumEjectionParams[_quorumNumber].rateLimitWindow;
-        uint256 totalEjectable = quorumEjectionParams[_quorumNumber].ejectableStakePercent * stakeRegistry.getCurrentTotalStake(_quorumNumber) / BIPS_DENOMINATOR;
+        uint256 totalEjectable = uint256(quorumEjectionParams[_quorumNumber].ejectableStakePercent) * uint256(stakeRegistry.getCurrentTotalStake(_quorumNumber)) / uint256(BIPS_DENOMINATOR);
         uint256 totalEjected;
         uint256 i;
         if (stakeEjectedForQuorum[_quorumNumber].length == 0) {
