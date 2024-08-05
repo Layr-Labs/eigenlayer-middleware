@@ -140,50 +140,6 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _migrateToOperatorSets();
     }
 
-    /**
-     * @notice Merges two sorted arrays using the merge sort algorithm
-     * @param left The first sorted array
-     * @param right The second sorted array
-     * @return The merged sorted array
-     */
-    function mergeSortedArrays(uint256[] memory left, uint256[] memory right) internal pure returns (uint256[] memory) {
-        uint256 leftLength = left.length;
-        uint256 rightLength = right.length;
-        uint256[] memory merged = new uint256[](leftLength + rightLength);
-
-        uint256 i = 0; // Index for left array
-        uint256 j = 0; // Index for right array
-        uint256 k = 0; // Index for merged array
-
-        // Merge the two arrays into the merged array
-        while (i < leftLength && j < rightLength) {
-            if (left[i] <= right[j]) {
-                merged[k] = left[i];
-                i++;
-            } else {
-                merged[k] = right[j];
-                j++;
-            }
-            k++;
-        }
-
-        // Copy remaining elements of left, if any
-        while (i < leftLength) {
-            merged[k] = left[i];
-            i++;
-            k++;
-        }
-
-        // Copy remaining elements of right, if any
-        while (j < rightLength) {
-            merged[k] = right[j];
-            j++;
-            k++;
-        }
-
-        return merged;
-    }
-
     function _migrateToOperatorSets() internal {
         // Initiate the migration process 
         _avsDirectory.becomeOperatorSetAVS();
@@ -211,7 +167,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
             for (uint256 i = 0; i < operatorIds.length; i++) {
                 operators[i] = _registryCoordinator.blsApkRegistry().getOperatorFromPubkeyHash(operatorIds[i]);
                 // Insert into sorted array of all operators
-                allOperators = mergeSortedArrays(allOperators, operators);
+                allOperators = _mergeSortedArrays(allOperators, operators);
             }
             address[] memory filteredOperators = new address[](allOperators.length);
             uint256 count = 0;
@@ -243,7 +199,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
 
     }
 
-    function mergeSortedArrays(address[] memory left, address[] memory right) internal pure returns (address[] memory) {
+    function _mergeSortedArrays(address[] memory left, address[] memory right) internal pure returns (address[] memory) {
         uint256 leftLength = left.length;
         uint256 rightLength = right.length;
         address[] memory merged = new address[](leftLength + rightLength);
