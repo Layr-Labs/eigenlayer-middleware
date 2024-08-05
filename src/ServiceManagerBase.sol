@@ -12,6 +12,7 @@ import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
+import {console} from "forge-std/Test.sol";
 
 /**
  * @title Minimal implementation of a ServiceManager-type contract.
@@ -180,21 +181,21 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
             assembly { mstore(filteredOperators, count) }
             allOperators = filteredOperators;
 
-            operatorSetIds = new uint32[][](allOperators.length);
-            // Loop through each unique operator to get the quorums they are registered for
-            for (uint256 i = 0; i < allOperators.length; i++) {
-                address operator = allOperators[i];
-                bytes32 operatorId = _registryCoordinator.getOperatorId(operator);
-                uint192 quorumsBitmap = _registryCoordinator.getCurrentQuorumBitmap(operatorId);
-                bytes memory quorumBytesArray = BitmapUtils.bitmapToBytesArray(quorumsBitmap);
-                uint32[] memory quorums = new uint32[](quorumBytesArray.length);
-                for (uint256 j = 0; j < quorumBytesArray.length; j++) {
-                    quorums[j] = uint32(uint8(quorumBytesArray[j]));
-                }
-                operatorSetIds[i] = quorums;
-            }
-
             operatorSetIdsToCreate[quorumNumber] = uint32(quorumNumber);
+        }
+
+        operatorSetIds = new uint32[][](allOperators.length);
+        // Loop through each unique operator to get the quorums they are registered for
+        for (uint256 i = 0; i < allOperators.length; i++) {
+            address operator = allOperators[i];
+            bytes32 operatorId = _registryCoordinator.getOperatorId(operator);
+            uint192 quorumsBitmap = _registryCoordinator.getCurrentQuorumBitmap(operatorId);
+            bytes memory quorumBytesArray = BitmapUtils.bitmapToBytesArray(quorumsBitmap);
+            uint32[] memory quorums = new uint32[](quorumBytesArray.length);
+            for (uint256 j = 0; j < quorumBytesArray.length; j++) {
+                quorums[j] = uint32(uint8(quorumBytesArray[j]));
+            }
+            operatorSetIds[i] = quorums;
         }
 
     }
