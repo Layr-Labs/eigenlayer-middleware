@@ -187,11 +187,19 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     function _migrateToOperatorSets() internal {
         // Initiate the migration process 
         _avsDirectory.becomeOperatorSetAVS();
+
+        (uint32[] memory operatorSetIdsToCreate, uint32[][] memory operatorSetIds, address[] memory allOperators) = getOperatorsToMigrate();
+
+        // Step 4: Migrate to operator set for this quorum
+        AVSDirectory(address(_avsDirectory)).createOperatorSets(operatorSetIdsToCreate);
+        AVSDirectory(address(_avsDirectory)).migrateOperatorsToOperatorSets(allOperators, operatorSetIds);
+    }
+
+    function getOperatorsToMigrate() public view returns (uint32[] memory operatorSetIdsToCreate, uint32[][] memory operatorSetIds, address[] memory allOperators) {
         uint256 quorumCount = _registryCoordinator.quorumCount();
 
-        address[] memory allOperators = new address[](0);
-        uint32[] memory operatorSetIdsToCreate = new uint32[](quorumCount);
-        uint32[][] memory operatorSetIds;
+        allOperators = new address[](0);
+        operatorSetIdsToCreate = new uint32[](quorumCount);
 
         // Step 1: Iterate through quorum numbers and get a list of unique operators
         for (uint8 quorumNumber = 0; quorumNumber < quorumCount; quorumNumber++) {
@@ -233,9 +241,6 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
             operatorSetIdsToCreate[quorumNumber] = uint32(quorumNumber);
         }
 
-        // Step 4: Migrate to operator set for this quorum
-        AVSDirectory(address(_avsDirectory)).createOperatorSets(operatorSetIdsToCreate);
-        AVSDirectory(address(_avsDirectory)).migrateOperatorsToOperatorSets(allOperators, operatorSetIds);
     }
 
     function mergeSortedArrays(address[] memory left, address[] memory right) internal pure returns (address[] memory) {
