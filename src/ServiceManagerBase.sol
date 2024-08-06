@@ -147,7 +147,6 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
 
         (uint32[] memory operatorSetIdsToCreate, uint32[][] memory operatorSetIds, address[] memory allOperators) = getOperatorsToMigrate();
 
-        // Step 4: Migrate to operator set for this quorum
         AVSDirectory(address(_avsDirectory)).createOperatorSets(operatorSetIdsToCreate);
         AVSDirectory(address(_avsDirectory)).migrateOperatorsToOperatorSets(allOperators, operatorSetIds);
     }
