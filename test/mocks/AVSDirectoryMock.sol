@@ -172,4 +172,8 @@ contract AVSDirectoryMock is IAVSDirectory {
 
     /// @notice The EIP-712 typehash for the OperatorSetRegistration struct used by the contract.
     function OPERATOR_SET_REGISTRATION_TYPEHASH() external view returns (bytes32) {}
+
+    function isOperatorSetAVS(address avs) external view returns (bool) {}
+
+    function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool){}
 } 

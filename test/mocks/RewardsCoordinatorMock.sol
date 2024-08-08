@@ -107,4 +107,6 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
         RewardType rewardType,
         uint16 commissionBips
     ) external returns (uint32) {}
+
+    function rewardOperatorSetForRange(OperatorSetRewardsSubmission[] calldata rewardsSubmissions) external{}
 }
