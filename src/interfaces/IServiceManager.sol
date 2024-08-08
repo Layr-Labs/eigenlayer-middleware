@@ -9,6 +9,8 @@ import {IServiceManagerUI} from "./IServiceManagerUI.sol";
  * @author Layr Labs, Inc.
  */
 interface IServiceManager is IServiceManagerUI {
+    /// @notice Temporary error for M2-> OperatorSets Migration
+    error MigrationAlreadyFinalized();
     /**
      * @notice Creates a new rewards submission to the EigenLayer RewardsCoordinator contract, to be split amongst the
      * set of stakers delegated to operators who are registered to this `avs`

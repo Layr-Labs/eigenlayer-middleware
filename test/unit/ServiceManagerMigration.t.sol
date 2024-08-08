@@ -237,8 +237,9 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
         cheats.startPrank(serviceManagerOwner);
         serviceManager.migrateOperatorSetIds(operatorSetsToCreate);
         serviceManager.migrateToOperatorSets(operatorSetIdsToMigrate, operators);
+        serviceManager.finalizeMigration();
 
-        // vm.expectRevert(); /// TODO: Now that it's not 1 step, we should have a way to signal completion
+        vm.expectRevert(); /// TODO: Now that it's not 1 step, we should have a way to signal completion
         serviceManager.migrateToOperatorSets(operatorSetIdsToMigrate, operators);
 
         cheats.stopPrank();

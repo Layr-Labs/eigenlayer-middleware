@@ -35,6 +35,8 @@ abstract contract ServiceManagerBaseStorage is IServiceManager, OwnableUpgradeab
     /// @notice The address of the entity that can initiate rewards
     address public rewardsInitiator;
 
+    bool public migrationFinalized;
+
     /// @notice Sets the (immutable) `_avsDirectory`, `_rewardsCoordinator`, `_registryCoordinator`, and `_stakeRegistry` addresses
     constructor(
         IAVSDirectory __avsDirectory,

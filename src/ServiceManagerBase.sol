@@ -142,7 +142,14 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     }
 
     function migrateToOperatorSets(uint32[][] memory operatorSetIds, address[] memory operators) external onlyOwner {
+        if (migrationFinalized){
+            revert MigrationAlreadyFinalized();
+        }
         _migrateToOperatorSets(operatorSetIds, operators);
+    }
+
+    function finalizeMigration() external onlyOwner{
+        migrationFinalized = true;
     }
 
     function _migrateCreateOperatorSetIds(uint32[] memory operatorSetIdsToCreate) internal {
