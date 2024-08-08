@@ -12,6 +12,7 @@ import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
+import {console} from "forge-std/Test.sol";
 
 /**
  * @title Minimal implementation of a ServiceManager-type contract.
@@ -143,58 +144,21 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _migrateToOperatorSets();
     }
 
-    /**
-     * @notice Merges two sorted arrays using the merge sort algorithm
-     * @param left The first sorted array
-     * @param right The second sorted array
-     * @return The merged sorted array
-     */
-    function mergeSortedArrays(uint256[] memory left, uint256[] memory right) internal pure returns (uint256[] memory) {
-        uint256 leftLength = left.length;
-        uint256 rightLength = right.length;
-        uint256[] memory merged = new uint256[](leftLength + rightLength);
-
-        uint256 i = 0; // Index for left array
-        uint256 j = 0; // Index for right array
-        uint256 k = 0; // Index for merged array
-
-        // Merge the two arrays into the merged array
-        while (i < leftLength && j < rightLength) {
-            if (left[i] <= right[j]) {
-                merged[k] = left[i];
-                i++;
-            } else {
-                merged[k] = right[j];
-                j++;
-            }
-            k++;
-        }
-
-        // Copy remaining elements of left, if any
-        while (i < leftLength) {
-            merged[k] = left[i];
-            i++;
-            k++;
-        }
-
-        // Copy remaining elements of right, if any
-        while (j < rightLength) {
-            merged[k] = right[j];
-            j++;
-            k++;
-        }
-
-        return merged;
-    }
-
     function _migrateToOperatorSets() internal {
         // Initiate the migration process 
         _avsDirectory.becomeOperatorSetAVS();
+
+        (uint32[] memory operatorSetIdsToCreate, uint32[][] memory operatorSetIds, address[] memory allOperators) = getOperatorsToMigrate();
+
+        AVSDirectory(address(_avsDirectory)).createOperatorSets(operatorSetIdsToCreate);
+        AVSDirectory(address(_avsDirectory)).migrateOperatorsToOperatorSets(allOperators, operatorSetIds);
+    }
+
+    function getOperatorsToMigrate() public view returns (uint32[] memory operatorSetIdsToCreate, uint32[][] memory operatorSetIds, address[] memory allOperators) {
         uint256 quorumCount = _registryCoordinator.quorumCount();
 
-        address[] memory allOperators = new address[](0);
-        uint32[] memory operatorSetIdsToCreate = new uint32[](quorumCount);
-        uint32[][] memory operatorSetIds;
+        allOperators = new address[](0);
+        operatorSetIdsToCreate = new uint32[](quorumCount);
 
         // Step 1: Iterate through quorum numbers and get a list of unique operators
         for (uint8 quorumNumber = 0; quorumNumber < quorumCount; quorumNumber++) {
@@ -206,7 +170,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
             for (uint256 i = 0; i < operatorIds.length; i++) {
                 operators[i] = _registryCoordinator.blsApkRegistry().getOperatorFromPubkeyHash(operatorIds[i]);
                 // Insert into sorted array of all operators
-                allOperators = mergeSortedArrays(allOperators, operators);
+                allOperators = _mergeSortedArrays(allOperators, operators);
             }
             address[] memory filteredOperators = new address[](allOperators.length);
             uint256 count = 0;
@@ -219,29 +183,26 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
             assembly { mstore(filteredOperators, count) }
             allOperators = filteredOperators;
 
-            operatorSetIds = new uint32[][](allOperators.length);
-            // Loop through each unique operator to get the quorums they are registered for
-            for (uint256 i = 0; i < allOperators.length; i++) {
-                address operator = allOperators[i];
-                bytes32 operatorId = _registryCoordinator.getOperatorId(operator);
-                uint192 quorumsBitmap = _registryCoordinator.getCurrentQuorumBitmap(operatorId);
-                bytes memory quorumBytesArray = BitmapUtils.bitmapToBytesArray(quorumsBitmap);
-                uint32[] memory quorums = new uint32[](quorumBytesArray.length);
-                for (uint256 j = 0; j < quorumBytesArray.length; j++) {
-                    quorums[j] = uint32(uint8(quorumBytesArray[j]));
-                }
-                operatorSetIds[i] = quorums;
-            }
-
             operatorSetIdsToCreate[quorumNumber] = uint32(quorumNumber);
         }
 
-        // Step 4: Migrate to operator set for this quorum
-        AVSDirectory(address(_avsDirectory)).createOperatorSets(operatorSetIdsToCreate);
-        AVSDirectory(address(_avsDirectory)).migrateOperatorsToOperatorSets(allOperators, operatorSetIds);
+        operatorSetIds = new uint32[][](allOperators.length);
+        // Loop through each unique operator to get the quorums they are registered for
+        for (uint256 i = 0; i < allOperators.length; i++) {
+            address operator = allOperators[i];
+            bytes32 operatorId = _registryCoordinator.getOperatorId(operator);
+            uint192 quorumsBitmap = _registryCoordinator.getCurrentQuorumBitmap(operatorId);
+            bytes memory quorumBytesArray = BitmapUtils.bitmapToBytesArray(quorumsBitmap);
+            uint32[] memory quorums = new uint32[](quorumBytesArray.length);
+            for (uint256 j = 0; j < quorumBytesArray.length; j++) {
+                quorums[j] = uint32(uint8(quorumBytesArray[j]));
+            }
+            operatorSetIds[i] = quorums;
+        }
+
     }
 
-    function mergeSortedArrays(address[] memory left, address[] memory right) internal pure returns (address[] memory) {
+    function _mergeSortedArrays(address[] memory left, address[] memory right) internal pure returns (address[] memory) {
         uint256 leftLength = left.length;
         uint256 rightLength = right.length;
         address[] memory merged = new address[](leftLength + rightLength);
