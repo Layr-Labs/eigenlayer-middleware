@@ -22,6 +22,8 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
     uint32 MAX_FUTURE_LENGTH = 28 days;
     uint32 GENESIS_REWARDS_TIMESTAMP = 1_712_188_800;
     uint256 MAX_REWARDS_AMOUNT = 1e38 - 1;
+    uint32 OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP = 0; /// TODO: what values should these have
+    uint32 OPERATOR_SET_MAX_RETROACTIVE_LENGTH = 0; /// TODO: What values these should have
     /// @notice Delay in timestamp before a posted root can be claimed against
     uint32 activationDelay = 7 days;
     /// @notice the commission for all operators across all avss
@@ -56,11 +58,14 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationMock,
             strategyManagerMock,
+            avsDirectoryMock,
             CALCULATION_INTERVAL_SECONDS,
             MAX_REWARDS_DURATION,
             MAX_RETROACTIVE_LENGTH,
             MAX_FUTURE_LENGTH,
-            GENESIS_REWARDS_TIMESTAMP
+            GENESIS_REWARDS_TIMESTAMP,
+            OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
+            OPERATOR_SET_MAX_RETROACTIVE_LENGTH
         );
 
         rewardsCoordinator = RewardsCoordinator(
