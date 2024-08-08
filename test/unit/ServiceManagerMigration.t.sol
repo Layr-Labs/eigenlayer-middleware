@@ -195,7 +195,7 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
     function test_migrateToOperatorSets() public {
         (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
         cheats.startPrank(serviceManagerOwner);
-        serviceManager.migrateOperatorSetIds(operatorSetsToCreate);
+        serviceManager.migrateAndCreateOperatorSetIds(operatorSetsToCreate);
         serviceManager.migrateToOperatorSets(operatorSetIdsToMigrate, operators);
         cheats.stopPrank();
 
@@ -224,7 +224,7 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
 
         // Migrate the first half
         cheats.startPrank(serviceManagerOwner);
-        serviceManager.migrateOperatorSetIds(operatorSetsToCreate);
+        serviceManager.migrateAndCreateOperatorSetIds(operatorSetsToCreate);
         serviceManager.migrateToOperatorSets(firstHalfOperatorSetIds, firstHalfOperators);
         serviceManager.migrateToOperatorSets(secondHalfOperatorSetIds, secondHalfOperators);
         cheats.stopPrank();
@@ -235,7 +235,7 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
     function test_migrateToOperatorSets_revert_alreadyMigrated() public {
         (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
         cheats.startPrank(serviceManagerOwner);
-        serviceManager.migrateOperatorSetIds(operatorSetsToCreate);
+        serviceManager.migrateAndCreateOperatorSetIds(operatorSetsToCreate);
         serviceManager.migrateToOperatorSets(operatorSetIdsToMigrate, operators);
         serviceManager.finalizeMigration();
 
@@ -248,7 +248,7 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
     function test_migrateToOperatorSets_revert_notOwner() public {
         (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
         cheats.startPrank(serviceManagerOwner);
-        serviceManager.migrateOperatorSetIds(operatorSetsToCreate);
+        serviceManager.migrateAndCreateOperatorSetIds(operatorSetsToCreate);
         cheats.stopPrank();
         address caller = address(uint160(uint256(keccak256("caller"))));
         cheats.expectRevert("Ownable: caller is not the owner");
@@ -279,7 +279,7 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
 
         (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
         cheats.startPrank(serviceManagerOwner);
-        serviceManager.migrateOperatorSetIds(operatorSetsToCreate);
+        serviceManager.migrateAndCreateOperatorSetIds(operatorSetsToCreate);
         serviceManager.migrateToOperatorSets(operatorSetIdsToMigrate, operators);
         cheats.stopPrank();
 

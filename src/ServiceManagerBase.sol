@@ -137,8 +137,8 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _setRewardsInitiator(newRewardsInitiator);
     }
 
-    function migrateOperatorSetIds(uint32[] memory operatorSetsToCreate) external onlyOwner{
-        _migrateCreateOperatorSetIds(operatorSetsToCreate);
+    function migrateAndCreateOperatorSetIds(uint32[] memory operatorSetsToCreate) external onlyOwner{
+        _migrateAndCreateOperatorSetIds(operatorSetsToCreate);
     }
 
     function migrateToOperatorSets(uint32[][] memory operatorSetIds, address[] memory operators) external onlyOwner {
@@ -151,7 +151,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         migrationFinalized = true;
     }
 
-    function _migrateCreateOperatorSetIds(uint32[] memory operatorSetIdsToCreate) internal {
+    function _migrateAndCreateOperatorSetIds(uint32[] memory operatorSetIdsToCreate) internal {
         _avsDirectory.becomeOperatorSetAVS();
         AVSDirectory(address(_avsDirectory)).createOperatorSets(operatorSetIdsToCreate);
     }
