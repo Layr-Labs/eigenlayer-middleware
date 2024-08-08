@@ -140,18 +140,27 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _setRewardsInitiator(newRewardsInitiator);
     }
 
-    function migrateToOperatorSets() external onlyOwner {
-        _migrateToOperatorSets();
+    function migrateOperatorSetIds(uint32[] memory operatorSetsToCreate) external onlyOwner{
+        _migrateCreateOperatorSetIds(operatorSetsToCreate);
     }
 
-    function _migrateToOperatorSets() internal {
-        // Initiate the migration process 
+    function migrateToOperatorSets(uint32[][] memory operatorSetIds, address[] memory operators) external onlyOwner {
+        require(!migrationFinalized, "SerivceManager: Migration Already Finalized");
+        _migrateToOperatorSets(operatorSetIds, operators);
+    }
+
+    function finalizeMigration() external onlyOwner{
+        require(!migrationFinalized, "SerivceManager: Migration Already Finalized");
+        migrationFinalized = true;
+    }
+
+    function _migrateCreateOperatorSetIds(uint32[] memory operatorSetIdsToCreate) internal {
         _avsDirectory.becomeOperatorSetAVS();
-
-        (uint32[] memory operatorSetIdsToCreate, uint32[][] memory operatorSetIds, address[] memory allOperators) = getOperatorsToMigrate();
-
         AVSDirectory(address(_avsDirectory)).createOperatorSets(operatorSetIdsToCreate);
-        AVSDirectory(address(_avsDirectory)).migrateOperatorsToOperatorSets(allOperators, operatorSetIds);
+    }
+
+    function _migrateToOperatorSets(uint32[][] memory operatorSetIds, address[] memory operators) internal {
+        AVSDirectory(address(_avsDirectory)).migrateOperatorsToOperatorSets(operators, operatorSetIds);
     }
 
     function getOperatorsToMigrate() public view returns (uint32[] memory operatorSetIdsToCreate, uint32[][] memory operatorSetIds, address[] memory allOperators) {

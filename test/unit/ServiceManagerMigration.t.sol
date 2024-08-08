@@ -193,25 +193,67 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
     }
 
     function test_migrateToOperatorSets() public {
-        cheats.prank(serviceManagerOwner);
-        serviceManager.migrateToOperatorSets();
+        (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
+        cheats.startPrank(serviceManagerOwner);
+        serviceManager.migrateOperatorSetIds(operatorSetsToCreate);
+        serviceManager.migrateToOperatorSets(operatorSetIdsToMigrate, operators);
+        cheats.stopPrank();
+
+        assertTrue(avsDirectory.isOperatorSetAVS(address(serviceManager)), "AVS is not an operator set AVS");
+    }
+
+    function test_migrateTwoTransactions() public {
+        (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
+        // Split the operatorSetIdsToMigrate and operators into two separate sets
+        uint256 halfLength = operatorSetIdsToMigrate.length / 2;
+
+        uint32[][] memory firstHalfOperatorSetIds = new uint32[][](halfLength);
+        uint32[][] memory secondHalfOperatorSetIds = new uint32[][](operatorSetIdsToMigrate.length - halfLength);
+        address[] memory firstHalfOperators = new address[](halfLength);
+        address[] memory secondHalfOperators = new address[](operators.length - halfLength);
+
+        for (uint256 i = 0; i < halfLength; i++) {
+            firstHalfOperatorSetIds[i] = operatorSetIdsToMigrate[i];
+            firstHalfOperators[i] = operators[i];
+        }
+
+        for (uint256 i = halfLength; i < operatorSetIdsToMigrate.length; i++) {
+            secondHalfOperatorSetIds[i - halfLength] = operatorSetIdsToMigrate[i];
+            secondHalfOperators[i - halfLength] = operators[i];
+        }
+
+        // Migrate the first half
+        cheats.startPrank(serviceManagerOwner);
+        serviceManager.migrateOperatorSetIds(operatorSetsToCreate);
+        serviceManager.migrateToOperatorSets(firstHalfOperatorSetIds, firstHalfOperators);
+        serviceManager.migrateToOperatorSets(secondHalfOperatorSetIds, secondHalfOperators);
+        cheats.stopPrank();
 
         assertTrue(avsDirectory.isOperatorSetAVS(address(serviceManager)), "AVS is not an operator set AVS");
     }
 
     function test_migrateToOperatorSets_revert_alreadyMigrated() public {
+        (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
         cheats.startPrank(serviceManagerOwner);
-        serviceManager.migrateToOperatorSets();
+        serviceManager.migrateOperatorSetIds(operatorSetsToCreate);
+        serviceManager.migrateToOperatorSets(operatorSetIdsToMigrate, operators);
+        serviceManager.finalizeMigration();
 
-        vm.expectRevert();
-        serviceManager.migrateToOperatorSets();
+        vm.expectRevert(); /// TODO: Now that it's not 1 step, we should have a way to signal completion
+        serviceManager.migrateToOperatorSets(operatorSetIdsToMigrate, operators);
+
+        cheats.stopPrank();
     }
 
     function test_migrateToOperatorSets_revert_notOwner() public {
+        (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
+        cheats.startPrank(serviceManagerOwner);
+        serviceManager.migrateOperatorSetIds(operatorSetsToCreate);
+        cheats.stopPrank();
         address caller = address(uint160(uint256(keccak256("caller"))));
         cheats.expectRevert("Ownable: caller is not the owner");
         cheats.prank(caller);
-        serviceManager.migrateToOperatorSets();
+        serviceManager.migrateToOperatorSets(operatorSetIdsToMigrate, operators);
     }
 
     function test_migrateToOperatorSets_verify() public {
@@ -234,8 +276,12 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
                 AVSDirectoryHarness(address(avsDirectory)).setAvsOperatorStatus(address(serviceManager), operatorAddress, IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED);
             }
         }
-        cheats.prank(serviceManagerOwner);
-        serviceManager.migrateToOperatorSets();
+
+        (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
+        cheats.startPrank(serviceManagerOwner);
+        serviceManager.migrateOperatorSetIds(operatorSetsToCreate);
+        serviceManager.migrateToOperatorSets(operatorSetIdsToMigrate, operators);
+        cheats.stopPrank();
 
         /// quick check, this operator is in operator set 3
         assertTrue(
