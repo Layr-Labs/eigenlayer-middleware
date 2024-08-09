@@ -12,6 +12,7 @@ import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
+import {LibMergeSort} from "./libraries/LibMergeSort.sol";
 import {console} from "forge-std/Test.sol";
 
 /**
@@ -176,7 +177,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
             for (uint256 i = 0; i < operatorIds.length; i++) {
                 operators[i] = _registryCoordinator.blsApkRegistry().getOperatorFromPubkeyHash(operatorIds[i]);
                 // Insert into sorted array of all operators
-                allOperators = _mergeSortedArrays(allOperators, operators);
+                allOperators = LibMergeSort.mergeSortArrays(allOperators, LibMergeSort.sort(operators));
             }
             address[] memory filteredOperators = new address[](allOperators.length);
             uint256 count = 0;
@@ -206,43 +207,6 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
             operatorSetIds[i] = quorums;
         }
 
-    }
-
-    function _mergeSortedArrays(address[] memory left, address[] memory right) internal pure returns (address[] memory) {
-        uint256 leftLength = left.length;
-        uint256 rightLength = right.length;
-        address[] memory merged = new address[](leftLength + rightLength);
-
-        uint256 i = 0; // Index for left array
-        uint256 j = 0; // Index for right array
-        uint256 k = 0; // Index for merged array
-
-        // Merge the two arrays into the merged array
-        while (i < leftLength && j < rightLength) {
-            if (left[i] < right[j]) {
-                merged[k++] = left[i++];
-            } else if (left[i] > right[j]) {
-                merged[k++] = right[j++];
-            } else {
-                merged[k++] = left[i++];
-                j++;
-            }
-        }
-
-        // Copy remaining elements of left, if any
-        while (i < leftLength) {
-            merged[k++] = left[i++];
-        }
-
-        // Copy remaining elements of right, if any
-        while (j < rightLength) {
-            merged[k++] = right[j++];
-        }
-
-        // Resize the merged array to remove unused space
-        assembly { mstore(merged, k) }
-
-        return merged;
     }
 
     function _setRewardsInitiator(address newRewardsInitiator) internal {
