@@ -154,8 +154,11 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
     }
 
     function test_migrateToOperatorSets() public {
-        cheats.prank(serviceManagerOwner);
-        serviceManager.migrateToOperatorSets();
+        (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
+        cheats.startPrank(serviceManagerOwner);
+        serviceManager.migrateAndCreateOperatorSetIds(operatorSetsToCreate);
+        serviceManager.migrateToOperatorSets(operatorSetIdsToMigrate, operators);
+        cheats.stopPrank();
 
         assertTrue(avsDirectory.isOperatorSetAVS(address(serviceManager)), "AVS is not an operator set AVS");
     }
@@ -163,8 +166,11 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
 
 
     function test_createQuorum() public {
-        cheats.prank(serviceManagerOwner);
-        serviceManager.migrateToOperatorSets();
+        (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
+        cheats.startPrank(serviceManagerOwner);
+        serviceManager.migrateAndCreateOperatorSetIds(operatorSetsToCreate);
+        serviceManager.migrateToOperatorSets(operatorSetIdsToMigrate, operators);
+        cheats.stopPrank();
 
         assertTrue(avsDirectory.isOperatorSetAVS(address(serviceManager)), "AVS is not an operator set AVS");
 
