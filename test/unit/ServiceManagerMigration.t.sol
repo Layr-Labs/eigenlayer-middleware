@@ -192,10 +192,27 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
         return arr;
     }
 
+    function test_viewFunction(uint256 randomValue) public {
+        _registerRandomOperators(randomValue);
+        (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
+
+        // Assert that all operators are in quorum 0 invariant of _registerRandomOperators
+        for (uint256 i = 0; i < operators.length; i++) {
+            bytes32 operatorId = registryCoordinator.getOperatorId(operators[i]);
+            uint192 operatorBitmap = registryCoordinator.getCurrentQuorumBitmap(operatorId);
+            assertTrue(operatorId != bytes32(0), "Operator was registered");
+            assertTrue(operatorBitmap & 1 == 1, "Operator is not registered in quorum 0");
+        }
+
+        // Assert we are migrating all the quorums that existed
+        uint256 quorumCount = registryCoordinator.quorumCount();
+        assertEq(quorumCount, operatorSetsToCreate.length, "Operator sets to create incorrect");
+    }
+
     function test_migrateToOperatorSets() public {
         (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
         cheats.startPrank(serviceManagerOwner);
-        serviceManager.migrateOperatorSetIds(operatorSetsToCreate);
+        serviceManager.migrateAndCreateOperatorSetIds(operatorSetsToCreate);
         serviceManager.migrateToOperatorSets(operatorSetIdsToMigrate, operators);
         cheats.stopPrank();
 
@@ -224,7 +241,7 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
 
         // Migrate the first half
         cheats.startPrank(serviceManagerOwner);
-        serviceManager.migrateOperatorSetIds(operatorSetsToCreate);
+        serviceManager.migrateAndCreateOperatorSetIds(operatorSetsToCreate);
         serviceManager.migrateToOperatorSets(firstHalfOperatorSetIds, firstHalfOperators);
         serviceManager.migrateToOperatorSets(secondHalfOperatorSetIds, secondHalfOperators);
         cheats.stopPrank();
@@ -235,7 +252,7 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
     function test_migrateToOperatorSets_revert_alreadyMigrated() public {
         (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
         cheats.startPrank(serviceManagerOwner);
-        serviceManager.migrateOperatorSetIds(operatorSetsToCreate);
+        serviceManager.migrateAndCreateOperatorSetIds(operatorSetsToCreate);
         serviceManager.migrateToOperatorSets(operatorSetIdsToMigrate, operators);
         serviceManager.finalizeMigration();
 
@@ -248,7 +265,7 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
     function test_migrateToOperatorSets_revert_notOwner() public {
         (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
         cheats.startPrank(serviceManagerOwner);
-        serviceManager.migrateOperatorSetIds(operatorSetsToCreate);
+        serviceManager.migrateAndCreateOperatorSetIds(operatorSetsToCreate);
         cheats.stopPrank();
         address caller = address(uint160(uint256(keccak256("caller"))));
         cheats.expectRevert("Ownable: caller is not the owner");
@@ -279,7 +296,7 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
 
         (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
         cheats.startPrank(serviceManagerOwner);
-        serviceManager.migrateOperatorSetIds(operatorSetsToCreate);
+        serviceManager.migrateAndCreateOperatorSetIds(operatorSetsToCreate);
         serviceManager.migrateToOperatorSets(operatorSetIdsToMigrate, operators);
         cheats.stopPrank();
 
