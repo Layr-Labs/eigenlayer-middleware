@@ -192,6 +192,23 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
         return arr;
     }
 
+    function test_viewFunction(uint256 randomValue) public {
+        _registerRandomOperators(randomValue);
+        (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
+
+        // Assert that all operators are in quorum 0 invariant of _registerRandomOperators
+        for (uint256 i = 0; i < operators.length; i++) {
+            bytes32 operatorId = registryCoordinator.getOperatorId(operators[i]);
+            uint192 operatorBitmap = registryCoordinator.getCurrentQuorumBitmap(operatorId);
+            assertTrue(operatorId != bytes32(0), "Operator was registered");
+            assertTrue(operatorBitmap & 1 == 1, "Operator is not registered in quorum 0");
+        }
+
+        // Assert we are migrating all the quorums that existed
+        uint256 quorumCount = registryCoordinator.quorumCount();
+        assertEq(quorumCount, operatorSetsToCreate.length, "Operator sets to create incorrect");
+    }
+
     function test_migrateToOperatorSets() public {
         (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
         cheats.startPrank(serviceManagerOwner);
