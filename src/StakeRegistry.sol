@@ -195,6 +195,7 @@ contract StakeRegistry is StakeRegistryStorage {
         StrategyParams[] memory _strategyParams
     ) public virtual onlyRegistryCoordinator {
         require(!_quorumExists(quorumNumber), "StakeRegistry.initializeQuorum: quorum already exists");
+        emit QuorumCreated(quorumNumber);
         _addStrategyParams(quorumNumber, _strategyParams);
         _setMinimumStakeForQuorum(quorumNumber, minimumStake);
 
