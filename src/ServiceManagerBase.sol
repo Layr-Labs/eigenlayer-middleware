@@ -4,6 +4,7 @@ pragma solidity ^0.8.12;
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {AVSDirectory} from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
@@ -11,6 +12,8 @@ import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
+import {LibMergeSort} from "./libraries/LibMergeSort.sol";
+import {console} from "forge-std/Test.sol";
 
 /**
  * @title Minimal implementation of a ServiceManager-type contract.
@@ -133,6 +136,77 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      */
     function setRewardsInitiator(address newRewardsInitiator) external onlyOwner {
         _setRewardsInitiator(newRewardsInitiator);
+    }
+
+    function migrateAndCreateOperatorSetIds(uint32[] memory operatorSetsToCreate) external onlyOwner{
+        _migrateAndCreateOperatorSetIds(operatorSetsToCreate);
+    }
+
+    function migrateToOperatorSets(uint32[][] memory operatorSetIds, address[] memory operators) external onlyOwner {
+        require(!migrationFinalized, "SerivceManager: Migration Already Finalized");
+        _migrateToOperatorSets(operatorSetIds, operators);
+    }
+
+    function finalizeMigration() external onlyOwner{
+        require(!migrationFinalized, "SerivceManager: Migration Already Finalized");
+        migrationFinalized = true;
+    }
+
+    function _migrateAndCreateOperatorSetIds(uint32[] memory operatorSetIdsToCreate) internal {
+        _avsDirectory.becomeOperatorSetAVS();
+        AVSDirectory(address(_avsDirectory)).createOperatorSets(operatorSetIdsToCreate);
+    }
+
+    function _migrateToOperatorSets(uint32[][] memory operatorSetIds, address[] memory operators) internal {
+        AVSDirectory(address(_avsDirectory)).migrateOperatorsToOperatorSets(operators, operatorSetIds);
+    }
+
+    function getOperatorsToMigrate() public view returns (uint32[] memory operatorSetIdsToCreate, uint32[][] memory operatorSetIds, address[] memory allOperators) {
+        uint256 quorumCount = _registryCoordinator.quorumCount();
+
+        allOperators = new address[](0);
+        operatorSetIdsToCreate = new uint32[](quorumCount);
+
+        // Step 1: Iterate through quorum numbers and get a list of unique operators
+        for (uint8 quorumNumber = 0; quorumNumber < quorumCount; quorumNumber++) {
+            // Step 2: Get operator list for quorum at current block
+            bytes32[] memory operatorIds = _registryCoordinator.indexRegistry().getOperatorListAtBlockNumber(quorumNumber, uint32(block.number));
+        
+            // Step 3: Convert to address list and maintain a sorted array of operators
+            address[] memory operators = new address[](operatorIds.length);
+            for (uint256 i = 0; i < operatorIds.length; i++) {
+                operators[i] = _registryCoordinator.blsApkRegistry().getOperatorFromPubkeyHash(operatorIds[i]);
+                // Insert into sorted array of all operators
+                allOperators = LibMergeSort.mergeSortArrays(allOperators, LibMergeSort.sort(operators));
+            }
+            address[] memory filteredOperators = new address[](allOperators.length);
+            uint256 count = 0;
+            for (uint256 i = 0; i < allOperators.length; i++) {
+                if (allOperators[i] != address(0)) {
+                    filteredOperators[count++] = allOperators[i];
+                }
+            }
+            // Resize array to remove empty slots
+            assembly { mstore(filteredOperators, count) }
+            allOperators = filteredOperators;
+
+            operatorSetIdsToCreate[quorumNumber] = uint32(quorumNumber);
+        }
+
+        operatorSetIds = new uint32[][](allOperators.length);
+        // Loop through each unique operator to get the quorums they are registered for
+        for (uint256 i = 0; i < allOperators.length; i++) {
+            address operator = allOperators[i];
+            bytes32 operatorId = _registryCoordinator.getOperatorId(operator);
+            uint192 quorumsBitmap = _registryCoordinator.getCurrentQuorumBitmap(operatorId);
+            bytes memory quorumBytesArray = BitmapUtils.bitmapToBytesArray(quorumsBitmap);
+            uint32[] memory quorums = new uint32[](quorumBytesArray.length);
+            for (uint256 j = 0; j < quorumBytesArray.length; j++) {
+                quorums[j] = uint32(uint8(quorumBytesArray[j]));
+            }
+            operatorSetIds[i] = quorums;
+        }
+
     }
 
     function _setRewardsInitiator(address newRewardsInitiator) internal {
