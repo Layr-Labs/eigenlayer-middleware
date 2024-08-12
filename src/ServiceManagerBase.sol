@@ -4,7 +4,6 @@ pragma solidity ^0.8.12;
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-import {AVSDirectory} from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
@@ -157,11 +156,11 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
 
     function _migrateAndCreateOperatorSetIds(uint32[] memory operatorSetIdsToCreate) internal {
         _avsDirectory.becomeOperatorSetAVS();
-        AVSDirectory(address(_avsDirectory)).createOperatorSets(operatorSetIdsToCreate);
+        IAVSDirectory(address(_avsDirectory)).createOperatorSets(operatorSetIdsToCreate);
     }
 
     function _migrateToOperatorSets(uint32[][] memory operatorSetIds, address[] memory operators) internal {
-        AVSDirectory(address(_avsDirectory)).migrateOperatorsToOperatorSets(operators, operatorSetIds);
+        IAVSDirectory(address(_avsDirectory)).migrateOperatorsToOperatorSets(operators, operatorSetIds);
     }
 
     function getOperatorsToMigrate() public view returns (uint32[] memory operatorSetIdsToCreate, uint32[][] memory operatorSetIds, address[] memory allOperators) {
