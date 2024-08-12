@@ -10,7 +10,12 @@ contract ECDSAServiceManagerMock is ECDSAServiceManagerBase {
         address _rewardsCoordinator,
         address _delegationManager
     )
-        ECDSAServiceManagerBase(_avsDirectory, _stakeRegistry, _rewardsCoordinator, _delegationManager)
+        ECDSAServiceManagerBase(
+            _avsDirectory,
+            _stakeRegistry,
+            _rewardsCoordinator,
+            _delegationManager
+        )
     {}
 
     function initialize(
@@ -19,4 +24,6 @@ contract ECDSAServiceManagerMock is ECDSAServiceManagerBase {
     ) public virtual initializer {
         __ServiceManagerBase_init(initialOwner, rewardsInitiator);
     }
+
+    function createOperatorSets(uint32[] memory) external {}
 }
