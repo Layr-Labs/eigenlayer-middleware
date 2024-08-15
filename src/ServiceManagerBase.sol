@@ -197,9 +197,35 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         uint32[][] memory operatorSetIds,
         address[] memory operators
     ) internal {
+        require(
+            operators.length == operatorSetIds.length, "ServiceManager: Input array length mismatch"
+        );
+        for (uint256 i; i < operators.length; i++) {
+            _isOperatorRegisteredForQuorums(operators[i], operatorSetIds[i]);
+        }
         IAVSDirectory(address(_avsDirectory)).migrateOperatorsToOperatorSets(
             operators, operatorSetIds
         );
+    }
+
+    /**
+     * @notice Checks if an operator is registered for a specific quorum
+     * @param operator The address of the operator to check
+     * @param quorumNumbers The quorum number to check the registration for
+     * @return bool Returns true if the operator is registered for the specified quorum, false otherwise
+     */
+    function _isOperatorRegisteredForQuorums(
+        address operator,
+        uint32[] memory quorumNumbers
+    ) internal view returns (bool) {
+        bytes32 operatorId = _registryCoordinator.getOperatorId(operator);
+        uint192 operatorBitmap = _registryCoordinator.getCurrentQuorumBitmap(operatorId);
+        for (uint256 i; i < quorumNumbers.length; i++) {
+            require(
+                BitmapUtils.isSet(operatorBitmap, uint8(quorumNumbers[i])),
+                "ServiceManager: Operator not in quorum"
+            );
+        }
     }
 
     /**
