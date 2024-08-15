@@ -183,7 +183,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      * @notice Migrates the AVS to use operator sets and create new operator set IDs.
      * @param operatorSetIdsToCreate An array of operator set IDs to create.
      */
-    function _migrateAndCreateOperatorSetIds(uint32[] memory operatorSetIdsToCreate) {
+    function _migrateAndCreateOperatorSetIds(uint32[] memory operatorSetIdsToCreate) internal {
         _avsDirectory.becomeOperatorSetAVS();
         IAVSDirectory(address(_avsDirectory)).createOperatorSets(operatorSetIdsToCreate);
     }
@@ -193,7 +193,10 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      * @param operatorSetIds A 2D array where each sub-array contains the operator set IDs for a specific operator.
      * @param operators An array of operator addresses to migrate.
      */
-    function _migrateToOperatorSets(uint32[][] memory operatorSetIds, address[] memory operators) {
+    function _migrateToOperatorSets(
+        uint32[][] memory operatorSetIds,
+        address[] memory operators
+    ) internal {
         IAVSDirectory(address(_avsDirectory)).migrateOperatorsToOperatorSets(
             operators, operatorSetIds
         );
