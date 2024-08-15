@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import {IAVSDirectory, ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {
+    IAVSDirectory,
+    ISignatureUtils
+} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 contract AVSDirectoryMock is IAVSDirectory {
     /**
@@ -61,7 +64,10 @@ contract AVSDirectoryMock is IAVSDirectory {
      *
      *  @dev msg.sender is used as the AVS.
      */
-    function deregisterOperatorFromOperatorSets(address operator, uint32[] calldata operatorSetIds) external {}
+    function deregisterOperatorFromOperatorSets(
+        address operator,
+        uint32[] calldata operatorSetIds
+    ) external {}
 
     /**
      * @notice Called by an operator to deregister from an operator set
@@ -109,7 +115,7 @@ contract AVSDirectoryMock is IAVSDirectory {
      *
      * @param salt A unique and single use value associated with the approver signature.
      */
-    function cancelSalt(bytes32 salt) external{}
+    function cancelSalt(bytes32 salt) external {}
 
     /**
      * @notice Returns whether or not the salt has already been used by the operator.
@@ -117,7 +123,11 @@ contract AVSDirectoryMock is IAVSDirectory {
      */
     function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool) {}
 
-    function isMember(address avs, address operator, uint32 operatorSetId) external view returns (bool){}
+    function isMember(
+        address avs,
+        address operator,
+        uint32 operatorSetId
+    ) external view returns (bool) {}
 
     /**
      * @notice Calculates the digest hash to be signed by an operator to register with an AVS
@@ -175,5 +185,10 @@ contract AVSDirectoryMock is IAVSDirectory {
 
     function isOperatorSetAVS(address avs) external view returns (bool) {}
 
-    function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool){}
-} 
+    function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool) {}
+
+    function isMember(
+        address operator,
+        OperatorSet memory operatorSet
+    ) external view returns (bool) {}
+}

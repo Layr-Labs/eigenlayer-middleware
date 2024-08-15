@@ -22,8 +22,10 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
     uint32 MAX_FUTURE_LENGTH = 28 days;
     uint32 GENESIS_REWARDS_TIMESTAMP = 1_712_188_800;
     uint256 MAX_REWARDS_AMOUNT = 1e38 - 1;
-    uint32 OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP = 0; /// TODO: what values should these have
-    uint32 OPERATOR_SET_MAX_RETROACTIVE_LENGTH = 0; /// TODO: What values these should have
+    uint32 OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP = 0;
+    /// TODO: what values should these have
+    uint32 OPERATOR_SET_MAX_RETROACTIVE_LENGTH = 0;
+    /// TODO: What values these should have
     /// @notice Delay in timestamp before a posted root can be claimed against
     uint32 activationDelay = 7 days;
     /// @notice the commission for all operators across all avss
@@ -87,10 +89,7 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
         );
         // Deploy ServiceManager
         serviceManagerImplementation = new ServiceManagerMock(
-            avsDirectory,
-            rewardsCoordinator,
-            registryCoordinator,
-            stakeRegistry
+            avsDirectory, rewardsCoordinator, registryCoordinator, stakeRegistry
         );
 
         serviceManager = ServiceManagerMock(
@@ -104,7 +103,6 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
                 )
             )
         );
-
 
         serviceManagerOwner = serviceManager.owner();
         cheats.prank(serviceManagerOwner);
@@ -194,7 +192,11 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
 
     function test_viewFunction(uint256 randomValue) public {
         _registerRandomOperators(randomValue);
-        (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
+        (
+            uint32[] memory operatorSetsToCreate,
+            uint32[][] memory operatorSetIdsToMigrate,
+            address[] memory operators
+        ) = serviceManager.getOperatorsToMigrate();
 
         // Assert that all operators are in quorum 0 invariant of _registerRandomOperators
         for (uint256 i = 0; i < operators.length; i++) {
@@ -210,22 +212,33 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
     }
 
     function test_migrateToOperatorSets() public {
-        (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
+        (
+            uint32[] memory operatorSetsToCreate,
+            uint32[][] memory operatorSetIdsToMigrate,
+            address[] memory operators
+        ) = serviceManager.getOperatorsToMigrate();
         cheats.startPrank(serviceManagerOwner);
         serviceManager.migrateAndCreateOperatorSetIds(operatorSetsToCreate);
         serviceManager.migrateToOperatorSets(operatorSetIdsToMigrate, operators);
         cheats.stopPrank();
 
-        assertTrue(avsDirectory.isOperatorSetAVS(address(serviceManager)), "AVS is not an operator set AVS");
+        assertTrue(
+            avsDirectory.isOperatorSetAVS(address(serviceManager)), "AVS is not an operator set AVS"
+        );
     }
 
     function test_migrateTwoTransactions() public {
-        (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
+        (
+            uint32[] memory operatorSetsToCreate,
+            uint32[][] memory operatorSetIdsToMigrate,
+            address[] memory operators
+        ) = serviceManager.getOperatorsToMigrate();
         // Split the operatorSetIdsToMigrate and operators into two separate sets
         uint256 halfLength = operatorSetIdsToMigrate.length / 2;
 
         uint32[][] memory firstHalfOperatorSetIds = new uint32[][](halfLength);
-        uint32[][] memory secondHalfOperatorSetIds = new uint32[][](operatorSetIdsToMigrate.length - halfLength);
+        uint32[][] memory secondHalfOperatorSetIds =
+            new uint32[][](operatorSetIdsToMigrate.length - halfLength);
         address[] memory firstHalfOperators = new address[](halfLength);
         address[] memory secondHalfOperators = new address[](operators.length - halfLength);
 
@@ -246,24 +259,36 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
         serviceManager.migrateToOperatorSets(secondHalfOperatorSetIds, secondHalfOperators);
         cheats.stopPrank();
 
-        assertTrue(avsDirectory.isOperatorSetAVS(address(serviceManager)), "AVS is not an operator set AVS");
+        assertTrue(
+            avsDirectory.isOperatorSetAVS(address(serviceManager)), "AVS is not an operator set AVS"
+        );
     }
 
     function test_migrateToOperatorSets_revert_alreadyMigrated() public {
-        (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
+        (
+            uint32[] memory operatorSetsToCreate,
+            uint32[][] memory operatorSetIdsToMigrate,
+            address[] memory operators
+        ) = serviceManager.getOperatorsToMigrate();
         cheats.startPrank(serviceManagerOwner);
         serviceManager.migrateAndCreateOperatorSetIds(operatorSetsToCreate);
         serviceManager.migrateToOperatorSets(operatorSetIdsToMigrate, operators);
         serviceManager.finalizeMigration();
 
-        vm.expectRevert(); /// TODO: Now that it's not 1 step, we should have a way to signal completion
+        vm.expectRevert();
+
+        /// TODO: Now that it's not 1 step, we should have a way to signal completion
         serviceManager.migrateToOperatorSets(operatorSetIdsToMigrate, operators);
 
         cheats.stopPrank();
     }
 
     function test_migrateToOperatorSets_revert_notOwner() public {
-        (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
+        (
+            uint32[] memory operatorSetsToCreate,
+            uint32[][] memory operatorSetIdsToMigrate,
+            address[] memory operators
+        ) = serviceManager.getOperatorsToMigrate();
         cheats.startPrank(serviceManagerOwner);
         serviceManager.migrateAndCreateOperatorSetIds(operatorSetsToCreate);
         cheats.stopPrank();
@@ -286,15 +311,25 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
         uint256 quorumCount = registryCoordinator.quorumCount();
         for (uint256 i = 0; i < quorumCount; i++) {
             uint256 operatorCount = indexRegistry.totalOperatorsForQuorum(uint8(i));
-            bytes32[] memory operatorIds = indexRegistry.getOperatorListAtBlockNumber(uint8(i), uint32(block.number));
-            assertEq(operatorCount, operatorIds.length, "Operator Id length mismatch");// sanity check
+            bytes32[] memory operatorIds =
+                indexRegistry.getOperatorListAtBlockNumber(uint8(i), uint32(block.number));
+            assertEq(operatorCount, operatorIds.length, "Operator Id length mismatch"); // sanity check
             for (uint256 j = 0; j < operatorCount; j++) {
-                address operatorAddress = registryCoordinator.blsApkRegistry().getOperatorFromPubkeyHash(operatorIds[j]);
-                AVSDirectoryHarness(address(avsDirectory)).setAvsOperatorStatus(address(serviceManager), operatorAddress, IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED);
+                address operatorAddress =
+                    registryCoordinator.blsApkRegistry().getOperatorFromPubkeyHash(operatorIds[j]);
+                AVSDirectoryHarness(address(avsDirectory)).setAvsOperatorStatus(
+                    address(serviceManager),
+                    operatorAddress,
+                    IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED
+                );
             }
         }
 
-        (uint32[] memory operatorSetsToCreate, uint32[][] memory operatorSetIdsToMigrate, address[] memory operators) = serviceManager.getOperatorsToMigrate();
+        (
+            uint32[] memory operatorSetsToCreate,
+            uint32[][] memory operatorSetIdsToMigrate,
+            address[] memory operators
+        ) = serviceManager.getOperatorsToMigrate();
         cheats.startPrank(serviceManagerOwner);
         serviceManager.migrateAndCreateOperatorSetIds(operatorSetsToCreate);
         serviceManager.migrateToOperatorSets(operatorSetIdsToMigrate, operators);
@@ -302,8 +337,11 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
 
         /// quick check, this operator is in operator set 3
         assertTrue(
-            avsDirectory.isMember(address(serviceManager), 0x73e2Ce949f15Be901f76b54F5a4554A6C8DCf539, uint32(3)),
+            avsDirectory.isMember(
+                0x73e2Ce949f15Be901f76b54F5a4554A6C8DCf539,
+                IAVSDirectory.OperatorSet(address(serviceManager), uint32(3))
+            ),
             "Operator not migrated to operator set"
-        ); 
+        );
     }
 }

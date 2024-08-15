@@ -20,7 +20,7 @@ import "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
 import "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPodManager.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPod.sol";
-import "eigenlayer-contracts/src/contracts/pods/DelayedWithdrawalRouter.sol";
+// import "eigenlayer-contracts/src/contracts/pods/DelayedWithdrawalRouter.sol";
 import "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import "eigenlayer-contracts/src/test/mocks/ETHDepositMock.sol";
 // import "eigenlayer-contracts/src/test/integration/mocks/BeaconChainOracleMock.t.sol";
@@ -57,7 +57,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     Slasher slasher;
     IBeacon eigenPodBeacon;
     EigenPod pod;
-    DelayedWithdrawalRouter delayedWithdrawalRouter;
+    // DelayedWithdrawalRouter delayedWithdrawalRouter;
     ETHPOSDepositMock ethPOSDeposit;
     BeaconChainOracleMock beaconChainOracle;
 
@@ -147,11 +147,11 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
-        delayedWithdrawalRouter = DelayedWithdrawalRouter(
-            address(
-                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
-            )
-        );
+        // delayedWithdrawalRouter = DelayedWithdrawalRouter(
+        //     address(
+        //         new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
+        //     )
+        // );
         avsDirectory = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
@@ -164,9 +164,9 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         // Deploy EigenPod Contracts
         pod = new EigenPod(
             ethPOSDeposit,
-            delayedWithdrawalRouter,
+            // delayedWithdrawalRouter,
             eigenPodManager,
-            MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
+            // MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
             0
         );
 
@@ -181,8 +181,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit, eigenPodBeacon, strategyManager, slasher, delegationManager
         );
-        DelayedWithdrawalRouter delayedWithdrawalRouterImplementation =
-            new DelayedWithdrawalRouter(eigenPodManager);
+        // DelayedWithdrawalRouter delayedWithdrawalRouterImplementation =
+        //     new DelayedWithdrawalRouter(eigenPodManager);
         AVSDirectory avsDirectoryImplemntation = new AVSDirectory(delegationManager);
         // RewardsCoordinator rewardsCoordinatorImplementation = new RewardsCoordinator(
         //     delegationManager,
@@ -247,17 +247,17 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             )
         );
         // Delayed Withdrawal Router
-        proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
-            address(delayedWithdrawalRouterImplementation),
-            abi.encodeWithSelector(
-                DelayedWithdrawalRouter.initialize.selector,
-                eigenLayerReputedMultisig, // initialOwner
-                pauserRegistry,
-                0, // initialPausedStatus
-                minWithdrawalDelayBlocks
-            )
-        );
+        // proxyAdmin.upgradeAndCall(
+        //     TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
+        //     address(delayedWithdrawalRouterImplementation),
+        //     abi.encodeWithSelector(
+        //         DelayedWithdrawalRouter.initialize.selector,
+        //         eigenLayerReputedMultisig, // initialOwner
+        //         pauserRegistry,
+        //         0, // initialPausedStatus
+        //         minWithdrawalDelayBlocks
+        //     )
+        // );
         // AVSDirectory
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(avsDirectory))),
