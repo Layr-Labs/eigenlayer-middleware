@@ -4,7 +4,8 @@ pragma solidity ^0.8.12;
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IRewardsCoordinator} from
+    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
@@ -89,15 +90,15 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      * @dev This function will revert if the `rewardsSubmission` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
-    function createAVSRewardsSubmission(IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions)
-        public
-        virtual
-        onlyRewardsInitiator
-    {
+    function createAVSRewardsSubmission(
+        IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions
+    ) public virtual onlyRewardsInitiator {
         for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
             // transfer token to ServiceManager and approve RewardsCoordinator to transfer again
             // in createAVSRewardsSubmission() call
-            rewardsSubmissions[i].token.transferFrom(msg.sender, address(this), rewardsSubmissions[i].amount);
+            rewardsSubmissions[i].token.transferFrom(
+                msg.sender, address(this), rewardsSubmissions[i].amount
+            );
             uint256 allowance =
                 rewardsSubmissions[i].token.allowance(address(this), address(_rewardsCoordinator));
             rewardsSubmissions[i].token.approve(
@@ -107,7 +108,8 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
 
         _rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
-    function createOperatorSets(uint32[] memory operatorSetIds) external onlyRegistryCoordinator{
+
+    function createOperatorSets(uint32[] memory operatorSetIds) external onlyRegistryCoordinator {
         _avsDirectory.createOperatorSets(operatorSetIds);
     }
 
@@ -140,30 +142,78 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _setRewardsInitiator(newRewardsInitiator);
     }
 
-    function migrateAndCreateOperatorSetIds(uint32[] memory operatorSetsToCreate) external onlyOwner{
+    /**
+     * @notice Migrates the AVS to use operator sets and creates new operator set IDs.
+     * @param operatorSetsToCreate An array of operator set IDs to create.
+     * @dev This function can only be called by the contract owner.
+     */
+    function migrateAndCreateOperatorSetIds(uint32[] memory operatorSetsToCreate)
+        external
+        onlyOwner
+    {
         _migrateAndCreateOperatorSetIds(operatorSetsToCreate);
     }
 
-    function migrateToOperatorSets(uint32[][] memory operatorSetIds, address[] memory operators) external onlyOwner {
-        require(!migrationFinalized, "SerivceManager: Migration Already Finalized");
+    /**
+     * @notice Migrates operators to their respective operator sets.
+     * @param operatorSetIds A 2D array where each sub-array contains the operator set IDs for a specific operator.
+     * @param operators An array of operator addresses to migrate.
+     * @dev This function can only be called by the contract owner.
+     * @dev Reverts if the migration has already been finalized.
+     */
+    function migrateToOperatorSets(
+        uint32[][] memory operatorSetIds,
+        address[] memory operators
+    ) external onlyOwner {
+        require(!migrationFinalized, "ServiceManager: Migration Already Finalized");
         _migrateToOperatorSets(operatorSetIds, operators);
     }
 
-    function finalizeMigration() external onlyOwner{
-        require(!migrationFinalized, "SerivceManager: Migration Already Finalized");
+    /**
+     * @notice Finalizes the migration process, preventing further migrations.
+     * @dev This function can only be called by the contract owner.
+     * @dev Reverts if the migration has already been finalized.
+     */
+    function finalizeMigration() external onlyOwner {
+        require(!migrationFinalized, "ServiceManager: Migration Already Finalized");
         migrationFinalized = true;
     }
 
-    function _migrateAndCreateOperatorSetIds(uint32[] memory operatorSetIdsToCreate) internal {
+    /**
+     * @notice Migrates the AVS to use operator sets and create new operator set IDs.
+     * @param operatorSetIdsToCreate An array of operator set IDs to create.
+     */
+    function _migrateAndCreateOperatorSetIds(uint32[] memory operatorSetIdsToCreate) {
         _avsDirectory.becomeOperatorSetAVS();
         IAVSDirectory(address(_avsDirectory)).createOperatorSets(operatorSetIdsToCreate);
     }
 
-    function _migrateToOperatorSets(uint32[][] memory operatorSetIds, address[] memory operators) internal {
-        IAVSDirectory(address(_avsDirectory)).migrateOperatorsToOperatorSets(operators, operatorSetIds);
+    /**
+     * @notice Migrates operators to their respective operator sets.
+     * @param operatorSetIds A 2D array where each sub-array contains the operator set IDs for a specific operator.
+     * @param operators An array of operator addresses to migrate.
+     */
+    function _migrateToOperatorSets(uint32[][] memory operatorSetIds, address[] memory operators) {
+        IAVSDirectory(address(_avsDirectory)).migrateOperatorsToOperatorSets(
+            operators, operatorSetIds
+        );
     }
 
-    function getOperatorsToMigrate() public view returns (uint32[] memory operatorSetIdsToCreate, uint32[][] memory operatorSetIds, address[] memory allOperators) {
+    /**
+     * @notice Retrieves the operators to migrate along with their respective operator set IDs.
+     * @return operatorSetIdsToCreate An array of operator set IDs to create.
+     * @return operatorSetIds A 2D array where each sub-array contains the operator set IDs for a specific operator.
+     * @return allOperators An array of all unique operator addresses.
+     */
+    function getOperatorsToMigrate()
+        public
+        view
+        returns (
+            uint32[] memory operatorSetIdsToCreate,
+            uint32[][] memory operatorSetIds,
+            address[] memory allOperators
+        )
+    {
         uint256 quorumCount = _registryCoordinator.quorumCount();
 
         allOperators = new address[](0);
@@ -172,14 +222,17 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         // Step 1: Iterate through quorum numbers and get a list of unique operators
         for (uint8 quorumNumber = 0; quorumNumber < quorumCount; quorumNumber++) {
             // Step 2: Get operator list for quorum at current block
-            bytes32[] memory operatorIds = _registryCoordinator.indexRegistry().getOperatorListAtBlockNumber(quorumNumber, uint32(block.number));
-        
+            bytes32[] memory operatorIds = _registryCoordinator.indexRegistry()
+                .getOperatorListAtBlockNumber(quorumNumber, uint32(block.number));
+
             // Step 3: Convert to address list and maintain a sorted array of operators
             address[] memory operators = new address[](operatorIds.length);
             for (uint256 i = 0; i < operatorIds.length; i++) {
-                operators[i] = _registryCoordinator.blsApkRegistry().getOperatorFromPubkeyHash(operatorIds[i]);
+                operators[i] =
+                    _registryCoordinator.blsApkRegistry().getOperatorFromPubkeyHash(operatorIds[i]);
                 // Insert into sorted array of all operators
-                allOperators = LibMergeSort.mergeSortArrays(allOperators, LibMergeSort.sort(operators));
+                allOperators =
+                    LibMergeSort.mergeSortArrays(allOperators, LibMergeSort.sort(operators));
             }
             address[] memory filteredOperators = new address[](allOperators.length);
             uint256 count = 0;
@@ -189,7 +242,9 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
                 }
             }
             // Resize array to remove empty slots
-            assembly { mstore(filteredOperators, count) }
+            assembly {
+                mstore(filteredOperators, count)
+            }
             allOperators = filteredOperators;
 
             operatorSetIdsToCreate[quorumNumber] = uint32(quorumNumber);
@@ -208,7 +263,6 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
             }
             operatorSetIds[i] = quorums;
         }
-
     }
 
     function _setRewardsInitiator(address newRewardsInitiator) internal {
