@@ -199,12 +199,6 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
     }
 
     function test_updateOperatorsForQuorumsAfterDirectUnregister() public {
-        stakeRegistryImplementation = new StakeRegistryHarness(registryCoordinator, delegationMock, avsDirectory);
-        vm.prank(proxyAdmin.owner());
-        proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(stakeRegistry))),
-            address(stakeRegistryImplementation)
-        );
         vm.prank(proxyAdmin.owner());
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(avsDirectory))),
