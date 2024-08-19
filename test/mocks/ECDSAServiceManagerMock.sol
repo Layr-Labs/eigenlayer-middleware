@@ -26,4 +26,12 @@ contract ECDSAServiceManagerMock is ECDSAServiceManagerBase {
     }
 
     function createOperatorSets(uint32[] memory) external {}
+
+    function registerOperatorToOperatorSets(
+        address operator,
+        uint32[] calldata operatorSetIds,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) external {}
+
+    function deregisterOperatorFromOperatorSets(address operator, uint32[] calldata operatorSetIds) external{}
 }

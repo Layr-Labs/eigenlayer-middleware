@@ -134,6 +134,32 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     }
 
     /**
+     * @notice Forwards a call to EigenLayer's AVSDirectory contract to register an operator to operator sets
+     * @param operator The address of the operator to register.
+     * @param operatorSetIds The IDs of the operator sets.
+     * @param operatorSignature The signature, salt, and expiry of the operator's signature.
+     */
+    function registerOperatorToOperatorSets(
+        address operator,
+        uint32[] calldata operatorSetIds,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) public virtual onlyRegistryCoordinator {
+        _avsDirectory.registerOperatorToOperatorSets(operator, operatorSetIds, operatorSignature);
+    }
+
+    /**
+     * @notice Forwards a call to EigenLayer's AVSDirectory contract to deregister an operator from operator sets
+     * @param operator The address of the operator to deregister.
+     * @param operatorSetIds The IDs of the operator sets.
+     */
+    function deregisterOperatorFromOperatorSets(
+        address operator,
+        uint32[] calldata operatorSetIds
+    ) public virtual onlyRegistryCoordinator {
+        _avsDirectory.deregisterOperatorFromOperatorSets(operator, operatorSetIds);
+    }
+
+    /**
      * @notice Sets the rewards initiator address
      * @param newRewardsInitiator The new rewards initiator address
      * @dev only callable by the owner
