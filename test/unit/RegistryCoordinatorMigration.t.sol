@@ -207,7 +207,6 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
         uint256 pseudoRandomNumber = uint256(keccak256("pseudoRandomNumber"));
         _registerRandomOperators(pseudoRandomNumber);
 
-        vm.roll(block.number + 1);
         vm.prank(proxyAdmin.owner());
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(avsDirectory))),
@@ -269,15 +268,14 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
         }));
         bool isOperatorSetAVS = avsDirectory.isOperatorSetAVS(address(serviceManager));
         assertTrue(isOperatorSetAVS, "ServiceManager is not an operator set AVS");
+        assertTrue(operatorIsUnRegistered, "Operator wasnt unregistered from op set");
 
         address[][] memory registeredOperatorAddresses2D = new address[][](1);
         registeredOperatorAddresses2D[0] = registeredOperatorAddresses;
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
-        vm.roll(block.number + 1);
         registryCoordinator.updateOperatorsForQuorum(registeredOperatorAddresses2D, quorumNumbers);
 
-        vm.roll(block.number + 1);
         registeredOperators = indexRegistry.getOperatorListAtBlockNumber(defaultQuorumNumber, uint32(block.number));
         uint256 postRegisteredOperators = registeredOperators.length;
 
