@@ -172,22 +172,18 @@ contract StakeRegistry is StakeRegistryStorage {
             // against the minimum stake requirements for the quorum.
             (uint96 stakeWeight, bool hasMinimumStake) = _weightOfOperatorForQuorum(quorumNumber, operator);
             // If the operator no longer meets the minimum stake, set their stake to zero and mark them for removal
-            /// TODO: Check AVSDirectory for operatorSetId to see the operator deregistered directly on the AVSDirectory
-            /// Conditional correctly handles setting them to 0 for an accurate stake delta and quorumsToRemove
-            /// bubbles up changes via registry coordinator to deregister them
+            /// also handle setting the operator's stake to 0 and remove them from the quorum 
+            /// if they directly unregistered from the AVSDirectory bubbles up info via registry coordinator to deregister them
             bool operatorRegistered;
             // Convert quorumNumber to operatorSetId
             uint32 operatorSetId = uint32(quorumNumber);
 
             // Get the AVSDirectory address from the RegistryCoordinator
-            // Query the AVSDirectory to check if the operator is deregistered
-            /// TODO: Need to have a more accurate mock for AVSDirectory
-            /// TODO: also need to handle if they're a legacy operator || memberOfOperatorSet
+            // Query the AVSDirectory to check if the operator is directly unregistered
             operatorRegistered = avsDirectory.isMember(
                 operator,
                 IAVSDirectory.OperatorSet(address(avs), operatorSetId)
             );
-
 
             if (!hasMinimumStake || (isOperatorSetAVS && !operatorRegistered)) {
                 stakeWeight = 0;
