@@ -46,7 +46,7 @@ library BN254 {
         uint256[2] Y;
     }
 
-    function generatorG1() internal pure returns (G1Point memory) {
+    function generatorG1() external pure returns (G1Point memory) {
         return G1Point(1, 2);
     }
 
@@ -62,7 +62,7 @@ library BN254 {
     ///      this is because of the (unknown to us) convention used in the bn254 pairing precompile contract
     ///      "Elements a * i + b of F_p^2 are encoded as two elements of F_p, (a, b)."
     ///      https://github.com/ethereum/EIPs/blob/master/EIPS/eip-197.md#encoding
-    function generatorG2() internal pure returns (G2Point memory) {
+    function generatorG2() external pure returns (G2Point memory) {
         return G2Point([G2x1, G2x0], [G2y1, G2y0]);
     }
 
@@ -73,7 +73,7 @@ library BN254 {
     uint256 internal constant nG2y1 = 17805874995975841540914202342111839520379459829704422454583296818431106115052;
     uint256 internal constant nG2y0 = 13392588948715843804641432497768002650278120570034223513918757245338268106653;
 
-    function negGeneratorG2() internal pure returns (G2Point memory) {
+    function negGeneratorG2() external pure returns (G2Point memory) {
         return G2Point([nG2x1, nG2x0], [nG2y1, nG2y0]);
     }
 
@@ -84,7 +84,7 @@ library BN254 {
      * @param p Some point in G1.
      * @return The negation of `p`, i.e. p.plus(p.negate()) should be zero.
      */
-    function negate(G1Point memory p) internal pure returns (G1Point memory) {
+    function negate(G1Point memory p) external pure returns (G1Point memory) {
         // The prime q in the base field F_q for G1
         if (p.X == 0 && p.Y == 0) {
             return G1Point(0, 0);
@@ -194,7 +194,7 @@ library BN254 {
         G2Point memory a2,
         G1Point memory b1,
         G2Point memory b2
-    ) internal view returns (bool) {
+    ) external view returns (bool) {
         G1Point[2] memory p1 = [a1, b1];
         G2Point[2] memory p2 = [a2, b2];
 
@@ -238,7 +238,7 @@ library BN254 {
         G1Point memory b1,
         G2Point memory b2,
         uint256 pairingGas
-    ) internal view returns (bool, bool) {
+    ) external view returns (bool, bool) {
         G1Point[2] memory p1 = [a1, b1];
         G2Point[2] memory p2 = [a2, b2];
 
@@ -270,7 +270,7 @@ library BN254 {
 
     /// @return hashedG1 the keccak256 hash of the G1 Point
     /// @dev used for BLS signatures
-    function hashG1Point(BN254.G1Point memory pk) internal pure returns (bytes32 hashedG1) {
+    function hashG1Point(BN254.G1Point memory pk) external pure returns (bytes32 hashedG1) {
         assembly {
             mstore(0, mload(pk))
             mstore(0x20, mload(add(0x20, pk)))
@@ -282,14 +282,14 @@ library BN254 {
     /// @dev used for BLS signatures
     function hashG2Point(
         BN254.G2Point memory pk
-    ) internal pure returns (bytes32) {
+    ) external pure returns (bytes32) {
         return keccak256(abi.encodePacked(pk.X[0], pk.X[1], pk.Y[0], pk.Y[1]));
     }
 
     /**
      * @notice adapted from https://github.com/HarryR/solcrypto/blob/master/contracts/altbn128.sol
      */
-    function hashToG1(bytes32 _x) internal view returns (G1Point memory) {
+    function hashToG1(bytes32 _x) external view returns (G1Point memory) {
         uint256 beta = 0;
         uint256 y = 0;
 
