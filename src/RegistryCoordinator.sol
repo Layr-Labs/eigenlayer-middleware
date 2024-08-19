@@ -4,7 +4,6 @@ pragma solidity ^0.8.12;
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-import {AVSDirectory} from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import {ISocketUpdater} from "./interfaces/ISocketUpdater.sol";
 import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
@@ -159,7 +158,7 @@ contract RegistryCoordinator is
 
             require(
                 numOperatorsPerQuorum[i] <= _quorumParams[quorumNumber].maxOperatorCount,
-                "RegistryCoordinator.registerOperator: operator count exceeds maximum"
+                "RegistryCoordinator.registerOperator: operator exceeds max"
             );
         }
     }
@@ -334,7 +333,7 @@ contract RegistryCoordinator is
                     // Prevent duplicate operators
                     require(
                         operator > prevOperatorAddress,
-                        "RegistryCoordinator.updateOperatorsForQuorum: operators array must be sorted in ascending address order"
+                        "RegistryCoordinator.updateOperatorsForQuorum: operators must be sorted"
                     );
                 }
 
@@ -356,7 +355,7 @@ contract RegistryCoordinator is
     function updateSocket(string memory socket) external {
         require(
             _operatorInfo[msg.sender].status == OperatorStatus.REGISTERED,
-            "RegistryCoordinator.updateSocket: operator is not registered"
+            "RegistryCoordinator.updateSocket: not registered"
         );
         emit OperatorSocketUpdate(_operatorInfo[msg.sender].operatorId, socket);
     }
@@ -487,7 +486,7 @@ contract RegistryCoordinator is
             uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         uint192 currentBitmap = _currentOperatorBitmap(operatorId);
         require(
-            !quorumsToAdd.isEmpty(), "RegistryCoordinator._registerOperator: bitmap cannot be 0"
+            !quorumsToAdd.isEmpty(), "RegistryCoordinator._registerOperator: bitmap empty"
         );
         require(
             quorumsToAdd.noBitsInCommon(currentBitmap),
@@ -546,7 +545,7 @@ contract RegistryCoordinator is
      * @dev Reverts if the caller is not the ejector
      */
     function _checkEjector() internal view {
-        require(msg.sender == ejector, "RegistryCoordinator.onlyEjector: caller is not the ejector");
+        require(msg.sender == ejector, "RegistryCoordinator.onlyEjector: not ejector");
     }
 
     /**
@@ -640,7 +639,7 @@ contract RegistryCoordinator is
         bytes32 operatorId = operatorInfo.operatorId;
         require(
             operatorInfo.status == OperatorStatus.REGISTERED,
-            "RegistryCoordinator._deregisterOperator: operator is not registered"
+            "RegistryCoordinator._deregisterOperator: not registered"
         );
 
         /**
@@ -659,7 +658,7 @@ contract RegistryCoordinator is
         );
         require(
             quorumsToRemove.isSubsetOf(currentBitmap),
-            "RegistryCoordinator._deregisterOperator: operator is not registered for specified quorums"
+            "RegistryCoordinator._deregisterOperator: not registered for quorum"
         );
         uint192 newBitmap = uint192(currentBitmap.minus(quorumsToRemove));
 
@@ -750,11 +749,11 @@ contract RegistryCoordinator is
         // make sure the salt hasn't been used already
         require(
             !isChurnApproverSaltUsed[churnApproverSignature.salt],
-            "RegistryCoordinator._verifyChurnApproverSignature: churnApprover salt already used"
+            "RegistryCoordinator._verifyChurnApproverSignature: salt spent"
         );
         require(
             churnApproverSignature.expiry >= block.timestamp,
-            "RegistryCoordinator._verifyChurnApproverSignature: churnApprover signature expired"
+            "RegistryCoordinator._verifyChurnApproverSignature: signature expired"
         );
 
         // set salt used to true
@@ -804,7 +803,7 @@ contract RegistryCoordinator is
         indexRegistry.initializeQuorum(quorumNumber);
         blsApkRegistry.initializeQuorum(quorumNumber);
         // Check if the AVS has migrated to operator sets
-        AVSDirectory avsDirectory = AVSDirectory(serviceManager.avsDirectory());
+        IAVSDirectory avsDirectory = IAVSDirectory(serviceManager.avsDirectory());
         if (avsDirectory.isOperatorSetAVS(address(serviceManager))) {
             // Create an operator set for the new quorum
             uint32[] memory operatorSetIds = new uint32[](1);
@@ -886,7 +885,7 @@ contract RegistryCoordinator is
         }
 
         revert(
-            "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number"
+            "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId"
         );
     }
 
