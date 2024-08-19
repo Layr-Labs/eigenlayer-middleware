@@ -7,8 +7,9 @@ import "../../src/StakeRegistry.sol";
 contract StakeRegistryHarness is StakeRegistry {
     constructor(
         IRegistryCoordinator _registryCoordinator,
-        IDelegationManager _delegationManager
-    ) StakeRegistry(_registryCoordinator, _delegationManager) {
+        IDelegationManager _delegationManager,
+        IAVSDirectory _avsDirectory
+    ) StakeRegistry(_registryCoordinator, _delegationManager, _avsDirectory) {
     }
 
     function recordOperatorStakeUpdate(bytes32 operatorId, uint8 quorumNumber, uint96 newStake) external returns(int256) {

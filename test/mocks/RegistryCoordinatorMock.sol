@@ -68,4 +68,6 @@ contract RegistryCoordinatorMock is IRegistryCoordinator {
     function quorumUpdateBlockNumber(uint8 quorumNumber) external view returns (uint256) {}
 
     function owner() external view returns (address) {}
+
+    function serviceManager() external view returns (IServiceManager){}
 }
