@@ -1,14 +1,10 @@
-
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
 import {IRegistryCoordinator} from "../interfaces/IRegistryCoordinator.sol";
 
-
-/// Separated out this logic to save bytecode
 library QuorumBitmapHistoryLib {
-
-    function getQuorumBitmapIndexAtBlockNumber( 
+    function getQuorumBitmapIndexAtBlockNumber(
         mapping(bytes32 => IRegistryCoordinator.QuorumBitmapUpdate[]) storage self,
         uint32 blockNumber,
         bytes32 operatorId
@@ -28,7 +24,6 @@ library QuorumBitmapHistoryLib {
         revert(
             "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId"
         );
-
     }
 
     function currentOperatorBitmap(
@@ -83,7 +78,7 @@ library QuorumBitmapHistoryLib {
 
     function updateOperatorBitmap(
         mapping(bytes32 => IRegistryCoordinator.QuorumBitmapUpdate[]) storage self,
-        bytes32 operatorId, 
+        bytes32 operatorId,
         uint192 newBitmap
     ) external {
         uint256 historyLength = self[operatorId].length;
