@@ -526,9 +526,9 @@ contract RegistryCoordinator is
 
             } else {
                 serviceManager.registerOperatorToAVS(operator, operatorSignature);
+                emit OperatorRegistered(operator, operatorId);
             }
 
-            emit OperatorRegistered(operator, operatorId);
         }
 
         // Register the operator with the BLSApkRegistry, StakeRegistry, and IndexRegistry
