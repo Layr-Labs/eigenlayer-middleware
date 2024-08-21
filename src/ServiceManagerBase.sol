@@ -331,7 +331,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      * @dev No guarantee is made on uniqueness of each element in the returned array.
      *      The off-chain service should do that validation separately
      */
-    function getRestakeableStrategies() external view returns (address[] memory) {
+    function getRestakeableStrategies() external virtual view returns (address[] memory) {
         uint256 quorumCount = _registryCoordinator.quorumCount();
 
         if (quorumCount == 0) {
@@ -365,6 +365,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      */
     function getOperatorRestakedStrategies(address operator)
         external
+        virtual
         view
         returns (address[] memory)
     {

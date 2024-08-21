@@ -19,3 +19,4 @@ contract BeaconChainOracleMock {
         blockRoots[timestamp] = blockRoot;
     }
 }
+

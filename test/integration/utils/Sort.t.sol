@@ -2,23 +2,24 @@
 pragma solidity ^0.8.12;
 
 library Sort {
-
-    /// @dev In-place insertion sort of addrs, h/t ChatGPT
-    function sort(address[] memory addrs) internal pure {
-        for (uint i = 1; i < addrs.length; i++) {
-            address key = addrs[i];
-            uint j = i - 1;
-
-            // Move elements of addrs[0..i-1], that are greater than key,
-            // to one position ahead of their current position
-            while (j >= 0 && addrs[j] > key) {
-                addrs[j + 1] = addrs[j];
-                if(j == 0) {
-                    break;
+    /**
+     * @notice Sorts an array of addresses in ascending order. h/t ChatGPT take 2
+     * @dev This function uses the Bubble Sort algorithm, which is simple but has O(n^2) complexity.
+     * @param addresses The array of addresses to be sorted.
+     * @return sortedAddresses The array of addresses sorted in ascending order.
+     */
+    function sortAddresses(address[] memory addresses) internal pure returns (address[] memory) {
+        uint256 n = addresses.length;
+        for (uint256 i = 0; i < n; i++) {
+            for (uint256 j = 0; j < n - 1; j++) {
+                // Compare and swap if the current address is greater than the next one
+                if (addresses[j] > addresses[j + 1]) {
+                    address temp = addresses[j];
+                    addresses[j] = addresses[j + 1];
+                    addresses[j + 1] = temp;
                 }
-                j--;
             }
-            addrs[j + 1] = key;
         }
+        return addresses;
     }
 }
