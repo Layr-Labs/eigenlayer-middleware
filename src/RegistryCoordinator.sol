@@ -515,7 +515,7 @@ contract RegistryCoordinator is
                 OperatorInfo({operatorId: operatorId, status: OperatorStatus.REGISTERED});
 
             // Register the operator with the EigenLayer core contracts via this AVS's ServiceManager
-            bool operatorSetAVS = IAVSDirectory(serviceManager.avsDirectory()).isOperatorSetAVS(address(serviceManager)); /// TODO: call avsdirectory
+            bool operatorSetAVS = IAVSDirectory(serviceManager.avsDirectory()).isOperatorSetAVS(address(serviceManager));
             if (operatorSetAVS){
                 bytes memory quorumBytes = BitmapUtils.bitmapToBytesArray(quorumsToAdd);
                 uint32[] memory operatorSetIds = new uint32[](quorumBytes.length);
@@ -666,7 +666,7 @@ contract RegistryCoordinator is
         _updateOperatorBitmap({operatorId: operatorId, newBitmap: newBitmap});
 
 
-        bool operatorSetAVS = IAVSDirectory(serviceManager.avsDirectory()).isOperatorSetAVS(address(serviceManager)); /// TODO: call avsdirectory
+        bool operatorSetAVS = IAVSDirectory(serviceManager.avsDirectory()).isOperatorSetAVS(address(serviceManager));
         if (operatorSetAVS){
             bytes memory quorumBytes = BitmapUtils.bitmapToBytesArray(quorumsToRemove);
             uint32[] memory operatorSetIds = new uint32[](quorumBytes.length);
