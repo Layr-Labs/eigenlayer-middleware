@@ -199,6 +199,91 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
 
     }
 
+    function test_updateOperatorsForQuorumsAfterDirectUnregister() public {
+        vm.prank(proxyAdmin.owner());
+        proxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(avsDirectory))),
+            address(avsDirectoryMock)
+        );
+        uint256 pseudoRandomNumber = uint256(keccak256("pseudoRandomNumber"));
+        _registerRandomOperators(pseudoRandomNumber);
+
+        vm.prank(proxyAdmin.owner());
+        proxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(avsDirectory))),
+            address(avsDirectoryHarness)
+        );
+
+        uint256 quorumCount = registryCoordinator.quorumCount();
+        for (uint256 i = 0; i < quorumCount; i++) {
+            uint256 operatorCount = indexRegistry.totalOperatorsForQuorum(uint8(i));
+            bytes32[] memory operatorIds =
+                indexRegistry.getOperatorListAtBlockNumber(uint8(i), uint32(block.number));
+            assertEq(operatorCount, operatorIds.length, "Operator Id length mismatch"); // sanity check
+            for (uint256 j = 0; j < operatorCount; j++) {
+                address operatorAddress =
+                 registryCoordinator.blsApkRegistry().getOperatorFromPubkeyHash(operatorIds[j]);
+                AVSDirectoryHarness(address(avsDirectory)).setAvsOperatorStatus(
+                    address(serviceManager),
+                    operatorAddress,
+                    IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED
+                );
+            }
+        }
+
+        (
+            uint32[] memory operatorSetsToCreate,
+            uint32[][] memory operatorSetIdsToMigrate,
+            address[] memory operators
+        ) = serviceManager.getOperatorsToMigrate();
+        cheats.startPrank(serviceManagerOwner);
+        serviceManager.migrateAndCreateOperatorSetIds(operatorSetsToCreate);
+        serviceManager.migrateToOperatorSets(operatorSetIdsToMigrate, operators);
+        cheats.stopPrank();
+
+        bytes32[] memory registeredOperators = indexRegistry.getOperatorListAtBlockNumber(defaultQuorumNumber, uint32(block.number));
+        uint256 preNumOperators = registeredOperators.length;
+        address[] memory registeredOperatorAddresses = new address[](registeredOperators.length);
+        for (uint256 i = 0; i < registeredOperators.length; i++) {
+            registeredOperatorAddresses[i] = registryCoordinator.blsApkRegistry().pubkeyHashToOperator(registeredOperators[i]);
+        }
+
+        uint32[] memory operatorSetsToUnregister = new uint32[](1);
+        operatorSetsToUnregister[0] = defaultQuorumNumber;
+
+        vm.prank(operators[0]);
+        avsDirectory.forceDeregisterFromOperatorSets(
+            operators[0], 
+            address(serviceManager), 
+            operatorSetsToUnregister,
+            ISignatureUtils.SignatureWithSaltAndExpiry({
+                signature: new bytes(0),
+                salt: bytes32(0),
+                expiry: 0
+            })
+        );
+        // sanity check if the operator was unregistered from the intended operator set
+        bool operatorIsUnRegistered = !avsDirectory.isMember(operators[0], IAVSDirectory.OperatorSet({
+            avs: address(serviceManager),
+            operatorSetId: defaultQuorumNumber
+        }));
+        bool isOperatorSetAVS = avsDirectory.isOperatorSetAVS(address(serviceManager));
+        assertTrue(isOperatorSetAVS, "ServiceManager is not an operator set AVS");
+        assertTrue(operatorIsUnRegistered, "Operator wasnt unregistered from op set");
+
+        address[][] memory registeredOperatorAddresses2D = new address[][](1);
+        registeredOperatorAddresses2D[0] = registeredOperatorAddresses;
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+        registryCoordinator.updateOperatorsForQuorum(registeredOperatorAddresses2D, quorumNumbers);
+
+        registeredOperators = indexRegistry.getOperatorListAtBlockNumber(defaultQuorumNumber, uint32(block.number));
+        uint256 postRegisteredOperators = registeredOperators.length;
+
+        assertEq(preNumOperators-1, postRegisteredOperators, "");
+
+    }
+
     function test_deregister_afterMigration() public {
         vm.prank(proxyAdmin.owner());
         proxyAdmin.upgrade(
@@ -274,7 +359,7 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
         assertFalse(isOperatorRegistered, "Operator wasn't deregistered from operator set");
     }
 
-        function test_register_afterMigration() public {
+    function test_register_afterMigration() public {
         vm.prank(proxyAdmin.owner());
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(avsDirectory))),
