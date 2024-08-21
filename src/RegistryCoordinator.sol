@@ -14,6 +14,7 @@ import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {BN254} from "./libraries/BN254.sol";
 import {SignatureCheckerLib} from "./libraries/SignatureCheckerLib.sol";
+import {QuorumBitmapLib} from "./libraries/QuorumBitmapLib.sol";
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
@@ -516,7 +517,7 @@ contract RegistryCoordinator is
                 OperatorInfo({operatorId: operatorId, status: OperatorStatus.REGISTERED});
 
             // Register the operator with the EigenLayer core contracts via this AVS's ServiceManager
-            bool operatorSetAVS = IAVSDirectory(serviceManager.avsDirectory()).isOperatorSetAVS(address(serviceManager));
+            bool operatorSetAVS = avsDirectory.isOperatorSetAVS(address(serviceManager));
             if (operatorSetAVS){
                 bytes memory quorumBytes = BitmapUtils.bitmapToBytesArray(quorumsToAdd);
                 uint32[] memory operatorSetIds = new uint32[](quorumBytes.length);
@@ -827,7 +828,6 @@ contract RegistryCoordinator is
         indexRegistry.initializeQuorum(quorumNumber);
         blsApkRegistry.initializeQuorum(quorumNumber);
         // Check if the AVS has migrated to operator sets
-        IAVSDirectory avsDirectory = IAVSDirectory(serviceManager.avsDirectory());
         if (avsDirectory.isOperatorSetAVS(address(serviceManager))) {
             // Create an operator set for the new quorum
             uint32[] memory operatorSetIds = new uint32[](1);
@@ -841,50 +841,13 @@ contract RegistryCoordinator is
      * @param newBitmap is the most up-to-date set of bitmaps the operator is registered for
      */
     function _updateOperatorBitmap(bytes32 operatorId, uint192 newBitmap) internal {
-        uint256 historyLength = _operatorBitmapHistory[operatorId].length;
-
-        if (historyLength == 0) {
-            // No prior bitmap history - push our first entry
-            _operatorBitmapHistory[operatorId].push(
-                QuorumBitmapUpdate({
-                    updateBlockNumber: uint32(block.number),
-                    nextUpdateBlockNumber: 0,
-                    quorumBitmap: newBitmap
-                })
-            );
-        } else {
-            // We have prior history - fetch our last-recorded update
-            QuorumBitmapUpdate storage lastUpdate =
-                _operatorBitmapHistory[operatorId][historyLength - 1];
-
-            /**
-             * If the last update was made in the current block, update the entry.
-             * Otherwise, push a new entry and update the previous entry's "next" field
-             */
-            if (lastUpdate.updateBlockNumber == uint32(block.number)) {
-                lastUpdate.quorumBitmap = newBitmap;
-            } else {
-                lastUpdate.nextUpdateBlockNumber = uint32(block.number);
-                _operatorBitmapHistory[operatorId].push(
-                    QuorumBitmapUpdate({
-                        updateBlockNumber: uint32(block.number),
-                        nextUpdateBlockNumber: 0,
-                        quorumBitmap: newBitmap
-                    })
-                );
-            }
-        }
+        QuorumBitmapLib.updateOperatorBitmap(_operatorBitmapHistory, operatorId, newBitmap);
     }
 
     /// @notice Get the most recent bitmap for the operator, returning an empty bitmap if
     /// the operator is not registered.
     function _currentOperatorBitmap(bytes32 operatorId) internal view returns (uint192) {
-        uint256 historyLength = _operatorBitmapHistory[operatorId].length;
-        if (historyLength == 0) {
-            return 0;
-        } else {
-            return _operatorBitmapHistory[operatorId][historyLength - 1].quorumBitmap;
-        }
+        return QuorumBitmapLib.currentOperatorBitmap(_operatorBitmapHistory, operatorId);
     }
 
     /**
@@ -896,21 +859,7 @@ contract RegistryCoordinator is
         uint32 blockNumber,
         bytes32 operatorId
     ) internal view returns (uint32 index) {
-        uint256 length = _operatorBitmapHistory[operatorId].length;
-
-        // Traverse the operator's bitmap history in reverse, returning the first index
-        // corresponding to an update made before or at `blockNumber`
-        for (uint256 i = 0; i < length; i++) {
-            index = uint32(length - i - 1);
-
-            if (_operatorBitmapHistory[operatorId][index].updateBlockNumber <= blockNumber) {
-                return index;
-            }
-        }
-
-        revert(
-            "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId"
-        );
+        return QuorumBitmapLib.getQuorumBitmapIndexAtBlockNumber(_operatorBitmapHistory,blockNumber, operatorId);
     }
 
     function _setOperatorSetParams(
@@ -979,11 +928,7 @@ contract RegistryCoordinator is
         uint32 blockNumber,
         bytes32[] memory operatorIds
     ) external view returns (uint32[] memory) {
-        uint32[] memory indices = new uint32[](operatorIds.length);
-        for (uint256 i = 0; i < operatorIds.length; i++) {
-            indices[i] = _getQuorumBitmapIndexAtBlockNumber(blockNumber, operatorIds[i]);
-        }
-        return indices;
+        return QuorumBitmapLib.getQuorumBitmapIndicesAtBlockNumber(_operatorBitmapHistory, blockNumber, operatorIds);
     }
 
     /**
@@ -997,24 +942,7 @@ contract RegistryCoordinator is
         uint32 blockNumber,
         uint256 index
     ) external view returns (uint192) {
-        QuorumBitmapUpdate memory quorumBitmapUpdate = _operatorBitmapHistory[operatorId][index];
-
-        /**
-         * Validate that the update is valid for the given blockNumber:
-         * - blockNumber should be >= the update block number
-         * - the next update block number should be either 0 or strictly greater than blockNumber
-         */
-        require(
-            blockNumber >= quorumBitmapUpdate.updateBlockNumber,
-            "RegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber"
-        );
-        require(
-            quorumBitmapUpdate.nextUpdateBlockNumber == 0
-                || blockNumber < quorumBitmapUpdate.nextUpdateBlockNumber,
-            "RegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from before blockNumber"
-        );
-
-        return quorumBitmapUpdate.quorumBitmap;
+        return QuorumBitmapLib.getQuorumBitmapAtBlockNumberByIndex(_operatorBitmapHistory, operatorId, blockNumber, index);
     }
 
     /// @notice Returns the `index`th entry in the operator with `operatorId`'s bitmap history
