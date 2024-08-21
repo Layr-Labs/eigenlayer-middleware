@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
+import {IServiceManager} from "./IServiceManager.sol";
 import {IBLSApkRegistry} from "./IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./IStakeRegistry.sol";
 import {IIndexRegistry} from "./IIndexRegistry.sol";
@@ -150,4 +151,6 @@ interface IRegistryCoordinator {
 
     /// @notice The owner of the registry coordinator
     function owner() external view returns (address);
+
+    function serviceManager() external view returns (IServiceManager);
 }
