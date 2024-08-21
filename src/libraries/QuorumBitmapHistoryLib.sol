@@ -3,7 +3,15 @@ pragma solidity ^0.8.12;
 
 import {IRegistryCoordinator} from "../interfaces/IRegistryCoordinator.sol";
 
+/// @title QuorumBitmapHistoryLib
+/// @notice This library operates on the _operatorBitmapHistory in the RegistryCoordinator
 library QuorumBitmapHistoryLib {
+
+    /// @notice Retrieves the index of the quorum bitmap update at or before the specified block number
+    /// @param self The mapping of operator IDs to their quorum bitmap update history
+    /// @param blockNumber The block number to search for
+    /// @param operatorId The ID of the operator
+    /// @return index The index of the quorum bitmap update
     function getQuorumBitmapIndexAtBlockNumber(
         mapping(bytes32 => IRegistryCoordinator.QuorumBitmapUpdate[]) storage self,
         uint32 blockNumber,
@@ -26,6 +34,10 @@ library QuorumBitmapHistoryLib {
         );
     }
 
+    /// @notice Retrieves the current quorum bitmap for the given operator ID
+    /// @param self The mapping of operator IDs to their quorum bitmap update history
+    /// @param operatorId The ID of the operator
+    /// @return The current quorum bitmap
     function currentOperatorBitmap(
         mapping(bytes32 => IRegistryCoordinator.QuorumBitmapUpdate[]) storage self,
         bytes32 operatorId
@@ -38,6 +50,11 @@ library QuorumBitmapHistoryLib {
         }
     }
 
+    /// @notice Retrieves the indices of the quorum bitmap updates for the given operator IDs at the specified block number
+    /// @param self The mapping of operator IDs to their quorum bitmap update history
+    /// @param blockNumber The block number to search for
+    /// @param operatorIds The array of operator IDs
+    /// @return An array of indices corresponding to the quorum bitmap updates
     function getQuorumBitmapIndicesAtBlockNumber(
         mapping(bytes32 => IRegistryCoordinator.QuorumBitmapUpdate[]) storage self,
         uint32 blockNumber,
@@ -50,6 +67,12 @@ library QuorumBitmapHistoryLib {
         return indices;
     }
 
+    /// @notice Retrieves the quorum bitmap for the given operator ID at the specified block number and index
+    /// @param self The mapping of operator IDs to their quorum bitmap update history
+    /// @param operatorId The ID of the operator
+    /// @param blockNumber The block number to validate against
+    /// @param index The index of the quorum bitmap update
+    /// @return The quorum bitmap at the specified index
     function getQuorumBitmapAtBlockNumberByIndex(
         mapping(bytes32 => IRegistryCoordinator.QuorumBitmapUpdate[]) storage self,
         bytes32 operatorId,
@@ -76,6 +99,10 @@ library QuorumBitmapHistoryLib {
         return quorumBitmapUpdate.quorumBitmap;
     }
 
+    /// @notice Updates the quorum bitmap for the given operator ID
+    /// @param self The mapping of operator IDs to their quorum bitmap update history
+    /// @param operatorId The ID of the operator
+    /// @param newBitmap The new quorum bitmap to set
     function updateOperatorBitmap(
         mapping(bytes32 => IRegistryCoordinator.QuorumBitmapUpdate[]) storage self,
         bytes32 operatorId,
