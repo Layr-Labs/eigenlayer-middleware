@@ -8,8 +8,9 @@ contract StakeRegistryHarness is StakeRegistry {
     constructor(
         IRegistryCoordinator _registryCoordinator,
         IDelegationManager _delegationManager,
-        IAVSDirectory _avsDirectory
-    ) StakeRegistry(_registryCoordinator, _delegationManager, _avsDirectory) {
+        IAVSDirectory _avsDirectory,
+        IServiceManager _serviceManager
+    ) StakeRegistry(_registryCoordinator, _delegationManager, _avsDirectory, _serviceManager) {
     }
 
     function recordOperatorStakeUpdate(bytes32 operatorId, uint8 quorumNumber, uint96 newStake) external returns(int256) {

@@ -222,7 +222,7 @@ contract MockAVSDeployer is Test {
         cheats.startPrank(proxyAdminOwner);
 
         stakeRegistryImplementation =
-            new StakeRegistryHarness(IRegistryCoordinator(registryCoordinator), delegationMock, avsDirectory);
+            new StakeRegistryHarness(IRegistryCoordinator(registryCoordinator), delegationMock, avsDirectory, serviceManager);
 
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(stakeRegistry))),

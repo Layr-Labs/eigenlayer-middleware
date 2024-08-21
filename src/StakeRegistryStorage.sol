@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IStrategyManager, IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
@@ -28,6 +29,9 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
     /// @notice The address of the Delegation contract for EigenLayer.
     IAVSDirectory public immutable avsDirectory;
 
+    /// @notice the address of the ServiceManager associtated with the stake registries
+    IServiceManager public immutable serviceManager;
+
     /// @notice the coordinator contract that this registry is associated with
     address public immutable registryCoordinator;
 
@@ -52,11 +56,13 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
     constructor(
         IRegistryCoordinator _registryCoordinator, 
         IDelegationManager _delegationManager,
-        IAVSDirectory _avsDirectory
+        IAVSDirectory _avsDirectory,
+        IServiceManager _serviceManager
     ) {
         registryCoordinator = address(_registryCoordinator);
         delegation = _delegationManager;
         avsDirectory = _avsDirectory;
+        serviceManager = _serviceManager;
     }
 
     // storage gap for upgradeability

@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IServiceManager} from "./interfaces/IServiceManager.sol";
 
 import {StakeRegistryStorage, IStrategy} from "./StakeRegistryStorage.sol";
 
@@ -42,8 +43,9 @@ contract StakeRegistry is StakeRegistryStorage {
     constructor(
         IRegistryCoordinator _registryCoordinator,
         IDelegationManager _delegationManager,
-        IAVSDirectory _avsDirectory
-    ) StakeRegistryStorage(_registryCoordinator, _delegationManager, _avsDirectory) {}
+        IAVSDirectory _avsDirectory,
+        IServiceManager _serviceManager
+    ) StakeRegistryStorage(_registryCoordinator, _delegationManager, _avsDirectory, _serviceManager) {}
 
     /*******************************************************************************
                       EXTERNAL FUNCTIONS - REGISTRY COORDINATOR
@@ -150,10 +152,8 @@ contract StakeRegistry is StakeRegistryStorage {
     ) external onlyRegistryCoordinator returns (uint192) {
         uint192 quorumsToRemove;
 
-         address avs = address(
-             IRegistryCoordinator(registryCoordinator).serviceManager());
         bool isOperatorSetAVS = avsDirectory.isOperatorSetAVS(
-                address(avs)
+                address(serviceManager)
             );
 
         /**
@@ -182,7 +182,7 @@ contract StakeRegistry is StakeRegistryStorage {
             // Query the AVSDirectory to check if the operator is directly unregistered
             operatorRegistered = avsDirectory.isMember(
                 operator,
-                IAVSDirectory.OperatorSet(address(avs), operatorSetId)
+                IAVSDirectory.OperatorSet(address(serviceManager), operatorSetId)
             );
 
             if (!hasMinimumStake || (isOperatorSetAVS && !operatorRegistered)) {
