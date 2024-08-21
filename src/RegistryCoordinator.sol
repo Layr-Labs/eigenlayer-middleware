@@ -14,7 +14,7 @@ import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {BN254} from "./libraries/BN254.sol";
 import {SignatureCheckerLib} from "./libraries/SignatureCheckerLib.sol";
-import {QuorumBitmapLib} from "./libraries/QuorumBitmapLib.sol";
+import {QuorumBitmapHistoryLib} from "./libraries/QuorumBitmapHistoryLib.sol";
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
@@ -841,13 +841,13 @@ contract RegistryCoordinator is
      * @param newBitmap is the most up-to-date set of bitmaps the operator is registered for
      */
     function _updateOperatorBitmap(bytes32 operatorId, uint192 newBitmap) internal {
-        QuorumBitmapLib.updateOperatorBitmap(_operatorBitmapHistory, operatorId, newBitmap);
+        QuorumBitmapHistoryLib.updateOperatorBitmap(_operatorBitmapHistory, operatorId, newBitmap);
     }
 
     /// @notice Get the most recent bitmap for the operator, returning an empty bitmap if
     /// the operator is not registered.
     function _currentOperatorBitmap(bytes32 operatorId) internal view returns (uint192) {
-        return QuorumBitmapLib.currentOperatorBitmap(_operatorBitmapHistory, operatorId);
+        return QuorumBitmapHistoryLib.currentOperatorBitmap(_operatorBitmapHistory, operatorId);
     }
 
     /**
@@ -859,7 +859,7 @@ contract RegistryCoordinator is
         uint32 blockNumber,
         bytes32 operatorId
     ) internal view returns (uint32 index) {
-        return QuorumBitmapLib.getQuorumBitmapIndexAtBlockNumber(_operatorBitmapHistory,blockNumber, operatorId);
+        return QuorumBitmapHistoryLib.getQuorumBitmapIndexAtBlockNumber(_operatorBitmapHistory,blockNumber, operatorId);
     }
 
     function _setOperatorSetParams(
@@ -928,7 +928,7 @@ contract RegistryCoordinator is
         uint32 blockNumber,
         bytes32[] memory operatorIds
     ) external view returns (uint32[] memory) {
-        return QuorumBitmapLib.getQuorumBitmapIndicesAtBlockNumber(_operatorBitmapHistory, blockNumber, operatorIds);
+        return QuorumBitmapHistoryLib.getQuorumBitmapIndicesAtBlockNumber(_operatorBitmapHistory, blockNumber, operatorIds);
     }
 
     /**
@@ -942,7 +942,7 @@ contract RegistryCoordinator is
         uint32 blockNumber,
         uint256 index
     ) external view returns (uint192) {
-        return QuorumBitmapLib.getQuorumBitmapAtBlockNumberByIndex(_operatorBitmapHistory, operatorId, blockNumber, index);
+        return QuorumBitmapHistoryLib.getQuorumBitmapAtBlockNumberByIndex(_operatorBitmapHistory, operatorId, blockNumber, index);
     }
 
     /// @notice Returns the `index`th entry in the operator with `operatorId`'s bitmap history

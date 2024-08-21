@@ -6,7 +6,7 @@ import {IRegistryCoordinator} from "../interfaces/IRegistryCoordinator.sol";
 
 
 /// Separated out this logic to save bytecode
-library QuorumBitmapLib {
+library QuorumBitmapHistoryLib {
 
     function getQuorumBitmapIndexAtBlockNumber( 
         mapping(bytes32 => IRegistryCoordinator.QuorumBitmapUpdate[]) storage self,
