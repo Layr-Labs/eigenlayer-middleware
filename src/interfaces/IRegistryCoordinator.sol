@@ -137,7 +137,7 @@ interface IRegistryCoordinator {
     function registries(uint256) external view returns (address);
 
     /// @notice Returns the number of registries
-    // function numRegistries() external view returns (uint256);
+    function numRegistries() external view returns (uint256);
 
     /**
      * @notice Returns the message hash that an operator must sign to register their BLS public key.
