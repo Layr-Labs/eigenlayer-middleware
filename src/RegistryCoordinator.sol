@@ -58,9 +58,10 @@ contract RegistryCoordinator is
         IServiceManager _serviceManager,
         IStakeRegistry _stakeRegistry,
         IBLSApkRegistry _blsApkRegistry,
-        IIndexRegistry _indexRegistry
+        IIndexRegistry _indexRegistry,
+        IAVSDirectory _avsDirectory
     )
-        RegistryCoordinatorStorage(_serviceManager, _stakeRegistry, _blsApkRegistry, _indexRegistry)
+        RegistryCoordinatorStorage(_serviceManager, _stakeRegistry, _blsApkRegistry, _indexRegistry, _avsDirectory)
         EIP712("AVSRegistryCoordinator", "v0.0.1")
     {
         _disableInitializers();
@@ -670,10 +671,33 @@ contract RegistryCoordinator is
         if (operatorSetAVS){
             bytes memory quorumBytes = BitmapUtils.bitmapToBytesArray(quorumsToRemove);
             uint32[] memory operatorSetIds = new uint32[](quorumBytes.length);
+            uint256 forceDeregistrationCount;
             for (uint256 i = 0; i < quorumBytes.length; i++) {
+                /// We need to track forceDeregistrations so we don't pass an id that was already deregistered on the AVSDirectory
+                /// but hasnt yet been recorded in the middleware contracts
+                if (!avsDirectory.isMember(operator, IAVSDirectory.OperatorSet(address(serviceManager), uint8(quorumBytes[i])))){
+                    forceDeregistrationCount++;
+                }
                 operatorSetIds[i] = uint8(quorumBytes[i]);
             }
-            serviceManager.deregisterOperatorFromOperatorSets(operator, operatorSetIds);
+
+            /// Filter out forceDeregistration operator set Ids
+            if (forceDeregistrationCount > 0 ){
+                uint32[] memory filteredOperatorSetIds = new uint32[](operatorSetIds.length - forceDeregistrationCount);
+                uint256 offset;
+                for (uint256 i; i < operatorSetIds.length; i++){
+                    if (avsDirectory.isMember(operator, IAVSDirectory.OperatorSet(address(serviceManager), operatorSetIds[i]))){
+                        filteredOperatorSetIds[i] = operatorSetIds[i+offset];
+                    } else {
+                        offset++;
+                    }
+                }
+                serviceManager.deregisterOperatorFromOperatorSets(operator, filteredOperatorSetIds);
+            } else {
+                serviceManager.deregisterOperatorFromOperatorSets(operator, operatorSetIds);
+
+            }
+
 
         } else {
             // If the operator is no longer registered for any quorums, update their status and deregister
