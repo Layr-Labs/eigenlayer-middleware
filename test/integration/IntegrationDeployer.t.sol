@@ -20,11 +20,8 @@ import "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
 import "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPodManager.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPod.sol";
-// import "eigenlayer-contracts/src/contracts/pods/DelayedWithdrawalRouter.sol";
 import "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import "eigenlayer-contracts/src/test/mocks/ETHDepositMock.sol";
-// import "eigenlayer-contracts/src/test/integration/mocks/BeaconChainOracleMock.t.sol";
-import "test/integration/mocks/BeaconChainOracleMock.t.sol";
 
 // Middleware contracts
 import "src/RegistryCoordinator.sol";
@@ -57,9 +54,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     Slasher slasher;
     IBeacon eigenPodBeacon;
     EigenPod pod;
-    // DelayedWithdrawalRouter delayedWithdrawalRouter;
     ETHPOSDepositMock ethPOSDeposit;
-    BeaconChainOracleMock beaconChainOracle;
 
     // Base strategy implementation in case we want to create more strategies later
     StrategyBase baseStrategyImplementation;
@@ -92,7 +87,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     address rewardsUpdater = address(uint160(uint256(keccak256("rewardsUpdater"))));
 
     // Constants/Defaults
-    uint64 constant MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 32e9;
+    uint64 constant GENESIS_TIME_LOCAL = 1 hours * 12;
     uint256 constant MIN_BALANCE = 1e6;
     uint256 constant MAX_BALANCE = 5e6;
     uint256 constant MAX_STRATEGY_COUNT = 32; // From StakeRegistry.MAX_WEIGHING_FUNCTION_LENGTH
@@ -121,7 +116,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         // Deploy mocks
         EmptyContract emptyContract = new EmptyContract();
         ethPOSDeposit = new ETHPOSDepositMock();
-        beaconChainOracle = new BeaconChainOracleMock();
 
         /**
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
@@ -147,11 +141,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
-        // delayedWithdrawalRouter = DelayedWithdrawalRouter(
-        //     address(
-        //         new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
-        //     )
-        // );
         avsDirectory = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
@@ -164,10 +153,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         // Deploy EigenPod Contracts
         pod = new EigenPod(
             ethPOSDeposit,
-            // delayedWithdrawalRouter,
             eigenPodManager,
-            // MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-            0
+            GENESIS_TIME_LOCAL
         );
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
@@ -181,8 +168,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit, eigenPodBeacon, strategyManager, slasher, delegationManager
         );
-        // DelayedWithdrawalRouter delayedWithdrawalRouterImplementation =
-        //     new DelayedWithdrawalRouter(eigenPodManager);
         AVSDirectory avsDirectoryImplemntation = new AVSDirectory(delegationManager);
         // RewardsCoordinator rewardsCoordinatorImplementation = new RewardsCoordinator(
         //     delegationManager,
@@ -240,24 +225,11 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
-                address(beaconChainOracle),
                 eigenLayerReputedMultisig, // initialOwner
                 pauserRegistry,
                 0 // initialPausedStatus
             )
         );
-        // Delayed Withdrawal Router
-        // proxyAdmin.upgradeAndCall(
-        //     TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
-        //     address(delayedWithdrawalRouterImplementation),
-        //     abi.encodeWithSelector(
-        //         DelayedWithdrawalRouter.initialize.selector,
-        //         eigenLayerReputedMultisig, // initialOwner
-        //         pauserRegistry,
-        //         0, // initialPausedStatus
-        //         minWithdrawalDelayBlocks
-        //     )
-        // );
         // AVSDirectory
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(avsDirectory))),

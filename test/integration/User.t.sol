@@ -399,7 +399,7 @@ contract User_AltMethods is User {
                 operatorsPerQuorum[i][j] = blsApkRegistry.getOperatorFromPubkeyHash(operatorIds[j]);
             }
 
-            Sort.sort(operatorsPerQuorum[i]);
+            operatorsPerQuorum[i] = Sort.sortAddresses(operatorsPerQuorum[i]);
         }
 
         registryCoordinator.updateOperatorsForQuorum(operatorsPerQuorum, allQuorums);        
