@@ -5,6 +5,7 @@ import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
+import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 
 abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
@@ -39,6 +40,8 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
     IStakeRegistry public immutable stakeRegistry;
     /// @notice the Index Registry contract that will keep track of operators' indexes
     IIndexRegistry public immutable indexRegistry;
+    /// @notice the AVS Directory that tracks operator registrations to AVS and operator sets 
+    IAVSDirectory public immutable avsDirectory;
 
     /*******************************************************************************
                                        STATE 
@@ -73,12 +76,14 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
         IServiceManager _serviceManager,
         IStakeRegistry _stakeRegistry,
         IBLSApkRegistry _blsApkRegistry,
-        IIndexRegistry _indexRegistry
+        IIndexRegistry _indexRegistry,
+        IAVSDirectory _avsDirectory
     ) {
         serviceManager = _serviceManager;
         stakeRegistry = _stakeRegistry;
         blsApkRegistry = _blsApkRegistry;
         indexRegistry = _indexRegistry;
+        avsDirectory = _avsDirectory;
     }
 
     // storage gap for upgradeability
