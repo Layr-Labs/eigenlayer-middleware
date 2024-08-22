@@ -17,6 +17,10 @@ via_ir = false
 # Override the Solidity version (this overrides `auto_detect_solc`)
 solc_version = '0.8.12'
 
+[etherscan]
+mainnet = { key = "${ETHERSCAN_API_KEY}" }
+holesky = { key = "${ETHERSCAN_API_KEY}" }
+
 [fmt]
 bracket_spacing = false
 int_types = "long"
