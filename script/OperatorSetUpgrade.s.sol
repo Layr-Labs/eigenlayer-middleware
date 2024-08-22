@@ -217,7 +217,8 @@ contract OperatorSetUpgradeScript is Script {
             IServiceManager(serviceManager),
             IStakeRegistry(stakeRegistry),
             IBLSApkRegistry(blsApkRegistry),
-            IIndexRegistry(indexRegistry)
+            IIndexRegistry(indexRegistry),
+            IAVSDirectory(avsDirectory)
         ));
         address newStakeRegistryImpl = address(new StakeRegistry(
             IRegistryCoordinator(registryCoordinator),
