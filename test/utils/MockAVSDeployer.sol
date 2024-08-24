@@ -27,7 +27,8 @@ import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
 
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
 import {EigenPodManagerMock} from "eigenlayer-contracts/src/test/mocks/EigenPodManagerMock.sol";
-import {AVSDirectoryMock} from "../mocks/AVSDirectoryMock.sol";
+// import {AVSDirectoryMock} from "../mocks/AVSDirectoryMock.sol";
+import {AVSDirectoryMock} from "eigenlayer-contracts/src/test/mocks/AVSDirectoryMock.sol";
 import {DelegationMock} from "../mocks/DelegationMock.sol";
 import {AVSDirectory} from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";

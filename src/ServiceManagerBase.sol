@@ -122,7 +122,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) public virtual onlyRegistryCoordinator {
-        _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
+        // _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
     }
 
     /**
@@ -130,7 +130,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      * @param operator The address of the operator to deregister.
      */
     function deregisterOperatorFromAVS(address operator) public virtual onlyRegistryCoordinator {
-        _avsDirectory.deregisterOperatorFromAVS(operator);
+        // _avsDirectory.deregisterOperatorFromAVS(operator);
     }
 
     /**

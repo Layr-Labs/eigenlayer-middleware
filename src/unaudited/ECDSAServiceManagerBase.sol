@@ -159,10 +159,10 @@ abstract contract ECDSAServiceManagerBase is
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) internal virtual {
-        IAVSDirectory(avsDirectory).registerOperatorToAVS(
-            operator,
-            operatorSignature
-        );
+        // IAVSDirectory(avsDirectory).registerOperatorToAVS(
+        //     operator,
+        //     operatorSignature
+        // );
     }
 
     /**
@@ -171,7 +171,7 @@ abstract contract ECDSAServiceManagerBase is
      * @param operator The address of the operator to deregister.
      */
     function _deregisterOperatorFromAVS(address operator) internal virtual {
-        IAVSDirectory(avsDirectory).deregisterOperatorFromAVS(operator);
+        // IAVSDirectory(avsDirectory).deregisterOperatorFromAVS(operator);
     }
 
     /**

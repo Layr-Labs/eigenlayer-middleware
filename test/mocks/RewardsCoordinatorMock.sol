@@ -3,8 +3,8 @@ pragma solidity ^0.8.12;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
-import "./AVSDirectoryMock.sol";
 
 contract RewardsCoordinatorMock is IRewardsCoordinator {
     /// @notice The address of the entity that can update the contract with new merkle roots
