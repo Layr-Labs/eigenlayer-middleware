@@ -6,6 +6,7 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISi
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IStakeRootCompendium} from "eigenlayer-contracts/src/contracts/interfaces/IStakeRootCompendium.sol";
 
 import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
@@ -45,16 +46,17 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         );
     }
 
-    /// @notice Sets the (immutable) `_registryCoordinator` address
     constructor(
         IAVSDirectory __avsDirectory,
         IRewardsCoordinator __rewardsCoordinator,
+        IStakeRootCompendium __stakeRootCompendium,
         IRegistryCoordinator __registryCoordinator,
         IStakeRegistry __stakeRegistry
     )
         ServiceManagerBaseStorage(
             __avsDirectory,
             __rewardsCoordinator,
+            __stakeRootCompendium,
             __registryCoordinator,
             __stakeRegistry
         )
@@ -171,13 +173,14 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     /**
      * @notice Migrates the AVS to use operator sets and creates new operator set IDs.
      * @param operatorSetsToCreate An array of operator set IDs to create.
+     * @param amountToFund An array of amounts to fund each operatorSet with in the StakeRootCompendium
      * @dev This function can only be called by the contract owner.
      */
-    function migrateAndCreateOperatorSetIds(uint32[] memory operatorSetsToCreate)
+    function migrateAndCreateOperatorSetIds(uint32[] memory operatorSetsToCreate, uint256[] memory amountToFund)
         external
         onlyOwner
     {
-        _migrateAndCreateOperatorSetIds(operatorSetsToCreate);
+        _migrateAndCreateOperatorSetIds(operatorSetsToCreate, amountToFund);
     }
 
     /**
@@ -205,13 +208,32 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         migrationFinalized = true;
     }
 
-    /**
-     * @notice Migrates the AVS to use operator sets and create new operator set IDs.
-     * @param operatorSetIdsToCreate An array of operator set IDs to create.
-     */
-    function _migrateAndCreateOperatorSetIds(uint32[] memory operatorSetIdsToCreate) internal {
+    function _migrateAndCreateOperatorSetIds(uint32[] memory operatorSetIdsToCreate, uint256[] memory amountToFund ) internal {
         _avsDirectory.becomeOperatorSetAVS();
-        IAVSDirectory(address(_avsDirectory)).createOperatorSets(operatorSetIdsToCreate);
+        _avsDirectory.createOperatorSets(operatorSetIdsToCreate);
+        // Fund the operator sets in the StakeRootCompendium
+        if (amountToFund.length > 0) {
+            for(uint256 i = 0; i < operatorSetIdsToCreate.length; i++) {
+                // fund the operator set in the StakeRootCompendium
+                _stakeRootCompendium.depositForOperatorSet{value: amountToFund[i]}(
+                    IAVSDirectory.OperatorSet({
+                        avs: address(this),
+                        operatorSetId: operatorSetIdsToCreate[i]
+                    })
+                );
+
+                // configure the strategies and multipliers for the operator set
+                IStakeRegistry.StrategyParams[] memory strategyParams = _stakeRegistry.strategyParamsForQuorum(uint8(operatorSetIdsToCreate[i]));
+                IStakeRootCompendium.StrategyAndMultiplier[] memory strategiesAndMultipliers;
+                assembly {
+                    strategiesAndMultipliers := strategyParams
+                }
+                _stakeRootCompendium.addStrategiesAndMultipliers(
+                    operatorSetIdsToCreate[i],
+                    strategiesAndMultipliers
+                );
+            }
+        }
     }
 
     /**
@@ -226,10 +248,19 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         require(
             operators.length == operatorSetIds.length, "ServiceManager: Input array length mismatch"
         );
+        
         for (uint256 i; i < operators.length; i++) {
-            _isOperatorRegisteredForQuorums(operators[i], operatorSetIds[i]);
+            bytes32 operatorId = _getOperatorIdAndCheckQuorums(operators[i], operatorSetIds[i]);
+            for (uint256 j; j < operatorSetIds[i].length; j++) {
+                _stakeRootCompendium.setExtraData(
+                    operatorSetIds[i][j],
+                    operators[i],
+                    operatorId
+                );
+            }
+            
         }
-        IAVSDirectory(address(_avsDirectory)).migrateOperatorsToOperatorSets(
+        _avsDirectory.migrateOperatorsToOperatorSets(
             operators, operatorSetIds
         );
     }
@@ -238,12 +269,12 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      * @notice Checks if an operator is registered for a specific quorum
      * @param operator The address of the operator to check
      * @param quorumNumbers The quorum number to check the registration for
-     * @return bool Returns true if the operator is registered for the specified quorum, false otherwise
+     * @return operatorId Returns the operator Is
      */
-    function _isOperatorRegisteredForQuorums(
+    function _getOperatorIdAndCheckQuorums(
         address operator,
         uint32[] memory quorumNumbers
-    ) internal view returns (bool) {
+    ) internal view returns (bytes32) {
         bytes32 operatorId = _registryCoordinator.getOperatorId(operator);
         uint192 operatorBitmap = _registryCoordinator.getCurrentQuorumBitmap(operatorId);
         for (uint256 i; i < quorumNumbers.length; i++) {
@@ -252,6 +283,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
                 "ServiceManager: Operator not in quorum"
             );
         }
+        return operatorId;
     }
 
     /**

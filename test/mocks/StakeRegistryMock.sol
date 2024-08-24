@@ -98,6 +98,9 @@ contract StakeRegistryMock is IStakeRegistry {
         uint256 index
     ) external view returns (StrategyParams memory) {}
 
+    /// @notice Returns the list of strategy parameters for the quorum `quorumNumber`
+    function strategyParamsForQuorum(uint8 quorumNumber) public view returns (StrategyParams[] memory) {}
+
     /**
      * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
      * @dev reverts in the case that `quorumNumber` is greater than or equal to `quorumCount`

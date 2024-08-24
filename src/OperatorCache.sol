@@ -8,7 +8,7 @@ import "eigenlayer-contracts/src/contracts/libraries/Merkle.sol";
 import {BN254} from "./libraries/BN254.sol";
 
 contract OperatorCache {
-    uint32 public constant CACHE_WINDOW = 1 days;
+    uint32 public immutable CACHE_WINDOW;
 
     /// @notice the stakeRoot compendium address
     IStakeRootCompendium public immutable stakeRootCompendium;
@@ -25,12 +25,14 @@ contract OperatorCache {
         Stakes stakes;
     }
 
-    uint32 latestCacheTimestamp;
-    bytes32 operatorSetRoot;
-    Stakes totalStakes;
+    uint32 public latestCacheTimestamp;
+    bytes32 public operatorSetRoot;
+    Stakes public totalStakes;
+
     mapping(bytes32 => Stakes) operatorStakeCache;
 
-    constructor(IStakeRootCompendium _stakeRootCompendium) {
+    constructor(uint32 _CACHE_WINDOW, IStakeRootCompendium _stakeRootCompendium) {
+        CACHE_WINDOW = _CACHE_WINDOW;
         stakeRootCompendium = _stakeRootCompendium;
     }
 
@@ -114,6 +116,8 @@ contract OperatorCache {
         bytes32 operatorSetRootMem = operatorSetRoot;
         uint256 nonCachedOperatorsIndex = 0;
         Stakes memory totalStakesOfOperators;
+
+        // TODO: should we add publicKeys in this loop?
         // get the stakes of every operator
         for(uint256 i = 0; i < publicKeys.length; i++) {
             if (isCached[i]) {

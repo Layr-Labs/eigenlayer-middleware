@@ -7,10 +7,11 @@ contract ServiceManagerMock is ServiceManagerBase {
     constructor(
         IAVSDirectory _avsDirectory,
         IRewardsCoordinator _rewardsCoordinator,
+        // IStakeRootCompendium _stakeRootCompendium,
         IRegistryCoordinator _registryCoordinator,
         IStakeRegistry _stakeRegistry
     )
-        ServiceManagerBase(_avsDirectory, _rewardsCoordinator, _registryCoordinator, _stakeRegistry)
+        ServiceManagerBase(_avsDirectory, _rewardsCoordinator, IStakeRootCompendium(address(0)), _registryCoordinator, _stakeRegistry)
     {}
 
     function initialize(
