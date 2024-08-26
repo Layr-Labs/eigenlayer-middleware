@@ -4,6 +4,7 @@ pragma solidity ^0.8.12;
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IStakeRootCompendium} from "eigenlayer-contracts/src/contracts/interfaces/IStakeRootCompendium.sol";
 import {ISocketUpdater} from "./interfaces/ISocketUpdater.sol";
 import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
@@ -101,14 +102,9 @@ contract RegistryCoordinator is
         _setChurnApprover(_churnApprover);
         _setEjector(_ejector);
 
-        // Add registry contracts to the registries array
-        registries.push(address(stakeRegistry));
-        registries.push(address(blsApkRegistry));
-        registries.push(address(indexRegistry));
-
         // Create quorums
         for (uint256 i = 0; i < _operatorSetParams.length; i++) {
-            _createQuorum(_operatorSetParams[i], _minimumStakes[i], _strategyParams[i]);
+            // _createQuorum(_operatorSetParams[i], _minimumStakes[i], _strategyParams[i]);
         }
     }
 
@@ -399,17 +395,16 @@ contract RegistryCoordinator is
     /**
      * @notice Creates a quorum and initializes it in each registry contract
      * @param operatorSetParams configures the quorum's max operator count and churn parameters
-     * @param minimumStake sets the minimum stake required for an operator to register or remain
-     * registered
-     * @param strategyParams a list of strategies and multipliers used by the StakeRegistry to
+     * @param amountToFund the amount of ETH to fund the operatorSet with in the StakeRootCompendium
+     * @param strategiesAndMultipliers a list of strategies and multipliers used by the StakeRootCompendium to
      * calculate an operator's stake weight for the quorum
      */
     function createQuorum(
         OperatorSetParam memory operatorSetParams,
-        uint96 minimumStake,
-        IStakeRegistry.StrategyParams[] memory strategyParams
+        uint256 amountToFund,
+        IStakeRootCompendium.StrategyAndMultiplier[] memory strategiesAndMultipliers
     ) external virtual onlyOwner {
-        _createQuorum(operatorSetParams, minimumStake, strategyParams);
+        _createQuorum(operatorSetParams, amountToFund, strategiesAndMultipliers);
     }
 
     /**
@@ -798,18 +793,10 @@ contract RegistryCoordinator is
         );
     }
 
-    /**
-     * @notice Creates a quorum and initializes it in each registry contract
-     * @param operatorSetParams configures the quorum's max operator count and churn parameters
-     * @param minimumStake sets the minimum stake required for an operator to register or remain
-     * registered
-     * @param strategyParams a list of strategies and multipliers used by the StakeRegistry to
-     * calculate an operator's stake weight for the quorum
-     */
     function _createQuorum(
         OperatorSetParam memory operatorSetParams,
-        uint96 minimumStake,
-        IStakeRegistry.StrategyParams[] memory strategyParams
+        uint256 amountToFund,
+        IStakeRootCompendium.StrategyAndMultiplier[] memory strategiesAndMultipliers
     ) internal {
         // Increment the total quorum count. Fails if we're already at the max
         uint8 prevQuorumCount = quorumCount;
@@ -817,6 +804,7 @@ contract RegistryCoordinator is
             prevQuorumCount < MAX_QUORUM_COUNT,
             "RegistryCoordinator.createQuorum: max quorums reached"
         );
+        require(serviceManager.migrationFinalized(), "RegistryCoordinator.createQuorum: migration not finalized");
         quorumCount = prevQuorumCount + 1;
 
         // The previous count is the new quorum's number
@@ -824,16 +812,18 @@ contract RegistryCoordinator is
 
         // Initialize the quorum here and in each registry
         _setOperatorSetParams(quorumNumber, operatorSetParams);
-        stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
         indexRegistry.initializeQuorum(quorumNumber);
         blsApkRegistry.initializeQuorum(quorumNumber);
-        // Check if the AVS has migrated to operator sets
-        if (avsDirectory.isOperatorSetAVS(address(serviceManager))) {
-            // Create an operator set for the new quorum
-            uint32[] memory operatorSetIds = new uint32[](1);
-            operatorSetIds[0] = uint32(quorumNumber);
-            serviceManager.createOperatorSets(operatorSetIds);
-        }
+
+        // Create an operator set for the new quorum
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = uint32(quorumNumber);
+        uint256[] memory amountsToFund = new uint256[](1);
+        amountsToFund[0] = amountToFund;
+        IStakeRootCompendium.StrategyAndMultiplier[][] memory strategiesAndMultipliers2D =
+            new IStakeRootCompendium.StrategyAndMultiplier[][](1);
+        strategiesAndMultipliers2D[0] = strategiesAndMultipliers;
+        serviceManager.createOperatorSets(operatorSetIds, amountsToFund, strategiesAndMultipliers2D);
     }
 
     /**
@@ -961,11 +951,6 @@ contract RegistryCoordinator is
     /// @notice Returns the length of the quorum bitmap history for the given `operatorId`
     function getQuorumBitmapHistoryLength(bytes32 operatorId) external view returns (uint256) {
         return _operatorBitmapHistory[operatorId].length;
-    }
-
-    /// @notice Returns the number of registries
-    function numRegistries() external view returns (uint256) {
-        return registries.length;
     }
 
     /**

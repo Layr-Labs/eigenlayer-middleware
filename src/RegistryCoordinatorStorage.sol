@@ -60,8 +60,7 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
     /// @notice mapping from quorum number to the latest block that all quorums were updated all at once
     mapping(uint8 => uint256) public quorumUpdateBlockNumber;
 
-    /// @notice the dynamic-length array of the registries this coordinator is coordinating
-    address[] public registries;
+    address[] public __deprecated_registries;
     /// @notice the address of the entity allowed to sign off on operators getting kicked out of the AVS during registration
     address public churnApprover;
     /// @notice the address of the entity allowed to eject operators from the AVS

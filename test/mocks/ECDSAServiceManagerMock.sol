@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
+import "eigenlayer-contracts/src/contracts/interfaces/IStakeRootCompendium.sol";
 import "../../src/unaudited/ECDSAServiceManagerBase.sol";
 
 contract ECDSAServiceManagerMock is ECDSAServiceManagerBase {
@@ -25,7 +26,13 @@ contract ECDSAServiceManagerMock is ECDSAServiceManagerBase {
         __ServiceManagerBase_init(initialOwner, rewardsInitiator);
     }
 
-    function createOperatorSets(uint32[] memory) external {}
+    function createOperatorSets(
+        uint32[] memory operatorSetIds, 
+        uint256[] memory amountToFund, 
+        IStakeRootCompendium.StrategyAndMultiplier[][] memory strategiesAndMultipliers
+    ) external {}
+
+    function migrationFinalized() external view returns (bool) {}
 
     function registerOperatorToOperatorSets(
         address operator,

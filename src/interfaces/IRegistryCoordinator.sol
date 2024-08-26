@@ -134,12 +134,6 @@ interface IRegistryCoordinator {
     /// @notice Returns the length of the quorum bitmap history for the given `operatorId`
     function getQuorumBitmapHistoryLength(bytes32 operatorId) external view returns (uint256);
 
-    /// @notice Returns the registry at the desired index
-    function registries(uint256) external view returns (address);
-
-    /// @notice Returns the number of registries
-    function numRegistries() external view returns (uint256);
-
     /**
      * @notice Returns the message hash that an operator must sign to register their BLS public key.
      * @param operator is the address of the operator registering their BLS public key

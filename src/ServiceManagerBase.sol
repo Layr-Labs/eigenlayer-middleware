@@ -21,7 +21,7 @@ import {console} from "forge-std/Test.sol";
  * This contract can be inherited from or simply used as a point-of-reference.
  * @author Layr Labs, Inc.
  */
-abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
+contract ServiceManagerBase is ServiceManagerBaseStorage {
     using BitmapUtils for *;
 
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
@@ -111,8 +111,12 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
-    function createOperatorSets(uint32[] memory operatorSetIds) external onlyRegistryCoordinator {
-        _avsDirectory.createOperatorSets(operatorSetIds);
+    function createOperatorSets(
+        uint32[] memory operatorSetIds, 
+        uint256[] memory amountToFund, 
+        IStakeRootCompendium.StrategyAndMultiplier[][] memory strategiesAndMultipliers
+    ) external onlyRegistryCoordinator {
+        _createOperatorSets(operatorSetIds, amountToFund, strategiesAndMultipliers);
     }
 
     /**
@@ -180,7 +184,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         external
         onlyOwner
     {
-        _migrateAndCreateOperatorSetIds(operatorSetsToCreate, amountToFund);
+        _migrateAndCreateOperatorSets(operatorSetsToCreate, amountToFund);
     }
 
     /**
@@ -208,8 +212,26 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         migrationFinalized = true;
     }
 
-    function _migrateAndCreateOperatorSetIds(uint32[] memory operatorSetIdsToCreate, uint256[] memory amountToFund ) internal {
+    function _migrateAndCreateOperatorSets(uint32[] memory operatorSetIdsToCreate, uint256[] memory amountToFund) internal {
         _avsDirectory.becomeOperatorSetAVS();
+
+        IStakeRootCompendium.StrategyAndMultiplier[][] memory strategiesAndMultipliers;
+        if (amountToFund.length != 0) {
+            strategiesAndMultipliers = new IStakeRootCompendium.StrategyAndMultiplier[][](operatorSetIdsToCreate.length);
+            for (uint256 i = 0; i < operatorSetIdsToCreate.length; i++) {
+                IStakeRegistry.StrategyParams[] memory strategyParams = _stakeRegistry.strategyParamsForQuorum(uint8(operatorSetIdsToCreate[i]));
+                IStakeRootCompendium.StrategyAndMultiplier[] memory strategiesAndMultipliersInner;
+                assembly {
+                    strategiesAndMultipliersInner := strategyParams
+                }
+                strategiesAndMultipliers[i] = strategiesAndMultipliersInner;
+            }
+        }
+        _createOperatorSets(operatorSetIdsToCreate, amountToFund, strategiesAndMultipliers);
+    }
+
+    /// @notice Creates operator sets and funds them in the StakeRootCompendium and configures strategies and multipliers if needed
+    function _createOperatorSets(uint32[] memory operatorSetIdsToCreate, uint256[] memory amountToFund, IStakeRootCompendium.StrategyAndMultiplier[][] memory strategiesAndMultipliers) internal {
         _avsDirectory.createOperatorSets(operatorSetIdsToCreate);
         // Fund the operator sets in the StakeRootCompendium
         if (amountToFund.length > 0) {
@@ -223,14 +245,9 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
                 );
 
                 // configure the strategies and multipliers for the operator set
-                IStakeRegistry.StrategyParams[] memory strategyParams = _stakeRegistry.strategyParamsForQuorum(uint8(operatorSetIdsToCreate[i]));
-                IStakeRootCompendium.StrategyAndMultiplier[] memory strategiesAndMultipliers;
-                assembly {
-                    strategiesAndMultipliers := strategyParams
-                }
                 _stakeRootCompendium.addStrategiesAndMultipliers(
                     operatorSetIdsToCreate[i],
-                    strategiesAndMultipliers
+                    strategiesAndMultipliers[i]
                 );
             }
         }
