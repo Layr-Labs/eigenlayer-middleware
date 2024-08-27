@@ -38,45 +38,39 @@ interface IBLSApkRegistry is IRegistry {
     event NewPubkeyRegistration(address indexed operator, BN254.G1Point pubkeyG1, BN254.G2Point pubkeyG2);
 
     // @notice Emitted when a new operator pubkey is registered for a set of quorums
-    event OperatorAddedToQuorums(
+    event OperatorAddedToQuorum(
         address operator,
         bytes32 operatorId,
-        bytes quorumNumbers
+        uint8 quorumNumber
     );
 
     // @notice Emitted when an operator pubkey is removed from a set of quorums
-    event OperatorRemovedFromQuorums(
+    event OperatorRemovedFromQuorum(
         address operator, 
         bytes32 operatorId,
-        bytes quorumNumbers
+        uint8 quorumNumber
     );
 
     /**
      * @notice Registers the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to register.
-     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
+     * @param quorumNumber The quorum number the operator is registering for
      * @dev access restricted to the RegistryCoordinator
-     * @dev Preconditions (these are assumed, not validated in this contract):
-     *         1) `quorumNumbers` has no duplicates
-     *         2) `quorumNumbers.length` != 0
-     *         3) `quorumNumbers` is ordered in ascending order
-     *         4) the operator is not already registered
+     * @dev Precondition: the operator is not already registered for the quorum
      */
-    function registerOperator(address operator, bytes calldata quorumNumbers) external;
+    function registerOperator(
+        address operator,
+        uint8 quorumNumber
+    ) external;
 
     /**
-     * @notice Deregisters the `operator`'s pubkey for the specified `quorumNumbers`.
+     * @notice Deregisters the `operator`'s pubkey for the specified `quorumNumber`.
      * @param operator The address of the operator to deregister.
-     * @param quorumNumbers The quorum numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
+     * @param quorumNumber The quorum number the operator is deregistering from
      * @dev access restricted to the RegistryCoordinator
-     * @dev Preconditions (these are assumed, not validated in this contract):
-     *         1) `quorumNumbers` has no duplicates
-     *         2) `quorumNumbers.length` != 0
-     *         3) `quorumNumbers` is ordered in ascending order
-     *         4) the operator is not already deregistered
-     *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
+     * @dev Precondition: the operator is not already deregistered
      */ 
-    function deregisterOperator(address operator, bytes calldata quorumNumbers) external;
+    function deregisterOperator(address operator, uint8 quorumNumber) external;
     
     /**
      * @notice Initializes a new quorum by pushing its first apk update

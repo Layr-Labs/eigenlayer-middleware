@@ -5,6 +5,7 @@ import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/Ownabl
 
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
@@ -26,6 +27,7 @@ abstract contract ServiceManagerBaseStorage is IServiceManager, OwnableUpgradeab
     IRewardsCoordinator internal immutable _rewardsCoordinator;
     IStakeRootCompendium internal immutable _stakeRootCompendium;
     IRegistryCoordinator internal immutable _registryCoordinator;
+    IIndexRegistry internal immutable _indexRegistry;
     IStakeRegistry internal immutable _stakeRegistry;
 
     /**
@@ -45,12 +47,14 @@ abstract contract ServiceManagerBaseStorage is IServiceManager, OwnableUpgradeab
         IRewardsCoordinator __rewardsCoordinator,
         IStakeRootCompendium __stakeRootCompendium,
         IRegistryCoordinator __registryCoordinator,
+        IIndexRegistry __indexRegistry,
         IStakeRegistry __stakeRegistry
     ) {
         _avsDirectory = __avsDirectory;
         _rewardsCoordinator = __rewardsCoordinator;
         _stakeRootCompendium = __stakeRootCompendium;
         _registryCoordinator = __registryCoordinator;
+        _indexRegistry = __indexRegistry;
         _stakeRegistry = __stakeRegistry;
     }
 

@@ -40,9 +40,10 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
 
     constructor(IRegistryCoordinator _registryCoordinator) {
         registryCoordinator = _registryCoordinator;
-        stakeRegistry = _registryCoordinator.stakeRegistry();
         blsApkRegistry = _registryCoordinator.blsApkRegistry();
-        delegation = stakeRegistry.delegation();
+        // delegation = stakeRegistry.delegation();
+        stakeRegistry = IStakeRegistry(address(0));
+        delegation = IDelegationManager(address(0));
     }
 
     /**
@@ -198,19 +199,6 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                 : 0;
 
             for (uint256 i = 0; i < quorumNumbers.length; i++) {
-                // If we're disallowing stale stake updates, check that each quorum's last update block
-                // is within withdrawalDelayBlocks
-                if (_staleStakesForbidden) {
-                    require(
-                        registryCoordinator.quorumUpdateBlockNumber(
-                            uint8(quorumNumbers[i])
-                        ) +
-                            withdrawalDelayBlocks >
-                            referenceBlockNumber,
-                        "BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within withdrawalDelayBlocks window"
-                    );
-                }
-
                 // Validate params.quorumApks is correct for this quorum at the referenceBlockNumber,
                 // then add it to the total apk
                 require(

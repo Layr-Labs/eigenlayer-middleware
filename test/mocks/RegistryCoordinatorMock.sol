@@ -10,7 +10,7 @@ contract RegistryCoordinatorMock is IRegistryCoordinator {
 
     function ejectOperator(
         address operator, 
-        bytes calldata quorumNumbers
+        uint8[] calldata quorumNumbers
     ) external {}
 
     function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory) {}

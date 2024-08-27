@@ -32,6 +32,17 @@ contract ECDSAServiceManagerMock is ECDSAServiceManagerBase {
         IStakeRootCompendium.StrategyAndMultiplier[][] memory strategiesAndMultipliers
     ) external {}
 
+    function setOperatorExtraData(
+        uint32 operatorSetId,
+        address operator,
+        bytes32 extraData
+    ) external {}
+
+    function setOperatorSetExtraData(
+        uint32 operatorSetId,
+        bytes32 extraData
+    ) external {}
+
     function migrationFinalized() external view returns (bool) {}
 
     function registerOperatorToOperatorSets(

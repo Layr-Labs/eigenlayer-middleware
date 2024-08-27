@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
+import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
 import "../../src/RegistryCoordinator.sol";
 
 import "forge-std/Test.sol";
@@ -50,7 +51,7 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         OperatorInfo memory operatorInfo,
         bytes memory quorumsToUpdate
     ) external {
-        _updateOperator(operator, operatorInfo, quorumsToUpdate);
+        // _updateOperator(operator, operatorInfo, quorumsToUpdate);
     }
 
     // @notice exposes the internal `_updateOperatorBitmap` function, overriding all access controls

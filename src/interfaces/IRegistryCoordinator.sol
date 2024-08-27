@@ -84,12 +84,8 @@ interface IRegistryCoordinator {
 
     /// @notice Returns the operator set params for the given `quorumNumber`
     function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory);
-    /// @notice the Stake registry contract that will keep track of operators' stakes
-    function stakeRegistry() external view returns (IStakeRegistry);
     /// @notice the BLS Aggregate Pubkey Registry contract that will keep track of operators' BLS aggregate pubkeys per quorum
     function blsApkRegistry() external view returns (IBLSApkRegistry);
-    /// @notice the index Registry contract that will keep track of operators' indexes
-    function indexRegistry() external view returns (IIndexRegistry);
 
     /**
      * @notice Ejects the provided operator from the provided quorums from the AVS
@@ -98,7 +94,7 @@ interface IRegistryCoordinator {
      */
     function ejectOperator(
         address operator, 
-        bytes calldata quorumNumbers
+        uint8[] calldata quorumNumbers
     ) external;
 
     /// @notice Returns the number of quorums the registry coordinator has created
@@ -139,9 +135,6 @@ interface IRegistryCoordinator {
      * @param operator is the address of the operator registering their BLS public key
      */
     function pubkeyRegistrationMessageHash(address operator) external view returns (BN254.G1Point memory);
-
-    /// @notice returns the blocknumber the quorum was last updated all at once for all operators
-    function quorumUpdateBlockNumber(uint8 quorumNumber) external view returns (uint256);
 
     /// @notice The owner of the registry coordinator
     function owner() external view returns (address);

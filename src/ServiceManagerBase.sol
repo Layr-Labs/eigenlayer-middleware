@@ -11,6 +11,7 @@ import {IStakeRootCompendium} from "eigenlayer-contracts/src/contracts/interface
 import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {LibMergeSort} from "./libraries/LibMergeSort.sol";
@@ -51,6 +52,7 @@ contract ServiceManagerBase is ServiceManagerBaseStorage {
         IRewardsCoordinator __rewardsCoordinator,
         IStakeRootCompendium __stakeRootCompendium,
         IRegistryCoordinator __registryCoordinator,
+        IIndexRegistry __indexRegistry,
         IStakeRegistry __stakeRegistry
     )
         ServiceManagerBaseStorage(
@@ -58,6 +60,7 @@ contract ServiceManagerBase is ServiceManagerBaseStorage {
             __rewardsCoordinator,
             __stakeRootCompendium,
             __registryCoordinator,
+            __indexRegistry,
             __stakeRegistry
         )
     {
@@ -117,6 +120,21 @@ contract ServiceManagerBase is ServiceManagerBaseStorage {
         IStakeRootCompendium.StrategyAndMultiplier[][] memory strategiesAndMultipliers
     ) external onlyRegistryCoordinator {
         _createOperatorSets(operatorSetIds, amountToFund, strategiesAndMultipliers);
+    }
+
+    function setOperatorExtraData(
+        uint32 operatorSetId,
+        address operator,
+        bytes32 extraData
+    ) external onlyRegistryCoordinator {
+        _stakeRootCompendium.setOperatorExtraData(operatorSetId, operator, extraData);
+    }
+
+    function setOperatorSetExtraData(
+        uint32 operatorSetId,
+        bytes32 extraData
+    ) external onlyRegistryCoordinator {
+        _stakeRootCompendium.setOperatorSetExtraData(operatorSetId, extraData);
     }
 
     /**
@@ -269,7 +287,7 @@ contract ServiceManagerBase is ServiceManagerBaseStorage {
         for (uint256 i; i < operators.length; i++) {
             bytes32 operatorId = _getOperatorIdAndCheckQuorums(operators[i], operatorSetIds[i]);
             for (uint256 j; j < operatorSetIds[i].length; j++) {
-                _stakeRootCompendium.setExtraData(
+                _stakeRootCompendium.setOperatorExtraData(
                     operatorSetIds[i][j],
                     operators[i],
                     operatorId
@@ -326,8 +344,7 @@ contract ServiceManagerBase is ServiceManagerBaseStorage {
         // Step 1: Iterate through quorum numbers and get a list of unique operators
         for (uint8 quorumNumber = 0; quorumNumber < quorumCount; quorumNumber++) {
             // Step 2: Get operator list for quorum at current block
-            bytes32[] memory operatorIds = _registryCoordinator.indexRegistry()
-                .getOperatorListAtBlockNumber(quorumNumber, uint32(block.number));
+            bytes32[] memory operatorIds = _indexRegistry.getOperatorListAtBlockNumber(quorumNumber, uint32(block.number));
 
             // Step 3: Convert to address list and maintain a sorted array of operators
             address[] memory operators = new address[](operatorIds.length);

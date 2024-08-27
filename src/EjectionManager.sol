@@ -94,9 +94,11 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
                 stakeForEjection += operatorStake;
                 ++ejectedOperators;
 
+                uint8[] memory quorumNumbers = new uint8[](1);
+                quorumNumbers[0] = quorumNumber;
                 registryCoordinator.ejectOperator(
                     registryCoordinator.getOperatorFromId(_operatorIds[i][j]),
-                    abi.encodePacked(quorumNumber)
+                    quorumNumbers
                 );
                 
                 emit OperatorEjected(_operatorIds[i][j], quorumNumber);

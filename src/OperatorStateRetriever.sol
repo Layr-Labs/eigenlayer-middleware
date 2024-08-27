@@ -66,8 +66,8 @@ contract OperatorStateRetriever {
         bytes memory quorumNumbers, 
         uint32 blockNumber
     ) public view returns(Operator[][] memory) {
-        IStakeRegistry stakeRegistry = registryCoordinator.stakeRegistry();
-        IIndexRegistry indexRegistry = registryCoordinator.indexRegistry();
+        IStakeRegistry stakeRegistry; // TODO = registryCoordinator.stakeRegistry();
+        IIndexRegistry indexRegistry; //TODO = registryCoordinator.indexRegistry();
         IBLSApkRegistry blsApkRegistry = registryCoordinator.blsApkRegistry();
 
         Operator[][] memory operators = new Operator[][](quorumNumbers.length);
@@ -107,7 +107,7 @@ contract OperatorStateRetriever {
         bytes calldata quorumNumbers, 
         bytes32[] calldata nonSignerOperatorIds
     ) external view returns (CheckSignaturesIndices memory) {
-        IStakeRegistry stakeRegistry = registryCoordinator.stakeRegistry();
+        IStakeRegistry stakeRegistry; // TODO = registryCoordinator.stakeRegistry();
         CheckSignaturesIndices memory checkSignaturesIndices;
 
         // get the indices of the quorumBitmap updates for each of the operators in the nonSignerOperatorIds array
