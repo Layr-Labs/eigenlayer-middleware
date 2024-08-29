@@ -28,32 +28,28 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     /**
      * @notice Registers the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to register.
-     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
+     * @param quorumNumber The quorum number the operator is registering for
      * @dev access restricted to the RegistryCoordinator
-     * @dev Preconditions (these are assumed, not validated in this contract):
-     *         1) `quorumNumbers` has no duplicates
-     *         2) `quorumNumbers.length` != 0
-     *         3) `quorumNumbers` is ordered in ascending order
-     *         4) the operator is not already registered
+     * @dev Precondition: the operator is not already registered for the quorum
      */
     function registerOperator(
         address operator,
-        bytes memory quorumNumbers
+        uint8 quorumNumber
     ) public virtual onlyRegistryCoordinator {
         // Get the operator's pubkey. Reverts if they have not registered a key
         (BN254.G1Point memory pubkey, ) = getRegisteredPubkey(operator);
 
         // Update each quorum's aggregate pubkey
-        _processQuorumApkUpdate(quorumNumbers, pubkey);
+        _processQuorumApkUpdate(quorumNumber, pubkey);
 
         // Return pubkeyHash, which will become the operator's unique id
-        emit OperatorAddedToQuorums(operator, getOperatorId(operator), quorumNumbers);
+        emit OperatorAddedToQuorum(operator, getOperatorId(operator), quorumNumber);
     }
 
     /**
      * @notice Deregisters the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to deregister.
-     * @param quorumNumbers The quorum numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
+     * @param quorumNumber The quorum number the operator is deregistering from
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
@@ -64,14 +60,14 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
      */
     function deregisterOperator(
         address operator,
-        bytes memory quorumNumbers
+        uint8 quorumNumber
     ) public virtual onlyRegistryCoordinator {
         // Get the operator's pubkey. Reverts if they have not registered a key
         (BN254.G1Point memory pubkey, ) = getRegisteredPubkey(operator);
 
         // Update each quorum's aggregate pubkey
-        _processQuorumApkUpdate(quorumNumbers, pubkey.negate());
-        emit OperatorRemovedFromQuorums(operator, getOperatorId(operator), quorumNumbers);
+        _processQuorumApkUpdate(quorumNumber, pubkey.negate());
+        emit OperatorRemovedFromQuorum(operator, getOperatorId(operator), quorumNumber);
     }
 
     /**
@@ -144,33 +140,30 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
                             INTERNAL FUNCTIONS
     *******************************************************************************/
 
-    function _processQuorumApkUpdate(bytes memory quorumNumbers, BN254.G1Point memory point) internal {
+    function _processQuorumApkUpdate(uint8 quorumNumber, BN254.G1Point memory point) internal {
         BN254.G1Point memory newApk;
 
-        for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            // Validate quorum exists and get history length
-            uint8 quorumNumber = uint8(quorumNumbers[i]);
-            uint256 historyLength = apkHistory[quorumNumber].length;
-            require(historyLength != 0, "BLSApkRegistry._processQuorumApkUpdate: quorum does not exist");
+        // Validate quorum exists and get history length
+        uint256 historyLength = apkHistory[quorumNumber].length;
+        require(historyLength != 0, "BLSApkRegistry._processQuorumApkUpdate: quorum does not exist");
 
-            // Update aggregate public key for this quorum
-            newApk = currentApk[quorumNumber].plus(point);
-            currentApk[quorumNumber] = newApk;
-            bytes24 newApkHash = bytes24(BN254.hashG1Point(newApk));
+        // Update aggregate public key for this quorum
+        newApk = currentApk[quorumNumber].plus(point);
+        currentApk[quorumNumber] = newApk;
+        bytes24 newApkHash = bytes24(BN254.hashG1Point(newApk));
 
-            // Update apk history. If the last update was made in this block, update the entry
-            // Otherwise, push a new historical entry and update the prev->next pointer
-            ApkUpdate storage lastUpdate = apkHistory[quorumNumber][historyLength - 1];
-            if (lastUpdate.updateBlockNumber == uint32(block.number)) {
-                lastUpdate.apkHash = newApkHash;
-            } else {
-                lastUpdate.nextUpdateBlockNumber = uint32(block.number);
-                apkHistory[quorumNumber].push(ApkUpdate({
-                    apkHash: newApkHash,
-                    updateBlockNumber: uint32(block.number),
-                    nextUpdateBlockNumber: 0
-                }));
-            }
+        // Update apk history. If the last update was made in this block, update the entry
+        // Otherwise, push a new historical entry and update the prev->next pointer
+        ApkUpdate storage lastUpdate = apkHistory[quorumNumber][historyLength - 1];
+        if (lastUpdate.updateBlockNumber == uint32(block.number)) {
+            lastUpdate.apkHash = newApkHash;
+        } else {
+            lastUpdate.nextUpdateBlockNumber = uint32(block.number);
+            apkHistory[quorumNumber].push(ApkUpdate({
+                apkHash: newApkHash,
+                updateBlockNumber: uint32(block.number),
+                nextUpdateBlockNumber: 0
+            }));
         }
     }
 

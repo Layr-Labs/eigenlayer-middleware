@@ -130,6 +130,9 @@ interface IStakeRegistry is IRegistry {
     /// @notice Returns the length of the dynamic array stored in `strategyParams[quorumNumber]`.
     function strategyParamsLength(uint8 quorumNumber) external view returns (uint256);
 
+    /// @notice Returns the list of strategy parameters for the quorum `quorumNumber`
+    function strategyParamsForQuorum(uint8 quorumNumber) external view returns (StrategyParams[] memory);
+
     /// @notice Returns the strategy and weight multiplier for the `index`'th strategy in the quorum `quorumNumber`
     function strategyParamsByIndex(
         uint8 quorumNumber,

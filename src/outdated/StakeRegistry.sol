@@ -3,14 +3,14 @@ pragma solidity ^0.8.12;
 
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-import {IServiceManager} from "./interfaces/IServiceManager.sol";
+import {IServiceManager} from "../interfaces/IServiceManager.sol";
 
 import {StakeRegistryStorage, IStrategy} from "./StakeRegistryStorage.sol";
 
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
-import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
+import {IRegistryCoordinator} from "../interfaces/IRegistryCoordinator.sol";
+import {IStakeRegistry} from "../interfaces/IStakeRegistry.sol";
 
-import {BitmapUtils} from "./libraries/BitmapUtils.sol";
+import {BitmapUtils} from "../libraries/BitmapUtils.sol";
 
 /**
  * @title A `Registry` that keeps track of stakes of operators for up to 256 quorums.
@@ -540,6 +540,11 @@ contract StakeRegistry is StakeRegistryStorage {
     ) public view returns (StrategyParams memory)
     {
         return strategyParams[quorumNumber][index];
+    }
+
+    /// @notice Returns the list of strategies for the quorum `quorumNumber`
+    function strategyParamsForQuorum(uint8 quorumNumber) public view returns (StrategyParams[] memory) {
+        return strategyParams[quorumNumber];
     }
 
     /*******************************************************************************

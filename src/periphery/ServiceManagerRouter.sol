@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import {IServiceManagerUI} from "./interfaces/IServiceManagerUI.sol";
+import {IServiceManagerUI} from "../interfaces/IServiceManagerUI.sol";
 
 /**
  * @title Contract that proxies calls to a ServiceManager contract.

@@ -5,10 +5,12 @@ import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/Ownabl
 
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IStakeRootCompendium} from "eigenlayer-contracts/src/contracts/interfaces/IStakeRootCompendium.sol";
 
 /**
  * @title Storage variables for the `ServiceManagerBase` contract.
@@ -23,7 +25,9 @@ abstract contract ServiceManagerBaseStorage is IServiceManager, OwnableUpgradeab
      */
     IAVSDirectory internal immutable _avsDirectory;
     IRewardsCoordinator internal immutable _rewardsCoordinator;
+    IStakeRootCompendium internal immutable _stakeRootCompendium;
     IRegistryCoordinator internal immutable _registryCoordinator;
+    IIndexRegistry internal immutable _indexRegistry;
     IStakeRegistry internal immutable _stakeRegistry;
 
     /**
@@ -37,16 +41,20 @@ abstract contract ServiceManagerBaseStorage is IServiceManager, OwnableUpgradeab
 
     bool public migrationFinalized;
 
-    /// @notice Sets the (immutable) `_avsDirectory`, `_rewardsCoordinator`, `_registryCoordinator`, and `_stakeRegistry` addresses
+    /// @notice Sets the (immutable) `_avsDirectory`, `_rewardsCoordinator`, `__stakeRootCompendium`, `_registryCoordinator`, and `_stakeRegistry` addresses
     constructor(
         IAVSDirectory __avsDirectory,
         IRewardsCoordinator __rewardsCoordinator,
+        IStakeRootCompendium __stakeRootCompendium,
         IRegistryCoordinator __registryCoordinator,
+        IIndexRegistry __indexRegistry,
         IStakeRegistry __stakeRegistry
     ) {
         _avsDirectory = __avsDirectory;
         _rewardsCoordinator = __rewardsCoordinator;
+        _stakeRootCompendium = __stakeRootCompendium;
         _registryCoordinator = __registryCoordinator;
+        _indexRegistry = __indexRegistry;
         _stakeRegistry = __stakeRegistry;
     }
 

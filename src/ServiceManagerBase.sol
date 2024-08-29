@@ -6,10 +6,12 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISi
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IStakeRootCompendium} from "eigenlayer-contracts/src/contracts/interfaces/IStakeRootCompendium.sol";
 
 import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {LibMergeSort} from "./libraries/LibMergeSort.sol";
@@ -20,7 +22,7 @@ import {console} from "forge-std/Test.sol";
  * This contract can be inherited from or simply used as a point-of-reference.
  * @author Layr Labs, Inc.
  */
-abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
+contract ServiceManagerBase is ServiceManagerBaseStorage {
     using BitmapUtils for *;
 
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
@@ -45,17 +47,20 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         );
     }
 
-    /// @notice Sets the (immutable) `_registryCoordinator` address
     constructor(
         IAVSDirectory __avsDirectory,
         IRewardsCoordinator __rewardsCoordinator,
+        IStakeRootCompendium __stakeRootCompendium,
         IRegistryCoordinator __registryCoordinator,
+        IIndexRegistry __indexRegistry,
         IStakeRegistry __stakeRegistry
     )
         ServiceManagerBaseStorage(
             __avsDirectory,
             __rewardsCoordinator,
+            __stakeRootCompendium,
             __registryCoordinator,
+            __indexRegistry,
             __stakeRegistry
         )
     {
@@ -109,8 +114,27 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
-    function createOperatorSets(uint32[] memory operatorSetIds) external onlyRegistryCoordinator {
-        _avsDirectory.createOperatorSets(operatorSetIds);
+    function createOperatorSets(
+        uint32[] memory operatorSetIds, 
+        uint256[] memory amountToFund, 
+        IStakeRootCompendium.StrategyAndMultiplier[][] memory strategiesAndMultipliers
+    ) external onlyRegistryCoordinator {
+        _createOperatorSets(operatorSetIds, amountToFund, strategiesAndMultipliers);
+    }
+
+    function setOperatorExtraData(
+        uint32 operatorSetId,
+        address operator,
+        bytes32 extraData
+    ) external onlyRegistryCoordinator {
+        _stakeRootCompendium.setOperatorExtraData(operatorSetId, operator, extraData);
+    }
+
+    function setOperatorSetExtraData(
+        uint32 operatorSetId,
+        bytes32 extraData
+    ) external onlyRegistryCoordinator {
+        _stakeRootCompendium.setOperatorSetExtraData(operatorSetId, extraData);
     }
 
     /**
@@ -122,7 +146,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) public virtual onlyRegistryCoordinator {
-        _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
+        // _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
     }
 
     /**
@@ -130,7 +154,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      * @param operator The address of the operator to deregister.
      */
     function deregisterOperatorFromAVS(address operator) public virtual onlyRegistryCoordinator {
-        _avsDirectory.deregisterOperatorFromAVS(operator);
+        // _avsDirectory.deregisterOperatorFromAVS(operator);
     }
 
     /**
@@ -171,13 +195,14 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     /**
      * @notice Migrates the AVS to use operator sets and creates new operator set IDs.
      * @param operatorSetsToCreate An array of operator set IDs to create.
+     * @param amountToFund An array of amounts to fund each operatorSet with in the StakeRootCompendium
      * @dev This function can only be called by the contract owner.
      */
-    function migrateAndCreateOperatorSetIds(uint32[] memory operatorSetsToCreate)
+    function migrateAndCreateOperatorSetIds(uint32[] memory operatorSetsToCreate, uint256[] memory amountToFund)
         external
         onlyOwner
     {
-        _migrateAndCreateOperatorSetIds(operatorSetsToCreate);
+        _migrateAndCreateOperatorSets(operatorSetsToCreate, amountToFund);
     }
 
     /**
@@ -205,13 +230,45 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         migrationFinalized = true;
     }
 
-    /**
-     * @notice Migrates the AVS to use operator sets and create new operator set IDs.
-     * @param operatorSetIdsToCreate An array of operator set IDs to create.
-     */
-    function _migrateAndCreateOperatorSetIds(uint32[] memory operatorSetIdsToCreate) internal {
+    function _migrateAndCreateOperatorSets(uint32[] memory operatorSetIdsToCreate, uint256[] memory amountToFund) internal {
         _avsDirectory.becomeOperatorSetAVS();
-        IAVSDirectory(address(_avsDirectory)).createOperatorSets(operatorSetIdsToCreate);
+
+        IStakeRootCompendium.StrategyAndMultiplier[][] memory strategiesAndMultipliers;
+        if (amountToFund.length != 0) {
+            strategiesAndMultipliers = new IStakeRootCompendium.StrategyAndMultiplier[][](operatorSetIdsToCreate.length);
+            for (uint256 i = 0; i < operatorSetIdsToCreate.length; i++) {
+                IStakeRegistry.StrategyParams[] memory strategyParams = _stakeRegistry.strategyParamsForQuorum(uint8(operatorSetIdsToCreate[i]));
+                IStakeRootCompendium.StrategyAndMultiplier[] memory strategiesAndMultipliersInner;
+                assembly {
+                    strategiesAndMultipliersInner := strategyParams
+                }
+                strategiesAndMultipliers[i] = strategiesAndMultipliersInner;
+            }
+        }
+        _createOperatorSets(operatorSetIdsToCreate, amountToFund, strategiesAndMultipliers);
+    }
+
+    /// @notice Creates operator sets and funds them in the StakeRootCompendium and configures strategies and multipliers if needed
+    function _createOperatorSets(uint32[] memory operatorSetIdsToCreate, uint256[] memory amountToFund, IStakeRootCompendium.StrategyAndMultiplier[][] memory strategiesAndMultipliers) internal {
+        _avsDirectory.createOperatorSets(operatorSetIdsToCreate);
+        // Fund the operator sets in the StakeRootCompendium
+        if (amountToFund.length > 0) {
+            for(uint256 i = 0; i < operatorSetIdsToCreate.length; i++) {
+                // fund the operator set in the StakeRootCompendium
+                _stakeRootCompendium.depositForOperatorSet{value: amountToFund[i]}(
+                    IAVSDirectory.OperatorSet({
+                        avs: address(this),
+                        operatorSetId: operatorSetIdsToCreate[i]
+                    })
+                );
+
+                // configure the strategies and multipliers for the operator set
+                _stakeRootCompendium.addStrategiesAndMultipliers(
+                    operatorSetIdsToCreate[i],
+                    strategiesAndMultipliers[i]
+                );
+            }
+        }
     }
 
     /**
@@ -226,10 +283,19 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         require(
             operators.length == operatorSetIds.length, "ServiceManager: Input array length mismatch"
         );
+        
         for (uint256 i; i < operators.length; i++) {
-            _isOperatorRegisteredForQuorums(operators[i], operatorSetIds[i]);
+            bytes32 operatorId = _getOperatorIdAndCheckQuorums(operators[i], operatorSetIds[i]);
+            for (uint256 j; j < operatorSetIds[i].length; j++) {
+                _stakeRootCompendium.setOperatorExtraData(
+                    operatorSetIds[i][j],
+                    operators[i],
+                    operatorId
+                );
+            }
+            
         }
-        IAVSDirectory(address(_avsDirectory)).migrateOperatorsToOperatorSets(
+        _avsDirectory.migrateOperatorsToOperatorSets(
             operators, operatorSetIds
         );
     }
@@ -238,12 +304,12 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      * @notice Checks if an operator is registered for a specific quorum
      * @param operator The address of the operator to check
      * @param quorumNumbers The quorum number to check the registration for
-     * @return bool Returns true if the operator is registered for the specified quorum, false otherwise
+     * @return operatorId Returns the operator Is
      */
-    function _isOperatorRegisteredForQuorums(
+    function _getOperatorIdAndCheckQuorums(
         address operator,
         uint32[] memory quorumNumbers
-    ) internal view returns (bool) {
+    ) internal view returns (bytes32) {
         bytes32 operatorId = _registryCoordinator.getOperatorId(operator);
         uint192 operatorBitmap = _registryCoordinator.getCurrentQuorumBitmap(operatorId);
         for (uint256 i; i < quorumNumbers.length; i++) {
@@ -252,6 +318,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
                 "ServiceManager: Operator not in quorum"
             );
         }
+        return operatorId;
     }
 
     /**
@@ -277,8 +344,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         // Step 1: Iterate through quorum numbers and get a list of unique operators
         for (uint8 quorumNumber = 0; quorumNumber < quorumCount; quorumNumber++) {
             // Step 2: Get operator list for quorum at current block
-            bytes32[] memory operatorIds = _registryCoordinator.indexRegistry()
-                .getOperatorListAtBlockNumber(quorumNumber, uint32(block.number));
+            bytes32[] memory operatorIds = _indexRegistry.getOperatorListAtBlockNumber(quorumNumber, uint32(block.number));
 
             // Step 3: Convert to address list and maintain a sorted array of operators
             address[] memory operators = new address[](operatorIds.length);

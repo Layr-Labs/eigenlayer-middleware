@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IStakeRootCompendium} from "eigenlayer-contracts/src/contracts/interfaces/IStakeRootCompendium.sol";
 import {IServiceManagerUI} from "./IServiceManagerUI.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 
@@ -23,7 +24,24 @@ interface IServiceManager is IServiceManagerUI {
      */
     function createAVSRewardsSubmission(IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions) external;
 
-    function createOperatorSets(uint32[] memory operatorSetIds) external ;
+    function createOperatorSets(
+        uint32[] memory operatorSetIds, 
+        uint256[] memory amountToFund, 
+        IStakeRootCompendium.StrategyAndMultiplier[][] memory strategiesAndMultipliers
+    ) external;
+
+    function setOperatorExtraData(
+        uint32 operatorSetId,
+        address operator,
+        bytes32 extraData
+    ) external;
+
+    function setOperatorSetExtraData(
+        uint32 operatorSetId,
+        bytes32 extraData
+    ) external;
+
+    function migrationFinalized() external view returns (bool);
 
     /**
      * @notice Forwards a call to EigenLayer's AVSDirectory contract to register an operator to operator sets

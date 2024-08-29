@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
-import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
-import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
-import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
+import {IRegistryCoordinator} from "../interfaces/IRegistryCoordinator.sol";
+import {IBLSApkRegistry} from "../interfaces/IBLSApkRegistry.sol";
+import {IStakeRegistry} from "../interfaces/IStakeRegistry.sol";
+import {IIndexRegistry} from "../interfaces/IIndexRegistry.sol";
 
-import {BitmapUtils} from "./libraries/BitmapUtils.sol";
+import {BitmapUtils} from "../libraries/BitmapUtils.sol";
 
 /**
  * @title OperatorStateRetriever with view functions that allow to retrieve the state of an AVSs registry system.
@@ -66,8 +66,8 @@ contract OperatorStateRetriever {
         bytes memory quorumNumbers, 
         uint32 blockNumber
     ) public view returns(Operator[][] memory) {
-        IStakeRegistry stakeRegistry = registryCoordinator.stakeRegistry();
-        IIndexRegistry indexRegistry = registryCoordinator.indexRegistry();
+        IStakeRegistry stakeRegistry; // TODO = registryCoordinator.stakeRegistry();
+        IIndexRegistry indexRegistry; //TODO = registryCoordinator.indexRegistry();
         IBLSApkRegistry blsApkRegistry = registryCoordinator.blsApkRegistry();
 
         Operator[][] memory operators = new Operator[][](quorumNumbers.length);
@@ -107,7 +107,7 @@ contract OperatorStateRetriever {
         bytes calldata quorumNumbers, 
         bytes32[] calldata nonSignerOperatorIds
     ) external view returns (CheckSignaturesIndices memory) {
-        IStakeRegistry stakeRegistry = registryCoordinator.stakeRegistry();
+        IStakeRegistry stakeRegistry; // TODO = registryCoordinator.stakeRegistry();
         CheckSignaturesIndices memory checkSignaturesIndices;
 
         // get the indices of the quorumBitmap updates for each of the operators in the nonSignerOperatorIds array

@@ -6,6 +6,7 @@ import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IStakeRootCompendium} from "eigenlayer-contracts/src/contracts/interfaces/IStakeRootCompendium.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 
 abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
@@ -16,7 +17,7 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
 
     /// @notice The EIP-712 typehash for the `DelegationApproval` struct used by the contract
     bytes32 public constant OPERATOR_CHURN_APPROVAL_TYPEHASH =
-        keccak256("OperatorChurnApproval(address registeringOperator,bytes32 registeringOperatorId,OperatorKickParam[] operatorKickParams,bytes32 salt,uint256 expiry)OperatorKickParam(uint8 quorumNumber,address operator)");
+        keccak256("OperatorChurnApproval(address registeringOperator,bytes32 registeringOperatorId,OperatorKickParam operatorKickParams,bytes32 salt,uint256 expiry)OperatorKickParam(uint8 quorumNumber,address operator)");
     /// @notice The EIP-712 typehash used for registering BLS public keys
     bytes32 public constant PUBKEY_REGISTRATION_TYPEHASH = keccak256("BN254PubkeyRegistration(address operator)");
     /// @notice The maximum value of a quorum bitmap
@@ -34,12 +35,10 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
 
     /// @notice the ServiceManager for this AVS, which forwards calls onto EigenLayer's core contracts
     IServiceManager public immutable serviceManager;
+    /// @notice the StakeRootCompendium
+    IStakeRootCompendium public immutable stakeRootCompendium;
     /// @notice the BLS Aggregate Pubkey Registry contract that will keep track of operators' aggregate BLS public keys per quorum
     IBLSApkRegistry public immutable blsApkRegistry;
-    /// @notice the Stake Registry contract that will keep track of operators' stakes
-    IStakeRegistry public immutable stakeRegistry;
-    /// @notice the Index Registry contract that will keep track of operators' indexes
-    IIndexRegistry public immutable indexRegistry;
     /// @notice the AVS Directory that tracks operator registrations to AVS and operator sets 
     IAVSDirectory public immutable avsDirectory;
 
@@ -57,11 +56,10 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
     mapping(address => OperatorInfo) internal _operatorInfo;
     /// @notice whether the salt has been used for an operator churn approval
     mapping(bytes32 => bool) public isChurnApproverSaltUsed;
-    /// @notice mapping from quorum number to the latest block that all quorums were updated all at once
-    mapping(uint8 => uint256) public quorumUpdateBlockNumber;
 
-    /// @notice the dynamic-length array of the registries this coordinator is coordinating
-    address[] public registries;
+    mapping(uint8 => uint256) public __deprecated_quorumUpdateBlockNumber;
+    address[] public __deprecated_registries;
+
     /// @notice the address of the entity allowed to sign off on operators getting kicked out of the AVS during registration
     address public churnApprover;
     /// @notice the address of the entity allowed to eject operators from the AVS
@@ -74,15 +72,13 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
 
     constructor(
         IServiceManager _serviceManager,
-        IStakeRegistry _stakeRegistry,
+        IStakeRootCompendium _stakeRootCompendium,
         IBLSApkRegistry _blsApkRegistry,
-        IIndexRegistry _indexRegistry,
         IAVSDirectory _avsDirectory
     ) {
         serviceManager = _serviceManager;
-        stakeRegistry = _stakeRegistry;
+        stakeRootCompendium = _stakeRootCompendium;
         blsApkRegistry = _blsApkRegistry;
-        indexRegistry = _indexRegistry;
         avsDirectory = _avsDirectory;
     }
 
