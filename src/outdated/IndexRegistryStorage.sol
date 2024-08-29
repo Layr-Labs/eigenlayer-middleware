@@ -3,8 +3,8 @@ pragma solidity ^0.8.12;
 
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
-import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
+import {IRegistryCoordinator} from "../interfaces/IRegistryCoordinator.sol";
+import {IIndexRegistry} from "../interfaces/IIndexRegistry.sol";
 
 /**
  * @title Storage variables for the `IndexRegistry` contract.

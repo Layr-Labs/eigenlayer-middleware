@@ -2,7 +2,7 @@
 pragma solidity ^0.8.12;
 
 import {IndexRegistryStorage} from "./IndexRegistryStorage.sol";
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {IRegistryCoordinator} from "../interfaces/IRegistryCoordinator.sol";
 
 /**
  * @title A `Registry` that keeps track of an ordered list of operators for each quorum
