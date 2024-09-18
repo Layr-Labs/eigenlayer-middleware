@@ -1,5 +1,5 @@
-// // SPDX-License-Identifier: MIT
-// pragma solidity ^0.8.12;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.12;
 // 
 // contract NoInitializer {
 //     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
