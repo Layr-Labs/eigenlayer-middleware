@@ -22,6 +22,11 @@ interface IServiceManager is IServiceManagerUI {
      */
     function createAVSRewardsSubmission(IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions) external;
 
+    function setOperatorSocket(bytes32 operatorId, string memory socket) external;
+
     // EVENTS
     event RewardsInitiatorUpdated(address prevRewardsInitiator, address newRewardsInitiator);
+
+    event OperatorSocketUpdate(bytes32 indexed operatorId, string socket);
+
 }
