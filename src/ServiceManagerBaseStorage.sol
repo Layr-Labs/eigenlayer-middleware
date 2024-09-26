@@ -34,9 +34,6 @@ abstract contract ServiceManagerBaseStorage is IServiceManager, OwnableUpgradeab
 
     /// @notice The address of the entity that can initiate rewards
     address public rewardsInitiator;
-    
-    /// @notice maps operator id to socket address
-    mapping(bytes32 => string) public operatorIdToSocket;
 
     /// @notice Sets the (immutable) `_avsDirectory`, `_rewardsCoordinator`, `_registryCoordinator`, and `_stakeRegistry` addresses
     constructor(
@@ -52,5 +49,5 @@ abstract contract ServiceManagerBaseStorage is IServiceManager, OwnableUpgradeab
     }
 
     // storage gap for upgradeability
-    uint256[48] private __GAP;
+    uint256[49] private __GAP;
 }

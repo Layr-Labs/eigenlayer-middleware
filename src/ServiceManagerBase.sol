@@ -217,15 +217,4 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     function avsDirectory() external view override returns (address) {
         return address(_avsDirectory);
     }
-
-    function setOperatorSocket(bytes32 operatorId, string memory socket) external onlyRegistryCoordinator {
-        operatorIdToSocket[operatorId] = socket;
-        emit OperatorSocketUpdate(operatorId, socket);
-    }
-
-    function migrateSockets(bytes32[] calldata operatorIds, string[] calldata sockets) external onlyOwner {
-        for (uint256 i = 0; i < operatorIds.length; i++) {
-            operatorIdToSocket[operatorIds[i]] = sockets[i];
-        }
-    }
 }

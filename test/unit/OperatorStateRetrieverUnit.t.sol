@@ -13,7 +13,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
 
     function test_getOperatorState_revert_neverRegistered() public {
         cheats.expectRevert(
-            "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number"
+            "RegCoord.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operator at blockNumber"
         );
         operatorStateRetriever.getOperatorState(
             registryCoordinator, defaultOperatorId, uint32(block.number)
@@ -26,7 +26,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
 
         // should revert because the operator was registered for the first time after the reference block number
         cheats.expectRevert(
-            "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number"
+            "RegCoord.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operator at blockNumber"
         );
         operatorStateRetriever.getOperatorState(
             registryCoordinator, defaultOperatorId, registrationBlockNumber - 1
@@ -143,7 +143,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         nonSignerOperatorIds[0] = defaultOperatorId;
 
         cheats.expectRevert(
-            "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number"
+            "RegCoord.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operator at blockNumber"
         );
         operatorStateRetriever.getCheckSignaturesIndices(
             registryCoordinator,
@@ -164,7 +164,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
 
         // should revert because the operator was registered for the first time after the reference block number
         cheats.expectRevert(
-            "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId at block number"
+            "RegCoord.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operator at blockNumber"
         );
         operatorStateRetriever.getCheckSignaturesIndices(
             registryCoordinator,

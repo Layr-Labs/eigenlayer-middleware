@@ -24,6 +24,7 @@ import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
 import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
 import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
+import {SocketRegistry} from "../../src/SocketRegistry.sol";
 
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
 import {EigenPodManagerMock} from "eigenlayer-contracts/src/test/mocks/EigenPodManagerMock.sol";
@@ -61,6 +62,7 @@ contract MockAVSDeployer is Test {
     StakeRegistryHarness public stakeRegistryImplementation;
     IBLSApkRegistry public blsApkRegistryImplementation;
     IIndexRegistry public indexRegistryImplementation;
+    SocketRegistry public socketRegistryImplementation;
     ServiceManagerMock public serviceManagerImplementation;
 
     OperatorStateRetriever public operatorStateRetriever;
@@ -69,6 +71,7 @@ contract MockAVSDeployer is Test {
     BLSApkRegistryHarness public blsApkRegistry;
     IIndexRegistry public indexRegistry;
     ServiceManagerMock public serviceManager;
+    SocketRegistry public socketRegistry;
 
     StrategyManagerMock public strategyManagerMock;
     DelegationMock public delegationMock;
@@ -198,6 +201,12 @@ contract MockAVSDeployer is Test {
             )
         );
 
+        socketRegistry = SocketRegistry(
+            address(
+                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
+            )
+        );
+
         indexRegistry = IndexRegistry(
             address(
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
@@ -226,6 +235,13 @@ contract MockAVSDeployer is Test {
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(stakeRegistry))),
             address(stakeRegistryImplementation)
+        );
+
+        socketRegistryImplementation = new SocketRegistry(registryCoordinator);
+
+        proxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(socketRegistry))),
+            address(socketRegistryImplementation)
         );
 
         blsApkRegistryImplementation = new BLSApkRegistryHarness(registryCoordinator);
@@ -279,7 +295,7 @@ contract MockAVSDeployer is Test {
         }
 
         registryCoordinatorImplementation = new RegistryCoordinatorHarness(
-            serviceManager, stakeRegistry, blsApkRegistry, indexRegistry
+            serviceManager, stakeRegistry, blsApkRegistry, indexRegistry, socketRegistry
         );
         {
             delete operatorSetParams;

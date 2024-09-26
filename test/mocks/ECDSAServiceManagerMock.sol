@@ -19,6 +19,4 @@ contract ECDSAServiceManagerMock is ECDSAServiceManagerBase {
     ) public virtual initializer {
         __ServiceManagerBase_init(initialOwner, rewardsInitiator);
     }
-
-    function setOperatorSocket(bytes32 operatorId, string memory socket) external {}
 }
