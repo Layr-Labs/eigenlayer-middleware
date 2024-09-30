@@ -11,6 +11,7 @@ import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/
 import {StrategyBase} from "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import {IServiceManagerBaseEvents} from "../events/IServiceManagerBaseEvents.sol";
 import {AVSDirectoryHarness} from "../harnesses/AVSDirectoryHarness.sol";
+import {OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 import "../utils/MockAVSDeployer.sol";
 
@@ -263,7 +264,7 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
             })
         );
         // sanity check if the operator was unregistered from the intended operator set
-        bool operatorIsUnRegistered = !avsDirectory.isMember(operators[0], IAVSDirectory.OperatorSet({
+        bool operatorIsUnRegistered = !avsDirectory.isMember(operators[0], OperatorSet({
             avs: address(serviceManager),
             operatorSetId: defaultQuorumNumber
         }));
@@ -337,7 +338,7 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
 
         address operatorToDeregister = operators[0];
 
-        bool isOperatorRegistered = avsDirectory.isMember(operatorToDeregister, IAVSDirectory.OperatorSet({
+        bool isOperatorRegistered = avsDirectory.isMember(operatorToDeregister, OperatorSet({
             avs: address(serviceManager),
             operatorSetId: defaultQuorumNumber
         }));
@@ -352,7 +353,7 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
         registryCoordinator.deregisterOperator(quorumNumbers);
         cheats.stopPrank();
 
-        isOperatorRegistered = avsDirectory.isMember(operatorToDeregister, IAVSDirectory.OperatorSet({
+        isOperatorRegistered = avsDirectory.isMember(operatorToDeregister, OperatorSet({
             avs: address(serviceManager),
             operatorSetId: defaultQuorumNumber
         }));
@@ -413,7 +414,7 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
         uint256 operatorPk = uint256(keccak256("operator to register"));
         address operatorToRegister = vm.addr(operatorPk) ;
 
-        bool isOperatorRegistered = avsDirectory.isMember(operatorToRegister, IAVSDirectory.OperatorSet({
+        bool isOperatorRegistered = avsDirectory.isMember(operatorToRegister, OperatorSet({
             avs: address(serviceManager),
             operatorSetId: defaultQuorumNumber
         }));
@@ -453,7 +454,7 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
         registryCoordinator.registerOperator(quorumNumbers, "", params, operatorSignature);
         cheats.stopPrank();
 
-        isOperatorRegistered = avsDirectory.isMember(operatorToRegister, IAVSDirectory.OperatorSet({
+        isOperatorRegistered = avsDirectory.isMember(operatorToRegister, OperatorSet({
             avs: address(serviceManager),
             operatorSetId: defaultQuorumNumber
         }));

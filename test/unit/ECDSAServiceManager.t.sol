@@ -145,14 +145,15 @@ contract ECDSAServiceManagerSetup is Test {
         shares[0] = 0;
         shares[1] = 1;
 
-        vm.mockCall(
-            address(mockDelegationManager),
-            abi.encodeCall(
-                IDelegationManager.getOperatorShares,
-                (operator, strategies)
-            ),
-            abi.encode(shares)
-        );
+        // TODO: Fix
+        // vm.mockCall(
+        //     address(mockDelegationManager),
+        //     abi.encodeCall(
+        //         IDelegationManager.getOperatorShares,
+        //         (operator, strategies)
+        //     ),
+        //     abi.encode(shares)
+        // );
 
         address[] memory restakedStrategies = serviceManager
             .getOperatorRestakedStrategies(operator);

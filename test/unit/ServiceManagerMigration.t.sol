@@ -10,6 +10,7 @@ import {
 import {StrategyBase} from "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import {IServiceManagerBaseEvents} from "../events/IServiceManagerBaseEvents.sol";
 import {AVSDirectoryHarness} from "../harnesses/AVSDirectoryHarness.sol";
+import {OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 import "../utils/MockAVSDeployer.sol";
 
@@ -60,14 +61,11 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationMock,
             strategyManagerMock,
-            avsDirectoryMock,
             CALCULATION_INTERVAL_SECONDS,
             MAX_REWARDS_DURATION,
             MAX_RETROACTIVE_LENGTH,
             MAX_FUTURE_LENGTH,
-            GENESIS_REWARDS_TIMESTAMP,
-            OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
-            OPERATOR_SET_MAX_RETROACTIVE_LENGTH
+            GENESIS_REWARDS_TIMESTAMP
         );
 
         rewardsCoordinator = RewardsCoordinator(
@@ -339,7 +337,7 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
         assertTrue(
             avsDirectory.isMember(
                 0x73e2Ce949f15Be901f76b54F5a4554A6C8DCf539,
-                IAVSDirectory.OperatorSet(address(serviceManager), uint32(3))
+                OperatorSet(address(serviceManager), uint32(3))
             ),
             "Operator not migrated to operator set"
         );

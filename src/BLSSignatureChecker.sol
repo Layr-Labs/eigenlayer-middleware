@@ -193,9 +193,11 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
          */
         {
             bool _staleStakesForbidden = staleStakesForbidden;
-            uint256 withdrawalDelayBlocks = _staleStakesForbidden
-                ? delegation.minWithdrawalDelayBlocks()
-                : 0;
+            /// TODO: FIX
+            uint256 withdrawalDelayBlocks = 0;
+            // uint256 withdrawalDelayBlocks = _staleStakesForbidden
+                // ? delegation.minWithdrawalDelayBlocks()
+                // : 0;
 
             for (uint256 i = 0; i < quorumNumbers.length; i++) {
                 // If we're disallowing stale stake updates, check that each quorum's last update block

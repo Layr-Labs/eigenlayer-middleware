@@ -26,7 +26,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         _deployMockEigenLayerAndAVS();
 
         // Deploy New DelegationManager
-        DelegationManager delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasher, eigenPodManagerMock);
+        DelegationManager delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasher, eigenPodManagerMock, avsDirectoryMock, allocationManagerMock, 0); // TODO: Fix 
         IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
         uint256[] memory initializeWithdrawalDelayBlocks = new uint256[](0);
         delegationManager = DelegationManager(
@@ -107,6 +107,8 @@ contract Test_CoreRegistration is MockAVSDeployer {
                 delegationApprover: address(0),
                 stakerOptOutWindowBlocks: 0
             }),
+            // TODO: fix or parameterize
+            0,
             emptyStringForMetadataURI
         );
 

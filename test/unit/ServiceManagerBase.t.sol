@@ -54,14 +54,11 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationMock,
             strategyManagerMock,
-            avsDirectoryMock,
             CALCULATION_INTERVAL_SECONDS,
             MAX_REWARDS_DURATION,
             MAX_RETROACTIVE_LENGTH,
             MAX_FUTURE_LENGTH,
-            GENESIS_REWARDS_TIMESTAMP,
-            OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
-            OPERATOR_SET_MAX_RETROACTIVE_LENGTH
+            GENESIS_REWARDS_TIMESTAMP
         );
 
         rewardsCoordinator = RewardsCoordinator(

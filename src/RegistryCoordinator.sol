@@ -3,7 +3,7 @@ pragma solidity ^0.8.12;
 
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IAVSDirectory, OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {ISocketUpdater} from "./interfaces/ISocketUpdater.sol";
 import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
@@ -676,7 +676,7 @@ contract RegistryCoordinator is
             for (uint256 i = 0; i < quorumBytes.length; i++) {
                 /// We need to track forceDeregistrations so we don't pass an id that was already deregistered on the AVSDirectory
                 /// but hasnt yet been recorded in the middleware contracts
-                if (!avsDirectory.isMember(operator, IAVSDirectory.OperatorSet(address(serviceManager), uint8(quorumBytes[i])))){
+                if (!avsDirectory.isMember(operator, OperatorSet(address(serviceManager), uint8(quorumBytes[i])))){
                     forceDeregistrationCount++;
                 }
                 operatorSetIds[i] = uint8(quorumBytes[i]);
@@ -687,7 +687,7 @@ contract RegistryCoordinator is
                 uint32[] memory filteredOperatorSetIds = new uint32[](operatorSetIds.length - forceDeregistrationCount);
                 uint256 offset;
                 for (uint256 i; i < operatorSetIds.length; i++){
-                    if (avsDirectory.isMember(operator, IAVSDirectory.OperatorSet(address(serviceManager), operatorSetIds[i]))){
+                    if (avsDirectory.isMember(operator, OperatorSet(address(serviceManager), operatorSetIds[i]))){
                         filteredOperatorSetIds[i] = operatorSetIds[i+offset];
                     } else {
                         offset++;
