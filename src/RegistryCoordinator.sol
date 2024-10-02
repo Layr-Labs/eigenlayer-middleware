@@ -345,8 +345,7 @@ contract RegistryCoordinator is
      */
     function updateSocket(string memory socket) external {
         require(_operatorInfo[msg.sender].status == OperatorStatus.REGISTERED, "RegCoord.updateSocket: operator not registered");
-        socketRegistry.setOperatorSocket(_operatorInfo[msg.sender].operatorId, socket);
-        emit OperatorSocketUpdate(_operatorInfo[msg.sender].operatorId, socket);
+        _setOperatorSocket(_operatorInfo[msg.sender].operatorId, socket);
     }
 
     /*******************************************************************************
@@ -501,8 +500,7 @@ contract RegistryCoordinator is
             // Register the operator with the EigenLayer core contracts via this AVS's ServiceManager
             serviceManager.registerOperatorToAVS(operator, operatorSignature);
 
-            socketRegistry.setOperatorSocket(operatorId, socket);
-            emit OperatorSocketUpdate(operatorId, socket);
+            _setOperatorSocket(operatorId, socket);
 
             emit OperatorRegistered(operator, operatorId);
         }
@@ -822,6 +820,11 @@ contract RegistryCoordinator is
     function _setEjector(address newEjector) internal {
         emit EjectorUpdated(ejector, newEjector);
         ejector = newEjector;
+    }
+
+    function _setOperatorSocket(bytes32 operatorId, string memory socket) internal {
+        socketRegistry.setOperatorSocket(operatorId, socket);
+        emit OperatorSocketUpdate(operatorId, socket);
     }
 
     /*******************************************************************************
