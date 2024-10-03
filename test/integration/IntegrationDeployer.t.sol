@@ -17,6 +17,7 @@ import "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
 import "eigenlayer-contracts/src/contracts/core/Slasher.sol";
 import "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
+import "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 import "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPodManager.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPod.sol";
@@ -55,6 +56,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     IBeacon eigenPodBeacon;
     EigenPod pod;
     ETHPOSDepositMock ethPOSDeposit;
+    AllocationManager allocationManager;
 
     // Base strategy implementation in case we want to create more strategies later
     StrategyBase baseStrategyImplementation;
@@ -146,6 +148,12 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
+
+        allocationManager = AllocationManager(
+            address(
+                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
+            )
+        );
         // RewardsCoordinator = RewardsCoordinator(
         //     address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), ""))
         // );
@@ -161,9 +169,9 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         DelegationManager delegationImplementation =
-            new DelegationManager(strategyManager, slasher, eigenPodManager);
+            new DelegationManager(strategyManager, slasher, eigenPodManager, avsDirectory, allocationManager, 0);
         StrategyManager strategyManagerImplementation =
-            new StrategyManager(delegationManager, eigenPodManager, slasher);
+            new StrategyManager(delegationManager, eigenPodManager, slasher, avsDirectory);
         Slasher slasherImplementation = new Slasher(strategyManager, delegationManager);
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit, eigenPodBeacon, strategyManager, slasher, delegationManager
@@ -389,7 +397,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         strategies[0] = strategy;
         cheats.prank(strategyManager.strategyWhitelister());
         strategyManager.addStrategiesToDepositWhitelist(
-            strategies, thirdPartyTransfersForbiddenValues
+            strategies 
         );
 
         // Add to allStrats

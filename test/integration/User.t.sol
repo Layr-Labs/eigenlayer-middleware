@@ -249,7 +249,7 @@ contract User is Test {
             stakerOptOutWindowBlocks: 0
         });
 
-        delegationManager.registerAsOperator(details, NAME);
+        delegationManager.registerAsOperator(details,0, NAME);
     }
 
     // Deposit LSTs into the StrategyManager. This setup does not use the EPMgr or native ETH.
@@ -266,15 +266,15 @@ contract User is Test {
         }
     }
 
-    function exitEigenlayer() public createSnapshot virtual returns (IStrategy[] memory, uint[] memory) {
+    function exitEigenlayer() public createSnapshot virtual returns (IStrategy[] memory, OwnedShares[] memory) {
         _log("exitEigenlayer (core)");
 
-        (IStrategy[] memory strategies, uint[] memory shares) = delegationManager.getDelegatableShares(address(this));
+        (IStrategy[] memory strategies, OwnedShares[] memory shares) = delegationManager.getDelegatableShares(address(this));
 
         IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
         params[0] = IDelegationManager.QueuedWithdrawalParams({
             strategies: strategies,
-            shares: shares,
+            ownedShares: shares,
             withdrawer: address(this)
         });
 

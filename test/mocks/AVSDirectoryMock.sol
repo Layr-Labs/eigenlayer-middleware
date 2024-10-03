@@ -202,85 +202,55 @@ contract AVSDirectoryMock is IAVSDirectory {
     uint32 operatorSetId
   ) external view returns (bool) {}
 
-  function updateFreeMagnitude(
-    address operator,
-    IStrategy[] calldata strategies,
-    uint16[] calldata numToComplete
-  ) external override {}
-
-  function slashOperator(
-    address operator,
-    uint32 operatorSetId,
-    IStrategy[] calldata strategies,
-    uint16 bipsToSlash
-  ) external override {}
-
-  function initializeAllocationDelay(uint32 delay) external override {}
-
-  function INITIAL_TOTAL_MAGNITUDE() external view override returns (uint64) {}
-
-  function inTotalOperatorSets(
-    address operator
-  ) external view override returns (uint256) {}
-
-  function getAllocatableMagnitude(
-    address operator,
-    IStrategy strategy,
-    uint16 numToComplete
-  ) external view override returns (uint64) {}
-
-  function getAllocationDelay(
-    address operator
-  ) external view override returns (bool, uint32) {}
-
-  function getLatestTotalMagnitude(
-    address operator,
-    IStrategy strategy
-  ) external view override returns (uint64) {}
-
-  function getAllocatableMagnitude(
-    address operator,
-    IStrategy strategy
-  ) external view override returns (uint64) {}
-
-  function operatorSetMemberCount(
-    address avs,
-    uint32 operatorSetId
-  ) external view override returns (uint256) {}
-
-  function operatorSetsMemberOf(
-    address operator,
-    uint256 index
-  ) external view override returns (OperatorSet memory) {}
-
-  function operatorSetsMemberOf(
-    address operator,
-    uint256 start,
-    uint256 length
-  ) external view override returns (OperatorSet[] memory operatorSets) {}
-
-  function isOperatorSlashable(
-    address operator,
-    OperatorSet memory operatorSet
-  ) external view override returns (bool) {}
-
-  function getSlashablePPM(
-    address operator,
-    OperatorSet calldata operatorSet,
-    IStrategy[] calldata strategies,
-    uint32 timestamp,
-    bool linear
-  ) external view override returns (uint24[] memory) {}
-
-  function isMember(
-    address operator,
-    OperatorSet memory operatorSet
-  ) external view override returns (bool) {}
-
   function getSlashableMagnitudes(
     address operator,
     IStrategy[] calldata strategies,
     uint32 timestamp
   ) external view returns (OperatorSet[] memory, uint64[][] memory) {}
 
+  function operatorSetsMemberOfAtIndex(
+    address operator,
+    uint256 index
+  ) external view override returns (OperatorSet memory) {}
+
+  function operatorSetMemberAtIndex(
+    OperatorSet memory operatorSet,
+    uint256 index
+  ) external view override returns (address) {}
+
+  function getOperatorSetsOfOperator(
+    address operator,
+    uint256 start,
+    uint256 length
+  ) external view override returns (OperatorSet[] memory operatorSets) {}
+
+  function getOperatorsInOperatorSet(
+    OperatorSet memory operatorSet,
+    uint256 start,
+    uint256 length
+  ) external view override returns (address[] memory operators) {}
+
+  function getNumOperatorsInOperatorSet(
+    OperatorSet memory operatorSet
+  ) external view override returns (uint256) {}
+
+  function operatorSetStatus(
+    address avs,
+    address operator,
+    uint32 operatorSetId
+  )
+    external
+    view
+    override
+    returns (bool registered, uint32 lastDeregisteredTimestamp)
+  {}
+
+  function isMember(
+    address operator,
+    OperatorSet memory operatorSet
+  ) external view override returns (bool) {}
+
+  function inTotalOperatorSets(
+    address operator
+  ) external view override returns (uint256) {}
 }

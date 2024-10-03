@@ -591,7 +591,7 @@ abstract contract IntegrationBase is IntegrationConfig {
     function assert_Snap_Removed_OperatorShares(
         User operator, 
         IStrategy[] memory strategies, 
-        uint[] memory removedShares,
+        OwnedShares[] memory removedShares,
         string memory err
     ) internal {
         uint[] memory curShares = _getOperatorShares(operator, strategies);
@@ -600,7 +600,7 @@ abstract contract IntegrationBase is IntegrationConfig {
 
         // For each strategy, check (prev - removed == cur)
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(prevShares[i] - removedShares[i], curShares[i], err);
+            assertEq(prevShares[i] - removedShares[i].unwrap(), curShares[i], err);
         }
     }
 
@@ -773,7 +773,7 @@ abstract contract IntegrationBase is IntegrationConfig {
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
 
-            curShares[i] = strategyManager.stakerStrategyShares(address(staker), strat);
+            curShares[i] = strategyManager.stakerStrategyShares(address(staker), strat).unwrap();
         }
 
         return curShares;
