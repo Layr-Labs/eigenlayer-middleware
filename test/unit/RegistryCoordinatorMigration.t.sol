@@ -10,6 +10,8 @@ import {
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {StrategyBase} from "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import {IServiceManagerBaseEvents} from "../events/IServiceManagerBaseEvents.sol";
+import {IAVSDirectoryTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {AVSDirectoryHarness} from "../harnesses/AVSDirectoryHarness.sol";
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
@@ -91,7 +93,7 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
         IERC20 token3 = new ERC20PresetFixedSupply(
             "pepe wif avs", "MOCK3", mockTokenInitialSupply, address(this)
         );
-        strategyImplementation = new StrategyBase(strategyManagerMock);
+        strategyImplementation = new StrategyBase(IStrategyManager(address(strategyManagerMock)));
         strategyMock1 = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
@@ -227,7 +229,7 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
                 AVSDirectoryHarness(address(avsDirectory)).setAvsOperatorStatus(
                     address(serviceManager),
                     operatorAddress,
-                    IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED
+                    IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED
                 );
             }
         }
@@ -312,7 +314,7 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
                 AVSDirectoryHarness(address(avsDirectory)).setAvsOperatorStatus(
                     address(serviceManager),
                     operatorAddress,
-                    IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED
+                    IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED
                 );
             }
         }
@@ -387,7 +389,7 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
                 AVSDirectoryHarness(address(avsDirectory)).setAvsOperatorStatus(
                     address(serviceManager),
                     operatorAddress,
-                    IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED
+                    IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED
                 );
             }
         }

@@ -4,8 +4,6 @@ pragma solidity ^0.8.12;
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import {Slasher} from "eigenlayer-contracts/src/contracts/core/Slasher.sol";
-import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
@@ -26,7 +24,7 @@ import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.so
 import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
 
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
-import {EigenPodManagerMock} from "eigenlayer-contracts/src/test/mocks/EigenPodManagerMock.sol";
+import {EigenPodManagerMock} from "../mocks/EigenPodManagerMock.sol";
 import {AVSDirectoryMock} from "../mocks/AVSDirectoryMock.sol";
 import {AllocationManagerMock} from "../mocks/AllocationManagerMock.sol";
 import {DelegationMock} from "../mocks/DelegationMock.sol";
@@ -53,9 +51,6 @@ contract MockAVSDeployer is Test {
 
     ProxyAdmin public proxyAdmin;
     PauserRegistry public pauserRegistry;
-
-    ISlasher public slasher = ISlasher(address(uint160(uint256(keccak256("slasher")))));
-    Slasher public slasherImplementation;
 
     EmptyContract public emptyContract;
 
@@ -153,23 +148,8 @@ contract MockAVSDeployer is Test {
         eigenPodManagerMock = new EigenPodManagerMock(pauserRegistry);
         strategyManagerMock = new StrategyManagerMock();
         allocationManagerMock = new AllocationManagerMock();
-        slasherImplementation = new Slasher(strategyManagerMock, delegationMock);
-        slasher = Slasher(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(slasherImplementation),
-                    address(proxyAdmin),
-                    abi.encodeWithSelector(
-                        Slasher.initialize.selector,
-                        msg.sender,
-                        pauserRegistry,
-                        0 /*initialPausedStatus*/
-                    )
-                )
-            )
-        );
         avsDirectoryMock = new AVSDirectoryMock();
-        avsDirectoryImplementation = new AVSDirectory(delegationMock);
+        avsDirectoryImplementation = new AVSDirectory(delegationMock, 0); // TODO: config value
         avsDirectory = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(
@@ -186,7 +166,7 @@ contract MockAVSDeployer is Test {
         );
         rewardsCoordinatorMock = new RewardsCoordinatorMock();
 
-        strategyManagerMock.setAddresses(delegationMock, eigenPodManagerMock, slasher);
+        strategyManagerMock.setAddresses(delegationMock, eigenPodManagerMock);
         cheats.stopPrank();
 
         cheats.startPrank(registryCoordinatorOwner);

@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import {
-    IAVSDirectory, OperatorSet
-} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IAVSDirectory, OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
@@ -200,6 +198,12 @@ contract AVSDirectoryMock is IAVSDirectory {
   function isOperatorSet(
     address avs,
     uint32 operatorSetId
+  ) external view returns (bool) {}
+
+  function isOperatorSlashable(address operator, OperatorSet memory operatorSet) external view returns (bool){}
+
+  function isOperatorSetBatch(
+    OperatorSet[] calldata operatorSets
   ) external view returns (bool) {}
 
   function getSlashableMagnitudes(

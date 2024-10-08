@@ -9,6 +9,8 @@ import {
 } from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
 import {StrategyBase} from "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import {IServiceManagerBaseEvents} from "../events/IServiceManagerBaseEvents.sol";
+import {IAVSDirectoryTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {AVSDirectoryHarness} from "../harnesses/AVSDirectoryHarness.sol";
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
@@ -60,7 +62,7 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
         // Deploy rewards coordinator
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationMock,
-            strategyManagerMock,
+            IStrategyManager(address(strategyManagerMock)),
             CALCULATION_INTERVAL_SECONDS,
             MAX_REWARDS_DURATION,
             MAX_RETROACTIVE_LENGTH,
@@ -124,7 +126,7 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
         IERC20 token3 = new ERC20PresetFixedSupply(
             "pepe wif avs", "MOCK3", mockTokenInitialSupply, address(this)
         );
-        strategyImplementation = new StrategyBase(strategyManagerMock);
+        strategyImplementation = new StrategyBase(IStrategyManager(address(strategyManagerMock)));
         strategyMock1 = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
@@ -318,7 +320,7 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
                 AVSDirectoryHarness(address(avsDirectory)).setAvsOperatorStatus(
                     address(serviceManager),
                     operatorAddress,
-                    IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED
+                    IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED
                 );
             }
         }

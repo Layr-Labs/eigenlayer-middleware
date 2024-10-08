@@ -7,7 +7,7 @@ import {AVSDirectory} from "eigenlayer-contracts/src/contracts/core/AVSDirectory
 
 // wrapper around the AVSDirectory contract that exposes internal functionality, for unit testing
 contract AVSDirectoryHarness is AVSDirectory {
-    constructor(IDelegationManager _delegation) AVSDirectory(_delegation) {}
+    constructor(IDelegationManager _delegation) AVSDirectory(_delegation, 0) {} // TODO: config update
 
     function setOperatorSaltIsSpent(address operator, bytes32 salt, bool isSpent) external {
         operatorSaltIsSpent[operator][salt] = isSpent;
@@ -59,7 +59,7 @@ contract AVSDirectoryHarness is AVSDirectory {
     }
 
     function _calculateDigestHashExternal(bytes32 structHash) external view returns (bytes32) {
-        return _calculateDigestHash(structHash);
+        // return calculateOperatorSetRegistrationDigestHash(structHash); // TODO: Fix
     }
 
     function _calculateDomainSeparatorExternal() external view returns (bytes32) {

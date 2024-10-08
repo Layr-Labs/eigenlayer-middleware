@@ -118,7 +118,7 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
         check_Register_State(operator, quorums);
 
         // 2. (core) queue full withdrawal
-        (IStrategy[] memory strategies, OwnedShares[] memory shares) = operator.exitEigenlayer();
+        (IStrategy[] memory strategies, uint256[] memory shares) = operator.exitEigenlayer();
         check_Withdraw_State(operator, quorums, strategies, shares);
 
         // 3. Update stakes
@@ -151,7 +151,7 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
         check_Register_State(operator, quorums);
 
         // 2. (core) queue full withdrawal
-        (IStrategy[] memory strategies, OwnedShares[] memory shares) = operator.exitEigenlayer();
+        (IStrategy[] memory strategies, uint256[] memory shares) = operator.exitEigenlayer();
         check_Withdraw_State(operator, quorums, strategies, shares);
 
         // 3. Deregister from all quorums

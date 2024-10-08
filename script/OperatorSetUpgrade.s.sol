@@ -145,7 +145,7 @@ contract OperatorSetUpgradeScript is Script {
     function _upgradeAvsDirectory() internal {
         address proxyAdmin = OperatorSetUpgradeLib.getAdmin(avsDirectory);
         address avsDirectoryOwner = Ownable(proxyAdmin).owner();
-        AVSDirectory avsDirectoryImpl = new AVSDirectory(IDelegationManager(delegationManager));
+        AVSDirectory avsDirectoryImpl = new AVSDirectory(IDelegationManager(delegationManager), 0); // TODO: config
 
         vm.startPrank(avsDirectoryOwner);
         OperatorSetUpgradeLib.upgrade(avsDirectory, address(avsDirectoryImpl));

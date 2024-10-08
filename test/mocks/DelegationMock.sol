@@ -8,7 +8,7 @@ import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IS
 import {StrategyManager} from "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {SlashingLib, Shares, OwnedShares, DelegatedShares} from "eigenlayer-contracts/src/contracts/libraries/SlashingLib.sol";
+import {SlashingLib} from "eigenlayer-contracts/src/contracts/libraries/SlashingLib.sol";
 
 contract DelegationMock is IDelegationManager {
   using SlashingLib for uint256;
@@ -242,7 +242,7 @@ contract DelegationMock is IDelegationManager {
     IStrategy strategy,
     uint256 shares
   ) external {
-    strategyManager.addOwnedShares(staker, strategy, token, shares.wrapOwned());
+    strategyManager.addShares(staker, strategy, token, shares);
   }
 
   function removeShares(
@@ -251,7 +251,7 @@ contract DelegationMock is IDelegationManager {
     IStrategy strategy,
     uint256 shares
   ) external {
-    strategyManager.removeShares(staker, strategy, shares.wrapShares());
+    strategyManager.removeDepositShares(staker, strategy, shares);
   }
 
   function withdrawSharesAsTokens(
@@ -265,7 +265,7 @@ contract DelegationMock is IDelegationManager {
       recipient,
       strategy,
       token,
-      shares.wrapOwned()
+      shares
     );
   }
 
@@ -287,22 +287,24 @@ contract DelegationMock is IDelegationManager {
     bool[] calldata receiveAsTokens
   ) external override {}
 
+  function decreaseBeaconChainScalingFactor(
+    address staker,
+    uint256 existingDepositShares,
+    uint64 proportionOfOldBalance
+  ) external override {}
+
+  function decreaseOperatorShares(
+    address operator,
+    IStrategy strategy,
+    uint64 previousTotalMagnitude,
+    uint64 newTotalMagnitude
+  ) external override {}
+
   function increaseDelegatedShares(
     address staker,
     IStrategy strategy,
-    Shares existingShares,
-    OwnedShares addedOwnedShares
+    uint256 existingDepositShares,
+    uint256 addedShares
   ) external override {}
-
-  function decreaseDelegatedShares(
-    address staker,
-    IStrategy strategy,
-    OwnedShares removedOwnedShares
-  ) external override {}
-
-  function operatorDelegatedShares(
-    address operator,
-    IStrategy strategy
-  ) external view override returns (DelegatedShares) {}
 
 }
