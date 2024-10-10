@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import {
     RewardsCoordinator,
     IRewardsCoordinator,
+    IRewardsCoordinatorTypes,
     IERC20
 } from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
 import {StrategyBase} from "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
@@ -165,13 +166,13 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
         strategyManagerMock.setStrategyWhitelist(strategies[2], true);
 
         defaultStrategyAndMultipliers.push(
-            IRewardsCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[0])), 1e18)
+            IRewardsCoordinatorTypes.StrategyAndMultiplier(IStrategy(address(strategies[0])), 1e18)
         );
         defaultStrategyAndMultipliers.push(
-            IRewardsCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[1])), 2e18)
+            IRewardsCoordinatorTypes.StrategyAndMultiplier(IStrategy(address(strategies[1])), 2e18)
         );
         defaultStrategyAndMultipliers.push(
-            IRewardsCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[2])), 3e18)
+            IRewardsCoordinatorTypes.StrategyAndMultiplier(IStrategy(address(strategies[2])), 3e18)
         );
     }
 
