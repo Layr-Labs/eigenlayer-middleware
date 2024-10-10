@@ -257,8 +257,8 @@ contract MockAVSDeployer is Test {
 
         serviceManager.initialize({
             initialOwner: registryCoordinatorOwner,
-            rewardsInitiator: address(proxyAdminOwner),
-            slasher: address(proxyAdminOwner)
+            rewardsInitiator: proxyAdminOwner,
+            slasher: proxyAdminOwner
         });
 
         // set the public key for an operator, using harnessed function to bypass checks
