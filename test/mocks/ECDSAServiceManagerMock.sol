@@ -2,6 +2,7 @@
 pragma solidity ^0.8.12;
 
 import "../../src/unaudited/ECDSAServiceManagerBase.sol";
+import {IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
 contract ECDSAServiceManagerMock is ECDSAServiceManagerBase {
     constructor(
@@ -34,4 +35,8 @@ contract ECDSAServiceManagerMock is ECDSAServiceManagerBase {
     ) external {}
 
     function deregisterOperatorFromOperatorSets(address operator, uint32[] calldata operatorSetIds) external{}
+
+    function slashOperator(IAllocationManagerTypes.SlashingParams memory params) external override {
+        // Mock implementation - no actual slashing occurs
+    }
 }

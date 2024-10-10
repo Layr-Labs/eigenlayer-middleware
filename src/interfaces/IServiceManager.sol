@@ -4,6 +4,7 @@ pragma solidity >=0.5.0;
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {IServiceManagerUI} from "./IServiceManagerUI.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
 /**
  * @title Minimal interface for a ServiceManager-type contract that forms the single point for an AVS to push updates to EigenLayer
@@ -43,6 +44,8 @@ interface IServiceManager is IServiceManagerUI {
      * @param operatorSetIds The IDs of the operator sets.
      */
     function deregisterOperatorFromOperatorSets(address operator, uint32[] calldata operatorSetIds) external;
+
+    function slashOperator(IAllocationManagerTypes.SlashingParams memory params) external;
 
     // EVENTS
     event RewardsInitiatorUpdated(address prevRewardsInitiator, address newRewardsInitiator);
