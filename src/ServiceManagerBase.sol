@@ -6,6 +6,7 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISi
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
 import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
@@ -50,13 +51,15 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         IAVSDirectory __avsDirectory,
         IRewardsCoordinator __rewardsCoordinator,
         IRegistryCoordinator __registryCoordinator,
-        IStakeRegistry __stakeRegistry
+        IStakeRegistry __stakeRegistry,
+        IAllocationManager __allocationManager
     )
         ServiceManagerBaseStorage(
             __avsDirectory,
             __rewardsCoordinator,
             __registryCoordinator,
-            __stakeRegistry
+            __stakeRegistry,
+            __allocationManager
         )
     {
         _disableInitializers();
@@ -64,10 +67,12 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
 
     function __ServiceManagerBase_init(
         address initialOwner,
-        address _rewardsInitiator
+        address _rewardsInitiator,
+        address _slasher
     ) internal virtual onlyInitializing {
         _transferOwnership(initialOwner);
         _setRewardsInitiator(_rewardsInitiator);
+        _setSlasher(_slasher);
     }
 
     /**
@@ -166,6 +171,15 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      */
     function setRewardsInitiator(address newRewardsInitiator) external onlyOwner {
         _setRewardsInitiator(newRewardsInitiator);
+    }
+
+    /**
+     * @notice Sets the slasher address
+     * @param newSlasher The new slasher address
+     * @dev only callable by the owner
+     */
+    function setSlasher(address newSlasher) external onlyOwner {
+        _setSlasher(newSlasher);
     }
 
     /**
@@ -323,6 +337,11 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     function _setRewardsInitiator(address newRewardsInitiator) internal {
         emit RewardsInitiatorUpdated(rewardsInitiator, newRewardsInitiator);
         rewardsInitiator = newRewardsInitiator;
+    }
+
+    function _setSlasher(address newSlasher) internal {
+        emit SlasherUpdated(slasher, newSlasher);
+        slasher = newSlasher;
     }
 
     /**

@@ -327,7 +327,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
         serviceManager.initialize({
             initialOwner: registryCoordinatorOwner,
-            rewardsInitiator: address(msg.sender)
+            rewardsInitiator: address(msg.sender),
+            slasher: address(msg.sender)
         });
 
         RegistryCoordinator registryCoordinatorImplementation =

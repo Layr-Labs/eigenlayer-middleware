@@ -23,7 +23,7 @@ interface IServiceManager is IServiceManagerUI {
      */
     function createAVSRewardsSubmission(IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions) external;
 
-    function createOperatorSets(uint32[] memory operatorSetIds) external ;
+    function createOperatorSets(uint32[] memory operatorSetIds) external;
 
     /**
      * @notice Forwards a call to EigenLayer's AVSDirectory contract to register an operator to operator sets
@@ -46,4 +46,5 @@ interface IServiceManager is IServiceManagerUI {
 
     // EVENTS
     event RewardsInitiatorUpdated(address prevRewardsInitiator, address newRewardsInitiator);
+    event SlasherUpdated(address prevSlasher, address newSlasher);
 }

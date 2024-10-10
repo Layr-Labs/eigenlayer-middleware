@@ -22,8 +22,9 @@ contract ServiceManagerMock is ServiceManagerBase {
 
     function initialize(
         address initialOwner,
-        address rewardsInitiator
+        address rewardsInitiator,
+        address slasher
     ) public virtual initializer {
-        __ServiceManagerBase_init(initialOwner, rewardsInitiator);
+        __ServiceManagerBase_init(initialOwner, rewardsInitiator, slasher);
     }
 }
