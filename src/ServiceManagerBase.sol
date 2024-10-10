@@ -39,11 +39,10 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _;
     }
 
-    function _checkRewardsInitiator() internal view {
-        require(
-            msg.sender == rewardsInitiator,
-            "ServiceManagerBase.onlyRewardsInitiator: caller is not the rewards initiator"
-        );
+    /// @notice only slasher can call functions with this modifier
+    modifier onlySlasher() {
+        _checkSlasher();
+        _;
     }
 
     /// @notice Sets the (immutable) `_registryCoordinator` address
@@ -82,6 +81,10 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      */
     function updateAVSMetadataURI(string memory _metadataURI) public virtual onlyOwner {
         _avsDirectory.updateAVSMetadataURI(_metadataURI);
+    }
+
+    function slashOperator(IAllocationManager.SlashingParams memory params) external onlySlasher {
+        _allocationManager.slashOperator(params);
     }
 
     /**
@@ -420,5 +423,20 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     /// @notice Returns the EigenLayer AVSDirectory contract.
     function avsDirectory() external view override returns (address) {
         return address(_avsDirectory);
+    }
+
+    function _checkRewardsInitiator() internal view {
+        require(
+            msg.sender == rewardsInitiator,
+            "ServiceManagerBase.onlyRewardsInitiator: caller is not the rewards initiator"
+        );
+    }
+
+
+    function _checkSlasher() internal view {
+        require(
+            msg.sender == slasher,
+            "ServiceManagerBase.onlySlasher: caller is not the slasher"
+        );
     }
 }
