@@ -301,7 +301,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             IAVSDirectory(avsDirectory),
             rewardsCoordinator,
             IRegistryCoordinator(registryCoordinator),
-            stakeRegistry
+            stakeRegistry,
+            allocationManager
         );
 
         proxyAdmin.upgrade(

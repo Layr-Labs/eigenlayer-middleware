@@ -12,6 +12,7 @@ import {IBLSApkRegistry} from "../src/interfaces/IBLSApkRegistry.sol";
 import {IIndexRegistry} from "../src/interfaces/IIndexRegistry.sol";
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 interface IServiceManagerMigration {
     function getOperatorsToMigrate()
@@ -46,6 +47,7 @@ contract OperatorSetUpgradeScript is Script {
     address public delegationManager;
     address public blsApkRegistry;
     address public indexRegistry;
+    address public allocationManager;
 
     function setUp() public {
         vm.label(DEFAULT_FORGE_SENDER, "DEFAULT FORGE SENDER");
@@ -211,7 +213,8 @@ contract OperatorSetUpgradeScript is Script {
             IAVSDirectory(avsDirectory),
             IRewardsCoordinator(rewardsCoordinator),
             IRegistryCoordinator(registryCoordinator),
-            IStakeRegistry(stakeRegistry)
+            IStakeRegistry(stakeRegistry),
+            IAllocationManager(allocationManager)
         ));
         address newRegistryCoordinatorImpl = address(new RegistryCoordinator(
             IServiceManager(serviceManager),

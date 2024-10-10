@@ -59,6 +59,7 @@ contract MockAVSDeployer is Test {
     IBLSApkRegistry public blsApkRegistryImplementation;
     IIndexRegistry public indexRegistryImplementation;
     ServiceManagerMock public serviceManagerImplementation;
+    AllocationManagerMock public allocationManagerImplementation;
 
     OperatorStateRetriever public operatorStateRetriever;
     RegistryCoordinatorHarness public registryCoordinator;
@@ -66,6 +67,7 @@ contract MockAVSDeployer is Test {
     BLSApkRegistryHarness public blsApkRegistry;
     IIndexRegistry public indexRegistry;
     ServiceManagerMock public serviceManager;
+    AllocationManagerMock public allocationManager;
 
     StrategyManagerMock public strategyManagerMock;
     DelegationMock public delegationMock;
@@ -149,6 +151,7 @@ contract MockAVSDeployer is Test {
         strategyManagerMock = new StrategyManagerMock();
         allocationManagerMock = new AllocationManagerMock();
         avsDirectoryMock = new AVSDirectoryMock();
+        allocationManagerMock = new AllocationManagerMock();
         avsDirectoryImplementation = new AVSDirectory(delegationMock, 0); // TODO: config value
         avsDirectory = AVSDirectory(
             address(
@@ -200,6 +203,12 @@ contract MockAVSDeployer is Test {
             )
         );
 
+        allocationManager = AllocationManagerMock(
+            address(
+                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
+            )
+        );
+
         cheats.stopPrank();
 
         cheats.startPrank(proxyAdminOwner);
@@ -230,12 +239,20 @@ contract MockAVSDeployer is Test {
             avsDirectoryMock,
             IRewardsCoordinator(address(rewardsCoordinatorMock)),
             registryCoordinator,
-            stakeRegistry
+            stakeRegistry,
+            allocationManager
         );
 
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(serviceManager))),
             address(serviceManagerImplementation)
+        );
+
+        allocationManagerImplementation = new AllocationManagerMock();
+
+        proxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(allocationManager))),
+            address(allocationManagerImplementation)
         );
 
         serviceManager.initialize({

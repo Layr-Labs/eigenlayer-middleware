@@ -90,7 +90,7 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
         );
         // Deploy ServiceManager
         serviceManagerImplementation = new ServiceManagerMock(
-            avsDirectory, rewardsCoordinator, registryCoordinator, stakeRegistry
+            avsDirectory, rewardsCoordinator, registryCoordinator, stakeRegistry, allocationManager
         );
 
         serviceManager = ServiceManagerMock(

@@ -59,7 +59,8 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
             avsDirectory,
             IRewardsCoordinator(address(rewardsCoordinatorMock)),
             registryCoordinator,
-            stakeRegistry
+            stakeRegistry,
+            allocationManager
         );
         avsDirectoryHarness = new AVSDirectoryHarness(delegationMock);
 
@@ -67,7 +68,8 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
             avsDirectory,
             rewardsCoordinatorMock,
             registryCoordinator,
-            stakeRegistry
+            stakeRegistry,
+            allocationManager
         );
         /// Needed to upgrade to a service manager that points to an AVS Directory that can track state
         vm.prank(proxyAdmin.owner());
