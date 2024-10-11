@@ -25,6 +25,8 @@ interface IRegistryCoordinator {
 
     event EjectorUpdated(address prevEjector, address newEjector);
 
+    event OperatorSocketUpdate(bytes32 indexed operatorId, string socket);
+
     /// @notice emitted when all the operators for a quorum are updated at once
     event QuorumBlockNumberUpdated(uint8 indexed quorumNumber, uint256 blocknumber);
 
@@ -150,4 +152,10 @@ interface IRegistryCoordinator {
 
     /// @notice The owner of the registry coordinator
     function owner() external view returns (address);
+
+    /**
+     * @notice Updates the socket of the msg.sender given they are a registered operator
+     * @param socket is the new socket of the operator
+     */
+    function updateSocket(string memory socket) external;
 }

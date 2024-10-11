@@ -6,6 +6,7 @@ import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {ISocketRegistry} from "./interfaces/ISocketRegistry.sol";
 
 abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
 
@@ -39,6 +40,8 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
     IStakeRegistry public immutable stakeRegistry;
     /// @notice the Index Registry contract that will keep track of operators' indexes
     IIndexRegistry public immutable indexRegistry;
+    /// @notice the Socket Registry contract that will keep track of operators' sockets
+    ISocketRegistry public immutable socketRegistry;
 
     /*******************************************************************************
                                        STATE 
@@ -73,12 +76,14 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
         IServiceManager _serviceManager,
         IStakeRegistry _stakeRegistry,
         IBLSApkRegistry _blsApkRegistry,
-        IIndexRegistry _indexRegistry
+        IIndexRegistry _indexRegistry,
+        ISocketRegistry _socketRegistry
     ) {
         serviceManager = _serviceManager;
         stakeRegistry = _stakeRegistry;
         blsApkRegistry = _blsApkRegistry;
         indexRegistry = _indexRegistry;
+        socketRegistry = _socketRegistry;
     }
 
     // storage gap for upgradeability
