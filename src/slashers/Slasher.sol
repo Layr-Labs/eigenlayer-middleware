@@ -7,14 +7,6 @@ import {SlasherBase} from "./SlasherBase.sol";
 contract Slasher is SlasherBase {
     uint256 public nextRequestId;
 
-    event Slashed(
-        uint256 indexed requestId,
-        address indexed operator,
-        uint32 indexed operatorSetId,
-        uint256 wadToSlash,
-        string description
-    );
-
     function initialize(address _serviceManager) public initializer {
         __SlasherBase_init(_serviceManager);
     }
@@ -34,6 +26,6 @@ contract Slasher is SlasherBase {
             wadToSlash,
             description
         );
-        emit Slashed(requestId, operator, operatorSetId, wadToSlash, description);
+        emit OperatorSlashed(requestId, operator, operatorSetId, strategies, wadToSlash, description);
     }
 }

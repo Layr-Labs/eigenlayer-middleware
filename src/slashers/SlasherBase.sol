@@ -16,6 +16,7 @@ abstract contract SlasherBase is Initializable, SlasherStorage {
     }
 
     event OperatorSlashed(
+        uint256 indexed slashingRequestId,
         address indexed operator,
         uint32 indexed operatorSetId,
         IStrategy[] strategies,
@@ -42,8 +43,6 @@ abstract contract SlasherBase is Initializable, SlasherStorage {
             wadToSlash: wadToSlash,
             description: description
         });
-
-        emit OperatorSlashed(operator, operatorSetId, strategies, wadToSlash, description);
 
         IServiceManager(serviceManager).slashOperator(params);
     }

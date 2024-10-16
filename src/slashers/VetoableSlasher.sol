@@ -76,6 +76,8 @@ contract VetoableSlashing is SlasherBase {
             request.description
         );
 
+        emit OperatorSlashed(requestId, request.operator, request.operatorSetId, request.strategies, request.wadToSlash, request.description);
+
         delete slashingRequests[requestId];
     }
 
