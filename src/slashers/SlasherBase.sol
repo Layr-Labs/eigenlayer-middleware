@@ -7,18 +7,34 @@ import {SlasherStorage} from "./SlasherStorage.sol";
 import {IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
-contract SimpleSlasher is Initializable, SlasherStorage {
-    function initialize(address _serviceManager) public initializer {
+abstract contract SlasherBase is Initializable, SlasherStorage {
+    enum SlashingStatus {
+        Null,
+        Requested,
+        Completed,
+        Cancelled
+    }
+
+    event OperatorSlashed(
+        uint256 indexed slashingRequestId,
+        address indexed operator,
+        uint32 indexed operatorSetId,
+        IStrategy[] strategies,
+        uint256 wadToSlash,
+        string description
+    );
+
+    function __SlasherBase_init(address _serviceManager) internal onlyInitializing {
         serviceManager = _serviceManager;
     }
 
-    function slashOperator(
+    function _fulfillSlashingRequest(
         address operator,
         uint32 operatorSetId,
         IStrategy[] memory strategies,
         uint256 wadToSlash,
         string memory description
-    ) external {
+    ) internal virtual {
 
         IAllocationManagerTypes.SlashingParams memory params = IAllocationManagerTypes.SlashingParams({
             operator: operator,
@@ -31,3 +47,7 @@ contract SimpleSlasher is Initializable, SlasherStorage {
         IServiceManager(serviceManager).slashOperator(params);
     }
 }
+
+
+
+
