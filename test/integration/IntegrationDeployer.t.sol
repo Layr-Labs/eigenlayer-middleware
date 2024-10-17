@@ -164,7 +164,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         DelegationManager delegationImplementation =
             new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, 0);
         StrategyManager strategyManagerImplementation =
-            new StrategyManager(delegationManager, eigenPodManager, avsDirectory);
+            new StrategyManager(delegationManager);
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit, eigenPodBeacon, strategyManager, delegationManager
         );

@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import "./AVSDirectoryMock.sol";
 
@@ -119,5 +120,14 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
 
   function createRewardsForAllEarners(
     RewardsSubmission[] calldata rewardsSubmissions
+  ) external override {}
+
+  function initialize(
+    address initialOwner,
+    IPauserRegistry _pauserRegistry,
+    uint256 initialPausedStatus,
+    address _rewardsUpdater,
+    uint32 _activationDelay,
+    uint16 _globalCommissionBips
   ) external override {}
 }

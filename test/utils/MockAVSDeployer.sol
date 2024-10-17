@@ -169,7 +169,7 @@ contract MockAVSDeployer is Test {
         );
         rewardsCoordinatorMock = new RewardsCoordinatorMock();
 
-        strategyManagerMock.setAddresses(delegationMock, eigenPodManagerMock);
+        strategyManagerMock.setDelegationManager(delegationMock);
         cheats.stopPrank();
 
         cheats.startPrank(registryCoordinatorOwner);

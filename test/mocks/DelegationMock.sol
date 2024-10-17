@@ -7,6 +7,7 @@ import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {StrategyManager} from "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {SlashingLib} from "eigenlayer-contracts/src/contracts/libraries/SlashingLib.sol";
 
@@ -86,7 +87,7 @@ contract DelegationMock is IDelegationManager {
     OperatorDetails memory returnValue = OperatorDetails({
       __deprecated_earningsReceiver: operator,
       delegationApprover: operator,
-      stakerOptOutWindowBlocks: 0
+      __deprecated_stakerOptOutWindowBlocks: 0
     });
     return returnValue;
   }
@@ -261,12 +262,7 @@ contract DelegationMock is IDelegationManager {
     uint256 shares,
     IERC20 token
   ) external {
-    strategyManager.withdrawSharesAsTokens(
-      recipient,
-      strategy,
-      token,
-      shares
-    );
+    strategyManager.withdrawSharesAsTokens(recipient, strategy, token, shares);
   }
 
   function registerAsOperator(
@@ -307,4 +303,27 @@ contract DelegationMock is IDelegationManager {
     uint256 addedShares
   ) external override {}
 
+  function initialize(
+    address initialOwner,
+    IPauserRegistry _pauserRegistry,
+    uint256 initialPausedStatus
+  ) external override {}
+
+  function getOperatorsShares(
+    address[] memory operators,
+    IStrategy[] memory strategies
+  ) external view override returns (uint256[][] memory) {}
+
+  function getWithdrawableShares(
+    address staker,
+    IStrategy[] memory strategies
+  ) external view override returns (uint256[] memory withdrawableShares) {}
+
+  function getDepositedShares(
+    address staker
+  ) external view override returns (IStrategy[] memory, uint256[] memory) {}
+
+  function getCompletableTimestamp(
+    uint32 startTimestamp
+  ) external view override returns (uint32 completableTimestamp) {}
 }
