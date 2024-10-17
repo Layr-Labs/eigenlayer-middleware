@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import {EIP1271SignatureUtils} from
-    "eigenlayer-contracts/src/contracts/libraries/EIP1271SignatureUtils.sol";
+import "@openzeppelin-upgrades/contracts/utils/cryptography/SignatureCheckerUpgradeable.sol";
 
 /**
  * @title SignatureCheckerLib
@@ -11,6 +10,8 @@ import {EIP1271SignatureUtils} from
  * validation logic to this external library.
  */
 library SignatureCheckerLib {
+    error InvalidSignature();
+    
     /**
      * @notice Validates a signature using EIP-1271 standard.
      * @param signer The address of the signer.
@@ -22,6 +23,8 @@ library SignatureCheckerLib {
         bytes32 digestHash,
         bytes memory signature
     ) external view {
-        EIP1271SignatureUtils.checkSignature_EIP1271(signer, digestHash, signature);
+        if (!SignatureCheckerUpgradeable.isValidSignatureNow(signer, digestHash, signature)) {
+            revert InvalidSignature();
+        }
     }
 }

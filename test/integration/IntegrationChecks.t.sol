@@ -245,7 +245,7 @@ contract IntegrationChecks is IntegrationBase {
         User operator,
         bytes memory quorums,
         IStrategy[] memory strategies,
-        uint[] memory shares
+        uint256[] memory shares
     ) internal {
         _log("check_Withdraw_State", operator);
 

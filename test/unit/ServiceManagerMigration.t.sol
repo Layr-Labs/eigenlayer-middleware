@@ -5,11 +5,15 @@ import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import {
     RewardsCoordinator,
     IRewardsCoordinator,
+    IRewardsCoordinatorTypes,
     IERC20
 } from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
 import {StrategyBase} from "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import {IServiceManagerBaseEvents} from "../events/IServiceManagerBaseEvents.sol";
+import {IAVSDirectoryTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {AVSDirectoryHarness} from "../harnesses/AVSDirectoryHarness.sol";
+import {OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 import "../utils/MockAVSDeployer.sol";
 
@@ -59,15 +63,12 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
         // Deploy rewards coordinator
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationMock,
-            strategyManagerMock,
-            avsDirectoryMock,
+            IStrategyManager(address(strategyManagerMock)),
             CALCULATION_INTERVAL_SECONDS,
             MAX_REWARDS_DURATION,
             MAX_RETROACTIVE_LENGTH,
             MAX_FUTURE_LENGTH,
-            GENESIS_REWARDS_TIMESTAMP,
-            OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
-            OPERATOR_SET_MAX_RETROACTIVE_LENGTH
+            GENESIS_REWARDS_TIMESTAMP
         );
 
         rewardsCoordinator = RewardsCoordinator(
@@ -89,7 +90,7 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
         );
         // Deploy ServiceManager
         serviceManagerImplementation = new ServiceManagerMock(
-            avsDirectory, rewardsCoordinator, registryCoordinator, stakeRegistry
+            avsDirectory, rewardsCoordinator, registryCoordinator, stakeRegistry, allocationManager
         );
 
         serviceManager = ServiceManagerMock(
@@ -126,7 +127,7 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
         IERC20 token3 = new ERC20PresetFixedSupply(
             "pepe wif avs", "MOCK3", mockTokenInitialSupply, address(this)
         );
-        strategyImplementation = new StrategyBase(strategyManagerMock);
+        strategyImplementation = new StrategyBase(IStrategyManager(address(strategyManagerMock)));
         strategyMock1 = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
@@ -165,13 +166,13 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
         strategyManagerMock.setStrategyWhitelist(strategies[2], true);
 
         defaultStrategyAndMultipliers.push(
-            IRewardsCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[0])), 1e18)
+            IRewardsCoordinatorTypes.StrategyAndMultiplier(IStrategy(address(strategies[0])), 1e18)
         );
         defaultStrategyAndMultipliers.push(
-            IRewardsCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[1])), 2e18)
+            IRewardsCoordinatorTypes.StrategyAndMultiplier(IStrategy(address(strategies[1])), 2e18)
         );
         defaultStrategyAndMultipliers.push(
-            IRewardsCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[2])), 3e18)
+            IRewardsCoordinatorTypes.StrategyAndMultiplier(IStrategy(address(strategies[2])), 3e18)
         );
     }
 
@@ -320,7 +321,7 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
                 AVSDirectoryHarness(address(avsDirectory)).setAvsOperatorStatus(
                     address(serviceManager),
                     operatorAddress,
-                    IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED
+                    IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED
                 );
             }
         }
@@ -339,7 +340,7 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
         assertTrue(
             avsDirectory.isMember(
                 0x73e2Ce949f15Be901f76b54F5a4554A6C8DCf539,
-                IAVSDirectory.OperatorSet(address(serviceManager), uint32(3))
+                OperatorSet(address(serviceManager), uint32(3))
             ),
             "Operator not migrated to operator set"
         );

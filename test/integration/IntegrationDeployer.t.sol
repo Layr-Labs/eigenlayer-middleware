@@ -14,9 +14,9 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 // Core contracts
 import "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
-import "eigenlayer-contracts/src/contracts/core/Slasher.sol";
 import "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
+import "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 import "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPodManager.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPod.sol";
@@ -51,10 +51,10 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     EigenPodManager eigenPodManager;
     RewardsCoordinator rewardsCoordinator;
     PauserRegistry pauserRegistry;
-    Slasher slasher;
     IBeacon eigenPodBeacon;
     EigenPod pod;
     ETHPOSDepositMock ethPOSDeposit;
+    AllocationManager allocationManager;
 
     // Base strategy implementation in case we want to create more strategies later
     StrategyBase baseStrategyImplementation;
@@ -131,17 +131,18 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
-        slasher = Slasher(
-            address(
-                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
-            )
-        );
         eigenPodManager = EigenPodManager(
             address(
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
         avsDirectory = AVSDirectory(
+            address(
+                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
+            )
+        );
+
+        allocationManager = AllocationManager(
             address(
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
@@ -161,14 +162,13 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         DelegationManager delegationImplementation =
-            new DelegationManager(strategyManager, slasher, eigenPodManager);
+            new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, 0);
         StrategyManager strategyManagerImplementation =
-            new StrategyManager(delegationManager, eigenPodManager, slasher);
-        Slasher slasherImplementation = new Slasher(strategyManager, delegationManager);
+            new StrategyManager(delegationManager);
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
-            ethPOSDeposit, eigenPodBeacon, strategyManager, slasher, delegationManager
+            ethPOSDeposit, eigenPodBeacon, strategyManager, delegationManager
         );
-        AVSDirectory avsDirectoryImplemntation = new AVSDirectory(delegationManager);
+        AVSDirectory avsDirectoryImplemntation = new AVSDirectory(delegationManager, 0); // TODO: fix config
         // RewardsCoordinator rewardsCoordinatorImplementation = new RewardsCoordinator(
         //     delegationManager,
         //     IStrategyManager(address(strategyManager)),
@@ -204,17 +204,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 StrategyManager.initialize.selector,
                 eigenLayerReputedMultisig, //initialOwner
                 eigenLayerReputedMultisig, //initial whitelister
-                pauserRegistry,
-                0 // initialPausedStatus
-            )
-        );
-        // Slasher
-        proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(slasher))),
-            address(slasherImplementation),
-            abi.encodeWithSelector(
-                Slasher.initialize.selector,
-                eigenLayerReputedMultisig,
                 pauserRegistry,
                 0 // initialPausedStatus
             )
@@ -312,7 +301,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             IAVSDirectory(avsDirectory),
             rewardsCoordinator,
             IRegistryCoordinator(registryCoordinator),
-            stakeRegistry
+            stakeRegistry,
+            allocationManager
         );
 
         proxyAdmin.upgrade(
@@ -337,7 +327,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
         serviceManager.initialize({
             initialOwner: registryCoordinatorOwner,
-            rewardsInitiator: address(msg.sender)
+            rewardsInitiator: address(msg.sender),
+            slasher: address(msg.sender)
         });
 
         RegistryCoordinator registryCoordinatorImplementation =
@@ -389,7 +380,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         strategies[0] = strategy;
         cheats.prank(strategyManager.strategyWhitelister());
         strategyManager.addStrategiesToDepositWhitelist(
-            strategies, thirdPartyTransfersForbiddenValues
+            strategies 
         );
 
         // Add to allStrats

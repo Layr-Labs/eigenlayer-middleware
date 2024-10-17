@@ -4,8 +4,6 @@ pragma solidity ^0.8.12;
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import {Slasher} from "eigenlayer-contracts/src/contracts/core/Slasher.sol";
-import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
@@ -26,8 +24,9 @@ import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.so
 import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
 
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
-import {EigenPodManagerMock} from "eigenlayer-contracts/src/test/mocks/EigenPodManagerMock.sol";
+import {EigenPodManagerMock} from "../mocks/EigenPodManagerMock.sol";
 import {AVSDirectoryMock} from "../mocks/AVSDirectoryMock.sol";
+import {AllocationManagerMock} from "../mocks/AllocationManagerMock.sol";
 import {DelegationMock} from "../mocks/DelegationMock.sol";
 import {AVSDirectory} from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
@@ -53,9 +52,6 @@ contract MockAVSDeployer is Test {
     ProxyAdmin public proxyAdmin;
     PauserRegistry public pauserRegistry;
 
-    ISlasher public slasher = ISlasher(address(uint160(uint256(keccak256("slasher")))));
-    Slasher public slasherImplementation;
-
     EmptyContract public emptyContract;
 
     RegistryCoordinatorHarness public registryCoordinatorImplementation;
@@ -63,6 +59,7 @@ contract MockAVSDeployer is Test {
     IBLSApkRegistry public blsApkRegistryImplementation;
     IIndexRegistry public indexRegistryImplementation;
     ServiceManagerMock public serviceManagerImplementation;
+    AllocationManagerMock public allocationManagerImplementation;
 
     OperatorStateRetriever public operatorStateRetriever;
     RegistryCoordinatorHarness public registryCoordinator;
@@ -70,6 +67,7 @@ contract MockAVSDeployer is Test {
     BLSApkRegistryHarness public blsApkRegistry;
     IIndexRegistry public indexRegistry;
     ServiceManagerMock public serviceManager;
+    AllocationManagerMock public allocationManager;
 
     StrategyManagerMock public strategyManagerMock;
     DelegationMock public delegationMock;
@@ -77,6 +75,7 @@ contract MockAVSDeployer is Test {
     AVSDirectory public avsDirectory;
     AVSDirectory public avsDirectoryImplementation;
     AVSDirectoryMock public avsDirectoryMock;
+    AllocationManagerMock public allocationManagerMock;
     RewardsCoordinator public rewardsCoordinator;
     RewardsCoordinator public rewardsCoordinatorImplementation;
     RewardsCoordinatorMock public rewardsCoordinatorMock;
@@ -150,23 +149,10 @@ contract MockAVSDeployer is Test {
         avsDirectoryMock = new AVSDirectoryMock();
         eigenPodManagerMock = new EigenPodManagerMock(pauserRegistry);
         strategyManagerMock = new StrategyManagerMock();
-        slasherImplementation = new Slasher(strategyManagerMock, delegationMock);
-        slasher = Slasher(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(slasherImplementation),
-                    address(proxyAdmin),
-                    abi.encodeWithSelector(
-                        Slasher.initialize.selector,
-                        msg.sender,
-                        pauserRegistry,
-                        0 /*initialPausedStatus*/
-                    )
-                )
-            )
-        );
+        allocationManagerMock = new AllocationManagerMock();
         avsDirectoryMock = new AVSDirectoryMock();
-        avsDirectoryImplementation = new AVSDirectory(delegationMock);
+        allocationManagerMock = new AllocationManagerMock();
+        avsDirectoryImplementation = new AVSDirectory(delegationMock, 0); // TODO: config value
         avsDirectory = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(
@@ -183,7 +169,7 @@ contract MockAVSDeployer is Test {
         );
         rewardsCoordinatorMock = new RewardsCoordinatorMock();
 
-        strategyManagerMock.setAddresses(delegationMock, eigenPodManagerMock, slasher);
+        strategyManagerMock.setDelegationManager(delegationMock);
         cheats.stopPrank();
 
         cheats.startPrank(registryCoordinatorOwner);
@@ -212,6 +198,12 @@ contract MockAVSDeployer is Test {
         );
 
         serviceManager = ServiceManagerMock(
+            address(
+                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
+            )
+        );
+
+        allocationManager = AllocationManagerMock(
             address(
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
@@ -247,7 +239,8 @@ contract MockAVSDeployer is Test {
             avsDirectoryMock,
             IRewardsCoordinator(address(rewardsCoordinatorMock)),
             registryCoordinator,
-            stakeRegistry
+            stakeRegistry,
+            allocationManager
         );
 
         proxyAdmin.upgrade(
@@ -255,9 +248,17 @@ contract MockAVSDeployer is Test {
             address(serviceManagerImplementation)
         );
 
+        allocationManagerImplementation = new AllocationManagerMock();
+
+        proxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(allocationManager))),
+            address(allocationManagerImplementation)
+        );
+
         serviceManager.initialize({
             initialOwner: registryCoordinatorOwner,
-            rewardsInitiator: address(proxyAdminOwner)
+            rewardsInitiator: proxyAdminOwner,
+            slasher: proxyAdminOwner
         });
 
         // set the public key for an operator, using harnessed function to bypass checks

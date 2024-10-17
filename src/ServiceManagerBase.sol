@@ -6,6 +6,7 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISi
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
 import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
@@ -38,11 +39,10 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _;
     }
 
-    function _checkRewardsInitiator() internal view {
-        require(
-            msg.sender == rewardsInitiator,
-            "ServiceManagerBase.onlyRewardsInitiator: caller is not the rewards initiator"
-        );
+    /// @notice only slasher can call functions with this modifier
+    modifier onlySlasher() {
+        _checkSlasher();
+        _;
     }
 
     /// @notice Sets the (immutable) `_registryCoordinator` address
@@ -50,13 +50,15 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         IAVSDirectory __avsDirectory,
         IRewardsCoordinator __rewardsCoordinator,
         IRegistryCoordinator __registryCoordinator,
-        IStakeRegistry __stakeRegistry
+        IStakeRegistry __stakeRegistry,
+        IAllocationManager __allocationManager
     )
         ServiceManagerBaseStorage(
             __avsDirectory,
             __rewardsCoordinator,
             __registryCoordinator,
-            __stakeRegistry
+            __stakeRegistry,
+            __allocationManager
         )
     {
         _disableInitializers();
@@ -64,10 +66,12 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
 
     function __ServiceManagerBase_init(
         address initialOwner,
-        address _rewardsInitiator
+        address _rewardsInitiator,
+        address _slasher
     ) internal virtual onlyInitializing {
         _transferOwnership(initialOwner);
         _setRewardsInitiator(_rewardsInitiator);
+        _setSlasher(_slasher);
     }
 
     /**
@@ -77,6 +81,10 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      */
     function updateAVSMetadataURI(string memory _metadataURI) public virtual onlyOwner {
         _avsDirectory.updateAVSMetadataURI(_metadataURI);
+    }
+
+    function slashOperator(IAllocationManager.SlashingParams memory params) external onlySlasher {
+        _allocationManager.slashOperator(params);
     }
 
     /**
@@ -166,6 +174,15 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      */
     function setRewardsInitiator(address newRewardsInitiator) external onlyOwner {
         _setRewardsInitiator(newRewardsInitiator);
+    }
+
+    /**
+     * @notice Sets the slasher address
+     * @param newSlasher The new slasher address
+     * @dev only callable by the owner
+     */
+    function setSlasher(address newSlasher) external onlyOwner {
+        _setSlasher(newSlasher);
     }
 
     /**
@@ -325,6 +342,11 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         rewardsInitiator = newRewardsInitiator;
     }
 
+    function _setSlasher(address newSlasher) internal {
+        emit SlasherUpdated(slasher, newSlasher);
+        slasher = newSlasher;
+    }
+
     /**
      * @notice Returns the list of strategies that the AVS supports for restaking
      * @dev This function is intended to be called off-chain
@@ -401,5 +423,20 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     /// @notice Returns the EigenLayer AVSDirectory contract.
     function avsDirectory() external view override returns (address) {
         return address(_avsDirectory);
+    }
+
+    function _checkRewardsInitiator() internal view {
+        require(
+            msg.sender == rewardsInitiator,
+            "ServiceManagerBase.onlyRewardsInitiator: caller is not the rewards initiator"
+        );
+    }
+
+
+    function _checkSlasher() internal view {
+        require(
+            msg.sender == slasher,
+            "ServiceManagerBase.onlySlasher: caller is not the slasher"
+        );
     }
 }

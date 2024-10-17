@@ -238,8 +238,10 @@ abstract contract ECDSAServiceManagerBase is
         for (uint256 i; i < count; i++) {
             strategies[i] = quorum.strategies[i].strategy;
         }
-        uint256[] memory shares = IDelegationManager(delegationManager)
-            .getOperatorShares(_operator, strategies);
+        uint256[] memory shares;
+        // TODO: Fix
+        //  = IDelegationManager(delegationManager)
+        //     .getOperatorShares(_operator, strategies);
 
         uint256 activeCount;
         for (uint256 i; i < count; i++) {

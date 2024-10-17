@@ -3,9 +3,10 @@ pragma solidity ^0.8.12;
 
 import "../utils/MockAVSDeployer.sol";
 import { AVSDirectory } from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
-import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import { IAVSDirectory, IAVSDirectoryTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import { IStrategyManager } from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import { DelegationManager } from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
-import { IDelegationManager } from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import { IDelegationManager, IDelegationManagerTypes } from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import { RewardsCoordinator } from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
 import { IRewardsCoordinator } from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
@@ -26,7 +27,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         _deployMockEigenLayerAndAVS();
 
         // Deploy New DelegationManager
-        DelegationManager delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasher, eigenPodManagerMock);
+        DelegationManager delegationManagerImplementation = new DelegationManager(avsDirectoryMock, IStrategyManager(address(strategyManagerMock)), eigenPodManagerMock, allocationManagerMock, 0);
         IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
         uint256[] memory initializeWithdrawalDelayBlocks = new uint256[](0);
         delegationManager = DelegationManager(
@@ -48,7 +49,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         );
 
         // Deploy New AVS Directory
-        AVSDirectory avsDirectoryImplementation = new AVSDirectory(delegationManager);
+        AVSDirectory avsDirectoryImplementation = new AVSDirectory(delegationManager, 0); // TODO: Fix Config
         avsDirectory = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(
@@ -72,7 +73,8 @@ contract Test_CoreRegistration is MockAVSDeployer {
             avsDirectory,
             rewardsCoordinatorMock,
             registryCoordinator,
-            stakeRegistry
+            stakeRegistry,
+            allocationManager
         );
 
         registryCoordinatorImplementation = new RegistryCoordinatorHarness(
@@ -102,11 +104,13 @@ contract Test_CoreRegistration is MockAVSDeployer {
         // Register operator to EigenLayer
         cheats.prank(operator);
         delegationManager.registerAsOperator(
-            IDelegationManager.OperatorDetails({
+            IDelegationManagerTypes.OperatorDetails({
                 __deprecated_earningsReceiver: operator,
                 delegationApprover: address(0),
-                stakerOptOutWindowBlocks: 0
+                __deprecated_stakerOptOutWindowBlocks: 0
             }),
+            // TODO: fix or parameterize
+            0,
             emptyStringForMetadataURI
         );
 
@@ -137,8 +141,8 @@ contract Test_CoreRegistration is MockAVSDeployer {
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, operatorSignature);
 
         // Check operator is registered
-        IAVSDirectory.OperatorAVSRegistrationStatus operatorStatus = avsDirectory.avsOperatorStatus(address(serviceManager), operator);
-        assertEq(uint8(operatorStatus), uint8(IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED));
+        IAVSDirectoryTypes.OperatorAVSRegistrationStatus operatorStatus = avsDirectory.avsOperatorStatus(address(serviceManager), operator);
+        assertEq(uint8(operatorStatus), uint8(IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED));
     }
 
     function test_deregisterOperator_coreStateChanges() public {
@@ -151,8 +155,8 @@ contract Test_CoreRegistration is MockAVSDeployer {
         registryCoordinator.deregisterOperator(quorumNumbers);
 
         // Check operator is deregistered
-        IAVSDirectory.OperatorAVSRegistrationStatus operatorStatus = avsDirectory.avsOperatorStatus(address(serviceManager), operator);
-        assertEq(uint8(operatorStatus), uint8(IAVSDirectory.OperatorAVSRegistrationStatus.UNREGISTERED));
+        IAVSDirectoryTypes.OperatorAVSRegistrationStatus operatorStatus = avsDirectory.avsOperatorStatus(address(serviceManager), operator);
+        assertEq(uint8(operatorStatus), uint8(IAVSDirectoryTypes.OperatorAVSRegistrationStatus.UNREGISTERED));
     }
 
     function test_deregisterOperator_notGloballyDeregistered() public {
@@ -167,8 +171,8 @@ contract Test_CoreRegistration is MockAVSDeployer {
         registryCoordinator.deregisterOperator(quorumNumbers);
 
         // Check operator is still registered
-        IAVSDirectory.OperatorAVSRegistrationStatus operatorStatus = avsDirectory.avsOperatorStatus(address(serviceManager), operator);
-        assertEq(uint8(operatorStatus), uint8(IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED));
+        IAVSDirectoryTypes.OperatorAVSRegistrationStatus operatorStatus = avsDirectory.avsOperatorStatus(address(serviceManager), operator);
+        assertEq(uint8(operatorStatus), uint8(IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED));
     }
 
     function test_setMetadataURI_fail_notServiceManagerOwner() public {

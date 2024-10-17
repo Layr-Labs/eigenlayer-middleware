@@ -2,7 +2,7 @@
 pragma solidity ^0.8.12;
 
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
-import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IAVSDirectory, OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 
 import {StakeRegistryStorage, IStrategy} from "./StakeRegistryStorage.sol";
@@ -182,7 +182,7 @@ contract StakeRegistry is StakeRegistryStorage {
             // Query the AVSDirectory to check if the operator is directly unregistered
             operatorRegistered = avsDirectory.isMember(
                 operator,
-                IAVSDirectory.OperatorSet(address(serviceManager), operatorSetId)
+                OperatorSet(address(serviceManager), operatorSetId)
             );
 
             if (!hasMinimumStake || (isOperatorSetAVS && !operatorRegistered)) {
@@ -491,7 +491,8 @@ contract StakeRegistry is StakeRegistryStorage {
         uint256 stratsLength = strategyParamsLength(quorumNumber);
         StrategyParams memory strategyAndMultiplier;
 
-        uint256[] memory strategyShares = delegation.getOperatorShares(operator, strategiesPerQuorum[quorumNumber]);
+        uint256[] memory strategyShares;
+        //  = delegation.getDelegatableShares(operator, strategiesPerQuorum[quorumNumber]);
         for (uint256 i = 0; i < stratsLength; i++) {
             // accessing i^th StrategyParams struct for the quorumNumber
             strategyAndMultiplier = strategyParams[quorumNumber][i];

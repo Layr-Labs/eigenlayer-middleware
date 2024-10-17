@@ -11,6 +11,7 @@ import "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
 // Core
 import "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
+import "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
 import "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 
@@ -243,13 +244,13 @@ contract User is Test {
     function registerAsOperator() public createSnapshot virtual {
         _log("registerAsOperator (core)");
 
-        IDelegationManager.OperatorDetails memory details = IDelegationManager.OperatorDetails({
+        IDelegationManagerTypes.OperatorDetails memory details = IDelegationManagerTypes.OperatorDetails({
             __deprecated_earningsReceiver: address(this),
             delegationApprover: address(0),
-            stakerOptOutWindowBlocks: 0
+            __deprecated_stakerOptOutWindowBlocks: 0
         });
 
-        delegationManager.registerAsOperator(details, NAME);
+        delegationManager.registerAsOperator(details,0, NAME);
     }
 
     // Deposit LSTs into the StrategyManager. This setup does not use the EPMgr or native ETH.
@@ -266,13 +267,15 @@ contract User is Test {
         }
     }
 
-    function exitEigenlayer() public createSnapshot virtual returns (IStrategy[] memory, uint[] memory) {
+    function exitEigenlayer() public createSnapshot virtual returns (IStrategy[] memory, uint256[] memory) {
         _log("exitEigenlayer (core)");
 
-        (IStrategy[] memory strategies, uint[] memory shares) = delegationManager.getDelegatableShares(address(this));
+        IStrategy[] memory strategies; 
+        uint256[] memory shares;
+        // = delegationManager.getDelegatableShares(address(this)); // TODO: Fix
 
-        IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
-        params[0] = IDelegationManager.QueuedWithdrawalParams({
+        IDelegationManagerTypes.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
+        params[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
             strategies: strategies,
             shares: shares,
             withdrawer: address(this)

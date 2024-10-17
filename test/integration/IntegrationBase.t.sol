@@ -166,15 +166,15 @@ abstract contract IntegrationBase is IntegrationConfig {
     /// AVSDirectory:
     
     function assert_NotRegisteredToAVS(User operator, string memory err) internal {
-        IAVSDirectory.OperatorAVSRegistrationStatus status = avsDirectory.avsOperatorStatus(address(serviceManager), address(operator));
+        IAVSDirectoryTypes.OperatorAVSRegistrationStatus status = avsDirectory.avsOperatorStatus(address(serviceManager), address(operator));
 
-        assertTrue(status == IAVSDirectory.OperatorAVSRegistrationStatus.UNREGISTERED, err);
+        assertTrue(status == IAVSDirectoryTypes.OperatorAVSRegistrationStatus.UNREGISTERED, err);
     }
 
     function assert_IsRegisteredToAVS(User operator, string memory err) internal {
         IAVSDirectory.OperatorAVSRegistrationStatus status = avsDirectory.avsOperatorStatus(address(serviceManager), address(operator));
 
-        assertTrue(status == IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED, err);
+        assertTrue(status == IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED, err);
     }
 
     /*******************************************************************************
@@ -591,7 +591,7 @@ abstract contract IntegrationBase is IntegrationConfig {
     function assert_Snap_Removed_OperatorShares(
         User operator, 
         IStrategy[] memory strategies, 
-        uint[] memory removedShares,
+        uint256[] memory removedShares,
         string memory err
     ) internal {
         uint[] memory curShares = _getOperatorShares(operator, strategies);
@@ -773,7 +773,7 @@ abstract contract IntegrationBase is IntegrationConfig {
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
 
-            curShares[i] = strategyManager.stakerStrategyShares(address(staker), strat);
+            curShares[i] = strategyManager.stakerDepositShares(address(staker), strat);
         }
 
         return curShares;

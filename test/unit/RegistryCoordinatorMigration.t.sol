@@ -5,12 +5,16 @@ import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import {
     RewardsCoordinator,
     IRewardsCoordinator,
+    IRewardsCoordinatorTypes,
     IERC20
 } from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {StrategyBase} from "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import {IServiceManagerBaseEvents} from "../events/IServiceManagerBaseEvents.sol";
+import {IAVSDirectoryTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {AVSDirectoryHarness} from "../harnesses/AVSDirectoryHarness.sol";
+import {OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 import "../utils/MockAVSDeployer.sol";
 
@@ -55,7 +59,8 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
             avsDirectory,
             IRewardsCoordinator(address(rewardsCoordinatorMock)),
             registryCoordinator,
-            stakeRegistry
+            stakeRegistry,
+            allocationManager
         );
         avsDirectoryHarness = new AVSDirectoryHarness(delegationMock);
 
@@ -63,7 +68,8 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
             avsDirectory,
             rewardsCoordinatorMock,
             registryCoordinator,
-            stakeRegistry
+            stakeRegistry,
+            allocationManager
         );
         /// Needed to upgrade to a service manager that points to an AVS Directory that can track state
         vm.prank(proxyAdmin.owner());
@@ -90,7 +96,7 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
         IERC20 token3 = new ERC20PresetFixedSupply(
             "pepe wif avs", "MOCK3", mockTokenInitialSupply, address(this)
         );
-        strategyImplementation = new StrategyBase(strategyManagerMock);
+        strategyImplementation = new StrategyBase(IStrategyManager(address(strategyManagerMock)));
         strategyMock1 = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
@@ -129,13 +135,13 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
         strategyManagerMock.setStrategyWhitelist(strategies[2], true);
 
         defaultStrategyAndMultipliers.push(
-            IRewardsCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[0])), 1e18)
+            IRewardsCoordinatorTypes.StrategyAndMultiplier(IStrategy(address(strategies[0])), 1e18)
         );
         defaultStrategyAndMultipliers.push(
-            IRewardsCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[1])), 2e18)
+            IRewardsCoordinatorTypes.StrategyAndMultiplier(IStrategy(address(strategies[1])), 2e18)
         );
         defaultStrategyAndMultipliers.push(
-            IRewardsCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[2])), 3e18)
+            IRewardsCoordinatorTypes.StrategyAndMultiplier(IStrategy(address(strategies[2])), 3e18)
         );
     }
 
@@ -226,7 +232,7 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
                 AVSDirectoryHarness(address(avsDirectory)).setAvsOperatorStatus(
                     address(serviceManager),
                     operatorAddress,
-                    IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED
+                    IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED
                 );
             }
         }
@@ -263,7 +269,7 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
             })
         );
         // sanity check if the operator was unregistered from the intended operator set
-        bool operatorIsUnRegistered = !avsDirectory.isMember(operators[0], IAVSDirectory.OperatorSet({
+        bool operatorIsUnRegistered = !avsDirectory.isMember(operators[0], OperatorSet({
             avs: address(serviceManager),
             operatorSetId: defaultQuorumNumber
         }));
@@ -311,7 +317,7 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
                 AVSDirectoryHarness(address(avsDirectory)).setAvsOperatorStatus(
                     address(serviceManager),
                     operatorAddress,
-                    IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED
+                    IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED
                 );
             }
         }
@@ -337,7 +343,7 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
 
         address operatorToDeregister = operators[0];
 
-        bool isOperatorRegistered = avsDirectory.isMember(operatorToDeregister, IAVSDirectory.OperatorSet({
+        bool isOperatorRegistered = avsDirectory.isMember(operatorToDeregister, OperatorSet({
             avs: address(serviceManager),
             operatorSetId: defaultQuorumNumber
         }));
@@ -352,7 +358,7 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
         registryCoordinator.deregisterOperator(quorumNumbers);
         cheats.stopPrank();
 
-        isOperatorRegistered = avsDirectory.isMember(operatorToDeregister, IAVSDirectory.OperatorSet({
+        isOperatorRegistered = avsDirectory.isMember(operatorToDeregister, OperatorSet({
             avs: address(serviceManager),
             operatorSetId: defaultQuorumNumber
         }));
@@ -386,7 +392,7 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
                 AVSDirectoryHarness(address(avsDirectory)).setAvsOperatorStatus(
                     address(serviceManager),
                     operatorAddress,
-                    IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED
+                    IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED
                 );
             }
         }
@@ -413,7 +419,7 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
         uint256 operatorPk = uint256(keccak256("operator to register"));
         address operatorToRegister = vm.addr(operatorPk) ;
 
-        bool isOperatorRegistered = avsDirectory.isMember(operatorToRegister, IAVSDirectory.OperatorSet({
+        bool isOperatorRegistered = avsDirectory.isMember(operatorToRegister, OperatorSet({
             avs: address(serviceManager),
             operatorSetId: defaultQuorumNumber
         }));
@@ -453,7 +459,7 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
         registryCoordinator.registerOperator(quorumNumbers, "", params, operatorSignature);
         cheats.stopPrank();
 
-        isOperatorRegistered = avsDirectory.isMember(operatorToRegister, IAVSDirectory.OperatorSet({
+        isOperatorRegistered = avsDirectory.isMember(operatorToRegister, OperatorSet({
             avs: address(serviceManager),
             operatorSetId: defaultQuorumNumber
         }));
