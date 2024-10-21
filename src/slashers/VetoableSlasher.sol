@@ -3,14 +3,11 @@ pragma solidity ^0.8.12;
 
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {SlasherBase} from "./SlasherBase.sol";
+import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
 contract VetoableSlashing is SlasherBase {
     struct SlashingRequest {
-        address operator;
-        uint32 operatorSetId;
-        IStrategy[] strategies;
-        uint256 wadToSlash;
-        string description;
+        IAllocationManager.SlashingParams params;
         uint256 requestTimestamp;
         SlashingStatus status;
     }
@@ -40,14 +37,8 @@ contract VetoableSlashing is SlasherBase {
         vetoCommittee = _vetoCommittee;
     }
 
-    function queueSlashingRequest(
-        address operator,
-        uint32 operatorSetId,
-        IStrategy[] memory strategies,
-        uint256 wadToSlash,
-        string memory description
-    ) external virtual {
-        _queueSlashingRequest(operator, operatorSetId, strategies, wadToSlash, description);
+    function queueSlashingRequest(IAllocationManager.SlashingParams memory params) external virtual {
+        _queueSlashingRequest(params);
     }
 
     function cancelSlashingRequest(uint256 requestId) external virtual onlyVetoCommittee {
@@ -69,36 +60,26 @@ contract VetoableSlashing is SlasherBase {
         require(request.status == SlashingStatus.Requested, "VetoableSlashing: request has been cancelled");
 
         _fulfillSlashingRequest(
-            request.operator,
-            request.operatorSetId,
-            request.strategies,
-            request.wadToSlash,
-            request.description
+            request.params.operator,
+            request.params.operatorSetId,
+            request.params.strategies,
+            request.params.wadToSlash,
+            request.params.description
         );
 
-        emit OperatorSlashed(requestId, request.operator, request.operatorSetId, request.strategies, request.wadToSlash, request.description);
+        emit OperatorSlashed(requestId, request.params.operator, request.params.operatorSetId, request.params.strategies, request.params.wadToSlash, request.params.description);
         slashingRequests[requestId].status = SlashingStatus.Completed;
     }
 
-    function _queueSlashingRequest(
-        address operator,
-        uint32 operatorSetId,
-        IStrategy[] memory strategies,
-        uint256 wadToSlash,
-        string memory description
-    ) internal virtual {
+    function _queueSlashingRequest(IAllocationManager.SlashingParams memory params) internal virtual {
         uint256 requestId = nextRequestId++;
         slashingRequests[requestId] = SlashingRequest({
-            operator: operator,
-            operatorSetId: operatorSetId,
-            strategies: strategies,
-            wadToSlash: wadToSlash,
-            description: description,
+            params: params,
             requestTimestamp: block.timestamp,
             status: SlashingStatus.Requested
         });
 
-        emit SlashingRequested(requestId, operator, operatorSetId, wadToSlash, description);
+        emit SlashingRequested(requestId, params.operator, params.operatorSetId, params.wadToSlash, params.description);
     }
 
     function _cancelSlashingRequest(uint256 requestId) internal virtual {
