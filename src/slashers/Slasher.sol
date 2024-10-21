@@ -2,6 +2,7 @@
 pragma solidity ^0.8.12;
 
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {SlasherBase} from "./SlasherBase.sol";
 
 contract Slasher is SlasherBase {
@@ -12,20 +13,10 @@ contract Slasher is SlasherBase {
     }
 
     function fulfillSlashingRequest(
-        address operator,
-        uint32 operatorSetId,
-        IStrategy[] memory strategies,
-        uint256 wadToSlash,
-        string memory description
+        IAllocationManager.SlashingParams memory _slashingParams
     ) external virtual {
         uint256 requestId = nextRequestId++;
-        _fulfillSlashingRequest(
-            operator,
-            operatorSetId,
-            strategies,
-            wadToSlash,
-            description
-        );
-        emit OperatorSlashed(requestId, operator, operatorSetId, strategies, wadToSlash, description);
+        _fulfillSlashingRequest(_slashingParams);
+        emit OperatorSlashed(requestId, _slashingParams.operator, _slashingParams.operatorSetId, _slashingParams.strategies, _slashingParams.wadToSlash, _slashingParams.description);
     }
 }

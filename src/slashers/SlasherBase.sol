@@ -4,7 +4,7 @@ pragma solidity ^0.8.12;
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {IServiceManager} from "../interfaces/IServiceManager.sol";
 import {SlasherStorage} from "./SlasherStorage.sol";
-import {IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IAllocationManagerTypes, IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 abstract contract SlasherBase is Initializable, SlasherStorage {
@@ -29,21 +29,8 @@ abstract contract SlasherBase is Initializable, SlasherStorage {
     }
 
     function _fulfillSlashingRequest(
-        address operator,
-        uint32 operatorSetId,
-        IStrategy[] memory strategies,
-        uint256 wadToSlash,
-        string memory description
+        IAllocationManager.SlashingParams memory params
     ) internal virtual {
-
-        IAllocationManagerTypes.SlashingParams memory params = IAllocationManagerTypes.SlashingParams({
-            operator: operator,
-            operatorSetId: operatorSetId,
-            strategies: strategies,
-            wadToSlash: wadToSlash,
-            description: description
-        });
-
         IServiceManager(serviceManager).slashOperator(params);
     }
 }
