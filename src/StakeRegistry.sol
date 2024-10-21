@@ -491,8 +491,7 @@ contract StakeRegistry is StakeRegistryStorage {
         uint256 stratsLength = strategyParamsLength(quorumNumber);
         StrategyParams memory strategyAndMultiplier;
 
-        uint256[] memory strategyShares;
-        //  = delegation.getDelegatableShares(operator, strategiesPerQuorum[quorumNumber]);
+        uint256[] memory strategyShares = delegation.getDelegatedShares(operator, strategiesPerQuorum[quorumNumber]);
         for (uint256 i = 0; i < stratsLength; i++) {
             // accessing i^th StrategyParams struct for the quorumNumber
             strategyAndMultiplier = strategyParams[quorumNumber][i];
