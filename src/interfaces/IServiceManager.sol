@@ -50,4 +50,5 @@ interface IServiceManager is IServiceManagerUI {
     // EVENTS
     event RewardsInitiatorUpdated(address prevRewardsInitiator, address newRewardsInitiator);
     event SlasherUpdated(address prevSlasher, address newSlasher);
+    event SlasherProposed(address newSlasher, uint256 slasherProposalTimestamp);
 }
