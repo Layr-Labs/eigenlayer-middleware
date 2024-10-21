@@ -247,7 +247,7 @@ contract User is Test {
         IDelegationManagerTypes.OperatorDetails memory details = IDelegationManagerTypes.OperatorDetails({
             __deprecated_earningsReceiver: address(this),
             delegationApprover: address(0),
-            stakerOptOutWindowBlocks: 0
+            __deprecated_stakerOptOutWindowBlocks: 0
         });
 
         delegationManager.registerAsOperator(details,0, NAME);

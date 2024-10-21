@@ -107,7 +107,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
             IDelegationManagerTypes.OperatorDetails({
                 __deprecated_earningsReceiver: operator,
                 delegationApprover: address(0),
-                stakerOptOutWindowBlocks: 0
+                __deprecated_stakerOptOutWindowBlocks: 0
             }),
             // TODO: fix or parameterize
             0,
