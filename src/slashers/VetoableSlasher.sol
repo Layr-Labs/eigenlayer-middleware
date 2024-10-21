@@ -77,8 +77,7 @@ contract VetoableSlashing is SlasherBase {
         );
 
         emit OperatorSlashed(requestId, request.operator, request.operatorSetId, request.strategies, request.wadToSlash, request.description);
-
-        delete slashingRequests[requestId];
+        slashingRequests[requestId].status = SlashingStatus.Completed;
     }
 
     function _queueSlashingRequest(
