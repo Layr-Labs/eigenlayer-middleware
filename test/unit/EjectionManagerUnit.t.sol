@@ -12,15 +12,17 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
     event EjectorUpdated(address ejector, bool status);
     event QuorumEjectionParamsSet(uint8 quorumNumber, uint32 rateLimitWindow, uint16 ejectableStakePercent);
     event OperatorEjected(bytes32 operatorId, uint8 quorumNumber);
-    event FailedOperatorEjection(bytes32 operatorId, uint8 quorumNumber, bytes err);
+    event OperatorStakeCapHit(bytes32 operatorId, uint256 operatorStake, uint256 operatorStakeCap);
 
     EjectionManager public ejectionManager;
     IEjectionManager public ejectionManagerImplementation;
 
     IEjectionManager.QuorumEjectionParams[] public quorumEjectionParams;
+    uint256[] public operatorStakeCapPercents;
 
     uint32 public ratelimitWindow = 1 days;
-    uint16 public ejectableStakePercent = 1000;
+    uint16 public ejectableStakePercent = 3300;
+    uint256 public operatorStakeCapPercent = 2000;
 
     function setUp() virtual public {
         for(uint8 i = 0; i < numQuorums; i++) {
@@ -28,6 +30,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
                 rateLimitWindow: ratelimitWindow,
                 ejectableStakePercent: ejectableStakePercent
             }));
+            operatorStakeCapPercents.push(operatorStakeCapPercent);
         }
 
         defaultMaxOperatorCount = 200;
@@ -54,7 +57,8 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
                 EjectionManager.initialize.selector,
                 registryCoordinatorOwner,
                 ejectors,
-                quorumEjectionParams
+                quorumEjectionParams,
+                operatorStakeCapPercents
             )
         );
 
@@ -127,7 +131,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
     }
 
     function testEjectOperators_MultipleOperatorOutsideRatelimit() public {
-        uint8 operatorsCanEject = 1;
+        uint8 operatorsCanEject = 3;
         uint8 operatorsToEject = 10;
         uint8 numOperators = 10;
         uint96 stake = 1 ether;
@@ -387,6 +391,29 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         stakeRegistry.recordTotalStakeUpdate(1, 2_000_000_000 * 1 ether);
 
         ejectionManager.amountEjectableForQuorum(1);
+    }
+
+    function testOperatorStakeCapHit() public {
+        _registerOperaters(100, 1 ether);
+        BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(uint256(420))));
+        address operator = _incrementAddress(defaultOperator, 420);
+        _registerOperatorWithCoordinator(operator, MAX_QUORUM_BITMAP, pubKey, 100 ether);
+
+        bytes32[][] memory operatorIds = new bytes32[][](numQuorums);
+        for (uint8 i = 0; i < numQuorums; i++) {
+            operatorIds[i] = new bytes32[](1);
+            operatorIds[i][0] = registryCoordinator.getOperatorId(operator);
+        }
+
+        for(uint8 i = 0; i < numQuorums; i++) {
+            cheats.expectEmit(true, true, true, true, address(ejectionManager));
+            emit OperatorStakeCapHit(operatorIds[i][0], 100 ether, 40 ether); //total stake 200 ether at 20% stake cap is 40 ether
+            cheats.expectEmit(true, true, true, true, address(ejectionManager));
+            emit OperatorEjected(operatorIds[i][0], i);
+        }
+
+        cheats.prank(ejector);
+        ejectionManager.ejectOperators(operatorIds);
     }
 
     function _registerOperaters(uint8 numOperators, uint96 stake) internal {

@@ -27,6 +27,10 @@ interface IEjectionManager {
     event OperatorEjected(bytes32 operatorId, uint8 quorumNumber);
     ///@notice Emitted when operators are ejected for a quroum 
     event QuorumEjection(uint32 ejectedOperators, bool ratelimitHit);
+    ///@notice Emitted when the operator stake cap percent for a quorum is set
+    event OperatorStakeCapPercentSet(uint8 quorumNumber, uint256 operatorStakeCapPercent);
+    ///@notice Emitted when the operator stake cap is hit
+    event OperatorStakeCapHit(bytes32 operatorId, uint256 operatorStake, uint256 operatorStakeCap);
 
    /**
      * @notice Ejects operators from the AVSs registryCoordinator under a ratelimit
@@ -48,8 +52,15 @@ interface IEjectionManager {
     function setEjector(address _ejector, bool _status) external;
 
     /**
+     * @notice Sets the operator stake cap percent for a quorum
+     * @param _quorumNumber The quorum number to set the operator stake cap percent for
+     * @param _operatorStakeCapPercent The operator stake cap percent to set for the given quorum
+     */
+    function setOperatorStakeCapPercent(uint8 _quorumNumber, uint256 _operatorStakeCapPercent) external;
+
+    /**
      * @notice Returns the amount of stake that can be ejected for a quorum at the current block.timestamp
      * @param _quorumNumber The quorum number to view ejectable stake for
      */
-    function amountEjectableForQuorum(uint8 _quorumNumber) external view returns (uint256);
+    function amountEjectableForQuorum(uint8 _quorumNumber) external view returns (uint256 ejectableStake, uint256 totalStake);
 }
