@@ -6,9 +6,6 @@ import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/
 import {SlasherBase} from "./base/SlasherBase.sol";
 
 contract InstantSlasher is SlasherBase {
-    uint256 public nextRequestId;
-    address public slasher;
-
     modifier onlySlasher() {
         require(msg.sender == slasher, "InstantSlasher: caller is not the slasher");
         _;

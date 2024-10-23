@@ -8,8 +8,7 @@ import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/
 contract VetoableSlashing is SlasherBase {
     uint256 public constant VETO_PERIOD = 3 days;
     address public vetoCommittee;
-    address public slasher;
-    uint256 public nextRequestId;
+
     mapping(uint256 => SlashingRequest) public slashingRequests;
 
     modifier onlyVetoCommittee() {
