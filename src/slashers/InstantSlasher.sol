@@ -23,7 +23,6 @@ contract InstantSlasher is SlasherBase {
         IAllocationManager.SlashingParams memory _slashingParams
     ) external virtual onlySlasher {
         uint256 requestId = nextRequestId++;
-        _fulfillSlashingRequest(_slashingParams);
-        emit OperatorSlashed(requestId, _slashingParams.operator, _slashingParams.operatorSetId, _slashingParams.strategies, _slashingParams.wadToSlash, _slashingParams.description);
+        _fulfillSlashingRequest(requestId, _slashingParams);
     }
 }

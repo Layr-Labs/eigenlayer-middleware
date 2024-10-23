@@ -32,7 +32,7 @@ abstract contract SlasherBase is Initializable, SlasherStorage {
         uint256 _requestId,
         IAllocationManager.SlashingParams memory _params
     ) internal virtual {
-        IServiceManager(serviceManager).slashOperator(params);
+        IServiceManager(serviceManager).slashOperator(_params);
         emit OperatorSlashed(_requestId, _params.operator, _params.operatorSetId, _params.strategies, _params.wadToSlash, _params.description);
     }
 }
