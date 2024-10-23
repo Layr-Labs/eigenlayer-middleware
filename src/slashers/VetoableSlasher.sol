@@ -73,12 +73,12 @@ contract VetoableSlashing is SlasherBase {
         );
         require(request.status == SlashingStatus.Requested, "VetoableSlashing: request has been cancelled");
 
+        request.status = SlashingStatus.Completed;
+
         _fulfillSlashingRequest(
+            requestId,
             request.params
         );
-
-        emit OperatorSlashed(requestId, request.params.operator, request.params.operatorSetId, request.params.strategies, request.params.wadToSlash, request.params.description);
-        slashingRequests[requestId].status = SlashingStatus.Completed;
     }
 
     function _queueSlashingRequest(IAllocationManager.SlashingParams memory params) internal virtual {
