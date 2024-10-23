@@ -2,7 +2,7 @@
 pragma solidity ^0.8.12;
 
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import {IServiceManager} from "../interfaces/IServiceManager.sol";
+import {IServiceManager} from "../../interfaces/IServiceManager.sol";
 import {SlasherStorage} from "./SlasherStorage.sol";
 import {IAllocationManagerTypes, IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";

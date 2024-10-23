@@ -2,7 +2,7 @@
 pragma solidity ^0.8.12;
 
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {SlasherBase} from "./SlasherBase.sol";
+import {SlasherBase} from "./base/SlasherBase.sol";
 import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
 contract VetoableSlashing is SlasherBase {
@@ -14,6 +14,7 @@ contract VetoableSlashing is SlasherBase {
 
     uint256 public constant VETO_PERIOD = 3 days;
     address public vetoCommittee;
+    address public slasher;
     uint256 public nextRequestId;
     mapping(uint256 => SlashingRequest) public slashingRequests;
 
@@ -32,12 +33,25 @@ contract VetoableSlashing is SlasherBase {
         _;
     }
 
-    function initialize(address _serviceManager, address _vetoCommittee) external virtual initializer {
-        __SlasherBase_init(_serviceManager);
-        vetoCommittee = _vetoCommittee;
+    modifier onlySlasher() {
+        require(
+            msg.sender == slasher,
+            "VetoableSlashing: caller is not a slashing initiator"
+        );
+        _;
     }
 
-    function queueSlashingRequest(IAllocationManager.SlashingParams memory params) external virtual {
+    function initialize(
+        address _serviceManager,
+        address _vetoCommittee,
+        address _slashingInitiator
+    ) external virtual initializer {
+        __SlasherBase_init(_serviceManager);
+        vetoCommittee = _vetoCommittee;
+        slasher = _slashingInitiator;
+    }
+
+    function queueSlashingRequest(IAllocationManager.SlashingParams memory params) external virtual onlySlasher {
         _queueSlashingRequest(params);
     }
 
