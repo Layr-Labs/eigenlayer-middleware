@@ -14,7 +14,6 @@ import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {LibMergeSort} from "./libraries/LibMergeSort.sol";
-import {console} from "forge-std/Test.sol";
 
 /**
  * @title Minimal implementation of a ServiceManager-type contract.
@@ -23,6 +22,8 @@ import {console} from "forge-std/Test.sol";
  */
 abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     using BitmapUtils for *;
+
+    uint256 public constant SLASHER_PROPOSAL_DELAY = 7 days;
 
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
     modifier onlyRegistryCoordinator() {
@@ -177,12 +178,25 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     }
 
     /**
-     * @notice Sets the slasher address
+     * @notice Proposes a new slasher address
      * @param newSlasher The new slasher address
      * @dev only callable by the owner
      */
-    function setSlasher(address newSlasher) external onlyOwner {
-        _setSlasher(newSlasher);
+    function proposeNewSlasher(address newSlasher) external onlyOwner {
+        _proposeNewSlasher(newSlasher);
+    }
+
+    /**
+     * @notice Accepts the proposed slasher address after the delay period
+     * @dev only callable by the owner
+     */
+    function acceptProposedSlasher() external onlyOwner {
+        require(
+            block.timestamp >= slasherProposalTimestamp + SLASHER_PROPOSAL_DELAY,
+            "ServiceManager: Slasher proposal delay not met"
+        );
+        _setSlasher(proposedSlasher);
+        delete proposedSlasher;
     }
 
     /**
@@ -340,6 +354,12 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     function _setRewardsInitiator(address newRewardsInitiator) internal {
         emit RewardsInitiatorUpdated(rewardsInitiator, newRewardsInitiator);
         rewardsInitiator = newRewardsInitiator;
+    }
+
+    function _proposeNewSlasher(address newSlasher) internal {
+        proposedSlasher = newSlasher;
+        slasherProposalTimestamp = block.timestamp;
+        emit SlasherProposed(newSlasher, slasherProposalTimestamp);
     }
 
     function _setSlasher(address newSlasher) internal {

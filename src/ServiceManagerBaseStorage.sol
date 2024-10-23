@@ -40,6 +40,13 @@ abstract contract ServiceManagerBaseStorage is IServiceManager, OwnableUpgradeab
     /// @notice The address of the slasher account
     address public slasher;
 
+    /// @notice The address of the proposed slasher account
+    address public proposedSlasher;
+
+    /// @notice The timestamp when the slasher was proposed
+    uint256 public slasherProposalTimestamp;
+
+    /// @notice Boolean indicating if the migration has been finalized
     bool public migrationFinalized;
 
     /// @notice Sets the (immutable) `_avsDirectory`, `_rewardsCoordinator`, `_registryCoordinator`, `_stakeRegistry`, and `_allocationManager` addresses
@@ -58,5 +65,5 @@ abstract contract ServiceManagerBaseStorage is IServiceManager, OwnableUpgradeab
     }
 
     // storage gap for upgradeability
-    uint256[48] private __GAP;
+    uint256[46] private __GAP;
 }

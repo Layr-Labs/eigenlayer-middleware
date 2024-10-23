@@ -129,5 +129,5 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
     address _rewardsUpdater,
     uint32 _activationDelay,
     uint16 _globalCommissionBips
-  ) external override {}
+  ) external {}
 }

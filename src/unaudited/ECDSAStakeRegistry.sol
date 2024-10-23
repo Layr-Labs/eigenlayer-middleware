@@ -248,12 +248,10 @@ contract ECDSAStakeRegistry is
         for (uint256 i; i < strategyParams.length; i++) {
             strategies[i] = strategyParams[i].strategy;
         }
-        uint256[] memory shares;
-        /// TODO: FIX
-        //  = DELEGATION_MANAGER.getOperatorShares(
-        //     _operator,
-        //     strategies
-        // );
+        uint256[] memory shares  = DELEGATION_MANAGER.getOperatorShares(
+            _operator,
+            strategies
+        );
         for (uint256 i; i < strategyParams.length; i++) {
             weight += shares[i] * strategyParams[i].multiplier;
         }
