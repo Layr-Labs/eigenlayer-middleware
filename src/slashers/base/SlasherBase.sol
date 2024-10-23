@@ -8,21 +8,6 @@ import {IAllocationManagerTypes, IAllocationManager} from "eigenlayer-contracts/
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 abstract contract SlasherBase is Initializable, SlasherStorage {
-    enum SlashingStatus {
-        Null,
-        Requested,
-        Completed,
-        Cancelled
-    }
-
-    event OperatorSlashed(
-        uint256 indexed slashingRequestId,
-        address indexed operator,
-        uint32 indexed operatorSetId,
-        IStrategy[] strategies,
-        uint256 wadToSlash,
-        string description
-    );
 
     function __SlasherBase_init(address _serviceManager) internal onlyInitializing {
         serviceManager = _serviceManager;

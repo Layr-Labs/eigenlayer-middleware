@@ -6,27 +6,11 @@ import {SlasherBase} from "./base/SlasherBase.sol";
 import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
 contract VetoableSlashing is SlasherBase {
-    struct SlashingRequest {
-        IAllocationManager.SlashingParams params;
-        uint256 requestTimestamp;
-        SlashingStatus status;
-    }
-
     uint256 public constant VETO_PERIOD = 3 days;
     address public vetoCommittee;
     address public slasher;
     uint256 public nextRequestId;
     mapping(uint256 => SlashingRequest) public slashingRequests;
-
-    event SlashingRequested(
-        uint256 indexed requestId,
-        address indexed operator,
-        uint32 indexed operatorSetId,
-        uint256 wadToSlash,
-        string description
-    );
-
-    event SlashingRequestCancelled(uint256 indexed requestId);
 
     modifier onlyVetoCommittee() {
         require(msg.sender == vetoCommittee, "VetoableSlashing: caller is not the veto committee");

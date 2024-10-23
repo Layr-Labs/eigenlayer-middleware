@@ -14,7 +14,7 @@ contract InstantSlasher is SlasherBase {
         _;
     }
 
-    function initialize(address _serviceManager, address _slasher) public initializer {
+    function initialize(address _serviceManager, address _slasher) external initializer {
         __SlasherBase_init(_serviceManager);
         slasher = _slasher;
     }
