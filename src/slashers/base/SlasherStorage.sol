@@ -7,5 +7,5 @@ contract SlasherStorage is ISlasher {
     address public slasher;
     uint256 public nextRequestId;
 
-    uint256[49] private __gap;
+    uint256[47] private __gap;
 }
