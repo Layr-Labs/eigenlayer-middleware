@@ -12,15 +12,7 @@ contract VetoableSlashing is SlasherBase {
     mapping(uint256 => SlashingRequest) public slashingRequests;
 
     modifier onlyVetoCommittee() {
-        require(msg.sender == vetoCommittee, "VetoableSlashing: caller is not the veto committee");
-        _;
-    }
-
-    modifier onlySlasher() {
-        require(
-            msg.sender == slasher,
-            "VetoableSlashing: caller is not a slashing initiator"
-        );
+        _checkVetoCommittee(msg.sender);
         _;
     }
 
@@ -77,5 +69,9 @@ contract VetoableSlashing is SlasherBase {
     function _cancelSlashingRequest(uint256 requestId) internal virtual {
         slashingRequests[requestId].status = SlashingStatus.Cancelled;
         emit SlashingRequestCancelled(requestId);
+    }
+
+    function _checkVetoCommittee(address account) internal view virtual {
+        require(account == vetoCommittee, "VetoableSlashing: caller is not the veto committee");
     }
 }

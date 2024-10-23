@@ -9,6 +9,11 @@ import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy
 
 abstract contract SlasherBase is Initializable, SlasherStorage {
 
+    modifier onlySlasher() {
+        _checkSlasher(msg.sender);
+        _;
+    }
+
     function __SlasherBase_init(address _serviceManager, address _slasher) internal onlyInitializing {
         serviceManager = _serviceManager;
         slasher = _slasher;
@@ -20,6 +25,10 @@ abstract contract SlasherBase is Initializable, SlasherStorage {
     ) internal virtual {
         IServiceManager(serviceManager).slashOperator(_params);
         emit OperatorSlashed(_requestId, _params.operator, _params.operatorSetId, _params.strategies, _params.wadToSlash, _params.description);
+    }
+
+    function _checkSlasher(address account) internal view virtual {
+        require(account == slasher, "InstantSlasher: caller is not the slasher");
     }
 }
 
