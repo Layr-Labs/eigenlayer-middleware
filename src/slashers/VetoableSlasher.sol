@@ -39,7 +39,7 @@ contract VetoableSlashing is SlasherBase {
         _cancelSlashingRequest(requestId);
     }
 
-    function fulfillSlashingRequest(uint256 requestId) external virtual {
+    function fulfillSlashingRequest(uint256 requestId) external virtual onlySlasher {
         SlashingRequest storage request = slashingRequests[requestId];
         require(
             block.timestamp >= request.requestTimestamp + VETO_PERIOD,
