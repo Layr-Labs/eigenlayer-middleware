@@ -9,8 +9,9 @@ import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy
 
 abstract contract SlasherBase is Initializable, SlasherStorage {
 
-    function __SlasherBase_init(address _serviceManager) internal onlyInitializing {
+    function __SlasherBase_init(address _serviceManager, address _slasher) internal onlyInitializing {
         serviceManager = _serviceManager;
+        slasher = _slasher;
     }
 
     function _fulfillSlashingRequest(

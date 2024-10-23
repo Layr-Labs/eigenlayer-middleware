@@ -27,11 +27,10 @@ contract VetoableSlashing is SlasherBase {
     function initialize(
         address _serviceManager,
         address _vetoCommittee,
-        address _slashingInitiator
+        address _slasher
     ) external virtual initializer {
-        __SlasherBase_init(_serviceManager);
+        __SlasherBase_init(_serviceManager, _slasher);
         vetoCommittee = _vetoCommittee;
-        slasher = _slashingInitiator;
     }
 
     function queueSlashingRequest(IAllocationManager.SlashingParams memory params) external virtual onlySlasher {
