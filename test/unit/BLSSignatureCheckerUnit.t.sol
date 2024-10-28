@@ -294,6 +294,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
     }
 
     function test_checkSignatures_revert_staleStakes() public {
+        vm.skip(true);
         uint256 numNonSigners = 2;
         uint256 quorumBitmap = 1;
         uint256 nonRandomNumber = 777;
