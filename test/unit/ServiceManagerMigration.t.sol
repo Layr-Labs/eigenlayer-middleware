@@ -99,7 +99,7 @@ contract ServiceManagerMigration_UnitTests is MockAVSDeployer, IServiceManagerBa
                     address(serviceManagerImplementation),
                     address(proxyAdmin),
                     abi.encodeWithSelector(
-                        ServiceManagerMock.initialize.selector, msg.sender, msg.sender
+                        ServiceManagerMock.initialize.selector, serviceManager.owner(), msg.sender, msg.sender
                     )
                 )
             )

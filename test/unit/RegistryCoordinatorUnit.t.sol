@@ -260,7 +260,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         registryCoordinator.pause(2 ** PAUSED_REGISTER_OPERATOR);
 
         cheats.startPrank(defaultOperator);
-        cheats.expectRevert(bytes("Pausable: index is paused"));
+        cheats.expectRevert(bytes4(keccak256("CurrentlyPaused()")));
         registryCoordinator.registerOperator(emptyQuorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
     }
 
@@ -591,7 +591,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         cheats.prank(pauser);
         registryCoordinator.pause(2 ** PAUSED_DEREGISTER_OPERATOR);
 
-        cheats.expectRevert(bytes("Pausable: index is paused"));
+        cheats.expectRevert(bytes4(keccak256("CurrentlyPaused()")));
         cheats.prank(defaultOperator);
         registryCoordinator.deregisterOperator(quorumNumbers);
     }
@@ -1526,7 +1526,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
             hex"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001B";
         signatureWithSaltAndExpiry.salt = defaultSalt;
         cheats.prank(operatorToRegister);
-        cheats.expectRevert("ECDSA: invalid signature");
+        cheats.expectRevert(bytes4(keccak256("InvalidSignature()")));
         registryCoordinator.registerOperatorWithChurn(
             quorumNumbers, 
             defaultSocket,
@@ -1576,7 +1576,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         address[] memory operatorsToUpdate = new address[](1);
         operatorsToUpdate[0] = defaultOperator;
 
-        cheats.expectRevert(bytes("Pausable: index is paused"));
+        cheats.expectRevert(bytes4(keccak256("CurrentlyPaused()")));
         registryCoordinator.updateOperators(operatorsToUpdate);
     }
 
@@ -1657,7 +1657,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
-        cheats.expectRevert(bytes("Pausable: index is paused"));
+        cheats.expectRevert(bytes4(keccak256("CurrentlyPaused()")));
         registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
     }
 
