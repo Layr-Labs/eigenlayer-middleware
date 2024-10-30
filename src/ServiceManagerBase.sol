@@ -445,6 +445,10 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         return address(_avsDirectory);
     }
 
+    function allocationManager() external view override returns (address) {
+        return address(_allocationManager);
+    }
+
     function _checkRewardsInitiator() internal view {
         require(
             msg.sender == rewardsInitiator,

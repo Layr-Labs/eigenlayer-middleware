@@ -9,13 +9,15 @@ contract ECDSAServiceManagerMock is ECDSAServiceManagerBase {
         address _avsDirectory,
         address _stakeRegistry,
         address _rewardsCoordinator,
-        address _delegationManager
+        address _delegationManager,
+        address _allocationManager
     )
         ECDSAServiceManagerBase(
             _avsDirectory,
             _stakeRegistry,
             _rewardsCoordinator,
-            _delegationManager
+            _delegationManager,
+            _allocationManager
         )
     {}
 

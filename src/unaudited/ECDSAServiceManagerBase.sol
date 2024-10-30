@@ -23,6 +23,9 @@ abstract contract ECDSAServiceManagerBase is
     /// @notice Address of the AVS directory contract, which manages AVS-related data for registered operators.
     address public immutable avsDirectory;
 
+    /// @notice Address of the AllocationManager contract 
+    address public immutable allocationManager;
+
     /// @notice Address of the rewards coordinator contract, which handles rewards distributions.
     address internal immutable rewardsCoordinator;
 
@@ -70,12 +73,14 @@ abstract contract ECDSAServiceManagerBase is
         address _avsDirectory,
         address _stakeRegistry,
         address _rewardsCoordinator,
-        address _delegationManager
+        address _delegationManager,
+        address _allocationManager
     ) {
         avsDirectory = _avsDirectory;
         stakeRegistry = _stakeRegistry;
         rewardsCoordinator = _rewardsCoordinator;
         delegationManager = _delegationManager;
+        allocationManager = _allocationManager;
         _disableInitializers();
     }
 

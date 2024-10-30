@@ -40,6 +40,8 @@ contract MockAVSDirectory {
     function updateAVSMetadataURI(string memory) external pure {}
 }
 
+contract MockAllocationManager {}
+
 contract MockRewardsCoordinator {
     function createAVSRewardsSubmission(
         IRewardsCoordinator.RewardsSubmission[] calldata
@@ -49,6 +51,7 @@ contract MockRewardsCoordinator {
 contract ECDSAServiceManagerSetup is Test {
     MockDelegationManager public mockDelegationManager;
     MockAVSDirectory public mockAVSDirectory;
+    MockAllocationManager public mockAllocationManager;
     ECDSAStakeRegistryMock public mockStakeRegistry;
     MockRewardsCoordinator public mockRewardsCoordinator;
     ECDSAServiceManagerMock public serviceManager;
@@ -60,6 +63,7 @@ contract ECDSAServiceManagerSetup is Test {
     function setUp() public {
         mockDelegationManager = new MockDelegationManager();
         mockAVSDirectory = new MockAVSDirectory();
+        mockAllocationManager = new MockAllocationManager();
         mockStakeRegistry = new ECDSAStakeRegistryMock(
             IDelegationManager(address(mockDelegationManager))
         );
@@ -69,7 +73,8 @@ contract ECDSAServiceManagerSetup is Test {
             address(mockAVSDirectory),
             address(mockStakeRegistry),
             address(mockRewardsCoordinator),
-            address(mockDelegationManager)
+            address(mockDelegationManager),
+            address(mockAllocationManager)
         );
 
         operator1Pk = 1;

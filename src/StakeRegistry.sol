@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IAVSDirectory, OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 
 import {StakeRegistryStorage, IStrategy} from "./StakeRegistryStorage.sol";
@@ -491,14 +492,17 @@ contract StakeRegistry is StakeRegistryStorage {
         uint256 stratsLength = strategyParamsLength(quorumNumber);
         StrategyParams memory strategyAndMultiplier;
 
-        uint256[] memory strategyShares = delegation.getOperatorShares(operator, strategiesPerQuorum[quorumNumber]);
+        address[] memory operators = new address[](1);
+        operators[0] = operator;
+        uint32 beforeTimestamp = uint32(block.timestamp + 7 days);
+        (uint256[][] memory strategyShares, ) = IAllocationManager(serviceManager.allocationManager()).getMinDelegatedAndSlashableOperatorShares(OperatorSet(address(serviceManager), quorumNumber), operators ,strategiesPerQuorum[quorumNumber], beforeTimestamp);
         for (uint256 i = 0; i < stratsLength; i++) {
             // accessing i^th StrategyParams struct for the quorumNumber
             strategyAndMultiplier = strategyParams[quorumNumber][i];
 
             // add the weight from the shares for this strategy to the total weight
-            if (strategyShares[i] > 0) {
-                weight += uint96(strategyShares[i] * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR);
+            if (strategyShares[i][0] > 0) {
+                weight += uint96(strategyShares[i][0] * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR);
             }
         }
 
