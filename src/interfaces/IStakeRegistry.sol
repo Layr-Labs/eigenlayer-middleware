@@ -11,6 +11,12 @@ import {IRegistry} from "./IRegistry.sol";
  * @author Layr Labs, Inc.
  */
 interface IStakeRegistry is IRegistry {
+
+    enum StakeType {
+        TOTAL_DELEGATED,
+        TOTAL_SLASHABLE,
+        BOTH
+    }
     
     // DATA STRUCTURES
 
@@ -42,6 +48,13 @@ interface IStakeRegistry is IRegistry {
         uint8 quorumNumber,
         uint96 stake
     );
+
+
+    /// @notice emitted when the look ahead time for checking operator shares is updated
+    event LookAheadPeriodChanged(uint32 oldLookAheadDays, uint32 newLookAheadDays);
+
+    /// @notice emitted when the stake type is updated
+    event StakeTypeSet(StakeType previousStakeType, StakeType newStakeType);
     /// @notice emitted when the minimum stake for a quorum is updated
     event MinimumStakeForQuorumUpdated(uint8 indexed quorumNumber, uint96 minimumStake);
     /// @notice emitted when a new quorum is created
