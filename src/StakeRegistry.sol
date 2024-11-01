@@ -494,7 +494,7 @@ contract StakeRegistry is StakeRegistryStorage {
 
         address[] memory operators = new address[](1);
         operators[0] = operator;
-        uint32 beforeTimestamp = uint32(block.timestamp + 7 days);
+        uint32 beforeTimestamp = uint32(block.timestamp + 14 days);
         (uint256[][] memory strategyShares, ) = IAllocationManager(serviceManager.allocationManager()).getMinDelegatedAndSlashableOperatorShares(OperatorSet(address(serviceManager), quorumNumber), operators ,strategiesPerQuorum[quorumNumber], beforeTimestamp);
         for (uint256 i = 0; i < stratsLength; i++) {
             // accessing i^th StrategyParams struct for the quorumNumber
