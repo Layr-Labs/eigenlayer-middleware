@@ -32,8 +32,8 @@ contract StakeRegistryMock is IStakeRegistry {
      *         4) the operator is not already registered
      */
     function registerOperator(
-        address operator, 
-        bytes32 operatorId, 
+        address operator,
+        bytes32 operatorId,
         bytes memory quorumNumbers
     ) external returns (uint96[] memory, uint96[] memory) {}
 
@@ -149,7 +149,7 @@ contract StakeRegistryMock is IStakeRegistry {
 
     /**
      * @notice Returns the stake weight corresponding to `operatorId` for quorum `quorumNumber`, at the
-     * `index`-th entry in the `operatorIdToStakeHistory[operatorId][quorumNumber]` array if the entry 
+     * `index`-th entry in the `operatorIdToStakeHistory[operatorId][quorumNumber]` array if the entry
      * corresponds to the operator's stake at `blockNumber`. Reverts otherwise.
      * @param quorumNumber The quorum number to get the stake for.
      * @param operatorId The id of the operator of interest.
@@ -164,8 +164,8 @@ contract StakeRegistryMock is IStakeRegistry {
         returns (uint96) {}
 
     /**
-     * @notice Returns the total stake weight for quorum `quorumNumber`, at the `index`-th entry in the 
-     * `totalStakeHistory[quorumNumber]` array if the entry corresponds to the total stake at `blockNumber`. 
+     * @notice Returns the total stake weight for quorum `quorumNumber`, at the `index`-th entry in the
+     * `totalStakeHistory[quorumNumber]` array if the entry corresponds to the total stake at `blockNumber`.
      * Reverts otherwise.
      * @param quorumNumber The quorum number to get the stake for.
      * @param index Array index for lookup, within the dynamic array `totalStakeHistory[quorumNumber]`.
@@ -201,8 +201,8 @@ contract StakeRegistryMock is IStakeRegistry {
      * added to the
      */
     function updateOperatorStake(
-        address /*operator*/, 
-        bytes32 /*operatorId*/, 
+        address /*operator*/,
+        bytes32 /*operatorId*/,
         bytes calldata /*quorumNumbers*/
     ) external returns (uint192) {
         return updateOperatorStakeReturnBitmap;
@@ -211,4 +211,10 @@ contract StakeRegistryMock is IStakeRegistry {
     function getMockOperatorId(address operator) external pure returns(bytes32) {
         return bytes32(uint256(keccak256(abi.encodePacked(operator, "operatorId"))));
     }
+
+    function updateOperatorsAllocations(
+        address[] memory /*operators*/,
+        bytes32[] memory /*operatorIds*/,
+        uint8 /*quorumNumber*/
+    ) external {}
 }

@@ -274,6 +274,17 @@ contract RegistryCoordinator is
         }
     }
 
+    function updateOperatorAllocationsForQuorum(
+        address[] memory operators,
+        uint8 quorumNumber
+    ) external onlyWhenNotPaused(PAUSED_UPDATE_OPERATOR) {
+        bytes32[] memory operatorIds = new bytes32[](operators.length);
+        for (uint256 i = 0; i < operators.length; i++) {
+            operatorIds[i] = _operatorInfo[operators[i]].operatorId;
+        }
+        stakeRegistry.updateOperatorsAllocations(operators, operatorIds, quorumNumber);
+    }
+
     /**
      * @notice For each quorum in `quorumNumbers`, updates the StakeRegistry's view of ALL its registered operators' stakes.
      * Each quorum's `quorumUpdateBlockNumber` is also updated, which tracks the most recent block number when ALL registered
