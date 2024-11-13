@@ -331,6 +331,9 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             slasher: address(msg.sender)
         });
 
+        IStakeRegistry.StakeType[] memory quorumStakeTypes = new IStakeRegistry.StakeType[](0);
+        uint32[] memory slashableStakeQuorumLookAheadPeriods = new uint32[](0);
+
         RegistryCoordinator registryCoordinatorImplementation =
             new RegistryCoordinator(serviceManager, stakeRegistry, blsApkRegistry, indexRegistry, avsDirectory);
         proxyAdmin.upgradeAndCall(
@@ -345,7 +348,9 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 0, /*initialPausedStatus*/
                 new IRegistryCoordinator.OperatorSetParam[](0),
                 new uint96[](0),
-                new IStakeRegistry.StrategyParams[][](0)
+                new IStakeRegistry.StrategyParams[][](0),
+                quorumStakeTypes,
+                slashableStakeQuorumLookAheadPeriods
             )
         );
 
@@ -380,7 +385,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         strategies[0] = strategy;
         cheats.prank(strategyManager.strategyWhitelister());
         strategyManager.addStrategiesToDepositWhitelist(
-            strategies 
+            strategies
         );
 
         // Add to allStrats
