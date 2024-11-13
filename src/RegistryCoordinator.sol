@@ -87,11 +87,15 @@ contract RegistryCoordinator is
         uint256 _initialPausedStatus,
         OperatorSetParam[] memory _operatorSetParams,
         uint96[] memory _minimumStakes,
-        IStakeRegistry.StrategyParams[][] memory _strategyParams
+        IStakeRegistry.StrategyParams[][] memory _strategyParams,
+        IStakeRegistry.StakeType[] memory _stakeTypes,
+        uint32[] memory _lookAheadPeriods
     ) external initializer {
         require(
             _operatorSetParams.length == _minimumStakes.length
-                && _minimumStakes.length == _strategyParams.length,
+                && _minimumStakes.length == _strategyParams.length
+                && _strategyParams.length == _stakeTypes.length
+                && _stakeTypes.length == _lookAheadPeriods.length,
             "RegistryCoordinator.initialize: input length mismatch"
         );
 
@@ -108,7 +112,7 @@ contract RegistryCoordinator is
 
         // Create quorums
         for (uint256 i = 0; i < _operatorSetParams.length; i++) {
-            _createQuorum(_operatorSetParams[i], _minimumStakes[i], _strategyParams[i]);
+            _createQuorum(_operatorSetParams[i], _minimumStakes[i], _strategyParams[i], _stakeTypes[i], _lookAheadPeriods[i]);
         }
     }
 
@@ -404,12 +408,21 @@ contract RegistryCoordinator is
      * @param strategyParams a list of strategies and multipliers used by the StakeRegistry to
      * calculate an operator's stake weight for the quorum
      */
-    function createQuorum(
+    function createTotalDelegatedStakeQuorum(
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
         IStakeRegistry.StrategyParams[] memory strategyParams
     ) external virtual onlyOwner {
-        _createQuorum(operatorSetParams, minimumStake, strategyParams);
+        _createQuorum(operatorSetParams, minimumStake, strategyParams, IStakeRegistry.StakeType.TOTAL_DELEGATED, 0);
+    }
+
+    function createSlashableStakeQuorum(
+        OperatorSetParam memory operatorSetParams,
+        uint96 minimumStake,
+        IStakeRegistry.StrategyParams[] memory strategyParams,
+        uint32 lookAheadPeriod
+    ) external virtual onlyOwner {
+        _createQuorum(operatorSetParams, minimumStake, strategyParams, IStakeRegistry.StakeType.TOTAL_SLASHABLE, lookAheadPeriod);
     }
 
     /**
@@ -809,7 +822,9 @@ contract RegistryCoordinator is
     function _createQuorum(
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
-        IStakeRegistry.StrategyParams[] memory strategyParams
+        IStakeRegistry.StrategyParams[] memory strategyParams,
+        IStakeRegistry.StakeType stakeType,
+        uint32 lookAheadPeriod
     ) internal {
         // Increment the total quorum count. Fails if we're already at the max
         uint8 prevQuorumCount = quorumCount;
@@ -824,7 +839,14 @@ contract RegistryCoordinator is
 
         // Initialize the quorum here and in each registry
         _setOperatorSetParams(quorumNumber, operatorSetParams);
-        stakeRegistry.initializeQuorum(quorumNumber, minimumStake, strategyParams);
+
+        // Initialize stake registry based on stake type
+        if (stakeType == IStakeRegistry.StakeType.TOTAL_DELEGATED) {
+            stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
+        } else if (stakeType == IStakeRegistry.StakeType.TOTAL_SLASHABLE) {
+            stakeRegistry.initializeSlashableStakeQuorum(quorumNumber, minimumStake, lookAheadPeriod, strategyParams);
+        }
+
         indexRegistry.initializeQuorum(quorumNumber);
         blsApkRegistry.initializeQuorum(quorumNumber);
         // Check if the AVS has migrated to operator sets

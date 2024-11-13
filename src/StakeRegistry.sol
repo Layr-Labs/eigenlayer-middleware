@@ -25,7 +25,7 @@ import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 contract StakeRegistry is StakeRegistryStorage {
 
     using BitmapUtils for *;
-    
+
     modifier onlyRegistryCoordinator() {
         _checkRegistryCoordinator();
         _;
@@ -73,8 +73,8 @@ contract StakeRegistry is StakeRegistryStorage {
 
         uint96[] memory currentStakes = new uint96[](quorumNumbers.length);
         uint96[] memory totalStakes = new uint96[](quorumNumbers.length);
-        for (uint256 i = 0; i < quorumNumbers.length; i++) {            
-            
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             _checkQuorumExists(quorumNumber);
 
@@ -88,7 +88,7 @@ contract StakeRegistry is StakeRegistryStorage {
 
             // Update the operator's stake
             int256 stakeDelta = _recordOperatorStakeUpdate({
-                operatorId: operatorId, 
+                operatorId: operatorId,
                 quorumNumber: quorumNumber,
                 newStake: currentStake
             });
@@ -127,8 +127,8 @@ contract StakeRegistry is StakeRegistryStorage {
 
             // Update the operator's stake for the quorum and retrieve the shares removed
             int256 stakeDelta = _recordOperatorStakeUpdate({
-                operatorId: operatorId, 
-                quorumNumber: quorumNumber, 
+                operatorId: operatorId,
+                quorumNumber: quorumNumber,
                 newStake: 0
             });
 
@@ -147,8 +147,8 @@ contract StakeRegistry is StakeRegistryStorage {
      * and should be deregistered.
      */
     function updateOperatorStake(
-        address operator, 
-        bytes32 operatorId, 
+        address operator,
+        bytes32 operatorId,
         bytes calldata quorumNumbers
     ) external onlyRegistryCoordinator returns (uint192) {
         uint192 quorumsToRemove;
@@ -173,7 +173,7 @@ contract StakeRegistry is StakeRegistryStorage {
             // against the minimum stake requirements for the quorum.
             (uint96 stakeWeight, bool hasMinimumStake) = _weightOfOperatorForQuorum(quorumNumber, operator);
             // If the operator no longer meets the minimum stake, set their stake to zero and mark them for removal
-            /// also handle setting the operator's stake to 0 and remove them from the quorum 
+            /// also handle setting the operator's stake to 0 and remove them from the quorum
             /// if they directly unregistered from the AVSDirectory bubbles up info via registry coordinator to deregister them
             bool operatorRegistered;
             // Convert quorumNumber to operatorSetId
@@ -207,7 +207,7 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     /// @notice Initialize a new quorum and push its first history update
-    function initializeQuorum(
+    function initializeDelegatedStakeQuorum(
         uint8 quorumNumber,
         uint96 minimumStake,
         StrategyParams[] memory _strategyParams
@@ -215,6 +215,28 @@ contract StakeRegistry is StakeRegistryStorage {
         require(!_quorumExists(quorumNumber), "StakeRegistry.initializeQuorum: quorum already exists");
         _addStrategyParams(quorumNumber, _strategyParams);
         _setMinimumStakeForQuorum(quorumNumber, minimumStake);
+        _setStakeType(quorumNumber, StakeType.TOTAL_DELEGATED);
+
+        _totalStakeHistory[quorumNumber].push(StakeUpdate({
+            updateBlockNumber: uint32(block.number),
+            nextUpdateBlockNumber: 0,
+            stake: 0
+        }));
+    }
+
+
+    /// @notice Initialize a new quorum and push its first history update
+    function initializeSlashableStakeQuorum(
+        uint8 quorumNumber,
+        uint96 minimumStake,
+        uint32 lookAheadPeriod,
+        StrategyParams[] memory _strategyParams
+    ) public virtual onlyRegistryCoordinator {
+        require(!_quorumExists(quorumNumber), "StakeRegistry.initializeQuorum: quorum already exists");
+        _addStrategyParams(quorumNumber, _strategyParams);
+        _setMinimumStakeForQuorum(quorumNumber, minimumStake);
+        _setStakeType(quorumNumber, StakeType.TOTAL_SLASHABLE);
+        _setLookAheadPeriod(quorumNumber, lookAheadPeriod);
 
         _totalStakeHistory[quorumNumber].push(StakeUpdate({
             updateBlockNumber: uint32(block.number),
@@ -224,32 +246,37 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     function setMinimumStakeForQuorum(
-        uint8 quorumNumber, 
+        uint8 quorumNumber,
         uint96 minimumStake
     ) public virtual onlyCoordinatorOwner quorumExists(quorumNumber) {
         _setMinimumStakeForQuorum(quorumNumber, minimumStake);
     }
 
     /**
-     * @notice Sets the stake type for the registry
+     * @notice Sets the stake type for the registry for a specific quorum
+     * @param quorumNumber The quorum number to set the stake type for
      * @param _stakeType The type of stake to track (TOTAL_DELEGATED, TOTAL_SLASHABLE, or BOTH)
      */
-    function setStakeType(StakeType _stakeType) external onlyCoordinatorOwner {
-        _setStakeType(_stakeType);
+    function setStakeType(uint8 quorumNumber, StakeType _stakeType) external onlyCoordinatorOwner {
+        _setStakeType(quorumNumber, _stakeType);
     }
 
-
-    function setSlashableStakeLookahead(uint32 _lookAheadPeriod) external onlyCoordinatorOwner {
-        _setLookAheadPeriod(_lookAheadPeriod);
+    /**
+     * @notice Sets the look ahead time for checking operator shares for a specific quorum
+     * @param quorumNumber The quorum number to set the look ahead period for
+     * @param _lookAheadPeriod The number of days to look ahead when checking shares
+     */
+    function setSlashableStakeLookahead(uint8 quorumNumber, uint32 _lookAheadPeriod) external onlyCoordinatorOwner {
+        _setLookAheadPeriod(quorumNumber, _lookAheadPeriod);
     }
-    /** 
+    /**
      * @notice Adds strategies and weights to the quorum
      * @dev Checks to make sure that the *same* strategy cannot be added multiple times (checks against both against existing and new strategies).
      * @dev This function has no check to make sure that the strategies for a single quorum have the same underlying asset. This is a concious choice,
      * since a middleware may want, e.g., a stablecoin quorum that accepts USDC, USDT, DAI, etc. as underlying assets and trades them as "equivalent".
      */
     function addStrategies(
-        uint8 quorumNumber, 
+        uint8 quorumNumber,
         StrategyParams[] memory _strategyParams
     ) public virtual onlyCoordinatorOwner quorumExists(quorumNumber) {
         _addStrategyParams(quorumNumber, _strategyParams);
@@ -357,7 +384,7 @@ contract StakeRegistry is StakeRegistryStorage {
             }));
         } else {
             // We have prior stake history - fetch our last-recorded stake
-            StakeUpdate storage lastUpdate = operatorStakeHistory[operatorId][quorumNumber][historyLength-1]; 
+            StakeUpdate storage lastUpdate = operatorStakeHistory[operatorId][quorumNumber][historyLength-1];
             prevStake = lastUpdate.stake;
 
             // Short-circuit in case there's no change in stake
@@ -368,7 +395,7 @@ contract StakeRegistry is StakeRegistryStorage {
             /**
              * If our last stake entry was made in the current block, update the entry
              * Otherwise, push a new entry and update the previous entry's "next" field
-             */ 
+             */
             if (lastUpdate.updateBlockNumber == uint32(block.number)) {
                 lastUpdate.stake = newStake;
             } else {
@@ -397,7 +424,7 @@ contract StakeRegistry is StakeRegistryStorage {
         if (stakeDelta == 0) {
             return lastStakeUpdate.stake;
         }
-        
+
         // Calculate the new total stake by applying the delta to our previous stake
         uint96 newStake = _applyDelta(lastStakeUpdate.stake, stakeDelta);
 
@@ -419,7 +446,7 @@ contract StakeRegistry is StakeRegistryStorage {
         return newStake;
     }
 
-    /** 
+    /**
      * @notice Adds `strategyParams` to the `quorumNumber`-th quorum.
      * @dev Checks to make sure that the *same* strategy cannot be added multiple times (checks against both against existing and new strategies).
      * @dev This function has no check to make sure that the strategies for a single quorum have the same underlying asset. This is a conscious choice,
@@ -493,6 +520,23 @@ contract StakeRegistry is StakeRegistryStorage {
         );
     }
 
+    /// Returns total Slashable stake for an operator per strategy that can have the weights applied based on strategy multipliers
+    function _getSlashableStakePerStrategy(uint8 quorumNumber, address operator) internal view returns (uint256[] memory) {
+        address[] memory operators = new address[](1);
+        operators[0] = operator;
+        uint32 beforeTimestamp = uint32(block.timestamp + slashableStakeLookAheadPerQuorum[quorumNumber]);
+
+        (,uint256[][] memory slashableShares) = IAllocationManager(serviceManager.allocationManager())
+            .getMinDelegatedAndSlashableOperatorShares(
+                OperatorSet(address(serviceManager), quorumNumber),
+                operators,
+                strategiesPerQuorum[quorumNumber],
+                beforeTimestamp
+            );
+
+        return slashableShares[0];
+    }
+
     /**
      * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
      * @dev this method DOES NOT check that the quorum exists
@@ -503,18 +547,27 @@ contract StakeRegistry is StakeRegistryStorage {
         uint96 weight;
         uint256 stratsLength = strategyParamsLength(quorumNumber);
         StrategyParams memory strategyAndMultiplier;
+        uint256[] memory strategyShares;
 
-        address[] memory operators = new address[](1);
-        operators[0] = operator;
-        uint32 beforeTimestamp = uint32(block.timestamp + slashableStakeLookAhead);
-        (uint256[][] memory strategyShares, ) = IAllocationManager(serviceManager.allocationManager()).getMinDelegatedAndSlashableOperatorShares(OperatorSet(address(serviceManager), quorumNumber), operators ,strategiesPerQuorum[quorumNumber], beforeTimestamp);
-        for (uint256 i = 0; i < stratsLength; i++) {
-            // accessing i^th StrategyParams struct for the quorumNumber
-            strategyAndMultiplier = strategyParams[quorumNumber][i];
+        if (stakeTypePerQuorum[quorumNumber]== StakeType.TOTAL_SLASHABLE) {
+            strategyShares = _getSlashableStakePerStrategy(quorumNumber, operator);
+            for (uint256 i = 0; i < stratsLength; i++) {
+                strategyAndMultiplier = strategyParams[quorumNumber][i];
+                if (strategyShares[i] > 0) {
+                    weight += uint96(strategyShares[i] * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR);
+                }
+            }
+        } else {
+            /// M2 Concept of delegated stake
+            strategyShares = delegation.getOperatorShares(operator, strategiesPerQuorum[quorumNumber]);
+            for (uint256 i = 0; i < stratsLength; i++) {
+                // accessing i^th StrategyParams struct for the quorumNumber
+                strategyAndMultiplier = strategyParams[quorumNumber][i];
 
-            // add the weight from the shares for this strategy to the total weight
-            if (strategyShares[i][0] > 0) {
-                weight += uint96(strategyShares[i][0] * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR);
+                // add the weight from the shares for this strategy to the total weight
+                if (strategyShares[i] > 0) {
+                    weight += uint96(strategyShares[i] * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR);
+                }
             }
         }
 
@@ -537,7 +590,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @dev reverts if the quorum does not exist
      */
     function weightOfOperatorForQuorum(
-        uint8 quorumNumber, 
+        uint8 quorumNumber,
         address operator
     ) public virtual view quorumExists(quorumNumber) returns (uint96) {
         (uint96 stake, ) = _weightOfOperatorForQuorum(quorumNumber, operator);
@@ -551,7 +604,7 @@ contract StakeRegistry is StakeRegistryStorage {
 
     /// @notice Returns the strategy and weight multiplier for the `index`'th strategy in the quorum `quorumNumber`
     function strategyParamsByIndex(
-        uint8 quorumNumber, 
+        uint8 quorumNumber,
         uint256 index
     ) public view returns (StrategyParams memory)
     {
@@ -578,7 +631,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param quorumNumber The quorum number to get the stake for.
      */
     function getStakeHistory(
-        bytes32 operatorId, 
+        bytes32 operatorId,
         uint8 quorumNumber
     ) external view returns (StakeUpdate[] memory) {
         return operatorStakeHistory[operatorId][quorumNumber];
@@ -697,7 +750,7 @@ contract StakeRegistry is StakeRegistryStorage {
         uint256 index
     ) external view returns (StakeUpdate memory) {
         return _totalStakeHistory[quorumNumber][index];
-    } 
+    }
 
     /**
      * @notice Returns the total stake weight for quorum `quorumNumber`, at the `index`-th entry in the
@@ -747,22 +800,24 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     /**
-     * @notice Sets the stake type for the registry
+     * @notice Sets the stake type for the registry for a specific quorum
+     * @param quorumNumber The quorum number to set the stake type for
      * @param _stakeType The type of stake to track (TOTAL_DELEGATED, TOTAL_SLASHABLE, or BOTH)
      */
-    function _setStakeType(StakeType _stakeType) internal {
-        StakeType oldStakeType = stakeType;
-        stakeType = _stakeType;
+    function _setStakeType(uint8 quorumNumber, StakeType _stakeType) internal {
+        StakeType oldStakeType = stakeTypePerQuorum[quorumNumber];
+        stakeTypePerQuorum[quorumNumber] = _stakeType;
         emit StakeTypeSet(oldStakeType, _stakeType);
     }
 
     /**
-     * @notice Sets the look ahead time for checking operator shares
+     * @notice Sets the look ahead time for checking operator shares for a specific quorum
+     * @param quorumNumber The quorum number to set the look ahead period for
      * @param _lookAheadDays The number of days to look ahead when checking shares
      */
-    function _setLookAheadPeriod(uint32 _lookAheadDays) internal {
-        uint32 oldLookAheadDays = slashableStakeLookAhead;
-        slashableStakeLookAhead = _lookAheadDays;
+    function _setLookAheadPeriod(uint8 quorumNumber, uint32 _lookAheadDays) internal {
+        uint32 oldLookAheadDays = slashableStakeLookAheadPerQuorum[quorumNumber];
+        slashableStakeLookAheadPerQuorum[quorumNumber] = _lookAheadDays;
         emit LookAheadPeriodChanged(oldLookAheadDays, _lookAheadDays);
     }
 

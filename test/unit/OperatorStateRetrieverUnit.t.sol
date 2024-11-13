@@ -93,7 +93,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
             IStakeRegistry.StrategyParams({strategy: IStrategy(address(1000)), multiplier: 1e16});
 
         cheats.prank(registryCoordinator.owner());
-        registryCoordinator.createQuorum(operatorSetParams, minimumStake, strategyParams);
+        registryCoordinator.createTotalDelegatedStakeQuorum(operatorSetParams, minimumStake, strategyParams);
 
         cheats.expectRevert(
             "IndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number"
@@ -235,7 +235,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
             IStakeRegistry.StrategyParams({strategy: IStrategy(address(1000)), multiplier: 1e16});
 
         cheats.prank(registryCoordinator.owner());
-        registryCoordinator.createQuorum(operatorSetParams, minimumStake, strategyParams);
+        registryCoordinator.createTotalDelegatedStakeQuorum(operatorSetParams, minimumStake, strategyParams);
 
         cheats.expectRevert(
             "StakeRegistry.getTotalStakeIndicesAtBlockNumber: quorum has no stake history at blockNumber"

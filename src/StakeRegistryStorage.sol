@@ -15,7 +15,7 @@ import {IStakeRegistry} from  "./interfaces/IStakeRegistry.sol";
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
 abstract contract StakeRegistryStorage is IStakeRegistry {
-    
+
     /// @notice Constant used as a divisor in calculating weights.
     uint256 public constant WEIGHTING_DIVISOR = 1e18;
     /// @notice Maximum length of dynamic arrays in the `strategyParams` mapping.
@@ -52,12 +52,12 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
     mapping(uint8 => StrategyParams[]) public strategyParams;
     mapping(uint8 => IStrategy[]) public strategiesPerQuorum;
 
-    StakeType public stakeType;
+    mapping(uint8 => StakeType) public stakeTypePerQuorum;
 
-    uint32 public slashableStakeLookAhead;
+    mapping(uint8 => uint32) public slashableStakeLookAheadPerQuorum;
 
     constructor(
-        IRegistryCoordinator _registryCoordinator, 
+        IRegistryCoordinator _registryCoordinator,
         IDelegationManager _delegationManager,
         IAVSDirectory _avsDirectory,
         IServiceManager _serviceManager

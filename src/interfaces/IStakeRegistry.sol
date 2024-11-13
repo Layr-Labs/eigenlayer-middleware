@@ -101,7 +101,20 @@ interface IStakeRegistry is IRegistry {
     /**
      * @notice Initialize a new quorum created by the registry coordinator by setting strategies, weights, and minimum stake
      */
-    function initializeQuorum(uint8 quorumNumber, uint96 minimumStake, StrategyParams[] memory strategyParams) external;
+    /// @notice Initialize a new quorum and push its first history update
+    function initializeDelegatedStakeQuorum(
+        uint8 quorumNumber,
+        uint96 minimumStake,
+        StrategyParams[] memory _strategyParams
+    ) external;
+
+    /// @notice Initialize a new quorum and push its first history update
+    function initializeSlashableStakeQuorum(
+        uint8 quorumNumber,
+        uint96 minimumStake,
+        uint32 lookAheadPeriod,
+        StrategyParams[] memory _strategyParams
+    ) external;
 
     /// @notice Adds new strategies and the associated multipliers to the @param quorumNumber.
     function addStrategies(

@@ -199,7 +199,7 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
         assertTrue(avsDirectory.isOperatorSet(address(serviceManager), quorumNumber-1), "Operator set doesn't already existed");
 
         vm.prank(registryCoordinator.owner());
-        registryCoordinator.createQuorum(operatorSetParams, minimumStake, strategyParams);
+        registryCoordinator.createTotalDelegatedStakeQuorum(operatorSetParams, minimumStake, strategyParams);
 
         assertTrue(avsDirectory.isOperatorSet(address(serviceManager), quorumNumber), "Operator set was not created for the quorum");
 
@@ -259,8 +259,8 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
 
         vm.prank(operators[0]);
         avsDirectory.forceDeregisterFromOperatorSets(
-            operators[0], 
-            address(serviceManager), 
+            operators[0],
+            address(serviceManager),
             operatorSetsToUnregister,
             ISignatureUtils.SignatureWithSaltAndExpiry({
                 signature: new bytes(0),
@@ -466,5 +466,5 @@ contract RegistryCoordinatorMigrationUnit is MockAVSDeployer, IServiceManagerBas
         assertTrue(isOperatorRegistered, "Operator wasn't deregistered from operator set");
     }
 
-    
+
 }
