@@ -83,11 +83,18 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
                     quorumEjectionParams[quorumNumber].rateLimitWindow > 0 &&
                     stakeForEjection + operatorStake > amountEjectable
                 ){
-                    stakeEjectedForQuorum[quorumNumber].push(StakeEjection({
-                        timestamp: block.timestamp,
-                        stakeEjected: stakeForEjection
-                    }));
                     ratelimitHit = true;
+
+                    stakeForEjection += operatorStake;
+                    ++ejectedOperators;
+
+                    registryCoordinator.ejectOperator(
+                        registryCoordinator.getOperatorFromId(_operatorIds[i][j]),
+                        abi.encodePacked(quorumNumber)
+                    );
+
+                    emit OperatorEjected(_operatorIds[i][j], quorumNumber);
+
                     break;
                 }
 
@@ -103,7 +110,7 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
             }
 
             //record the stake ejected if ejector and ratelimit enforced
-            if(!ratelimitHit && isEjector[msg.sender]){
+            if(isEjector[msg.sender]){
                 stakeEjectedForQuorum[quorumNumber].push(StakeEjection({
                     timestamp: block.timestamp,
                     stakeEjected: stakeForEjection

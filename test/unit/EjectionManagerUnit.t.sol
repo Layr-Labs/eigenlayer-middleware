@@ -127,7 +127,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
     }
 
     function testEjectOperators_MultipleOperatorOutsideRatelimit() public {
-        uint8 operatorsCanEject = 1;
+        uint8 operatorsCanEject = 2;
         uint8 operatorsToEject = 10;
         uint8 numOperators = 10;
         uint96 stake = 1 ether;
