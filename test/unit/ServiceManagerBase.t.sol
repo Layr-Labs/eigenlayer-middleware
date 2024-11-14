@@ -731,12 +731,12 @@ contract ServiceManagerBase_createOperatorDirectedAVSRewardsSubmission is
         );
     }
 
-    function test_createOperatorDirectedAVSRewardsSubmission_Revert_WhenERC20NotApproved(
+    function testFuzz_createOperatorDirectedAVSRewardsSubmission_Revert_WhenERC20NotApproved(
         uint256 startTimestamp,
         uint256 duration
     ) public {
         // 1. Bound fuzz inputs to valid ranges and amounts
-        IERC20 token = new ERC20PresetFixedSupply(
+        IERC20 rewardToken = new ERC20PresetFixedSupply(
             "dog wif hat",
             "MOCK1",
             mockTokenInitialSupply,
@@ -768,7 +768,7 @@ contract ServiceManagerBase_createOperatorDirectedAVSRewardsSubmission is
         operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator
             .OperatorDirectedRewardsSubmission({
                 strategiesAndMultipliers: defaultStrategyAndMultipliers,
-                token: token,
+                token: rewardToken,
                 operatorRewards: defaultOperatorRewards,
                 startTimestamp: uint32(startTimestamp),
                 duration: uint32(duration),
@@ -780,6 +780,118 @@ contract ServiceManagerBase_createOperatorDirectedAVSRewardsSubmission is
         cheats.expectRevert("ERC20: insufficient allowance");
         serviceManager.createOperatorDirectedAVSRewardsSubmission(
             operatorDirectedRewardsSubmissions
+        );
+    }
+
+    /**
+     * @notice test a single rewards submission asserting for the following
+     * - correct event emitted
+     * - submission nonce incrementation by 1, and rewards submission hash being set in storage.
+     * - rewards submission hash being set in storage
+     * - token balance before and after of rewards initiator and rewardsCoordinator
+     */
+    function testFuzz_createOperatorDirectedAVSRewardsSubmission_SingleSubmission(
+        uint256 startTimestamp,
+        uint256 duration
+    ) public {
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply(
+            "dog wif hat",
+            "MOCK1",
+            mockTokenInitialSupply,
+            rewardsInitiator
+        );
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(
+                _maxTimestamp(
+                    GENESIS_REWARDS_TIMESTAMP,
+                    uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH
+                )
+            ) +
+                CALCULATION_INTERVAL_SECONDS -
+                1,
+            block.timestamp - duration - 1
+        );
+        startTimestamp =
+            startTimestamp -
+            (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
+                1
+            );
+        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator
+            .OperatorDirectedRewardsSubmission({
+                strategiesAndMultipliers: defaultStrategyAndMultipliers,
+                token: rewardToken,
+                operatorRewards: defaultOperatorRewards,
+                startTimestamp: uint32(startTimestamp),
+                duration: uint32(duration),
+                description: ""
+            });
+
+        // 3. Get total amount
+        uint256 amount = _getTotalRewardsAmount(defaultOperatorRewards);
+
+        // 4. Approve serviceManager for ERC20
+        cheats.startPrank(rewardsInitiator);
+        rewardToken.approve(address(serviceManager), amount);
+
+        // 3. call createOperatorDirectedAVSRewardsSubmission() with expected event emitted
+        uint256 rewardsInitiatorBalanceBefore = rewardToken.balanceOf(
+            rewardsInitiator
+        );
+        uint256 rewardsCoordinatorBalanceBefore = rewardToken.balanceOf(
+            address(rewardsCoordinator)
+        );
+        uint256 currSubmissionNonce = rewardsCoordinator.submissionNonce(
+            address(serviceManager)
+        );
+        bytes32 rewardsSubmissionHash = keccak256(
+            abi.encode(
+                address(serviceManager),
+                currSubmissionNonce,
+                operatorDirectedRewardsSubmissions[0]
+            )
+        );
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit OperatorDirectedAVSRewardsSubmissionCreated(
+            address(serviceManager),
+            address(serviceManager),
+            rewardsSubmissionHash,
+            currSubmissionNonce,
+            operatorDirectedRewardsSubmissions[0]
+        );
+        serviceManager.createOperatorDirectedAVSRewardsSubmission(
+            operatorDirectedRewardsSubmissions
+        );
+        cheats.stopPrank();
+
+        assertTrue(
+            rewardsCoordinator.isOperatorDirectedAVSRewardsSubmissionHash(
+                address(serviceManager),
+                rewardsSubmissionHash
+            ),
+            "rewards submission hash not submitted"
+        );
+        assertEq(
+            currSubmissionNonce + 1,
+            rewardsCoordinator.submissionNonce(address(serviceManager)),
+            "submission nonce not incremented"
+        );
+        assertEq(
+            rewardsInitiatorBalanceBefore - amount,
+            rewardToken.balanceOf(rewardsInitiator),
+            "AVS balance not decremented by amount of rewards submission"
+        );
+        assertEq(
+            rewardsCoordinatorBalanceBefore + amount,
+            rewardToken.balanceOf(address(rewardsCoordinator)),
+            "RewardsCoordinator balance not incremented by amount of rewards submission"
         );
     }
 }
