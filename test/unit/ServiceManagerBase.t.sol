@@ -640,22 +640,6 @@ contract ServiceManagerBase_UnitTests is
         }
     }
 
-    function testFuzz_createOperatorDirectedAVSRewardsSubmission_Revert_WhenNotOwner(
-        address caller
-    ) public filterFuzzedAddressInputs(caller) {
-        cheats.assume(caller != rewardsInitiator);
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            memory rewardsSubmissions;
-
-        cheats.prank(caller);
-        cheats.expectRevert(
-            "ServiceManagerBase.onlyRewardsInitiator: caller is not the rewards initiator"
-        );
-        serviceManager.createOperatorDirectedAVSRewardsSubmission(
-            rewardsSubmissions
-        );
-    }
-
     function test_setRewardsInitiator() public {
         address newRewardsInitiator = address(
             uint160(uint256(keccak256("newRewardsInitiator")))
@@ -673,5 +657,129 @@ contract ServiceManagerBase_UnitTests is
         cheats.expectRevert("Ownable: caller is not the owner");
         cheats.prank(caller);
         serviceManager.setRewardsInitiator(newRewardsInitiator);
+    }
+}
+
+contract ServiceManagerBase_createOperatorDirectedAVSRewardsSubmission is
+    ServiceManagerBase_UnitTests
+{
+    IRewardsCoordinator.OperatorReward[] defaultOperatorRewards;
+
+    function setUp() public virtual override {
+        ServiceManagerBase_UnitTests.setUp();
+
+        address[] memory operators = new address[](3);
+        operators[0] = makeAddr("operator1");
+        operators[1] = makeAddr("operator2");
+        operators[2] = makeAddr("operator3");
+        operators = _sortAddressArrayAsc(operators);
+
+        defaultOperatorRewards.push(
+            IRewardsCoordinator.OperatorReward(operators[0], 1e18)
+        );
+        defaultOperatorRewards.push(
+            IRewardsCoordinator.OperatorReward(operators[1], 2e18)
+        );
+        defaultOperatorRewards.push(
+            IRewardsCoordinator.OperatorReward(operators[2], 3e18)
+        );
+
+        // Set the timestamp to when Rewards v2 will realisticly go out (i.e 6 months)
+        cheats.warp(GENESIS_REWARDS_TIMESTAMP + 168 days);
+    }
+
+    /// @dev Sort to ensure that the array is in ascending order for addresses
+    function _sortAddressArrayAsc(
+        address[] memory arr
+    ) internal pure returns (address[] memory) {
+        uint256 l = arr.length;
+        for (uint256 i = 0; i < l; i++) {
+            for (uint256 j = i + 1; j < l; j++) {
+                if (arr[i] > arr[j]) {
+                    address temp = arr[i];
+                    arr[i] = arr[j];
+                    arr[j] = temp;
+                }
+            }
+        }
+        return arr;
+    }
+
+    function _getTotalRewardsAmount(
+        IRewardsCoordinator.OperatorReward[] memory operatorRewards
+    ) internal pure returns (uint256) {
+        uint256 totalAmount = 0;
+        for (uint256 i = 0; i < operatorRewards.length; ++i) {
+            totalAmount += operatorRewards[i].amount;
+        }
+        return totalAmount;
+    }
+
+    function testFuzz_createOperatorDirectedAVSRewardsSubmission_Revert_WhenNotOwner(
+        address caller
+    ) public filterFuzzedAddressInputs(caller) {
+        cheats.assume(caller != rewardsInitiator);
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions;
+
+        cheats.prank(caller);
+        cheats.expectRevert(
+            "ServiceManagerBase.onlyRewardsInitiator: caller is not the rewards initiator"
+        );
+        serviceManager.createOperatorDirectedAVSRewardsSubmission(
+            operatorDirectedRewardsSubmissions
+        );
+    }
+
+    function test_createOperatorDirectedAVSRewardsSubmission_Revert_WhenERC20NotApproved(
+        uint256 startTimestamp,
+        uint256 duration
+    ) public {
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 token = new ERC20PresetFixedSupply(
+            "dog wif hat",
+            "MOCK1",
+            mockTokenInitialSupply,
+            rewardsInitiator
+        );
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(
+                _maxTimestamp(
+                    GENESIS_REWARDS_TIMESTAMP,
+                    uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH
+                )
+            ) +
+                CALCULATION_INTERVAL_SECONDS -
+                1,
+            block.timestamp - duration - 1
+        );
+        startTimestamp =
+            startTimestamp -
+            (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
+                1
+            );
+        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator
+            .OperatorDirectedRewardsSubmission({
+                strategiesAndMultipliers: defaultStrategyAndMultipliers,
+                token: token,
+                operatorRewards: defaultOperatorRewards,
+                startTimestamp: uint32(startTimestamp),
+                duration: uint32(duration),
+                description: ""
+            });
+
+        // 3. Call createOperatorDirectedAVSRewardsSubmission()
+        cheats.prank(rewardsInitiator);
+        cheats.expectRevert("ERC20: insufficient allowance");
+        serviceManager.createOperatorDirectedAVSRewardsSubmission(
+            operatorDirectedRewardsSubmissions
+        );
     }
 }
