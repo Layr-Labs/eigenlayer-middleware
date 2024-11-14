@@ -27,12 +27,7 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
         IERC20 token
     ) external view returns (uint256) {}
 
-    function globalOperatorCommissionBips() external view returns (uint16) {}
-
-    function operatorCommissionBips(
-        address operator,
-        address avs
-    ) external view returns (uint16) {}
+    function defaultOperatorSplitBips() external view returns (uint16) {}
 
     function calculateEarnerLeafHash(
         EarnerTreeMerkleLeaf calldata leaf
@@ -76,12 +71,12 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
 
     function domainSeparator() external view returns (bytes32) {}
 
-    function getOperatorAVSCommission(
+    function getOperatorAVSSplit(
         address operator,
         address avs
     ) external view returns (uint16) {}
 
-    function getOperatorPICommission(
+    function getOperatorPISplit(
         address operator
     ) external view returns (uint16) {}
 
@@ -97,9 +92,10 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
         RewardsSubmission[] calldata rewardsSubmissions
     ) external {}
 
-    function createAVSPerformanceRewardsSubmission(
+    function createOperatorDirectedAVSRewardsSubmission(
         address avs,
-        PerformanceRewardsSubmission[] calldata performanceRewardsSubmissions
+        OperatorDirectedRewardsSubmission[]
+            calldata operatorDirectedRewardsSubmissions
     ) external {}
 
     function processClaim(
@@ -123,9 +119,7 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
 
     function setActivationDelay(uint32 _activationDelay) external {}
 
-    function setGlobalOperatorCommission(
-        uint16 _globalCommissionBips
-    ) external {}
+    function setDefaultOperatorSplit(uint16 split) external {}
 
     function setRewardsUpdater(address _rewardsUpdater) external {}
 
@@ -134,14 +128,11 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
         bool _newValue
     ) external {}
 
-    function setOperatorAVSCommission(
+    function setOperatorAVSSplit(
         address operator,
         address avs,
-        uint16 commission
+        uint16 split
     ) external {}
 
-    function setOperatorPICommission(
-        address operator,
-        uint16 commission
-    ) external {}
+    function setOperatorPISplit(address operator, uint16 split) external {}
 }

@@ -114,53 +114,58 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     }
 
     /**
-     * @notice Creates a new performance-based rewards submission, to be split amongst the operators and
+     * @notice Creates a new operator-directed rewards submission, to be split amongst the operators and
      * set of stakers delegated to operators who are registered to this `avs`.
-     * @param performanceRewardsSubmissions The performance rewards submissions being created.
+     * @param operatorDirectedRewardsSubmissions The operator-directed rewards submissions being created.
      * @dev Only callabe by the permissioned rewardsInitiator address
      * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
      * @dev The tokens are sent to the `RewardsCoordinator` contract
-     * @dev This contract needs a token approval of sum of all `operatorRewards` in the `performanceRewardsSubmissions`, before calling this function.
+     * @dev This contract needs a token approval of sum of all `operatorRewards` in the `operatorDirectedRewardsSubmissions`, before calling this function.
      * @dev Strategies must be in ascending order of addresses to check for duplicates
      * @dev Operators must be in ascending order of addresses to check for duplicates.
-     * @dev This function will revert if the `performanceRewardsSubmissions` is malformed.
+     * @dev This function will revert if the `operatorDirectedRewardsSubmissions` is malformed.
      */
-    function createAVSPerformanceRewardsSubmission(
-        IRewardsCoordinator.PerformanceRewardsSubmission[]
-            calldata performanceRewardsSubmissions
+    function createOperatorDirectedAVSRewardsSubmission(
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
+            calldata operatorDirectedRewardsSubmissions
     ) public virtual onlyRewardsInitiator {
-        for (uint256 i = 0; i < performanceRewardsSubmissions.length; ++i) {
+        for (
+            uint256 i = 0;
+            i < operatorDirectedRewardsSubmissions.length;
+            ++i
+        ) {
             // Calculate total amount of token to transfer
             uint256 totalAmount = 0;
             for (
                 uint256 j = 0;
-                j < performanceRewardsSubmissions[i].operatorRewards.length;
+                j <
+                operatorDirectedRewardsSubmissions[i].operatorRewards.length;
                 ++j
             ) {
-                totalAmount += performanceRewardsSubmissions[i]
+                totalAmount += operatorDirectedRewardsSubmissions[i]
                     .operatorRewards[j]
                     .amount;
             }
 
             // Transfer token to ServiceManager and approve RewardsCoordinator to transfer again
             // in createAVSPerformanceRewardsSubmission() call
-            performanceRewardsSubmissions[i].token.transferFrom(
+            operatorDirectedRewardsSubmissions[i].token.transferFrom(
                 msg.sender,
                 address(this),
                 totalAmount
             );
-            uint256 allowance = performanceRewardsSubmissions[i]
+            uint256 allowance = operatorDirectedRewardsSubmissions[i]
                 .token
                 .allowance(address(this), address(_rewardsCoordinator));
-            performanceRewardsSubmissions[i].token.approve(
+            operatorDirectedRewardsSubmissions[i].token.approve(
                 address(_rewardsCoordinator),
                 totalAmount + allowance
             );
         }
 
-        _rewardsCoordinator.createAVSPerformanceRewardsSubmission(
+        _rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(
             address(this),
-            performanceRewardsSubmissions
+            operatorDirectedRewardsSubmissions
         );
     }
 

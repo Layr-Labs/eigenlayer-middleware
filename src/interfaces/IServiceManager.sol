@@ -25,20 +25,20 @@ interface IServiceManager is IServiceManagerUI {
     ) external;
 
     /**
-     * @notice Creates a new performance-based rewards submission on behalf of an AVS, to be split amongst the operators and
+     * @notice Creates a new operator-directed rewards submission on behalf of an AVS, to be split amongst the operators and
      * set of stakers delegated to operators who are registered to the `avs`.
-     * @param performanceRewardsSubmissions The performance rewards submissions being created
+     * @param operatorDirectedRewardsSubmissions The operator-directed rewards submissions being created
      * @dev Only callabe by the permissioned rewardsInitiator address
      * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
      * @dev The tokens are sent to the `RewardsCoordinator` contract
-     * @dev This contract needs a token approval of sum of all `operatorRewards` in the `performanceRewardsSubmissions`, before calling this function.
+     * @dev This contract needs a token approval of sum of all `operatorRewards` in the `operatorDirectedRewardsSubmissions`, before calling this function.
      * @dev Strategies must be in ascending order of addresses to check for duplicates
      * @dev Operators must be in ascending order of addresses to check for duplicates.
-     * @dev This function will revert if the `performanceRewardsSubmissions` is malformed.
+     * @dev This function will revert if the `operatorDirectedRewardsSubmissions` is malformed.
      */
-    function createAVSPerformanceRewardsSubmission(
-        IRewardsCoordinator.PerformanceRewardsSubmission[]
-            calldata performanceRewardsSubmissions
+    function createOperatorDirectedAVSRewardsSubmission(
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
+            calldata operatorDirectedRewardsSubmissions
     ) external;
 
     /**
