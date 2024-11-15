@@ -34,9 +34,9 @@ interface IServiceManagerBaseEvents {
         uint32 oldActivationDelay,
         uint32 newActivationDelay
     );
-    event GlobalCommissionBipsSet(
-        uint16 oldGlobalCommissionBips,
-        uint16 newGlobalCommissionBips
+    event DefaultOperatorSplitBipsSet(
+        uint16 oldDefaultOperatorSplitBips,
+        uint16 newDefaultOperatorSplitBips
     );
     event ClaimerForSet(
         address indexed earner,
