@@ -658,6 +658,33 @@ contract ServiceManagerBase_UnitTests is
         cheats.prank(caller);
         serviceManager.setRewardsInitiator(newRewardsInitiator);
     }
+
+    function testFuzz_setClaimerFor(address claimer) public {
+        cheats.startPrank(serviceManagerOwner);
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit ClaimerForSet(
+            address(serviceManager),
+            rewardsCoordinator.claimerFor(address(serviceManager)),
+            claimer
+        );
+        serviceManager.setClaimerFor(claimer);
+        assertEq(
+            claimer,
+            rewardsCoordinator.claimerFor(address(serviceManager)),
+            "claimerFor not set"
+        );
+        cheats.stopPrank();
+    }
+
+    function testFuzz_setClaimerFor_revert_notOwner(
+        address caller,
+        address claimer
+    ) public filterFuzzedAddressInputs(caller) {
+        cheats.assume(caller != serviceManagerOwner);
+        cheats.prank(caller);
+        cheats.expectRevert("Ownable: caller is not the owner");
+        serviceManager.setClaimerFor(claimer);
+    }
 }
 
 contract ServiceManagerBase_createOperatorDirectedAVSRewardsSubmission is
