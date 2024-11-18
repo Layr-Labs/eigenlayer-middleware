@@ -131,7 +131,7 @@ contract RegistryCoordinatorUnitTests_Initialization_Setters is RegistryCoordina
             operatorSetParams,
             new uint96[](0),
             new IStakeRegistry.StrategyParams[][](0),
-            new IStakeRegistry.StakeType[](0),
+            new StakeType[](0),
             new uint32[](0)
         );
     }

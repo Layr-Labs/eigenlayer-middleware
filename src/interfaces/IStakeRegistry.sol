@@ -6,16 +6,18 @@ import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy
 
 import {IRegistry} from "./IRegistry.sol";
 
+enum StakeType {
+    TOTAL_DELEGATED,
+    TOTAL_SLASHABLE
+}
+
 /**
  * @title Interface for a `Registry` that keeps track of stakes of operators for up to 256 quorums.
  * @author Layr Labs, Inc.
  */
 interface IStakeRegistry is IRegistry {
 
-    enum StakeType {
-        TOTAL_DELEGATED,
-        TOTAL_SLASHABLE
-    }
+
 
     // DATA STRUCTURES
 

@@ -9,7 +9,7 @@ import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {StakeRegistryStorage, IStrategy} from "./StakeRegistryStorage.sol";
 
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
-import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
+import {IStakeRegistry, StakeType} from "./interfaces/IStakeRegistry.sol";
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 

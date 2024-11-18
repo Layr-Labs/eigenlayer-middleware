@@ -7,7 +7,7 @@ import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IStrategyManager, IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
-import {IStakeRegistry} from  "./interfaces/IStakeRegistry.sol";
+import {IStakeRegistry, StakeType} from  "./interfaces/IStakeRegistry.sol";
 
 /**
  * @title Storage variables for the `StakeRegistry` contract.

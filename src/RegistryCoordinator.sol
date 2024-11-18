@@ -6,7 +6,7 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISi
 import {IAVSDirectory, OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {ISocketUpdater} from "./interfaces/ISocketUpdater.sol";
 import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
-import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
+import {IStakeRegistry, StakeType} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
@@ -88,7 +88,7 @@ contract RegistryCoordinator is
         OperatorSetParam[] memory _operatorSetParams,
         uint96[] memory _minimumStakes,
         IStakeRegistry.StrategyParams[][] memory _strategyParams,
-        IStakeRegistry.StakeType[] memory _stakeTypes,
+        StakeType[] memory _stakeTypes,
         uint32[] memory _lookAheadPeriods
     ) external initializer {
         require(
@@ -413,7 +413,7 @@ contract RegistryCoordinator is
         uint96 minimumStake,
         IStakeRegistry.StrategyParams[] memory strategyParams
     ) external virtual onlyOwner {
-        _createQuorum(operatorSetParams, minimumStake, strategyParams, IStakeRegistry.StakeType.TOTAL_DELEGATED, 0);
+        _createQuorum(operatorSetParams, minimumStake, strategyParams, StakeType.TOTAL_DELEGATED, 0);
     }
 
     function createSlashableStakeQuorum(
@@ -422,7 +422,7 @@ contract RegistryCoordinator is
         IStakeRegistry.StrategyParams[] memory strategyParams,
         uint32 lookAheadPeriod
     ) external virtual onlyOwner {
-        _createQuorum(operatorSetParams, minimumStake, strategyParams, IStakeRegistry.StakeType.TOTAL_SLASHABLE, lookAheadPeriod);
+        _createQuorum(operatorSetParams, minimumStake, strategyParams, StakeType.TOTAL_SLASHABLE, lookAheadPeriod);
     }
 
     /**
@@ -823,7 +823,7 @@ contract RegistryCoordinator is
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
         IStakeRegistry.StrategyParams[] memory strategyParams,
-        IStakeRegistry.StakeType stakeType,
+        StakeType stakeType,
         uint32 lookAheadPeriod
     ) internal {
         // Increment the total quorum count. Fails if we're already at the max
@@ -841,9 +841,9 @@ contract RegistryCoordinator is
         _setOperatorSetParams(quorumNumber, operatorSetParams);
 
         // Initialize stake registry based on stake type
-        if (stakeType == IStakeRegistry.StakeType.TOTAL_DELEGATED) {
+        if (stakeType == StakeType.TOTAL_DELEGATED) {
             stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
-        } else if (stakeType == IStakeRegistry.StakeType.TOTAL_SLASHABLE) {
+        } else if (stakeType == StakeType.TOTAL_SLASHABLE) {
             stakeRegistry.initializeSlashableStakeQuorum(quorumNumber, minimumStake, lookAheadPeriod, strategyParams);
         }
 

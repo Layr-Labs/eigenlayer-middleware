@@ -15,7 +15,7 @@ import {RegistryCoordinator} from "../../src/RegistryCoordinator.sol";
 import {RegistryCoordinatorHarness} from "../harnesses/RegistryCoordinatorHarness.t.sol";
 import {BLSApkRegistry} from "../../src/BLSApkRegistry.sol";
 import {ServiceManagerMock} from "../mocks/ServiceManagerMock.sol";
-import {StakeRegistry} from "../../src/StakeRegistry.sol";
+import {StakeRegistry, StakeType} from "../../src/StakeRegistry.sol";
 import {IndexRegistry} from "../../src/IndexRegistry.sol";
 import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
@@ -297,12 +297,12 @@ contract MockAVSDeployer is Test {
             }
 
             // Create arrays for quorum types and lookahead periods
-            IStakeRegistry.StakeType[] memory quorumStakeTypes = new IStakeRegistry.StakeType[](numQuorumsToAdd);
+            StakeType[] memory quorumStakeTypes = new StakeType[](numQuorumsToAdd);
             uint32[] memory slashableStakeQuorumLookAheadPeriods = new uint32[](numQuorumsToAdd);
 
             // Set all quorums to TOTAL_DELEGATED type with 0 lookahead period
             for (uint256 i = 0; i < numQuorumsToAdd; i++) {
-                quorumStakeTypes[i] = IStakeRegistry.StakeType.TOTAL_DELEGATED;
+                quorumStakeTypes[i] = StakeType.TOTAL_DELEGATED;
                 slashableStakeQuorumLookAheadPeriods[i] = 0;
             }
 
