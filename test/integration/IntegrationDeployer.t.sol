@@ -162,13 +162,13 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         DelegationManager delegationImplementation =
-            new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, 0);
+            new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, pauserRegistry, 0);
         StrategyManager strategyManagerImplementation =
-            new StrategyManager(delegationManager);
+            new StrategyManager(delegationManager, pauserRegistry);
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
-            ethPOSDeposit, eigenPodBeacon, strategyManager, delegationManager
+            ethPOSDeposit, eigenPodBeacon, strategyManager, delegationManager, pauserRegistry
         );
-        AVSDirectory avsDirectoryImplemntation = new AVSDirectory(delegationManager, 0); // TODO: fix config
+        AVSDirectory avsDirectoryImplemntation = new AVSDirectory(delegationManager, pauserRegistry); // TODO: fix config
         // RewardsCoordinator rewardsCoordinatorImplementation = new RewardsCoordinator(
         //     delegationManager,
         //     IStrategyManager(address(strategyManager)),
@@ -247,7 +247,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         // );
 
         // Deploy and whitelist strategies
-        baseStrategyImplementation = new StrategyBase(strategyManager);
+        baseStrategyImplementation = new StrategyBase(strategyManager, pauserRegistry);
         for (uint256 i = 0; i < MAX_STRATEGY_COUNT; i++) {
             string memory number = uint256(i).toString();
             string memory stratName = string.concat("StrategyToken", number);
@@ -335,7 +335,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         uint32[] memory slashableStakeQuorumLookAheadPeriods = new uint32[](0);
 
         RegistryCoordinator registryCoordinatorImplementation =
-            new RegistryCoordinator(serviceManager, stakeRegistry, blsApkRegistry, indexRegistry, avsDirectory);
+            new RegistryCoordinator(serviceManager, stakeRegistry, blsApkRegistry, indexRegistry, avsDirectory, pauserRegistry);
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(registryCoordinator))),
             address(registryCoordinatorImplementation),

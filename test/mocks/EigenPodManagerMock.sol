@@ -11,8 +11,8 @@ contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
 
     mapping(address => int256) public podShares;
 
-    constructor(IPauserRegistry _pauserRegistry) {
-        _initializePauser(_pauserRegistry, 0);
+    constructor(IPauserRegistry _pauserRegistry) Pausable(_pauserRegistry){
+        _setPausedStatus(0);
     }
 
     function podOwnerShares(address podOwner) external view returns (int256) {
@@ -67,9 +67,6 @@ contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
     function beaconChainETHStrategy() external view returns (IStrategy) {
     }
 
-    function addShares(address staker, IStrategy strategy, IERC20 token, uint256 shares) external {
-    }
-
     function removeDepositShares(address staker, IStrategy strategy, uint256 depositSharesToRemove) external {
     }
 
@@ -77,4 +74,12 @@ contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
     }
 
     function withdrawSharesAsTokens(address staker, IStrategy strategy, IERC20 token, uint256 shares) external{}
+
+    function addShares(
+        address staker,
+        IStrategy strategy,
+        IERC20 token,
+        uint256 shares
+    ) external returns (uint256, uint256) {
+    }
 }

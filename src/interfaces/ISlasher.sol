@@ -20,7 +20,6 @@ interface ISlasherEvents {
         uint256 indexed slashingRequestId,
         address indexed operator,
         uint32 indexed operatorSetId,
-        IStrategy[] strategies,
         uint256 wadToSlash,
         string description
     );

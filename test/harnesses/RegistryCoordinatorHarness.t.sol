@@ -13,7 +13,7 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         IBLSApkRegistry _blsApkRegistry,
         IIndexRegistry _indexRegistry,
         IAVSDirectory _avsDirectory
-    ) RegistryCoordinator(_serviceManager, _stakeRegistry, _blsApkRegistry, _indexRegistry, _avsDirectory) {
+    ) RegistryCoordinator(_serviceManager, _stakeRegistry, _blsApkRegistry, _indexRegistry, _avsDirectory, pauserRegistry) {
         _transferOwnership(msg.sender);
     }
 
@@ -27,7 +27,7 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
 
     // @notice exposes the internal `_registerOperator` function, overriding all access controls
     function _registerOperatorExternal(
-        address operator, 
+        address operator,
         bytes32 operatorId,
         bytes calldata quorumNumbers,
         string memory socket,
@@ -38,7 +38,7 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
 
     // @notice exposes the internal `_deregisterOperator` function, overriding all access controls
     function _deregisterOperatorExternal(
-        address operator, 
+        address operator,
         bytes calldata quorumNumbers
     ) external {
         _deregisterOperator(operator, quorumNumbers);

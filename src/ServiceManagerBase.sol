@@ -119,7 +119,8 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     }
 
     function createOperatorSets(uint32[] memory operatorSetIds) external onlyRegistryCoordinator {
-        _avsDirectory.createOperatorSets(operatorSetIds);
+        /// TODO:
+        // _avsDirectory.createOperatorSets(operatorSetIds);
     }
 
     /**
@@ -153,7 +154,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) public virtual onlyRegistryCoordinator {
-        _avsDirectory.registerOperatorToOperatorSets(operator, operatorSetIds, operatorSignature);
+        // _avsDirectory.registerOperatorToOperatorSets(operator, operatorSetIds, operatorSignature);
     }
 
     /**
@@ -165,7 +166,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         address operator,
         uint32[] calldata operatorSetIds
     ) public virtual onlyRegistryCoordinator {
-        _avsDirectory.deregisterOperatorFromOperatorSets(operator, operatorSetIds);
+        // _avsDirectory.deregisterOperatorFromOperatorSets(operator, operatorSetIds);
     }
 
     /**
@@ -241,8 +242,8 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      * @param operatorSetIdsToCreate An array of operator set IDs to create.
      */
     function _migrateAndCreateOperatorSetIds(uint32[] memory operatorSetIdsToCreate) internal {
-        _avsDirectory.becomeOperatorSetAVS();
-        IAVSDirectory(address(_avsDirectory)).createOperatorSets(operatorSetIdsToCreate);
+        // _avsDirectory.becomeOperatorSetAVS();
+        // IAVSDirectory(address(_avsDirectory)).createOperatorSets(operatorSetIdsToCreate);
     }
 
     /**
@@ -260,9 +261,9 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         for (uint256 i; i < operators.length; i++) {
             _isOperatorRegisteredForQuorums(operators[i], operatorSetIds[i]);
         }
-        IAVSDirectory(address(_avsDirectory)).migrateOperatorsToOperatorSets(
-            operators, operatorSetIds
-        );
+        // IAVSDirectory(address(_avsDirectory)).migrateOperatorsToOperatorSets(
+        //     operators, operatorSetIds
+        // );
     }
 
     /**

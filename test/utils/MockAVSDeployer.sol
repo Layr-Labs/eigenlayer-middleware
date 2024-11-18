@@ -148,11 +148,11 @@ contract MockAVSDeployer is Test {
         delegationMock = new DelegationMock();
         avsDirectoryMock = new AVSDirectoryMock();
         eigenPodManagerMock = new EigenPodManagerMock(pauserRegistry);
-        strategyManagerMock = new StrategyManagerMock();
+        strategyManagerMock = new StrategyManagerMock(delegationMock);
         allocationManagerMock = new AllocationManagerMock();
         avsDirectoryMock = new AVSDirectoryMock();
         allocationManagerMock = new AllocationManagerMock();
-        avsDirectoryImplementation = new AVSDirectory(delegationMock, 0); // TODO: config value
+        avsDirectoryImplementation = new AVSDirectory(delegationMock, pauserRegistry); // TODO: config value
         avsDirectory = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(

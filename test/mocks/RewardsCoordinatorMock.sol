@@ -124,7 +124,6 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
 
   function initialize(
     address initialOwner,
-    IPauserRegistry _pauserRegistry,
     uint256 initialPausedStatus,
     address _rewardsUpdater,
     uint32 _activationDelay,

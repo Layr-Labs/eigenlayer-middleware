@@ -1,17 +1,23 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import {IAVSDirectory, OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 
 contract AVSDirectoryMock is IAVSDirectory {
+  function initialize(
+    address initialOwner,
+    uint256 initialPausedStatus
+  ) external {}
+
   function createOperatorSets(
     uint32[] calldata operatorSetIds
   ) external {}
 
-  function becomeOperatorSetAVS() external  {}
+  function becomeOperatorSetAVS() external {}
 
   function migrateOperatorsToOperatorSets(
     address[] calldata operators,
@@ -24,17 +30,33 @@ contract AVSDirectoryMock is IAVSDirectory {
     ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
   ) external {}
 
-  function deregisterOperatorFromOperatorSets(
-    address operator,
-    uint32[] calldata operatorSetIds
-  ) external {}
-
   function forceDeregisterFromOperatorSets(
     address operator,
     address avs,
     uint32[] calldata operatorSetIds,
     ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
   ) external {}
+
+  function deregisterOperatorFromOperatorSets(
+    address operator,
+    uint32[] calldata operatorSetIds
+  ) external {}
+
+  function addStrategiesToOperatorSet(
+    uint32 operatorSetId,
+    IStrategy[] calldata strategies
+  ) external {}
+
+  function removeStrategiesFromOperatorSet(
+    uint32 operatorSetId,
+    IStrategy[] calldata strategies
+  ) external {}
+
+  function updateAVSMetadataURI(
+    string calldata metadataURI
+  ) external {}
+
+  function cancelSalt(bytes32 salt) external {}
 
   function registerOperatorToAVS(
     address operator,
@@ -43,25 +65,9 @@ contract AVSDirectoryMock is IAVSDirectory {
 
   function deregisterOperatorFromAVS(address operator) external {}
 
-  function updateAVSMetadataURI(
-    string calldata metadataURI
-  ) external {}
-
-  function cancelSalt(bytes32 salt) external  {}
-
   function operatorSaltIsSpent(
     address operator,
     bytes32 salt
-  ) external view returns (bool) {}
-
-  function isMember(
-    address operator,
-    OperatorSet memory operatorSet
-  ) external view returns (bool) {}
-
-  function isOperatorSlashable(
-    address operator,
-    OperatorSet memory operatorSet
   ) external view returns (bool) {}
 
   function isOperatorSetAVS(
@@ -73,35 +79,9 @@ contract AVSDirectoryMock is IAVSDirectory {
     uint32 operatorSetId
   ) external view returns (bool) {}
 
-  function isOperatorSetBatch(
-    OperatorSet[] calldata operatorSets
-  ) external view returns (bool) {}
-
-  function operatorSetsMemberOfAtIndex(
-    address operator,
-    uint256 index
-  ) external view returns (OperatorSet memory) {}
-
-  function operatorSetMemberAtIndex(
-    OperatorSet memory operatorSet,
-    uint256 index
-  ) external view returns (address) {}
-
-  function getOperatorSetsOfOperator(
-    address operator,
-    uint256 start,
-    uint256 length
-  ) external view returns (OperatorSet[] memory operatorSets) {}
-
-  function getOperatorsInOperatorSet(
-    OperatorSet memory operatorSet,
-    uint256 start,
-    uint256 length
-  ) external view returns (address[] memory operators) {}
-
-  function getNumOperatorsInOperatorSet(
-    OperatorSet memory operatorSet
-  ) external view  returns (uint256) {}
+  function getNumOperatorSetsOfOperator(
+    address operator
+  ) external view returns (uint256) {}
 
   function inTotalOperatorSets(
     address operator
@@ -131,13 +111,15 @@ contract AVSDirectoryMock is IAVSDirectory {
   function OPERATOR_AVS_REGISTRATION_TYPEHASH()
     external
     view
-    returns (bytes32)
+
+   returns (bytes32)
   {}
 
   function OPERATOR_SET_REGISTRATION_TYPEHASH()
     external
     view
-    returns (bytes32)
+
+   returns (bytes32)
   {}
 
   function operatorSetStatus(
@@ -147,16 +129,9 @@ contract AVSDirectoryMock is IAVSDirectory {
   )
     external
     view
-    returns (bool registered, uint32 lastDeregisteredTimestamp)
+
+   returns (bool registered, uint32 lastDeregisteredTimestamp)
   {}
-
-  function getNumOperatorSetsOfOperator(
-    address operator
-  ) external view returns (uint256) {}
-
-  function getStrategiesInOperatorSet(
-    OperatorSet memory operatorSet
-  ) external view returns (IStrategy[] memory) {}
 
   function initialize(
     address initialOwner,
@@ -164,10 +139,36 @@ contract AVSDirectoryMock is IAVSDirectory {
     uint256 initialPausedStatus
   ) external {}
 
-  function removeStrategiesFromOperatorSet(
-    uint32 operatorSetId,
-    IStrategy[] calldata strategies
-  ) external {}
+  function operatorSetMemberAtIndex(
+    OperatorSet memory operatorSet,
+    uint256 index
+  ) external view returns (address) {}
 
-   function addStrategiesToOperatorSet(uint32 operatorSetId, IStrategy[] calldata strategies) external {}
+  function getOperatorsInOperatorSet(
+    OperatorSet memory operatorSet,
+    uint256 start,
+    uint256 length
+  ) external view returns (address[] memory operators) {}
+
+  function getStrategiesInOperatorSet(
+    OperatorSet memory operatorSet
+  ) external view returns (IStrategy[] memory strategies) {}
+
+  function getNumOperatorsInOperatorSet(
+    OperatorSet memory operatorSet
+  ) external view returns (uint256) {}
+
+  function isMember(
+    address operator,
+    OperatorSet memory operatorSet
+  ) external view returns (bool) {}
+
+  function isOperatorSlashable(
+    address operator,
+    OperatorSet memory operatorSet
+  ) external view returns (bool) {}
+
+  function isOperatorSetBatch(
+    OperatorSet[] calldata operatorSets
+  ) external view returns (bool) {}
 }

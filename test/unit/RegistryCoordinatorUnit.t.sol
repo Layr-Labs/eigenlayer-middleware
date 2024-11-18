@@ -126,7 +126,6 @@ contract RegistryCoordinatorUnitTests_Initialization_Setters is RegistryCoordina
             registryCoordinatorOwner,
             churnApprover,
             ejector,
-            pauserRegistry,
             0/*initialPausedStatus*/,
             operatorSetParams,
             new uint96[](0),

@@ -57,7 +57,7 @@ contract User is Test {
     BLSApkRegistry blsApkRegistry;
     StakeRegistry stakeRegistry;
     IndexRegistry indexRegistry;
-    
+
     TimeMachine timeMachine;
 
     uint churnApproverPrivateKey;
@@ -147,12 +147,12 @@ contract User is Test {
         assertEq(churnQuorums.length, churnTargets.length, "User.registerOperatorWithChurn: input length mismatch");
         assertTrue(churnBitmap.noBitsInCommon(standardBitmap), "User.registerOperatorWithChurn: input quorums have common bits");
 
-        bytes memory allQuorums = 
+        bytes memory allQuorums =
             churnBitmap
                 .plus(standardBitmap)
                 .bitmapToBytesArray();
 
-        IRegistryCoordinator.OperatorKickParam[] memory kickParams 
+        IRegistryCoordinator.OperatorKickParam[] memory kickParams
             = new IRegistryCoordinator.OperatorKickParam[](allQuorums.length);
 
         // this constructs OperatorKickParam[] in ascending quorum order
@@ -270,14 +270,14 @@ contract User is Test {
     function exitEigenlayer() public createSnapshot virtual returns (IStrategy[] memory, uint256[] memory) {
         _log("exitEigenlayer (core)");
 
-        IStrategy[] memory strategies; 
+        IStrategy[] memory strategies;
         uint256[] memory shares;
         // = delegationManager.getDelegatableShares(address(this)); // TODO: Fix
 
         IDelegationManagerTypes.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
         params[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
             strategies: strategies,
-            shares: shares,
+            depositShares: shares,
             withdrawer: address(this)
         });
 
@@ -332,14 +332,14 @@ contract User is Test {
         emit log_named_string(string.concat(NAME, ".", s), quorums.toString());
     }
 
-    // Operator0.registerOperatorWithChurn 
+    // Operator0.registerOperatorWithChurn
     // - standardQuorums: 0x00010203...
     // - churnQuorums: 0x0405...
     // - churnTargets: Operator1, Operator2, ...
     function _logChurn(
-        string memory s, 
-        bytes memory churnQuorums, 
-        User[] memory churnTargets, 
+        string memory s,
+        bytes memory churnQuorums,
+        User[] memory churnTargets,
         bytes memory standardQuorums
     ) internal virtual {
         emit log(string.concat(NAME, ".", s));
@@ -371,7 +371,7 @@ contract User_AltMethods is User {
         _;
     }
 
-    constructor(string memory name, uint _privKey, IBLSApkRegistry.PubkeyRegistrationParams memory _pubkeyParams) 
+    constructor(string memory name, uint _privKey, IBLSApkRegistry.PubkeyRegistrationParams memory _pubkeyParams)
         User(name, _privKey, _pubkeyParams) {}
 
     /// @dev Rather than calling deregisterOperator, this pranks the ejector and calls
@@ -405,6 +405,6 @@ contract User_AltMethods is User {
             operatorsPerQuorum[i] = Sort.sortAddresses(operatorsPerQuorum[i]);
         }
 
-        registryCoordinator.updateOperatorsForQuorum(operatorsPerQuorum, allQuorums);        
+        registryCoordinator.updateOperatorsForQuorum(operatorsPerQuorum, allQuorums);
     }
 }

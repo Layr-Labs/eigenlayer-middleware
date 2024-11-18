@@ -27,7 +27,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         _deployMockEigenLayerAndAVS();
 
         // Deploy New DelegationManager
-        DelegationManager delegationManagerImplementation = new DelegationManager(avsDirectoryMock, IStrategyManager(address(strategyManagerMock)), eigenPodManagerMock, allocationManagerMock, 0);
+        DelegationManager delegationManagerImplementation = new DelegationManager(avsDirectoryMock, IStrategyManager(address(strategyManagerMock)), eigenPodManagerMock, allocationManagerMock, pauserRegistry, 0);
         IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
         uint256[] memory initializeWithdrawalDelayBlocks = new uint256[](0);
         delegationManager = DelegationManager(
@@ -49,7 +49,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         );
 
         // Deploy New AVS Directory
-        AVSDirectory avsDirectoryImplementation = new AVSDirectory(delegationManager, 0); // TODO: Fix Config
+        AVSDirectory avsDirectoryImplementation = new AVSDirectory(delegationManager, pauserRegistry); // TODO: Fix Config
         avsDirectory = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(

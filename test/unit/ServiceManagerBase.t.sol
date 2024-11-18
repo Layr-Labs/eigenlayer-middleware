@@ -56,6 +56,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationMock,
             IStrategyManager(address(strategyManagerMock)),
+            pauserRegistry,
             CALCULATION_INTERVAL_SECONDS,
             MAX_REWARDS_DURATION,
             MAX_RETROACTIVE_LENGTH,
@@ -71,7 +72,6 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
                     abi.encodeWithSelector(
                         RewardsCoordinator.initialize.selector,
                         msg.sender,
-                        pauserRegistry,
                         0, /*initialPausedStatus*/
                         rewardsUpdater,
                         activationDelay,
@@ -146,7 +146,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         IERC20 token3 = new ERC20PresetFixedSupply(
             "pepe wif avs", "MOCK3", mockTokenInitialSupply, address(this)
         );
-        strategyImplementation = new StrategyBase(IStrategyManager(address(strategyManagerMock)));
+        strategyImplementation = new StrategyBase(IStrategyManager(address(strategyManagerMock)), pauserRegistry);
         strategyMock1 = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(

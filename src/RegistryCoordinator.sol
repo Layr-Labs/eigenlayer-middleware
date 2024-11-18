@@ -3,7 +3,8 @@ pragma solidity ^0.8.12;
 
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {IAVSDirectory, OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import { OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {ISocketUpdater} from "./interfaces/ISocketUpdater.sol";
 import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
@@ -60,10 +61,12 @@ contract RegistryCoordinator is
         IStakeRegistry _stakeRegistry,
         IBLSApkRegistry _blsApkRegistry,
         IIndexRegistry _indexRegistry,
-        IAVSDirectory _avsDirectory
+        IAVSDirectory _avsDirectory,
+        IPauserRegistry _pauserRegistry
     )
         RegistryCoordinatorStorage(_serviceManager, _stakeRegistry, _blsApkRegistry, _indexRegistry, _avsDirectory)
         EIP712("AVSRegistryCoordinator", "v0.0.1")
+        Pausable(_pauserRegistry)
     {
         _disableInitializers();
     }
@@ -72,7 +75,6 @@ contract RegistryCoordinator is
      * @param _initialOwner will hold the owner role
      * @param _churnApprover will hold the churnApprover role, which authorizes registering with churn
      * @param _ejector will hold the ejector role, which can force-eject operators from quorums
-     * @param _pauserRegistry a registry of addresses that can pause the contract
      * @param _initialPausedStatus pause status after calling initialize
      * Config for initial quorums (see `createQuorum`):
      * @param _operatorSetParams max operator count and operator churn parameters
@@ -83,7 +85,6 @@ contract RegistryCoordinator is
         address _initialOwner,
         address _churnApprover,
         address _ejector,
-        IPauserRegistry _pauserRegistry,
         uint256 _initialPausedStatus,
         OperatorSetParam[] memory _operatorSetParams,
         uint96[] memory _minimumStakes,
@@ -101,8 +102,8 @@ contract RegistryCoordinator is
 
         // Initialize roles
         _transferOwnership(_initialOwner);
-        _initializePauser(_pauserRegistry, _initialPausedStatus);
         _setChurnApprover(_churnApprover);
+        _setPausedStatus(_initialPausedStatus);
         _setEjector(_ejector);
 
         // Add registry contracts to the registries array
@@ -530,7 +531,9 @@ contract RegistryCoordinator is
                 OperatorInfo({operatorId: operatorId, status: OperatorStatus.REGISTERED});
 
             // Register the operator with the EigenLayer core contracts via this AVS's ServiceManager
-            bool operatorSetAVS = avsDirectory.isOperatorSetAVS(address(serviceManager));
+            bool operatorSetAVS;
+            // TODO: Fix
+            //  = avsDirectory.isOperatorSetAVS(address(serviceManager));
             if (operatorSetAVS){
                 bytes memory quorumBytes = BitmapUtils.bitmapToBytesArray(quorumsToAdd);
                 uint32[] memory operatorSetIds = new uint32[](quorumBytes.length);
@@ -681,7 +684,8 @@ contract RegistryCoordinator is
         _updateOperatorBitmap({operatorId: operatorId, newBitmap: newBitmap});
 
 
-        bool operatorSetAVS = IAVSDirectory(serviceManager.avsDirectory()).isOperatorSetAVS(address(serviceManager));
+        bool operatorSetAVS;
+        //  = IAVSDirectory(serviceManager.avsDirectory()).isOperatorSetAVS(address(serviceManager));
         if (operatorSetAVS){
             bytes memory quorumBytes = BitmapUtils.bitmapToBytesArray(quorumsToRemove);
             uint32[] memory operatorSetIds = new uint32[](quorumBytes.length);
@@ -689,9 +693,10 @@ contract RegistryCoordinator is
             for (uint256 i = 0; i < quorumBytes.length; i++) {
                 /// We need to track forceDeregistrations so we don't pass an id that was already deregistered on the AVSDirectory
                 /// but hasnt yet been recorded in the middleware contracts
-                if (!avsDirectory.isMember(operator, OperatorSet(address(serviceManager), uint8(quorumBytes[i])))){
-                    forceDeregistrationCount++;
-                }
+                // TODO: Fix
+                // if (!avsDirectory.isMember(operator, OperatorSet(address(serviceManager), uint8(quorumBytes[i])))){
+                //     forceDeregistrationCount++;
+                // }
                 operatorSetIds[i] = uint8(quorumBytes[i]);
             }
 
@@ -700,7 +705,9 @@ contract RegistryCoordinator is
                 uint32[] memory filteredOperatorSetIds = new uint32[](operatorSetIds.length - forceDeregistrationCount);
                 uint256 offset;
                 for (uint256 i; i < operatorSetIds.length; i++){
-                    if (avsDirectory.isMember(operator, OperatorSet(address(serviceManager), operatorSetIds[i]))){
+                    if (true){
+                        /// TODO: Fix
+                        // avsDirectory.isMember(operator, OperatorSet(address(serviceManager), operatorSetIds[i]))){
                         filteredOperatorSetIds[i] = operatorSetIds[i+offset];
                     } else {
                         offset++;
@@ -850,7 +857,9 @@ contract RegistryCoordinator is
         indexRegistry.initializeQuorum(quorumNumber);
         blsApkRegistry.initializeQuorum(quorumNumber);
         // Check if the AVS has migrated to operator sets
-        if (avsDirectory.isOperatorSetAVS(address(serviceManager))) {
+        // TODO: Fix
+        if (true){
+        // if (avsDirectory.isOperatorSetAVS(address(serviceManager))) {
             // Create an operator set for the new quorum
             uint32[] memory operatorSetIds = new uint32[](1);
             operatorSetIds[0] = uint32(quorumNumber);
