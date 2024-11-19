@@ -70,6 +70,8 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
             uint8 quorumNumber = uint8(i);
 
             uint256 amountEjectable = amountEjectableForQuorum(quorumNumber);
+            require(amountEjectable > 0, "EjectionManager: No ejectable stake for quorum");
+
             uint256 stakeForEjection;
             uint32 ejectedOperators;
 
