@@ -615,6 +615,28 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
     }
 
+    function test_initializeSlashableStakeQuorum() public {
+        uint8 quorumNumber = nextQuorum;
+        uint96 minimumStake = 0;
+        IStakeRegistry.StrategyParams[] memory strategyParams =
+            new IStakeRegistry.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistry.StrategyParams(
+            IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(quorumNumber)))))),
+            uint96(WEIGHTING_DIVISOR)
+        );
+
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.initializeSlashableStakeQuorum(
+            quorumNumber,
+            minimumStake,
+            7 days,
+            strategyParams
+        );
+
+        StakeType stakeType = stakeRegistry.stakeTypePerQuorum(quorumNumber);
+        assertEq(uint8(stakeType), uint8(StakeType.TOTAL_SLASHABLE), "invalid stake type");
+    }
+
     /**
      * @dev Initializes a quorum with StrategyParams with fuzzed multipliers inputs and corresponding
      * strategy addresses.
