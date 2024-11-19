@@ -70,7 +70,6 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
             uint8 quorumNumber = uint8(i);
 
             uint256 amountEjectable = amountEjectableForQuorum(quorumNumber);
-
             uint256 stakeForEjection;
             uint32 ejectedOperators;
 
