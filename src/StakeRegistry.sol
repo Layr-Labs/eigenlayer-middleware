@@ -551,23 +551,17 @@ contract StakeRegistry is StakeRegistryStorage {
 
         if (stakeTypePerQuorum[quorumNumber]== StakeType.TOTAL_SLASHABLE) {
             strategyShares = _getSlashableStakePerStrategy(quorumNumber, operator);
-            for (uint256 i = 0; i < stratsLength; i++) {
-                strategyAndMultiplier = strategyParams[quorumNumber][i];
-                if (strategyShares[i] > 0) {
-                    weight += uint96(strategyShares[i] * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR);
-                }
-            }
         } else {
             /// M2 Concept of delegated stake
             strategyShares = delegation.getOperatorShares(operator, strategiesPerQuorum[quorumNumber]);
-            for (uint256 i = 0; i < stratsLength; i++) {
-                // accessing i^th StrategyParams struct for the quorumNumber
-                strategyAndMultiplier = strategyParams[quorumNumber][i];
+        }
+        for (uint256 i = 0; i < stratsLength; i++) {
+            // accessing i^th StrategyParams struct for the quorumNumber
+            strategyAndMultiplier = strategyParams[quorumNumber][i];
 
-                // add the weight from the shares for this strategy to the total weight
-                if (strategyShares[i] > 0) {
-                    weight += uint96(strategyShares[i] * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR);
-                }
+            // add the weight from the shares for this strategy to the total weight
+            if (strategyShares[i] > 0) {
+                weight += uint96(strategyShares[i] * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR);
             }
         }
 
