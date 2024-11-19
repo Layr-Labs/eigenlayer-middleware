@@ -70,7 +70,6 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
             uint8 quorumNumber = uint8(i);
 
             uint256 amountEjectable = amountEjectableForQuorum(quorumNumber);
-            require(amountEjectable > 0, "EjectionManager: No ejectable stake for quorum");
 
             uint256 stakeForEjection;
             uint32 ejectedOperators;
@@ -83,7 +82,8 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
                 if(
                     isEjector[msg.sender] &&
                     quorumEjectionParams[quorumNumber].rateLimitWindow > 0 &&
-                    stakeForEjection + operatorStake > amountEjectable
+                    stakeForEjection + operatorStake > amountEjectable &&
+                    amountEjectable > 0
                 ){
                     ratelimitHit = true;
 
