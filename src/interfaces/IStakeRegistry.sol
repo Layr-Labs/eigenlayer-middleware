@@ -17,8 +17,6 @@ enum StakeType {
  */
 interface IStakeRegistry is IRegistry {
 
-
-
     // DATA STRUCTURES
 
     /// @notice struct used to store the stakes of an individual operator or the sum of all operators' stakes, for storage
