@@ -102,6 +102,9 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
         cheats.prank(address(registryCoordinator));
         stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
 
+        StakeType stakeType = stakeRegistry.stakeTypePerQuorum(quorumNumber);
+        assertEq(uint8(stakeType), uint8(StakeType.TOTAL_DELEGATED), "invalid stake type");
+
         // Mark quorum initialized for other tests
         initializedQuorumBitmap = uint192(initializedQuorumBitmap.setBit(quorumNumber));
         initializedQuorumBytes = initializedQuorumBitmap.bitmapToBytesArray();
@@ -614,6 +617,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         cheats.prank(address(registryCoordinator));
         stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
     }
+    event StakeTypeSet(StakeType newStakeType);
 
     function test_initializeSlashableStakeQuorum() public {
         uint8 quorumNumber = nextQuorum;
@@ -626,6 +630,8 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         );
 
         cheats.prank(address(registryCoordinator));
+        cheats.expectEmit(true, true, true, true);
+        emit StakeTypeSet(StakeType.TOTAL_SLASHABLE);
         stakeRegistry.initializeSlashableStakeQuorum(
             quorumNumber,
             minimumStake,

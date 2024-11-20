@@ -55,7 +55,7 @@ interface IStakeRegistry is IRegistry {
     event LookAheadPeriodChanged(uint32 oldLookAheadDays, uint32 newLookAheadDays);
 
     /// @notice emitted when the stake type is updated
-    event StakeTypeSet(StakeType previousStakeType, StakeType newStakeType);
+    event StakeTypeSet(StakeType newStakeType);
     /// @notice emitted when the minimum stake for a quorum is updated
     event MinimumStakeForQuorumUpdated(uint8 indexed quorumNumber, uint96 minimumStake);
     /// @notice emitted when a new quorum is created
