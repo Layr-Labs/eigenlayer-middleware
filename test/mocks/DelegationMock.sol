@@ -12,6 +12,14 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISi
 import {SlashingLib} from "eigenlayer-contracts/src/contracts/libraries/SlashingLib.sol";
 
 contract DelegationMock is IDelegationManager {
+
+    function getSlashableSharesInQueue(address operator, IStrategy strategy) external view returns (uint256){}
+    function burnOperatorShares(
+        address operator,
+        IStrategy strategy,
+        uint64 prevMaxMagnitude,
+        uint64 newMaxMagnitude
+    ) external{}
     function initialize(address initialOwner, uint256 initialPausedStatus) external {}
 
     function registerAsOperator(
