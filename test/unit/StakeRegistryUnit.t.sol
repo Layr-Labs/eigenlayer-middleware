@@ -49,7 +49,8 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
             stakeRegistry,
             IBLSApkRegistry(blsApkRegistry),
             IIndexRegistry(indexRegistry),
-            IAVSDirectory(avsDirectory)
+            IAVSDirectory(avsDirectory),
+            pauserRegistry
         );
 
         stakeRegistryImplementation = new StakeRegistryHarness(

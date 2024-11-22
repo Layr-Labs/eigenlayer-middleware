@@ -82,7 +82,8 @@ contract Test_CoreRegistration is MockAVSDeployer {
             stakeRegistry,
             blsApkRegistry,
             indexRegistry,
-            avsDirectory
+            avsDirectory,
+            pauserRegistry
         );
 
         // Upgrade Registry Coordinator & ServiceManager

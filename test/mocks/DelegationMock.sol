@@ -2,6 +2,7 @@
 pragma solidity ^0.8.12;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {console2 as console} from "forge-std/Test.sol";
 
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
@@ -174,9 +175,13 @@ contract DelegationMock is IDelegationManager {
         address operator,
         IStrategy strategy,
         uint256 shares
-    ) external {}
+    ) external {
+        console.log("HERE");
+    }
 
-    function setIsOperator(address, bool) external {}
+    function setIsOperator(address, bool) external {
+        console.log("HERE");
+    }
 
     function minWithdrawalDelayBlocks() external returns (uint32) {}
 }
