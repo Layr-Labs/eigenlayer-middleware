@@ -34,6 +34,7 @@ import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSD
 import {RewardsCoordinatorMock} from "../mocks/RewardsCoordinatorMock.sol";
 
 import {RewardsCoordinator} from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
+import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
@@ -59,7 +60,6 @@ contract MockAVSDeployer is Test {
     IBLSApkRegistry public blsApkRegistryImplementation;
     IIndexRegistry public indexRegistryImplementation;
     ServiceManagerMock public serviceManagerImplementation;
-    AllocationManagerMock public allocationManagerImplementation;
 
     OperatorStateRetriever public operatorStateRetriever;
     RegistryCoordinatorHarness public registryCoordinator;
@@ -67,7 +67,6 @@ contract MockAVSDeployer is Test {
     BLSApkRegistryHarness public blsApkRegistry;
     IIndexRegistry public indexRegistry;
     ServiceManagerMock public serviceManager;
-    AllocationManagerMock public allocationManager;
 
     StrategyManagerMock public strategyManagerMock;
     DelegationMock public delegationMock;
@@ -76,6 +75,8 @@ contract MockAVSDeployer is Test {
     AVSDirectory public avsDirectoryImplementation;
     AVSDirectoryMock public avsDirectoryMock;
     AllocationManagerMock public allocationManagerMock;
+    AllocationManager public allocationManager;
+    AllocationManager public allocationManagerImplementation;
     RewardsCoordinator public rewardsCoordinator;
     RewardsCoordinator public rewardsCoordinatorImplementation;
     RewardsCoordinatorMock public rewardsCoordinatorMock;
@@ -135,43 +136,19 @@ contract MockAVSDeployer is Test {
 
     function _deployMockEigenLayerAndAVS(uint8 numQuorumsToAdd) internal {
         emptyContract = new EmptyContract();
-        vm.label(address(emptyContract), "EmptyContract");
-
         defaultOperatorId = defaultPubKey.hashG1Point();
 
         cheats.startPrank(proxyAdminOwner);
         proxyAdmin = new ProxyAdmin();
-        vm.label(address(proxyAdmin), "ProxyAdmin");
-
         address[] memory pausers = new address[](1);
         pausers[0] = pauser;
         pauserRegistry = new PauserRegistry(pausers, unpauser);
-        vm.label(address(pauserRegistry), "PauserRegistry");
-
         delegationMock = new DelegationMock();
-        vm.label(address(delegationMock), "DelegationMock");
-
         avsDirectoryMock = new AVSDirectoryMock();
-        vm.label(address(avsDirectoryMock), "AVSDirectoryMock");
-
         eigenPodManagerMock = new EigenPodManagerMock(pauserRegistry);
-        vm.label(address(eigenPodManagerMock), "EigenPodManagerMock");
-
         strategyManagerMock = new StrategyManagerMock(delegationMock);
-        vm.label(address(strategyManagerMock), "StrategyManagerMock");
-
         allocationManagerMock = new AllocationManagerMock();
-        vm.label(address(allocationManagerMock), "AllocationManagerMock");
-
-        avsDirectoryMock = new AVSDirectoryMock();
-        vm.label(address(avsDirectoryMock), "AVSDirectoryMock");
-
-        allocationManagerMock = new AllocationManagerMock();
-        vm.label(address(allocationManagerMock), "AllocationManagerMock");
-
         avsDirectoryImplementation = new AVSDirectory(delegationMock, pauserRegistry); // TODO: config value
-        vm.label(address(avsDirectoryImplementation), "AVSDirectoryImplementation");
-
         avsDirectory = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(
@@ -186,11 +163,7 @@ contract MockAVSDeployer is Test {
                 )
             )
         );
-        vm.label(address(avsDirectory), "AVSDirectory");
-
         rewardsCoordinatorMock = new RewardsCoordinatorMock();
-        vm.label(address(rewardsCoordinatorMock), "RewardsCoordinatorMock");
-
         strategyManagerMock.setDelegationManager(delegationMock);
         cheats.stopPrank();
 
@@ -200,67 +173,49 @@ contract MockAVSDeployer is Test {
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
-        vm.label(address(registryCoordinator), "RegistryCoordinator");
-
         stakeRegistry = StakeRegistryHarness(
             address(
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
-        vm.label(address(stakeRegistry), "StakeRegistry");
-
         indexRegistry = IndexRegistry(
             address(
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
-        vm.label(address(indexRegistry), "IndexRegistry");
-
         blsApkRegistry = BLSApkRegistryHarness(
             address(
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
-        vm.label(address(blsApkRegistry), "BLSApkRegistry");
-
         serviceManager = ServiceManagerMock(
             address(
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
-        vm.label(address(serviceManager), "ServiceManager");
-
-        allocationManager = AllocationManagerMock(
+        allocationManager = AllocationManager(
             address(
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
-        vm.label(address(allocationManager), "AllocationManager");
-
         cheats.stopPrank();
 
         cheats.startPrank(proxyAdminOwner);
 
         stakeRegistryImplementation =
             new StakeRegistryHarness(IRegistryCoordinator(registryCoordinator), delegationMock, avsDirectory, serviceManager);
-        vm.label(address(stakeRegistryImplementation), "StakeRegistryImplementation");
-
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(stakeRegistry))),
             address(stakeRegistryImplementation)
         );
 
         blsApkRegistryImplementation = new BLSApkRegistryHarness(registryCoordinator);
-        vm.label(address(blsApkRegistryImplementation), "BLSApkRegistryImplementation");
-
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(blsApkRegistry))),
             address(blsApkRegistryImplementation)
         );
 
         indexRegistryImplementation = new IndexRegistry(registryCoordinator);
-        vm.label(address(indexRegistryImplementation), "IndexRegistryImplementation");
-
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(indexRegistry))),
             address(indexRegistryImplementation)
@@ -273,16 +228,17 @@ contract MockAVSDeployer is Test {
             stakeRegistry,
             allocationManager
         );
-        vm.label(address(serviceManagerImplementation), "ServiceManagerImplementation");
-
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(serviceManager))),
             address(serviceManagerImplementation)
         );
 
-        allocationManagerImplementation = new AllocationManagerMock();
-        vm.label(address(allocationManagerImplementation), "AllocationManagerImplementation");
-
+        allocationManagerImplementation = new AllocationManager(
+            delegationMock,
+            pauserRegistry,
+            uint32(7 days), // DEALLOCATION_DELAY
+            uint32(1 days)  // ALLOCATION_CONFIGURATION_DELAY
+        );
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(allocationManager))),
             address(allocationManagerImplementation)
@@ -342,25 +298,50 @@ contract MockAVSDeployer is Test {
             proxyAdmin.upgradeAndCall(
                 TransparentUpgradeableProxy(payable(address(registryCoordinator))),
                 address(registryCoordinatorImplementation),
-                abi.encodeWithSelector(
-                    RegistryCoordinator.initialize.selector,
-                    registryCoordinatorOwner,
-                    churnApprover,
-                    ejector,
-                    pauserRegistry,
-                    0, /*initialPausedStatus*/
-                    operatorSetParams,
-                    minimumStakeForQuorum,
-                    quorumStrategiesConsideredAndMultipliers,
-                    quorumStakeTypes,
-                    slashableStakeQuorumLookAheadPeriods
-                )
-            );
+                abi.encodeCall(
+                    RegistryCoordinator.initialize,
+                    (
+                        registryCoordinatorOwner, // _initialOwner
+                        churnApprover, // _churnApprover
+                        ejector, // _ejector
+                        0, // _initialPausedStatus
+                        operatorSetParams, // _operatorSetParams
+                        minimumStakeForQuorum, // _minimumStakes
+                        quorumStrategiesConsideredAndMultipliers, // _strategyParams
+                        quorumStakeTypes, // _stakeTypes
+                        slashableStakeQuorumLookAheadPeriods // _lookAheadPeriods
+                    )
+                ));
         }
 
         operatorStateRetriever = new OperatorStateRetriever();
 
         cheats.stopPrank();
+    }
+
+    function _labelContracts() internal {
+        vm.label(address(emptyContract), "EmptyContract");
+        vm.label(address(proxyAdmin), "ProxyAdmin");
+        vm.label(address(pauserRegistry), "PauserRegistry");
+        vm.label(address(delegationMock), "DelegationMock");
+        vm.label(address(avsDirectoryMock), "AVSDirectoryMock");
+        vm.label(address(eigenPodManagerMock), "EigenPodManagerMock");
+        vm.label(address(strategyManagerMock), "StrategyManagerMock");
+        vm.label(address(allocationManagerMock), "AllocationManagerMock");
+        vm.label(address(avsDirectoryImplementation), "AVSDirectoryImplementation");
+        vm.label(address(avsDirectory), "AVSDirectory");
+        vm.label(address(rewardsCoordinatorMock), "RewardsCoordinatorMock");
+        vm.label(address(registryCoordinator), "RegistryCoordinator");
+        vm.label(address(stakeRegistry), "StakeRegistry");
+        vm.label(address(indexRegistry), "IndexRegistry");
+        vm.label(address(blsApkRegistry), "BLSApkRegistry");
+        vm.label(address(serviceManager), "ServiceManager");
+        vm.label(address(allocationManager), "AllocationManager");
+        vm.label(address(stakeRegistryImplementation), "StakeRegistryImplementation");
+        vm.label(address(blsApkRegistryImplementation), "BLSApkRegistryImplementation");
+        vm.label(address(indexRegistryImplementation), "IndexRegistryImplementation");
+        vm.label(address(serviceManagerImplementation), "ServiceManagerImplementation");
+        vm.label(address(allocationManagerImplementation), "AllocationManagerImplementation");
     }
 
     /**
