@@ -82,12 +82,14 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      * @notice Creates a new rewards submission to the EigenLayer RewardsCoordinator contract, to be split amongst the
      * set of stakers delegated to operators who are registered to this `avs`
      * @param rewardsSubmissions The rewards submissions being created
-     * @dev Only callabe by the permissioned rewardsInitiator address
+     * @dev Only callable by the permissioned rewardsInitiator address
      * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
      * @dev The tokens are sent to the `RewardsCoordinator` contract
      * @dev Strategies must be in ascending order of addresses to check for duplicates
      * @dev This function will revert if the `rewardsSubmission` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
+     * @dev This function may fail to execute with a large number of submissions due to gas limits. Use a
+     * smaller array of submissions if necessary.
      */
     function createAVSRewardsSubmission(
         IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions
@@ -117,13 +119,15 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      * @notice Creates a new operator-directed rewards submission, to be split amongst the operators and
      * set of stakers delegated to operators who are registered to this `avs`.
      * @param operatorDirectedRewardsSubmissions The operator-directed rewards submissions being created.
-     * @dev Only callabe by the permissioned rewardsInitiator address
+     * @dev Only callable by the permissioned rewardsInitiator address
      * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
      * @dev The tokens are sent to the `RewardsCoordinator` contract
      * @dev This contract needs a token approval of sum of all `operatorRewards` in the `operatorDirectedRewardsSubmissions`, before calling this function.
      * @dev Strategies must be in ascending order of addresses to check for duplicates
      * @dev Operators must be in ascending order of addresses to check for duplicates.
      * @dev This function will revert if the `operatorDirectedRewardsSubmissions` is malformed.
+     * @dev This function may fail to execute with a large number of submissions due to gas limits. Use a
+     * smaller array of submissions if necessary.
      */
     function createOperatorDirectedAVSRewardsSubmission(
         IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
@@ -172,7 +176,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     /**
      * @notice Forwards a call to Eigenlayer's RewardsCoordinator contract to set the address of the entity that can call `processClaim` on behalf of this contract.
      * @param claimer The address of the entity that can call `processClaim` on behalf of the earner
-     * @dev Only callabe by the owner.
+     * @dev Only callable by the owner.
      */
     function setClaimerFor(address claimer) public virtual onlyOwner {
         _rewardsCoordinator.setClaimerFor(claimer);
