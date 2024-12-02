@@ -13,6 +13,7 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISi
 import {SlashingLib} from "eigenlayer-contracts/src/contracts/libraries/SlashingLib.sol";
 
 contract DelegationMock is IDelegationManager {
+    mapping(address => bool) public operatorStatus;
 
     function getSlashableSharesInQueue(address operator, IStrategy strategy) external view returns (uint256){}
     function burnOperatorShares(
@@ -114,7 +115,9 @@ contract DelegationMock is IDelegationManager {
 
     function isOperator(
         address operator
-    ) external view returns (bool) {}
+    ) external view returns (bool) {
+        return operatorStatus[operator];
+    }
 
     function operatorDetails(
         address operator
@@ -179,8 +182,8 @@ contract DelegationMock is IDelegationManager {
         console.log("HERE");
     }
 
-    function setIsOperator(address, bool) external {
-        console.log("HERE");
+    function setIsOperator(address operator, bool status) external {
+        operatorStatus[operator] = status;
     }
 
     function minWithdrawalDelayBlocks() external returns (uint32) {}

@@ -51,12 +51,7 @@ contract AVSRegistrarTest is MockAVSDeployer {
         operatorSetIds[0] = operatorSetId;
         bytes memory emptyBytes;
 
-        // Mock that operator is registered in DelegationManager
-        vm.mockCall(
-            address(delegationMock),
-            abi.encodeCall(delegationMock.isOperator, (operator)),
-            abi.encode(true)
-        );
+        delegationMock.setIsOperator(operator, true);
 
         // Register operator
         vm.prank(operator);
