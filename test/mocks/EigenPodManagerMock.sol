@@ -82,4 +82,16 @@ contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
         uint256 shares
     ) external returns (uint256, uint256) {
     }
+
+    function beaconChainSlashingFactor(
+        address staker
+    ) external view returns (uint64) {
+    }
+
+    function recordBeaconChainETHBalanceUpdate(
+        address podOwner,
+        uint256 prevRestakedBalanceWei,
+        int256 balanceDeltaWei
+    ) external {
+    }
 }

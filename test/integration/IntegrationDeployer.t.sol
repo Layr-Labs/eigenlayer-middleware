@@ -21,6 +21,7 @@ import "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPodManager.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPod.sol";
 import "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
+import "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
 import "eigenlayer-contracts/src/test/mocks/ETHDepositMock.sol";
 
 // Middleware contracts
@@ -55,6 +56,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     EigenPod pod;
     ETHPOSDepositMock ethPOSDeposit;
     AllocationManager allocationManager;
+    PermissionController permissionController;
 
     // Base strategy implementation in case we want to create more strategies later
     StrategyBase baseStrategyImplementation;
@@ -162,7 +164,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         DelegationManager delegationImplementation =
-            new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, pauserRegistry, 0);
+            new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, pauserRegistry, permissionController, 0);
         StrategyManager strategyManagerImplementation =
             new StrategyManager(delegationManager, pauserRegistry);
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(

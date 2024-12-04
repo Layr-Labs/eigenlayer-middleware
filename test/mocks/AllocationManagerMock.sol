@@ -12,9 +12,13 @@ contract AllocationManagerMock is IAllocationManager {
     uint256 initialPausedStatus
   ) external override {}
 
-  function slashOperator(SlashingParams calldata params) external override {}
+  function slashOperator(
+    address avs,
+    SlashingParams calldata params
+  ) external override {}
 
   function modifyAllocations(
+    address operator,
     AllocateParams[] calldata params
   ) external override {}
 
@@ -25,6 +29,7 @@ contract AllocationManagerMock is IAllocationManager {
   ) external override {}
 
   function registerForOperatorSets(
+    address operator,
     RegisterParams calldata params
   ) external override {}
 
@@ -37,27 +42,36 @@ contract AllocationManagerMock is IAllocationManager {
     uint32 delay
   ) external override {}
 
-  function setAllocationDelay(uint32 delay) external override {}
-
-  function setAVSRegistrar(IAVSRegistrar registrar) external override {}
+  function setAVSRegistrar(
+    address avs,
+    IAVSRegistrar registrar
+  ) external override {}
 
   function updateAVSMetadataURI(
+    address avs,
     string calldata metadataURI
   ) external override {}
 
   function createOperatorSets(
+    address avs,
     CreateSetParams[] calldata params
   ) external override {}
 
   function addStrategiesToOperatorSet(
+    address avs,
     uint32 operatorSetId,
     IStrategy[] calldata strategies
   ) external override {}
 
   function removeStrategiesFromOperatorSet(
+    address avs,
     uint32 operatorSetId,
     IStrategy[] calldata strategies
   ) external override {}
+
+  function getOperatorSetCount(
+    address avs
+  ) external view override returns (uint256) {}
 
   function getAllocatedSets(
     address operator

@@ -25,14 +25,14 @@ contract AVSRegistrarTest is MockAVSDeployer {
 
     function testSetAVSRegistrar() public {
         vm.prank(address(serviceManager));
-        allocationManager.setAVSRegistrar(IAVSRegistrar(address(avsRegistrarMock)));
+        allocationManager.setAVSRegistrar(address(serviceManager), IAVSRegistrar(address(avsRegistrarMock)));
         assertEq(address(allocationManager.getAVSRegistrar(address(serviceManager))), address(avsRegistrarMock));
     }
 
     function testRegisterOperator() public {
         // Set up AVS registrar
         vm.prank(address(serviceManager));
-        allocationManager.setAVSRegistrar(IAVSRegistrar(address(avsRegistrarMock)));
+        allocationManager.setAVSRegistrar(address(serviceManager), IAVSRegistrar(address(avsRegistrarMock)));
 
         // Create operator set
         uint32 operatorSetId = 1;
@@ -44,7 +44,7 @@ contract AVSRegistrarTest is MockAVSDeployer {
 
         // Create operator set
         vm.prank(address(serviceManager));
-        allocationManager.createOperatorSets(createSetParams);
+        allocationManager.createOperatorSets(address(serviceManager), createSetParams);
 
         // Set up registration params
         uint32[] memory operatorSetIds = new uint32[](1);
@@ -56,6 +56,7 @@ contract AVSRegistrarTest is MockAVSDeployer {
         // Register operator
         vm.prank(operator);
         allocationManager.registerForOperatorSets(
+            address(serviceManager),
             IAllocationManagerTypes.RegisterParams(address(serviceManager), operatorSetIds, emptyBytes)
         );
     }
@@ -63,7 +64,7 @@ contract AVSRegistrarTest is MockAVSDeployer {
     function testRegisterOperator_RevertsIfNotOperator() public {
 
         vm.prank(address(serviceManager));
-        allocationManager.setAVSRegistrar(IAVSRegistrar(address(avsRegistrarMock)));
+        allocationManager.setAVSRegistrar(address(serviceManager), IAVSRegistrar(address(avsRegistrarMock)));
 
         // Create operator set
         uint32 operatorSetId = 1;
@@ -75,7 +76,7 @@ contract AVSRegistrarTest is MockAVSDeployer {
 
         // Create operator set
         vm.prank(address(serviceManager));
-        allocationManager.createOperatorSets(createSetParams);
+        allocationManager.createOperatorSets(address(serviceManager), createSetParams);
 
         // Set up registration params
         uint32[] memory operatorSetIds = new uint32[](1);
@@ -89,6 +90,7 @@ contract AVSRegistrarTest is MockAVSDeployer {
 
         vm.expectRevert();
         allocationManager.registerForOperatorSets(
+            address(operator),
             IAllocationManagerTypes.RegisterParams(address(serviceManager), operatorSetIds, emptyBytes)
         );
     }
