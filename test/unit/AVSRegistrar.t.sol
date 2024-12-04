@@ -56,7 +56,7 @@ contract AVSRegistrarTest is MockAVSDeployer {
         // Register operator
         vm.prank(operator);
         allocationManager.registerForOperatorSets(
-            address(serviceManager),
+            address(operator),
             IAllocationManagerTypes.RegisterParams(address(serviceManager), operatorSetIds, emptyBytes)
         );
     }

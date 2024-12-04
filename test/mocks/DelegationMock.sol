@@ -251,6 +251,11 @@ contract DelegationMock is DelegationIntermediate {
     function setIsOperator(address operator, bool isOperator) external {
         _isOperator[operator] = isOperator;
     }
+
+    function isOperator(address operator) external view override returns (bool) {
+        return _isOperator[operator];
+    }
+
     function getOperatorShares(
         address operator,
         IStrategy[] calldata strategies

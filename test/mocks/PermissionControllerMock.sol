@@ -3,54 +3,89 @@ pragma solidity ^0.8.12;
 
 import {IPermissionController} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 
-contract PermissionControllerMock is IPermissionController {
-    function initialize() external {}
+contract PermissionControllerIntermediate is IPermissionController {
+  function addPendingAdmin(address account, address admin) external virtual {}
 
-    function addPendingAdmin(address account, address admin) external {}
+  function removePendingAdmin(
+    address account,
+    address admin
+  ) external virtual {}
 
-    function removePendingAdmin(address account, address admin) external {}
+  function acceptAdmin(address account) external virtual {}
 
-    function acceptAdmin(address account) external {}
+  function removeAdmin(address account, address admin) external virtual {}
 
-    function removeAdmin(address account, address admin) external {}
+  function setAppointee(
+    address account,
+    address appointee,
+    address target,
+    bytes4 selector
+  ) external virtual {}
 
-    function setAppointee(
+  function removeAppointee(
+    address account,
+    address appointee,
+    address target,
+    bytes4 selector
+  ) external virtual {}
+
+  function isAdmin(
+    address account,
+    address caller
+  ) external view virtual returns (bool) {}
+
+  function isPendingAdmin(
+    address account,
+    address pendingAdmin
+  ) external view virtual returns (bool) {}
+
+  function getAdmins(
+    address account
+  ) external view virtual returns (address[] memory) {}
+
+  function getPendingAdmins(
+    address account
+  ) external view virtual returns (address[] memory) {}
+
+  function canCall(
+    address account,
+    address caller,
+    address target,
+    bytes4 selector
+  ) external virtual returns (bool) {}
+
+  function getAppointeePermissions(
+    address account,
+    address appointee
+  ) external virtual returns (address[] memory, bytes4[] memory) {}
+
+  function getAppointees(
+    address account,
+    address target,
+    bytes4 selector
+  ) external virtual returns (address[] memory) {}
+}
+
+contract PermissionControllerMock is PermissionControllerIntermediate {
+    mapping(address => mapping(address => mapping(address => mapping(bytes4 => bool)))) internal _canCall;
+
+    function setCanCall(
         address account,
-        address appointee,
+        address caller,
         address target,
         bytes4 selector
-    ) external {}
-
-    function removeAppointee(
-        address account,
-        address appointee,
-        address target,
-        bytes4 selector
-    ) external {}
-
-    function isAdmin(address account, address caller) external view returns (bool) {}
-
-    function isPendingAdmin(address account, address pendingAdmin) external view returns (bool) {}
-
-    function getAdmins(address account) external view returns (address[] memory) {}
-
-    function getPendingAdmins(address account) external view returns (address[] memory) {}
+    ) external {
+        _canCall[account][caller][target][selector] = true;
+    }
 
     function canCall(
         address account,
         address caller,
         address target,
         bytes4 selector
-    ) external view returns (bool) {}
+    ) external override returns (bool) {
+        if (account == caller) return true;
+        return _canCall[account][caller][target][selector];
+    }
 
-    function getAppointeePermissions(
-        address account,
-        address appointee
-    ) external view returns (address[] memory targets, bytes4[] memory selectors) {}
-
-    function getAppointees(
-        address account,
-        address target,
-        bytes4 selector
-    ) external view returns (address[] memory) {}
 }
