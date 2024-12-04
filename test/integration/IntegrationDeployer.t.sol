@@ -255,8 +255,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             )
         );
 
-        // TODO:
-        // RewardsCoordinator
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(rewardsCoordinator))),
             address(rewardsCoordinatorImplementation),
