@@ -46,6 +46,8 @@ contract RegistryCoordinator is
     using BitmapUtils for *;
     using BN254 for BN254.G1Point;
 
+    bool isOperatorSetAVS;
+
     modifier onlyEjector() {
         _checkEjector();
         _;
@@ -141,6 +143,7 @@ contract RegistryCoordinator is
         IBLSApkRegistry.PubkeyRegistrationParams memory params,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
+        if (isUsingOperatorSets()) revert();
         /**
          * If the operator has NEVER registered a pubkey before, use `params` to register
          * their pubkey in blsApkRegistry
@@ -192,6 +195,7 @@ contract RegistryCoordinator is
         SignatureWithSaltAndExpiry memory churnApproverSignature,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
+        if (isUsingOperatorSets()) revert();
         require(
             operatorKickParams.length == quorumNumbers.length,
             "RegistryCoordinator.registerOperatorWithChurn: input length mismatch"
@@ -259,11 +263,24 @@ contract RegistryCoordinator is
         _deregisterOperator({operator: msg.sender, quorumNumbers: quorumNumbers});
     }
 
+    function isUsingOperatorSets() public view returns (bool){
+        return isOperatorSetAVS;
+    }
+
+    function enableOperatorSets() external onlyOwner {
+        /// TODO:
+        /// Triggers the updates to use operator sets
+        /// Opens update the AVS Registrar Hooks on this contract
+        /// Allows creation of quorums with slashable and total delegated stake for operator sets
+        isOperatorSetAVS = true;
+    }
+
     function registerOperator(
         address operator,
         uint32[] memory operatorSetIds,
         bytes memory data
     ) external override {
+        if (!isUsingOperatorSets()) revert();
         /// TODO: Make a mapping for quorums associated with operator sets / ones associated with m2 registrations
         /// TODO: only allow registration of operator sets that have been created in the core and don't conflict with existing quorum numbers
         require(msg.sender == address(serviceManager.allocationManager()), "Only allocation manager can register operators");
@@ -297,6 +314,7 @@ contract RegistryCoordinator is
         address operator,
         uint32[] memory operatorSetIds
     ) external override {
+        if (!isUsingOperatorSets()) revert();
         require(msg.sender == address(serviceManager.allocationManager()), "Only allocation manager can register operators");
         /// TODO: Make a mapping for quorums associated with operator sets / ones associated with m2 registrations
         /// TODO: Call _registerOperator to propogate changes to the other contracts
@@ -466,6 +484,7 @@ contract RegistryCoordinator is
         uint96 minimumStake,
         IStakeRegistry.StrategyParams[] memory strategyParams
     ) external virtual onlyOwner {
+        if (!isUsingOperatorSets()) revert ();
         _createQuorum(operatorSetParams, minimumStake, strategyParams, IStakeRegistry.StakeType.TOTAL_DELEGATED, 0);
     }
 
@@ -475,6 +494,7 @@ contract RegistryCoordinator is
         IStakeRegistry.StrategyParams[] memory strategyParams,
         uint32 lookAheadPeriod
     ) external virtual onlyOwner {
+        if (!isUsingOperatorSets()) revert ();
         _createQuorum(operatorSetParams, minimumStake, strategyParams, IStakeRegistry.StakeType.TOTAL_SLASHABLE, lookAheadPeriod);
     }
 
@@ -582,22 +602,8 @@ contract RegistryCoordinator is
             _operatorInfo[operator] =
                 OperatorInfo({operatorId: operatorId, status: OperatorStatus.REGISTERED});
 
-            // Register the operator with the EigenLayer core contracts via this AVS's ServiceManager
-            bool operatorSetAVS;
-            // TODO: Fix
-            //  = avsDirectory.isOperatorSetAVS(address(serviceManager));
-            if (operatorSetAVS){
-                bytes memory quorumBytes = BitmapUtils.bitmapToBytesArray(quorumsToAdd);
-                uint32[] memory operatorSetIds = new uint32[](quorumBytes.length);
-                for (uint256 i = 0; i < quorumBytes.length; i++) {
-                    operatorSetIds[i] = uint8(quorumBytes[i]);
-                }
-                serviceManager.registerOperatorToOperatorSets(operator, operatorSetIds, operatorSignature);
-
-            } else {
-                serviceManager.registerOperatorToAVS(operator, operatorSignature);
-                emit OperatorRegistered(operator, operatorId);
-            }
+            serviceManager.registerOperatorToAVS(operator, operatorSignature);
+            emit OperatorRegistered(operator, operatorId);
 
         }
 
@@ -794,6 +800,7 @@ contract RegistryCoordinator is
         _updateOperatorBitmap({operatorId: operatorId, newBitmap: newBitmap});
 
 
+        /// TODO: Need to know if an AVS is an operator set avs
         bool operatorSetAVS;
         //  = IAVSDirectory(serviceManager.avsDirectory()).isOperatorSetAVS(address(serviceManager));
         if (operatorSetAVS){
@@ -801,9 +808,11 @@ contract RegistryCoordinator is
             uint32[] memory operatorSetIds = new uint32[](quorumBytes.length);
             uint256 forceDeregistrationCount;
             for (uint256 i = 0; i < quorumBytes.length; i++) {
-                /// We need to track forceDeregistrations so we don't pass an id that was already deregistered on the AVSDirectory
+                /// Post operator sets feature we need to track forceDeregistrations so we don't pass an id that was already deregistered on the AVSDirectory
                 /// but hasnt yet been recorded in the middleware contracts
-                // TODO: Fix
+
+                // TODO: Fix need a way to check member ship in the allocation manager without iterating through every member
+
                 // if (!avsDirectory.isMember(operator, OperatorSet(address(serviceManager), uint8(quorumBytes[i])))){
                 //     forceDeregistrationCount++;
                 // }
@@ -816,7 +825,7 @@ contract RegistryCoordinator is
                 uint256 offset;
                 for (uint256 i; i < operatorSetIds.length; i++){
                     if (true){
-                        /// TODO: Fix
+                        /// TODO: Fix need to check
                         // avsDirectory.isMember(operator, OperatorSet(address(serviceManager), operatorSetIds[i]))){
                         filteredOperatorSetIds[i] = operatorSetIds[i+offset];
                     } else {
@@ -966,15 +975,6 @@ contract RegistryCoordinator is
 
         indexRegistry.initializeQuorum(quorumNumber);
         blsApkRegistry.initializeQuorum(quorumNumber);
-        // Check if the AVS has migrated to operator sets
-        // TODO: Fix
-        if (true){
-        // if (avsDirectory.isOperatorSetAVS(address(serviceManager))) {
-            // Create an operator set for the new quorum
-            uint32[] memory operatorSetIds = new uint32[](1);
-            operatorSetIds[0] = uint32(quorumNumber);
-            serviceManager.createOperatorSets(operatorSetIds);
-        }
     }
 
     /**

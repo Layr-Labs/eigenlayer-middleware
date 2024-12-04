@@ -155,7 +155,7 @@ contract StakeRegistry is StakeRegistryStorage {
         uint192 quorumsToRemove;
 
         bool isOperatorSetAVS;
-        // TODO:
+        // TODO: logic for determining if it's an operator set quorum number or not
         // avsDirectory.isOperatorSetAVS(address(serviceManager));
 
         /**
