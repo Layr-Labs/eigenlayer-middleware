@@ -59,7 +59,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
             IStrategyManager(address(strategyManagerMock)),
             allocationManagerMock,
             pauserRegistry,
-            permissionController,
+            permissionControllerMock,
             CALCULATION_INTERVAL_SECONDS,
             MAX_REWARDS_DURATION,
             MAX_RETROACTIVE_LENGTH,
