@@ -151,7 +151,7 @@ contract MockAVSDeployer is Test {
         eigenPodManagerMock = new EigenPodManagerMock(pauserRegistry);
         strategyManagerMock = new StrategyManagerMock(delegationMock);
         allocationManagerMock = new AllocationManagerMock();
-        /// TODO: permissionControllerMock;
+        permissionControllerMock = new PermissionControllerMock();
         avsDirectoryImplementation = new AVSDirectory(delegationMock, pauserRegistry); // TODO: config value
         avsDirectory = AVSDirectory(
             address(

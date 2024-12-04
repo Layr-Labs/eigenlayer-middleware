@@ -99,6 +99,9 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     uint32 MAX_RETROACTIVE_LENGTH = 84 days;
     uint32 MAX_FUTURE_LENGTH = 28 days;
     uint32 GENESIS_REWARDS_TIMESTAMP = 1_712_092_632;
+    // TODO:
+    uint32 CALCULATION_INTERVAL_SECONDS;
+    uint32 defaultOperatorSplitBips;
     /// @notice Delay in timestamp before a posted root can be claimed against
     uint32 activationDelay = 7 days;
     /// @notice intervals(epochs) are 2 weeks
@@ -149,9 +152,12 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
-        // RewardsCoordinator = RewardsCoordinator(
-        //     address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), ""))
-        // );
+
+        permissionController = PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
+
+        rewardsCoordinator = RewardsCoordinator(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), ""))
+        );
 
         // Deploy EigenPod Contracts
         pod = new EigenPod(
@@ -162,6 +168,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
+        PermissionController permissionControllerImplementation = new PermissionController();
+
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         DelegationManager delegationImplementation =
             new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, pauserRegistry, permissionController, 0);
@@ -170,15 +178,21 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit, eigenPodBeacon, strategyManager, delegationManager, pauserRegistry
         );
-        AVSDirectory avsDirectoryImplemntation = new AVSDirectory(delegationManager, pauserRegistry); // TODO: fix config
-        // RewardsCoordinator rewardsCoordinatorImplementation = new RewardsCoordinator(
-        //     delegationManager,
-        //     IStrategyManager(address(strategyManager)),
-        //     MAX_REWARDS_DURATION,
-        //     MAX_RETROACTIVE_LENGTH,
-        //     MAX_FUTURE_LENGTH,
-        //     GENESIS_REWARDS_TIMESTAMP
-        // );
+        AVSDirectory avsDirectoryImplementation = new AVSDirectory(delegationManager, pauserRegistry);
+
+        // TODO: fix config
+        RewardsCoordinator rewardsCoordinatorImplementation = new RewardsCoordinator(
+            delegationManager,
+            IStrategyManager(address(strategyManager)),
+            allocationManager,
+            pauserRegistry,
+            permissionController,
+            CALCULATION_INTERVAL_SECONDS,
+            MAX_REWARDS_DURATION,
+            MAX_RETROACTIVE_LENGTH,
+            MAX_FUTURE_LENGTH,
+            GENESIS_REWARDS_TIMESTAMP
+        );
 
         // Third, upgrade the proxy contracts to point to the implementations
         uint256 minWithdrawalDelayBlocks = 7 days / 12 seconds;
@@ -224,7 +238,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         // AVSDirectory
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(avsDirectory))),
-            address(avsDirectoryImplemntation),
+            address(avsDirectoryImplementation),
             abi.encodeWithSelector(
                 AVSDirectory.initialize.selector,
                 eigenLayerReputedMultisig, // initialOwner
@@ -232,21 +246,29 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 0 // initialPausedStatus
             )
         );
-        // // RewardsCoordinator
-        // proxyAdmin.upgradeAndCall(
-        //     TransparentUpgradeableProxy(payable(address(rewardsCoordinator))),
-        //     address(rewardsCoordinatorImplementation),
-        //     abi.encodeWithSelector(
-        //         RewardsCoordinator.initialize.selector,
-        //         eigenLayerReputedMultisig, // initialOwner
-        //         pauserRegistry,
-        //         0, // initialPausedStatus
-        //         rewardsUpdater,
-        //         activationDelay,
-        //         calculationIntervalSeconds,
-        //         globalCommissionBips
-        //     )
-        // );
+
+        proxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(permissionController))),
+            address(permissionControllerImplementation),
+            abi.encodeWithSelector(
+                PermissionController.initialize.selector
+            )
+        );
+
+        // TODO:
+        // RewardsCoordinator
+        proxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(rewardsCoordinator))),
+            address(rewardsCoordinatorImplementation),
+            abi.encodeWithSelector(
+                RewardsCoordinator.initialize.selector,
+                eigenLayerReputedMultisig, // initialOwner
+                0, // initialPausedStatus
+                rewardsUpdater,
+                activationDelay,
+                defaultOperatorSplitBips // defaultSplitBips
+            )
+        );
 
         // Deploy and whitelist strategies
         baseStrategyImplementation = new StrategyBase(strategyManager, pauserRegistry);
