@@ -130,8 +130,8 @@ contract BLSMockAVSDeployer is MockAVSDeployer {
 
         OperatorStateRetriever.CheckSignaturesIndices memory checkSignaturesIndices = operatorStateRetriever.getCheckSignaturesIndices(
             registryCoordinator,
-            referenceBlockNumber, 
-            quorumNumbers, 
+            referenceBlockNumber,
+            quorumNumbers,
             nonSignerOperatorIds
         );
 

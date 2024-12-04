@@ -160,9 +160,8 @@ contract MockAVSDeployer is Test {
                     address(proxyAdmin),
                     abi.encodeWithSelector(
                         AVSDirectory.initialize.selector,
-                        msg.sender,
-                        pauserRegistry,
-                        0 /*initialPausedStatus*/
+                        msg.sender, // initialOwner
+                        0 // initialPausedStatus
                     )
                 )
             )
