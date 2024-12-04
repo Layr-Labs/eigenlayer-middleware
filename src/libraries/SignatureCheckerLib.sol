@@ -11,7 +11,7 @@ import "@openzeppelin-upgrades/contracts/utils/cryptography/SignatureCheckerUpgr
  */
 library SignatureCheckerLib {
     error InvalidSignature();
-    
+
     /**
      * @notice Validates a signature using EIP-1271 standard.
      * @param signer The address of the signer.
@@ -22,7 +22,7 @@ library SignatureCheckerLib {
         address signer,
         bytes32 digestHash,
         bytes memory signature
-    ) external view {
+    ) internal view {
         if (!SignatureCheckerUpgradeable.isValidSignatureNow(signer, digestHash, signature)) {
             revert InvalidSignature();
         }
