@@ -34,6 +34,7 @@ import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSD
 import {RewardsCoordinatorMock} from "../mocks/RewardsCoordinatorMock.sol";
 
 import {RewardsCoordinator} from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
+import {PermissionController} from "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
 import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
@@ -80,6 +81,7 @@ contract MockAVSDeployer is Test {
     RewardsCoordinator public rewardsCoordinator;
     RewardsCoordinator public rewardsCoordinatorImplementation;
     RewardsCoordinatorMock public rewardsCoordinatorMock;
+    PermissionController public permissionController;
 
     /// @notice StakeRegistry, Constant used as a divisor in calculating weights.
     uint256 public constant WEIGHTING_DIVISOR = 1e18;
@@ -148,6 +150,7 @@ contract MockAVSDeployer is Test {
         eigenPodManagerMock = new EigenPodManagerMock(pauserRegistry);
         strategyManagerMock = new StrategyManagerMock(delegationMock);
         allocationManagerMock = new AllocationManagerMock();
+        /// TODO: permissionControllerMock;
         avsDirectoryImplementation = new AVSDirectory(delegationMock, pauserRegistry); // TODO: config value
         avsDirectory = AVSDirectory(
             address(
@@ -236,6 +239,7 @@ contract MockAVSDeployer is Test {
         allocationManagerImplementation = new AllocationManager(
             delegationMock,
             pauserRegistry,
+            permissionController,
             uint32(7 days), // DEALLOCATION_DELAY
             uint32(1 days)  // ALLOCATION_CONFIGURATION_DELAY
         );

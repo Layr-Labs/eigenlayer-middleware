@@ -244,13 +244,8 @@ contract User is Test {
     function registerAsOperator() public createSnapshot virtual {
         _log("registerAsOperator (core)");
 
-        IDelegationManagerTypes.OperatorDetails memory details = IDelegationManagerTypes.OperatorDetails({
-            __deprecated_earningsReceiver: address(this),
-            delegationApprover: address(0),
-            __deprecated_stakerOptOutWindowBlocks: 0
-        });
-
-        delegationManager.registerAsOperator(details,0, NAME);
+        /// TODO: check
+        delegationManager.registerAsOperator(msg.sender,0, NAME);
     }
 
     // Deposit LSTs into the StrategyManager. This setup does not use the EPMgr or native ETH.

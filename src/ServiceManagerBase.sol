@@ -85,7 +85,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     }
 
     function slashOperator(IAllocationManager.SlashingParams memory params) external onlySlasher {
-        _allocationManager.slashOperator(params);
+        _allocationManager.slashOperator(address(this), params);
     }
 
     /**
@@ -115,7 +115,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
             );
         }
 
-        _rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
+        _rewardsCoordinator.createAVSRewardsSubmission(address(this),rewardsSubmissions);
     }
 
     function createOperatorSets(uint32[] memory operatorSetIds) external onlyRegistryCoordinator {
