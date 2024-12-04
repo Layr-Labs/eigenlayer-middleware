@@ -95,13 +95,23 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     uint256 constant MAX_STRATEGY_COUNT = 32; // From StakeRegistry.MAX_WEIGHING_FUNCTION_LENGTH
     uint96 constant DEFAULT_STRATEGY_MULTIPLIER = 1e18;
     // RewardsCoordinator
+    // Config Variables
+    /// @notice intervals(epochs) are 1 weeks
+    uint32 CALCULATION_INTERVAL_SECONDS = 7 days;
+
+    /// @notice Max duration is 5 epochs (2 weeks * 5 = 10 weeks in seconds)
     uint32 MAX_REWARDS_DURATION = 70 days;
+
+    /// @notice Lower bound start range is ~3 months into the past, multiple of CALCULATION_INTERVAL_SECONDS
     uint32 MAX_RETROACTIVE_LENGTH = 84 days;
+    /// @notice Upper bound start range is ~1 month into the future, multiple of CALCULATION_INTERVAL_SECONDS
     uint32 MAX_FUTURE_LENGTH = 28 days;
-    uint32 GENESIS_REWARDS_TIMESTAMP = 1_712_092_632;
-    // TODO:
-    uint32 CALCULATION_INTERVAL_SECONDS;
-    uint32 defaultOperatorSplitBips;
+    /// @notice absolute min timestamp that a rewards can start at
+    uint32 GENESIS_REWARDS_TIMESTAMP = 1712188800;
+    /// @notice Equivalent to 100%, but in basis points.
+    uint16 internal constant ONE_HUNDRED_IN_BIPS = 10_000;
+
+    uint32 defaultOperatorSplitBips = 1000;
     /// @notice Delay in timestamp before a posted root can be claimed against
     uint32 activationDelay = 7 days;
     /// @notice intervals(epochs) are 2 weeks
@@ -178,9 +188,9 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit, eigenPodBeacon, strategyManager, delegationManager, pauserRegistry
         );
+        console.log("HERE Impl");
         AVSDirectory avsDirectoryImplementation = new AVSDirectory(delegationManager, pauserRegistry);
 
-        // TODO: fix config
         RewardsCoordinator rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManager,
             IStrategyManager(address(strategyManager)),
@@ -235,6 +245,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 0 // initialPausedStatus
             )
         );
+        console.log("HERE");
         // AVSDirectory
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(avsDirectory))),
@@ -242,11 +253,12 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             abi.encodeWithSelector(
                 AVSDirectory.initialize.selector,
                 eigenLayerReputedMultisig, // initialOwner
-                pauserRegistry,
+                // pauserRegistry,
                 0 // initialPausedStatus
             )
         );
 
+        console.log("HERE 2");
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(permissionController))),
             address(permissionControllerImplementation),
@@ -366,7 +378,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 registryCoordinatorOwner,
                 churnApprover,
                 ejector,
-                pauserRegistry,
                 0, /*initialPausedStatus*/
                 new IRegistryCoordinator.OperatorSetParam[](0),
                 new uint96[](0),

@@ -62,7 +62,6 @@ contract AVSRegistrarTest is MockAVSDeployer {
     }
 
     function testRegisterOperator_RevertsIfNotOperator() public {
-
         vm.prank(address(serviceManager));
         allocationManager.setAVSRegistrar(address(serviceManager), IAVSRegistrar(address(avsRegistrarMock)));
 
