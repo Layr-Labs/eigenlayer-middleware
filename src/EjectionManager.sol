@@ -74,7 +74,7 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
             uint32 ejectedOperators;
 
             bool ratelimitHit;
-            if(amountEjectable > 0){
+            if(amountEjectable > 0 || msg.sender == owner()){
                 for(uint8 j = 0; j < _operatorIds[i].length; ++j) {
                     uint256 operatorStake = stakeRegistry.getCurrentStake(_operatorIds[i][j], quorumNumber);
 
