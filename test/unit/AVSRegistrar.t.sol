@@ -60,6 +60,38 @@ contract AVSRegistrarTest is MockAVSDeployer {
         );
     }
 
+    function testRegisterOperator_RevertsIfNotOperator() public {
+
+        vm.prank(address(serviceManager));
+        allocationManager.setAVSRegistrar(IAVSRegistrar(address(avsRegistrarMock)));
+
+        // Create operator set
+        uint32 operatorSetId = 1;
+        IAllocationManagerTypes.CreateSetParams[] memory createSetParams = new IAllocationManagerTypes.CreateSetParams[](1);
+        createSetParams[0] = IAllocationManagerTypes.CreateSetParams({
+            operatorSetId: operatorSetId,
+            strategies: new IStrategy[](0)
+        });
+
+        // Create operator set
+        vm.prank(address(serviceManager));
+        allocationManager.createOperatorSets(createSetParams);
+
+        // Set up registration params
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = operatorSetId;
+        bytes memory emptyBytes;
+
+        delegationMock.setIsOperator(operator, false);
+
+        // Register operator
+        vm.prank(operator);
+
+        vm.expectRevert();
+        allocationManager.registerForOperatorSets(
+            IAllocationManagerTypes.RegisterParams(address(serviceManager), operatorSetIds, emptyBytes)
+        );
+    }
     function testAllocationManagerDeployed() public {
         assertTrue(address(allocationManager) != address(0), "AllocationManager not deployed");
         assertTrue(address(allocationManagerImplementation) != address(0), "AllocationManager implementation not deployed");
