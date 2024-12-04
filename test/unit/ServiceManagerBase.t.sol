@@ -251,7 +251,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         serviceManager.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
-    function test_createAVSRewardsSubmission_SingleSubmission(
+    function testFuzz_createAVSRewardsSubmission_SingleSubmission(
         uint256 startTimestamp,
         uint256 duration,
         uint256 amount
@@ -328,7 +328,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         );
     }
 
-    function test_createAVSRewardsSubmission_MultipleSubmissions(
+    function testFuzz_createAVSRewardsSubmission_MultipleSubmissions(
         uint256 startTimestamp,
         uint256 duration,
         uint256 amount,
@@ -421,7 +421,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         }
     }
 
-    function test_createAVSRewardsSubmission_MultipleSubmissionsSingleToken(
+    function testFuzz_createAVSRewardsSubmission_MultipleSubmissionsSingleToken(
         uint256 startTimestamp,
         uint256 duration,
         uint256 amount,
