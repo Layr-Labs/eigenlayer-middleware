@@ -269,9 +269,10 @@ contract RegistryCoordinator is
 
     function enableOperatorSets() external onlyOwner {
         /// TODO:
-        /// Triggers the updates to use operator sets
-        /// Opens update the AVS Registrar Hooks on this contract
+        /// Triggers the updates to use operator sets ie setsAVSRegistrar
+        /// Opens up the AVS Registrar Hooks on this contract to be callable by the ALM
         /// Allows creation of quorums with slashable and total delegated stake for operator sets
+        /// Sets all quorums created before this call as m2 quorums in a mapping so that we can gate function calls to deregister
         isOperatorSetAVS = true;
     }
 

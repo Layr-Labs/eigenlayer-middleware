@@ -47,7 +47,6 @@ interface IStakeRegistry is IRegistry {
         uint96 stake
     );
 
-
     /// @notice emitted when the look ahead time for checking operator shares is updated
     event LookAheadPeriodChanged(uint32 oldLookAheadDays, uint32 newLookAheadDays);
 
