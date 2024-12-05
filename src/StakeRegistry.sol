@@ -10,7 +10,7 @@ import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {StakeRegistryStorage, IStrategy} from "./StakeRegistryStorage.sol";
 
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
-import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
+import {IStakeRegistry, StakeType} from "./interfaces/IStakeRegistry.sol";
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 
@@ -808,9 +808,8 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param _stakeType The type of stake to track (TOTAL_DELEGATED, TOTAL_SLASHABLE, or BOTH)
      */
     function _setStakeType(uint8 quorumNumber, StakeType _stakeType) internal {
-        StakeType oldStakeType = stakeTypePerQuorum[quorumNumber];
         stakeTypePerQuorum[quorumNumber] = _stakeType;
-        emit StakeTypeSet(oldStakeType, _stakeType);
+        emit StakeTypeSet(_stakeType);
     }
 
     /**

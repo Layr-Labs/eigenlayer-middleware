@@ -365,7 +365,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             slasher: address(msg.sender)
         });
 
-        IStakeRegistry.StakeType[] memory quorumStakeTypes = new IStakeRegistry.StakeType[](0);
+        StakeType[] memory quorumStakeTypes = new StakeType[](0);
         uint32[] memory slashableStakeQuorumLookAheadPeriods = new uint32[](0);
 
         RegistryCoordinator registryCoordinatorImplementation =

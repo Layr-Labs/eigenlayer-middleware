@@ -6,17 +6,16 @@ import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy
 
 import {IRegistry} from "./IRegistry.sol";
 
+enum StakeType {
+    TOTAL_DELEGATED,
+    TOTAL_SLASHABLE
+}
+
 /**
  * @title Interface for a `Registry` that keeps track of stakes of operators for up to 256 quorums.
  * @author Layr Labs, Inc.
  */
 interface IStakeRegistry is IRegistry {
-
-    enum StakeType {
-        TOTAL_DELEGATED, /// DEFAULT for old flow
-        TOTAL_SLASHABLE
-    }
-
     // DATA STRUCTURES
 
     /// @notice struct used to store the stakes of an individual operator or the sum of all operators' stakes, for storage
@@ -53,7 +52,7 @@ interface IStakeRegistry is IRegistry {
     event LookAheadPeriodChanged(uint32 oldLookAheadDays, uint32 newLookAheadDays);
 
     /// @notice emitted when the stake type is updated
-    event StakeTypeSet(StakeType previousStakeType, StakeType newStakeType);
+    event StakeTypeSet(StakeType newStakeType);
     /// @notice emitted when the minimum stake for a quorum is updated
     event MinimumStakeForQuorumUpdated(uint8 indexed quorumNumber, uint96 minimumStake);
     /// @notice emitted when a new quorum is created

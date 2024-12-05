@@ -103,6 +103,9 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
         cheats.prank(address(registryCoordinator));
         stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
 
+        StakeType stakeType = stakeRegistry.stakeTypePerQuorum(quorumNumber);
+        assertEq(uint8(stakeType), uint8(StakeType.TOTAL_DELEGATED), "invalid stake type");
+
         // Mark quorum initialized for other tests
         initializedQuorumBitmap = uint192(initializedQuorumBitmap.setBit(quorumNumber));
         initializedQuorumBytes = initializedQuorumBitmap.bitmapToBytesArray();
@@ -614,6 +617,54 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         cheats.expectRevert("StakeRegistry._addStrategyParams: exceed MAX_WEIGHING_FUNCTION_LENGTH");
         cheats.prank(address(registryCoordinator));
         stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
+    }
+    event StakeTypeSet(StakeType newStakeType);
+
+    function test_initializeDelegatedStakeQuorum() public {
+        uint8 quorumNumber = nextQuorum;
+        uint96 minimumStake = 0;
+        IStakeRegistry.StrategyParams[] memory strategyParams =
+            new IStakeRegistry.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistry.StrategyParams(
+            IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(quorumNumber)))))),
+            uint96(WEIGHTING_DIVISOR)
+        );
+
+        cheats.prank(address(registryCoordinator));
+        cheats.expectEmit(true, true, true, true);
+        emit StakeTypeSet(StakeType.TOTAL_DELEGATED);
+        stakeRegistry.initializeDelegatedStakeQuorum(
+            quorumNumber,
+            minimumStake,
+            strategyParams
+        );
+
+        StakeType stakeType = stakeRegistry.stakeTypePerQuorum(quorumNumber);
+        assertEq(uint8(stakeType), uint8(StakeType.TOTAL_DELEGATED), "invalid stake type");
+    }
+
+    function test_initializeSlashableStakeQuorum() public {
+        uint8 quorumNumber = nextQuorum;
+        uint96 minimumStake = 0;
+        IStakeRegistry.StrategyParams[] memory strategyParams =
+            new IStakeRegistry.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistry.StrategyParams(
+            IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(quorumNumber)))))),
+            uint96(WEIGHTING_DIVISOR)
+        );
+
+        cheats.prank(address(registryCoordinator));
+        cheats.expectEmit(true, true, true, true);
+        emit StakeTypeSet(StakeType.TOTAL_SLASHABLE);
+        stakeRegistry.initializeSlashableStakeQuorum(
+            quorumNumber,
+            minimumStake,
+            7 days,
+            strategyParams
+        );
+
+        StakeType stakeType = stakeRegistry.stakeTypePerQuorum(quorumNumber);
+        assertEq(uint8(stakeType), uint8(StakeType.TOTAL_SLASHABLE), "invalid stake type");
     }
 
     /**
