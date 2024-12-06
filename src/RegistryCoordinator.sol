@@ -485,7 +485,8 @@ contract RegistryCoordinator is
         uint96 minimumStake,
         IStakeRegistry.StrategyParams[] memory strategyParams
     ) external virtual onlyOwner {
-        if (!isUsingOperatorSets()) revert ();
+        /// m2 -> uses old pathway
+        /// post m2 -> total delegated stake for operator set
         _createQuorum(operatorSetParams, minimumStake, strategyParams, StakeType.TOTAL_DELEGATED, 0);
     }
 
