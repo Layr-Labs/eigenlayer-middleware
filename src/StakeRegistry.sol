@@ -175,21 +175,7 @@ contract StakeRegistry is StakeRegistryStorage {
             (uint96 stakeWeight, bool hasMinimumStake) = _weightOfOperatorForQuorum(quorumNumber, operator);
             // If the operator no longer meets the minimum stake, set their stake to zero and mark them for removal
             /// also handle setting the operator's stake to 0 and remove them from the quorum
-            /// if they directly unregistered from the AVSDirectory bubbles up info via registry coordinator to deregister them
-            bool operatorRegistered;
-            // Convert quorumNumber to operatorSetId
-            uint32 operatorSetId = uint32(quorumNumber);
-
-            // Get the AVSDirectory address from the RegistryCoordinator
-            // Query the AVSDirectory to check if the operator is directly unregistered
-            operatorRegistered;
-            // TODO: Fix
-            //  = avsDirectory.isMember(
-            //     operator,
-            //     OperatorSet(address(serviceManager), operatorSetId)
-            // );
-
-            if (!hasMinimumStake || (isOperatorSetAVS && !operatorRegistered)) {
+            if (!hasMinimumStake) {
                 stakeWeight = 0;
                 quorumsToRemove = uint192(quorumsToRemove.setBit(quorumNumber));
             }
