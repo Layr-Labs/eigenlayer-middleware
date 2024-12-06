@@ -233,8 +233,8 @@ contract RegistryCoordinatorUnitTests_Initialization_Setters is RegistryCoordina
 
         uint8 quorumCountBefore = registryCoordinator.quorumCount();
 
-        // cheats.expectEmit(true, true, true, true, address(registryCoordinator));
-        // emit OperatorSetParamsUpdated(quorumCountBefore, operatorSetParams);
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit OperatorSetParamsUpdated(quorumCountBefore, operatorSetParams);
         cheats.prank(registryCoordinatorOwner);
         registryCoordinator.createTotalDelegatedStakeQuorum(operatorSetParams, minimumStake, strategyParams);
 
