@@ -1886,3 +1886,117 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         );
     }
 }
+
+contract RegistryCoordinatorUnitTests_BeforeMigration is RegistryCoordinatorUnitTests {
+    function test_registerALMHook_Reverts() public {
+        cheats.prank(address(serviceManager.allocationManager()));
+        cheats.expectRevert();
+        registryCoordinator.registerOperator(defaultOperator, new uint32[](0), abi.encode(defaultSocket, pubkeyRegistrationParams));
+    }
+
+    function test_deregisterALMHook_Reverts() public {
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = 0;
+        cheats.prank(address(serviceManager.allocationManager()));
+        cheats.expectRevert();
+        registryCoordinator.deregisterOperator(defaultOperator, operatorSetIds);
+    }
+
+    function test_CreateTotalDelegatedStakeQuorum() public {
+        // Set up test params
+        IRegistryCoordinator.OperatorSetParam memory operatorSetParams = IRegistryCoordinator.OperatorSetParam({
+            maxOperatorCount: 10,
+            kickBIPsOfOperatorStake: 0,
+            kickBIPsOfTotalStake: 0
+        });
+        uint96 minimumStake = 100;
+        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](0);
+
+        // Get initial quorum count
+        uint8 initialQuorumCount = registryCoordinator.quorumCount();
+
+        // Create quorum with total delegated stake type
+        cheats.prank(registryCoordinatorOwner);
+        registryCoordinator.createTotalDelegatedStakeQuorum(
+            operatorSetParams,
+            minimumStake,
+            strategyParams
+        );
+
+        // Verify quorum was created
+        assertEq(registryCoordinator.quorumCount(), initialQuorumCount + 1);
+
+        // Verify quorum params were set correctly
+        IRegistryCoordinator.OperatorSetParam memory storedParams = registryCoordinator.getOperatorSetParams(initialQuorumCount);
+        assertEq(storedParams.maxOperatorCount, operatorSetParams.maxOperatorCount);
+        assertEq(storedParams.kickBIPsOfOperatorStake, operatorSetParams.kickBIPsOfOperatorStake);
+        assertEq(storedParams.kickBIPsOfTotalStake, operatorSetParams.kickBIPsOfTotalStake);
+    }
+
+    function test_CreateSlashableStakeQuorum_Reverts() public {
+       IRegistryCoordinator.OperatorSetParam memory operatorSetParams = IRegistryCoordinator.OperatorSetParam({
+            maxOperatorCount: 10,
+            kickBIPsOfOperatorStake: 0,
+            kickBIPsOfTotalStake: 0
+        });
+        uint96 minimumStake = 100;
+        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](0);
+        uint32 lookAheadPeriod = 100;
+
+        // Attempt to create quorum with slashable stake type before enabling operator sets
+        cheats.prank(registryCoordinatorOwner);
+        cheats.expectRevert();
+        registryCoordinator.createSlashableStakeQuorum(
+            operatorSetParams,
+            minimumStake,
+            strategyParams,
+            lookAheadPeriod
+        );
+    }
+
+    function test_MigrateToOperatorSets() public {
+        cheats.prank(registryCoordinatorOwner);
+        registryCoordinator.enableOperatorSets();
+        assertTrue(registryCoordinator.isUsingOperatorSets());
+    }
+}
+
+contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitTests {
+    function test_MigrateToOperatorSets() public {
+        cheats.prank(registryCoordinatorOwner);
+        registryCoordinator.enableOperatorSets();
+        assertTrue(registryCoordinator.isUsingOperatorSets());
+    }
+
+    function test_M2_Deregister() public {}
+
+    function test_M2_Register_Reverts() public {
+        cheats.prank(registryCoordinatorOwner);
+        registryCoordinator.enableOperatorSets();
+
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(uint8(0));
+        IBLSApkRegistry.PubkeyRegistrationParams memory params;
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+
+        cheats.expectRevert();
+        registryCoordinator.registerOperator(
+            quorumNumbers,
+            defaultSocket,
+            params,
+            operatorSignature
+        );
+    }
+
+    function test_createSlashableStakeQuorum() public {}
+
+    function test_createTotalDelegatedStakeQuorum() public {}
+
+    function test_updateStakesForQuorum() public {}
+
+    function test_registerHook() public {}
+
+    function test_registerHook_WithChurn() public {}
+
+    function test_deregisterHook() public {}
+}
