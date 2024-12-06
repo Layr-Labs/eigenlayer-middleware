@@ -265,9 +265,7 @@ contract User is Test {
     function exitEigenlayer() public createSnapshot virtual returns (IStrategy[] memory, uint256[] memory) {
         _log("exitEigenlayer (core)");
 
-        IStrategy[] memory strategies;
-        uint256[] memory shares;
-        // = delegationManager.getDelegatableShares(address(this)); // TODO: Fix
+        (IStrategy[] memory strategies, uint256[] memory shares) = delegationManager.getDepositedShares(address(this));
 
         IDelegationManagerTypes.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
         params[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
@@ -284,7 +282,6 @@ contract User is Test {
     /**
      * EIP1271 Signatures:
      */
-
     bytes4 internal constant EIP1271_MAGICVALUE = 0x1626ba7e;
 
     function isValidSignature(bytes32 digestHash, bytes memory) public view returns (bytes4) {
