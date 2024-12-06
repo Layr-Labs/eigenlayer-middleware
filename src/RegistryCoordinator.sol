@@ -485,7 +485,8 @@ contract RegistryCoordinator is
         uint96 minimumStake,
         IStakeRegistry.StrategyParams[] memory strategyParams
     ) external virtual onlyOwner {
-        /// m2 -> uses old pathway
+        /// TODO: Add note on function behavior
+        /// not upgraded ie, m2 -> uses old pathway
         /// post m2 -> total delegated stake for operator set
         _createQuorum(operatorSetParams, minimumStake, strategyParams, StakeType.TOTAL_DELEGATED, 0);
     }
@@ -801,46 +802,16 @@ contract RegistryCoordinator is
         // Update operator's bitmap and status
         _updateOperatorBitmap({operatorId: operatorId, newBitmap: newBitmap});
 
-
-        /// TODO: Need to know if an AVS is an operator set avs
-        bool operatorSetAVS;
+        bool operatorSetAVS = isUsingOperatorSets();
         //  = IAVSDirectory(serviceManager.avsDirectory()).isOperatorSetAVS(address(serviceManager));
         if (operatorSetAVS){
             bytes memory quorumBytes = BitmapUtils.bitmapToBytesArray(quorumsToRemove);
             uint32[] memory operatorSetIds = new uint32[](quorumBytes.length);
-            uint256 forceDeregistrationCount;
             for (uint256 i = 0; i < quorumBytes.length; i++) {
-                /// Post operator sets feature we need to track forceDeregistrations so we don't pass an id that was already deregistered on the AVSDirectory
-                /// but hasnt yet been recorded in the middleware contracts
-
-                // TODO: Fix need a way to check member ship in the allocation manager without iterating through every member
-
-                // if (!avsDirectory.isMember(operator, OperatorSet(address(serviceManager), uint8(quorumBytes[i])))){
-                //     forceDeregistrationCount++;
-                // }
                 operatorSetIds[i] = uint8(quorumBytes[i]);
             }
 
-            /// Filter out forceDeregistration operator set Ids
-            if (forceDeregistrationCount > 0 ){
-                uint32[] memory filteredOperatorSetIds = new uint32[](operatorSetIds.length - forceDeregistrationCount);
-                uint256 offset;
-                for (uint256 i; i < operatorSetIds.length; i++){
-                    if (true){
-                        /// TODO: Fix need to check
-                        // avsDirectory.isMember(operator, OperatorSet(address(serviceManager), operatorSetIds[i]))){
-                        filteredOperatorSetIds[i] = operatorSetIds[i+offset];
-                    } else {
-                        offset++;
-                    }
-                }
-                serviceManager.deregisterOperatorFromOperatorSets(operator, filteredOperatorSetIds);
-            } else {
-                serviceManager.deregisterOperatorFromOperatorSets(operator, operatorSetIds);
-
-            }
-
-
+            serviceManager.deregisterOperatorFromOperatorSets(operator, operatorSetIds);
         } else {
             // If the operator is no longer registered for any quorums, update their status and deregister
             // them from the AVS via the EigenLayer core contracts

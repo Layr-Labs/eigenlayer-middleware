@@ -204,6 +204,14 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             GENESIS_REWARDS_TIMESTAMP
         );
 
+        AllocationManager allocationManagerImplementation = new AllocationManager(
+            delegationManager,
+            pauserRegistry,
+            permissionController,
+            uint32(7 days), // DEALLOCATION_DELAY
+            uint32(1 days)  // ALLOCATION_CONFIGURATION_DELAY
+        );
+
         // Third, upgrade the proxy contracts to point to the implementations
         uint256 minWithdrawalDelayBlocks = 7 days / 12 seconds;
         IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
@@ -215,11 +223,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             abi.encodeWithSelector(
                 DelegationManager.initialize.selector,
                 eigenLayerReputedMultisig, // initialOwner
-                pauserRegistry,
-                0, /* initialPausedStatus */
-                minWithdrawalDelayBlocks,
-                initializeStrategiesToSetDelayBlocks,
-                initializeWithdrawalDelayBlocks
+                0 /* initialPausedStatus */
             )
         );
         // StrategyManager
@@ -230,7 +234,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 StrategyManager.initialize.selector,
                 eigenLayerReputedMultisig, //initialOwner
                 eigenLayerReputedMultisig, //initial whitelister
-                pauserRegistry,
                 0 // initialPausedStatus
             )
         );
@@ -241,11 +244,9 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
                 eigenLayerReputedMultisig, // initialOwner
-                pauserRegistry,
                 0 // initialPausedStatus
             )
         );
-        console.log("HERE");
         // AVSDirectory
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(avsDirectory))),
@@ -258,7 +259,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             )
         );
 
-        console.log("HERE 2");
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(permissionController))),
             address(permissionControllerImplementation),
@@ -277,6 +277,16 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 rewardsUpdater,
                 activationDelay,
                 defaultOperatorSplitBips // defaultSplitBips
+            )
+        );
+
+        proxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(allocationManager))),
+            address(allocationManagerImplementation),
+            abi.encodeWithSelector(
+                AllocationManager.initialize.selector,
+                eigenLayerReputedMultisig, // initialOwner
+                0 // initialPausedStatus
             )
         );
 

@@ -44,6 +44,7 @@ contract MockAllocationManager {}
 
 contract MockRewardsCoordinator {
     function createAVSRewardsSubmission(
+        address avs,
         IRewardsCoordinator.RewardsSubmission[] calldata
     ) external pure {}
 }
@@ -146,19 +147,18 @@ contract ECDSAServiceManagerSetup is Test {
         strategies[0] = IStrategy(address(420));
         strategies[1] = IStrategy(address(421));
 
-        uint256[] memory shares = new uint256[](2);
+        uint96[] memory shares = new uint96[](2);
         shares[0] = 0;
         shares[1] = 1;
 
-        // TODO: Fix
-        // vm.mockCall(
-        //     address(mockDelegationManager),
-        //     abi.encodeCall(
-        //         IDelegationManager.getOperatorShares,
-        //         (operator, strategies)
-        //     ),
-        //     abi.encode(shares)
-        // );
+        vm.mockCall(
+            address(mockDelegationManager),
+            abi.encodeCall(
+                IDelegationManager.getOperatorShares,
+                (operator, strategies)
+            ),
+            abi.encode(shares)
+        );
 
         address[] memory restakedStrategies = serviceManager
             .getOperatorRestakedStrategies(operator);
