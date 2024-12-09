@@ -24,6 +24,8 @@ import {EIP712} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.so
 
 import {Pausable} from "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
 import {RegistryCoordinatorStorage} from "./RegistryCoordinatorStorage.sol";
+import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
+
 
 /**
  * @title A `RegistryCoordinator` that has three registries:
@@ -46,7 +48,8 @@ contract RegistryCoordinator is
     using BitmapUtils for *;
     using BN254 for BN254.G1Point;
 
-    bool isOperatorSetAVS;
+    bool public isOperatorSetAVS;
+    mapping(uint8 => bool) public isM2Quorum;
 
     modifier onlyEjector() {
         _checkEjector();
@@ -260,6 +263,16 @@ contract RegistryCoordinator is
         external
         onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR)
     {
+        // Check that either:
+        // 1. The AVS hasn't migrated to operator sets yet (!isOperatorSetAVS), or
+        // 2. The AVS has migrated but this is an M2 quorum
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+            require(
+                !isOperatorSetAVS || isM2Quorum[quorumNumber],
+                "RegistryCoordinator.deregisterOperator: cannot deregister from non-M2 quorum after operator sets enabled"
+            );
+        }
         _deregisterOperator({operator: msg.sender, quorumNumbers: quorumNumbers});
     }
 
@@ -268,11 +281,20 @@ contract RegistryCoordinator is
     }
 
     function enableOperatorSets() external onlyOwner {
-        /// TODO:
         /// Triggers the updates to use operator sets ie setsAVSRegistrar
         /// Opens up the AVS Registrar Hooks on this contract to be callable by the ALM
         /// Allows creation of quorums with slashable and total delegated stake for operator sets
         /// Sets all quorums created before this call as m2 quorums in a mapping so that we can gate function calls to deregister
+        /// M2 Registrations turn off once migrated.  M2 deregistration remain open for only m2 quorums
+        // Set this contract as the AVS registrar in the service manager
+        serviceManager.setAVSRegistrar(IAVSRegistrar(address(this)));
+
+        // Set all existing quorums as m2 quorums
+        for (uint8 i = 0; i < quorumCount; i++) {
+            isM2Quorum[i] = true;
+        }
+
+        // Enable operator sets mode
         isOperatorSetAVS = true;
     }
 
@@ -685,6 +707,10 @@ contract RegistryCoordinator is
         require(msg.sender == ejector, "RegistryCoordinator.onlyEjector: not ejector");
     }
 
+    function _checkAllocationManager() internal view {
+        address allocationManager = address(serviceManager.allocationManager());
+        require(msg.sender == allocationManager, "RegistryCoordinator.onlyAllocationManager: not allocation manager");
+    }
     /**
      * @notice Checks if a quorum exists
      * @param quorumNumber The quorum number to check

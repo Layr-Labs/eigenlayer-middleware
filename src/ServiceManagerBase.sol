@@ -12,6 +12,8 @@ import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
+import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
+
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {LibMergeSort} from "./libraries/LibMergeSort.sol";
 
@@ -176,6 +178,15 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      */
     function setRewardsInitiator(address newRewardsInitiator) external onlyOwner {
         _setRewardsInitiator(newRewardsInitiator);
+    }
+
+    /**
+     * @notice Sets the AVS registrar address in the AllocationManager
+     * @param registrar The new AVS registrar address
+     * @dev Only callable by the registry coordinator
+     */
+    function setAVSRegistrar(IAVSRegistrar registrar) external onlyRegistryCoordinator {
+        _allocationManager.setAVSRegistrar(address(this), registrar);
     }
 
     /**

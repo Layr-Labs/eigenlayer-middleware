@@ -12,6 +12,10 @@ import {IStakeRegistry} from "../interfaces/IStakeRegistry.sol";
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {Quorum} from "../interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
 import {ECDSAStakeRegistry} from "../unaudited/ECDSAStakeRegistry.sol";
+import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
+import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+
+
 
 abstract contract ECDSAServiceManagerBase is
     IServiceManager,
@@ -225,6 +229,15 @@ abstract contract ECDSAServiceManagerBase is
             strategies[i] = address(quorum.strategies[i].strategy);
         }
         return strategies;
+    }
+
+    /**
+     * @notice Sets the AVS registrar address in the AllocationManager
+     * @param registrar The new AVS registrar address
+     * @dev Only callable by the registry coordinator
+     */
+    function setAVSRegistrar(IAVSRegistrar registrar) external onlyOwner {
+        IAllocationManager(allocationManager).setAVSRegistrar(address(this), registrar);
     }
 
     /**

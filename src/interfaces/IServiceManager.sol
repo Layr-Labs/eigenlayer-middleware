@@ -6,6 +6,8 @@ import {IServiceManagerUI} from "./IServiceManagerUI.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
+
 
 /**
  * @title Minimal interface for a ServiceManager-type contract that forms the single point for an AVS to push updates to EigenLayer
@@ -38,6 +40,13 @@ interface IServiceManager is IServiceManagerUI {
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external;
+
+    /**
+     * @notice Sets the AVS registrar address in the AllocationManager
+     * @param registrar The new AVS registrar address
+     * @dev Only callable by the registry coordinator
+     */
+    function setAVSRegistrar(IAVSRegistrar registrar) external;
 
     /**
      * @notice Forwards a call to EigenLayer's AVSDirectory contract to deregister an operator from operator sets
