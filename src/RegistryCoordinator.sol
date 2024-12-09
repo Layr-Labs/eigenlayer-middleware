@@ -501,15 +501,15 @@ contract RegistryCoordinator is
      * registered
      * @param strategyParams a list of strategies and multipliers used by the StakeRegistry to
      * calculate an operator's stake weight for the quorum
+     *  @dev For m2 AVS this function has the same behavior as createQuorum before
+     *       For migrated AVS that enable operator sets this will create a quorum that measures total delegated stake for operator set
+     *
      */
     function createTotalDelegatedStakeQuorum(
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
         IStakeRegistry.StrategyParams[] memory strategyParams
     ) external virtual onlyOwner {
-        /// TODO: Add note on function behavior
-        /// not upgraded ie, m2 -> uses old pathway
-        /// post m2 -> total delegated stake for operator set
         _createQuorum(operatorSetParams, minimumStake, strategyParams, StakeType.TOTAL_DELEGATED, 0);
     }
 
@@ -519,7 +519,7 @@ contract RegistryCoordinator is
         IStakeRegistry.StrategyParams[] memory strategyParams,
         uint32 lookAheadPeriod
     ) external virtual onlyOwner {
-        if (!isUsingOperatorSets()) revert ();
+        require(isUsingOperatorSets(), "RegistryCoordinator.createSlashableStakeQuorum: operator sets not enabled");
         _createQuorum(operatorSetParams, minimumStake, strategyParams, StakeType.TOTAL_SLASHABLE, lookAheadPeriod);
     }
 
