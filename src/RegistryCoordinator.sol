@@ -304,8 +304,9 @@ contract RegistryCoordinator is
         bytes memory data
     ) external override {
         if (!isUsingOperatorSets()) revert();
-        /// TODO: Make a mapping for quorums associated with operator sets / ones associated with m2 registrations
-        /// TODO: only allow registration of operator sets that have been created in the core and don't conflict with existing quorum numbers
+        for (uint256 i = 0; i < operatorSetIds.length; i++) {
+            require(!isM2Quorum[uint8(operatorSetIds[i])], "RegistryCoordinator.registerOperator: cannot register for M2 quorum");
+        }
         require(msg.sender == address(serviceManager.allocationManager()), "Only allocation manager can register operators");
 
         // Decode registration data from bytes
@@ -331,7 +332,7 @@ contract RegistryCoordinator is
 
         /// TODO: Register with Churn doesn't seem to be used in practice.  I would advocate for not even handling the
         /// the case and just killing off the function.  This would free up code size as well
-        /// TODO: Correctly handle decoding the registration with churn and the normal registration flow parameters
+        /// TODO: alternatively, Correctly handle decoding the registration with churn and the normal registration flow parameters
 
     }
 
@@ -340,10 +341,10 @@ contract RegistryCoordinator is
         uint32[] memory operatorSetIds
     ) external override {
         if (!isUsingOperatorSets()) revert();
+        for (uint256 i = 0; i < operatorSetIds.length; i++) {
+            require(!isM2Quorum[uint8(operatorSetIds[i])], "RegistryCoordinator.deregisterOperator: cannot deregister from M2 quorum");
+        }
         require(msg.sender == address(serviceManager.allocationManager()), "Only allocation manager can register operators");
-        /// TODO: Make a mapping for quorums associated with operator sets / ones associated with m2 registrations
-        /// TODO: Call _registerOperator to propogate changes to the other contracts
-        /// TODO: only allow deregistration of operator sets that have been created in the core and don't conflict with existing quorum numbers
         bytes memory quorumNumbers = new bytes(operatorSetIds.length);
         for (uint256 i = 0; i < operatorSetIds.length; i++) {
             quorumNumbers[i] = bytes1(uint8(operatorSetIds[i]));
