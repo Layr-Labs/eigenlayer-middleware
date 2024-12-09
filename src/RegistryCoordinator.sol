@@ -329,6 +329,8 @@ contract RegistryCoordinator is
             socket: socket
         });
 
+        /// TODO: Register with Churn doesn't seem to be used in practice.  I would advocate for not even handling the
+        /// the case and just killing off the function.  This would free up code size as well
         /// TODO: Correctly handle decoding the registration with churn and the normal registration flow parameters
 
     }
