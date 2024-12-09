@@ -11,7 +11,7 @@ import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
 
     /*******************************************************************************
-                               CONSTANTS AND IMMUTABLES 
+                               CONSTANTS AND IMMUTABLES
     *******************************************************************************/
 
     /// @notice The EIP-712 typehash for the `DelegationApproval` struct used by the contract
@@ -40,11 +40,11 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
     IStakeRegistry public immutable stakeRegistry;
     /// @notice the Index Registry contract that will keep track of operators' indexes
     IIndexRegistry public immutable indexRegistry;
-    /// @notice the AVS Directory that tracks operator registrations to AVS and operator sets 
+    /// @notice the AVS Directory that tracks operator registrations to AVS and operator sets
     IAVSDirectory public immutable avsDirectory;
 
     /*******************************************************************************
-                                       STATE 
+                                       STATE
     *******************************************************************************/
 
     /// @notice the current number of quorums supported by the registry coordinator
@@ -72,6 +72,9 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
     /// @notice the delay in seconds before an operator can reregister after being ejected
     uint256 public ejectionCooldown;
 
+    bool public isOperatorSetAVS;
+    mapping(uint8 => bool) public isM2Quorum;
+
     constructor(
         IServiceManager _serviceManager,
         IStakeRegistry _stakeRegistry,
@@ -88,5 +91,5 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
 
     // storage gap for upgradeability
     // slither-disable-next-line shadowing-state
-    uint256[39] private __GAP;
+    uint256[37] private __GAP;
 }

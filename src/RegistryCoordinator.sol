@@ -48,9 +48,6 @@ contract RegistryCoordinator is
     using BitmapUtils for *;
     using BN254 for BN254.G1Point;
 
-    bool public isOperatorSetAVS;
-    mapping(uint8 => bool) public isM2Quorum;
-
     modifier onlyEjector() {
         _checkEjector();
         _;
@@ -146,7 +143,7 @@ contract RegistryCoordinator is
         IBLSApkRegistry.PubkeyRegistrationParams memory params,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        if (isUsingOperatorSets()) revert();
+        require(!isUsingOperatorSets(), "RegistryCoordinator.registerOperator: operator sets enabled");
         /**
          * If the operator has NEVER registered a pubkey before, use `params` to register
          * their pubkey in blsApkRegistry
@@ -198,7 +195,7 @@ contract RegistryCoordinator is
         SignatureWithSaltAndExpiry memory churnApproverSignature,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        if (isUsingOperatorSets()) revert();
+        require(!isUsingOperatorSets(), "RegistryCoordinator.registerOperatorWithChurn: operator sets not supported");
         require(
             operatorKickParams.length == quorumNumbers.length,
             "RegistryCoordinator.registerOperatorWithChurn: input length mismatch"
@@ -302,8 +299,8 @@ contract RegistryCoordinator is
         address operator,
         uint32[] memory operatorSetIds,
         bytes memory data
-    ) external override {
-        if (!isUsingOperatorSets()) revert();
+    ) external override onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
+        require(isUsingOperatorSets(), "RegistryCoordinator.registerOperator: operator sets not enabled");
         for (uint256 i = 0; i < operatorSetIds.length; i++) {
             require(!isM2Quorum[uint8(operatorSetIds[i])], "RegistryCoordinator.registerOperator: cannot register for M2 quorum");
         }
@@ -323,7 +320,7 @@ contract RegistryCoordinator is
         }
 
         // Register operator with decoded parameters
-        _registerOperatorNew({
+        _registerOperatorToOperatorSet({
             operator: operator,
             operatorId: operatorId,
             quorumNumbers: quorumNumbers,
@@ -339,8 +336,8 @@ contract RegistryCoordinator is
     function deregisterOperator(
         address operator,
         uint32[] memory operatorSetIds
-    ) external override {
-        if (!isUsingOperatorSets()) revert();
+    ) external override onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
+        require(isUsingOperatorSets(), "RegistryCoordinator.deregisterOperator: operator sets not enabled");
         for (uint256 i = 0; i < operatorSetIds.length; i++) {
             require(!isM2Quorum[uint8(operatorSetIds[i])], "RegistryCoordinator.deregisterOperator: cannot deregister from M2 quorum");
         }
@@ -648,7 +645,7 @@ contract RegistryCoordinator is
      * @notice Register the operator for one or more quorums. This method updates the
      * operator's quorum bitmap, socket, and status, then registers them with each registry.
      */
-    function _registerOperatorNew(
+    function _registerOperatorToOperatorSet(
         address operator,
         bytes32 operatorId,
         bytes memory quorumNumbers,
