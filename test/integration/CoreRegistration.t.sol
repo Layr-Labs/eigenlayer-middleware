@@ -29,7 +29,14 @@ contract Test_CoreRegistration is MockAVSDeployer {
 
         // Deploy New DelegationManager
         PermissionController permissionController; // TODO: Fix
-        DelegationManager delegationManagerImplementation = new DelegationManager(avsDirectoryMock, IStrategyManager(address(strategyManagerMock)), eigenPodManagerMock, allocationManagerMock, pauserRegistry, permissionController, 0);
+        DelegationManager delegationManagerImplementation = new DelegationManager(
+            IStrategyManager(address(strategyManagerMock)),
+            eigenPodManagerMock,
+            allocationManagerMock,
+            pauserRegistry,
+            permissionController,
+            0
+        );
         IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
         uint256[] memory initializeWithdrawalDelayBlocks = new uint256[](0);
         delegationManager = DelegationManager(

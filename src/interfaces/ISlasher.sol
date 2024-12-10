@@ -10,7 +10,7 @@ interface ISlasherEvents {
         uint256 indexed requestId,
         address indexed operator,
         uint32 indexed operatorSetId,
-        uint256 wadToSlash,
+        uint256[] wadsToSlash,
         string description
     );
 
@@ -20,7 +20,7 @@ interface ISlasherEvents {
         uint256 indexed slashingRequestId,
         address indexed operator,
         uint32 indexed operatorSetId,
-        uint256 wadToSlash,
+        uint256[] wadsToSlash,
         string description
     );
 }

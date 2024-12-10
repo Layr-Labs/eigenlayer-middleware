@@ -63,7 +63,7 @@ contract VetoableSlashing is SlasherBase {
             status: SlashingStatus.Requested
         });
 
-        emit SlashingRequested(requestId, params.operator, params.operatorSetId, params.wadToSlash, params.description);
+        emit SlashingRequested(requestId, params.operator, params.operatorSetId, params.wadsToSlash, params.description);
     }
 
     function _cancelSlashingRequest(uint256 requestId) internal virtual {

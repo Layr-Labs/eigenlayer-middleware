@@ -182,11 +182,11 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         DelegationManager delegationImplementation =
-            new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, pauserRegistry, permissionController, 0);
+            new DelegationManager(strategyManager, eigenPodManager, allocationManager, pauserRegistry, permissionController, 0);
         StrategyManager strategyManagerImplementation =
             new StrategyManager(delegationManager, pauserRegistry);
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
-            ethPOSDeposit, eigenPodBeacon, strategyManager, delegationManager, pauserRegistry
+            ethPOSDeposit, eigenPodBeacon, delegationManager, pauserRegistry
         );
         console.log("HERE Impl");
         AVSDirectory avsDirectoryImplementation = new AVSDirectory(delegationManager, pauserRegistry);
@@ -259,12 +259,9 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             )
         );
 
-        proxyAdmin.upgradeAndCall(
+        proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(permissionController))),
-            address(permissionControllerImplementation),
-            abi.encodeWithSelector(
-                PermissionController.initialize.selector
-            )
+            address(permissionControllerImplementation)
         );
 
         proxyAdmin.upgradeAndCall(

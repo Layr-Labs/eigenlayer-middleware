@@ -24,7 +24,7 @@ abstract contract SlasherBase is Initializable, SlasherStorage {
         IAllocationManager.SlashingParams memory _params
     ) internal virtual {
         IServiceManager(serviceManager).slashOperator(_params);
-        emit OperatorSlashed(_requestId, _params.operator, _params.operatorSetId, _params.wadToSlash, _params.description);
+        emit OperatorSlashed(_requestId, _params.operator, _params.operatorSetId, _params.wadsToSlash, _params.description);
     }
 
     function _checkSlasher(address account) internal view virtual {

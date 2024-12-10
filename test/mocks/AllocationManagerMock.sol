@@ -163,6 +163,11 @@ contract AllocationManagerIntermediate is IAllocationManager {
     IStrategy[] memory strategies,
     uint32 futureBlock
   ) external view virtual returns (uint256[][] memory slashableStake) {}
+
+  function isMemberOfOperatorSet(
+    address operator,
+    OperatorSet memory operatorSet
+  ) external view virtual returns (bool) {}
 }
 
 contract AllocationManagerMock is AllocationManagerIntermediate {
