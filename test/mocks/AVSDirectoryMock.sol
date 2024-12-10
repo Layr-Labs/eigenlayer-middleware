@@ -49,4 +49,8 @@ contract AVSDirectoryMock is IAVSDirectory {
 
     /// @notice The EIP-712 typehash for the Registration struct used by the contract
     function OPERATOR_AVS_REGISTRATION_TYPEHASH() external view returns (bytes32) {}
-} 
+
+    function cancelSalt(bytes32 salt) external {}
+
+    function domainSeparator() external view returns (bytes32) {}
+}

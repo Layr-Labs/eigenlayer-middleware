@@ -24,7 +24,7 @@ contract DelegationMock is IDelegationManager {
     mapping (address => address) public delegatedTo;
 
     function registerAsOperator(OperatorDetails calldata /*registeringOperatorDetails*/, string calldata /*metadataURI*/) external pure {}
-    
+
     function updateOperatorMetadataURI(string calldata /*metadataURI*/) external pure {}
 
     function updateAVSMetadataURI(string calldata /*metadataURI*/) external pure {}
@@ -58,7 +58,7 @@ contract DelegationMock is IDelegationManager {
 
     function operatorDetails(address operator) external pure returns (OperatorDetails memory) {
         OperatorDetails memory returnValue = OperatorDetails({
-            earningsReceiver: operator,
+            __deprecated_earningsReceiver: operator,
             delegationApprover: operator,
             stakerOptOutWindowBlocks: 0
         });
@@ -169,8 +169,8 @@ contract DelegationMock is IDelegationManager {
         bool[] calldata receiveAsTokens
     ) external {}
 
-    function migrateQueuedWithdrawals(IStrategyManager.DeprecatedStruct_QueuedWithdrawal[] memory withdrawalsToQueue) external {}
-    
+    // function migrateQueuedWithdrawals(IStrategyManager.DeprecatedStruct_QueuedWithdrawal[] memory withdrawalsToQueue) external {}
+
     // onlyDelegationManager functions in StrategyManager
     function addShares(
         IStrategyManager strategyManager,
@@ -199,5 +199,21 @@ contract DelegationMock is IDelegationManager {
         IERC20 token
     ) external {
         strategyManager.withdrawSharesAsTokens(recipient, strategy, shares, token);
+    }
+
+    function getDelegatableShares(address staker) external view returns (IStrategy[] memory, uint256[] memory) {
+        IStrategy[] memory strategies;
+        uint256[] memory shares;
+        return (strategies, shares);
+    }
+
+    function beaconChainETHStrategy() external view returns (IStrategy) {
+        return IStrategy(address(0));
+    }
+
+    function setMinWithdrawalDelayBlocks(uint256 newMinWithdrawalDelayBlocks) external {
+    }
+
+    function setStrategyWithdrawalDelayBlocks(IStrategy[] calldata strategies, uint256[] calldata withdrawalDelayBlocks) external {
     }
 }

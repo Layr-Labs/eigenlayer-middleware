@@ -19,7 +19,6 @@ import "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPodManager.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPod.sol";
-import "eigenlayer-contracts/src/contracts/pods/DelayedWithdrawalRouter.sol";
 import "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import "eigenlayer-contracts/src/test/mocks/ETHDepositMock.sol";
 // import "eigenlayer-contracts/src/test/integration/mocks/BeaconChainOracleMock.t.sol";
@@ -56,7 +55,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     Slasher slasher;
     IBeacon eigenPodBeacon;
     EigenPod pod;
-    DelayedWithdrawalRouter delayedWithdrawalRouter;
     ETHPOSDepositMock ethPOSDeposit;
     BeaconChainOracleMock beaconChainOracle;
 
@@ -125,9 +123,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         eigenPodManager = EigenPodManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), ""))
         );
-        delayedWithdrawalRouter = DelayedWithdrawalRouter(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), ""))
-        );
         avsDirectory = AVSDirectory(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), ""))
         );
@@ -135,10 +130,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         // Deploy EigenPod Contracts
         pod = new EigenPod(
             ethPOSDeposit,
-            delayedWithdrawalRouter,
             eigenPodManager,
-            MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-            0
+            MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR
         );
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
@@ -154,7 +147,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             slasher,
             delegationManager
         );
-        DelayedWithdrawalRouter delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
         AVSDirectory avsDirectoryImplemntation = new AVSDirectory(delegationManager);
 
         // Third, upgrade the proxy contracts to point to the implementations
@@ -208,18 +200,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 eigenLayerReputedMultisig, // initialOwner
                 pauserRegistry,
                 0 // initialPausedStatus
-            )
-        );
-        // Delayed Withdrawal Router
-        proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
-            address(delayedWithdrawalRouterImplementation),
-            abi.encodeWithSelector(
-                DelayedWithdrawalRouter.initialize.selector,
-                eigenLayerReputedMultisig, // initialOwner
-                pauserRegistry,
-                0, // initialPausedStatus
-                minWithdrawalDelayBlocks
             )
         );
         // AVSDirectory
@@ -305,7 +285,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             TransparentUpgradeableProxy(payable(address(stakeRegistry))),
             address(stakeRegistryImplementation)
         );
-        
+
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(blsApkRegistry))),
             address(blsApkRegistryImplementation)
@@ -346,7 +326,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist
     /// strategy in strategyManager
     function _newStrategyAndToken(string memory tokenName, string memory tokenSymbol, uint initialSupply, address owner) internal {
-        IERC20 underlyingToken = new ERC20PresetFixedSupply(tokenName, tokenSymbol, initialSupply, owner); 
+        IERC20 underlyingToken = new ERC20PresetFixedSupply(tokenName, tokenSymbol, initialSupply, owner);
         StrategyBase strategy = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(

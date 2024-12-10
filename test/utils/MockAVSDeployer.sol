@@ -138,7 +138,7 @@ contract MockAVSDeployer is Test {
 
         delegationMock = new DelegationMock();
         avsDirectoryMock = new AVSDirectoryMock();
-        eigenPodManagerMock = new EigenPodManagerMock();
+        eigenPodManagerMock = new EigenPodManagerMock(pauserRegistry);
         strategyManagerMock = new StrategyManagerMock();
         slasherImplementation = new Slasher(strategyManagerMock, delegationMock);
         slasher = Slasher(

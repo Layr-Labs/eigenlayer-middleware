@@ -97,7 +97,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         cheats.prank(operator);
         delegationManager.registerAsOperator(
             IDelegationManager.OperatorDetails({
-                earningsReceiver: operator,
+                __deprecated_earningsReceiver: operator,
                 delegationApprover: address(0),
                 stakerOptOutWindowBlocks: 0
             }),
