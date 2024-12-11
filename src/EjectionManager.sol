@@ -15,6 +15,9 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable {
     /// @notice The basis point denominator for the ejectable stake percent
     uint16 internal constant BIPS_DENOMINATOR = 10_000;
 
+    /// @notice The max number of quorums
+    uint8 internal constant MAX_QUORUM_COUNT = 192;
+
     /// @notice the RegistryCoordinator contract that is the entry point for ejection
     IRegistryCoordinator public immutable registryCoordinator;
     /// @notice the StakeRegistry contract that keeps track of quorum stake
@@ -134,6 +137,7 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable {
 
     ///@dev internal function to set the quorum ejection params
     function _setQuorumEjectionParams(uint8 _quorumNumber, QuorumEjectionParams memory _quorumEjectionParams) internal {
+        require(_quorumNumber < MAX_QUORUM_COUNT, "EjectionManager._setQuorumEjectionParams: Quorum number exceeds MAX_QUORUM_COUNT");
         quorumEjectionParams[_quorumNumber] = _quorumEjectionParams;
         emit QuorumEjectionParamsSet(_quorumNumber, _quorumEjectionParams.rateLimitWindow, _quorumEjectionParams.ejectableStakePercent);
     }
