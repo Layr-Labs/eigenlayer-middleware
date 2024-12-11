@@ -114,17 +114,17 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
 
         // gamma = h(sigma, P, P', H(m))
         uint256 gamma = uint256(keccak256(abi.encodePacked(
-            params.pubkeyRegistrationSignature.X, 
-            params.pubkeyRegistrationSignature.Y, 
-            params.pubkeyG1.X, 
-            params.pubkeyG1.Y, 
-            params.pubkeyG2.X, 
-            params.pubkeyG2.Y, 
-            pubkeyRegistrationMessageHash.X, 
+            params.pubkeyRegistrationSignature.X,
+            params.pubkeyRegistrationSignature.Y,
+            params.pubkeyG1.X,
+            params.pubkeyG1.Y,
+            params.pubkeyG2.X,
+            params.pubkeyG2.Y,
+            pubkeyRegistrationMessageHash.X,
             pubkeyRegistrationMessageHash.Y
         ))) % BN254.FR_MODULUS;
-        
-        // e(sigma + P * gamma, [-1]_2) = e(H(m) + [1]_1 * gamma, P') 
+
+        // e(sigma + P * gamma, [-1]_2) = e(H(m) + [1]_1 * gamma, P')
         require(BN254.pairing(
             params.pubkeyRegistrationSignature.plus(params.pubkeyG1.scalar_mul(gamma)),
             BN254.negGeneratorG2(),
@@ -189,7 +189,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
             pubkeyHash != bytes32(0),
             "BLSApkRegistry.getRegisteredPubkey: operator is not registered"
         );
-        
+
         return (pubkey, pubkeyHash);
     }
 
@@ -202,10 +202,10 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         uint256 blockNumber
     ) external view returns (uint32[] memory) {
         uint32[] memory indices = new uint32[](quorumNumbers.length);
-        
+
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            
+
             uint256 quorumApkUpdatesLength = apkHistory[quorumNumber].length;
             if (quorumApkUpdatesLength == 0 || blockNumber < apkHistory[quorumNumber][0].updateBlockNumber) {
                 revert("BLSApkRegistry.getApkIndicesAtBlockNumber: blockNumber is before the first update");
@@ -253,11 +253,11 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
          */
         require(
             blockNumber >= quorumApkUpdate.updateBlockNumber,
-            "BLSApkRegistry._validateApkHashAtBlockNumber: index too recent"
+            "BLSApkRegistry.getApkHashAtBlockNumberAndIndex: index too recent"
         );
         require(
             quorumApkUpdate.nextUpdateBlockNumber == 0 || blockNumber < quorumApkUpdate.nextUpdateBlockNumber,
-            "BLSApkRegistry._validateApkHashAtBlockNumber: not latest apk update"
+            "BLSApkRegistry.getApkHashAtBlockNumberAndIndex: not latest apk update"
         );
 
         return quorumApkUpdate.apkHash;
@@ -282,7 +282,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     function _checkRegistryCoordinator() internal view {
         require(
             msg.sender == address(registryCoordinator),
-            "BLSApkRegistry.onlyRegistryCoordinator: caller is not the registry coordinator"
+            "BLSApkRegistry._checkRegistryCoordinator: caller is not the registry coordinator"
         );
     }
 }
