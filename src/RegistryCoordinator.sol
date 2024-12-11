@@ -273,7 +273,7 @@ contract RegistryCoordinator is
         _deregisterOperator({operator: msg.sender, quorumNumbers: quorumNumbers});
     }
 
-    function isUsingOperatorSets() public view returns (bool){
+    function isUsingOperatorSets() public view returns (bool) {
         return isOperatorSetAVS;
     }
 
@@ -641,7 +641,7 @@ contract RegistryCoordinator is
         return results;
     }
 
-        /**
+    /**
      * @notice Register the operator for one or more quorums. This method updates the
      * operator's quorum bitmap, socket, and status, then registers them with each registry.
      */
@@ -662,18 +662,18 @@ contract RegistryCoordinator is
             uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         uint192 currentBitmap = _currentOperatorBitmap(operatorId);
         require(
-            !quorumsToAdd.isEmpty(), "RegistryCoordinator._registerOperator: bitmap empty"
+            !quorumsToAdd.isEmpty(), "RegistryCoordinator._registerOperatorToOperatorSet: bitmap empty"
         );
         require(
             quorumsToAdd.noBitsInCommon(currentBitmap),
-            "RegistryCoordinator._registerOperator: operator already registered for some quorums being registered for"
+            "RegistryCoordinator._registerOperatorToOperatorSet: operator already registered for some quorums being registered for"
         );
         uint192 newBitmap = uint192(currentBitmap.plus(quorumsToAdd));
 
         // Check that the operator can reregister if ejected
         require(
             lastEjectionTimestamp[operator] + ejectionCooldown < block.timestamp,
-            "RegistryCoordinator._registerOperator: operator cannot reregister yet"
+            "RegistryCoordinator._registerOperatorToOperatorSet: operator cannot reregister yet"
         );
 
         /**
