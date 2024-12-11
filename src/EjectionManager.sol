@@ -10,10 +10,10 @@ import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
  * @title Used for automated ejection of operators from the RegistryCoordinator under a ratelimit
  * @author Layr Labs, Inc.
  */
-contract EjectionManager is IEjectionManager, OwnableUpgradeable{
+contract EjectionManager is IEjectionManager, OwnableUpgradeable {
 
     /// @notice The basis point denominator for the ejectable stake percent
-    uint16 internal constant BIPS_DENOMINATOR = 10000;
+    uint16 internal constant BIPS_DENOMINATOR = 10_000;
 
     /// @notice the RegistryCoordinator contract that is the entry point for ejection
     IRegistryCoordinator public immutable registryCoordinator;
@@ -64,7 +64,7 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
      * @dev The owner can eject operators without recording of stake ejection
      */
     function ejectOperators(bytes32[][] memory _operatorIds) external {
-        require(isEjector[msg.sender] || msg.sender == owner(), "Ejector: Only owner or ejector can eject");
+        require(isEjector[msg.sender] || msg.sender == owner(), "EjectionManager.ejectOperators: Only owner or ejector can eject");
 
         for(uint i = 0; i < _operatorIds.length; ++i) {
             uint8 quorumNumber = uint8(i);
@@ -98,7 +98,7 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
                     registryCoordinator.getOperatorFromId(_operatorIds[i][j]),
                     abi.encodePacked(quorumNumber)
                 );
-                
+
                 emit OperatorEjected(_operatorIds[i][j], quorumNumber);
             }
 
@@ -149,25 +149,27 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable{
      * @param _quorumNumber The quorum number to view ejectable stake for
      */
     function amountEjectableForQuorum(uint8 _quorumNumber) public view returns (uint256) {
-        uint256 cutoffTime = block.timestamp - quorumEjectionParams[_quorumNumber].rateLimitWindow;
-        uint256 totalEjectable = uint256(quorumEjectionParams[_quorumNumber].ejectableStakePercent) * uint256(stakeRegistry.getCurrentTotalStake(_quorumNumber)) / uint256(BIPS_DENOMINATOR);
-        uint256 totalEjected;
-        uint256 i;
+        uint256 totalEjectable = uint256(quorumEjectionParams[_quorumNumber].ejectableStakePercent)
+            * uint256(stakeRegistry.getCurrentTotalStake(_quorumNumber)) / uint256(BIPS_DENOMINATOR);
+
         if (stakeEjectedForQuorum[_quorumNumber].length == 0) {
             return totalEjectable;
         }
-        i = stakeEjectedForQuorum[_quorumNumber].length - 1;
 
-        while(stakeEjectedForQuorum[_quorumNumber][i].timestamp > cutoffTime) {
+        uint256 cutoffTime = block.timestamp - quorumEjectionParams[_quorumNumber].rateLimitWindow;
+        uint256 totalEjected = 0;
+        uint256 i = stakeEjectedForQuorum[_quorumNumber].length - 1;
+
+        while (stakeEjectedForQuorum[_quorumNumber][i].timestamp > cutoffTime) {
             totalEjected += stakeEjectedForQuorum[_quorumNumber][i].stakeEjected;
-            if(i == 0){
+            if (i == 0) {
                 break;
             } else {
                 --i;
             }
         }
 
-        if(totalEjected >= totalEjectable){
+        if (totalEjected >= totalEjectable) {
             return 0;
         }
         return totalEjectable - totalEjected;
