@@ -30,18 +30,6 @@ interface IServiceManager is IServiceManagerUI {
     function createOperatorSets(uint32[] memory operatorSetIds) external;
 
     /**
-     * @notice Forwards a call to EigenLayer's AVSDirectory contract to register an operator to operator sets
-     * @param operator The address of the operator to register.
-     * @param operatorSetIds The IDs of the operator sets.
-     * @param operatorSignature The signature, salt, and expiry of the operator's signature.
-     */
-    function registerOperatorToOperatorSets(
-        address operator,
-        uint32[] calldata operatorSetIds,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external;
-
-    /**
      * @notice Sets the AVS registrar address in the AllocationManager
      * @param registrar The new AVS registrar address
      * @dev Only callable by the registry coordinator
