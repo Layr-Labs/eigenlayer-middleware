@@ -336,7 +336,7 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is BLSApkRegistryUnitTests
         pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(operator);
 
         cheats.startPrank(address(registryCoordinator));
-        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);        
+        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
 
         cheats.expectRevert("BLSApkRegistry.registerBLSPublicKey: public key already registered");
         blsApkRegistry.registerBLSPublicKey(operator2, pubkeyRegistrationParams, messageHash);
@@ -800,8 +800,8 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
         uint256 blockGap,
         uint256 randSeed
     ) external {
-        cheats.assume(numRegistrants > 0 && numRegistrants < 100);
-        cheats.assume(blockGap < 100);
+        numRegistrants = bound(numRegistrants, 1, 99);
+        blockGap = bound(blockGap, 0, 99);
 
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
@@ -850,12 +850,12 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
      * and checking the correct revert messages are emitted for wrong blocknumber inputs
      */
     function testFuzz_quorumApkUpdates_IncorrectBlockNumber(
-        uint256 numRegistrants,
+        uint32 numRegistrants,
         uint32 indexToCheck,
         uint32 wrongBlockNumber,
         uint256 randSeed
     ) external {
-        cheats.assume(numRegistrants > 0 && numRegistrants < 100);
+        numRegistrants = uint32(bound(numRegistrants, 1, 99));
         cheats.assume(indexToCheck < numRegistrants - 1);
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
