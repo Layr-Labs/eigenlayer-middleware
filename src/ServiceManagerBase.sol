@@ -4,6 +4,7 @@ pragma solidity ^0.8.12;
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
@@ -120,9 +121,19 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _rewardsCoordinator.createAVSRewardsSubmission(address(this),rewardsSubmissions);
     }
 
-    function createOperatorSets(uint32[] memory operatorSetIds) external onlyRegistryCoordinator {
-        /// TODO:
-        // _avsDirectory.createOperatorSets(operatorSetIds);
+    function createOperatorSets(address avs, IAllocationManager.CreateSetParams[] memory params) external onlyRegistryCoordinator {
+        /// TODO: add operator set creation params
+        // allocationManager.createOperatorSets(avs, params);
+    }
+
+    function addStrategyToOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external onlyRegistryCoordinator {
+        /// TODO: add strategy info
+        // allocationManager.addStrategiesToOperatorSet(address(this), operatorSetId, strategies);
+    }
+
+    function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external onlyRegistryCoordinator {
+        /// TODO: add strategy info
+        // allocationManager.removeStrategiesFromOperatorSet(address(this), operatorSetId, strategies);
     }
 
     /**
@@ -155,7 +166,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         uint32[] calldata operatorSetIds
     ) public virtual onlyRegistryCoordinator {
         /// TODO: Keep for avs directed deregistration
-        // _avsDirectory.deregisterOperatorFromOperatorSets(operator, operatorSetIds);
+        // allocationManager.deregisterOperatorFromOperatorSets(operator, operatorSetIds);
     }
 
     /**

@@ -6,6 +6,7 @@ import {IServiceManagerUI} from "./IServiceManagerUI.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 
 
@@ -27,7 +28,11 @@ interface IServiceManager is IServiceManagerUI {
      */
     function createAVSRewardsSubmission(IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions) external;
 
-    function createOperatorSets(uint32[] memory operatorSetIds) external;
+    function createOperatorSets(address avs, IAllocationManager.CreateSetParams[] memory params) external;
+
+    function addStrategyToOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external;
+
+    function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external;
 
     /**
      * @notice Sets the AVS registrar address in the AllocationManager
