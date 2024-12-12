@@ -18,7 +18,7 @@ interface IServiceManager is IServiceManagerUI {
      * @notice Creates a new rewards submission to the EigenLayer RewardsCoordinator contract, to be split amongst the
      * set of stakers delegated to operators who are registered to this `avs`
      * @param rewardsSubmissions The rewards submissions being created
-     * @dev Only callabe by the permissioned rewardsInitiator address
+     * @dev Only callable by the permissioned rewardsInitiator address
      * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
      * @dev The tokens are sent to the `RewardsCoordinator` contract
      * @dev Strategies must be in ascending order of addresses to check for duplicates

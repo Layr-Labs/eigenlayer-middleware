@@ -32,9 +32,9 @@ contract VetoableSlashing is SlasherBase {
     function cancelSlashingRequest(uint256 requestId) external virtual onlyVetoCommittee {
         require(
             block.timestamp < slashingRequests[requestId].requestTimestamp + VETO_PERIOD,
-            "VetoableSlashing: veto period has passed"
+            "VetoableSlashing.cancelSlashingRequest: veto period has passed"
         );
-        require(slashingRequests[requestId].status == SlashingStatus.Requested, "VetoableSlashing: request is not in Requested status");
+        require(slashingRequests[requestId].status == SlashingStatus.Requested, "VetoableSlashing.cancelSlashingRequest: request is not in Requested status");
 
         _cancelSlashingRequest(requestId);
     }
@@ -43,9 +43,9 @@ contract VetoableSlashing is SlasherBase {
         SlashingRequest storage request = slashingRequests[requestId];
         require(
             block.timestamp >= request.requestTimestamp + VETO_PERIOD,
-            "VetoableSlashing: veto period has not passed"
+            "VetoableSlashing.fulfillSlashingRequest: veto period has not passed"
         );
-        require(request.status == SlashingStatus.Requested, "VetoableSlashing: request has been cancelled");
+        require(request.status == SlashingStatus.Requested, "VetoableSlashing.fulfillSlashingRequest: request has been cancelled");
 
         request.status = SlashingStatus.Completed;
 
@@ -72,6 +72,6 @@ contract VetoableSlashing is SlasherBase {
     }
 
     function _checkVetoCommittee(address account) internal view virtual {
-        require(account == vetoCommittee, "VetoableSlashing: caller is not the veto committee");
+        require(account == vetoCommittee, "VetoableSlashing._checkVetoCommittee: caller is not the veto committee");
     }
 }
