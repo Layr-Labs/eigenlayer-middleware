@@ -7,7 +7,7 @@ import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSD
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
-import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IAllocationManager, IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
 import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
@@ -168,8 +168,11 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         address operator,
         uint32[] calldata operatorSetIds
     ) public virtual onlyRegistryCoordinator {
-        /// TODO: Keep for avs directed deregistration
-        // allocationManager.deregisterOperatorFromOperatorSets(operator, operatorSetIds);
+        _allocationManager.deregisterFromOperatorSets(IAllocationManagerTypes.DeregisterParams({
+            operator: operator,
+            avs: address(this),
+            operatorSetIds: operatorSetIds
+        }));
     }
 
     /**
