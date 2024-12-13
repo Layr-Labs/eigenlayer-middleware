@@ -7,11 +7,35 @@ import {IStakeRegistry} from "./IStakeRegistry.sol";
 import {IIndexRegistry} from "./IIndexRegistry.sol";
 import {BN254} from "../libraries/BN254.sol";
 
+interface IRegistryCoordinatorErrors {
+    error InputLengthMismatch();
+    error OperatorSetsEnabled();
+    error OperatorSetsNotEnabled();
+    error OperatorSetsNotSupported();
+    error OnlyAllocationManager();
+    error OnlyEjector();
+    error QuorumDoesNotExist();
+    error BitmapEmpty();
+    error AlreadyRegisteredForQuorums();
+    error CannotReregisterYet();
+    error NotRegistered();
+    error CannotChurnSelf();
+    error QuorumOperatorCountMismatch();
+    error InsufficientStakeForChurn();
+    error CannotKickOperatorAboveThreshold();
+    error BitmapCannotBeZero();
+    error NotRegisteredForQuorum();
+    error MaxQuorumsReached();
+    error SaltAlreadyUsed();
+    error RegistryCoordinatorSignatureExpired();
+    error ChurnApproverSaltUsed();
+    error NotSorted();
+}
 /**
  * @title Interface for a contract that coordinates between various registries for an AVS.
  * @author Layr Labs, Inc.
  */
-interface IRegistryCoordinator {
+interface IRegistryCoordinator is IRegistryCoordinatorErrors{
     // EVENTS
 
     /// Emits when an operator is registered

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "../utils/MockAVSDeployer.sol";
+import {IRegistryCoordinatorErrors} from "../../src/interfaces/IRegistryCoordinator.sol";
 
 contract RegistryCoordinatorUnitTests is MockAVSDeployer {
     using BN254 for BN254.G1Point;
@@ -120,7 +121,7 @@ contract RegistryCoordinatorUnitTests_Initialization_Setters is RegistryCoordina
             );
         }
 
-        // make sure the contract intializers are disabled
+        // make sure the contract initializers are disabled
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         registryCoordinator.initialize(
             registryCoordinatorOwner,
@@ -198,7 +199,7 @@ contract RegistryCoordinatorUnitTests_Initialization_Setters is RegistryCoordina
 
     function test_updateSocket_revert_notRegistered() public {
         cheats.prank(defaultOperator);
-        cheats.expectRevert("RegistryCoordinator.updateSocket: not registered");
+        cheats.expectRevert(bytes4(keccak256("NotRegistered()")));
         registryCoordinator.updateSocket("localhost:32004");
     }
 
@@ -269,7 +270,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         bytes memory emptyQuorumNumbers = new bytes(0);
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
 
-        cheats.expectRevert("RegistryCoordinator._registerOperator: bitmap empty");
+        cheats.expectRevert(bytes4(keccak256("BitmapEmpty()")));
         cheats.prank(defaultOperator);
         registryCoordinator.registerOperator(emptyQuorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
     }
@@ -483,7 +484,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         _setOperatorWeight(operatorToRegister, defaultQuorumNumber, defaultStake);
 
         cheats.prank(operatorToRegister);
-        cheats.expectRevert("RegistryCoordinator.registerOperator: operator exceeds max");
+        cheats.expectRevert(bytes4(keccak256("MaxQuorumsReached()")));
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
     }
 
@@ -503,8 +504,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
 
         cheats.prank(defaultOperator);
         cheats.roll(nextRegistrationBlockNumber);
-        cheats.expectRevert("RegistryCoordinator._registerOperator: operator already registered for some quorums being registered for");
-
+        cheats.expectRevert(bytes4(keccak256("AlreadyRegisteredForQuorums()")));
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
     }
 
@@ -513,7 +513,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         bytes memory emptyQuorumNumbers = new bytes(0);
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
 
-        cheats.expectRevert("RegistryCoordinator._registerOperator: bitmap empty");
+        cheats.expectRevert(bytes4(keccak256("BitmapEmpty()")));
         registryCoordinator._registerOperatorExternal(defaultOperator, defaultOperatorId, emptyQuorumNumbers, defaultSocket, emptySig);
     }
 
@@ -535,7 +535,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         _setOperatorWeight(defaultOperator, uint8(quorumNumbers[0]), defaultStake);
         registryCoordinator._registerOperatorExternal(defaultOperator, defaultOperatorId, quorumNumbers, defaultSocket, emptySig);
 
-        cheats.expectRevert("RegistryCoordinator._registerOperator: operator already registered for some quorums being registered for");
+        cheats.expectRevert(bytes4(keccak256("AlreadyRegisteredForQuorums()")));
         registryCoordinator._registerOperatorExternal(defaultOperator, defaultOperatorId, quorumNumbers, defaultSocket, emptySig);
     }
 
@@ -601,7 +601,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
-        cheats.expectRevert("RegistryCoordinator._deregisterOperator: not registered");
+        cheats.expectRevert(bytes4(keccak256("NotRegistered()")));
         cheats.prank(defaultOperator);
         registryCoordinator.deregisterOperator(quorumNumbers);
     }
@@ -617,7 +617,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         quorumNumbers[0] = bytes1(defaultQuorumNumber + 1);
         quorumNumbers[1] = bytes1(defaultQuorumNumber + 2);
 
-        cheats.expectRevert("RegistryCoordinator._deregisterOperator: not registered for quorum");
+        cheats.expectRevert(bytes4(keccak256("NotRegisteredForQuorum()")));
         cheats.prank(defaultOperator);
         registryCoordinator.deregisterOperator(quorumNumbers);
     }
@@ -957,13 +957,13 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         bytes memory emptyQuorumNumbers = new bytes(0);
 
         cheats.roll(deregistrationBlockNumber);
-        cheats.expectRevert("RegistryCoordinator._deregisterOperator: bitmap cannot be 0");
+        cheats.expectRevert(bytes4(keccak256("BitmapCannotBeZero()")));
         registryCoordinator._deregisterOperatorExternal(defaultOperator, emptyQuorumNumbers);
     }
 
     function test_deregisterOperatorExternal_revert_notRegistered() public {
         bytes memory emptyQuorumNumbers = new bytes(0);
-        cheats.expectRevert("RegistryCoordinator._deregisterOperator: not registered");
+        cheats.expectRevert(bytes4(keccak256("NotRegistered()")));
         registryCoordinator._deregisterOperatorExternal(defaultOperator, emptyQuorumNumbers);
     }
 
@@ -985,7 +985,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         incorrectQuorum[0] = bytes1(defaultQuorumNumber + 1);
 
         cheats.roll(deregistrationBlockNumber);
-        cheats.expectRevert("RegistryCoordinator._deregisterOperator: not registered for quorum");
+        cheats.expectRevert(bytes4(keccak256("NotRegisteredForQuorum()")));
         registryCoordinator._deregisterOperatorExternal(defaultOperator, incorrectQuorum);
     }
 
@@ -1013,7 +1013,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
 
         cheats.prank(defaultOperator);
         cheats.roll(reregistrationBlockNumber);
-        cheats.expectRevert("RegistryCoordinator._registerOperator: operator cannot reregister yet");
+        cheats.expectRevert(bytes4(keccak256("CannotReregisterYet()")));
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
     }
 
@@ -1214,7 +1214,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         cheats.prank(defaultOperator);
         registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
 
-        cheats.expectRevert("RegistryCoordinator.onlyEjector: not ejector");
+        cheats.expectRevert(bytes4(keccak256("OnlyEjector()")));
         cheats.prank(defaultOperator);
         registryCoordinator.ejectOperator(defaultOperator, quorumNumbers);
     }
@@ -1463,7 +1463,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry =
             _signOperatorChurnApproval(operatorToRegister, operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp + 10);
         cheats.prank(operatorToRegister);
-        cheats.expectRevert("RegistryCoordinator._validateChurn: incoming operator has insufficient stake for churn");
+        cheats.expectRevert(bytes4(keccak256("InsufficientStakeForChurn()")));
         registryCoordinator.registerOperatorWithChurn(
             quorumNumbers,
             defaultSocket,
@@ -1495,7 +1495,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry =
             _signOperatorChurnApproval(operatorToRegister, operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp + 10);
         cheats.prank(operatorToRegister);
-        cheats.expectRevert("RegistryCoordinator._validateChurn: cannot kick operator with more than kickBIPsOfTotalStake");
+        cheats.expectRevert(bytes4(keccak256("CannotKickOperatorAboveThreshold()")));
         registryCoordinator.registerOperatorWithChurn(
             quorumNumbers,
             defaultSocket,
@@ -1557,7 +1557,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry =
             _signOperatorChurnApproval(operatorToRegister, operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp - 1);
         cheats.prank(operatorToRegister);
-        cheats.expectRevert("RegistryCoordinator._verifyChurnApproverSignature: signature expired");
+        cheats.expectRevert(bytes4(keccak256("SignatureExpired()")));
         registryCoordinator.registerOperatorWithChurn(
             quorumNumbers,
             defaultSocket,
@@ -1678,7 +1678,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
-        cheats.expectRevert(bytes("RegistryCoordinator.updateOperatorsForQuorum: input length mismatch"));
+        cheats.expectRevert(bytes4(keccak256("InputLengthMismatch()")));
         registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
     }
 
@@ -1690,7 +1690,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
-        cheats.expectRevert(bytes("RegistryCoordinator.updateOperatorsForQuorum: number of updated operators does not match quorum total"));
+        cheats.expectRevert(bytes4(keccak256("QuorumOperatorCountMismatch()")));
         registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
     }
 
@@ -1711,7 +1711,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         operatorArray[0] =  _incrementAddress(defaultOperator, 1);
         operatorsToUpdate[0] = operatorArray;
 
-        cheats.expectRevert(bytes("RegistryCoordinator.updateOperatorsForQuorum: operator not in quorum"));
+        cheats.expectRevert(bytes4(keccak256("NotRegisteredForQuorum()")));
         registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
     }
 
@@ -1739,7 +1739,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         operatorsToUpdate[0] = operatorArray;
 
         // note: there is not an explicit check for duplicates, as checking for explicit ordering covers this
-        cheats.expectRevert(bytes("RegistryCoordinator.updateOperatorsForQuorum: operators must be sorted"));
+        cheats.expectRevert(bytes4(keccak256("NotSorted()")));
         registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
     }
 
@@ -1765,7 +1765,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         operatorArray[1] =  defaultOperator;
         operatorsToUpdate[0] = operatorArray;
 
-        cheats.expectRevert(bytes("RegistryCoordinator.updateOperatorsForQuorum: operators must be sorted"));
+        cheats.expectRevert(bytes4(keccak256("NotSorted()")));
         registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
     }
 
