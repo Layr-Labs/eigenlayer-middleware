@@ -575,6 +575,19 @@ contract StakeRegistry is StakeRegistryStorage {
     *******************************************************************************/
 
     /**
+     * @notice Returns whether a quorum is an operator set quorum based on its stake type
+     * @dev A quorum is an operator set quorum if it has TOTAL_SLASHABLE stake type
+     * and is not an M2 quorum
+     * @param quorumNumber The quorum number to check
+     * @return True if the quorum is an operator set quorum
+     */
+    function isOperatorSetQuorum(uint8 quorumNumber) external view returns (bool) {
+        bool isM2 = IRegistryCoordinator(registryCoordinator).isM2Quorum(quorumNumber);
+        bool isOperatorSet = IRegistryCoordinator(registryCoordinator).isOperatorSetAVS();
+        return isOperatorSet && !isM2;
+    }
+
+    /**
      * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
      * @dev reverts if the quorum does not exist
      */

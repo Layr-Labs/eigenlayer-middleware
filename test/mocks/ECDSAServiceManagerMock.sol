@@ -28,7 +28,7 @@ contract ECDSAServiceManagerMock is ECDSAServiceManagerBase {
         __ServiceManagerBase_init(initialOwner, rewardsInitiator);
     }
 
-    function createOperatorSets(address avs, IAllocationManager.CreateSetParams[] memory params) external{}
+    function createOperatorSets(IAllocationManager.CreateSetParams[] memory params) external{}
 
     function addStrategyToOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external{}
 

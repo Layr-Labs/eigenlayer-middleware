@@ -121,19 +121,16 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _rewardsCoordinator.createAVSRewardsSubmission(address(this),rewardsSubmissions);
     }
 
-    function createOperatorSets(address avs, IAllocationManager.CreateSetParams[] memory params) external onlyRegistryCoordinator {
-        /// TODO: add operator set creation params
-        // allocationManager.createOperatorSets(avs, params);
+    function createOperatorSets(IAllocationManager.CreateSetParams[] memory params) external onlyRegistryCoordinator {
+        _allocationManager.createOperatorSets(address(this), params);
     }
 
     function addStrategyToOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external onlyRegistryCoordinator {
-        /// TODO: add strategy info
-        // allocationManager.addStrategiesToOperatorSet(address(this), operatorSetId, strategies);
+        _allocationManager.addStrategiesToOperatorSet(address(this), operatorSetId, strategies);
     }
 
     function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external onlyRegistryCoordinator {
-        /// TODO: add strategy info
-        // allocationManager.removeStrategiesFromOperatorSet(address(this), operatorSetId, strategies);
+        _allocationManager.removeStrategiesFromOperatorSet(address(this), operatorSetId, strategies);
     }
 
     /**

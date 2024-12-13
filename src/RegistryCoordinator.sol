@@ -4,7 +4,8 @@ pragma solidity ^0.8.12;
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-import { OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+import { IAllocationManager, OperatorSet, IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {ISocketUpdater} from "./interfaces/ISocketUpdater.sol";
 import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry, StakeType} from "./interfaces/IStakeRegistry.sol";
@@ -326,11 +327,6 @@ contract RegistryCoordinator is
             quorumNumbers: quorumNumbers,
             socket: socket
         });
-
-        /// TODO: Register with Churn doesn't seem to be used in practice.  I would advocate for not even handling the
-        /// the case and just killing off the function.  This would free up code size as well
-        /// TODO: alternatively, Correctly handle decoding the registration with churn and the normal registration flow parameters
-
     }
 
     function deregisterOperator(
@@ -965,6 +961,24 @@ contract RegistryCoordinator is
         // Initialize the quorum here and in each registry
         _setOperatorSetParams(quorumNumber, operatorSetParams);
 
+        /// Update the AllocationManager if operatorSetQuorum
+        if (isOperatorSetAVS && !isM2Quorum[quorumNumber]) {
+            // Create array of CreateSetParams for the new quorum
+            IAllocationManagerTypes.CreateSetParams[] memory createSetParams = new IAllocationManagerTypes.CreateSetParams[](1);
+
+            // Extract strategies from strategyParams
+            IStrategy[] memory strategies = new IStrategy[](strategyParams.length);
+            for (uint256 i = 0; i < strategyParams.length; i++) {
+                strategies[i] = strategyParams[i].strategy;
+            }
+
+            // Initialize CreateSetParams with quorumNumber as operatorSetId
+            createSetParams[0] = IAllocationManagerTypes.CreateSetParams({
+                operatorSetId: quorumNumber,
+                strategies: strategies
+            });
+            serviceManager.createOperatorSets(createSetParams);
+        }
         // Initialize stake registry based on stake type
         if (stakeType == StakeType.TOTAL_DELEGATED) {
             stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);

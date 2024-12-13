@@ -28,7 +28,7 @@ interface IServiceManager is IServiceManagerUI {
      */
     function createAVSRewardsSubmission(IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions) external;
 
-    function createOperatorSets(address avs, IAllocationManager.CreateSetParams[] memory params) external;
+    function createOperatorSets(IAllocationManager.CreateSetParams[] memory params) external;
 
     function addStrategyToOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external;
 
