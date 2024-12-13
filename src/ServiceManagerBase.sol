@@ -49,6 +49,12 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _;
     }
 
+    /// @notice only StakeRegistry can call functions with this modifier
+    modifier onlyStakeRegistry() {
+        _checkStakeRegistry();
+        _;
+    }
+
     /// @notice Sets the (immutable) `_registryCoordinator` address
     constructor(
         IAVSDirectory __avsDirectory,
@@ -125,11 +131,11 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _allocationManager.createOperatorSets(address(this), params);
     }
 
-    function addStrategyToOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external onlyRegistryCoordinator {
+    function addStrategyToOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external onlyStakeRegistry {
         _allocationManager.addStrategiesToOperatorSet(address(this), operatorSetId, strategies);
     }
 
-    function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external onlyRegistryCoordinator {
+    function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external onlyStakeRegistry {
         _allocationManager.removeStrategiesFromOperatorSet(address(this), operatorSetId, strategies);
     }
 
@@ -460,6 +466,13 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         require(
             msg.sender == rewardsInitiator,
             "ServiceManagerBase.onlyRewardsInitiator: caller is not the rewards initiator"
+        );
+    }
+
+    function _checkStakeRegistry() internal view {
+        require(
+            msg.sender == address(_stakeRegistry),
+            "ServiceManagerBase.onlyStakeRegistry: caller is not the stake registry"
         );
     }
 
