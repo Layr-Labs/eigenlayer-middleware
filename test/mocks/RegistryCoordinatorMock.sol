@@ -70,4 +70,12 @@ contract RegistryCoordinatorMock is IRegistryCoordinator {
     function owner() external view returns (address) {}
 
     function serviceManager() external view returns (IServiceManager){}
+
+    function isM2Quorum(uint8 quorumNumber) external view returns (bool) {
+        return false;
+    }
+
+    function isOperatorSetAVS() external view returns (bool) {
+        return false;
+    }
 }

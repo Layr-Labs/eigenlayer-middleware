@@ -6,6 +6,7 @@ import {IServiceManagerUI} from "./IServiceManagerUI.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 
 
@@ -27,19 +28,11 @@ interface IServiceManager is IServiceManagerUI {
      */
     function createAVSRewardsSubmission(IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions) external;
 
-    function createOperatorSets(uint32[] memory operatorSetIds) external;
+    function createOperatorSets(IAllocationManager.CreateSetParams[] memory params) external;
 
-    /**
-     * @notice Forwards a call to EigenLayer's AVSDirectory contract to register an operator to operator sets
-     * @param operator The address of the operator to register.
-     * @param operatorSetIds The IDs of the operator sets.
-     * @param operatorSignature The signature, salt, and expiry of the operator's signature.
-     */
-    function registerOperatorToOperatorSets(
-        address operator,
-        uint32[] calldata operatorSetIds,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external;
+    function addStrategyToOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external;
+
+    function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external;
 
     /**
      * @notice Sets the AVS registrar address in the AllocationManager

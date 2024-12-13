@@ -154,10 +154,6 @@ contract StakeRegistry is StakeRegistryStorage {
     ) external onlyRegistryCoordinator returns (uint192) {
         uint192 quorumsToRemove;
 
-        bool isOperatorSetAVS;
-        // TODO: logic for determining if it's an operator set quorum number or not
-        // avsDirectory.isOperatorSetAVS(address(serviceManager));
-
         /**
          * For each quorum, update the operator's stake and record the delta
          * in the quorum's total stake.
@@ -246,7 +242,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param quorumNumber The quorum number to set the stake type for
      * @param _stakeType The type of stake to track (TOTAL_DELEGATED, TOTAL_SLASHABLE, or BOTH)
      */
-    function setStakeType(uint8 quorumNumber, StakeType _stakeType) external onlyCoordinatorOwner {
+    function setStakeType(uint8 quorumNumber, StakeType _stakeType) external onlyCoordinatorOwner quorumExists(quorumNumber) {
         _setStakeType(quorumNumber, _stakeType);
     }
 
@@ -255,9 +251,10 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param quorumNumber The quorum number to set the look ahead period for
      * @param _lookAheadPeriod The number of days to look ahead when checking shares
      */
-    function setSlashableStakeLookahead(uint8 quorumNumber, uint32 _lookAheadPeriod) external onlyCoordinatorOwner {
+    function setSlashableStakeLookahead(uint8 quorumNumber, uint32 _lookAheadPeriod) external onlyCoordinatorOwner quorumExists(quorumNumber) {
         _setLookAheadPeriod(quorumNumber, _lookAheadPeriod);
     }
+
     /**
      * @notice Adds strategies and weights to the quorum
      * @dev Checks to make sure that the *same* strategy cannot be added multiple times (checks against both against existing and new strategies).
@@ -573,6 +570,19 @@ contract StakeRegistry is StakeRegistryStorage {
     /*******************************************************************************
                             VIEW FUNCTIONS
     *******************************************************************************/
+
+    /**
+     * @notice Returns whether a quorum is an operator set quorum based on its stake type
+     * @dev A quorum is an operator set quorum if it has TOTAL_SLASHABLE stake type
+     * and is not an M2 quorum
+     * @param quorumNumber The quorum number to check
+     * @return True if the quorum is an operator set quorum
+     */
+    function isOperatorSetQuorum(uint8 quorumNumber) external view returns (bool) {
+        bool isM2 = IRegistryCoordinator(registryCoordinator).isM2Quorum(quorumNumber);
+        bool isOperatorSet = IRegistryCoordinator(registryCoordinator).isOperatorSetAVS();
+        return isOperatorSet && !isM2;
+    }
 
     /**
      * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.

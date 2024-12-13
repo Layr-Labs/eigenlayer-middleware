@@ -4,7 +4,8 @@ pragma solidity ^0.8.27;
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-import { OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+import { IAllocationManager, OperatorSet, IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {ISocketUpdater} from "./interfaces/ISocketUpdater.sol";
 import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry, StakeType} from "./interfaces/IStakeRegistry.sol";
@@ -326,11 +327,6 @@ contract RegistryCoordinator is
             quorumNumbers: quorumNumbers,
             socket: socket
         });
-
-        /// TODO: Register with Churn doesn't seem to be used in practice.  I would advocate for not even handling the
-        /// the case and just killing off the function.  This would free up code size as well
-        /// TODO: alternatively, Correctly handle decoding the registration with churn and the normal registration flow parameters
-
     }
 
     function deregisterOperator(
@@ -828,24 +824,12 @@ contract RegistryCoordinator is
         // Update operator's bitmap and status
         _updateOperatorBitmap({operatorId: operatorId, newBitmap: newBitmap});
 
-        bool operatorSetAVS = isUsingOperatorSets();
-        //  = IAVSDirectory(serviceManager.avsDirectory()).isOperatorSetAVS(address(serviceManager));
-        if (operatorSetAVS){
-            bytes memory quorumBytes = BitmapUtils.bitmapToBytesArray(quorumsToRemove);
-            uint32[] memory operatorSetIds = new uint32[](quorumBytes.length);
-            for (uint256 i = 0; i < quorumBytes.length; i++) {
-                operatorSetIds[i] = uint8(quorumBytes[i]);
-            }
-
-            serviceManager.deregisterOperatorFromOperatorSets(operator, operatorSetIds);
-        } else {
-            // If the operator is no longer registered for any quorums, update their status and deregister
-            // them from the AVS via the EigenLayer core contracts
-            if (newBitmap.isEmpty()) {
-                operatorInfo.status = OperatorStatus.DEREGISTERED;
-                serviceManager.deregisterOperatorFromAVS(operator);
-                emit OperatorDeregistered(operator, operatorId);
-            }
+        // If the operator is no longer registered for any quorums, update their status and deregister
+        // them from the AVS via the EigenLayer core contracts
+        if (newBitmap.isEmpty()) {
+            operatorInfo.status = OperatorStatus.DEREGISTERED;
+            serviceManager.deregisterOperatorFromAVS(operator);
+            emit OperatorDeregistered(operator, operatorId);
         }
 
         // Deregister operator with each of the registry contracts
@@ -965,6 +949,24 @@ contract RegistryCoordinator is
         // Initialize the quorum here and in each registry
         _setOperatorSetParams(quorumNumber, operatorSetParams);
 
+        /// Update the AllocationManager if operatorSetQuorum
+        if (isOperatorSetAVS && !isM2Quorum[quorumNumber]) {
+            // Create array of CreateSetParams for the new quorum
+            IAllocationManagerTypes.CreateSetParams[] memory createSetParams = new IAllocationManagerTypes.CreateSetParams[](1);
+
+            // Extract strategies from strategyParams
+            IStrategy[] memory strategies = new IStrategy[](strategyParams.length);
+            for (uint256 i = 0; i < strategyParams.length; i++) {
+                strategies[i] = strategyParams[i].strategy;
+            }
+
+            // Initialize CreateSetParams with quorumNumber as operatorSetId
+            createSetParams[0] = IAllocationManagerTypes.CreateSetParams({
+                operatorSetId: quorumNumber,
+                strategies: strategies
+            });
+            serviceManager.createOperatorSets(createSetParams);
+        }
         // Initialize stake registry based on stake type
         if (stakeType == StakeType.TOTAL_DELEGATED) {
             stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
