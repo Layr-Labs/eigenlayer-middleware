@@ -154,10 +154,6 @@ contract StakeRegistry is StakeRegistryStorage {
     ) external onlyRegistryCoordinator returns (uint192) {
         uint192 quorumsToRemove;
 
-        bool isOperatorSetAVS;
-        // TODO: logic for determining if it's an operator set quorum number or not
-        // avsDirectory.isOperatorSetAVS(address(serviceManager));
-
         /**
          * For each quorum, update the operator's stake and record the delta
          * in the quorum's total stake.
