@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import {IServiceManagerUI} from "./interfaces/IServiceManagerUI.sol";
 
 /**
  * @title Contract that proxies calls to a ServiceManager contract.
  * This contract is designed to be used by off-chain services which need
- * errors to be handled gracefully. 
+ * errors to be handled gracefully.
  * @author Layr Labs, Inc.
  */
 
@@ -40,7 +40,7 @@ contract ServiceManagerRouter {
 
     /**
      * @notice Internal helper function to make static calls
-     * @dev Handles calls to contracts that don't implement the given function and to EOAs by 
+     * @dev Handles calls to contracts that don't implement the given function and to EOAs by
      *      returning a failed call address
      */
     function _makeCall(address serviceManager, bytes memory data) internal view returns (address[] memory) {

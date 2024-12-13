@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "../../src/libraries/BN254.sol";
 import "forge-std/Test.sol";
@@ -83,7 +83,7 @@ contract ProofParsing is Test{
     function getExecutionPayloadProof () public returns(bytes32[7] memory) {
         for (uint i = 0; i < 7; i++) {
             prefix = string.concat(".ExecutionPayloadProof[", string.concat(vm.toString(i), "]"));
-            executionPayloadProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+            executionPayloadProof[i] = (stdJson.readBytes32(proofConfigJson, prefix));
         }
         return executionPayloadProof;
     }
@@ -91,7 +91,7 @@ contract ProofParsing is Test{
     function getTimestampProof() public returns(bytes32[4] memory) {
         for (uint i = 0; i < 4; i++) {
             prefix = string.concat(".TimestampProof[", string.concat(vm.toString(i), "]"));
-            timestampProofs[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+            timestampProofs[i] = (stdJson.readBytes32(proofConfigJson, prefix));
         }
         return timestampProofs;
     }
@@ -99,7 +99,7 @@ contract ProofParsing is Test{
     function getBlockHeaderProof() public returns(bytes32[18] memory) {
         for (uint i = 0; i < 18; i++) {
             prefix = string.concat(".BlockHeaderProof[", string.concat(vm.toString(i), "]"));
-            blockHeaderProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+            blockHeaderProof[i] = (stdJson.readBytes32(proofConfigJson, prefix));
         }
         return blockHeaderProof;
     }
@@ -107,7 +107,7 @@ contract ProofParsing is Test{
     function getSlotProof() public returns(bytes32[3] memory) {
         for (uint i = 0; i < 3; i++) {
             prefix = string.concat(".SlotProof[", string.concat(vm.toString(i), "]"));
-            slotProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+            slotProof[i] = (stdJson.readBytes32(proofConfigJson, prefix));
         }
         return slotProof;
     }
@@ -116,7 +116,7 @@ contract ProofParsing is Test{
         bytes32[] memory stateRootProof = new bytes32[](3);
         for (uint i = 0; i < 3; i++) {
             prefix = string.concat(".StateRootAgainstLatestBlockHeaderProof[", string.concat(vm.toString(i), "]"));
-            stateRootProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+            stateRootProof[i] = (stdJson.readBytes32(proofConfigJson, prefix));
         }
         return stateRootProof;
     }
@@ -124,7 +124,7 @@ contract ProofParsing is Test{
     function getWithdrawalProof() public returns(bytes32[9] memory) {
         for (uint i = 0; i < 9; i++) {
             prefix = string.concat(".WithdrawalProof[", string.concat(vm.toString(i), "]"));
-            withdrawalProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+            withdrawalProof[i] = (stdJson.readBytes32(proofConfigJson, prefix));
         }
         return withdrawalProof;
     }
@@ -132,7 +132,7 @@ contract ProofParsing is Test{
     function getValidatorProof() public returns(bytes32[46] memory) {
         for (uint i = 0; i < 46; i++) {
             prefix = string.concat(".ValidatorProof[", string.concat(vm.toString(i), "]"));
-            validatorProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+            validatorProof[i] = (stdJson.readBytes32(proofConfigJson, prefix));
         }
         return validatorProof;
     }
@@ -140,16 +140,16 @@ contract ProofParsing is Test{
     function getHistoricalSummaryProof() public returns(bytes32[44] memory) {
         for (uint i = 0; i < 44; i++) {
             prefix = string.concat(".HistoricalSummaryProof[", string.concat(vm.toString(i), "]"));
-            historicalSummaryProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+            historicalSummaryProof[i] = (stdJson.readBytes32(proofConfigJson, prefix));
         }
         return historicalSummaryProof;
     }
-    
+
     function getWithdrawalFields() public returns(bytes32[] memory) {
         bytes32[] memory withdrawalFields = new bytes32[](4);
         for (uint i = 0; i < 4; i++) {
             prefix = string.concat(".WithdrawalFields[", string.concat(vm.toString(i), "]"));
-            withdrawalFields[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+            withdrawalFields[i] = (stdJson.readBytes32(proofConfigJson, prefix));
         }
          return withdrawalFields;
 
@@ -159,7 +159,7 @@ contract ProofParsing is Test{
         bytes32[] memory validatorFields = new bytes32[](8);
         for (uint i = 0; i < 8; i++) {
             prefix = string.concat(".ValidatorFields[", string.concat(vm.toString(i), "]"));
-            validatorFields[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+            validatorFields[i] = (stdJson.readBytes32(proofConfigJson, prefix));
         }
         return validatorFields;
     }
@@ -168,7 +168,7 @@ contract ProofParsing is Test{
         bytes32[] memory validatorBalanceProof = new bytes32[](44);
         for (uint i = 0; i < 44; i++) {
             prefix = string.concat(".ValidatorBalanceProof[", string.concat(vm.toString(i), "]"));
-            validatorBalanceProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+            validatorBalanceProof[i] = (stdJson.readBytes32(proofConfigJson, prefix));
         }
         return validatorBalanceProof;
     }
@@ -177,7 +177,7 @@ contract ProofParsing is Test{
         bytes32[] memory balanceUpdateSlotProof = new bytes32[](5);
         for (uint i = 0; i < 5; i++) {
             prefix = string.concat(".slotProof[", string.concat(vm.toString(i), "]"));
-            balanceUpdateSlotProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+            balanceUpdateSlotProof[i] = (stdJson.readBytes32(proofConfigJson, prefix));
         }
         return balanceUpdateSlotProof;
     }
@@ -186,7 +186,7 @@ contract ProofParsing is Test{
         bytes32[] memory withdrawalCredenitalProof = new bytes32[](46);
         for (uint i = 0; i < 46; i++) {
             prefix = string.concat(".WithdrawalCredentialProof[", string.concat(vm.toString(i), "]"));
-            withdrawalCredenitalProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+            withdrawalCredenitalProof[i] = (stdJson.readBytes32(proofConfigJson, prefix));
         }
         return withdrawalCredenitalProof;
     }
@@ -195,7 +195,7 @@ contract ProofParsing is Test{
         bytes32[] memory validatorFieldsProof = new bytes32[](46);
         for (uint i = 0; i < 46; i++) {
             prefix = string.concat(".ValidatorFieldsProof[", string.concat(vm.toString(i), "]"));
-            validatorFieldsProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+            validatorFieldsProof[i] = (stdJson.readBytes32(proofConfigJson, prefix));
         }
         return validatorFieldsProof;
     }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 
@@ -164,7 +164,7 @@ abstract contract IntegrationBase is IntegrationConfig {
     }
 
     /// AVSDirectory:
-    
+
     function assert_NotRegisteredToAVS(User operator, string memory err) internal {
         IAVSDirectoryTypes.OperatorAVSRegistrationStatus status = avsDirectory.avsOperatorStatus(address(serviceManager), address(operator));
 
@@ -222,7 +222,7 @@ abstract contract IntegrationBase is IntegrationConfig {
 
     function assert_Snap_Unchanged_QuorumBitmap(User user, string memory err) internal {
         bytes32 operatorId = user.operatorId();
-        
+
         uint192 curBitmap = _getQuorumBitmap(operatorId);
         uint192 prevBitmap = _getPrevQuorumBitmap(operatorId);
 
@@ -288,11 +288,11 @@ abstract contract IntegrationBase is IntegrationConfig {
         for (uint i = 0; i < churnedQuorums.length; i++) {
             BN254.G1Point memory churnedPubkey = churnedOperators[i].pubkeyG1();
 
-            BN254.G1Point memory expectedApk 
+            BN254.G1Point memory expectedApk
                 = prevApks[i]
                     .plus(churnedPubkey.negate())
                     .plus(incomingPubkey);
-                
+
             assertEq(expectedApk.X, curApks[i].X, err);
             assertEq(expectedApk.Y, curApks[i].Y, err);
         }
@@ -300,7 +300,7 @@ abstract contract IntegrationBase is IntegrationConfig {
 
     /// @dev Check that specific weights were added to the operator and total stakes for each quorum
     function assert_Snap_AddedWeightToStakes(
-        User user, 
+        User user,
         bytes memory quorums,
         uint96[] memory addedWeights,
         string memory err
@@ -320,7 +320,7 @@ abstract contract IntegrationBase is IntegrationConfig {
     /// @dev Check that the operator's stake weight was added to the operator and total
     /// stakes for each quorum
     function assert_Snap_Added_OperatorWeight(
-        User user, 
+        User user,
         bytes memory quorums,
         string memory err
     ) internal {
@@ -362,7 +362,7 @@ abstract contract IntegrationBase is IntegrationConfig {
     }
 
     function assert_Snap_Unchanged_OperatorStake(
-        User user, 
+        User user,
         bytes memory quorums,
         string memory err
     ) internal {
@@ -431,7 +431,7 @@ abstract contract IntegrationBase is IntegrationConfig {
     }
 
     function assert_Snap_Removed_TotalStake(
-        User user, 
+        User user,
         bytes memory quorums,
         string memory err
     ) internal {
@@ -462,7 +462,7 @@ abstract contract IntegrationBase is IntegrationConfig {
     function assert_Snap_Added_OperatorCount(bytes memory quorums, string memory err) internal {
         uint32[] memory curOperatorCounts = _getOperatorCounts(quorums);
         uint32[] memory prevOperatorCounts = _getPrevOperatorCounts(quorums);
-        
+
         for (uint i = 0; i < quorums.length; i++) {
             assertEq(curOperatorCounts[i], prevOperatorCounts[i] + 1, err);
         }
@@ -471,7 +471,7 @@ abstract contract IntegrationBase is IntegrationConfig {
     function assert_Snap_Reduced_OperatorCount(bytes memory quorums, string memory err) internal {
         uint32[] memory curOperatorCounts = _getOperatorCounts(quorums);
         uint32[] memory prevOperatorCounts = _getPrevOperatorCounts(quorums);
-        
+
         for (uint i = 0; i < quorums.length; i++) {
             assertEq(curOperatorCounts[i], prevOperatorCounts[i] - 1, err);
         }
@@ -480,7 +480,7 @@ abstract contract IntegrationBase is IntegrationConfig {
     function assert_Snap_Unchanged_OperatorCount(bytes memory quorums, string memory err) internal {
         uint32[] memory curOperatorCounts = _getOperatorCounts(quorums);
         uint32[] memory prevOperatorCounts = _getPrevOperatorCounts(quorums);
-        
+
         for (uint i = 0; i < quorums.length; i++) {
             assertEq(curOperatorCounts[i], prevOperatorCounts[i], err);
         }
@@ -491,7 +491,7 @@ abstract contract IntegrationBase is IntegrationConfig {
     /// - that the operator is in the current list, but not the previous list
     function assert_Snap_Added_OperatorListEntry(
         User operator,
-        bytes memory quorums, 
+        bytes memory quorums,
         string memory err
     ) internal {
         bytes32[][] memory curOperatorLists = _getOperatorLists(quorums);
@@ -510,7 +510,7 @@ abstract contract IntegrationBase is IntegrationConfig {
     /// - that the operator is in the previous list, but not the current list
     function assert_Snap_Removed_OperatorListEntry(
         User operator,
-        bytes memory quorums, 
+        bytes memory quorums,
         string memory err
     ) internal {
         bytes32[][] memory curOperatorLists = _getOperatorLists(quorums);
@@ -541,12 +541,12 @@ abstract contract IntegrationBase is IntegrationConfig {
     function assert_Snap_Replaced_OperatorListEntries(
         User incomingOperator,
         User[] memory churnedOperators,
-        bytes memory churnedQuorums, 
+        bytes memory churnedQuorums,
         string memory err
     ) internal {
         // Sanity check input lengths
         assertEq(churnedOperators.length, churnedQuorums.length, "assert_Snap_Replaced_OperatorListEntries: input length mismatch");
-        
+
         bytes32[][] memory curOperatorLists = _getOperatorLists(churnedQuorums);
         bytes32[][] memory prevOperatorLists = _getPrevOperatorLists(churnedQuorums);
 
@@ -568,11 +568,11 @@ abstract contract IntegrationBase is IntegrationConfig {
                        TIME TRAVELERS ONLY BEYOND THIS POINT
     *******************************************************************************/
 
-    /// @dev Check that the operator has `addedShares` additional operator shares 
+    /// @dev Check that the operator has `addedShares` additional operator shares
     // for each strategy since the last snapshot
     function assert_Snap_Added_OperatorShares(
-        User operator, 
-        IStrategy[] memory strategies, 
+        User operator,
+        IStrategy[] memory strategies,
         uint[] memory addedShares,
         string memory err
     ) internal {
@@ -589,8 +589,8 @@ abstract contract IntegrationBase is IntegrationConfig {
     /// @dev Check that the operator has `removedShares` fewer operator shares
     /// for each strategy since the last snapshot
     function assert_Snap_Removed_OperatorShares(
-        User operator, 
-        IStrategy[] memory strategies, 
+        User operator,
+        IStrategy[] memory strategies,
         uint256[] memory removedShares,
         string memory err
     ) internal {
@@ -607,8 +607,8 @@ abstract contract IntegrationBase is IntegrationConfig {
     /// @dev Check that the staker has `addedShares` additional delegatable shares
     /// for each strategy since the last snapshot
     function assert_Snap_Added_StakerShares(
-        User staker, 
-        IStrategy[] memory strategies, 
+        User staker,
+        IStrategy[] memory strategies,
         uint[] memory addedShares,
         string memory err
     ) internal {
@@ -625,8 +625,8 @@ abstract contract IntegrationBase is IntegrationConfig {
     /// @dev Check that the staker has `removedShares` fewer delegatable shares
     /// for each strategy since the last snapshot
     function assert_Snap_Removed_StakerShares(
-        User staker, 
-        IStrategy[] memory strategies, 
+        User staker,
+        IStrategy[] memory strategies,
         uint[] memory removedShares,
         string memory err
     ) internal {
@@ -641,7 +641,7 @@ abstract contract IntegrationBase is IntegrationConfig {
     }
 
     function assert_Snap_Added_QueuedWithdrawals(
-        User staker, 
+        User staker,
         IDelegationManager.Withdrawal[] memory withdrawals,
         string memory err
     ) internal {
@@ -653,7 +653,7 @@ abstract contract IntegrationBase is IntegrationConfig {
     }
 
     function assert_Snap_Added_QueuedWithdrawal(
-        User staker, 
+        User staker,
         string memory err
     ) internal {
         uint curQueuedWithdrawal = _getCumulativeWithdrawals(staker);
@@ -741,7 +741,7 @@ abstract contract IntegrationBase is IntegrationConfig {
 
     /// @dev Uses timewarp modifier to get operator shares at the last snapshot
     function _getPrevOperatorShares(
-        User operator, 
+        User operator,
         IStrategy[] memory strategies
     ) internal timewarp() returns (uint[] memory) {
         return _getOperatorShares(operator, strategies);
@@ -760,7 +760,7 @@ abstract contract IntegrationBase is IntegrationConfig {
 
     /// @dev Uses timewarp modifier to get staker shares at the last snapshot
     function _getPrevStakerShares(
-        User staker, 
+        User staker,
         IStrategy[] memory strategies
     ) internal timewarp() returns (uint[] memory) {
         return _getStakerShares(staker, strategies);
@@ -786,7 +786,7 @@ abstract contract IntegrationBase is IntegrationConfig {
     function _getCumulativeWithdrawals(User staker) internal view returns (uint) {
         return delegationManager.cumulativeWithdrawalsQueued(address(staker));
     }
-    
+
     /// RegistryCoordinator:
 
     function _getOperatorInfo(User user) internal view returns (IRegistryCoordinator.OperatorInfo memory) {
@@ -880,7 +880,7 @@ abstract contract IntegrationBase is IntegrationConfig {
         for (uint i = 0; i < quorums.length; i++) {
             stakes[i] = stakeRegistry.getCurrentTotalStake(uint8(quorums[i]));
         }
-        
+
         return stakes;
     }
 

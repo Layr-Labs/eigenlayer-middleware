@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import {IRegistry} from "./IRegistry.sol";
 
@@ -24,9 +24,9 @@ interface IBLSApkRegistry is IRegistry {
     /**
      * @notice Struct used when registering a new public key
      * @param pubkeyRegistrationSignature is the registration message signed by the private key of the operator
-     * @param pubkeyG1 is the corresponding G1 public key of the operator 
+     * @param pubkeyG1 is the corresponding G1 public key of the operator
      * @param pubkeyG2 is the corresponding G2 public key of the operator
-     */     
+     */
     struct PubkeyRegistrationParams {
         BN254.G1Point pubkeyRegistrationSignature;
         BN254.G1Point pubkeyG1;
@@ -46,7 +46,7 @@ interface IBLSApkRegistry is IRegistry {
 
     // @notice Emitted when an operator pubkey is removed from a set of quorums
     event OperatorRemovedFromQuorums(
-        address operator, 
+        address operator,
         bytes32 operatorId,
         bytes quorumNumbers
     );
@@ -75,9 +75,9 @@ interface IBLSApkRegistry is IRegistry {
      *         3) `quorumNumbers` is ordered in ascending order
      *         4) the operator is not already deregistered
      *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
-     */ 
+     */
     function deregisterOperator(address operator, bytes calldata quorumNumbers) external;
-    
+
     /**
      * @notice Initializes a new quorum by pushing its first apk update
      * @param quorumNumber The number of the new quorum

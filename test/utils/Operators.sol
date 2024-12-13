@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "../../src/libraries/BN254.sol";
 import "forge-std/Test.sol";
@@ -50,12 +50,12 @@ contract Operators is Test {
             X: [
                 readUint(operatorConfigJson, index, "PubkeyG2.X.A1"),
                 readUint(operatorConfigJson, index, "PubkeyG2.X.A0")
-            ],   
+            ],
             Y: [
                 readUint(operatorConfigJson, index, "PubkeyG2.Y.A1"),
                 readUint(operatorConfigJson, index, "PubkeyG2.Y.A0")
             ]
-        }); 
+        });
         return pubkey;
     }
 
@@ -68,7 +68,7 @@ contract Operators is Test {
         uint256 result = 0;
         for (uint256 i = 0; i < b.length; i++) {
             if (uint256(uint8(b[i])) >= 48 && uint256(uint8(b[i])) <= 57) {
-                result = result * 10 + (uint256(uint8(b[i])) - 48); 
+                result = result * 10 + (uint256(uint8(b[i])) - 48);
             }
         }
         return result;

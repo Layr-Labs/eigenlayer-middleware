@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import {BN254} from "../../src/libraries/BN254.sol";
 
@@ -17,7 +17,7 @@ interface IBLSApkRegistryEvents {
 
     // @notice Emitted when an operator pubkey is removed from a set of quorums
     event OperatorRemovedFromQuorums(
-        address operator, 
+        address operator,
         bytes32 operatorId,
         bytes quorumNumbers
     );

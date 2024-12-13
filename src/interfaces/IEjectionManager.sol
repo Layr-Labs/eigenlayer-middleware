@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 /**
  * @title Interface for a contract that ejects operators from an AVSs RegistryCoordinator
@@ -25,7 +25,7 @@ interface IEjectionManager {
     event QuorumEjectionParamsSet(uint8 quorumNumber, uint32 rateLimitWindow, uint16 ejectableStakePercent);
     ///@notice Emitted when an operator is ejected
     event OperatorEjected(bytes32 operatorId, uint8 quorumNumber);
-    ///@notice Emitted when operators are ejected for a quroum 
+    ///@notice Emitted when operators are ejected for a quroum
     event QuorumEjection(uint32 ejectedOperators, bool ratelimitHit);
 
    /**

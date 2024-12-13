@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 import "forge-std/Script.sol";
@@ -29,7 +29,7 @@ contract Owners is Test {
         for (uint256 i = 0; i < getNumOperators(); i++) {
             addresses.push(getOwnerAddress(i));
         }
-        return addresses;    
+        return addresses;
     }
 
     function getReputedOwnerAddresses() public returns(address[] memory) {
@@ -37,11 +37,11 @@ contract Owners is Test {
         for (uint256 i = 0; i < getNumOperators(); i++) {
             addresses.push(getOwnerAddress(i));
         }
-        return addresses;    
+        return addresses;
     }
 
     function resetOwnersConfigJson(string memory newConfig) public {
         ownersConfigJson = vm.readFile(newConfig);
     }
-    
+
 }

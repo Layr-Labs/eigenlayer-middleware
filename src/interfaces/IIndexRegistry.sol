@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import {IRegistry} from "./IRegistry.sol";
 
@@ -9,13 +9,13 @@ import {IRegistry} from "./IRegistry.sol";
  */
 interface IIndexRegistry is IRegistry {
     // EVENTS
-    
+
     // emitted when an operator's index in the ordered operator list for the quorum with number `quorumNumber` is updated
     event QuorumIndexUpdate(bytes32 indexed operatorId, uint8 quorumNumber, uint32 newOperatorIndex);
 
     // DATA STRUCTURES
 
-    // struct used to give definitive ordering to operators at each blockNumber. 
+    // struct used to give definitive ordering to operators at each blockNumber.
     struct OperatorUpdate {
         // blockNumber number from which `operatorIndex` was the operators index
         // the operator's index is the first entry such that `blockNumber >= entry.fromBlockNumber`

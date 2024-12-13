@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 import "openzeppelin-contracts/contracts/utils/Strings.sol";
@@ -13,7 +13,7 @@ contract G2Operations is Test {
         inputs[0] = "go";
         inputs[1] = "run";
         inputs[2] = "test/ffi/go/g2mul.go";
-        inputs[3] = x.toString(); 
+        inputs[3] = x.toString();
 
         inputs[4] = "1";
         bytes memory res = vm.ffi(inputs);

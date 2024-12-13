@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "test/integration/User.t.sol";
 
@@ -109,7 +109,7 @@ contract Integration_Full_Register_Deregister is IntegrationChecks {
             churnTarget.registerOperator(quorum);
             check_Register_State(churnTarget, quorum);
         }
-        
+
         // 4. Original operator re-registers for all quorums by churning old operators again
         operator.registerOperatorWithChurn(quorums, churnTargets, new bytes(0));
         check_Churned_State({
@@ -140,7 +140,7 @@ contract Integration_Full_Register_Deregister is IntegrationChecks {
 
         // Select some quorums to register using churn, and the rest without churn
         bytes memory churnQuorums = _selectRand(quorums);
-        bytes memory standardQuorums = 
+        bytes memory standardQuorums =
             quorums
                 .orderedBytesArrayToBitmap()
                 .minus(churnQuorums.orderedBytesArrayToBitmap())

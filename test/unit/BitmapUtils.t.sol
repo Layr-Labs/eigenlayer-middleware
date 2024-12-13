@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "../harnesses/BitmapUtilsWrapper.sol";
 // import "../../contracts/libraries/BitmapUtils.sol";
@@ -24,7 +24,7 @@ contract BitmapUtilsUnitTests_bitwiseOperations is BitmapUtilsUnitTests {
         uint16 numOnes = 0;
         for (uint256 i = 0; i < 256; ++i) {
             if ((input >> i) & 1 == 1) {
-                ++numOnes; 
+                ++numOnes;
             }
         }
         assertEq(libraryOutput, numOnes, "inconsistency in countNumOnes function");

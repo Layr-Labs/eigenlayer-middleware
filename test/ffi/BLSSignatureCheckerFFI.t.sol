@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import {G2Operations} from "../ffi/util/G2Operations.sol";
 import {MockAVSDeployer} from "../utils/MockAVSDeployer.sol";
@@ -30,13 +30,13 @@ contract BLSSignatureCheckerFFITests is MockAVSDeployer, G2Operations {
     // this test checks that a valid signature from maxOperatorsToRegister with a random number of nonsigners is checked
     // correctly on the BLSSignatureChecker contract when all operators are only regsitered for a single quorum and
     // the signature is only checked for stakes on that quorum
-    function testBLSSignatureChecker_SingleQuorum_Valid(uint256 pseudoRandomNumber) public { 
+    function testBLSSignatureChecker_SingleQuorum_Valid(uint256 pseudoRandomNumber) public {
         uint256 numNonSigners = pseudoRandomNumber % (maxOperatorsToRegister - 1);
 
         uint256 quorumBitmap = 1;
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
-        (uint32 referenceBlockNumber, BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature) = 
+        (uint32 referenceBlockNumber, BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature) =
             _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(pseudoRandomNumber, numNonSigners, quorumBitmap);
 
         uint256 gasBefore = gasleft();
@@ -44,9 +44,9 @@ contract BLSSignatureCheckerFFITests is MockAVSDeployer, G2Operations {
             BLSSignatureChecker.QuorumStakeTotals memory quorumStakeTotals,
             /* bytes32 signatoryRecordHash */
         ) = blsSignatureChecker.checkSignatures(
-            msgHash, 
+            msgHash,
             quorumNumbers,
-            referenceBlockNumber, 
+            referenceBlockNumber,
             nonSignerStakesAndSignature
         );
         uint256 gasAfter = gasleft();
@@ -61,14 +61,14 @@ contract BLSSignatureCheckerFFITests is MockAVSDeployer, G2Operations {
     // this test checks that a valid signature from maxOperatorsToRegister with a random number of nonsigners is checked
     // correctly on the BLSSignatureChecker contract when all operators are registered for the first 100 quorums
     // and the signature is only checked for stakes on those quorums
-    function testBLSSignatureChecker_100Quorums_Valid(uint256 pseudoRandomNumber) public { 
+    function testBLSSignatureChecker_100Quorums_Valid(uint256 pseudoRandomNumber) public {
         uint256 numNonSigners = pseudoRandomNumber % (maxOperatorsToRegister - 1);
 
         // 100 set bits
         uint256 quorumBitmap = (1 << 100) - 1;
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
-        (uint32 referenceBlockNumber, BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature) = 
+        (uint32 referenceBlockNumber, BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature) =
             _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(pseudoRandomNumber, numNonSigners, quorumBitmap);
 
         nonSignerStakesAndSignature.sigma = sigma.scalar_mul(quorumNumbers.length);
@@ -76,9 +76,9 @@ contract BLSSignatureCheckerFFITests is MockAVSDeployer, G2Operations {
 
         uint256 gasBefore = gasleft();
         blsSignatureChecker.checkSignatures(
-            msgHash, 
+            msgHash,
             quorumNumbers,
-            referenceBlockNumber, 
+            referenceBlockNumber,
             nonSignerStakesAndSignature
         );
         uint256 gasAfter = gasleft();
@@ -168,8 +168,8 @@ contract BLSSignatureCheckerFFITests is MockAVSDeployer, G2Operations {
 
         OperatorStateRetriever.CheckSignaturesIndices memory checkSignaturesIndices = operatorStateRetriever.getCheckSignaturesIndices(
             registryCoordinator,
-            referenceBlockNumber, 
-            quorumNumbers, 
+            referenceBlockNumber,
+            quorumNumbers,
             nonSignerOperatorIds
         );
 

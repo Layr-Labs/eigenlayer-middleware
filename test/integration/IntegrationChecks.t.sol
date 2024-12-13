@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "test/integration/IntegrationBase.t.sol";
 import "test/integration/User.t.sol";
 
 /// @notice Contract that provides utility functions to reuse common test blocks & checks
 contract IntegrationChecks is IntegrationBase {
-    
+
     using BitmapUtils for *;
 
     /*******************************************************************************
@@ -25,11 +25,11 @@ contract IntegrationChecks is IntegrationBase {
             "operator already has bits in quorum bitmap");
 
         // BLSApkRegistry
-        assert_NoRegisteredPubkey(operator, 
+        assert_NoRegisteredPubkey(operator,
             "operator already has a registered pubkey");
 
         // DelegationManager
-        assert_NotRegisteredToAVS(operator, 
+        assert_NotRegisteredToAVS(operator,
             "operator should not be registered to the AVS");
     }
 
@@ -44,7 +44,7 @@ contract IntegrationChecks is IntegrationBase {
         _log("check_Register_State", operator);
 
         // RegistryCoordinator
-        assert_HasOperatorInfoWithId(operator, 
+        assert_HasOperatorInfoWithId(operator,
             "operatorInfo should have operatorId");
         assert_HasRegisteredStatus(operator,
             "operatorInfo status should be REGISTERED");
@@ -54,11 +54,11 @@ contract IntegrationChecks is IntegrationBase {
             "operator did not register for all quorums");
 
         // BLSApkRegistry
-        assert_HasRegisteredPubkey(operator, 
+        assert_HasRegisteredPubkey(operator,
             "operator should have registered a pubkey");
-        assert_Snap_Added_QuorumApk(operator, quorums, 
+        assert_Snap_Added_QuorumApk(operator, quorums,
             "operator pubkey should have been added to each quorum apk");
-        
+
         // StakeRegistry
         assert_HasAtLeastMinimumStake(operator, quorums,
             "operator should have at least the minimum stake in each quorum");
@@ -86,14 +86,14 @@ contract IntegrationChecks is IntegrationBase {
     ) internal {
         _log("check_Churned_State", incomingOperator);
 
-        bytes memory combinedQuorums = 
+        bytes memory combinedQuorums =
             churnedQuorums
                 .orderedBytesArrayToBitmap()
                 .plus(standardQuorums.orderedBytesArrayToBitmap())
                 .bitmapToBytesArray();
 
         // RegistryCoordinator
-        assert_HasOperatorInfoWithId(incomingOperator, 
+        assert_HasOperatorInfoWithId(incomingOperator,
             "operatorInfo should have operatorId");
         assert_HasRegisteredStatus(incomingOperator,
             "operatorInfo status should be REGISTERED");
@@ -103,13 +103,13 @@ contract IntegrationChecks is IntegrationBase {
             "operator did not register for all quorums");
 
         // BLSApkRegistry
-        assert_HasRegisteredPubkey(incomingOperator, 
+        assert_HasRegisteredPubkey(incomingOperator,
             "operator should have registered a pubkey");
         assert_Snap_Added_QuorumApk(incomingOperator, standardQuorums,
             "operator pubkey should have been added to standardQuorums apks");
         assert_Snap_Churned_QuorumApk(incomingOperator, churnedOperators, churnedQuorums,
             "operator pubkey should have been added and churned operator pubkeys should have been removed from apks");
-        
+
         // StakeRegistry
         assert_HasAtLeastMinimumStake(incomingOperator, combinedQuorums,
             "operator should have at least the minimum stake in each quorum");
@@ -140,7 +140,7 @@ contract IntegrationChecks is IntegrationBase {
             churnedQuorum[0] = churnedQuorums[i];
 
             // RegistryCoordinator
-            assert_HasOperatorInfoWithId(churnedOperator, 
+            assert_HasOperatorInfoWithId(churnedOperator,
                 "churned operatorInfo should still have operatorId");
             assert_NotRegisteredForQuorums(churnedOperator, churnedQuorum,
                 "churned operator bitmap should not include churned quorums");
@@ -148,7 +148,7 @@ contract IntegrationChecks is IntegrationBase {
                 "churned operator did not deregister from churned quorum");
 
             // BLSApkRegistry
-            assert_HasRegisteredPubkey(churnedOperator, 
+            assert_HasRegisteredPubkey(churnedOperator,
                 "churned operator should still have a registered pubkey");
 
             // StakeRegistry
@@ -177,7 +177,7 @@ contract IntegrationChecks is IntegrationBase {
             "operator info should not have changed");
         assert_Snap_Unchanged_QuorumBitmap(operator,
             "operators quorum bitmap should not have changed");
-        
+
         // BLSApkRegistry
         assert_Snap_Unchanged_QuorumApk(quorums,
             "quorum apks should not have changed");
@@ -185,9 +185,9 @@ contract IntegrationChecks is IntegrationBase {
         // StakeRegistry
         assert_Snap_Increased_OperatorWeight(operator, quorums,
             "operator weight should not have decreased after deposit");
-        assert_Snap_Unchanged_OperatorStake(operator, quorums, 
+        assert_Snap_Unchanged_OperatorStake(operator, quorums,
             "operator stake should be unchanged");
-        assert_Snap_Unchanged_TotalStake(quorums, 
+        assert_Snap_Unchanged_TotalStake(quorums,
             "total stake should be unchanged");
 
         // IndexRegistry
@@ -205,8 +205,8 @@ contract IntegrationChecks is IntegrationBase {
     /// NOTE: This method assumes (and checks) that the operator already
     ///       met the minimum stake before stake was added.
     function check_DepositUpdate_State(
-        User operator, 
-        bytes memory quorums, 
+        User operator,
+        bytes memory quorums,
         uint96[] memory addedWeights
     ) internal {
         _log("check_DepositUpdate_State", operator);
@@ -254,7 +254,7 @@ contract IntegrationChecks is IntegrationBase {
             "operator info should not have changed");
         assert_Snap_Unchanged_QuorumBitmap(operator,
             "operators quorum bitmap should not have changed");
-        
+
         // BLSApkRegistry
         assert_Snap_Unchanged_QuorumApk(quorums,
             "quorum apks should not have changed");
@@ -262,9 +262,9 @@ contract IntegrationChecks is IntegrationBase {
         // StakeRegistry
         assert_Snap_Decreased_OperatorWeight(operator, quorums,
             "operator weight should not have increased after deposit");
-        assert_Snap_Unchanged_OperatorStake(operator, quorums, 
+        assert_Snap_Unchanged_OperatorStake(operator, quorums,
             "operator stake should be unchanged");
-        assert_Snap_Unchanged_TotalStake(quorums, 
+        assert_Snap_Unchanged_TotalStake(quorums,
             "total stake should be unchanged");
 
         // IndexRegistry
@@ -288,7 +288,7 @@ contract IntegrationChecks is IntegrationBase {
         _log("check_WithdrawUpdate_State", operator);
 
         // RegistryCoordinator
-        assert_HasOperatorInfoWithId(operator, 
+        assert_HasOperatorInfoWithId(operator,
             "operatorInfo should still have operatorId");
         assert_EmptyQuorumBitmap(operator,
             "operator should not have any bits in bitmap");
@@ -298,9 +298,9 @@ contract IntegrationChecks is IntegrationBase {
             "operator did not deregister from all quorums");
 
         // BLSApkRegistry
-        assert_HasRegisteredPubkey(operator, 
+        assert_HasRegisteredPubkey(operator,
             "operator should still have a registered pubkey");
-        assert_Snap_Removed_QuorumApk(operator, quorums, 
+        assert_Snap_Removed_QuorumApk(operator, quorums,
             "operator pubkey should have been subtracted from each quorum apk");
 
         // StakeRegistry
@@ -316,7 +316,7 @@ contract IntegrationChecks is IntegrationBase {
             "operator list should have one fewer entry");
 
         // AVSDirectory
-        assert_NotRegisteredToAVS(operator, 
+        assert_NotRegisteredToAVS(operator,
             "operator should not be registered to the AVS");
     }
 
@@ -364,7 +364,7 @@ contract IntegrationChecks is IntegrationBase {
         _log("check_Deregister_State", operator);
 
         // RegistryCoordinator
-        assert_HasOperatorInfoWithId(operator, 
+        assert_HasOperatorInfoWithId(operator,
             "operatorInfo should still have operatorId");
         assert_NotRegisteredForQuorums(operator, quorums,
             "current operator bitmap should not include quorums");
@@ -372,9 +372,9 @@ contract IntegrationChecks is IntegrationBase {
             "operator did not deregister from all quorums");
 
         // BLSApkRegistry
-        assert_HasRegisteredPubkey(operator, 
+        assert_HasRegisteredPubkey(operator,
             "operator should still have a registered pubkey");
-        assert_Snap_Removed_QuorumApk(operator, quorums, 
+        assert_Snap_Removed_QuorumApk(operator, quorums,
             "operator pubkey should have been subtracted from each quorum apk");
 
         // StakeRegistry
@@ -399,13 +399,13 @@ contract IntegrationChecks is IntegrationBase {
         // RegistryCoordinator
         assert_EmptyQuorumBitmap(operator,
             "operator should not have any bits in bitmap");
-        assert_HasOperatorInfoWithId(operator, 
+        assert_HasOperatorInfoWithId(operator,
             "operatorInfo should still have operatorId");
         assert_HasDeregisteredStatus(operator,
             "operatorInfo status should be DEREGISTERED");
 
         // AVSDirectory
-        assert_NotRegisteredToAVS(operator, 
+        assert_NotRegisteredToAVS(operator,
             "operator should not be registered to the AVS");
     }
 

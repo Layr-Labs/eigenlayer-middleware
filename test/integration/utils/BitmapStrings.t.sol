@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -16,12 +16,12 @@ library BitmapStrings {
         for (uint i = 0; i < bitmapArr.length; i++) {
             if (i == bitmapArr.length - 1) {
                 result = string.concat(
-                    result, 
+                    result,
                     uint(uint8(bitmapArr[i])).toString()
                 );
             } else {
                 result = string.concat(
-                    result, 
+                    result,
                     uint(uint8(bitmapArr[i])).toString(),
                     ", "
                 );

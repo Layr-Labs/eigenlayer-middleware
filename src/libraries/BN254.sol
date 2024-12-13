@@ -19,7 +19,7 @@
 
 // The remainder of the code in this library is written by LayrLabs Inc. and is also under an MIT license
 
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 /**
  * @title Library for operations on the BN254 elliptic curve.

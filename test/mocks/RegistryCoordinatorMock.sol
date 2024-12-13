@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 
 import "../../src/interfaces/IRegistryCoordinator.sol";
@@ -9,7 +9,7 @@ contract RegistryCoordinatorMock is IRegistryCoordinator {
     function blsApkRegistry() external view returns (IBLSApkRegistry) {}
 
     function ejectOperator(
-        address operator, 
+        address operator,
         bytes calldata quorumNumbers
     ) external {}
 

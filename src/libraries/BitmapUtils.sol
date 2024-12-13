@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 /**
  * @title Library for Bitmap utilities such as converting between an array of bytes and a bitmap and finding the number of 1s in a bitmap.
@@ -62,7 +62,7 @@ library BitmapUtils {
     function orderedBytesArrayToBitmap(bytes memory orderedBytesArray, uint8 bitUpperBound) internal pure returns (uint256) {
         uint256 bitmap = orderedBytesArrayToBitmap(orderedBytesArray);
 
-        require((1 << bitUpperBound) > bitmap, 
+        require((1 << bitUpperBound) > bitmap,
             "BitmapUtils.orderedBytesArrayToBitmap: bitmap exceeds max value"
         );
 
@@ -95,11 +95,11 @@ library BitmapUtils {
             if (uint256(uint8(bytesArray[i])) <= uint256(uint8(singleByte))) {
                 return false;
             }
-            
+
             // Pull the next byte out of the array
             singleByte = bytesArray[i];
         }
-        
+
         return true;
     }
 
@@ -149,9 +149,9 @@ library BitmapUtils {
     function isSet(uint256 bitmap, uint8 bit) internal pure returns (bool) {
         return 1 == ((bitmap >> bit) & 1);
     }
-    
+
     /**
-     * @notice Returns a copy of `bitmap` with `bit` set. 
+     * @notice Returns a copy of `bitmap` with `bit` set.
      * @dev IMPORTANT: we're dealing with stack values here, so this doesn't modify
      * the original bitmap. Using this correctly requires an assignment statement:
      * `bitmap = bitmap.setBit(bit);`

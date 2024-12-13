@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "test/integration/User.t.sol";
 
@@ -37,7 +37,7 @@ contract Integration_AVS_Sync_GasCosts_FFI is IntegrationChecks {
                 config_data,
                 string.concat(".G1y[", vm.toString(i), "]")
             );
-            // G2 
+            // G2
             pubkey.pubkeyG2.X[1] = stdJson.readUint(
                 config_data,
                 string.concat(".G2x1[", vm.toString(i), "]")
