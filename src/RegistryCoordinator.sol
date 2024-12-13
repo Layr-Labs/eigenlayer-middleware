@@ -824,24 +824,12 @@ contract RegistryCoordinator is
         // Update operator's bitmap and status
         _updateOperatorBitmap({operatorId: operatorId, newBitmap: newBitmap});
 
-        bool operatorSetAVS = isUsingOperatorSets();
-        //  = IAVSDirectory(serviceManager.avsDirectory()).isOperatorSetAVS(address(serviceManager));
-        if (operatorSetAVS){
-            bytes memory quorumBytes = BitmapUtils.bitmapToBytesArray(quorumsToRemove);
-            uint32[] memory operatorSetIds = new uint32[](quorumBytes.length);
-            for (uint256 i = 0; i < quorumBytes.length; i++) {
-                operatorSetIds[i] = uint8(quorumBytes[i]);
-            }
-
-            serviceManager.deregisterOperatorFromOperatorSets(operator, operatorSetIds);
-        } else {
-            // If the operator is no longer registered for any quorums, update their status and deregister
-            // them from the AVS via the EigenLayer core contracts
-            if (newBitmap.isEmpty()) {
-                operatorInfo.status = OperatorStatus.DEREGISTERED;
-                serviceManager.deregisterOperatorFromAVS(operator);
-                emit OperatorDeregistered(operator, operatorId);
-            }
+        // If the operator is no longer registered for any quorums, update their status and deregister
+        // them from the AVS via the EigenLayer core contracts
+        if (newBitmap.isEmpty()) {
+            operatorInfo.status = OperatorStatus.DEREGISTERED;
+            serviceManager.deregisterOperatorFromAVS(operator);
+            emit OperatorDeregistered(operator, operatorId);
         }
 
         // Deregister operator with each of the registry contracts
