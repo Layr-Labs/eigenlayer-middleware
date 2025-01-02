@@ -151,7 +151,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
             }
 
             // Transfer token to ServiceManager and approve RewardsCoordinator to transfer again
-            // in createAVSPerformanceRewardsSubmission() call
+            // in createOperatorDirectedAVSRewardsSubmission() call
             operatorDirectedRewardsSubmissions[i].token.safeTransferFrom(
                 msg.sender,
                 address(this),
