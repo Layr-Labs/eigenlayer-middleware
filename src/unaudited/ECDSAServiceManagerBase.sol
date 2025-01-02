@@ -2,6 +2,8 @@
 pragma solidity ^0.8.12;
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IServiceManager} from "../interfaces/IServiceManager.sol";
@@ -17,6 +19,8 @@ abstract contract ECDSAServiceManagerBase is
     IServiceManager,
     OwnableUpgradeable
 {
+    using SafeERC20 for IERC20;
+
     /// @notice Address of the stake registry contract, which manages registration and stake recording.
     address public immutable stakeRegistry;
 
@@ -198,18 +202,14 @@ abstract contract ECDSAServiceManagerBase is
         IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions
     ) internal virtual {
         for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
-            rewardsSubmissions[i].token.transferFrom(
+            rewardsSubmissions[i].token.safeTransferFrom(
                 msg.sender,
                 address(this),
                 rewardsSubmissions[i].amount
             );
-            uint256 allowance = rewardsSubmissions[i].token.allowance(
-                address(this),
-                rewardsCoordinator
-            );
-            rewardsSubmissions[i].token.approve(
+            rewardsSubmissions[i].token.safeIncreaseAllowance(
                 rewardsCoordinator,
-                rewardsSubmissions[i].amount + allowance
+                rewardsSubmissions[i].amount
             );
         }
 
@@ -247,17 +247,14 @@ abstract contract ECDSAServiceManagerBase is
 
             // Transfer token to ServiceManager and approve RewardsCoordinator to transfer again
             // in createOperatorDirectedAVSRewardsSubmission() call
-            operatorDirectedRewardsSubmissions[i].token.transferFrom(
+            operatorDirectedRewardsSubmissions[i].token.safeTransferFrom(
                 msg.sender,
                 address(this),
                 totalAmount
             );
-            uint256 allowance = operatorDirectedRewardsSubmissions[i]
-                .token
-                .allowance(address(this), rewardsCoordinator);
-            operatorDirectedRewardsSubmissions[i].token.approve(
+            operatorDirectedRewardsSubmissions[i].token.safeIncreaseAllowance(
                 rewardsCoordinator,
-                totalAmount + allowance
+                totalAmount
             );
         }
 

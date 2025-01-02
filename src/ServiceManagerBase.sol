@@ -2,6 +2,8 @@
 pragma solidity ^0.8.12;
 
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
@@ -18,6 +20,7 @@ import {BitmapUtils} from "./libraries/BitmapUtils.sol";
  * @author Layr Labs, Inc.
  */
 abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
+    using SafeERC20 for IERC20;
     using BitmapUtils for *;
 
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
@@ -97,18 +100,14 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
             // transfer token to ServiceManager and approve RewardsCoordinator to transfer again
             // in createAVSRewardsSubmission() call
-            rewardsSubmissions[i].token.transferFrom(
+            rewardsSubmissions[i].token.safeTransferFrom(
                 msg.sender,
                 address(this),
                 rewardsSubmissions[i].amount
             );
-            uint256 allowance = rewardsSubmissions[i].token.allowance(
-                address(this),
-                address(_rewardsCoordinator)
-            );
-            rewardsSubmissions[i].token.approve(
+            rewardsSubmissions[i].token.safeIncreaseAllowance(
                 address(_rewardsCoordinator),
-                rewardsSubmissions[i].amount + allowance
+                rewardsSubmissions[i].amount
             );
         }
 
@@ -153,17 +152,14 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
 
             // Transfer token to ServiceManager and approve RewardsCoordinator to transfer again
             // in createAVSPerformanceRewardsSubmission() call
-            operatorDirectedRewardsSubmissions[i].token.transferFrom(
+            operatorDirectedRewardsSubmissions[i].token.safeTransferFrom(
                 msg.sender,
                 address(this),
                 totalAmount
             );
-            uint256 allowance = operatorDirectedRewardsSubmissions[i]
-                .token
-                .allowance(address(this), address(_rewardsCoordinator));
-            operatorDirectedRewardsSubmissions[i].token.approve(
+            operatorDirectedRewardsSubmissions[i].token.safeIncreaseAllowance(
                 address(_rewardsCoordinator),
-                totalAmount + allowance
+                totalAmount
             );
         }
 
