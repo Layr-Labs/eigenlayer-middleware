@@ -34,7 +34,7 @@ jobs:
 
       - name: "Generate and prepare the storage reports for target branch"
         run: |
-          bash bin/storage-report.sh target
+          bash .github/bin/storage-report.sh target
 
       - name: Compare outputs
         run: |
