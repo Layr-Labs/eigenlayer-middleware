@@ -155,6 +155,9 @@ contract RegistryCoordinator is
          */
         bytes32 operatorId = _getOrCreateOperatorId(msg.sender, params);
 
+        // Validate that the quorums are M2 quorums and not operatorSets in the AllocationManager
+        _validateM2Quorums(quorumNumbers);
+
         // Register the operator in each of the registry contracts and update the operator's
         // quorum bitmap and registration status
         uint32[] memory numOperatorsPerQuorum = _registerOperator({
@@ -168,7 +171,6 @@ contract RegistryCoordinator is
         // (If it does, an operator needs to be replaced -- see `registerOperatorWithChurn`)
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-
             require(
                 numOperatorsPerQuorum[i] <= _quorumParams[quorumNumber].maxOperatorCount,
                 MaxQuorumsReached()
@@ -205,10 +207,14 @@ contract RegistryCoordinator is
         SignatureWithSaltAndExpiry memory churnApproverSignature,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
+        require(!isOperatorSetAVS, "registerOperator: is operatorSet AVS");
         require(
             operatorKickParams.length == quorumNumbers.length,
             InputLengthMismatch()
         );
+
+        // Validate that the quorums are M2 quorums and not operatorSets in the AllocationManager
+        _validateM2Quorums(quorumNumbers);
 
         /**
          * If the operator has NEVER registered a pubkey before, use `params` to register
@@ -279,12 +285,7 @@ contract RegistryCoordinator is
         // Validate that the quorum is not an operatorSet
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            IAllocationManager allocationManager = IAllocationManager(serviceManager.allocationManager());
-            bool isOperatorSet = allocationManager.isOperatorSet(OperatorSet({
-                avs: address(serviceManager),
-                id: quorumNumber
-            }));
-            require(!isOperatorSet, "quorum should not be an operatorSet");
+            require(!_isOperatorSet(quorumNumber), "quorum should not be an operatorSet in core");
         }
         
         _deregisterOperator({operator: msg.sender, quorumNumbers: quorumNumbers});
@@ -1018,6 +1019,20 @@ contract RegistryCoordinator is
     function _setEjector(address newEjector) internal {
         emit EjectorUpdated(ejector, newEjector);
         ejector = newEjector;
+    }
+
+    function _validateM2Quorums(bytes memory quorumNumbers) internal {
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            require(_isOperatorSet(uint8(quorumNumbers[i])), "quorum should not be an operatorSet in core");
+        }
+    }   
+
+    function _isOperatorSet(uint8 quorumNumber) internal view returns (bool) {
+        IAllocationManager allocationManager = IAllocationManager(serviceManager.allocationManager());
+        return allocationManager.isOperatorSet(OperatorSet({
+            avs: address(serviceManager),
+            id: quorumNumber
+        }));
     }
 
     /**
