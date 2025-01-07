@@ -6,12 +6,13 @@ import "test/integration/User.t.sol";
 import "test/integration/IntegrationChecks.t.sol";
 
 contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChecks {
-
     // 1. Register for all quorums
     // 2. (core) Deposit additional tokens
     // 3. Update stakes
     // 4. Deregister from all quorums
-    function testFuzz_registerAll_increaseCoreBalance_update_deregisterAll(uint24 _random) public {
+    function testFuzz_registerAll_increaseCoreBalance_update_deregisterAll(
+        uint24 _random
+    ) public {
         _configRand({
             _randomSeed: _random,
             _userTypes: DEFAULT | ALT_METHODS,
@@ -33,10 +34,7 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
         check_Register_State(operator, quorums);
 
         // Award operator tokens to deposit into core
-        (
-            IStrategy[] memory strategies,
-            uint[] memory tokenBalances
-        ) = _dealRandTokens(operator);
+        (IStrategy[] memory strategies, uint256[] memory tokenBalances) = _dealRandTokens(operator);
 
         // 2. (core) Deposit tokens and return the weight added in each initialized quorum
         operator.depositIntoEigenlayer(strategies, tokenBalances);
@@ -56,7 +54,9 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
     // 1. Register for all quorums
     // 2. (core) Deposit additional tokens
     // 3. Deregister from all quorums
-    function testFuzz_registerAll_increaseCoreBalance_deregisterAll(uint24 _random) public {
+    function testFuzz_registerAll_increaseCoreBalance_deregisterAll(
+        uint24 _random
+    ) public {
         _configRand({
             _randomSeed: _random,
             _userTypes: DEFAULT | ALT_METHODS,
@@ -78,10 +78,7 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
         check_Register_State(operator, quorums);
 
         // Award operator tokens to deposit into core
-        (
-            IStrategy[] memory strategies,
-            uint[] memory tokenBalances
-        ) = _dealRandTokens(operator);
+        (IStrategy[] memory strategies, uint256[] memory tokenBalances) = _dealRandTokens(operator);
 
         // 2. (core) Deposit tokens
         operator.depositIntoEigenlayer(strategies, tokenBalances);
@@ -96,7 +93,9 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
     // 1. Register for all quorums
     // 2. (core) Queue full withdrawal
     // 3. updateOperators/updateOperatorsForQuorum
-    function testFuzz_registerAll_decreaseCoreBalance_update(uint24 _random) public {
+    function testFuzz_registerAll_decreaseCoreBalance_update(
+        uint24 _random
+    ) public {
         _configRand({
             _randomSeed: _random,
             _userTypes: DEFAULT | ALT_METHODS,
@@ -129,7 +128,9 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
     // 1. Register for all quorums
     // 2. (core) Queue full withdrawal
     // 3. Deregister from all quorums
-    function testFuzz_registerAll_decreaseCoreBalance_deregisterAll(uint24 _random) public {
+    function testFuzz_registerAll_decreaseCoreBalance_deregisterAll(
+        uint24 _random
+    ) public {
         _configRand({
             _randomSeed: _random,
             _userTypes: DEFAULT | ALT_METHODS,
@@ -163,7 +164,9 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
     // 1. Register for all quorums
     // 2. updateOperators/updateOperatorsForQuorum
     // 3. Deregister from all quorums
-    function testFuzz_registerAll_update_deregisterAll(uint24 _random) public {
+    function testFuzz_registerAll_update_deregisterAll(
+        uint24 _random
+    ) public {
         _configRand({
             _randomSeed: _random,
             _userTypes: DEFAULT | ALT_METHODS,

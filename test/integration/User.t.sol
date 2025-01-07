@@ -28,17 +28,15 @@ import "test/integration/TimeMachine.t.sol";
 import "test/integration/utils/Sort.t.sol";
 import "test/integration/utils/BitmapStrings.t.sol";
 
-
 interface IUserDeployer {
     function registryCoordinator() external view returns (RegistryCoordinator);
     function avsDirectory() external view returns (AVSDirectory);
     function timeMachine() external view returns (TimeMachine);
-    function churnApproverPrivateKey() external view returns (uint);
+    function churnApproverPrivateKey() external view returns (uint256);
     function churnApprover() external view returns (address);
 }
 
 contract User is Test {
-
     using BN254 for *;
     using Strings for *;
     using BitmapStrings for *;
@@ -60,21 +58,25 @@ contract User is Test {
 
     TimeMachine timeMachine;
 
-    uint churnApproverPrivateKey;
+    uint256 churnApproverPrivateKey;
     address churnApprover;
 
     string public NAME;
     bytes32 public operatorId;
 
     // BLS keypair:
-    uint privKey;
+    uint256 privKey;
     IBLSApkRegistry.PubkeyRegistrationParams pubkeyParams;
 
     // EIP1271 sigs:
     mapping(bytes32 => bool) digests;
-    uint salt = 0;
+    uint256 salt = 0;
 
-    constructor(string memory name, uint _privKey, IBLSApkRegistry.PubkeyRegistrationParams memory _pubkeyParams) {
+    constructor(
+        string memory name,
+        uint256 _privKey,
+        IBLSApkRegistry.PubkeyRegistrationParams memory _pubkeyParams
+    ) {
         IUserDeployer deployer = IUserDeployer(msg.sender);
 
         registryCoordinator = deployer.registryCoordinator();
@@ -100,7 +102,8 @@ contract User is Test {
         privKey = _privKey;
         pubkeyParams = _pubkeyParams;
 
-        BN254.G1Point memory registrationMessageHash = registryCoordinator.pubkeyRegistrationMessageHash(address(this));
+        BN254.G1Point memory registrationMessageHash =
+            registryCoordinator.pubkeyRegistrationMessageHash(address(this));
         pubkeyParams.pubkeyRegistrationSignature = registrationMessageHash.scalar_mul(privKey);
 
         operatorId = pubkeyParams.pubkeyG1.hashG1Point();
@@ -114,8 +117,9 @@ contract User is Test {
     /**
      * Middleware contracts:
      */
-
-    function registerOperator(bytes calldata quorums) public createSnapshot virtual returns (bytes32) {
+    function registerOperator(
+        bytes calldata quorums
+    ) public virtual createSnapshot returns (bytes32) {
         _log("registerOperator", quorums);
 
         vm.warp(block.timestamp + 1);
@@ -136,7 +140,7 @@ contract User is Test {
         bytes calldata churnQuorums,
         User[] calldata churnTargets,
         bytes calldata standardQuorums
-    ) public createSnapshot virtual {
+    ) public virtual createSnapshot {
         _logChurn("registerOperatorWithChurn", churnQuorums, churnTargets, standardQuorums);
 
         // Sanity check input:
@@ -144,39 +148,41 @@ contract User is Test {
         // - churnQuorums and standardQuorums should not have any bits in common
         uint192 churnBitmap = uint192(churnQuorums.orderedBytesArrayToBitmap());
         uint192 standardBitmap = uint192(standardQuorums.orderedBytesArrayToBitmap());
-        assertEq(churnQuorums.length, churnTargets.length, "User.registerOperatorWithChurn: input length mismatch");
-        assertTrue(churnBitmap.noBitsInCommon(standardBitmap), "User.registerOperatorWithChurn: input quorums have common bits");
+        assertEq(
+            churnQuorums.length,
+            churnTargets.length,
+            "User.registerOperatorWithChurn: input length mismatch"
+        );
+        assertTrue(
+            churnBitmap.noBitsInCommon(standardBitmap),
+            "User.registerOperatorWithChurn: input quorums have common bits"
+        );
 
-        bytes memory allQuorums =
-            churnBitmap
-                .plus(standardBitmap)
-                .bitmapToBytesArray();
+        bytes memory allQuorums = churnBitmap.plus(standardBitmap).bitmapToBytesArray();
 
-        IRegistryCoordinator.OperatorKickParam[] memory kickParams
-            = new IRegistryCoordinator.OperatorKickParam[](allQuorums.length);
+        IRegistryCoordinator.OperatorKickParam[] memory kickParams =
+            new IRegistryCoordinator.OperatorKickParam[](allQuorums.length);
 
         // this constructs OperatorKickParam[] in ascending quorum order
         // (yikes)
-        uint churnIdx;
-        uint stdIdx;
+        uint256 churnIdx;
+        uint256 stdIdx;
         while (churnIdx + stdIdx < allQuorums.length) {
             if (churnIdx == churnQuorums.length) {
-                kickParams[churnIdx + stdIdx] = IRegistryCoordinator.OperatorKickParam({
-                    quorumNumber: 0,
-                    operator: address(0)
-                });
+                kickParams[churnIdx + stdIdx] =
+                    IRegistryCoordinator.OperatorKickParam({quorumNumber: 0, operator: address(0)});
                 stdIdx++;
-            } else if (stdIdx == standardQuorums.length || churnQuorums[churnIdx] < standardQuorums[stdIdx]) {
+            } else if (
+                stdIdx == standardQuorums.length || churnQuorums[churnIdx] < standardQuorums[stdIdx]
+            ) {
                 kickParams[churnIdx + stdIdx] = IRegistryCoordinator.OperatorKickParam({
                     quorumNumber: uint8(churnQuorums[churnIdx]),
                     operator: address(churnTargets[churnIdx])
                 });
                 churnIdx++;
             } else if (standardQuorums[stdIdx] < churnQuorums[churnIdx]) {
-                kickParams[churnIdx + stdIdx] = IRegistryCoordinator.OperatorKickParam({
-                    quorumNumber: 0,
-                    operator: address(0)
-                });
+                kickParams[churnIdx + stdIdx] =
+                    IRegistryCoordinator.OperatorKickParam({quorumNumber: 0, operator: address(0)});
                 stdIdx++;
             } else {
                 revert("User.registerOperatorWithChurn: malformed input");
@@ -185,7 +191,7 @@ contract User is Test {
 
         // Generate churn approver signature
         bytes32 _salt = keccak256(abi.encodePacked(++salt, address(this)));
-        uint expiry = type(uint).max;
+        uint256 expiry = type(uint256).max;
         bytes32 digest = registryCoordinator.calculateOperatorChurnApprovalDigestHash({
             registeringOperator: address(this),
             registeringOperatorId: operatorId,
@@ -203,12 +209,8 @@ contract User is Test {
         }
         signature[signature.length - 1] = bytes1(v);
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature
-            = ISignatureUtils.SignatureWithSaltAndExpiry({
-                signature: signature,
-                salt: _salt,
-                expiry: expiry
-            });
+        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature = ISignatureUtils
+            .SignatureWithSaltAndExpiry({signature: signature, salt: _salt, expiry: expiry});
 
         vm.warp(block.timestamp + 1);
         registryCoordinator.registerOperatorWithChurn({
@@ -221,14 +223,16 @@ contract User is Test {
         });
     }
 
-    function deregisterOperator(bytes calldata quorums) public createSnapshot virtual {
+    function deregisterOperator(
+        bytes calldata quorums
+    ) public virtual createSnapshot {
         _log("deregisterOperator", quorums);
 
         registryCoordinator.deregisterOperator(quorums);
     }
 
     /// @dev Uses updateOperators to update this user's stake
-    function updateStakes() public createSnapshot virtual {
+    function updateStakes() public virtual createSnapshot {
         _log("updateStakes (updateOperators)");
 
         address[] memory addrs = new address[](1);
@@ -240,21 +244,23 @@ contract User is Test {
     /**
      * Core contracts:
      */
-
-    function registerAsOperator() public createSnapshot virtual {
+    function registerAsOperator() public virtual createSnapshot {
         _log("registerAsOperator (core)");
 
         /// TODO: check
-        delegationManager.registerAsOperator(msg.sender,0, NAME);
+        delegationManager.registerAsOperator(msg.sender, 0, NAME);
     }
 
     // Deposit LSTs into the StrategyManager. This setup does not use the EPMgr or native ETH.
-    function depositIntoEigenlayer(IStrategy[] memory strategies, uint[] memory tokenBalances) public createSnapshot virtual {
+    function depositIntoEigenlayer(
+        IStrategy[] memory strategies,
+        uint256[] memory tokenBalances
+    ) public virtual createSnapshot {
         _log("depositIntoEigenLayer (core)");
 
-        for (uint i = 0; i < strategies.length; i++) {
+        for (uint256 i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
-            uint tokenBalance = tokenBalances[i];
+            uint256 tokenBalance = tokenBalances[i];
 
             IERC20 underlyingToken = strat.underlyingToken();
             underlyingToken.approve(address(strategyManager), tokenBalance);
@@ -262,12 +268,19 @@ contract User is Test {
         }
     }
 
-    function exitEigenlayer() public createSnapshot virtual returns (IStrategy[] memory, uint256[] memory) {
+    function exitEigenlayer()
+        public
+        virtual
+        createSnapshot
+        returns (IStrategy[] memory, uint256[] memory)
+    {
         _log("exitEigenlayer (core)");
 
-        (IStrategy[] memory strategies, uint256[] memory shares) = delegationManager.getDepositedShares(address(this));
+        (IStrategy[] memory strategies, uint256[] memory shares) =
+            delegationManager.getDepositedShares(address(this));
 
-        IDelegationManagerTypes.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
+        IDelegationManagerTypes.QueuedWithdrawalParams[] memory params =
+            new IDelegationManager.QueuedWithdrawalParams[](1);
         params[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
             strategies: strategies,
             depositShares: shares,
@@ -296,8 +309,12 @@ contract User is Test {
         return pubkeyParams.pubkeyG1;
     }
 
-    function _genAVSRegistrationSig() internal returns (ISignatureUtils.SignatureWithSaltAndExpiry memory) {
-        ISignatureUtils.SignatureWithSaltAndExpiry memory signature = ISignatureUtils.SignatureWithSaltAndExpiry({
+    function _genAVSRegistrationSig()
+        internal
+        returns (ISignatureUtils.SignatureWithSaltAndExpiry memory)
+    {
+        ISignatureUtils.SignatureWithSaltAndExpiry memory signature = ISignatureUtils
+            .SignatureWithSaltAndExpiry({
             signature: new bytes(0),
             salt: bytes32(salt++),
             expiry: type(uint256).max
@@ -315,7 +332,9 @@ contract User is Test {
     }
 
     // Operator0.registerOperator
-    function _log(string memory s) internal virtual {
+    function _log(
+        string memory s
+    ) internal virtual {
         emit log(string.concat(NAME, ".", s));
     }
 
@@ -340,7 +359,7 @@ contract User is Test {
         emit log_named_string("- churnQuorums", churnQuorums.toString());
 
         string memory targetString = "[";
-        for (uint i = 0; i < churnTargets.length; i++) {
+        for (uint256 i = 0; i < churnTargets.length; i++) {
             if (i == churnTargets.length - 1) {
                 targetString = string.concat(targetString, churnTargets[i].NAME());
             } else {
@@ -354,7 +373,6 @@ contract User is Test {
 }
 
 contract User_AltMethods is User {
-
     using BitmapUtils for *;
 
     modifier createSnapshot() virtual override {
@@ -363,12 +381,17 @@ contract User_AltMethods is User {
         _;
     }
 
-    constructor(string memory name, uint _privKey, IBLSApkRegistry.PubkeyRegistrationParams memory _pubkeyParams)
-        User(name, _privKey, _pubkeyParams) {}
+    constructor(
+        string memory name,
+        uint256 _privKey,
+        IBLSApkRegistry.PubkeyRegistrationParams memory _pubkeyParams
+    ) User(name, _privKey, _pubkeyParams) {}
 
     /// @dev Rather than calling deregisterOperator, this pranks the ejector and calls
     /// ejectOperator
-    function deregisterOperator(bytes calldata quorums) public createSnapshot virtual override {
+    function deregisterOperator(
+        bytes calldata quorums
+    ) public virtual override createSnapshot {
         _log("deregisterOperator (eject)", quorums);
 
         address ejector = registryCoordinator.ejector();
@@ -378,19 +401,21 @@ contract User_AltMethods is User {
     }
 
     /// @dev Uses updateOperatorsForQuorum to update stakes of all operators in all quorums
-    function updateStakes() public createSnapshot virtual override {
+    function updateStakes() public virtual override createSnapshot {
         _log("updateStakes (updateOperatorsForQuorum)");
 
-        bytes memory allQuorums = ((1 << registryCoordinator.quorumCount()) - 1).bitmapToBytesArray();
+        bytes memory allQuorums =
+            ((1 << registryCoordinator.quorumCount()) - 1).bitmapToBytesArray();
         address[][] memory operatorsPerQuorum = new address[][](allQuorums.length);
 
-        for (uint i = 0; i < allQuorums.length; i++) {
+        for (uint256 i = 0; i < allQuorums.length; i++) {
             uint8 quorum = uint8(allQuorums[i]);
-            bytes32[] memory operatorIds = indexRegistry.getOperatorListAtBlockNumber(quorum, uint32(block.number));
+            bytes32[] memory operatorIds =
+                indexRegistry.getOperatorListAtBlockNumber(quorum, uint32(block.number));
 
             operatorsPerQuorum[i] = new address[](operatorIds.length);
 
-            for (uint j = 0; j < operatorIds.length; j++) {
+            for (uint256 j = 0; j < operatorIds.length; j++) {
                 operatorsPerQuorum[i][j] = blsApkRegistry.getOperatorFromPubkeyHash(operatorIds[j]);
             }
 

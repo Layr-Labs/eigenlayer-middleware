@@ -4,15 +4,22 @@ pragma solidity ^0.8.27;
 import {Test, console} from "forge-std/Test.sol";
 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IDelegationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 import {ECDSAStakeRegistry} from "../../src/unaudited/ECDSAStakeRegistry.sol";
-import {ECDSAStakeRegistryEventsAndErrors, Quorum, StrategyParams} from "../../src/interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
+import {
+    ECDSAStakeRegistryEventsAndErrors,
+    Quorum,
+    StrategyParams
+} from "../../src/interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
 
 contract MockServiceManager {
     // solhint-disable-next-line
-    function deregisterOperatorFromAVS(address) external {}
+    function deregisterOperatorFromAVS(
+        address
+    ) external {}
 
     function registerOperatorToAVS(
         address,
@@ -58,13 +65,8 @@ contract ECDSAStakeRegistrySetup is Test, ECDSAStakeRegistryEventsAndErrors {
         mockServiceManager = new MockServiceManager();
         IStrategy mockStrategy = IStrategy(address(0x1234));
         Quorum memory quorum = Quorum({strategies: new StrategyParams[](1)});
-        quorum.strategies[0] = StrategyParams({
-            strategy: mockStrategy,
-            multiplier: 10_000
-        });
-        registry = new ECDSAStakeRegistry(
-            IDelegationManager(address(mockDelegationManager))
-        );
+        quorum.strategies[0] = StrategyParams({strategy: mockStrategy, multiplier: 10_000});
+        registry = new ECDSAStakeRegistry(IDelegationManager(address(mockDelegationManager)));
         registry.initialize(address(mockServiceManager), 100, quorum);
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
         vm.prank(operator1);
@@ -81,10 +83,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
         Quorum memory oldQuorum = registry.quorum();
         Quorum memory newQuorum = Quorum({strategies: new StrategyParams[](1)});
-        newQuorum.strategies[0] = StrategyParams({
-            strategy: mockStrategy,
-            multiplier: 10_000
-        });
+        newQuorum.strategies[0] = StrategyParams({strategy: mockStrategy, multiplier: 10_000});
         address[] memory operators = new address[](2);
         operators[0] = operator1;
         operators[1] = operator2;
@@ -96,9 +95,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     }
 
     function test_RevertsWhen_InvalidQuorum_UpdateQuourmConfig() public {
-        Quorum memory invalidQuorum = Quorum({
-            strategies: new StrategyParams[](1)
-        });
+        Quorum memory invalidQuorum = Quorum({strategies: new StrategyParams[](1)});
         invalidQuorum.strategies[0] = StrategyParams({
             /// TODO: Make mock strategy
             strategy: IStrategy(address(420)),
@@ -108,20 +105,14 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         operators[0] = operator1;
         operators[1] = operator2;
 
-        vm.expectRevert(
-            ECDSAStakeRegistryEventsAndErrors.InvalidQuorum.selector
-        );
+        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InvalidQuorum.selector);
         registry.updateQuorumConfig(invalidQuorum, operators);
     }
 
     function test_RevertsWhen_NotOwner_UpdateQuorumConfig() public {
-        Quorum memory validQuorum = Quorum({
-            strategies: new StrategyParams[](1)
-        });
-        validQuorum.strategies[0] = StrategyParams({
-            strategy: IStrategy(address(420)),
-            multiplier: 10_000
-        });
+        Quorum memory validQuorum = Quorum({strategies: new StrategyParams[](1)});
+        validQuorum.strategies[0] =
+            StrategyParams({strategy: IStrategy(address(420)), multiplier: 10_000});
 
         address[] memory operators = new address[](2);
         operators[0] = operator1;
@@ -145,60 +136,42 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     }
 
     function test_RevertSWhen_Duplicate_UpdateQuorumConfig() public {
-        Quorum memory invalidQuorum = Quorum({
-            strategies: new StrategyParams[](2)
-        });
-        invalidQuorum.strategies[0] = StrategyParams({
-            strategy: IStrategy(address(420)),
-            multiplier: 5000
-        });
+        Quorum memory invalidQuorum = Quorum({strategies: new StrategyParams[](2)});
+        invalidQuorum.strategies[0] =
+            StrategyParams({strategy: IStrategy(address(420)), multiplier: 5000});
         address[] memory operators = new address[](2);
         operators[0] = operator1;
         operators[1] = operator2;
 
-        invalidQuorum.strategies[1] = StrategyParams({
-            strategy: IStrategy(address(420)),
-            multiplier: 5000
-        });
+        invalidQuorum.strategies[1] =
+            StrategyParams({strategy: IStrategy(address(420)), multiplier: 5000});
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
         registry.updateQuorumConfig(invalidQuorum, operators);
     }
 
     function test_RevertSWhen_NotSorted_UpdateQuorumConfig() public {
-        Quorum memory invalidQuorum = Quorum({
-            strategies: new StrategyParams[](2)
-        });
-        invalidQuorum.strategies[0] = StrategyParams({
-            strategy: IStrategy(address(420)),
-            multiplier: 5000
-        });
+        Quorum memory invalidQuorum = Quorum({strategies: new StrategyParams[](2)});
+        invalidQuorum.strategies[0] =
+            StrategyParams({strategy: IStrategy(address(420)), multiplier: 5000});
         address[] memory operators = new address[](2);
         operators[0] = operator1;
         operators[1] = operator2;
 
-        invalidQuorum.strategies[1] = StrategyParams({
-            strategy: IStrategy(address(419)),
-            multiplier: 5000
-        });
+        invalidQuorum.strategies[1] =
+            StrategyParams({strategy: IStrategy(address(419)), multiplier: 5000});
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
         registry.updateQuorumConfig(invalidQuorum, operators);
     }
 
     function test_RevertSWhen_OverMultiplierTotal_UpdateQuorumConfig() public {
-        Quorum memory invalidQuorum = Quorum({
-            strategies: new StrategyParams[](1)
-        });
-        invalidQuorum.strategies[0] = StrategyParams({
-            strategy: IStrategy(address(420)),
-            multiplier: 10_001
-        });
+        Quorum memory invalidQuorum = Quorum({strategies: new StrategyParams[](1)});
+        invalidQuorum.strategies[0] =
+            StrategyParams({strategy: IStrategy(address(420)), multiplier: 10_001});
         address[] memory operators = new address[](2);
         operators[0] = operator1;
         operators[1] = operator2;
 
-        vm.expectRevert(
-            ECDSAStakeRegistryEventsAndErrors.InvalidQuorum.selector
-        );
+        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InvalidQuorum.selector);
         registry.updateQuorumConfig(invalidQuorum, operators);
     }
 
@@ -211,23 +184,17 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         assertEq(registry.getLastCheckpointOperatorWeight(operator3), 1000);
     }
 
-    function test_RevertsWhen_AlreadyRegistered_RegisterOperatorWithSignature()
-        public
-    {
+    function test_RevertsWhen_AlreadyRegistered_RegisterOperatorWithSignature() public {
         assertEq(registry.getLastCheckpointOperatorWeight(operator1), 1000);
         assertEq(registry.getLastCheckpointTotalWeight(), 2000);
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory signature;
-        vm.expectRevert(
-            ECDSAStakeRegistryEventsAndErrors.OperatorAlreadyRegistered.selector
-        );
+        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.OperatorAlreadyRegistered.selector);
         vm.prank(operator1);
         registry.registerOperatorWithSignature(signature, operator1);
     }
 
-    function test_RevertsWhen_SignatureIsInvalid_RegisterOperatorWithSignature()
-        public
-    {
+    function test_RevertsWhen_SignatureIsInvalid_RegisterOperatorWithSignature() public {
         bytes memory signatureData;
         vm.mockCall(
             address(mockServiceManager),
@@ -258,9 +225,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     function test_RevertsWhen_NotOperator_DeregisterOperator() public {
         address notOperator = address(0x2);
         vm.prank(notOperator);
-        vm.expectRevert(
-            ECDSAStakeRegistryEventsAndErrors.OperatorNotRegistered.selector
-        );
+        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.OperatorNotRegistered.selector);
         registry.deregisterOperator();
     }
 
@@ -284,9 +249,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         operators[0] = operator1;
 
         registry.updateOperators(operators);
-        uint256 updatedWeight = registry.getLastCheckpointOperatorWeight(
-            operator1
-        );
+        uint256 updatedWeight = registry.getLastCheckpointOperatorWeight(operator1);
         assertEq(updatedWeight, 1000);
     }
 
@@ -318,12 +281,8 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
         registry.updateOperators(operators);
 
-        uint256 updatedWeight1 = registry.getLastCheckpointOperatorWeight(
-            operator1
-        );
-        uint256 updatedWeight2 = registry.getLastCheckpointOperatorWeight(
-            operator2
-        );
+        uint256 updatedWeight1 = registry.getLastCheckpointOperatorWeight(operator1);
+        uint256 updatedWeight2 = registry.getLastCheckpointOperatorWeight(operator2);
         assertEq(updatedWeight1, 1000);
         assertEq(updatedWeight2, 1000);
     }
@@ -335,9 +294,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
         registry.updateOperators(operators);
 
-        uint256 updatedWeight = registry.getLastCheckpointOperatorWeight(
-            operator1
-        );
+        uint256 updatedWeight = registry.getLastCheckpointOperatorWeight(operator1);
         assertEq(updatedWeight, 1000);
     }
 
@@ -346,14 +303,8 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         IStrategy mockStrategy2 = IStrategy(address(421));
 
         Quorum memory quorum = Quorum({strategies: new StrategyParams[](2)});
-        quorum.strategies[0] = StrategyParams({
-            strategy: mockStrategy,
-            multiplier: 5000
-        });
-        quorum.strategies[1] = StrategyParams({
-            strategy: mockStrategy2,
-            multiplier: 5000
-        });
+        quorum.strategies[0] = StrategyParams({strategy: mockStrategy, multiplier: 5000});
+        quorum.strategies[1] = StrategyParams({strategy: mockStrategy2, multiplier: 5000});
 
         address[] memory operators = new address[](2);
         operators[0] = operator1;
@@ -370,21 +321,15 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         vm.mockCall(
             address(mockDelegationManager),
             abi.encodeWithSelector(
-                MockDelegationManager.getOperatorShares.selector,
-                operator1,
-                strategies
+                MockDelegationManager.getOperatorShares.selector, operator1, strategies
             ),
             abi.encode(shares)
         );
 
         registry.updateOperators(operators);
 
-        uint256 updatedWeight1 = registry.getLastCheckpointOperatorWeight(
-            operator1
-        );
-        uint256 updatedWeight2 = registry.getLastCheckpointOperatorWeight(
-            operator2
-        );
+        uint256 updatedWeight1 = registry.getLastCheckpointOperatorWeight(operator1);
+        uint256 updatedWeight2 = registry.getLastCheckpointOperatorWeight(operator2);
         assertEq(updatedWeight1, 525);
         assertEq(updatedWeight2, 1000);
         vm.roll(block.number + 1);
@@ -465,10 +410,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         (v, r, s) = vm.sign(operator2Pk, msgHash);
         signatures[1] = abi.encodePacked(r, s, v);
 
-        registry.isValidSignature(
-            msgHash,
-            abi.encode(signers, signatures, block.number - 1)
-        );
+        registry.isValidSignature(msgHash, abi.encode(signers, signatures, block.number - 1));
     }
 
     function test_RevertsWhen_LengthMismatch_CheckSignatures() public {
@@ -479,13 +421,8 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(operator1Pk, msgHash);
         signatures[0] = abi.encode(v, r, s);
 
-        vm.expectRevert(
-            ECDSAStakeRegistryEventsAndErrors.LengthMismatch.selector
-        );
-        registry.isValidSignature(
-            msgHash,
-            abi.encode(signers, signatures, block.number - 1)
-        );
+        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.LengthMismatch.selector);
+        registry.isValidSignature(msgHash, abi.encode(signers, signatures, block.number - 1));
     }
 
     function test_RevertsWhen_InvalidLength_CheckSignatures() public {
@@ -493,13 +430,8 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         address[] memory signers = new address[](0);
         bytes[] memory signatures = new bytes[](0);
 
-        vm.expectRevert(
-            ECDSAStakeRegistryEventsAndErrors.InvalidLength.selector
-        );
-        registry.isValidSignature(
-            dataHash,
-            abi.encode(signers, signatures, block.number - 1)
-        );
+        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InvalidLength.selector);
+        registry.isValidSignature(dataHash, abi.encode(signers, signatures, block.number - 1));
     }
 
     function test_RevertsWhen_NotSorted_CheckSignatures() public {
@@ -514,10 +446,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         signatures[0] = abi.encodePacked(r, s, v);
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
-        registry.isValidSignature(
-            msgHash,
-            abi.encode(signers, signatures, block.number - 1)
-        );
+        registry.isValidSignature(msgHash, abi.encode(signers, signatures, block.number - 1));
     }
 
     function test_RevertsWhen_Duplicates_CheckSignatures() public {
@@ -535,10 +464,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         signatures[1] = abi.encodePacked(r, s, v);
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
-        registry.isValidSignature(
-            msgHash,
-            abi.encode(signers, signatures, block.number - 1)
-        );
+        registry.isValidSignature(msgHash, abi.encode(signers, signatures, block.number - 1));
     }
 
     function test_RevetsWhen_InvalidSignature_CheckSignatures() public {
@@ -548,13 +474,8 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         bytes[] memory signatures = new bytes[](1);
         signatures[0] = "invalid-signature";
 
-        vm.expectRevert(
-            ECDSAStakeRegistryEventsAndErrors.InvalidSignature.selector
-        );
-        registry.isValidSignature(
-            dataHash,
-            abi.encode(signers, signatures, block.number - 1)
-        );
+        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InvalidSignature.selector);
+        registry.isValidSignature(dataHash, abi.encode(signers, signatures, block.number - 1));
     }
 
     function test_RevertsWhen_InsufficientSignedStake_CheckSignatures() public {
@@ -576,19 +497,13 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         vm.mockCall(
             address(registry),
             abi.encodeWithSelector(
-                ECDSAStakeRegistry.getLastCheckpointOperatorWeight.selector,
-                operator1
+                ECDSAStakeRegistry.getLastCheckpointOperatorWeight.selector, operator1
             ),
             abi.encode(50)
         );
 
-        vm.expectRevert(
-            ECDSAStakeRegistryEventsAndErrors.InsufficientSignedStake.selector
-        );
-        registry.isValidSignature(
-            msgHash,
-            abi.encode(signers, signatures, block.number - 1)
-        );
+        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InsufficientSignedStake.selector);
+        registry.isValidSignature(msgHash, abi.encode(signers, signatures, block.number - 1));
     }
 
     function test_RevertsWhen_LengthMismatch_CheckSignaturesAtBlock() public {
@@ -599,13 +514,8 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         signers[1] = operator2;
         bytes[] memory signatures = new bytes[](1);
 
-        vm.expectRevert(
-            ECDSAStakeRegistryEventsAndErrors.LengthMismatch.selector
-        );
-        registry.isValidSignature(
-            dataHash,
-            abi.encode(signers, signatures, referenceBlock)
-        );
+        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.LengthMismatch.selector);
+        registry.isValidSignature(dataHash, abi.encode(signers, signatures, referenceBlock));
     }
 
     function test_RevertsWhen_InvalidLength_CheckSignaturesAtBlock() public {
@@ -614,13 +524,8 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         address[] memory signers = new address[](0);
         bytes[] memory signatures = new bytes[](0);
 
-        vm.expectRevert(
-            ECDSAStakeRegistryEventsAndErrors.InvalidLength.selector
-        );
-        registry.isValidSignature(
-            dataHash,
-            abi.encode(signers, signatures, referenceBlock)
-        );
+        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InvalidLength.selector);
+        registry.isValidSignature(dataHash, abi.encode(signers, signatures, referenceBlock));
     }
 
     function test_RevertsWhen_NotSorted_CheckSignaturesAtBlock() public {
@@ -637,15 +542,10 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         signatures[0] = abi.encodePacked(r, s, v);
 
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
-        registry.isValidSignature(
-            msgHash,
-            abi.encode(signers, signatures, referenceBlock)
-        );
+        registry.isValidSignature(msgHash, abi.encode(signers, signatures, referenceBlock));
     }
 
-    function test_RevetsWhen_InsufficientSignedStake_CheckSignaturesAtBlock()
-        public
-    {
+    function test_RevetsWhen_InsufficientSignedStake_CheckSignaturesAtBlock() public {
         uint32 referenceBlock = 123;
         msgHash = keccak256("data");
         signers = new address[](2);
@@ -665,20 +565,13 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         vm.mockCall(
             address(registry),
             abi.encodeWithSelector(
-                ECDSAStakeRegistry.getOperatorWeightAtBlock.selector,
-                operator1,
-                referenceBlock
+                ECDSAStakeRegistry.getOperatorWeightAtBlock.selector, operator1, referenceBlock
             ),
             abi.encode(50)
         );
 
-        vm.expectRevert(
-            ECDSAStakeRegistryEventsAndErrors.InsufficientSignedStake.selector
-        );
-        registry.isValidSignature(
-            msgHash,
-            abi.encode(signers, signatures, referenceBlock)
-        );
+        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InsufficientSignedStake.selector);
+        registry.isValidSignature(msgHash, abi.encode(signers, signatures, referenceBlock));
     }
 
     function test_Gas_UpdateOperators() public {
@@ -694,10 +587,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         for (uint256 i; i < operators.length; i++) {
             operators[i] = address(uint160(i));
             vm.prank(operators[i]);
-            registry.registerOperatorWithSignature(
-                operatorSignature,
-                operators[i]
-            );
+            registry.registerOperatorWithSignature(operatorSignature, operators[i]);
         }
         vm.resumeGasMetering();
         registry.updateOperators(operators);
@@ -723,10 +613,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         for (uint256 i = 1; i < operators.length + 1; i++) {
             operators[i - 1] = address(vm.addr(i));
             vm.prank(operators[i - 1]);
-            registry.registerOperatorWithSignature(
-                operatorSignature,
-                operators[i - 1]
-            );
+            registry.registerOperatorWithSignature(operatorSignature, operators[i - 1]);
             (v, r, s) = vm.sign(i, msgHash);
             signatures[i - 1] = abi.encodePacked(r, s, v);
         }
@@ -735,10 +622,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         vm.roll(block.number + 1);
         vm.resumeGasMetering();
 
-        registry.isValidSignature(
-            msgHash,
-            abi.encode(operators, signatures, block.number - 1)
-        );
+        registry.isValidSignature(msgHash, abi.encode(operators, signatures, block.number - 1));
 
         emit log_named_uint("Gas consumed", before - gasleft());
     }
@@ -759,9 +643,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         registry.registerOperatorWithSignature(operatorSignature, signer);
 
         // Verify that the signing key has been successfully registered for the operator
-        address registeredSigningKey = registry.getLastestOperatorSigningKey(
-            operator
-        );
+        address registeredSigningKey = registry.getLastestOperatorSigningKey(operator);
         assertEq(
             registeredSigningKey,
             signer,
@@ -783,15 +665,11 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         registry.updateOperatorSigningKey(address(420));
 
         // Verify that the signing key has been successfully registered for the operator
-        address registeredSigningKey = registry.getLastestOperatorSigningKey(
-            operator
-        );
+        address registeredSigningKey = registry.getLastestOperatorSigningKey(operator);
 
         vm.roll(block.number + 1);
-        registeredSigningKey = registry.getOperatorSigningKeyAtBlock(
-            operator,
-            uint32(block.number - 1)
-        );
+        registeredSigningKey =
+            registry.getOperatorSigningKeyAtBlock(operator, uint32(block.number - 1));
         assertEq(
             registeredSigningKey,
             address(420),
@@ -820,10 +698,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         signatures[0] = abi.encodePacked(r, s, v);
 
         // Check signatures using the registered signing key
-        registry.isValidSignature(
-            dataHash,
-            abi.encode(operators, signatures, block.number - 1)
-        );
+        registry.isValidSignature(dataHash, abi.encode(operators, signatures, block.number - 1));
     }
 
     function test_WhenUsingSigningKey_CheckSignaturesAtBlock() public {
@@ -835,10 +710,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
         // Register operator with the initial signing key
         vm.prank(operator);
-        registry.registerOperatorWithSignature(
-            operatorSignature,
-            initialSigningKey
-        );
+        registry.registerOperatorWithSignature(operatorSignature, initialSigningKey);
         vm.roll(block.number + 1);
 
         // Prepare data for signature with initial signing key
@@ -852,10 +724,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         signatures[0] = abi.encodePacked(r, s, v);
 
         // Check signatures using the initial registered signing key
-        registry.isValidSignature(
-            dataHash,
-            abi.encode(operators, signatures, block.number - 1)
-        );
+        registry.isValidSignature(dataHash, abi.encode(operators, signatures, block.number - 1));
 
         // Increase block number
         vm.roll(block.number + 10);
@@ -870,10 +739,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         signatures[0] = abi.encodePacked(r, s, v);
 
         // Check signatures using the updated registered signing key
-        registry.isValidSignature(
-            dataHash,
-            abi.encode(operators, signatures, block.number - 1)
-        );
+        registry.isValidSignature(dataHash, abi.encode(operators, signatures, block.number - 1));
     }
 
     function test_WhenUsingPriorSigningKey_CheckSignaturesAtBlock() public {
@@ -885,10 +751,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
         // Register operator with the initial signing key
         vm.prank(operator);
-        registry.registerOperatorWithSignature(
-            operatorSignature,
-            initialSigningKey
-        );
+        registry.registerOperatorWithSignature(operatorSignature, initialSigningKey);
         vm.roll(block.number + 1);
 
         // Prepare data for signature with initial signing key
@@ -909,10 +772,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         registry.updateOperatorSigningKey(updatedSigningKey);
 
         // Check signatures using the initial registered signing key at the previous block
-        registry.isValidSignature(
-            dataHash,
-            abi.encode(operators, signatures, block.number - 10)
-        );
+        registry.isValidSignature(dataHash, abi.encode(operators, signatures, block.number - 10));
     }
 
     function test_RevertsWhen_SigningCurrentBlock_IsValidSignature() public {
@@ -929,15 +789,10 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         signatures[0] = signature;
 
         vm.expectRevert(abi.encodeWithSignature("InvalidReferenceBlock()"));
-        registry.isValidSignature(
-            dataHash,
-            abi.encode(operators, signatures, currentBlock)
-        );
+        registry.isValidSignature(dataHash, abi.encode(operators, signatures, currentBlock));
     }
 
-    function test_RevertsWhen_SigningKeyNotValidAtBlock_IsValidSignature()
-        public
-    {
+    function test_RevertsWhen_SigningKeyNotValidAtBlock_IsValidSignature() public {
         address operator = operator1;
         uint256 invalidSignerPk = signerPk + 1;
         address updatedSigningKey = address(vm.addr(invalidSignerPk));
@@ -958,20 +813,14 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         signatures[0] = signature;
 
         vm.expectRevert(abi.encodeWithSignature("InvalidSignature()"));
-        registry.isValidSignature(
-            dataHash,
-            abi.encode(operators, signatures, referenceBlock)
-        );
+        registry.isValidSignature(dataHash, abi.encode(operators, signatures, referenceBlock));
     }
 
     function _sort(
         address[] memory operators,
         bytes[] memory signatures
     ) internal pure returns (address[] memory, bytes[] memory) {
-        require(
-            operators.length == signatures.length,
-            "Operators and signatures length mismatch"
-        );
+        require(operators.length == signatures.length, "Operators and signatures length mismatch");
 
         uint256 length = operators.length;
         for (uint256 i = 0; i < length - 1; i++) {

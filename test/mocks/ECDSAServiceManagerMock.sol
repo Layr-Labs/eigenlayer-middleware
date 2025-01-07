@@ -2,7 +2,8 @@
 pragma solidity ^0.8.27;
 
 import "../../src/unaudited/ECDSAServiceManagerBase.sol";
-import {IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IAllocationManagerTypes} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
 contract ECDSAServiceManagerMock is ECDSAServiceManagerBase {
     constructor(
@@ -28,11 +29,19 @@ contract ECDSAServiceManagerMock is ECDSAServiceManagerBase {
         __ServiceManagerBase_init(initialOwner, rewardsInitiator);
     }
 
-    function createOperatorSets(IAllocationManager.CreateSetParams[] memory params) external{}
+    function createOperatorSets(
+        IAllocationManager.CreateSetParams[] memory params
+    ) external {}
 
-    function addStrategyToOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external{}
+    function addStrategyToOperatorSet(
+        uint32 operatorSetId,
+        IStrategy[] memory strategies
+    ) external {}
 
-    function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external{}
+    function removeStrategiesFromOperatorSet(
+        uint32 operatorSetId,
+        IStrategy[] memory strategies
+    ) external {}
 
     function registerOperatorToOperatorSets(
         address operator,
@@ -40,9 +49,14 @@ contract ECDSAServiceManagerMock is ECDSAServiceManagerBase {
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external {}
 
-    function deregisterOperatorFromOperatorSets(address operator, uint32[] calldata operatorSetIds) external{}
+    function deregisterOperatorFromOperatorSets(
+        address operator,
+        uint32[] calldata operatorSetIds
+    ) external {}
 
-    function slashOperator(IAllocationManagerTypes.SlashingParams memory params) external override {
+    function slashOperator(
+        IAllocationManagerTypes.SlashingParams memory params
+    ) external override {
         // Mock implementation - no actual slashing occurs
     }
 }

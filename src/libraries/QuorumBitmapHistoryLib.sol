@@ -6,7 +6,6 @@ import {IRegistryCoordinator} from "../interfaces/IRegistryCoordinator.sol";
 /// @title QuorumBitmapHistoryLib
 /// @notice This library operates on the _operatorBitmapHistory in the RegistryCoordinator
 library QuorumBitmapHistoryLib {
-
     /// @notice Retrieves the index of the quorum bitmap update at or before the specified block number
     /// @param self The mapping of operator IDs to their quorum bitmap update history
     /// @param blockNumber The block number to search for

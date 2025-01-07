@@ -35,7 +35,8 @@ import {RewardsCoordinatorMock} from "../mocks/RewardsCoordinatorMock.sol";
 import {PermissionControllerMock} from "../mocks/PermissionControllerMock.sol";
 
 import {RewardsCoordinator} from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
-import {PermissionController} from "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
+import {PermissionController} from
+    "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
 import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
@@ -137,7 +138,9 @@ contract MockAVSDeployer is Test {
         _deployMockEigenLayerAndAVS(numQuorums);
     }
 
-    function _deployMockEigenLayerAndAVS(uint8 numQuorumsToAdd) internal {
+    function _deployMockEigenLayerAndAVS(
+        uint8 numQuorumsToAdd
+    ) internal {
         emptyContract = new EmptyContract();
         defaultOperatorId = defaultPubKey.hashG1Point();
 
@@ -205,8 +208,9 @@ contract MockAVSDeployer is Test {
 
         cheats.startPrank(proxyAdminOwner);
 
-        stakeRegistryImplementation =
-            new StakeRegistryHarness(IRegistryCoordinator(registryCoordinator), delegationMock, avsDirectory, serviceManager);
+        stakeRegistryImplementation = new StakeRegistryHarness(
+            IRegistryCoordinator(registryCoordinator), delegationMock, avsDirectory, serviceManager
+        );
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(stakeRegistry))),
             address(stakeRegistryImplementation)
@@ -241,7 +245,7 @@ contract MockAVSDeployer is Test {
             pauserRegistry,
             permissionControllerMock,
             uint32(7 days), // DEALLOCATION_DELAY
-            uint32(1 days)  // ALLOCATION_CONFIGURATION_DELAY
+            uint32(1 days) // ALLOCATION_CONFIGURATION_DELAY
         );
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(allocationManager))),
@@ -274,7 +278,12 @@ contract MockAVSDeployer is Test {
         }
 
         registryCoordinatorImplementation = new RegistryCoordinatorHarness(
-            serviceManager, stakeRegistry, blsApkRegistry, indexRegistry, avsDirectory, pauserRegistry
+            serviceManager,
+            stakeRegistry,
+            blsApkRegistry,
+            indexRegistry,
+            avsDirectory,
+            pauserRegistry
         );
         {
             delete operatorSetParams;
@@ -315,7 +324,8 @@ contract MockAVSDeployer is Test {
                         quorumStakeTypes, // _stakeTypes
                         slashableStakeQuorumLookAheadPeriods // _lookAheadPeriods
                     )
-                ));
+                )
+            );
         }
 
         operatorStateRetriever = new OperatorStateRetriever();
@@ -411,10 +421,9 @@ contract MockAVSDeployer is Test {
         );
     }
 
-    function _registerRandomOperators(uint256 pseudoRandomNumber)
-        internal
-        returns (OperatorMetadata[] memory, uint256[][] memory)
-    {
+    function _registerRandomOperators(
+        uint256 pseudoRandomNumber
+    ) internal returns (OperatorMetadata[] memory, uint256[][] memory) {
         OperatorMetadata[] memory operatorMetadatas = new OperatorMetadata[](maxOperatorsToRegister);
         for (uint256 i = 0; i < operatorMetadatas.length; i++) {
             // limit to 16 quorums so we don't run out of gas, make them all register for quorum 0 as well

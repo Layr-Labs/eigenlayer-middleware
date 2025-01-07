@@ -26,13 +26,13 @@ interface IServiceManagerBaseEvents {
     /// @notice rewardsUpdater is responsible for submiting DistributionRoots, only owner can set rewardsUpdater
     event RewardsUpdaterSet(address indexed oldRewardsUpdater, address indexed newRewardsUpdater);
     event RewardsForAllSubmitterSet(
-        address indexed rewardsForAllSubmitter,
-        bool indexed oldValue,
-        bool indexed newValue
+        address indexed rewardsForAllSubmitter, bool indexed oldValue, bool indexed newValue
     );
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
-    event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
+    event ClaimerForSet(
+        address indexed earner, address indexed oldClaimer, address indexed claimer
+    );
     /// @notice rootIndex is the specific array index of the newly created root in the storage array
     event DistributionRootSubmitted(
         uint32 indexed rootIndex,
@@ -49,8 +49,6 @@ interface IServiceManagerBaseEvents {
         IERC20 token,
         uint256 claimedAmount
     );
-
-
 
     /// TOKEN EVENTS FOR TESTING ///
     /**

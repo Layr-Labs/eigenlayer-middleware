@@ -12,7 +12,6 @@ import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
 abstract contract IndexRegistryStorage is Initializable, IIndexRegistry {
-
     /// @notice The value that is returned when an operator does not exist at an index at a certain block
     bytes32 public constant OPERATOR_DOES_NOT_EXIST_ID = bytes32(0);
 
@@ -32,7 +31,7 @@ abstract contract IndexRegistryStorage is Initializable, IIndexRegistry {
 
     constructor(
         IRegistryCoordinator _registryCoordinator
-    ){
+    ) {
         registryCoordinator = address(_registryCoordinator);
         // disable initializers so that the implementation contract cannot be initialized
         _disableInitializers();
