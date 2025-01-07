@@ -72,8 +72,8 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
     /// @notice the delay in seconds before an operator can reregister after being ejected
     uint256 public ejectionCooldown;
 
+    /// @notice boolean to denote whether the AVS is an operatorSet AVS
     bool public isOperatorSetAVS;
-    mapping(uint8 => bool) public isM2Quorum;
 
     constructor(
         IServiceManager _serviceManager,

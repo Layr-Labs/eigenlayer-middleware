@@ -164,11 +164,6 @@ interface IRegistryCoordinator is IRegistryCoordinatorErrors{
     /// @notice Returns the number of registries
     function numRegistries() external view returns (uint256);
 
-    /// @notice Returns whether a quorum is an M2 quorum
-    /// @param quorumNumber The quorum number to check
-    /// @return True if the quorum is an M2 quorum
-    function isM2Quorum(uint8 quorumNumber) external view returns (bool);
-
     /// @notice Returns whether the AVS is an operator set AVS
     /// @return True if the AVS is an operator set AVS
     function isOperatorSetAVS() external view returns (bool);

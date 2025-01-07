@@ -579,9 +579,11 @@ contract StakeRegistry is StakeRegistryStorage {
      * @return True if the quorum is an operator set quorum
      */
     function isOperatorSetQuorum(uint8 quorumNumber) external view returns (bool) {
-        bool isM2 = IRegistryCoordinator(registryCoordinator).isM2Quorum(quorumNumber);
-        bool isOperatorSet = IRegistryCoordinator(registryCoordinator).isOperatorSetAVS();
-        return isOperatorSet && !isM2;
+        IAllocationManager allocationManager = IAllocationManager(serviceManager.allocationManager());
+        return allocationManager.isOperatorSet(OperatorSet({
+            avs: address(serviceManager),
+            id: quorumNumber
+        }));
     }
 
     /**
