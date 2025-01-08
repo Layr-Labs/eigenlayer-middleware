@@ -581,6 +581,7 @@ contract ServiceManagerBase_createOperatorDirectedOperatorSetRewardsSubmission_U
     }
 
     function testFuzz_createOperatorDirectedOperatorSetRewardsSubmission_Correctness() public {
+        vm.warp(block.timestamp - (block.timestamp % CALCULATION_INTERVAL_SECONDS));
         allocationManagerMock.setIsOperatorSet(operatorSet, true);
 
         uint256 numSubmissions = cheats.randomUint(1, 10);
@@ -599,7 +600,7 @@ contract ServiceManagerBase_createOperatorDirectedOperatorSetRewardsSubmission_U
             uint256 totalAmount = 0;
 
             for (uint256 j = 0; j < numOperators; ++j) {
-                address operator = cheats.randomAddress();
+                address operator = address(uint160(j + 1));
                 uint256 amount = cheats.randomUint(1 ether, 100 ether);
                 operatorRewards[j] =
                     IRewardsCoordinatorTypes.OperatorReward({operator: operator, amount: amount});
@@ -610,13 +611,15 @@ contract ServiceManagerBase_createOperatorDirectedOperatorSetRewardsSubmission_U
                 strategiesAndMultipliers: defaultStrategyAndMultipliers,
                 token: rewardTokens[i % rewardTokens.length],
                 operatorRewards: operatorRewards,
-                startTimestamp: uint32(block.timestamp),
-                duration: uint32(1 weeks),
+                startTimestamp: uint32(block.timestamp - CALCULATION_INTERVAL_SECONDS),
+                duration: uint32(CALCULATION_INTERVAL_SECONDS),
                 description: string.concat("Test submission #", cheats.toString(i))
             });
 
             totalAmounts[i] = totalAmount;
         }
+
+        vm.warp(block.timestamp + 1);
 
         permissionControllerMock.setCanCall({
             account: address(this),
