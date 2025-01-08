@@ -6,6 +6,7 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISi
 import {IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import { IAllocationManager, OperatorSet, IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import { AllocationManager } from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 import {ISocketUpdater} from "./interfaces/ISocketUpdater.sol";
 import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry, StakeType} from "./interfaces/IStakeRegistry.sol";
@@ -479,6 +480,40 @@ contract RegistryCoordinator is
             operatorInfo.status == OperatorStatus.REGISTERED && !quorumsToRemove.isEmpty()
                 && quorumsToRemove.isSubsetOf(currentBitmap)
         ) {
+            // If using operator sets, call out to AllocationManager to eject operator
+            if (isUsingOperatorSets()) {
+                // Count non-M2 quorums to size array
+                uint256 operatorSetIdCount;
+                for (uint256 i = 0; i < quorumNumbers.length; i++) {
+                    if (!isM2Quorum[uint8(quorumNumbers[i])]) {
+                        operatorSetIdCount++;
+                    }
+                }
+
+                // Get operator sets for quorums being removed
+                uint32[] memory operatorSetIds = new uint32[](quorumNumbers.length);
+                uint256 operatorSetIndex = 0;
+                for (uint256 i = 0; i < quorumNumbers.length; i++) {
+                    if (!isM2Quorum[uint8(quorumNumbers[i])]) {
+                        operatorSetIds[operatorSetIndex] = uint8(quorumNumbers[i]);
+                        operatorSetIndex++;
+                    }
+                }
+
+                assembly {
+                    mstore(operatorSetIds, operatorSetIdCount)
+                }
+
+                // Call AllocationManager to deregister operator from sets
+                AllocationManager(serviceManager.allocationManager()).deregisterFromOperatorSets(
+                    IAllocationManagerTypes.DeregisterParams({
+                        operator: operator,
+                        avs: address(serviceManager),
+                        operatorSetIds: operatorSetIds
+                    })
+                );
+            }
+
             _deregisterOperator({operator: operator, quorumNumbers: quorumNumbers});
         }
     }
