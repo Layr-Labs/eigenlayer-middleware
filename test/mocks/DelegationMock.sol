@@ -232,13 +232,40 @@ contract DelegationIntermediate is IDelegationManager {
     uint256 wadSlashed
   ) external virtual {}
 
-    function decreaseDelegatedShares(
-        address staker,
-        uint256 curDepositShares,
-        uint64 beaconChainSlashingFactorDecrease
-    ) external virtual {}
+  function decreaseDelegatedShares(
+    address staker,
+    uint256 curDepositShares,
+    uint64 beaconChainSlashingFactorDecrease
+  ) external virtual {}
 
-    function minWithdrawalDelayBlocks() external view virtual override returns (uint32) {}
+  function minWithdrawalDelayBlocks()
+    external
+    view
+    virtual
+    override
+    returns (uint32)
+  {}
+
+  function slashOperatorShares(
+    address operator,
+    IStrategy strategy,
+    uint64 prevMaxMagnitude,
+    uint64 newMaxMagnitude
+  ) external override {}
+
+  function getQueuedWithdrawal(
+    bytes32 withdrawalRoot
+  ) external view override returns (Withdrawal memory) {}
+
+  function getQueuedWithdrawalRoots(
+    address staker
+  ) external view override returns (bytes32[] memory) {}
+
+  function convertToDepositShares(
+    address staker,
+    IStrategy[] memory strategies,
+    uint256[] memory withdrawableShares
+  ) external view override returns (uint256[] memory) {}
 }
 
 contract DelegationMock is DelegationIntermediate {

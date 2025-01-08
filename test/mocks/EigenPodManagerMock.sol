@@ -94,4 +94,10 @@ contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
         int256 balanceDeltaWei
     ) external {
     }
+
+    function burnableETHShares() external view returns (uint256) {
+    }
+
+    function increaseBurnableShares(IStrategy strategy, uint256 addedSharesToBurn) external {
+    }
 }
