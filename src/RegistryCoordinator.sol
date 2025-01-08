@@ -503,14 +503,15 @@ contract RegistryCoordinator is
                     mstore(operatorSetIds, operatorSetIdCount)
                 }
 
-                // Call AllocationManager to deregister operator from sets
-                IAllocationManager(serviceManager.allocationManager()).deregisterFromOperatorSets(
+                IAllocationManagerTypes.DeregisterParams memory params =
                     IAllocationManagerTypes.DeregisterParams({
                         operator: operator,
                         avs: address(serviceManager),
                         operatorSetIds: operatorSetIds
-                    })
-                );
+                    });
+                serviceManager.ejectOperators(params);
+
+
             }
 
             _deregisterOperator({operator: operator, quorumNumbers: quorumNumbers});

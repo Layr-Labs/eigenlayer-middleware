@@ -175,6 +175,10 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         }));
     }
 
+    function ejectOperators(IAllocationManagerTypes.DeregisterParams memory params) external onlyRegistryCoordinator {
+        _allocationManager.deregisterFromOperatorSets(params);
+    }
+
     /**
      * @notice Sets the rewards initiator address
      * @param newRewardsInitiator The new rewards initiator address

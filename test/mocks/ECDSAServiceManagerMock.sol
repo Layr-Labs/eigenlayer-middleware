@@ -45,4 +45,5 @@ contract ECDSAServiceManagerMock is ECDSAServiceManagerBase {
     function slashOperator(IAllocationManagerTypes.SlashingParams memory params) external override {
         // Mock implementation - no actual slashing occurs
     }
+     function ejectOperators(IAllocationManagerTypes.DeregisterParams memory params) external{}
 }

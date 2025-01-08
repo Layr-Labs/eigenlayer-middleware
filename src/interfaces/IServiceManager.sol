@@ -50,6 +50,12 @@ interface IServiceManager is IServiceManagerUI {
 
     function slashOperator(IAllocationManagerTypes.SlashingParams memory params) external;
 
+    /**
+     * @notice Ejects operators from operator sets
+     * @param params The deregistration parameters containing operator address, AVS address and operator set IDs
+     */
+    function ejectOperators(IAllocationManagerTypes.DeregisterParams memory params) external;
+
     // EVENTS
     event RewardsInitiatorUpdated(address prevRewardsInitiator, address newRewardsInitiator);
     event SlasherUpdated(address prevSlasher, address newSlasher);
