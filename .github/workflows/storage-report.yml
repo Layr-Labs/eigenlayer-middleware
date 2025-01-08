@@ -23,7 +23,7 @@ jobs:
 
       - name: "Generate and prepare the storage reports for current branch"
         run: |
-          bash .github/bin/storage-report.sh pr
+          bash ./.github/bin/storage-report.sh pr
 
       - name: Checkout dev
         env:
@@ -34,7 +34,7 @@ jobs:
 
       - name: "Generate and prepare the storage reports for target branch"
         run: |
-          bash .github/bin/storage-report.sh target
+          bash ./.github/bin/storage-report.sh target
 
       - name: Compare outputs
         run: |
