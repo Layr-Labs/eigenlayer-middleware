@@ -6,7 +6,6 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISi
 import {IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import { IAllocationManager, OperatorSet, IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import { AllocationManager } from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 import {ISocketUpdater} from "./interfaces/ISocketUpdater.sol";
 import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry, StakeType} from "./interfaces/IStakeRegistry.sol";
@@ -505,7 +504,7 @@ contract RegistryCoordinator is
                 }
 
                 // Call AllocationManager to deregister operator from sets
-                AllocationManager(serviceManager.allocationManager()).deregisterFromOperatorSets(
+                IAllocationManager(serviceManager.allocationManager()).deregisterFromOperatorSets(
                     IAllocationManagerTypes.DeregisterParams({
                         operator: operator,
                         avs: address(serviceManager),
