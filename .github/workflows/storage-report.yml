@@ -1,12 +1,14 @@
 name: Storage Layout
 
 on:
-  workflow_dispatch:
-  pull_request:
   push:
     branches:
-      - "dev"
-      
+      - master
+      - mainnet
+      - testnet-goerli
+      - dev
+  pull_request:
+
 jobs:
   check_storage:
     name: CI
@@ -23,7 +25,7 @@ jobs:
 
       - name: "Generate and prepare the storage reports for current branch"
         run: |
-          bash bin/storage-report.sh pr
+          bash .github/bin/storage-report.sh pr
 
       - name: Checkout dev
         env:
@@ -34,7 +36,7 @@ jobs:
 
       - name: "Generate and prepare the storage reports for target branch"
         run: |
-          bash bin/storage-report.sh target
+          bash .github/bin/storage-report.sh target
 
       - name: Compare outputs
         run: |
