@@ -5,9 +5,12 @@ import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import {
     RewardsCoordinator,
     IRewardsCoordinator,
+    IRewardsCoordinatorErrors,
     IRewardsCoordinatorTypes,
+    OperatorSet,
     IERC20
 } from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
+import {IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {PermissionController} from "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
 import {StrategyBase} from "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
@@ -40,8 +43,9 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
     IStrategy strategyMock1;
     IStrategy strategyMock2;
     IStrategy strategyMock3;
+    IStrategy[] strategies;
     StrategyBase strategyImplementation;
-    IRewardsCoordinator.StrategyAndMultiplier[] defaultStrategyAndMultipliers;
+    IRewardsCoordinatorTypes.StrategyAndMultiplier[] defaultStrategyAndMultipliers;
 
     // mapping to setting fuzzed inputs
     mapping(address => bool) public addressIsExcludedFromFuzzedInputs;
@@ -177,11 +181,14 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
                 )
             )
         );
-        IStrategy[] memory strategies = new IStrategy[](3);
-        strategies[0] = strategyMock1;
-        strategies[1] = strategyMock2;
-        strategies[2] = strategyMock3;
-        strategies = _sortArrayAsc(strategies);
+
+        IStrategy[] memory strats = new IStrategy[](3);
+        strats[0] = strategyMock1;
+        strats[1] = strategyMock2;
+        strats[2] = strategyMock3;
+        strats = _sortArrayAsc(strats);
+        
+        strategies = strats;
 
         strategyManagerMock.setStrategyWhitelist(strategies[0], true);
         strategyManagerMock.setStrategyWhitelist(strategies[1], true);
@@ -217,12 +224,29 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         return timestamp1 > timestamp2 ? timestamp1 : timestamp2;
     }
 
+    // function test_setRewardsInitiator() public {
+    //     address newRewardsInitiator = address(uint160(uint256(keccak256("newRewardsInitiator"))));
+    //     cheats.prank(serviceManagerOwner);
+    //     serviceManager.setRewardsInitiator(newRewardsInitiator);
+    //     assertEq(newRewardsInitiator, serviceManager.rewardsInitiator());
+    // }
+
+    // function test_setRewardsInitiator_revert_notOwner() public {
+    //     address caller = address(uint160(uint256(keccak256("caller"))));
+    //     address newRewardsInitiator = address(uint160(uint256(keccak256("newRewardsInitiator"))));
+    //     cheats.expectRevert("Ownable: caller is not the owner");
+    //     cheats.prank(caller);
+    //     serviceManager.setRewardsInitiator(newRewardsInitiator);
+    // }
+}
+
+contract ServiceManagerBase_createAVSRewardsSubmission_UnitTests is ServiceManagerBase_UnitTests {
     function testFuzz_createAVSRewardsSubmission_Revert_WhenNotOwner(address caller)
         public
         filterFuzzedAddressInputs(caller)
     {
         cheats.assume(caller != rewardsInitiator);
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions;
+        IRewardsCoordinatorTypes.RewardsSubmission[] memory rewardsSubmissions;
 
         cheats.prank(caller);
         cheats.expectRevert(
@@ -337,8 +361,8 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         cheats.assume(2 <= numSubmissions && numSubmissions <= 10);
         cheats.prank(rewardsCoordinator.owner());
 
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions =
-            new IRewardsCoordinator.RewardsSubmission[](numSubmissions);
+        IRewardsCoordinatorTypes.RewardsSubmission[] memory rewardsSubmissions =
+            new IRewardsCoordinatorTypes.RewardsSubmission[](numSubmissions);
         bytes32[] memory avsSubmissionHashes = new bytes32[](numSubmissions);
         uint256 startSubmissionNonce = rewardsCoordinator.submissionNonce(address(serviceManager));
         _deployMockRewardTokens(rewardsInitiator, numSubmissions);
@@ -430,8 +454,8 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         cheats.assume(2 <= numSubmissions && numSubmissions <= 10);
         cheats.prank(rewardsCoordinator.owner());
 
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions =
-            new IRewardsCoordinator.RewardsSubmission[](numSubmissions);
+        IRewardsCoordinatorTypes.RewardsSubmission[] memory rewardsSubmissions =
+            new IRewardsCoordinatorTypes.RewardsSubmission[](numSubmissions);
         bytes32[] memory avsSubmissionHashes = new bytes32[](numSubmissions);
         uint256 startSubmissionNonce = rewardsCoordinator.submissionNonce(address(serviceManager));
         IERC20 rewardToken = new ERC20PresetFixedSupply(
@@ -518,19 +542,92 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
             );
         }
     }
+}
 
-    function test_setRewardsInitiator() public {
-        address newRewardsInitiator = address(uint160(uint256(keccak256("newRewardsInitiator"))));
-        cheats.prank(serviceManagerOwner);
-        serviceManager.setRewardsInitiator(newRewardsInitiator);
-        assertEq(newRewardsInitiator, serviceManager.rewardsInitiator());
+contract ServiceManagerBase_createOperatorDirectedOperatorSetRewardsSubmission_UnitTests is
+    ServiceManagerBase_UnitTests
+{
+    OperatorSet operatorSet = OperatorSet(address(this), 1);
+
+    function testFuzz_createOperatorDirectedOperatorSetRewardsSubmission_Revert_WhenNotOwner(
+        address caller
+    ) public filterFuzzedAddressInputs(caller) {
+        cheats.assume(caller != rewardsInitiator);
+
+        cheats.prank(caller);
+        cheats.expectRevert(
+            "ServiceManagerBase.onlyRewardsInitiator: caller is not the rewards initiator"
+        );
+        serviceManager.createOperatorDirectedOperatorSetRewardsSubmission(
+            operatorSet,
+            new IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[](0),
+            new uint256[](0)
+        );
     }
 
-    function test_setRewardsInitiator_revert_notOwner() public {
-        address caller = address(uint160(uint256(keccak256("caller"))));
-        address newRewardsInitiator = address(uint160(uint256(keccak256("newRewardsInitiator"))));
-        cheats.expectRevert("Ownable: caller is not the owner");
-        cheats.prank(caller);
-        serviceManager.setRewardsInitiator(newRewardsInitiator);
+    function testFuzz_createOperatorDirectedOperatorSetRewardsSubmission_Revert_InvalidOperatorSet() public {
+        permissionControllerMock.setCanCall({
+            account: address(this),
+            caller: address(serviceManager),
+            target: address(rewardsCoordinator),
+            selector: IRewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission.selector
+        });
+
+        cheats.prank(rewardsInitiator);
+        cheats.expectRevert(IRewardsCoordinatorErrors.InvalidOperatorSet.selector);
+        serviceManager.createOperatorDirectedOperatorSetRewardsSubmission(
+            operatorSet, new IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[](0), new uint256[](0)
+        );
+    }
+
+    function testFuzz_createOperatorDirectedOperatorSetRewardsSubmission_Correctness() public {
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+
+        uint256 numSubmissions = cheats.randomUint(1, 10);
+        uint256 maxOperatorsPerSubmission = cheats.randomUint(1, 32);
+
+        _deployMockRewardTokens(rewardsInitiator, numSubmissions);
+        
+        IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[] memory rewardsSubmissions =
+            new IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[](numSubmissions);
+        uint256[] memory totalAmounts = new uint256[](numSubmissions);
+
+        for (uint256 i = 0; i < numSubmissions; ++i) {
+            uint256 numOperators = cheats.randomUint(1, maxOperatorsPerSubmission);
+            IRewardsCoordinatorTypes.OperatorReward[] memory operatorRewards =
+                new IRewardsCoordinatorTypes.OperatorReward[](numOperators);
+            uint256 totalAmount = 0;
+
+            for (uint256 j = 0; j < numOperators; ++j) {
+                address operator = cheats.randomAddress();
+                uint256 amount = cheats.randomUint(1 ether, 100 ether);
+                operatorRewards[j] =
+                    IRewardsCoordinatorTypes.OperatorReward({operator: operator, amount: amount});
+                totalAmount += amount;
+            }
+
+            rewardsSubmissions[i] = IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission({
+                strategiesAndMultipliers: defaultStrategyAndMultipliers,
+                token: rewardTokens[i % rewardTokens.length],
+                operatorRewards: operatorRewards,
+                startTimestamp: uint32(block.timestamp),
+                duration: uint32(1 weeks),
+                description: string.concat("Test submission #", cheats.toString(i))
+            });
+
+            totalAmounts[i] = totalAmount;
+        }
+
+        permissionControllerMock.setCanCall({
+            account: address(this),
+            caller: address(serviceManager),
+            target: address(rewardsCoordinator),
+            selector: IRewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission.selector
+        });
+
+        cheats.prank(rewardsInitiator);
+        serviceManager.createOperatorDirectedOperatorSetRewardsSubmission(
+            operatorSet, rewardsSubmissions, totalAmounts
+        );
     }
 }

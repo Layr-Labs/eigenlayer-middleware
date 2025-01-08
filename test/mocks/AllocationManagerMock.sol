@@ -1,11 +1,18 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {IAllocationManager, OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IAllocationManager, OperatorSet } from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {OperatorSetLib} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
+
 import {IAVSRegistrar } from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 contract AllocationManagerIntermediate is IAllocationManager {
+  using OperatorSetLib for OperatorSet;
+
+
+  mapping(bytes32 => bool) internal _isOperatorSet;
+
   function initialize(
     address initialOwner,
     uint256 initialPausedStatus
@@ -139,7 +146,16 @@ contract AllocationManagerIntermediate is IAllocationManager {
 
   function isOperatorSet(
     OperatorSet memory operatorSet
-  ) external view virtual returns (bool) {}
+  ) external view virtual returns (bool) {
+    return _isOperatorSet[operatorSet.key()];
+  }
+
+  function setIsOperatorSet(
+    OperatorSet memory operatorSet,
+    bool isSet
+  ) external virtual {
+    _isOperatorSet[operatorSet.key()] = isSet;
+  }
 
   function getMembers(
     OperatorSet memory operatorSet
