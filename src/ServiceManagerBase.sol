@@ -93,6 +93,11 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _avsDirectory.updateAVSMetadataURI(_metadataURI);
     }
 
+    /**
+     * @notice Slashing an operator in the allocationManager
+     * @param params Slashing parameters
+     * @dev Only callable by the slasher
+     */
     function slashOperator(IAllocationManager.SlashingParams memory params) external onlySlasher {
         _allocationManager.slashOperator(address(this), params);
     }
@@ -127,14 +132,34 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
+    /**
+     * @notice Ejects operators from the AllocationManager
+     * @dev Only callable by the RegistryCoordinator
+     */
+    function ejectOperator(IAllocationManagerTypes.DeregisterParams memory params) external onlyRegistryCoordinator {
+        _allocationManager.deregisterFromOperatorSets(params);
+    }
+
+    /**
+     * @notice Creates operatorSets 
+     * @dev Only callable by the RegistryCoordinator
+     */
     function createOperatorSets(IAllocationManager.CreateSetParams[] memory params) external onlyRegistryCoordinator {
         _allocationManager.createOperatorSets(address(this), params);
     }
 
+    /**
+     * @notice Adds strategies to an operatorSet
+     * @dev Only callable by the stakeRegistry
+     */
     function addStrategyToOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external onlyStakeRegistry {
         _allocationManager.addStrategiesToOperatorSet(address(this), operatorSetId, strategies);
     }
 
+    /**
+     * @notice Removes strategies from an operatorSet
+     * @dev Only callable by the stakeRegistry
+     */
     function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external onlyStakeRegistry {
         _allocationManager.removeStrategiesFromOperatorSet(address(this), operatorSetId, strategies);
     }

@@ -34,6 +34,8 @@ interface IServiceManager is IServiceManagerUI {
 
     function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external;
 
+    function ejectOperator(IAllocationManagerTypes.DeregisterParams memory params) external;
+    
     /**
      * @notice Sets the AVS registrar address in the AllocationManager
      * @param registrar The new AVS registrar address

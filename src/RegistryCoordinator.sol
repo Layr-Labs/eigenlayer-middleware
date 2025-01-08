@@ -54,7 +54,7 @@ contract RegistryCoordinator is
     }
 
     modifier onlyAllocationManager() {
-        require(msg.sender == address(serviceManager.allocationManager()), OnlyAllocationManager());
+        _checkAllocationManager();
         _;
     }
 
@@ -498,8 +498,12 @@ contract RegistryCoordinator is
         if (
             operatorInfo.status == OperatorStatus.REGISTERED && !quorumsToRemove.isEmpty()
                 && quorumsToRemove.isSubsetOf(currentBitmap)
-        ) {
+        ) { 
+            // Handles deregistration in middleware + AVSD
             _deregisterOperator({operator: operator, quorumNumbers: quorumNumbers});
+
+            // Ejects from operatorSets
+            _ejectOperatorsFromOperatorSets(operator, quorumNumbers);
         }
     }
 
@@ -673,6 +677,13 @@ contract RegistryCoordinator is
     }
 
     /**
+     * Checks if the caller is the Allocation Manager
+     */
+    function _checkAllocationManager() internal view {
+        require(msg.sender == address(serviceManager.allocationManager()), OnlyAllocationManager());
+    }
+
+    /**
      * @notice Checks if a quorum exists
      * @param quorumNumber The quorum number to check
      * @dev Reverts if the quorum does not exist
@@ -803,6 +814,31 @@ contract RegistryCoordinator is
         blsApkRegistry.deregisterOperator(operator, quorumNumbers);
         stakeRegistry.deregisterOperator(operatorId, quorumNumbers);
         indexRegistry.deregisterOperator(operatorId, quorumNumbers);
+    }
+
+    function _ejectOperatorsFromOperatorSets(address operator, bytes memory quorumNumbers) internal {
+        // Populate the operatorSetIds to remove
+        uint256 operatorSetIdCount;
+        uint32[] memory operatorSetIds = new uint32[](quorumNumbers.length);
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            if (_isOperatorSet(uint8(quorumNumbers[i]))) {
+                operatorSetIds[operatorSetIdCount] = uint8(quorumNumbers[i]);
+                operatorSetIdCount++;
+            }
+        }
+
+        // Resize array
+        assembly {
+            mstore (operatorSetIds, operatorSetIdCount)
+        }
+
+        // Eject through serviceManager
+        IAllocationManagerTypes.DeregisterParams memory params = IAllocationManagerTypes.DeregisterParams({
+            operator: operator,
+            avs: address(serviceManager),
+            operatorSetIds: operatorSetIds
+        });
+        serviceManager.ejectOperator(params);
     }
 
     /**
@@ -1021,7 +1057,7 @@ contract RegistryCoordinator is
         ejector = newEjector;
     }
 
-    function _validateM2Quorums(bytes memory quorumNumbers) internal {
+    function _validateM2Quorums(bytes memory quorumNumbers) internal view {
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             require(_isOperatorSet(uint8(quorumNumbers[i])), "quorum should not be an operatorSet in core");
         }
