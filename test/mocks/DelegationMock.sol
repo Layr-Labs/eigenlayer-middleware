@@ -18,6 +18,13 @@ contract DelegationIntermediate is IDelegationManager {
     uint256 initialPausedStatus
   ) external virtual {}
 
+  function convertToDepositShares(
+      address staker,
+      IStrategy[] memory strategies,
+      uint256[] memory withdrawableShares
+  ) external view returns (uint256[] memory) {}
+
+
   function registerAsOperator(
     OperatorDetails calldata registeringOperatorDetails,
     uint32 allocationDelay,
@@ -239,6 +246,25 @@ contract DelegationIntermediate is IDelegationManager {
     ) external virtual {}
 
     function minWithdrawalDelayBlocks() external view virtual override returns (uint32) {}
+
+    /// @notice Returns the Withdrawal associated with a `withdrawalRoot`, if it exists. NOTE that
+    /// withdrawals queued before the slashing release can NOT be queried with this method.
+    function getQueuedWithdrawal(
+        bytes32 withdrawalRoot
+    ) external virtual override view returns (Withdrawal memory) {}
+
+    /// @notice Returns a list of queued withdrawal roots for the `staker`.
+    /// NOTE that this only returns withdrawals queued AFTER the slashing release.
+    function getQueuedWithdrawalRoots(
+        address staker
+    ) external virtual override view returns (bytes32[] memory) {}
+
+    function slashOperatorShares(
+        address operator,
+        IStrategy strategy,
+        uint64 prevMaxMagnitude,
+        uint64 newMaxMagnitude
+    ) external virtual override {}
 }
 
 contract DelegationMock is DelegationIntermediate {

@@ -30,9 +30,17 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
 
   function createOperatorDirectedAVSRewardsSubmission(
     address avs,
-    OperatorDirectedRewardsSubmission[]
-      calldata operatorDirectedRewardsSubmissions
+    OperatorDirectedRewardsSubmission[] calldata operatorDirectedRewardsSubmissions
   ) external override {}
+
+  function createOperatorDirectedOperatorSetRewardsSubmission(
+    OperatorSet calldata operatorSet,
+    OperatorDirectedRewardsSubmission[] calldata operatorDirectedRewardsSubmissions
+  ) external override {}
+
+  function getOperatorSetSplit(address operator, OperatorSet calldata operatorSet) external override view returns (uint16) {}
+
+  function setOperatorSetSplit(address operator, OperatorSet calldata operatorSet, uint16 split) external override {}
 
   function processClaim(
     RewardsMerkleClaim calldata claim,

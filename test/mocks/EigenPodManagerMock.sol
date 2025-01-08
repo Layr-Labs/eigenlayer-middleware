@@ -15,6 +15,10 @@ contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
         _setPausedStatus(0);
     }
 
+    function burnableETHShares() external view returns (uint256) {}
+
+    function increaseBurnableShares(IStrategy strategy, uint256 addedSharesToBurn) external {}
+
     function podOwnerShares(address podOwner) external view returns (int256) {
         return podShares[podOwner];
     }

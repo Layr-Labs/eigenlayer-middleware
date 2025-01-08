@@ -5,7 +5,7 @@ import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initia
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {IRewardsCoordinator} from
+import {IRewardsCoordinator, IERC20, OperatorSet} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {IAllocationManager, IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
@@ -97,6 +97,10 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _allocationManager.slashOperator(address(this), params);
     }
 
+    function _increaseAllowance(IERC20 token, address spender, uint256 amount) internal {
+        token.approve(spender, amount + token.allowance(address(this), spender));
+    }
+
     /**
      * @notice Creates a new rewards submission to the EigenLayer RewardsCoordinator contract, to be split amongst the
      * set of stakers delegated to operators who are registered to this `avs`
@@ -112,19 +116,30 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions
     ) public virtual onlyRewardsInitiator {
         for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
-            // transfer token to ServiceManager and approve RewardsCoordinator to transfer again
-            // in createAVSRewardsSubmission() call
-            rewardsSubmissions[i].token.transferFrom(
-                msg.sender, address(this), rewardsSubmissions[i].amount
-            );
-            uint256 allowance =
-                rewardsSubmissions[i].token.allowance(address(this), address(_rewardsCoordinator));
-            rewardsSubmissions[i].token.approve(
-                address(_rewardsCoordinator), rewardsSubmissions[i].amount + allowance
-            );
+            IRewardsCoordinator.RewardsSubmission calldata submission = rewardsSubmissions[i];
+            
+            submission.token.transferFrom(msg.sender, address(this), submission.amount);
+
+            _increaseAllowance(submission.token, address(_rewardsCoordinator), submission.amount);
         }
 
         _rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
+    }
+
+    function createOperatorDirectedOperatorSetRewardsSubmission(
+        OperatorSet memory operatorSet,
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[] calldata rewardsSubmissions,
+        uint256[] memory totalAmounts
+    ) public virtual onlyRewardsInitiator {
+        for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
+            IRewardsCoordinator.OperatorDirectedRewardsSubmission calldata submission = rewardsSubmissions[i];
+            
+            submission.token.transferFrom(msg.sender, address(this), totalAmounts[i]);
+
+            _increaseAllowance(submission.token, address(_rewardsCoordinator), totalAmounts[i]);
+        }
+
+        _rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, rewardsSubmissions);
     }
 
     function createOperatorSets(IAllocationManager.CreateSetParams[] memory params) external onlyRegistryCoordinator {
