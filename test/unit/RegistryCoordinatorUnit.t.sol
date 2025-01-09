@@ -2399,6 +2399,7 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         registryCoordinator.setEjector(ejector);
 
         // Eject operator
+        /// TODO: Mocked state issue
         cheats.prank(ejector);
         registryCoordinator.ejectOperator(defaultOperator, quorumNumbers);
 
