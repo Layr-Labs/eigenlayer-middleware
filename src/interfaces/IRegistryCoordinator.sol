@@ -9,10 +9,6 @@ import {BN254} from "../libraries/BN254.sol";
 
 interface IRegistryCoordinatorErrors {
     error InputLengthMismatch();
-    error OperatorSetsEnabled();
-    error OperatorSetsNotEnabled();
-    error OperatorSetsNotSupported();
-    error OnlyAllocationManager();
     error OnlyEjector();
     error QuorumDoesNotExist();
     error BitmapEmpty();

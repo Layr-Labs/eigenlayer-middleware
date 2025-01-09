@@ -5,7 +5,6 @@ import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPa
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import { IAllocationManager, OperatorSet, IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {ISocketUpdater} from "./interfaces/ISocketUpdater.sol";
 import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry, StakeType} from "./interfaces/IStakeRegistry.sol";
@@ -117,7 +116,7 @@ contract RegistryCoordinator is
 
         // Create quorums
         for (uint256 i = 0; i < _operatorSetParams.length; i++) {
-            _createQuorum(_operatorSetParams[i], _minimumStakes[i], _strategyParams[i], _stakeTypes[i], _lookAheadPeriods[i]);
+            _createQuorum(_operatorSetParams[i], _minimumStakes[i], _strategyParams[i]);
         }
     }
 
@@ -143,7 +142,6 @@ contract RegistryCoordinator is
         IBLSApkRegistry.PubkeyRegistrationParams memory params,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        require(!isUsingOperatorSets(), OperatorSetsEnabled());
         /**
          * If the operator has NEVER registered a pubkey before, use `params` to register
          * their pubkey in blsApkRegistry
@@ -195,7 +193,6 @@ contract RegistryCoordinator is
         SignatureWithSaltAndExpiry memory churnApproverSignature,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        require(!isUsingOperatorSets(), OperatorSetsEnabled());
         require(
             operatorKickParams.length == quorumNumbers.length,
             InputLengthMismatch()
@@ -271,78 +268,6 @@ contract RegistryCoordinator is
             );
         }
         _deregisterOperator({operator: msg.sender, quorumNumbers: quorumNumbers});
-    }
-
-    function isUsingOperatorSets() public view returns (bool) {
-        return isOperatorSetAVS;
-    }
-
-    function enableOperatorSets() external onlyOwner {
-        /// Triggers the updates to use operator sets ie setsAVSRegistrar
-        /// Opens up the AVS Registrar Hooks on this contract to be callable by the ALM
-        /// Allows creation of quorums with slashable and total delegated stake for operator sets
-        /// Sets all quorums created before this call as m2 quorums in a mapping so that we can gate function calls to deregister
-        /// M2 Registrations turn off once migrated.  M2 deregistration remain open for only m2 quorums
-        // Set this contract as the AVS registrar in the service manager
-        serviceManager.setAVSRegistrar(IAVSRegistrar(address(this)));
-
-        // Set all existing quorums as m2 quorums
-        for (uint8 i = 0; i < quorumCount; i++) {
-            isM2Quorum[i] = true;
-        }
-
-        // Enable operator sets mode
-        isOperatorSetAVS = true;
-    }
-
-    function registerOperator(
-        address operator,
-        uint32[] memory operatorSetIds,
-        bytes memory data
-    ) external override onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        require(isUsingOperatorSets(), OperatorSetsNotEnabled());
-        for (uint256 i = 0; i < operatorSetIds.length; i++) {
-            require(!isM2Quorum[uint8(operatorSetIds[i])], OperatorSetsNotSupported());
-        }
-        require(msg.sender == address(serviceManager.allocationManager()), OnlyAllocationManager());
-
-        // Decode registration data from bytes
-        (
-            string memory socket,
-            IBLSApkRegistry.PubkeyRegistrationParams memory params
-        ) = abi.decode(data, (string, IBLSApkRegistry.PubkeyRegistrationParams));
-
-        // Get operator ID from BLS registry
-        bytes32 operatorId = _getOrCreateOperatorId(operator, params);
-        bytes memory quorumNumbers = new bytes(operatorSetIds.length);
-        for (uint256 i = 0; i < operatorSetIds.length; i++) {
-            quorumNumbers[i] = bytes1(uint8(operatorSetIds[i]));
-        }
-
-        // Register operator with decoded parameters
-        _registerOperatorToOperatorSet({
-            operator: operator,
-            operatorId: operatorId,
-            quorumNumbers: quorumNumbers,
-            socket: socket
-        });
-    }
-
-    function deregisterOperator(
-        address operator,
-        uint32[] memory operatorSetIds
-    ) external override onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        require(isUsingOperatorSets(), OperatorSetsNotEnabled());
-        for (uint256 i = 0; i < operatorSetIds.length; i++) {
-            require(!isM2Quorum[uint8(operatorSetIds[i])], OperatorSetsNotSupported());
-        }
-        require(msg.sender == address(serviceManager.allocationManager()), OnlyAllocationManager());
-        bytes memory quorumNumbers = new bytes(operatorSetIds.length);
-        for (uint256 i = 0; i < operatorSetIds.length; i++) {
-            quorumNumbers[i] = bytes1(uint8(operatorSetIds[i]));
-        }
-
-        _deregisterOperator(operator, quorumNumbers);
     }
 
     /**
@@ -428,7 +353,7 @@ contract RegistryCoordinator is
                     // Prevent duplicate operators
                     require(
                         operator > prevOperatorAddress,
-                        NotSorted()
+                        OperatorsNotSorted()
                     );
                 }
 
@@ -500,22 +425,12 @@ contract RegistryCoordinator is
      *       For migrated AVS that enable operator sets this will create a quorum that measures total delegated stake for operator set
      *
      */
-    function createTotalDelegatedStakeQuorum(
+    function createQuorum(
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
         IStakeRegistry.StrategyParams[] memory strategyParams
     ) external virtual onlyOwner {
-        _createQuorum(operatorSetParams, minimumStake, strategyParams, StakeType.TOTAL_DELEGATED, 0);
-    }
-
-    function createSlashableStakeQuorum(
-        OperatorSetParam memory operatorSetParams,
-        uint96 minimumStake,
-        IStakeRegistry.StrategyParams[] memory strategyParams,
-        uint32 lookAheadPeriod
-    ) external virtual onlyOwner {
-        require(isUsingOperatorSets(), OperatorSetsNotEnabled());
-        _createQuorum(operatorSetParams, minimumStake, strategyParams, StakeType.TOTAL_SLASHABLE, lookAheadPeriod);
+        _createQuorum(operatorSetParams, minimumStake, strategyParams);
     }
 
     /**
@@ -702,11 +617,6 @@ contract RegistryCoordinator is
         require(msg.sender == ejector, OnlyEjector());
     }
 
-    function _checkAllocationManager() internal view {
-        address allocationManager = address(serviceManager.allocationManager());
-        require(msg.sender == allocationManager, OnlyAllocationManager());
-    }
-
     /**
      * @notice Checks if a quorum exists
      * @param quorumNumber The quorum number to check
@@ -774,7 +684,7 @@ contract RegistryCoordinator is
         );
         require(
             kickParams.quorumNumber == quorumNumber,
-            QuorumOperatorCountMismatch()
+            KickParamsQuorumMismatch()
         );
 
         // Get the target operator's stake and check that it is below the kick thresholds
@@ -815,7 +725,7 @@ contract RegistryCoordinator is
         uint192 currentBitmap = _currentOperatorBitmap(operatorId);
         require(
             !quorumsToRemove.isEmpty(),
-            BitmapCannotBeZero()
+            BitmapEmpty()
         );
         require(
             quorumsToRemove.isSubsetOf(currentBitmap),
@@ -934,8 +844,6 @@ contract RegistryCoordinator is
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
         IStakeRegistry.StrategyParams[] memory strategyParams,
-        StakeType stakeType,
-        uint32 lookAheadPeriod
     ) internal {
         // Increment the total quorum count. Fails if we're already at the max
         uint8 prevQuorumCount = quorumCount;
@@ -951,30 +859,8 @@ contract RegistryCoordinator is
         // Initialize the quorum here and in each registry
         _setOperatorSetParams(quorumNumber, operatorSetParams);
 
-        /// Update the AllocationManager if operatorSetQuorum
-        if (isOperatorSetAVS && !isM2Quorum[quorumNumber]) {
-            // Create array of CreateSetParams for the new quorum
-            IAllocationManagerTypes.CreateSetParams[] memory createSetParams = new IAllocationManagerTypes.CreateSetParams[](1);
-
-            // Extract strategies from strategyParams
-            IStrategy[] memory strategies = new IStrategy[](strategyParams.length);
-            for (uint256 i = 0; i < strategyParams.length; i++) {
-                strategies[i] = strategyParams[i].strategy;
-            }
-
-            // Initialize CreateSetParams with quorumNumber as operatorSetId
-            createSetParams[0] = IAllocationManagerTypes.CreateSetParams({
-                operatorSetId: quorumNumber,
-                strategies: strategies
-            });
-            serviceManager.createOperatorSets(createSetParams);
-        }
-        // Initialize stake registry based on stake type
-        if (stakeType == StakeType.TOTAL_DELEGATED) {
-            stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
-        } else if (stakeType == StakeType.TOTAL_SLASHABLE) {
-            stakeRegistry.initializeSlashableStakeQuorum(quorumNumber, minimumStake, lookAheadPeriod, strategyParams);
-        }
+        // Initialize delegated stake quorum 
+        stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
 
         indexRegistry.initializeQuorum(quorumNumber);
         blsApkRegistry.initializeQuorum(quorumNumber);
