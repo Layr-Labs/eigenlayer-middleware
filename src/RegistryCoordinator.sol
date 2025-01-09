@@ -278,6 +278,7 @@ contract RegistryCoordinator is
     }
 
     function enableOperatorSets() external onlyOwner {
+        require(!isOperatorSetAVS, OperatorSetsEnabled());
         /// Triggers the updates to use operator sets ie setsAVSRegistrar
         /// Opens up the AVS Registrar Hooks on this contract to be callable by the ALM
         /// Allows creation of quorums with slashable and total delegated stake for operator sets
@@ -304,7 +305,7 @@ contract RegistryCoordinator is
         for (uint256 i = 0; i < operatorSetIds.length; i++) {
             require(!isM2Quorum[uint8(operatorSetIds[i])], OperatorSetsNotSupported());
         }
-        require(msg.sender == address(serviceManager.allocationManager()), OnlyAllocationManager());
+        _checkAllocationManager();
 
         // Decode registration data from bytes
         (
@@ -336,7 +337,7 @@ contract RegistryCoordinator is
         for (uint256 i = 0; i < operatorSetIds.length; i++) {
             require(!isM2Quorum[uint8(operatorSetIds[i])], OperatorSetsNotSupported());
         }
-        require(msg.sender == address(serviceManager.allocationManager()), OnlyAllocationManager());
+        _checkAllocationManager();
         bytes memory quorumNumbers = new bytes(operatorSetIds.length);
         for (uint256 i = 0; i < operatorSetIds.length; i++) {
             quorumNumbers[i] = bytes1(uint8(operatorSetIds[i]));
