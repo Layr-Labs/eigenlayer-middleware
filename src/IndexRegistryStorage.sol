@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {IRegistrar} from "./interfaces/IRegistrar.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 
 /**
@@ -18,6 +19,8 @@ abstract contract IndexRegistryStorage is Initializable, IIndexRegistry {
 
     /// @notice The RegistryCoordinator contract for this middleware
     address public immutable registryCoordinator;
+    /// @notice The Registrar contract for this middleware
+    address public immutable registrar;
 
     /// @notice maps quorumNumber => operator id => current operatorIndex
     /// NOTE: This mapping is NOT updated when an operator is deregistered,
@@ -31,9 +34,11 @@ abstract contract IndexRegistryStorage is Initializable, IIndexRegistry {
     mapping(uint8 => QuorumUpdate[]) internal _operatorCountHistory;
 
     constructor(
-        IRegistryCoordinator _registryCoordinator
+        IRegistryCoordinator _registryCoordinator,
+        IRegistrar _registrar
     ){
         registryCoordinator = address(_registryCoordinator);
+        registrar = address(_registrar);
         // disable initializers so that the implementation contract cannot be initialized
         _disableInitializers();
     }

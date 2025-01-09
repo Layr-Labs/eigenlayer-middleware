@@ -26,6 +26,8 @@ interface IRegistryCoordinatorErrors {
     error RegistryCoordinatorSignatureExpired();
     error ChurnApproverSaltUsed();
     error NotSorted();
+    error KickParamsQuorumMismatch();
+    error OperatorsNotSorted();
 }
 /**
  * @title Interface for a contract that coordinates between various registries for an AVS.
@@ -159,15 +161,6 @@ interface IRegistryCoordinator is IRegistryCoordinatorErrors{
 
     /// @notice Returns the number of registries
     function numRegistries() external view returns (uint256);
-
-    /// @notice Returns whether a quorum is an M2 quorum
-    /// @param quorumNumber The quorum number to check
-    /// @return True if the quorum is an M2 quorum
-    function isM2Quorum(uint8 quorumNumber) external view returns (bool);
-
-    /// @notice Returns whether the AVS is an operator set AVS
-    /// @return True if the AVS is an operator set AVS
-    function isOperatorSetAVS() external view returns (bool);
 
     /**
      * @notice Returns the message hash that an operator must sign to register their BLS public key.

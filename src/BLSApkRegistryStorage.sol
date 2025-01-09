@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {IRegistrar} from "./interfaces/IRegistrar.sol";
 
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
@@ -14,6 +15,9 @@ abstract contract BLSApkRegistryStorage is Initializable, IBLSApkRegistry {
 
     /// @notice the registry coordinator contract
     address public immutable registryCoordinator;
+
+    /// @notice the registrar contract
+    address public immutable registrar;
 
     // storage for individual pubkeys
     /// @notice maps operator address to pubkey hash
@@ -29,8 +33,9 @@ abstract contract BLSApkRegistryStorage is Initializable, IBLSApkRegistry {
     /// @notice maps quorumNumber => current aggregate pubkey of quorum
     mapping(uint8 => BN254.G1Point) public currentApk;
 
-    constructor(IRegistryCoordinator _registryCoordinator) {
+    constructor(IRegistryCoordinator _registryCoordinator, IRegistrar _registrar) {
         registryCoordinator = address(_registryCoordinator);
+        registrar = address(_registrar);
         // disable initializers so that the implementation contract cannot be initialized
         _disableInitializers();
     }

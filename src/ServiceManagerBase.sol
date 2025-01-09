@@ -8,6 +8,7 @@ import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy
 import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {IAllocationManager, IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IPermissionController} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 
 import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
@@ -61,14 +62,16 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         IRewardsCoordinator __rewardsCoordinator,
         IRegistryCoordinator __registryCoordinator,
         IStakeRegistry __stakeRegistry,
-        IAllocationManager __allocationManager
+        IAllocationManager __allocationManager,
+        IPermissionController __permissionController
     )
         ServiceManagerBaseStorage(
             __avsDirectory,
             __rewardsCoordinator,
             __registryCoordinator,
             __stakeRegistry,
-            __allocationManager
+            __allocationManager,
+            __permissionController
         )
     {
         _disableInitializers();
@@ -127,18 +130,6 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
-    function createOperatorSets(IAllocationManager.CreateSetParams[] memory params) external onlyRegistryCoordinator {
-        _allocationManager.createOperatorSets(address(this), params);
-    }
-
-    function addStrategyToOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external onlyStakeRegistry {
-        _allocationManager.addStrategiesToOperatorSet(address(this), operatorSetId, strategies);
-    }
-
-    function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external onlyStakeRegistry {
-        _allocationManager.removeStrategiesFromOperatorSet(address(this), operatorSetId, strategies);
-    }
-
     /**
      * @notice Forwards a call to EigenLayer's AVSDirectory contract to confirm operator registration with the AVS
      * @param operator The address of the operator to register.
@@ -160,19 +151,11 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     }
 
     /**
-     * @notice Forwards a call to EigenLayer's AVSDirectory contract to deregister an operator from operator sets
-     * @param operator The address of the operator to deregister.
-     * @param operatorSetIds The IDs of the operator sets.
+     * @notice Sets an admin for the AVS on the PermissionController
+     * @param newAdmin The new admin address
      */
-    function deregisterOperatorFromOperatorSets(
-        address operator,
-        uint32[] calldata operatorSetIds
-    ) public virtual onlyRegistryCoordinator {
-        _allocationManager.deregisterFromOperatorSets(IAllocationManagerTypes.DeregisterParams({
-            operator: operator,
-            avs: address(this),
-            operatorSetIds: operatorSetIds
-        }));
+    function addPendingAdmin(address newAdmin) external onlyOwner {
+        _permissionController.addPendingAdmin(address(this), newAdmin);
     }
 
     /**

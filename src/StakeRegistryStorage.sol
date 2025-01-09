@@ -7,6 +7,7 @@ import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IStrategyManager, IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {IRegistrar} from "./interfaces/IRegistrar.sol";
 import {IStakeRegistry, StakeType} from  "./interfaces/IStakeRegistry.sol";
 
 /**
@@ -26,14 +27,14 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
     /// @notice The address of the Delegation contract for EigenLayer.
     IDelegationManager public immutable delegation;
 
-    /// @notice The address of the Delegation contract for EigenLayer.
-    IAVSDirectory public immutable avsDirectory;
-
     /// @notice the address of the ServiceManager associtated with the stake registries
     IServiceManager public immutable serviceManager;
 
     /// @notice the coordinator contract that this registry is associated with
     address public immutable registryCoordinator;
+
+    /// @notice The Registrar contract for this middleware
+    address public immutable registrar;
 
     /// @notice In order to register for a quorum i, an operator must have at least `minimumStakeForQuorum[i]`
     /// evaluated by this contract's 'VoteWeigher' logic.
@@ -58,13 +59,13 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
 
     constructor(
         IRegistryCoordinator _registryCoordinator,
+        IRegistrar _registrar,
         IDelegationManager _delegationManager,
-        IAVSDirectory _avsDirectory,
         IServiceManager _serviceManager
     ) {
         registryCoordinator = address(_registryCoordinator);
+        registrar = address(_registrar);
         delegation = _delegationManager;
-        avsDirectory = _avsDirectory;
         serviceManager = _serviceManager;
     }
 

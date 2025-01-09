@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import {IndexRegistryStorage} from "./IndexRegistryStorage.sol";
+import {IRegistrar} from "./interfaces/IRegistrar.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 
 /**
@@ -10,16 +11,17 @@ import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
  */
 contract IndexRegistry is IndexRegistryStorage {
 
-    /// @notice when applied to a function, only allows the RegistryCoordinator to call it
-    modifier onlyRegistryCoordinator() {
-        _checkRegistryCoordinator();
+    /// @notice when applied to a function, only allows the RegistryCoordinator or Registrar to call it
+    modifier onlyRegistry() {
+        _checkRegistryCoordinatorOrRegistrar();
         _;
     }
 
     /// @notice sets the (immutable) `registryCoordinator` address
     constructor(
-        IRegistryCoordinator _registryCoordinator
-    ) IndexRegistryStorage(_registryCoordinator) {}
+        IRegistryCoordinator _registryCoordinator,
+        IRegistrar _registrar
+    ) IndexRegistryStorage(_registryCoordinator, _registrar) {}
 
     /*******************************************************************************
                       EXTERNAL FUNCTIONS - REGISTRY COORDINATOR
@@ -40,7 +42,7 @@ contract IndexRegistry is IndexRegistryStorage {
     function registerOperator(
         bytes32 operatorId,
         bytes calldata quorumNumbers
-    ) public virtual onlyRegistryCoordinator returns(uint32[] memory) {
+    ) public virtual onlyRegistry returns(uint32[] memory) {
         uint32[] memory numOperatorsPerQuorum = new uint32[](quorumNumbers.length);
 
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
@@ -82,7 +84,7 @@ contract IndexRegistry is IndexRegistryStorage {
     function deregisterOperator(
         bytes32 operatorId,
         bytes calldata quorumNumbers
-    ) public virtual onlyRegistryCoordinator {
+    ) public virtual onlyRegistry {
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             // Validate quorum exists and get the operatorIndex of the operator being deregistered
             uint8 quorumNumber = uint8(quorumNumbers[i]);
@@ -112,7 +114,7 @@ contract IndexRegistry is IndexRegistryStorage {
      * @notice Initialize a quorum by pushing its first quorum update
      * @param quorumNumber The number of the new quorum
      */
-    function initializeQuorum(uint8 quorumNumber) public virtual onlyRegistryCoordinator {
+    function initializeQuorum(uint8 quorumNumber) public virtual onlyRegistry {
         require(_operatorCountHistory[quorumNumber].length == 0, "IndexRegistry.createQuorum: quorum already exists");
 
         _operatorCountHistory[quorumNumber].push(QuorumUpdate({
@@ -341,7 +343,10 @@ contract IndexRegistry is IndexRegistryStorage {
         return _latestQuorumUpdate(quorumNumber).numOperators;
     }
 
-    function _checkRegistryCoordinator() internal view {
-        require(msg.sender == address(registryCoordinator), "IndexRegistry._checkRegistryCoordinator: caller is not the registry coordinator");
+    function _checkRegistryCoordinatorOrRegistrar() internal view {
+        require(
+            msg.sender == address(registryCoordinator) || msg.sender == address(registrar),
+            "IndexRegistry._checkRegistryCoordinatorOrRegistrar: caller is not the registry coordinator or registry"
+        );
     }
 }

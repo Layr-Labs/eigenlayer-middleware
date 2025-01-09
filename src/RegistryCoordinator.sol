@@ -16,7 +16,6 @@ import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {BN254} from "./libraries/BN254.sol";
 import {SignatureCheckerLib} from "./libraries/SignatureCheckerLib.sol";
 import {QuorumBitmapHistoryLib} from "./libraries/QuorumBitmapHistoryLib.sol";
-import {AVSRegistrar} from "./AVSRegistrar.sol";
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
@@ -40,7 +39,6 @@ contract RegistryCoordinator is
     Pausable,
     OwnableUpgradeable,
     RegistryCoordinatorStorage,
-    AVSRegistrar,
     ISocketUpdater,
     ISignatureUtils
 {
@@ -113,11 +111,6 @@ contract RegistryCoordinator is
         registries.push(address(stakeRegistry));
         registries.push(address(blsApkRegistry));
         registries.push(address(indexRegistry));
-
-        // Create quorums
-        for (uint256 i = 0; i < _operatorSetParams.length; i++) {
-            _createQuorum(_operatorSetParams[i], _minimumStakes[i], _strategyParams[i]);
-        }
     }
 
     /**
@@ -257,16 +250,6 @@ contract RegistryCoordinator is
         external
         onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR)
     {
-        // Check that either:
-        // 1. The AVS hasn't migrated to operator sets yet (!isOperatorSetAVS), or
-        // 2. The AVS has migrated but this is an M2 quorum
-        for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            uint8 quorumNumber = uint8(quorumNumbers[i]);
-            require(
-                !isOperatorSetAVS || isM2Quorum[quorumNumber],
-                OperatorSetsEnabled()
-            );
-        }
         _deregisterOperator({operator: msg.sender, quorumNumbers: quorumNumbers});
     }
 
@@ -314,8 +297,6 @@ contract RegistryCoordinator is
         // - all quorums should exist (checked against `quorumCount` in orderedBytesArrayToBitmap)
         // - there should be no duplicates in `quorumNumbers`
         // - there should be one list of operators per quorum
-        uint192 quorumBitmap =
-            uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         require(
             operatorsPerQuorum.length == quorumNumbers.length,
             InputLengthMismatch()
@@ -413,25 +394,6 @@ contract RegistryCoordinator is
      *                         EXTERNAL FUNCTIONS - OWNER
      *
      */
-
-    /**
-     * @notice Creates a quorum and initializes it in each registry contract
-     * @param operatorSetParams configures the quorum's max operator count and churn parameters
-     * @param minimumStake sets the minimum stake required for an operator to register or remain
-     * registered
-     * @param strategyParams a list of strategies and multipliers used by the StakeRegistry to
-     * calculate an operator's stake weight for the quorum
-     *  @dev For m2 AVS this function has the same behavior as createQuorum before
-     *       For migrated AVS that enable operator sets this will create a quorum that measures total delegated stake for operator set
-     *
-     */
-    function createQuorum(
-        OperatorSetParam memory operatorSetParams,
-        uint96 minimumStake,
-        IStakeRegistry.StrategyParams[] memory strategyParams
-    ) external virtual onlyOwner {
-        _createQuorum(operatorSetParams, minimumStake, strategyParams);
-    }
 
     /**
      * @notice Updates an existing quorum's configuration with a new max operator count
@@ -830,40 +792,6 @@ contract RegistryCoordinator is
             ),
             churnApproverSignature.signature
         );
-    }
-
-    /**
-     * @notice Creates a quorum and initializes it in each registry contract
-     * @param operatorSetParams configures the quorum's max operator count and churn parameters
-     * @param minimumStake sets the minimum stake required for an operator to register or remain
-     * registered
-     * @param strategyParams a list of strategies and multipliers used by the StakeRegistry to
-     * calculate an operator's stake weight for the quorum
-     */
-    function _createQuorum(
-        OperatorSetParam memory operatorSetParams,
-        uint96 minimumStake,
-        IStakeRegistry.StrategyParams[] memory strategyParams,
-    ) internal {
-        // Increment the total quorum count. Fails if we're already at the max
-        uint8 prevQuorumCount = quorumCount;
-        require(
-            prevQuorumCount < MAX_QUORUM_COUNT,
-            MaxQuorumsReached()
-        );
-        quorumCount = prevQuorumCount + 1;
-
-        // The previous count is the new quorum's number
-        uint8 quorumNumber = prevQuorumCount;
-
-        // Initialize the quorum here and in each registry
-        _setOperatorSetParams(quorumNumber, operatorSetParams);
-
-        // Initialize delegated stake quorum 
-        stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
-
-        indexRegistry.initializeQuorum(quorumNumber);
-        blsApkRegistry.initializeQuorum(quorumNumber);
     }
 
     /**

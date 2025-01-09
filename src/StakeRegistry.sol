@@ -10,6 +10,7 @@ import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {StakeRegistryStorage, IStrategy} from "./StakeRegistryStorage.sol";
 
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {IRegistrar} from "./interfaces/IRegistrar.sol";
 import {IStakeRegistry, StakeType} from "./interfaces/IStakeRegistry.sol";
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
@@ -27,8 +28,9 @@ contract StakeRegistry is StakeRegistryStorage {
 
     using BitmapUtils for *;
 
-    modifier onlyRegistryCoordinator() {
-        _checkRegistryCoordinator();
+    /// @notice when applied to a function, only allows the RegistryCoordinator or Registrar to call it
+    modifier onlyRegistry() {
+        _checkRegistryCoordinatorOrRegistrar();
         _;
     }
 
@@ -44,10 +46,10 @@ contract StakeRegistry is StakeRegistryStorage {
 
     constructor(
         IRegistryCoordinator _registryCoordinator,
+        IRegistrar _registrar,
         IDelegationManager _delegationManager,
-        IAVSDirectory _avsDirectory,
         IServiceManager _serviceManager
-    ) StakeRegistryStorage(_registryCoordinator, _delegationManager, _avsDirectory, _serviceManager) {}
+    ) StakeRegistryStorage(_registryCoordinator, _registrar, _delegationManager, _serviceManager) {}
 
     /*******************************************************************************
                       EXTERNAL FUNCTIONS - REGISTRY COORDINATOR
@@ -70,7 +72,7 @@ contract StakeRegistry is StakeRegistryStorage {
         address operator,
         bytes32 operatorId,
         bytes calldata quorumNumbers
-    ) public virtual onlyRegistryCoordinator returns (uint96[] memory, uint96[] memory) {
+    ) public virtual onlyRegistry returns (uint96[] memory, uint96[] memory) {
 
         uint96[] memory currentStakes = new uint96[](quorumNumbers.length);
         uint96[] memory totalStakes = new uint96[](quorumNumbers.length);
@@ -117,7 +119,7 @@ contract StakeRegistry is StakeRegistryStorage {
     function deregisterOperator(
         bytes32 operatorId,
         bytes calldata quorumNumbers
-    ) public virtual onlyRegistryCoordinator {
+    ) public virtual onlyRegistry {
         /**
          * For each quorum, remove the operator's stake for the quorum and update
          * the quorum's total stake to account for the removal
@@ -151,7 +153,7 @@ contract StakeRegistry is StakeRegistryStorage {
         address operator,
         bytes32 operatorId,
         bytes calldata quorumNumbers
-    ) external onlyRegistryCoordinator returns (uint192) {
+    ) external onlyRegistry returns (uint192) {
         uint192 quorumsToRemove;
 
         /**
@@ -196,7 +198,7 @@ contract StakeRegistry is StakeRegistryStorage {
         uint8 quorumNumber,
         uint96 minimumStake,
         StrategyParams[] memory _strategyParams
-    ) public virtual onlyRegistryCoordinator {
+    ) public virtual onlyRegistry {
         require(!_quorumExists(quorumNumber), "StakeRegistry.initializeQuorum: quorum already exists");
         _addStrategyParams(quorumNumber, _strategyParams);
         _setMinimumStakeForQuorum(quorumNumber, minimumStake);
@@ -216,7 +218,7 @@ contract StakeRegistry is StakeRegistryStorage {
         uint96 minimumStake,
         uint32 lookAheadPeriod,
         StrategyParams[] memory _strategyParams
-    ) public virtual onlyRegistryCoordinator {
+    ) public virtual onlyRegistry {
         require(!_quorumExists(quorumNumber), "StakeRegistry.initializeQuorum: quorum already exists");
         _addStrategyParams(quorumNumber, _strategyParams);
         _setMinimumStakeForQuorum(quorumNumber, minimumStake);
@@ -573,15 +575,13 @@ contract StakeRegistry is StakeRegistryStorage {
 
     /**
      * @notice Returns whether a quorum is an operator set quorum based on its stake type
-     * @dev A quorum is an operator set quorum if it has TOTAL_SLASHABLE stake type
-     * and is not an M2 quorum
      * @param quorumNumber The quorum number to check
+     * @dev A quorum is an operator set quorum if it has been created in the `Registrar`
+     * @dev Quorums cannot be created in the RegistryCoordinator once it is upgraded
      * @return True if the quorum is an operator set quorum
      */
     function isOperatorSetQuorum(uint8 quorumNumber) external view returns (bool) {
-        bool isM2 = IRegistryCoordinator(registryCoordinator).isM2Quorum(quorumNumber);
-        bool isOperatorSet = IRegistryCoordinator(registryCoordinator).isOperatorSetAVS();
-        return isOperatorSet && !isM2;
+        return quorumNumber > IRegistryCoordinator(registryCoordinator).quorumCount();
     }
 
     /**
@@ -820,10 +820,10 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
 
-    function _checkRegistryCoordinator() internal view {
+    function _checkRegistryCoordinatorOrRegistrar() internal view {
         require(
-            msg.sender == address(registryCoordinator),
-            "StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator"
+            msg.sender == address(registryCoordinator) || msg.sender == address(registrar),
+            "StakeRegistry._checkRegistryCoordinatorOrRegistrar: caller is not the registry coordinator or registry"
         );
     }
 

@@ -5,21 +5,24 @@ import {BLSApkRegistryStorage} from "./BLSApkRegistryStorage.sol";
 
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 
+import {IRegistrar} from "./interfaces/IRegistrar.sol";
+
 import {BN254} from "./libraries/BN254.sol";
 
 contract BLSApkRegistry is BLSApkRegistryStorage {
     using BN254 for BN254.G1Point;
 
-    /// @notice when applied to a function, only allows the RegistryCoordinator to call it
-    modifier onlyRegistryCoordinator() {
-        _checkRegistryCoordinator();
+    /// @notice when applied to a function, only allows the RegistryCoordinator or Registrar to call it
+    modifier onlyRegistry() {
+        _checkRegistryCoordinatorOrRegistrar();
         _;
     }
 
     /// @notice Sets the (immutable) `registryCoordinator` address
     constructor(
-        IRegistryCoordinator _registryCoordinator
-    ) BLSApkRegistryStorage(_registryCoordinator) {}
+        IRegistryCoordinator _registryCoordinator,
+        IRegistrar _registrar
+    ) BLSApkRegistryStorage(_registryCoordinator, _registrar) {}
 
     /*******************************************************************************
                       EXTERNAL FUNCTIONS - REGISTRY COORDINATOR
@@ -29,7 +32,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
      * @notice Registers the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to register.
      * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
-     * @dev access restricted to the RegistryCoordinator
+     * @dev access restricted to the RegistryCoordinator or Registrar
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0
@@ -39,7 +42,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     function registerOperator(
         address operator,
         bytes memory quorumNumbers
-    ) public virtual onlyRegistryCoordinator {
+    ) public virtual onlyRegistry {
         // Get the operator's pubkey. Reverts if they have not registered a key
         (BN254.G1Point memory pubkey, ) = getRegisteredPubkey(operator);
 
@@ -54,7 +57,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
      * @notice Deregisters the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to deregister.
      * @param quorumNumbers The quorum numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
-     * @dev access restricted to the RegistryCoordinator
+     * @dev access restricted to the RegistryCoordinator or Registrar
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0
@@ -65,7 +68,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     function deregisterOperator(
         address operator,
         bytes memory quorumNumbers
-    ) public virtual onlyRegistryCoordinator {
+    ) public virtual onlyRegistry {
         // Get the operator's pubkey. Reverts if they have not registered a key
         (BN254.G1Point memory pubkey, ) = getRegisteredPubkey(operator);
 
@@ -78,7 +81,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
      * @notice Initializes a new quorum by pushing its first apk update
      * @param quorumNumber The number of the new quorum
      */
-    function initializeQuorum(uint8 quorumNumber) public virtual onlyRegistryCoordinator {
+    function initializeQuorum(uint8 quorumNumber) public virtual onlyRegistry {
         require(apkHistory[quorumNumber].length == 0, "BLSApkRegistry.initializeQuorum: quorum already exists");
 
         apkHistory[quorumNumber].push(ApkUpdate({
@@ -98,7 +101,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         address operator,
         PubkeyRegistrationParams calldata params,
         BN254.G1Point calldata pubkeyRegistrationMessageHash
-    ) external onlyRegistryCoordinator returns (bytes32 operatorId) {
+    ) external onlyRegistry returns (bytes32 operatorId) {
         bytes32 pubkeyHash = BN254.hashG1Point(params.pubkeyG1);
         require(
             pubkeyHash != ZERO_PK_HASH, "BLSApkRegistry.registerBLSPublicKey: cannot register zero pubkey"
@@ -279,10 +282,10 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         return operatorToPubkeyHash[operator];
     }
 
-    function _checkRegistryCoordinator() internal view {
+    function _checkRegistryCoordinatorOrRegistrar() internal view {
         require(
-            msg.sender == address(registryCoordinator),
-            "BLSApkRegistry._checkRegistryCoordinator: caller is not the registry coordinator"
+            msg.sender == address(registryCoordinator) || msg.sender == address(registrar),
+            "BLSApkRegistry._checkRegistryCoordinatorOrRegistrar: caller is not the registry coordinator or registry"
         );
     }
 }
