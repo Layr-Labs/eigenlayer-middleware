@@ -48,8 +48,9 @@ contract StakeRegistry is StakeRegistryStorage {
         IRegistryCoordinator _registryCoordinator,
         IRegistrar _registrar,
         IDelegationManager _delegationManager,
+        IAllocationManager _allocationManager,
         IServiceManager _serviceManager
-    ) StakeRegistryStorage(_registryCoordinator, _registrar, _delegationManager, _serviceManager) {}
+    ) StakeRegistryStorage(_registryCoordinator, _registrar, _delegationManager, _allocationManager, _serviceManager) {}
 
     /*******************************************************************************
                       EXTERNAL FUNCTIONS - REGISTRY COORDINATOR
@@ -268,6 +269,14 @@ contract StakeRegistry is StakeRegistryStorage {
         StrategyParams[] memory _strategyParams
     ) public virtual onlyCoordinatorOwner quorumExists(quorumNumber) {
         _addStrategyParams(quorumNumber, _strategyParams);
+
+        if (isOperatorSetQuorum(quorumNumber)) {
+            IStrategy[] memory strategiesToAdd = new IStrategy[](_strategyParams.length);
+            for (uint256 i = 0; i < _strategyParams.length; i++) {
+                strategiesToAdd[i] = _strategyParams[i].strategy;
+            }
+            allocationManager.addStrategiesToOperatorSet(address(serviceManager), quorumNumber, strategiesToAdd);
+        }
     }
 
     /**
@@ -284,16 +293,23 @@ contract StakeRegistry is StakeRegistryStorage {
 
         StrategyParams[] storage _strategyParams = strategyParams[quorumNumber];
         IStrategy[] storage _strategiesPerQuorum = strategiesPerQuorum[quorumNumber];
+        IStrategy[] memory strategiesToRemove = new IStrategy[](toRemoveLength);
 
         for (uint256 i = 0; i < toRemoveLength; i++) {
             emit StrategyRemovedFromQuorum(quorumNumber, _strategyParams[indicesToRemove[i]].strategy);
             emit StrategyMultiplierUpdated(quorumNumber, _strategyParams[indicesToRemove[i]].strategy, 0);
+
+            strategiesToRemove[i] = _strategyParams[indicesToRemove[i]].strategy;
 
             // Replace index to remove with the last item in the list, then pop the last item
             _strategyParams[indicesToRemove[i]] = _strategyParams[_strategyParams.length - 1];
             _strategyParams.pop();
             _strategiesPerQuorum[indicesToRemove[i]] = _strategiesPerQuorum[_strategiesPerQuorum.length - 1];
             _strategiesPerQuorum.pop();
+        }
+
+        if (isOperatorSetQuorum(quorumNumber)) {
+            allocationManager.removeStrategiesFromOperatorSet(address(serviceManager), quorumNumber, strategiesToRemove);
         }
     }
 
@@ -580,7 +596,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @dev Quorums cannot be created in the RegistryCoordinator once it is upgraded
      * @return True if the quorum is an operator set quorum
      */
-    function isOperatorSetQuorum(uint8 quorumNumber) external view returns (bool) {
+    function isOperatorSetQuorum(uint8 quorumNumber) public view returns (bool) {
         return quorumNumber > IRegistryCoordinator(registryCoordinator).quorumCount();
     }
 

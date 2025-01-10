@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IStrategyManager, IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
@@ -26,6 +27,9 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
 
     /// @notice The address of the Delegation contract for EigenLayer.
     IDelegationManager public immutable delegation;
+
+    /// @notice THe address of the AllocationManager contract for EigenLayer.
+    IAllocationManager public immutable allocationManager;
 
     /// @notice the address of the ServiceManager associtated with the stake registries
     IServiceManager public immutable serviceManager;
@@ -61,11 +65,13 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
         IRegistryCoordinator _registryCoordinator,
         IRegistrar _registrar,
         IDelegationManager _delegationManager,
+        IAllocationManager _allocationManager,
         IServiceManager _serviceManager
     ) {
         registryCoordinator = address(_registryCoordinator);
         registrar = address(_registrar);
         delegation = _delegationManager;
+        allocationManager = _allocationManager;
         serviceManager = _serviceManager;
     }
 
