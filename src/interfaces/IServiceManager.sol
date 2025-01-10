@@ -9,12 +9,24 @@ import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 
+interface IServiceManagerErrors {
+    /// @dev Thrown when a function is called by an address that is not the RegistryCoordinator
+    error OnlyRegistryCoordinator();
+    /// @dev Thrown when a function is called by an address that is not the RewardsInitiator
+    error OnlyRewardsInitiator();
+    /// @dev Thrown when a function is called by an address that is not the Slasher
+    error OnlyStakeRegistry();
+    /// @dev Thrown when a function is called by an address that is not the Slasher
+    error OnlySlasher();
+    /// @dev Thrown when a slashing proposal delay has not been met yet.
+    error DelayPeriodNotPassed();
+}
 
 /**
  * @title Minimal interface for a ServiceManager-type contract that forms the single point for an AVS to push updates to EigenLayer
  * @author Layr Labs, Inc.
  */
-interface IServiceManager is IServiceManagerUI {
+interface IServiceManager is IServiceManagerUI, IServiceManagerErrors {
     /**
      * @notice Creates a new rewards submission to the EigenLayer RewardsCoordinator contract, to be split amongst the
      * set of stakers delegated to operators who are registered to this `avs`

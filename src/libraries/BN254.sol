@@ -46,6 +46,17 @@ library BN254 {
         uint256[2] Y;
     }
 
+    /// @dev Thrown when the sum of two points of G1 fails
+    error ECAddFailed();
+    /// @dev Thrown when the scalar multiplication of a point of G1 fails
+    error ECMulFailed();
+    /// @dev Thrown when the scalar is too large.
+    error ScalarTooLarge();
+    /// @dev Thrown when the pairing check fails
+    error ECPairingFailed();
+    /// @dev Thrown when the exponentiation mod fails
+    error ExpModFailed();
+
     function generatorG1() internal pure returns (G1Point memory) {
         return G1Point(1, 2);
     }
@@ -114,7 +125,7 @@ library BN254 {
             }
         }
 
-        require(success, "ec-add-failed");
+        require(success, ECAddFailed());
     }
 
     /**
@@ -124,7 +135,7 @@ library BN254 {
      * @dev this function is only safe to use if the scalar is 9 bits or less
      */
     function scalar_mul_tiny(BN254.G1Point memory p, uint16 s) internal view returns (BN254.G1Point memory) {
-        require(s < 2**9, "scalar-too-large");
+        require(s < 2**9, ScalarTooLarge());
 
         // if s is 1 return p
         if(s == 1) {
@@ -180,7 +191,7 @@ library BN254 {
                 invalid()
             }
         }
-        require(success, "ec-mul-failed");
+        require(success, ECMulFailed());
     }
 
     /**
@@ -223,7 +234,7 @@ library BN254 {
             }
         }
 
-        require(success, "pairing-opcode-failed");
+        require(success, ECPairingFailed());
 
         return out[0] != 0;
     }
@@ -344,7 +355,7 @@ library BN254 {
                 invalid()
             }
         }
-        require(success, "BN254.expMod: call failure");
+        require(success, ExpModFailed());
         return output[0];
     }
 }

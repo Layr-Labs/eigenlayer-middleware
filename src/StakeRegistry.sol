@@ -82,10 +82,7 @@ contract StakeRegistry is StakeRegistryStorage {
             // Retrieve the operator's current weighted stake for the quorum, reverting if they have not met
             // the minimum.
             (uint96 currentStake, bool hasMinimumStake) = _weightOfOperatorForQuorum(quorumNumber, operator);
-            require(
-                hasMinimumStake,
-                "StakeRegistry.registerOperator: Operator does not meet minimum stake requirement for quorum"
-            );
+            require(hasMinimumStake, BelowMinimumStakeRequirement());
 
             // Update the operator's stake
             int256 stakeDelta = _recordOperatorStakeUpdate({
@@ -197,7 +194,7 @@ contract StakeRegistry is StakeRegistryStorage {
         uint96 minimumStake,
         StrategyParams[] memory _strategyParams
     ) public virtual onlyRegistryCoordinator {
-        require(!_quorumExists(quorumNumber), "StakeRegistry.initializeQuorum: quorum already exists");
+        require(!_quorumExists(quorumNumber), QuorumAlreadyExists());
         _addStrategyParams(quorumNumber, _strategyParams);
         _setMinimumStakeForQuorum(quorumNumber, minimumStake);
         _setStakeType(quorumNumber, StakeType.TOTAL_DELEGATED);
@@ -217,7 +214,7 @@ contract StakeRegistry is StakeRegistryStorage {
         uint32 lookAheadPeriod,
         StrategyParams[] memory _strategyParams
     ) public virtual onlyRegistryCoordinator {
-        require(!_quorumExists(quorumNumber), "StakeRegistry.initializeQuorum: quorum already exists");
+        require(!_quorumExists(quorumNumber), QuorumAlreadyExists());
         _addStrategyParams(quorumNumber, _strategyParams);
         _setMinimumStakeForQuorum(quorumNumber, minimumStake);
         _setStakeType(quorumNumber, StakeType.TOTAL_SLASHABLE);
@@ -278,7 +275,7 @@ contract StakeRegistry is StakeRegistryStorage {
         uint256[] memory indicesToRemove
     ) public virtual onlyCoordinatorOwner quorumExists(quorumNumber) {
         uint256 toRemoveLength = indicesToRemove.length;
-        require(toRemoveLength > 0, "StakeRegistry.removeStrategies: no indices to remove provided");
+        require(toRemoveLength > 0, InputArrayLengthZero());
 
         StrategyParams[] storage _strategyParams = strategyParams[quorumNumber];
         IStrategy[] storage _strategiesPerQuorum = strategiesPerQuorum[quorumNumber];
@@ -307,8 +304,8 @@ contract StakeRegistry is StakeRegistryStorage {
         uint96[] calldata newMultipliers
     ) public virtual onlyCoordinatorOwner quorumExists(quorumNumber) {
         uint256 numStrats = strategyIndices.length;
-        require(numStrats > 0, "StakeRegistry.modifyStrategyParams: no strategy indices provided");
-        require(newMultipliers.length == numStrats, "StakeRegistry.modifyStrategyParams: input length mismatch");
+        require(numStrats > 0, InputArrayLengthZero());
+        require(newMultipliers.length == numStrats, InputArrayLengthMismatch());
 
         StrategyParams[] storage _strategyParams = strategyParams[quorumNumber];
 
@@ -442,25 +439,22 @@ contract StakeRegistry is StakeRegistryStorage {
         uint8 quorumNumber,
         StrategyParams[] memory _strategyParams
     ) internal {
-        require(_strategyParams.length > 0, "StakeRegistry._addStrategyParams: no strategies provided");
+        require(_strategyParams.length > 0, InputArrayLengthZero());
         uint256 numStratsToAdd = _strategyParams.length;
         uint256 numStratsExisting = strategyParams[quorumNumber].length;
         require(
             numStratsExisting + numStratsToAdd <= MAX_WEIGHING_FUNCTION_LENGTH,
-            "StakeRegistry._addStrategyParams: exceed MAX_WEIGHING_FUNCTION_LENGTH"
+            InputArrayLengthMismatch()
         );
         for (uint256 i = 0; i < numStratsToAdd; i++) {
             // fairly gas-expensive internal loop to make sure that the *same* strategy cannot be added multiple times
             for (uint256 j = 0; j < (numStratsExisting + i); j++) {
                 require(
                     strategyParams[quorumNumber][j].strategy != _strategyParams[i].strategy,
-                    "StakeRegistry._addStrategyParams: cannot add same strategy 2x"
+                    InputDuplicateStrategy()
                 );
             }
-            require(
-                _strategyParams[i].multiplier > 0,
-                "StakeRegistry._addStrategyParams: cannot add strategy with zero weight"
-            );
+            require(_strategyParams[i].multiplier > 0, InputMultiplierZero());
             strategyParams[quorumNumber].push(_strategyParams[i]);
             strategiesPerQuorum[quorumNumber].push(_strategyParams[i].strategy);
             emit StrategyAddedToQuorum(quorumNumber, _strategyParams[i].strategy);
@@ -496,13 +490,10 @@ contract StakeRegistry is StakeRegistryStorage {
          * - blockNumber should be >= the update block number
          * - the next update block number should be either 0 or strictly greater than blockNumber
          */
-        require(
-            blockNumber >= stakeUpdate.updateBlockNumber,
-            "StakeRegistry._validateStakeUpdateAtBlockNumber: stakeUpdate is from after blockNumber"
-        );
+        require(blockNumber >= stakeUpdate.updateBlockNumber, InvalidBlockNumber());
         require(
             stakeUpdate.nextUpdateBlockNumber == 0 || blockNumber < stakeUpdate.nextUpdateBlockNumber,
-            "StakeRegistry._validateStakeUpdateAtBlockNumber: there is a newer stakeUpdate available before blockNumber"
+            InvalidBlockNumber()
         );
     }
 
@@ -785,7 +776,7 @@ contract StakeRegistry is StakeRegistryStorage {
             _checkQuorumExists(quorumNumber);
             require(
                 _totalStakeHistory[quorumNumber][0].updateBlockNumber <= blockNumber,
-                "StakeRegistry.getTotalStakeIndicesAtBlockNumber: quorum has no stake history at blockNumber"
+                EmptyStakeHistory()
             );
             uint256 length = _totalStakeHistory[quorumNumber].length;
             for (uint256 j = 0; j < length; j++) {
@@ -821,17 +812,14 @@ contract StakeRegistry is StakeRegistryStorage {
 
 
     function _checkRegistryCoordinator() internal view {
-        require(
-            msg.sender == address(registryCoordinator),
-            "StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator"
-        );
+        require(msg.sender == address(registryCoordinator), OnlyRegistryCoordinator());
     }
 
     function _checkRegistryCoordinatorOwner() internal view {
-        require(msg.sender == IRegistryCoordinator(registryCoordinator).owner(), "StakeRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator");
+        require(msg.sender == IRegistryCoordinator(registryCoordinator).owner(), OnlyRegistryCoordinatorOwner());
     }
 
     function _checkQuorumExists(uint8 quorumNumber) internal view {
-        require(_quorumExists(quorumNumber), "StakeRegistry.quorumExists: quorum does not exist");
+        require(_quorumExists(quorumNumber), QuorumDoesNotExist());
     }
 }

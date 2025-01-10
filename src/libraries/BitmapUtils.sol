@@ -7,6 +7,13 @@ pragma solidity ^0.8.27;
  * @author Layr Labs, Inc.
  */
 library BitmapUtils {
+    /// @dev Thrown when the input byte array is too long to be converted to a bitmap
+    error BytesArrayLengthTooLong();
+    /// @dev Thrown when the input byte array is not strictly ordered
+    error BytesArrayNotOrdered();
+    /// @dev Thrown when the bitmap value is too large
+    error BitmapValueTooLarge();
+
     /**
      * @notice Byte arrays are meant to contain unique bytes.
      * If the array length exceeds 256, then it's impossible for all entries to be unique.
@@ -24,8 +31,7 @@ library BitmapUtils {
      */
     function orderedBytesArrayToBitmap(bytes memory orderedBytesArray) internal pure returns (uint256) {
         // sanity-check on input. a too-long input would fail later on due to having duplicate entry(s)
-        require(orderedBytesArray.length <= MAX_BYTE_ARRAY_LENGTH,
-            "BitmapUtils.orderedBytesArrayToBitmap: orderedBytesArray is too long");
+        require(orderedBytesArray.length <= MAX_BYTE_ARRAY_LENGTH, BytesArrayLengthTooLong());
 
         // return empty bitmap early if length of array is 0
         if (orderedBytesArray.length == 0) {
@@ -46,7 +52,7 @@ library BitmapUtils {
             // construct a single-bit mask from the numerical value of the next byte of the array
             bitMask = uint256(1 << uint8(orderedBytesArray[i]));
             // check strictly ascending array ordering by comparing the mask to the bitmap so far (revert if mask isn't greater than bitmap)
-            require(bitMask > bitmap, "BitmapUtils.orderedBytesArrayToBitmap: orderedBytesArray is not ordered");
+            require(bitMask > bitmap, BytesArrayNotOrdered());
             // add the entry to the bitmap
             bitmap = (bitmap | bitMask);
         }
@@ -62,9 +68,7 @@ library BitmapUtils {
     function orderedBytesArrayToBitmap(bytes memory orderedBytesArray, uint8 bitUpperBound) internal pure returns (uint256) {
         uint256 bitmap = orderedBytesArrayToBitmap(orderedBytesArray);
 
-        require((1 << bitUpperBound) > bitmap,
-            "BitmapUtils.orderedBytesArrayToBitmap: bitmap exceeds max value"
-        );
+        require((1 << bitUpperBound) > bitmap, BitmapValueTooLarge());
 
         return bitmap;
     }

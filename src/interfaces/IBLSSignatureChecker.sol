@@ -7,13 +7,36 @@ import {IStakeRegistry, IDelegationManager} from "./IStakeRegistry.sol";
 
 import {BN254} from "../libraries/BN254.sol";
 
+interface IBLSSignatureCheckerErrors {
+    /// @dev Thrown when the caller is not the registry coordinator owner.
+    error OnlyRegistryCoordinatorOwner();
+    /// @dev Thrown when the quorum numbers input in is empty.
+    error InputEmptyQuorumNumbers();
+    /// @dev Thrown when two array parameters have mismatching lengths.
+    error InputArrayLengthMismatch();
+    /// @dev Thrown when the non-signer pubkey length does not match non-signer bitmap indices length.
+    error InputNonSignerLengthMismatch();
+    /// @dev Thrown when the reference block number is invalid.
+    error InvalidReferenceBlocknumber();
+    /// @dev Thrown when the non signer pubkeys are not sorted.
+    error NonSignerPubkeysNotSorted();
+    /// @dev Thrown when StakeRegistry updates have not been updated within withdrawalDelayBlocks window
+    error StaleStakesForbidden();
+    /// @dev Thrown when the quorum apk hash in storage does not match provided quorum apk.
+    error InvalidQuorumApkHash();
+    /// @dev Thrown when BLS pairing precompile call fails.
+    error InvalidBLSPairingKey();
+    /// @dev Thrown when BLS signature is invalid.
+    error InvalidBLSSignature();
+}
+
 /**
  * @title Used for checking BLS aggregate signatures from the operators of a EigenLayer AVS with the RegistryCoordinator/BLSApkRegistry/StakeRegistry architechture.
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This is the contract for checking the validity of aggregate operator signatures.
  */
-interface IBLSSignatureChecker {
+interface IBLSSignatureChecker is IBLSSignatureCheckerErrors {
     // DATA STRUCTURES
 
     struct NonSignerStakesAndSignature {

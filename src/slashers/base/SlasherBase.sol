@@ -28,7 +28,7 @@ abstract contract SlasherBase is Initializable, SlasherStorage {
     }
 
     function _checkSlasher(address account) internal view virtual {
-        require(account == slasher, "SlasherBase._checkSlasher: caller is not the slasher");
+        require(account == slasher, OnlySlasher());
     }
 }
 

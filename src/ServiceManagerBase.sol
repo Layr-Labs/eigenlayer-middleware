@@ -30,10 +30,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
 
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
     modifier onlyRegistryCoordinator() {
-        require(
-            msg.sender == address(_registryCoordinator),
-            "ServiceManagerBase.onlyRegistryCoordinator: caller is not the registry coordinator"
-        );
+        require(msg.sender == address(_registryCoordinator), OnlyRegistryCoordinator());
         _;
     }
 
@@ -209,7 +206,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     function acceptProposedSlasher() external onlyOwner {
         require(
             block.timestamp >= slasherProposalTimestamp + SLASHER_PROPOSAL_DELAY,
-            "ServiceManager: Slasher proposal delay not met"
+            DelayPeriodNotPassed()
         );
         _setSlasher(proposedSlasher);
         delete proposedSlasher;
@@ -314,24 +311,14 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     }
 
     function _checkRewardsInitiator() internal view {
-        require(
-            msg.sender == rewardsInitiator,
-            "ServiceManagerBase.onlyRewardsInitiator: caller is not the rewards initiator"
-        );
+        require(msg.sender == rewardsInitiator, OnlyRewardsInitiator());
     }
 
     function _checkStakeRegistry() internal view {
-        require(
-            msg.sender == address(_stakeRegistry),
-            "ServiceManagerBase.onlyStakeRegistry: caller is not the stake registry"
-        );
+        require(msg.sender == address(_stakeRegistry), OnlyStakeRegistry());
     }
 
-
     function _checkSlasher() internal view {
-        require(
-            msg.sender == slasher,
-            "ServiceManagerBase.onlySlasher: caller is not the slasher"
-        );
+        require(msg.sender == slasher, OnlySlasher());
     }
 }

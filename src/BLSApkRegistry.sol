@@ -79,7 +79,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
      * @param quorumNumber The number of the new quorum
      */
     function initializeQuorum(uint8 quorumNumber) public virtual onlyRegistryCoordinator {
-        require(apkHistory[quorumNumber].length == 0, "BLSApkRegistry.initializeQuorum: quorum already exists");
+        require(apkHistory[quorumNumber].length == 0, QuorumAlreadyExists());
 
         apkHistory[quorumNumber].push(ApkUpdate({
             apkHash: bytes24(0),
@@ -100,17 +100,9 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         BN254.G1Point calldata pubkeyRegistrationMessageHash
     ) external onlyRegistryCoordinator returns (bytes32 operatorId) {
         bytes32 pubkeyHash = BN254.hashG1Point(params.pubkeyG1);
-        require(
-            pubkeyHash != ZERO_PK_HASH, "BLSApkRegistry.registerBLSPublicKey: cannot register zero pubkey"
-        );
-        require(
-            operatorToPubkeyHash[operator] == bytes32(0),
-            "BLSApkRegistry.registerBLSPublicKey: operator already registered pubkey"
-        );
-        require(
-            pubkeyHashToOperator[pubkeyHash] == address(0),
-            "BLSApkRegistry.registerBLSPublicKey: public key already registered"
-        );
+        require(pubkeyHash != ZERO_PK_HASH, ZeroPubKey());
+        require(operatorToPubkeyHash[operator] == bytes32(0), OperatorAlreadyRegistered());
+        require(pubkeyHashToOperator[pubkeyHash] == address(0), BLSPubkeyAlreadyRegistered());
 
         // gamma = h(sigma, P, P', H(m))
         uint256 gamma = uint256(keccak256(abi.encodePacked(
@@ -130,7 +122,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
             BN254.negGeneratorG2(),
             pubkeyRegistrationMessageHash.plus(BN254.generatorG1().scalar_mul(gamma)),
             params.pubkeyG2
-        ), "BLSApkRegistry.registerBLSPublicKey: either the G1 signature is wrong, or G1 and G2 private key do not match");
+        ), InvalidBLSSignatureOrPrivateKey());
 
         operatorToPubkey[operator] = params.pubkeyG1;
         operatorToPubkeyHash[operator] = pubkeyHash;
@@ -151,7 +143,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
             // Validate quorum exists and get history length
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             uint256 historyLength = apkHistory[quorumNumber].length;
-            require(historyLength != 0, "BLSApkRegistry._processQuorumApkUpdate: quorum does not exist");
+            require(historyLength != 0, QuorumDoesNotExist());
 
             // Update aggregate public key for this quorum
             newApk = currentApk[quorumNumber].plus(point);
@@ -185,10 +177,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         BN254.G1Point memory pubkey = operatorToPubkey[operator];
         bytes32 pubkeyHash = operatorToPubkeyHash[operator];
 
-        require(
-            pubkeyHash != bytes32(0),
-            "BLSApkRegistry.getRegisteredPubkey: operator is not registered"
-        );
+        require(pubkeyHash != bytes32(0), OperatorNotRegistered());
 
         return (pubkey, pubkeyHash);
     }
@@ -253,11 +242,11 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
          */
         require(
             blockNumber >= quorumApkUpdate.updateBlockNumber,
-            "BLSApkRegistry.getApkHashAtBlockNumberAndIndex: index too recent"
+            BlockNumberTooRecent()
         );
         require(
             quorumApkUpdate.nextUpdateBlockNumber == 0 || blockNumber < quorumApkUpdate.nextUpdateBlockNumber,
-            "BLSApkRegistry.getApkHashAtBlockNumberAndIndex: not latest apk update"
+            BlockNumberNotLatest()
         );
 
         return quorumApkUpdate.apkHash;
@@ -280,9 +269,6 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     }
 
     function _checkRegistryCoordinator() internal view {
-        require(
-            msg.sender == address(registryCoordinator),
-            "BLSApkRegistry._checkRegistryCoordinator: caller is not the registry coordinator"
-        );
+        require(msg.sender == address(registryCoordinator), OnlyRegistryCoordinatorOwner());
     }
 }

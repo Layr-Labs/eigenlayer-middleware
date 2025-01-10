@@ -31,10 +31,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
     bool public staleStakesForbidden;
 
     modifier onlyCoordinatorOwner() {
-        require(
-            msg.sender == registryCoordinator.owner(),
-            "BLSSignatureChecker.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator"
-        );
+        require(msg.sender == registryCoordinator.owner(), OnlyRegistryCoordinatorOwner());
         _;
     }
 
@@ -91,29 +88,23 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         uint32 referenceBlockNumber,
         NonSignerStakesAndSignature memory params
     ) public view returns (QuorumStakeTotals memory, bytes32) {
-        require(
-            quorumNumbers.length != 0,
-            "BLSSignatureChecker.checkSignatures: empty quorum input"
-        );
+        require(quorumNumbers.length != 0, InputEmptyQuorumNumbers());
 
         require(
             (quorumNumbers.length == params.quorumApks.length) &&
                 (quorumNumbers.length == params.quorumApkIndices.length) &&
                 (quorumNumbers.length == params.totalStakeIndices.length) &&
                 (quorumNumbers.length == params.nonSignerStakeIndices.length),
-            "BLSSignatureChecker.checkSignatures: input quorum length mismatch"
+            InputArrayLengthMismatch()
         );
 
         require(
             params.nonSignerPubkeys.length ==
                 params.nonSignerQuorumBitmapIndices.length,
-            "BLSSignatureChecker.checkSignatures: input nonsigner length mismatch"
+            InputNonSignerLengthMismatch()
         );
 
-        require(
-            referenceBlockNumber < uint32(block.number),
-            "BLSSignatureChecker.checkSignatures: invalid reference block"
-        );
+        require(referenceBlockNumber < uint32(block.number), InvalidReferenceBlocknumber());
 
         // This method needs to calculate the aggregate pubkey for all signing operators across
         // all signing quorums. To do that, we can query the aggregate pubkey for each quorum
@@ -155,7 +146,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                     require(
                         uint256(nonSigners.pubkeyHashes[j]) >
                             uint256(nonSigners.pubkeyHashes[j - 1]),
-                        "BLSSignatureChecker.checkSignatures: nonSignerPubkeys not sorted"
+                        NonSignerPubkeysNotSorted()
                     );
                 }
 
@@ -207,7 +198,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                         ) +
                             withdrawalDelayBlocks >
                             referenceBlockNumber,
-                        "BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within withdrawalDelayBlocks window"
+                        StaleStakesForbidden()
                     );
                 }
 
@@ -220,7 +211,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                             blockNumber: referenceBlockNumber,
                             index: params.quorumApkIndices[i]
                         }),
-                    "BLSSignatureChecker.checkSignatures: quorumApk hash in storage does not match provided quorum apk"
+                    InvalidQuorumApkHash()
                 );
                 apk = apk.plus(params.quorumApks[i]);
 
@@ -274,14 +265,8 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                     params.apkG2,
                     params.sigma
                 );
-            require(
-                pairingSuccessful,
-                "BLSSignatureChecker.checkSignatures: pairing precompile call failed"
-            );
-            require(
-                signatureIsValid,
-                "BLSSignatureChecker.checkSignatures: signature is invalid"
-            );
+            require(pairingSuccessful, InvalidBLSPairingKey());
+            require(signatureIsValid, InvalidBLSSignature());
         }
         // set signatoryRecordHash variable used for fraudproofs
         bytes32 signatoryRecordHash = keccak256(

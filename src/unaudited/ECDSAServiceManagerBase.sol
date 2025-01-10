@@ -44,10 +44,7 @@ abstract contract ECDSAServiceManagerBase is
      * This is used to restrict certain registration and deregistration functionality to the `stakeRegistry`
      */
     modifier onlyStakeRegistry() {
-        require(
-            msg.sender == stakeRegistry,
-            "ECDSAServiceManagerBase.onlyStakeRegistry: caller is not the stakeRegistry"
-        );
+        require(msg.sender == stakeRegistry, OnlyStakeRegistry());
         _;
     }
 
@@ -60,10 +57,7 @@ abstract contract ECDSAServiceManagerBase is
     }
 
     function _checkRewardsInitiator() internal view {
-        require(
-            msg.sender == rewardsInitiator,
-            "ECDSAServiceManagerBase.onlyRewardsInitiator: caller is not the rewards initiator"
-        );
+        require(msg.sender == rewardsInitiator, OnlyRewardsInitiator());
     }
 
     /**

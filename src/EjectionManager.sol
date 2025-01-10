@@ -67,7 +67,7 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable {
      * @dev The owner can eject operators without recording of stake ejection
      */
     function ejectOperators(bytes32[][] memory _operatorIds) external {
-        require(isEjector[msg.sender] || msg.sender == owner(), "EjectionManager.ejectOperators: Only owner or ejector can eject");
+        require(isEjector[msg.sender] || msg.sender == owner(), OnlyOwnerOrEjector());
 
         for(uint i = 0; i < _operatorIds.length; ++i) {
             uint8 quorumNumber = uint8(i);
@@ -137,7 +137,7 @@ contract EjectionManager is IEjectionManager, OwnableUpgradeable {
 
     ///@dev internal function to set the quorum ejection params
     function _setQuorumEjectionParams(uint8 _quorumNumber, QuorumEjectionParams memory _quorumEjectionParams) internal {
-        require(_quorumNumber < MAX_QUORUM_COUNT, "EjectionManager._setQuorumEjectionParams: Quorum number exceeds MAX_QUORUM_COUNT");
+        require(_quorumNumber < MAX_QUORUM_COUNT, MaxQuorumCount());
         quorumEjectionParams[_quorumNumber] = _quorumEjectionParams;
         emit QuorumEjectionParamsSet(_quorumNumber, _quorumEjectionParams.rateLimitWindow, _quorumEjectionParams.ejectableStakePercent);
     }

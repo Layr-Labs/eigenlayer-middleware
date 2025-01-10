@@ -25,6 +25,21 @@ interface ISlasherEvents {
     );
 }
 
+interface ISlasherErrors {
+    /// @dev Thrown when the caller is not the veto committee
+    error OnlyVetoCommittee();
+    /// @dev Thrown when the caller is not the slasher
+    error OnlySlasher();
+    /// @dev Thrown when the veto period has passed
+    error VetoPeriodPassed();
+    /// @dev Thrown when the veto period has not passed
+    error VetoPeriodNotPassed();
+    /// @dev Thrown when the slashing request is cancelled
+    error SlashingRequestIsCancelled();
+    /// @dev Thrown when the slashing request was not already requested
+    error SlashingRequestNotRequested();
+}
+
 interface ISlasherTypes {
     enum SlashingStatus {
         Null,
@@ -41,4 +56,4 @@ interface ISlasherTypes {
 
 }
 
-interface ISlasher is ISlasherEvents, ISlasherTypes{}
+interface ISlasher is ISlasherEvents, ISlasherTypes, ISlasherErrors {}

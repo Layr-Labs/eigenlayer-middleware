@@ -11,11 +11,37 @@ enum StakeType {
     TOTAL_SLASHABLE
 }
 
+interface IStakeRegistryErrors {
+    /// @dev Thrown when the caller is not the registry coordinator
+    error OnlyRegistryCoordinator();
+    /// @dev Thrown when the caller is not the owner of the registry coordinator
+    error OnlyRegistryCoordinatorOwner();
+    /// @dev Thrown when the stake is below the minimum required for a quorum
+    error BelowMinimumStakeRequirement();
+    /// @dev Thrown when a quorum being created already exists.
+    error QuorumAlreadyExists();
+    /// @dev Thrown when a quorum does not exist.
+    error QuorumDoesNotExist();
+    /// @dev Thrown when two array parameters have mismatching lengths.
+    error InputArrayLengthMismatch();
+    /// @dev Thrown when input arrays length is zero.
+    error InputArrayLengthZero();
+    /// @dev Thrown when a duplicate strategy is provided in input array.
+    error InputDuplicateStrategy();
+    /// @dev Thrown when multiplier input is zero.
+    error InputMultiplierZero();
+    /// @dev Thrown when the blocknumber provided is not >= the provided StakeUpdate's updateBlockNumber
+    /// or if the blocknumber provided is not the nextUpdateBlockNumber
+    error InvalidBlockNumber();
+    /// @dev Thrown when the quorum has no stake history at block number provided.
+    error EmptyStakeHistory();
+}
+
 /**
  * @title Interface for a `Registry` that keeps track of stakes of operators for up to 256 quorums.
  * @author Layr Labs, Inc.
  */
-interface IStakeRegistry is IRegistry {
+interface IStakeRegistry is IRegistry, IStakeRegistryErrors {
     // DATA STRUCTURES
 
     /// @notice struct used to store the stakes of an individual operator or the sum of all operators' stakes, for storage

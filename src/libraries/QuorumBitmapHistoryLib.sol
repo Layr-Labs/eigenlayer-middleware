@@ -6,6 +6,12 @@ import {IRegistryCoordinator} from "../interfaces/IRegistryCoordinator.sol";
 /// @title QuorumBitmapHistoryLib
 /// @notice This library operates on the _operatorBitmapHistory in the RegistryCoordinator
 library QuorumBitmapHistoryLib {
+    /// @dev Thrown when the quorum bitmap update is not found
+    error BitmapUpdateNotFound();
+    /// @dev Thrown when quorum bitmap update is after the block number
+    error BitmapUpdateIsAfterBlockNumber();
+    /// @dev Thrown when the next update block number is not 0 and strictly greater than blockNumber
+    error NextBitmapUpdateIsBeforeBlockNumber();
 
     /// @notice Retrieves the index of the quorum bitmap update at or before the specified block number
     /// @param self The mapping of operator IDs to their quorum bitmap update history
@@ -88,12 +94,12 @@ library QuorumBitmapHistoryLib {
          */
         require(
             blockNumber >= quorumBitmapUpdate.updateBlockNumber,
-            "RegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber"
+            BitmapUpdateIsAfterBlockNumber()
         );
         require(
             quorumBitmapUpdate.nextUpdateBlockNumber == 0
                 || blockNumber < quorumBitmapUpdate.nextUpdateBlockNumber,
-            "RegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from before blockNumber"
+            NextBitmapUpdateIsBeforeBlockNumber()
         );
 
         return quorumBitmapUpdate.quorumBitmap;

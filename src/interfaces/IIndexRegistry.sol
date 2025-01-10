@@ -3,11 +3,20 @@ pragma solidity ^0.8.27;
 
 import {IRegistry} from "./IRegistry.sol";
 
+interface IIndexRegistryErrors {
+    /// @dev Thrown when a function is called by an address that is not the RegistryCoordinator
+    error OnlyRegistryCoordinator();
+    /// @dev Thrown when a quorum has 0 length history and thus does not exist
+    error QuorumDoesNotExist();
+    /// @dev Thrown when an operatorId is not found in the registry at a given block number
+    error OperatorIdDoesNotExist();
+}
+
 /**
  * @title Interface for a `Registry`-type contract that keeps track of an ordered list of operators for up to 256 quorums.
  * @author Layr Labs, Inc.
  */
-interface IIndexRegistry is IRegistry {
+interface IIndexRegistry is IRegistry, IIndexRegistryErrors {
     // EVENTS
 
     // emitted when an operator's index in the ordered operator list for the quorum with number `quorumNumber` is updated

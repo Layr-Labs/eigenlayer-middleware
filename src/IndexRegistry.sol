@@ -47,7 +47,7 @@ contract IndexRegistry is IndexRegistryStorage {
             // Validate quorum exists and get current operator count
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             uint256 historyLength = _operatorCountHistory[quorumNumber].length;
-            require(historyLength != 0, "IndexRegistry.registerOperator: quorum does not exist");
+            require(historyLength != 0, QuorumDoesNotExist());
 
             /**
              * Increase the number of operators currently active for this quorum,
@@ -87,7 +87,7 @@ contract IndexRegistry is IndexRegistryStorage {
             // Validate quorum exists and get the operatorIndex of the operator being deregistered
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             uint256 historyLength = _operatorCountHistory[quorumNumber].length;
-            require(historyLength != 0, "IndexRegistry.registerOperator: quorum does not exist");
+            require(historyLength != 0, QuorumDoesNotExist());
             uint32 operatorIndexToRemove = currentOperatorIndex[quorumNumber][operatorId];
 
             /**
@@ -113,7 +113,7 @@ contract IndexRegistry is IndexRegistryStorage {
      * @param quorumNumber The number of the new quorum
      */
     function initializeQuorum(uint8 quorumNumber) public virtual onlyRegistryCoordinator {
-        require(_operatorCountHistory[quorumNumber].length == 0, "IndexRegistry.createQuorum: quorum already exists");
+        require(_operatorCountHistory[quorumNumber].length == 0, QuorumDoesNotExist());
 
         _operatorCountHistory[quorumNumber].push(QuorumUpdate({
             numOperators: 0,
@@ -329,7 +329,7 @@ contract IndexRegistry is IndexRegistryStorage {
             operatorList[i] = _operatorIdForIndexAtBlockNumber(quorumNumber, uint32(i), blockNumber);
             require(
                 operatorList[i] != OPERATOR_DOES_NOT_EXIST_ID,
-                "IndexRegistry.getOperatorListAtBlockNumber: operator does not exist at the given block number"
+                OperatorIdDoesNotExist()
             );
         }
         return operatorList;
@@ -342,6 +342,6 @@ contract IndexRegistry is IndexRegistryStorage {
     }
 
     function _checkRegistryCoordinator() internal view {
-        require(msg.sender == address(registryCoordinator), "IndexRegistry._checkRegistryCoordinator: caller is not the registry coordinator");
+        require(msg.sender == address(registryCoordinator), OnlyRegistryCoordinator());
     }
 }

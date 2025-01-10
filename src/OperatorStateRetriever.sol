@@ -26,6 +26,8 @@ contract OperatorStateRetriever {
         uint32[][] nonSignerStakeIndices; // nonSignerStakeIndices[quorumNumberIndex][nonSignerIndex]
     }
 
+    error OperatorNotRegistered();
+
     /**
      * @notice This function is intended to to be called by AVS operators every time a new task is created (i.e.)
      * the AVS coordinator makes a request to AVS operators. Since all of the crucial information is kept onchain,
@@ -131,7 +133,7 @@ contract OperatorStateRetriever {
                         checkSignaturesIndices.nonSignerQuorumBitmapIndices[i]
                     );
 
-                require(nonSignerQuorumBitmap != 0, "OperatorStateRetriever.getCheckSignaturesIndices: operator must be registered at blocknumber");
+                require(nonSignerQuorumBitmap != 0, OperatorNotRegistered());
 
                 // if the operator was a part of the quorum and the quorum is a part of the provided quorumNumbers
                 if ((nonSignerQuorumBitmap >> uint8(quorumNumbers[quorumNumberIndex])) & 1 == 1) {

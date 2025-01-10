@@ -5,11 +5,34 @@ import {IRegistry} from "./IRegistry.sol";
 
 import {BN254} from "../libraries/BN254.sol";
 
+interface IBLSApkRegistryErrors {
+    /// @dev Thrown when the caller is not the owner of the registry coordinator.
+    error OnlyRegistryCoordinatorOwner();
+    /// @dev Thrown when a quorum being created already exists.
+    error QuorumAlreadyExists();
+    /// @dev Thrown when a quorum does not exist.
+    error QuorumDoesNotExist();
+    /// @dev Thrown when a BLS pubkey provided is zero pubkey
+    error ZeroPubKey();
+    /// @dev Thrown when an operator has already registered a BLS pubkey.
+    error OperatorAlreadyRegistered();
+    /// @dev Thrown when the operator is not registered.
+    error OperatorNotRegistered();
+    /// @dev Thrown when a BLS pubkey has already been registered for an operator.
+    error BLSPubkeyAlreadyRegistered();
+    /// @dev Thrown when either the G1 signature is wrong, or G1 and G2 private key do not match.
+    error InvalidBLSSignatureOrPrivateKey();
+    /// @dev Thrown when the quorum apk update block number is too recent.
+    error BlockNumberTooRecent();
+    /// @dev Thrown when blocknumber and index provided is not the latest apk update.
+    error BlockNumberNotLatest();
+}
+
 /**
  * @title Minimal interface for a registry that keeps track of aggregate operator public keys across many quorums.
  * @author Layr Labs, Inc.
  */
-interface IBLSApkRegistry is IRegistry {
+interface IBLSApkRegistry is IRegistry, IBLSApkRegistryErrors {
     // STRUCTS
     /// @notice Data structure used to track the history of the Aggregate Public Key of all operators
     struct ApkUpdate {

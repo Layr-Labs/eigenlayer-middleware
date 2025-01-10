@@ -1,11 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
+interface IEjectionManagerErrors {
+    /// @dev Thrown when the caller is not the owner or ejector.
+    error OnlyOwnerOrEjector();
+    /// @dev Thrown when quorum number exceeds MAX_QUORUM_COUNT.
+    error MaxQuorumCount();
+}
+
 /**
  * @title Interface for a contract that ejects operators from an AVSs RegistryCoordinator
  * @author Layr Labs, Inc.
  */
-interface IEjectionManager {
+interface IEjectionManager is IEjectionManagerErrors {
 
     /// @notice A quorum's ratelimit parameters
     struct QuorumEjectionParams {
