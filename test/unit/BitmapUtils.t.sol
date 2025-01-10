@@ -185,7 +185,7 @@ contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
     /// when calling orderedBytesArrayToBitmap
     function testFuzz_OrderedBytesArrayToBitmap_Revert_WhenNotOrdered(bytes memory originalBytesArray) public {
         cheats.assume(!bitmapUtilsWrapper.isArrayStrictlyAscendingOrdered(originalBytesArray));
-        cheats.expectRevert("BitmapUtils.orderedBytesArrayToBitmap: orderedBytesArray is not ordered");
+        cheats.expectRevert(BitmapUtils.BytesArrayNotOrdered.selector);
         bitmapUtilsWrapper.orderedBytesArrayToBitmap(originalBytesArray);
     }
 

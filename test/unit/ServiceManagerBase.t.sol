@@ -12,6 +12,7 @@ import {PermissionController} from "eigenlayer-contracts/src/contracts/permissio
 import {StrategyBase} from "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IServiceManagerBaseEvents} from "../events/IServiceManagerBaseEvents.sol";
+import {IServiceManagerErrors} from "../../src/interfaces/IServiceManager.sol";
 
 import "../utils/MockAVSDeployer.sol";
 
@@ -225,9 +226,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions;
 
         cheats.prank(caller);
-        cheats.expectRevert(
-            "ServiceManagerBase.onlyRewardsInitiator: caller is not the rewards initiator"
-        );
+        cheats.expectRevert(IServiceManagerErrors.OnlyRewardsInitiator.selector);
         serviceManager.createAVSRewardsSubmission(rewardsSubmissions);
     }
 

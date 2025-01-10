@@ -293,6 +293,7 @@ contract IndexRegistryUnitTests_configAndGetters is IndexRegistryUnitTests {
 
             // should revert with startBlocknumber
             cheats.expectRevert("IndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number");
+
             indexRegistry.getOperatorListAtBlockNumber(
                 quorumNumber,
                 startBlockNumber
@@ -418,7 +419,7 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
         bytes memory quorumNumbers = new bytes(defaultQuorumNumber);
 
         cheats.prank(nonRegistryCoordinator);
-        cheats.expectRevert("IndexRegistry._checkRegistryCoordinator: caller is not the registry coordinator");
+        cheats.expectRevert(IIndexRegistryErrors.OnlyRegistryCoordinator.selector);
         indexRegistry.registerOperator(bytes32(0), quorumNumbers);
     }
 
@@ -439,7 +440,7 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
         // Register for invalid quorums, should revert
         bytes memory invalidQuorumNumbers = bitmapUtilsWrapper.bitmapToBytesArray(invalidBitmap);
         cheats.prank(address(registryCoordinator));
-        cheats.expectRevert("IndexRegistry.registerOperator: quorum does not exist");
+        cheats.expectRevert(IIndexRegistryErrors.QuorumDoesNotExist.selector);
         indexRegistry.registerOperator(operatorId1, invalidQuorumNumbers);
     }
 
@@ -699,7 +700,7 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
         bytes memory quorumNumbers = new bytes(defaultQuorumNumber);
 
         cheats.prank(nonRegistryCoordinator);
-        cheats.expectRevert("IndexRegistry._checkRegistryCoordinator: caller is not the registry coordinator");
+        cheats.expectRevert(IIndexRegistryErrors.OnlyRegistryCoordinator.selector);
         indexRegistry.deregisterOperator(bytes32(0), quorumNumbers);
     }
 
@@ -724,7 +725,7 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
 
         // Deregister for invalid quorums, should revert
         cheats.prank(address(registryCoordinator));
-        cheats.expectRevert("IndexRegistry.registerOperator: quorum does not exist");
+        cheats.expectRevert(IIndexRegistryErrors.QuorumDoesNotExist.selector);
         indexRegistry.deregisterOperator(operatorId1, invalidQuorumNumbers);
     }
 

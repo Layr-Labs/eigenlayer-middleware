@@ -3,7 +3,7 @@
 pragma solidity ^0.8.27;
 
 import {EjectionManager} from "../../src/EjectionManager.sol";
-import {IEjectionManager} from "../../src/interfaces/IEjectionManager.sol";
+import {IEjectionManager, IEjectionManagerErrors} from "../../src/interfaces/IEjectionManager.sol";
 
 import "../utils/MockAVSDeployer.sol";
 
@@ -366,7 +366,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
 
     function test_Revert_NotPermissioned() public {
         bytes32[][] memory operatorIds;
-        cheats.expectRevert("EjectionManager.ejectOperators: Only owner or ejector can eject");
+        cheats.expectRevert(IEjectionManagerErrors.OnlyOwnerOrEjector.selector);
         ejectionManager.ejectOperators(operatorIds);
 
         EjectionManager.QuorumEjectionParams memory _quorumEjectionParams;

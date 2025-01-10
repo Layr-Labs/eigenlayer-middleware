@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "test/utils/MockAVSDeployer.sol";
 
 import {StakeRegistry} from "src/StakeRegistry.sol";
-import {IStakeRegistry} from "src/interfaces/IStakeRegistry.sol";
+import {IStakeRegistry, IStakeRegistryErrors} from "src/interfaces/IStakeRegistry.sol";
 import {IStakeRegistryEvents} from "test/events/IStakeRegistryEvents.sol";
 
 import "../utils/MockAVSDeployer.sol";
@@ -580,9 +580,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         uint96 minimumStake,
         IStakeRegistry.StrategyParams[] memory strategyParams
     ) public {
-        cheats.expectRevert(
-            "StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator"
-        );
+        cheats.expectRevert(IStakeRegistryErrors.OnlyRegistryCoordinator.selector);
         stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
     }
 
@@ -591,7 +589,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         uint96 minimumStake,
         IStakeRegistry.StrategyParams[] memory strategyParams
     ) public fuzzOnlyInitializedQuorums(quorumNumber) {
-        cheats.expectRevert("StakeRegistry.initializeQuorum: quorum already exists");
+        cheats.expectRevert(IStakeRegistryErrors.QuorumAlreadyExists.selector);
         cheats.prank(address(registryCoordinator));
         stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
     }
@@ -603,7 +601,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         cheats.assume(quorumNumber >= nextQuorum);
         IStakeRegistry.StrategyParams[] memory strategyParams =
             new IStakeRegistry.StrategyParams[](0);
-        cheats.expectRevert("StakeRegistry._addStrategyParams: no strategies provided");
+        cheats.expectRevert(IStakeRegistryErrors.InputArrayLengthZero.selector);
         cheats.prank(address(registryCoordinator));
         stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
 
@@ -613,7 +611,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
                 IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(i)))))), uint96(1)
             );
         }
-        cheats.expectRevert("StakeRegistry._addStrategyParams: exceed MAX_WEIGHING_FUNCTION_LENGTH");
+        cheats.expectRevert(IStakeRegistryErrors.InputArrayLengthMismatch.selector);
         cheats.prank(address(registryCoordinator));
         stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
     }
@@ -731,9 +729,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         uint8 quorumNumber,
         uint96 minimumStakeForQuorum
     ) public fuzzOnlyInitializedQuorums(quorumNumber) {
-        cheats.expectRevert(
-            "StakeRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator"
-        );
+        cheats.expectRevert(IStakeRegistryErrors.OnlyRegistryCoordinatorOwner.selector);
         stakeRegistry.setMinimumStakeForQuorum(quorumNumber, minimumStakeForQuorum);
     }
 
@@ -743,7 +739,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
     ) public {
         // quorums [0,nextQuorum) are initialized, so use an invalid quorumNumber
         cheats.assume(quorumNumber >= nextQuorum);
-        cheats.expectRevert("StakeRegistry.quorumExists: quorum does not exist");
+        cheats.expectRevert(IStakeRegistryErrors.QuorumDoesNotExist.selector);
         cheats.prank(registryCoordinatorOwner);
         stakeRegistry.setMinimumStakeForQuorum(quorumNumber, minimumStakeForQuorum);
     }
@@ -771,9 +767,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         uint8 quorumNumber,
         IStakeRegistry.StrategyParams[] memory strategyParams
     ) public fuzzOnlyInitializedQuorums(quorumNumber) {
-        cheats.expectRevert(
-            "StakeRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator"
-        );
+        cheats.expectRevert(IStakeRegistryErrors.OnlyRegistryCoordinatorOwner.selector);
         stakeRegistry.addStrategies(quorumNumber, strategyParams);
     }
 
@@ -783,7 +777,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
     ) public {
         // quorums [0,nextQuorum) are initialized, so use an invalid quorumNumber
         cheats.assume(quorumNumber >= nextQuorum);
-        cheats.expectRevert("StakeRegistry.quorumExists: quorum does not exist");
+        cheats.expectRevert(IStakeRegistryErrors.QuorumDoesNotExist.selector);
         cheats.prank(registryCoordinatorOwner);
         stakeRegistry.addStrategies(quorumNumber, strategyParams);
     }
@@ -798,7 +792,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         strategyParams[0] = IStakeRegistry.StrategyParams(strat, uint96(WEIGHTING_DIVISOR));
         strategyParams[1] = IStakeRegistry.StrategyParams(strat, uint96(WEIGHTING_DIVISOR));
 
-        cheats.expectRevert("StakeRegistry._addStrategyParams: cannot add same strategy 2x");
+        cheats.expectRevert(IStakeRegistryErrors.InputDuplicateStrategy.selector);
         cheats.prank(registryCoordinatorOwner);
         stakeRegistry.addStrategies(quorumNumber, strategyParams);
     }
@@ -812,9 +806,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
             new IStakeRegistry.StrategyParams[](2);
         strategyParams[0] = IStakeRegistry.StrategyParams(strat, 0);
 
-        cheats.expectRevert(
-            "StakeRegistry._addStrategyParams: cannot add strategy with zero weight"
-        );
+        cheats.expectRevert(IStakeRegistryErrors.InputMultiplierZero.selector);
         cheats.prank(registryCoordinatorOwner);
         stakeRegistry.addStrategies(quorumNumber, strategyParams);
     }
@@ -874,9 +866,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         uint8 quorumNumber,
         uint256[] memory indicesToRemove
     ) public fuzzOnlyInitializedQuorums(quorumNumber) {
-        cheats.expectRevert(
-            "StakeRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator"
-        );
+        cheats.expectRevert(IStakeRegistryErrors.OnlyRegistryCoordinatorOwner.selector);
         stakeRegistry.removeStrategies(quorumNumber, indicesToRemove);
     }
 
@@ -886,7 +876,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
     ) public {
         // quorums [0,nextQuorum) are initialized, so use an invalid quorumNumber
         cheats.assume(quorumNumber >= nextQuorum);
-        cheats.expectRevert("StakeRegistry.quorumExists: quorum does not exist");
+        cheats.expectRevert(IStakeRegistryErrors.QuorumDoesNotExist.selector);
         cheats.prank(registryCoordinatorOwner);
         stakeRegistry.removeStrategies(quorumNumber, indicesToRemove);
     }
@@ -916,7 +906,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         uint8 quorumNumber = _initializeQuorum(minimumStake, numStrategiesToAdd);
 
         uint256[] memory indicesToRemove = new uint256[](0);
-        cheats.expectRevert("StakeRegistry.removeStrategies: no indices to remove provided");
+        cheats.expectRevert(IStakeRegistryErrors.InputArrayLengthZero.selector);
         cheats.prank(registryCoordinatorOwner);
         stakeRegistry.removeStrategies(quorumNumber, indicesToRemove);
     }
@@ -977,9 +967,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         uint256[] calldata strategyIndices,
         uint96[] calldata newMultipliers
     ) public fuzzOnlyInitializedQuorums(quorumNumber) {
-        cheats.expectRevert(
-            "StakeRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator"
-        );
+        cheats.expectRevert(IStakeRegistryErrors.OnlyRegistryCoordinatorOwner.selector);
         stakeRegistry.modifyStrategyParams(quorumNumber, strategyIndices, newMultipliers);
     }
 
@@ -990,7 +978,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
     ) public {
         // quorums [0,nextQuorum) are initialized, so use an invalid quorumNumber
         cheats.assume(quorumNumber >= nextQuorum);
-        cheats.expectRevert("StakeRegistry.quorumExists: quorum does not exist");
+        cheats.expectRevert(IStakeRegistryErrors.QuorumDoesNotExist.selector);
         cheats.prank(registryCoordinatorOwner);
         stakeRegistry.modifyStrategyParams(quorumNumber, strategyIndices, newMultipliers);
     }
@@ -1001,7 +989,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
     {
         uint256[] memory strategyIndices = new uint256[](0);
         uint96[] memory newMultipliers = new uint96[](0);
-        cheats.expectRevert("StakeRegistry.modifyStrategyParams: no strategy indices provided");
+        cheats.expectRevert(IStakeRegistryErrors.InputArrayLengthZero.selector);
         cheats.prank(registryCoordinatorOwner);
         stakeRegistry.modifyStrategyParams(quorumNumber, strategyIndices, newMultipliers);
     }
@@ -1013,7 +1001,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
     ) public fuzzOnlyInitializedQuorums(quorumNumber) {
         cheats.assume(strategyIndices.length != newMultipliers.length);
         cheats.assume(strategyIndices.length > 0);
-        cheats.expectRevert("StakeRegistry.modifyStrategyParams: input length mismatch");
+        cheats.expectRevert(IStakeRegistryErrors.InputArrayLengthMismatch.selector);
         cheats.prank(registryCoordinatorOwner);
         stakeRegistry.modifyStrategyParams(quorumNumber, strategyIndices, newMultipliers);
     }
@@ -1072,9 +1060,7 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
     function test_registerOperator_Revert_WhenNotRegistryCoordinator() public {
         (address operator, bytes32 operatorId) = _selectNewOperator();
 
-        cheats.expectRevert(
-            "StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator"
-        );
+        cheats.expectRevert(IStakeRegistryErrors.OnlyRegistryCoordinator.selector);
         stakeRegistry.registerOperator(operator, operatorId, initializedQuorumBytes);
     }
 
@@ -1084,7 +1070,7 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
         // Get a list of valid quorums ending in an invalid quorum number
         bytes memory invalidQuorums = _fuzz_getInvalidQuorums(rand);
 
-        cheats.expectRevert("StakeRegistry.quorumExists: quorum does not exist");
+        cheats.expectRevert(IStakeRegistryErrors.QuorumDoesNotExist.selector);
         cheats.prank(address(registryCoordinator));
         stakeRegistry.registerOperator(setup.operator, setup.operatorId, invalidQuorums);
     }
@@ -1118,9 +1104,7 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
         }
 
         // Attempt to register
-        cheats.expectRevert(
-            "StakeRegistry.registerOperator: Operator does not meet minimum stake requirement for quorum"
-        );
+        cheats.expectRevert(IStakeRegistryErrors.BelowMinimumStakeRequirement.selector);
         cheats.prank(address(registryCoordinator));
         stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
     }
@@ -1426,9 +1410,7 @@ contract StakeRegistryUnitTests_Deregister is StakeRegistryUnitTests {
             fuzzy_addtlStake: 0
         });
 
-        cheats.expectRevert(
-            "StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator"
-        );
+        cheats.expectRevert(IStakeRegistryErrors.OnlyRegistryCoordinator.selector);
         stakeRegistry.deregisterOperator(setup.operatorId, setup.quorumsToRemove);
     }
 
@@ -1443,7 +1425,7 @@ contract StakeRegistryUnitTests_Deregister is StakeRegistryUnitTests {
         // Get a list of valid quorums ending in an invalid quorum number
         bytes memory invalidQuorums = _fuzz_getInvalidQuorums(rand);
 
-        cheats.expectRevert("StakeRegistry.quorumExists: quorum does not exist");
+        cheats.expectRevert(IStakeRegistryErrors.QuorumDoesNotExist.selector);
         cheats.prank(address(registryCoordinator));
         stakeRegistry.registerOperator(setup.operator, setup.operatorId, invalidQuorums);
     }
@@ -1790,9 +1772,7 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
         UpdateSetup memory setup =
             _fuzz_setupUpdateOperatorStake({registeredFor: initializedQuorumBitmap, fuzzy_Delta: 0});
 
-        cheats.expectRevert(
-            "StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator"
-        );
+        cheats.expectRevert(IStakeRegistryErrors.OnlyRegistryCoordinator.selector);
         stakeRegistry.updateOperatorStake(setup.operator, setup.operatorId, setup.quorumNumbers);
     }
 
@@ -1804,7 +1784,7 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
         // Get a list of valid quorums ending in an invalid quorum number
         bytes memory invalidQuorums = _fuzz_getInvalidQuorums(rand);
 
-        cheats.expectRevert("StakeRegistry.quorumExists: quorum does not exist");
+        cheats.expectRevert(IStakeRegistryErrors.QuorumDoesNotExist.selector);
         cheats.prank(address(registryCoordinator));
         stakeRegistry.updateOperatorStake(setup.operator, setup.operatorId, invalidQuorums);
     }

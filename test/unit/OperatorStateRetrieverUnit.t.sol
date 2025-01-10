@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "../utils/MockAVSDeployer.sol";
+import {IStakeRegistryErrors} from "../../src/interfaces/IStakeRegistry.sol";
 
 contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
     using BN254 for BN254.G1Point;
@@ -186,9 +187,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         registryCoordinator.deregisterOperator(BitmapUtils.bitmapToBytesArray(1));
 
         // should revert because the operator was registered for the first time after the reference block number
-        cheats.expectRevert(
-            "OperatorStateRetriever.getCheckSignaturesIndices: operator must be registered at blocknumber"
-        );
+        cheats.expectRevert(OperatorStateRetriever.OperatorNotRegistered.selector);
         operatorStateRetriever.getCheckSignaturesIndices(
             registryCoordinator,
             uint32(block.number),
@@ -203,7 +202,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
 
         _registerOperatorWithCoordinator(defaultOperator, 1, defaultPubKey);
 
-        cheats.expectRevert("StakeRegistry.quorumExists: quorum does not exist");
+        cheats.expectRevert(IStakeRegistryErrors.QuorumDoesNotExist.selector);
         operatorStateRetriever.getCheckSignaturesIndices(
             registryCoordinator,
             uint32(block.number),
@@ -237,9 +236,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         cheats.prank(registryCoordinator.owner());
         registryCoordinator.createTotalDelegatedStakeQuorum(operatorSetParams, minimumStake, strategyParams);
 
-        cheats.expectRevert(
-            "StakeRegistry.getTotalStakeIndicesAtBlockNumber: quorum has no stake history at blockNumber"
-        );
+        cheats.expectRevert(IStakeRegistryErrors.EmptyStakeHistory.selector);
         operatorStateRetriever.getCheckSignaturesIndices(
             registryCoordinator,
             registrationBlockNumber + 5,

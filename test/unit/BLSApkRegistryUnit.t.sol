@@ -8,6 +8,7 @@ import "../harnesses/BitmapUtilsWrapper.sol";
 import "../utils/BLSMockAVSDeployer.sol";
 
 import {IBLSApkRegistryEvents} from "../events/IBLSApkRegistryEvents.sol";
+import {IBLSApkRegistryErrors} from "../../src/interfaces/IBLSApkRegistry.sol";
 
 contract BLSApkRegistryUnitTests is BLSMockAVSDeployer, IBLSApkRegistryEvents {
     using BitmapUtils for uint192;
@@ -309,9 +310,7 @@ contract BLSApkRegistryUnitTests_configAndGetters is BLSApkRegistryUnitTests {
         cheats.assume(nonCoordinatorAddress != address(registryCoordinator));
 
         cheats.prank(address(nonCoordinatorAddress));
-        cheats.expectRevert(
-            "BLSApkRegistry._checkRegistryCoordinator: caller is not the registry coordinator"
-        );
+        cheats.expectRevert(IBLSApkRegistryErrors.OnlyRegistryCoordinatorOwner.selector);
         blsApkRegistry.initializeQuorum(defaultQuorumNumber);
     }
 }
@@ -334,9 +333,7 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is
             .pubkeyRegistrationMessageHash(defaultOperator);
 
         cheats.prank(address(nonCoordinatorAddress));
-        cheats.expectRevert(
-            "BLSApkRegistry._checkRegistryCoordinator: caller is not the registry coordinator"
-        );
+        cheats.expectRevert(IBLSApkRegistryErrors.OnlyRegistryCoordinatorOwner.selector);
         blsApkRegistry.registerBLSPublicKey(
             defaultOperator,
             pubkeyRegistrationParams,
@@ -353,9 +350,7 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is
             .pubkeyRegistrationMessageHash(operator);
 
         cheats.prank(address(registryCoordinator));
-        cheats.expectRevert(
-            "BLSApkRegistry.registerBLSPublicKey: cannot register zero pubkey"
-        );
+        cheats.expectRevert(IBLSApkRegistryErrors.ZeroPubKey.selector);
         blsApkRegistry.registerBLSPublicKey(
             operator,
             pubkeyRegistrationParams,
@@ -379,9 +374,7 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is
             messageHash
         );
 
-        cheats.expectRevert(
-            "BLSApkRegistry.registerBLSPublicKey: operator already registered pubkey"
-        );
+        cheats.expectRevert(IBLSApkRegistryErrors.OperatorAlreadyRegistered.selector);
         blsApkRegistry.registerBLSPublicKey(
             operator,
             pubkeyRegistrationParams,
@@ -412,9 +405,7 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is
             messageHash
         );
 
-        cheats.expectRevert(
-            "BLSApkRegistry.registerBLSPublicKey: public key already registered"
-        );
+        cheats.expectRevert(IBLSApkRegistryErrors.BLSPubkeyAlreadyRegistered.selector);
         blsApkRegistry.registerBLSPublicKey(
             operator2,
             pubkeyRegistrationParams,
@@ -442,9 +433,7 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is
         pubkeyRegistrationParams.pubkeyRegistrationSignature = invalidSignature;
 
         cheats.startPrank(address(registryCoordinator));
-        cheats.expectRevert(
-            "BLSApkRegistry.registerBLSPublicKey: either the G1 signature is wrong, or G1 and G2 private key do not match"
-        );
+        cheats.expectRevert(IBLSApkRegistryErrors.InvalidBLSSignatureOrPrivateKey.selector);
         blsApkRegistry.registerBLSPublicKey(
             operator,
             pubkeyRegistrationParams,
@@ -468,9 +457,7 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is
         BN254.G1Point memory messageHash = registryCoordinator
             .pubkeyRegistrationMessageHash(operator);
         cheats.prank(address(registryCoordinator));
-        cheats.expectRevert(
-            "BLSApkRegistry.registerBLSPublicKey: either the G1 signature is wrong, or G1 and G2 private key do not match"
-        );
+        cheats.expectRevert(IBLSApkRegistryErrors.InvalidBLSSignatureOrPrivateKey.selector);
         blsApkRegistry.registerBLSPublicKey(
             operator,
             pubkeyRegistrationParams,
@@ -544,9 +531,7 @@ contract BLSApkRegistryUnitTests_registerOperator is BLSApkRegistryUnitTests {
         cheats.assume(nonCoordinatorAddress != address(registryCoordinator));
 
         cheats.prank(nonCoordinatorAddress);
-        cheats.expectRevert(
-            "BLSApkRegistry._checkRegistryCoordinator: caller is not the registry coordinator"
-        );
+        cheats.expectRevert(IBLSApkRegistryErrors.OnlyRegistryCoordinatorOwner.selector);
         blsApkRegistry.registerOperator(nonCoordinatorAddress, new bytes(0));
     }
 
@@ -554,9 +539,7 @@ contract BLSApkRegistryUnitTests_registerOperator is BLSApkRegistryUnitTests {
         address operator
     ) public filterFuzzedAddressInputs(operator) {
         cheats.prank(address(registryCoordinator));
-        cheats.expectRevert(
-            "BLSApkRegistry.getRegisteredPubkey: operator is not registered"
-        );
+        cheats.expectRevert(IBLSApkRegistryErrors.OperatorNotRegistered.selector);
         blsApkRegistry.registerOperator(operator, new bytes(1));
     }
 
@@ -577,9 +560,7 @@ contract BLSApkRegistryUnitTests_registerOperator is BLSApkRegistryUnitTests {
         _registerDefaultBLSPubkey(operator);
 
         cheats.prank(address(registryCoordinator));
-        cheats.expectRevert(
-            "BLSApkRegistry._processQuorumApkUpdate: quorum does not exist"
-        );
+        cheats.expectRevert(IBLSApkRegistryErrors.QuorumDoesNotExist.selector);
         blsApkRegistry.registerOperator(operator, quorumNumbers);
     }
 
@@ -672,9 +653,7 @@ contract BLSApkRegistryUnitTests_deregisterOperator is BLSApkRegistryUnitTests {
         cheats.assume(nonCoordinatorAddress != address(registryCoordinator));
 
         cheats.prank(nonCoordinatorAddress);
-        cheats.expectRevert(
-            "BLSApkRegistry._checkRegistryCoordinator: caller is not the registry coordinator"
-        );
+        cheats.expectRevert(IBLSApkRegistryErrors.OnlyRegistryCoordinatorOwner.selector);
         blsApkRegistry.deregisterOperator(nonCoordinatorAddress, new bytes(0));
     }
 
@@ -682,9 +661,7 @@ contract BLSApkRegistryUnitTests_deregisterOperator is BLSApkRegistryUnitTests {
         address operator
     ) public filterFuzzedAddressInputs(operator) {
         cheats.prank(address(registryCoordinator));
-        cheats.expectRevert(
-            "BLSApkRegistry.getRegisteredPubkey: operator is not registered"
-        );
+        cheats.expectRevert(IBLSApkRegistryErrors.OperatorNotRegistered.selector);
         blsApkRegistry.registerOperator(operator, new bytes(1));
     }
 
@@ -708,9 +685,7 @@ contract BLSApkRegistryUnitTests_deregisterOperator is BLSApkRegistryUnitTests {
         _registerOperator(operator, validQuorumNumbers);
 
         cheats.prank(address(registryCoordinator));
-        cheats.expectRevert(
-            "BLSApkRegistry._processQuorumApkUpdate: quorum does not exist"
-        );
+        cheats.expectRevert(IBLSApkRegistryErrors.QuorumDoesNotExist.selector);
         blsApkRegistry.deregisterOperator(operator, invalidQuorumNumbers);
     }
 
@@ -1080,9 +1055,7 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
         }
         if (wrongBlockNumber < startingBlockNumber + indexToCheck * 100) {
             emit log_named_uint("index too recent: ", indexToCheck);
-            cheats.expectRevert(
-                "BLSApkRegistry.getApkHashAtBlockNumberAndIndex: index too recent"
-            );
+            cheats.expectRevert(IBLSApkRegistryErrors.BlockNumberTooRecent.selector);
             blsApkRegistry.getApkHashAtBlockNumberAndIndex(
                 defaultQuorumNumber,
                 wrongBlockNumber,
@@ -1093,9 +1066,7 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
             wrongBlockNumber >= startingBlockNumber + (indexToCheck + 1) * 100
         ) {
             emit log_named_uint("index not latest: ", indexToCheck);
-            cheats.expectRevert(
-                "BLSApkRegistry.getApkHashAtBlockNumberAndIndex: not latest apk update"
-            );
+            cheats.expectRevert(IBLSApkRegistryErrors.BlockNumberNotLatest.selector);
             blsApkRegistry.getApkHashAtBlockNumberAndIndex(
                 defaultQuorumNumber,
                 wrongBlockNumber,

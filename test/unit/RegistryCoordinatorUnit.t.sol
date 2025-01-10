@@ -3,6 +3,8 @@ pragma solidity ^0.8.27;
 
 import "../utils/MockAVSDeployer.sol";
 import {IRegistryCoordinatorErrors} from "../../src/interfaces/IRegistryCoordinator.sol";
+import {QuorumBitmapHistoryLib} from "../../src/libraries/QuorumBitmapHistoryLib.sol";
+import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
 
 contract RegistryCoordinatorUnitTests is MockAVSDeployer {
     using BN254 for BN254.G1Point;
@@ -281,7 +283,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
 
         quorumNumbersTooLarge[0] = 0xC0;
 
-        cheats.expectRevert("BitmapUtils.orderedBytesArrayToBitmap: bitmap exceeds max value");
+        cheats.expectRevert(BitmapUtils.BitmapValueTooLarge.selector);
         cheats.prank(defaultOperator);
         registryCoordinator.registerOperator(quorumNumbersTooLarge, defaultSocket, pubkeyRegistrationParams, emptySig);
     }
@@ -294,7 +296,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         quorumNumbersNotCreated[0] = 0x0B;
 
         cheats.prank(defaultOperator);
-        cheats.expectRevert("BitmapUtils.orderedBytesArrayToBitmap: bitmap exceeds max value");
+        cheats.expectRevert(BitmapUtils.BitmapValueTooLarge.selector);
         registryCoordinator.registerOperator(quorumNumbersNotCreated, defaultSocket, pubkeyRegistrationParams, emptySig);
     }
 
@@ -523,7 +525,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
 
         quorumNumbersTooLarge[0] = 0xC0;
 
-        cheats.expectRevert("BitmapUtils.orderedBytesArrayToBitmap: bitmap exceeds max value");
+        cheats.expectRevert(BitmapUtils.BitmapValueTooLarge.selector);
         registryCoordinator._registerOperatorExternal(defaultOperator, defaultOperatorId, quorumNumbersTooLarge, defaultSocket, emptySig);
     }
 
@@ -1298,7 +1300,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
         uint192 emptyBitmap = 0;
 
         // try an incorrect blockNumber input and confirm reversion
-        cheats.expectRevert("RegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber");
+        cheats.expectRevert(QuorumBitmapHistoryLib.BitmapUpdateIsAfterBlockNumber.selector);
         uint192 returnVal = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
 
         blockNumber = registrationBlockNumber;
@@ -1311,7 +1313,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
 
         // try an incorrect index input and confirm reversion
         index = 1;
-        cheats.expectRevert("RegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber");
+        cheats.expectRevert(QuorumBitmapHistoryLib.BitmapUpdateIsAfterBlockNumber.selector);
         returnVal = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
 
         blockNumber = deregistrationBlockNumber;
@@ -1324,7 +1326,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is Regist
 
         // try an incorrect index input and confirm reversion
         index = 0;
-        cheats.expectRevert("RegistryCoordinator.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from before blockNumber");
+        cheats.expectRevert(QuorumBitmapHistoryLib.NextBitmapUpdateIsBeforeBlockNumber.selector);
         returnVal = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
     }
 }
@@ -1669,7 +1671,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         address[][] memory operatorsToUpdate = new address[][](1);
 
         cheats.prank(defaultOperator);
-        cheats.expectRevert("BitmapUtils.orderedBytesArrayToBitmap: bitmap exceeds max value");
+        cheats.expectRevert(BitmapUtils.BitmapValueTooLarge.selector);
         registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbersNotCreated);
     }
 
