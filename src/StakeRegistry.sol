@@ -46,8 +46,9 @@ contract StakeRegistry is StakeRegistryStorage {
         IRegistryCoordinator _registryCoordinator,
         IDelegationManager _delegationManager,
         IAVSDirectory _avsDirectory,
+        IAllocationManager _allocationManager,
         IServiceManager _serviceManager
-    ) StakeRegistryStorage(_registryCoordinator, _delegationManager, _avsDirectory, _serviceManager) {}
+    ) StakeRegistryStorage(_registryCoordinator, _delegationManager, _avsDirectory, _allocationManager, _serviceManager) {}
 
     /*******************************************************************************
                       EXTERNAL FUNCTIONS - REGISTRY COORDINATOR
@@ -262,7 +263,11 @@ contract StakeRegistry is StakeRegistryStorage {
             for (uint256 i = 0; i < numStratsToAdd; i++) {
                 strategiesToAdd[i] = _strategyParams[i].strategy;
             }
-            serviceManager.addStrategyToOperatorSet(quorumNumber, strategiesToAdd);
+            allocationManager.addStrategiesToOperatorSet({
+                avs: address(serviceManager),
+                operatorSetId: quorumNumber,
+                strategies: strategiesToAdd
+            });
         }
     }
 
@@ -297,7 +302,11 @@ contract StakeRegistry is StakeRegistryStorage {
         }
 
         if (isOperatorSetQuorum(quorumNumber)){
-            serviceManager.removeStrategiesFromOperatorSet(quorumNumber, _strategiesToRemove);
+            allocationManager.removeStrategiesFromOperatorSet({
+                avs: address(serviceManager),
+                operatorSetId: quorumNumber,
+                strategies: _strategiesToRemove
+            });
         }
     }
 
@@ -512,13 +521,12 @@ contract StakeRegistry is StakeRegistryStorage {
         operators[0] = operator;
         uint32 beforeTimestamp = uint32(block.timestamp + slashableStakeLookAheadPerQuorum[quorumNumber]);
 
-        uint256[][] memory slashableShares = IAllocationManager(serviceManager.allocationManager())
-            .getMinimumSlashableStake(
-                OperatorSet(address(serviceManager), quorumNumber),
-                operators,
-                strategiesPerQuorum[quorumNumber],
-                beforeTimestamp
-            );
+        uint256[][] memory slashableShares = allocationManager.getMinimumSlashableStake(
+            OperatorSet(address(serviceManager), quorumNumber),
+            operators,
+            strategiesPerQuorum[quorumNumber],
+            beforeTimestamp
+        );
 
         return slashableShares[0];
     }

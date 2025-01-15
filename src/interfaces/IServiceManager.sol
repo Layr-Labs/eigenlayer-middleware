@@ -40,30 +40,6 @@ interface IServiceManager is IServiceManagerUI, IServiceManagerErrors {
      */
     function createAVSRewardsSubmission(IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions) external;
 
-    function createOperatorSets(IAllocationManager.CreateSetParams[] memory params) external;
-
-    function addStrategyToOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external;
-
-    function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external;
-
-    /**
-     * @notice Sets the AVS registrar address in the AllocationManager
-     * @param registrar The new AVS registrar address
-     * @dev Only callable by the registry coordinator
-     */
-    function setAVSRegistrar(IAVSRegistrar registrar) external;
-
-    /**
-     * @notice Forwards a call to EigenLayer's AVSDirectory contract to deregister an operator from operator sets
-     * @param operator The address of the operator to deregister.
-     * @param operatorSetIds The IDs of the operator sets.
-     */
-    function deregisterOperatorFromOperatorSets(address operator, uint32[] calldata operatorSetIds) external;
-
-    function slashOperator(IAllocationManagerTypes.SlashingParams memory params) external;
-
     // EVENTS
     event RewardsInitiatorUpdated(address prevRewardsInitiator, address newRewardsInitiator);
-    event SlasherUpdated(address prevSlasher, address newSlasher);
-    event SlasherProposed(address newSlasher, uint256 slasherProposalTimestamp);
 }

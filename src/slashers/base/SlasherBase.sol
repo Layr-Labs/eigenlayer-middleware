@@ -14,8 +14,14 @@ abstract contract SlasherBase is Initializable, SlasherStorage {
         _;
     }
 
-    function __SlasherBase_init(address _serviceManager, address _slasher) internal onlyInitializing {
-        serviceManager = _serviceManager;
+    constructor(
+        IAllocationManager _allocationManager,
+        IServiceManager _serviceManager
+    ) SlasherStorage(_allocationManager, _serviceManager) {
+        _disableInitializers();
+    }
+
+    function __SlasherBase_init(address _slasher) internal onlyInitializing {
         slasher = _slasher;
     }
 
@@ -23,7 +29,10 @@ abstract contract SlasherBase is Initializable, SlasherStorage {
         uint256 _requestId,
         IAllocationManager.SlashingParams memory _params
     ) internal virtual {
-        IServiceManager(serviceManager).slashOperator(_params);
+        allocationManager.slashOperator({
+            avs: address(serviceManager),
+            params: _params
+        });
         emit OperatorSlashed(_requestId, _params.operator, _params.operatorSetId, _params.wadsToSlash, _params.description);
     }
 
@@ -31,7 +40,3 @@ abstract contract SlasherBase is Initializable, SlasherStorage {
         require(account == slasher, OnlySlasher());
     }
 }
-
-
-
-

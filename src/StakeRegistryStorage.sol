@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IStrategyManager, IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 
@@ -29,6 +30,9 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
     /// @notice The address of the Delegation contract for EigenLayer.
     IAVSDirectory public immutable avsDirectory;
 
+    /// @notice the address of the AllocationManager for EigenLayer.
+    IAllocationManager public immutable allocationManager;
+
     /// @notice the address of the ServiceManager associtated with the stake registries
     IServiceManager public immutable serviceManager;
 
@@ -43,29 +47,35 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
     mapping(uint8 => StakeUpdate[]) internal _totalStakeHistory;
 
     /// @notice mapping from operator's operatorId to the history of their stake updates
-    mapping(bytes32 => mapping(uint8 => StakeUpdate[])) internal operatorStakeHistory;
+    mapping(bytes32 operatorId => mapping(uint8 => StakeUpdate[])) internal operatorStakeHistory;
 
     /**
      * @notice mapping from quorum number to the list of strategies considered and their
      * corresponding multipliers for that specific quorum
      */
-    mapping(uint8 => StrategyParams[]) public strategyParams;
-    mapping(uint8 => IStrategy[]) public strategiesPerQuorum;
+    mapping(uint8 quorumNumber => StrategyParams[]) public strategyParams;
 
-    mapping(uint8 => StakeType) public stakeTypePerQuorum;
+    /// @notice mapping from quorum number to the list of strategies considered for that specific quorum
+    mapping(uint8 quorumNumber => IStrategy[]) public strategiesPerQuorum;
 
-    mapping(uint8 => uint32) public slashableStakeLookAheadPerQuorum;
+    /// @notice mapping from quorum number to the StakeType for that specific quorum
+    mapping(uint8 quorumNumber => StakeType) public stakeTypePerQuorum;
+
+    /// @notice mapping from quorum number to the slashable stake look ahead time (in blocks)
+    mapping(uint8 quorumNumber => uint32) public slashableStakeLookAheadPerQuorum;
 
     constructor(
         IRegistryCoordinator _registryCoordinator,
         IDelegationManager _delegationManager,
         IAVSDirectory _avsDirectory,
+        IAllocationManager _allocationManager,
         IServiceManager _serviceManager
     ) {
         registryCoordinator = address(_registryCoordinator);
         delegation = _delegationManager;
         avsDirectory = _avsDirectory;
         serviceManager = _serviceManager;
+        allocationManager = _allocationManager;
     }
 
     // storage gap for upgradeability

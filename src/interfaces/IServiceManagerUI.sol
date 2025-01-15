@@ -58,7 +58,4 @@ interface IServiceManagerUI {
 
     /// @notice Returns the EigenLayer AVSDirectory contract.
     function avsDirectory() external view returns (address);
-
-    /// @notice Returns the EigenLayer AllocationManager contract.
-    function allocationManager() external view returns (address);
 }

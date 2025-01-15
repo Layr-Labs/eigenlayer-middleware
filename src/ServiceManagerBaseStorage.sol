@@ -10,6 +10,7 @@ import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IPermissionController} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 
 /**
  * @title Storage variables for the `ServiceManagerBase` contract.
@@ -26,7 +27,7 @@ abstract contract ServiceManagerBaseStorage is IServiceManager, OwnableUpgradeab
     IRewardsCoordinator internal immutable _rewardsCoordinator;
     IRegistryCoordinator internal immutable _registryCoordinator;
     IStakeRegistry internal immutable _stakeRegistry;
-    IAllocationManager internal immutable _allocationManager;
+    IPermissionController internal immutable _permissionController;
 
     /**
      *
@@ -55,13 +56,13 @@ abstract contract ServiceManagerBaseStorage is IServiceManager, OwnableUpgradeab
         IRewardsCoordinator __rewardsCoordinator,
         IRegistryCoordinator __registryCoordinator,
         IStakeRegistry __stakeRegistry,
-        IAllocationManager __allocationManager
+        IPermissionController __permissionController
     ) {
         _avsDirectory = __avsDirectory;
         _rewardsCoordinator = __rewardsCoordinator;
         _registryCoordinator = __registryCoordinator;
         _stakeRegistry = __stakeRegistry;
-        _allocationManager = __allocationManager;
+        _permissionController = __permissionController;
     }
 
     // storage gap for upgradeability

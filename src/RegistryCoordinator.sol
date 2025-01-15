@@ -3,9 +3,8 @@ pragma solidity ^0.8.27;
 
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import { IAllocationManager, OperatorSet, IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IAllocationManager, OperatorSet, IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {ISocketUpdater} from "./interfaces/ISocketUpdater.sol";
 import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry, StakeType} from "./interfaces/IStakeRegistry.sol";
@@ -65,9 +64,16 @@ contract RegistryCoordinator is
         IStakeRegistry _stakeRegistry,
         IBLSApkRegistry _blsApkRegistry,
         IIndexRegistry _indexRegistry,
+        IAllocationManager _allocationManager,
         IPauserRegistry _pauserRegistry
     )
-        RegistryCoordinatorStorage(_serviceManager, _stakeRegistry, _blsApkRegistry, _indexRegistry)
+        RegistryCoordinatorStorage(
+            _serviceManager,
+            _stakeRegistry,
+            _blsApkRegistry,
+            _indexRegistry,
+            _allocationManager
+        )
         EIP712("AVSRegistryCoordinator", "v0.0.1")
         Pausable(_pauserRegistry)
     {
@@ -278,13 +284,6 @@ contract RegistryCoordinator is
 
     function enableOperatorSets() external onlyOwner {
         require(!isOperatorSetAVS, OperatorSetsEnabled());
-        /// Triggers the updates to use operator sets ie setsAVSRegistrar
-        /// Opens up the AVS Registrar Hooks on this contract to be callable by the ALM
-        /// Allows creation of quorums with slashable and total delegated stake for operator sets
-        /// Sets all quorums created before this call as m2 quorums in a mapping so that we can gate function calls to deregister
-        /// M2 Registrations turn off once migrated.  M2 deregistration remain open for only m2 quorums
-        // Set this contract as the AVS registrar in the service manager
-        serviceManager.setAVSRegistrar(IAVSRegistrar(address(this)));
 
         // Set all existing quorums as m2 quorums
         for (uint8 i = 0; i < quorumCount; i++) {
@@ -389,8 +388,6 @@ contract RegistryCoordinator is
         // - all quorums should exist (checked against `quorumCount` in orderedBytesArrayToBitmap)
         // - there should be no duplicates in `quorumNumbers`
         // - there should be one list of operators per quorum
-        uint192 quorumBitmap =
-            uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         require(
             operatorsPerQuorum.length == quorumNumbers.length,
             InputLengthMismatch()
@@ -703,8 +700,7 @@ contract RegistryCoordinator is
     }
 
     function _checkAllocationManager() internal view {
-        address allocationManager = address(serviceManager.allocationManager());
-        require(msg.sender == allocationManager, OnlyAllocationManager());
+        require(msg.sender == address(allocationManager), OnlyAllocationManager());
     }
 
     /**
@@ -967,7 +963,10 @@ contract RegistryCoordinator is
                 operatorSetId: quorumNumber,
                 strategies: strategies
             });
-            serviceManager.createOperatorSets(createSetParams);
+            allocationManager.createOperatorSets({
+                avs: address(serviceManager),
+                params: createSetParams
+            });
         }
         // Initialize stake registry based on stake type
         if (stakeType == StakeType.TOTAL_DELEGATED) {
