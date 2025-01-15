@@ -73,8 +73,8 @@ interface IStakeRegistry is IRegistry, IStakeRegistryErrors {
         uint96 stake
     );
 
-    /// @notice emitted when the look ahead time for checking operator shares is updated
-    event LookAheadPeriodChanged(uint32 oldLookAheadDays, uint32 newLookAheadDays);
+    /// @notice emitted when the look ahead time(in blocks) for checking operator shares is updated
+    event LookAheadPeriodChanged(uint32 oldLookAheadBlocks, uint32 newLookAheadBlocks);
 
     /// @notice emitted when the stake type is updated
     event StakeTypeSet(StakeType newStakeType);

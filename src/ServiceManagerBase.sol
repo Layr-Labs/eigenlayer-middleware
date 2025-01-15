@@ -68,17 +68,26 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
 
     /// @inheritdoc IServiceManager
     function addPendingAdmin(address admin) external onlyOwner {
-        _permissionController.addPendingAdmin(address(this), admin);
+        _permissionController.addPendingAdmin({
+            account: address(this),
+            admin: admin
+        });
     }
 
     /// @inheritdoc IServiceManager
     function removePendingAdmin(address pendingAdmin) external onlyOwner {
-        _permissionController.removePendingAdmin(address(this), pendingAdmin);
+        _permissionController.removePendingAdmin({
+            account: address(this), 
+            admin: pendingAdmin
+        });
     }
 
     /// @inheritdoc IServiceManager
     function removeAdmin(address admin) external onlyOwner {
-        _permissionController.removeAdmin(address(this), admin);
+        _permissionController.removeAdmin({
+            account: address(this), 
+            admin: admin
+        });
     }
 
     /// @inheritdoc IServiceManager
@@ -87,7 +96,12 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         address target,
         bytes4 selector
     ) external onlyOwner {
-        _permissionController.setAppointee(address(this), appointee, target, selector);
+        _permissionController.setAppointee({
+            account: address(this), 
+            appointee: appointee, 
+            target: target, 
+            selector: selector
+        });
     }
 
     /// @inheritdoc IServiceManager
@@ -96,7 +110,12 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         address target,
         bytes4 selector
     ) external onlyOwner {
-        _permissionController.removeAppointee(address(this), appointee, target, selector);
+        _permissionController.removeAppointee({
+            account: address(this),
+            appointee: appointee,
+            target: target,
+            selector: selector
+        });
     }
 
     /**
