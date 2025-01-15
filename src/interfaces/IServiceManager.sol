@@ -27,6 +27,9 @@ interface IServiceManagerErrors {
  * @author Layr Labs, Inc.
  */
 interface IServiceManager is IServiceManagerUI, IServiceManagerErrors {
+    // EVENTS
+    event RewardsInitiatorUpdated(address prevRewardsInitiator, address newRewardsInitiator);
+
     /**
      * @notice Creates a new rewards submission to the EigenLayer RewardsCoordinator contract, to be split amongst the
      * set of stakers delegated to operators who are registered to this `avs`
@@ -40,6 +43,58 @@ interface IServiceManager is IServiceManagerUI, IServiceManagerErrors {
      */
     function createAVSRewardsSubmission(IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions) external;
 
-    // EVENTS
-    event RewardsInitiatorUpdated(address prevRewardsInitiator, address newRewardsInitiator);
+    /*******************************************************************************
+                                PERMISSIONCONTROLLER FUNCTIONS
+    *******************************************************************************/
+    /**
+     * @notice Calls `addPendingAdmin` on the `PermissionController` contract
+     * with `account` being the address of this contract.
+     * @param admin The address of the admin to add
+     * @dev Only callable by the owner of the contract
+     */
+    function addPendingAdmin(address admin) external;
+
+    /**
+     * @notice Calls `removePendingAdmin` on the `PermissionController` contract
+     * with `account` being the address of this contract.
+     * @param pendingAdmin The address of the pending admin to remove
+     * @dev Only callable by the owner of the contract
+     */
+    function removePendingAdmin(address pendingAdmin) external;
+
+    /**
+     * @notice Calls `removeAdmin` on the `PermissionController` contract
+     * with `account` being the address of this contract.
+     * @param admin The address of the admin to remove
+     * @dev Only callable by the owner of the contract
+     */
+    function removeAdmin(address admin) external;
+
+    /**
+     * @notice Calls `setAppointee` on the `PermissionController` contract
+     * with `account` being the address of this contract.
+     * @param appointee The address of the appointee to set
+     * @param target The address of the target to set the appointee for
+     * @param selector The function selector to set the appointee for
+     * @dev Only callable by the owner of the contract
+     */
+    function setAppointee(
+        address appointee,
+        address target,
+        bytes4 selector
+    ) external;
+
+    /**
+     * @notice Calls `removeAppointee` on the `PermissionController` contract
+     * with `account` being the address of this contract.
+     * @param appointee The address of the appointee to remove
+     * @param target The address of the target to remove the appointee for
+     * @param selector The function selector to remove the appointee for
+     * @dev Only callable by the owner of the contract
+     */
+    function removeAppointee(
+        address appointee,
+        address target,
+        bytes4 selector
+    ) external;
 }

@@ -13,7 +13,6 @@ import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
-import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {LibMergeSort} from "./libraries/LibMergeSort.sol";
@@ -67,8 +66,37 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _setRewardsInitiator(_rewardsInitiator);
     }
 
-    function addPendingAdmin(address account, address admin) external onlyOwner {
-        _permissionController.addPendingAdmin(account, admin);
+    /// @inheritdoc IServiceManager
+    function addPendingAdmin(address admin) external onlyOwner {
+        _permissionController.addPendingAdmin(address(this), admin);
+    }
+
+    /// @inheritdoc IServiceManager
+    function removePendingAdmin(address pendingAdmin) external onlyOwner {
+        _permissionController.removePendingAdmin(address(this), pendingAdmin);
+    }
+
+    /// @inheritdoc IServiceManager
+    function removeAdmin(address admin) external onlyOwner {
+        _permissionController.removeAdmin(address(this), admin);
+    }
+
+    /// @inheritdoc IServiceManager
+    function setAppointee(
+        address appointee,
+        address target,
+        bytes4 selector
+    ) external onlyOwner {
+        _permissionController.setAppointee(address(this), appointee, target, selector);
+    }
+
+    /// @inheritdoc IServiceManager
+    function removeAppointee(
+        address appointee,
+        address target,
+        bytes4 selector
+    ) external onlyOwner {
+        _permissionController.removeAppointee(address(this), appointee, target, selector);
     }
 
     /**
