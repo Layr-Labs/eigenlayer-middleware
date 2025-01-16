@@ -332,7 +332,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         cheats.stopPrank();
 
         StakeRegistry stakeRegistryImplementation = new StakeRegistry(
-            IRegistryCoordinator(registryCoordinator), IDelegationManager(delegationManager), IAVSDirectory(avsDirectory), IServiceManager(serviceManager)
+            IRegistryCoordinator(registryCoordinator), IDelegationManager(delegationManager), IAVSDirectory(avsDirectory), allocationManager, IServiceManager(serviceManager)
         );
         BLSApkRegistry blsApkRegistryImplementation =
             new BLSApkRegistry(IRegistryCoordinator(registryCoordinator));
@@ -343,7 +343,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             rewardsCoordinator,
             IRegistryCoordinator(registryCoordinator),
             stakeRegistry,
-            allocationManager
+            permissionController
         );
 
         proxyAdmin.upgrade(
@@ -368,15 +368,14 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
         serviceManager.initialize({
             initialOwner: registryCoordinatorOwner,
-            rewardsInitiator: address(msg.sender),
-            slasher: address(msg.sender)
+            rewardsInitiator: address(msg.sender)
         });
 
         StakeType[] memory quorumStakeTypes = new StakeType[](0);
         uint32[] memory slashableStakeQuorumLookAheadPeriods = new uint32[](0);
 
         RegistryCoordinator registryCoordinatorImplementation =
-            new RegistryCoordinator(serviceManager, stakeRegistry, blsApkRegistry, indexRegistry, pauserRegistry);
+            new RegistryCoordinator(serviceManager, stakeRegistry, blsApkRegistry, indexRegistry, allocationManager, pauserRegistry);
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(registryCoordinator))),
             address(registryCoordinatorImplementation),

@@ -206,7 +206,7 @@ contract MockAVSDeployer is Test {
         cheats.startPrank(proxyAdminOwner);
 
         stakeRegistryImplementation =
-            new StakeRegistryHarness(IRegistryCoordinator(registryCoordinator), delegationMock, avsDirectory, serviceManager);
+            new StakeRegistryHarness(IRegistryCoordinator(registryCoordinator), delegationMock, avsDirectory, allocationManagerMock, serviceManager);
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(stakeRegistry))),
             address(stakeRegistryImplementation)
@@ -229,7 +229,7 @@ contract MockAVSDeployer is Test {
             IRewardsCoordinator(address(rewardsCoordinatorMock)),
             registryCoordinator,
             stakeRegistry,
-            allocationManager
+            permissionControllerMock
         );
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(serviceManager))),
@@ -250,8 +250,7 @@ contract MockAVSDeployer is Test {
 
         serviceManager.initialize({
             initialOwner: registryCoordinatorOwner,
-            rewardsInitiator: proxyAdminOwner,
-            slasher: proxyAdminOwner
+            rewardsInitiator: proxyAdminOwner
         });
 
         // set the public key for an operator, using harnessed function to bypass checks
@@ -274,7 +273,7 @@ contract MockAVSDeployer is Test {
         }
 
         registryCoordinatorImplementation = new RegistryCoordinatorHarness(
-            serviceManager, stakeRegistry, blsApkRegistry, indexRegistry, pauserRegistry
+            serviceManager, stakeRegistry, blsApkRegistry, indexRegistry, allocationManagerMock, pauserRegistry
         );
         {
             delete operatorSetParams;

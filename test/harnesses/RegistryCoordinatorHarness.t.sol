@@ -12,8 +12,9 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         IStakeRegistry _stakeRegistry,
         IBLSApkRegistry _blsApkRegistry,
         IIndexRegistry _indexRegistry,
+        IAllocationManager _allocationManager,
         IPauserRegistry _pauserRegistry
-    ) RegistryCoordinator(_serviceManager, _stakeRegistry, _blsApkRegistry, _indexRegistry, _pauserRegistry) {
+    ) RegistryCoordinator(_serviceManager, _stakeRegistry, _blsApkRegistry, _indexRegistry, _allocationManager, _pauserRegistry) {
         _transferOwnership(msg.sender);
     }
 

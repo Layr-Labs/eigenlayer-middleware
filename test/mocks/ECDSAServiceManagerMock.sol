@@ -28,21 +28,21 @@ contract ECDSAServiceManagerMock is ECDSAServiceManagerBase {
         __ServiceManagerBase_init(initialOwner, rewardsInitiator);
     }
 
-    function createOperatorSets(IAllocationManager.CreateSetParams[] memory params) external{}
+    function addPendingAdmin(address admin) external {}
 
-    function addStrategyToOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external{}
+    function removePendingAdmin(address pendingAdmin) external {}
 
-    function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external{}
+    function removeAdmin(address admin) external {}
 
-    function registerOperatorToOperatorSets(
-        address operator,
-        uint32[] calldata operatorSetIds,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    function setAppointee(
+        address appointee,
+        address target,
+        bytes4 selector
     ) external {}
 
-    function deregisterOperatorFromOperatorSets(address operator, uint32[] calldata operatorSetIds) external{}
-
-    function slashOperator(IAllocationManagerTypes.SlashingParams memory params) external override {
-        // Mock implementation - no actual slashing occurs
-    }
+    function removeAppointee(
+        address appointee,
+        address target,
+        bytes4 selector
+    ) external {}
 }

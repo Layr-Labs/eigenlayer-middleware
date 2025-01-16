@@ -5,6 +5,8 @@ import "../utils/MockAVSDeployer.sol";
 import {IRegistryCoordinatorErrors} from "../../src/interfaces/IRegistryCoordinator.sol";
 import {QuorumBitmapHistoryLib} from "../../src/libraries/QuorumBitmapHistoryLib.sol";
 import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
+import {console} from "forge-std/console.sol";
+
 
 contract RegistryCoordinatorUnitTests is MockAVSDeployer {
     using BN254 for BN254.G1Point;
@@ -1891,7 +1893,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
 
 contract RegistryCoordinatorUnitTests_BeforeMigration is RegistryCoordinatorUnitTests {
     function test_registerALMHook_Reverts() public {
-        cheats.prank(address(serviceManager.allocationManager()));
+        cheats.prank(address(registryCoordinator.allocationManager()));
         cheats.expectRevert();
         registryCoordinator.registerOperator(defaultOperator, new uint32[](0), abi.encode(defaultSocket, pubkeyRegistrationParams));
     }
@@ -1899,7 +1901,7 @@ contract RegistryCoordinatorUnitTests_BeforeMigration is RegistryCoordinatorUnit
     function test_deregisterALMHook_Reverts() public {
         uint32[] memory operatorSetIds = new uint32[](1);
         operatorSetIds[0] = 0;
-        cheats.prank(address(serviceManager.allocationManager()));
+        cheats.prank(address(registryCoordinator.allocationManager()));
         cheats.expectRevert();
         registryCoordinator.deregisterOperator(defaultOperator, operatorSetIds);
     }
@@ -2162,8 +2164,7 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
 
         bytes memory data = abi.encode(socket, params);
 
-        address allocationManager = address(serviceManager.allocationManager());
-        cheats.prank(allocationManager);
+        cheats.prank(address(registryCoordinator.allocationManager()));
         registryCoordinator.registerOperator(defaultOperator, operatorSetIds, data);
     }
 
@@ -2225,8 +2226,7 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         );
 
         // Prank as allocation manager and call register hook
-        address allocationManager = address(serviceManager.allocationManager());
-        cheats.prank(allocationManager);
+        cheats.prank(address(registryCoordinator.allocationManager()));
         registryCoordinator.registerOperator(defaultOperator, operatorSetIds, registerParams);
     }
 
@@ -2304,8 +2304,7 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         bytes memory data = abi.encode(socket, params);
 
 
-        address allocationManager = address(serviceManager.allocationManager());
-        cheats.startPrank(allocationManager);
+        cheats.startPrank(address(registryCoordinator.allocationManager()));
         registryCoordinator.registerOperator(defaultOperator, operatorSetIds, data);
 
         registryCoordinator.deregisterOperator(defaultOperator, operatorSetIds);
@@ -2313,7 +2312,7 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         cheats.stopPrank();
     }
 
-        function test_registerHook_Reverts_WhenNotALM() public {
+    function test_registerHook_Reverts_WhenNotALM() public {
 
         _deployMockEigenLayerAndAVS(0);
         // Enable operator sets first
@@ -2406,8 +2405,7 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         bytes memory data = abi.encode(socket, params);
 
 
-        address allocationManager = address(serviceManager.allocationManager());
-        cheats.startPrank(allocationManager);
+        cheats.prank(address(registryCoordinator.allocationManager()));
         registryCoordinator.registerOperator(defaultOperator, operatorSetIds, data);
         cheats.stopPrank();
 

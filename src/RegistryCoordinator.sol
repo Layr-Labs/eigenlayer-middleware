@@ -388,6 +388,7 @@ contract RegistryCoordinator is
         // - all quorums should exist (checked against `quorumCount` in orderedBytesArrayToBitmap)
         // - there should be no duplicates in `quorumNumbers`
         // - there should be one list of operators per quorum
+        BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount);
         require(
             operatorsPerQuorum.length == quorumNumbers.length,
             InputLengthMismatch()

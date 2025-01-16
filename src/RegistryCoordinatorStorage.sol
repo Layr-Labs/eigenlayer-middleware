@@ -44,7 +44,7 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
 
     /// EigenLayer contracts
     /// @notice the AllocationManager that tracks OperatorSets and Slashing in EigenLayer
-    IAllocationManager public allocationManager;
+    IAllocationManager public immutable allocationManager;
 
     /*******************************************************************************
                                        STATE

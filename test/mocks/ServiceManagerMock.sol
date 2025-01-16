@@ -9,22 +9,21 @@ contract ServiceManagerMock is ServiceManagerBase {
         IRewardsCoordinator _rewardsCoordinator,
         IRegistryCoordinator _registryCoordinator,
         IStakeRegistry _stakeRegistry,
-        IAllocationManager _allocationManager
+        IPermissionController _permissionController
     )
         ServiceManagerBase(
             _avsDirectory,
             _rewardsCoordinator,
             _registryCoordinator,
             _stakeRegistry,
-            _allocationManager
+            _permissionController
         )
     {}
 
     function initialize(
         address initialOwner,
-        address rewardsInitiator,
-        address slasher
+        address rewardsInitiator
     ) public virtual initializer {
-        __ServiceManagerBase_init(initialOwner, rewardsInitiator, slasher);
+        __ServiceManagerBase_init(initialOwner, rewardsInitiator);
     }
 }
