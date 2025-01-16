@@ -7,7 +7,7 @@ import {SlasherBase} from "./base/SlasherBase.sol";
 import {IServiceManager} from "../interfaces/IServiceManager.sol";
 
 
-contract VetoableSlashing is SlasherBase {
+contract VetoableSlasher is SlasherBase {
     uint256 public constant VETO_PERIOD = 3 days;
     address public vetoCommittee;
 
