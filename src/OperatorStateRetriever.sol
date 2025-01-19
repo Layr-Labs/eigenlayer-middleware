@@ -27,7 +27,7 @@ contract OperatorStateRetriever {
     }
 
     /**
-     * @notice This function is intended to to be called by AVS operators every time a new task is created (i.e.)
+     * @notice This function is intended to be called by AVS operators every time a new task is created (i.e.)
      * the AVS coordinator makes a request to AVS operators. Since all of the crucial information is kept onchain, 
      * operators don't need to run indexers to fetch the data.
      * @param registryCoordinator is the registry coordinator to fetch the AVS registry information from

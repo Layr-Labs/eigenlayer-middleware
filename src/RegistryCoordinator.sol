@@ -878,7 +878,7 @@ contract RegistryCoordinator is
     }
 
     /**
-     * @notice Public function for the the churnApprover signature hash calculation when operators are being kicked from quorums
+     * @notice Public function for the churnApprover signature hash calculation when operators are being kicked from quorums
      * @param registeringOperatorId The id of the registering operator 
      * @param operatorKickParams The parameters needed to kick the operator from the quorums that have reached their caps
      * @param salt The salt to use for the churnApprover's signature
