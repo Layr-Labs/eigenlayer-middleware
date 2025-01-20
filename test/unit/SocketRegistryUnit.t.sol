@@ -24,26 +24,4 @@ contract SocketRegistryUnitTests is MockAVSDeployer {
         socketRegistry.setOperatorSocket(defaultOperatorId, "testSocket");
     }
 
-    function test_migrateOperatorSockets() public {
-        bytes32[] memory operatorIds = new bytes32[](1);
-        operatorIds[0] = defaultOperatorId;
-        string[] memory sockets = new string[](1);
-        sockets[0] = "testSocket";
-
-        vm.startPrank(registryCoordinator.owner());
-        socketRegistry.migrateOperatorSockets(operatorIds, sockets);
-        assertEq(socketRegistry.getOperatorSocket(defaultOperatorId), "testSocket");
-    }
-
-    function test_migrateOperatorSockets_revert_notCoordinatorOwner() public {
-        bytes32[] memory operatorIds = new bytes32[](1);
-        operatorIds[0] = defaultOperatorId;
-        string[] memory sockets = new string[](1);
-        sockets[0] = "testSocket";
-
-        vm.startPrank(address(0));
-        vm.expectRevert("SocketRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator");
-        socketRegistry.migrateOperatorSockets(operatorIds, sockets);
-    }
-
 }

@@ -37,13 +37,6 @@ contract SocketRegistry is ISocketRegistry {
         operatorIdToSocket[_operatorId] = _socket;
     }
 
-    /// @notice migrates the sockets for a list of operators only callable by the owner of the RegistryCoordinator
-    function migrateOperatorSockets(bytes32[] memory _operatorIds, string[] memory _sockets) external onlyCoordinatorOwner {
-        for (uint256 i = 0; i < _operatorIds.length; i++) {
-            operatorIdToSocket[_operatorIds[i]] = _sockets[i];
-        }
-    }
-
     /// @notice gets the stored socket for an operator
     function getOperatorSocket(bytes32 _operatorId) external view returns (string memory) {
         return operatorIdToSocket[_operatorId];
