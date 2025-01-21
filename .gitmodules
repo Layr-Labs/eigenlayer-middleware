@@ -5,9 +5,6 @@
 	path = lib/eigenlayer-contracts
 	url = https://github.com/Layr-labs/eigenlayer-contracts
 	branch = dev
-[submodule "lib/ds-test"]
-	path = lib/ds-test
-	url = https://github.com/dapphub/ds-test
 [submodule "lib/openzeppelin-contracts"]
 	path = lib/openzeppelin-contracts
 	url = https://github.com/Openzeppelin/openzeppelin-contracts

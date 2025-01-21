@@ -27,7 +27,9 @@ contract ECDSAStakeRegistryPermissioned is ECDSAStakeRegistry {
     /// @dev Custom error to signal that an operator is already allowlisted.
     error OperatorAlreadyAllowlisted();
 
-    constructor(IDelegationManager _delegationManager) ECDSAStakeRegistry(_delegationManager) {
+    constructor(
+        IDelegationManager _delegationManager
+    ) ECDSAStakeRegistry(_delegationManager) {
         // _disableInitializers();
     }
 
@@ -63,38 +65,40 @@ contract ECDSAStakeRegistryPermissioned is ECDSAStakeRegistry {
     /// Doesn't register the operator into the operator set
     /// @param _operator The address of the operator to allowlist.
     function _permitOperator(address _operator) internal {
-        if (allowlistedOperators[_operator]){
+        if (allowlistedOperators[_operator]) {
             revert OperatorAlreadyAllowlisted();
         }
         allowlistedOperators[_operator] = true;
         emit OperatorPermitted(_operator);
-
     }
 
     /// @dev Removes an operator from the allowlist.
     /// If the operator is registered, also deregisters the operator.
     /// @param _operator The address of the operator to be revoked.
     function _revokeOperator(address _operator) internal {
-        if (!allowlistedOperators[_operator]){
+        if (!allowlistedOperators[_operator]) {
             revert OperatorNotAllowlisted();
         }
         delete allowlistedOperators[_operator];
         emit OperatorRevoked(_operator);
-        if (_operatorRegistered[_operator]){
+        if (_operatorRegistered[_operator]) {
             _ejectOperator(_operator);
         }
-
     }
 
     /// @inheritdoc ECDSAStakeRegistry
     function _registerOperatorWithSig(
         address _operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature
+        ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature,
+        address _operatorSigningKey
     ) internal override {
-        if (allowlistedOperators[_operator] != true){
+        if (allowlistedOperators[_operator] != true) {
             revert OperatorNotAllowlisted();
         }
-        super._registerOperatorWithSig(_operator, _operatorSignature);
+        super._registerOperatorWithSig(
+            _operator,
+            _operatorSignature,
+            _operatorSigningKey
+        );
     }
 }
-

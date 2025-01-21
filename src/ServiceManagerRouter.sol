@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import {IServiceManager} from "./interfaces/IServiceManager.sol";
+import {IServiceManagerUI} from "./interfaces/IServiceManagerUI.sol";
 
 /**
  * @title Contract that proxies calls to a ServiceManager contract.
@@ -20,7 +20,7 @@ contract ServiceManagerRouter {
      */
     function getRestakeableStrategies(address serviceManager) external view returns (address[] memory) {
         bytes memory data = abi.encodeWithSelector(
-            IServiceManager.getRestakeableStrategies.selector
+            IServiceManagerUI.getRestakeableStrategies.selector
         );
         return _makeCall(serviceManager, data);
     }
@@ -32,7 +32,7 @@ contract ServiceManagerRouter {
      */
     function getOperatorRestakedStrategies(address serviceManager, address operator) external view returns (address[] memory) {
         bytes memory data = abi.encodeWithSelector(
-            IServiceManager.getOperatorRestakedStrategies.selector,
+            IServiceManagerUI.getOperatorRestakedStrategies.selector,
             operator
         );
         return _makeCall(serviceManager, data);

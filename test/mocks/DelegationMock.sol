@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 
-import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
-import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
-import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 
 contract DelegationMock is IDelegationManager {
     mapping(address => bool) public isOperator;
     mapping(address => mapping(IStrategy => uint256)) public operatorShares;
+
+    function getDelegatableShares(address staker) external view returns (IStrategy[] memory, uint256[] memory) {}
+
+    function setMinWithdrawalDelayBlocks(uint256 newMinWithdrawalDelayBlocks) external {}
+
+    function setStrategyWithdrawalDelayBlocks(IStrategy[] calldata strategies, uint256[] calldata withdrawalDelayBlocks) external {}
 
     function setIsOperator(address operator, bool _isOperatorReturnValue) external {
         isOperator[operator] = _isOperatorReturnValue;
@@ -24,7 +27,7 @@ contract DelegationMock is IDelegationManager {
     mapping (address => address) public delegatedTo;
 
     function registerAsOperator(OperatorDetails calldata /*registeringOperatorDetails*/, string calldata /*metadataURI*/) external pure {}
-
+    
     function updateOperatorMetadataURI(string calldata /*metadataURI*/) external pure {}
 
     function updateAVSMetadataURI(string calldata /*metadataURI*/) external pure {}
@@ -65,10 +68,6 @@ contract DelegationMock is IDelegationManager {
         return returnValue;
     }
 
-    function earningsReceiver(address operator) external pure returns (address) {
-        return operator;
-    }
-
     function delegationApprover(address operator) external pure returns (address) {
         return operator;
     }
@@ -77,31 +76,34 @@ contract DelegationMock is IDelegationManager {
         return 0;
     }
 
-    function minWithdrawalDelayBlocks() external view returns (uint256) {
-        return 50400;
+    function minWithdrawalDelayBlocks() external pure returns (uint256) {
+        return 0;
     }
+
+    /// @notice return address of the beaconChainETHStrategy
+    function beaconChainETHStrategy() external view returns (IStrategy) {}
 
     /**
      * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
      * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
      */
-    function strategyWithdrawalDelayBlocks(IStrategy /*strategy*/) external view returns (uint256) {
+    function strategyWithdrawalDelayBlocks(IStrategy /*strategy*/) external pure returns (uint256) {
         return 0;
     }
-
+    
     function getOperatorShares(
         address operator,
         IStrategy[] memory strategies
     ) external view returns (uint256[] memory) {
         uint256[] memory shares = new uint256[](strategies.length);
-        for (uint256 i = 0; i < strategies.length; ++i) {
+        for (uint256 i = 0; i < strategies.length; i++) {
             shares[i] = operatorShares[operator][strategies[i]];
         }
         return shares;
     }
 
-    function getWithdrawalDelay(IStrategy[] calldata /*strategies*/) public view returns (uint256) {
-        return 0;
+    function getWithdrawalDelay(IStrategy[] calldata /*strategies*/) public pure returns (uint256) {
+        return type(uint256).max;
     }
 
     function isDelegated(address staker) external view returns (bool) {
@@ -143,13 +145,19 @@ contract DelegationMock is IDelegationManager {
 
     function DELEGATION_APPROVAL_TYPEHASH() external view returns (bytes32) {}
 
-    function domainSeparator() external view returns (bytes32) {}
+    function OPERATOR_AVS_REGISTRATION_TYPEHASH() external view returns (bytes32) {}
 
     function cumulativeWithdrawalsQueued(address staker) external view returns (uint256) {}
 
     function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32) {}
 
+    function registerOperatorToAVS(address operator, ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) external {}
+
+    function deregisterOperatorFromAVS(address operator) external {}
+
     function operatorSaltIsSpent(address avs, bytes32 salt) external view returns (bool) {}
+
+    function domainSeparator() external view returns (bytes32) {}
 
    function queueWithdrawals(
         QueuedWithdrawalParams[] calldata queuedWithdrawalParams
@@ -168,9 +176,7 @@ contract DelegationMock is IDelegationManager {
         uint256[] calldata middlewareTimesIndexes,
         bool[] calldata receiveAsTokens
     ) external {}
-
-    // function migrateQueuedWithdrawals(IStrategyManager.DeprecatedStruct_QueuedWithdrawal[] memory withdrawalsToQueue) external {}
-
+    
     // onlyDelegationManager functions in StrategyManager
     function addShares(
         IStrategyManager strategyManager,
@@ -199,21 +205,5 @@ contract DelegationMock is IDelegationManager {
         IERC20 token
     ) external {
         strategyManager.withdrawSharesAsTokens(recipient, strategy, shares, token);
-    }
-
-    function getDelegatableShares(address staker) external view returns (IStrategy[] memory, uint256[] memory) {
-        IStrategy[] memory strategies;
-        uint256[] memory shares;
-        return (strategies, shares);
-    }
-
-    function beaconChainETHStrategy() external view returns (IStrategy) {
-        return IStrategy(address(0));
-    }
-
-    function setMinWithdrawalDelayBlocks(uint256 newMinWithdrawalDelayBlocks) external {
-    }
-
-    function setStrategyWithdrawalDelayBlocks(IStrategy[] calldata strategies, uint256[] calldata withdrawalDelayBlocks) external {
     }
 }
