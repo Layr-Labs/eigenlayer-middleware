@@ -7,10 +7,10 @@ import {IDelegationManager} from
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 import {
-    ECDSAStakeRegistryEventsAndErrors,
-    Quorum,
-    StrategyParams
-} from "../../src/interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
+    IECDSAStakeRegistry,
+    IECDSAStakeRegistryTypes,
+    IECDSAStakeRegistryErrors
+} from "../../src/interfaces/IECDSAStakeRegistry.sol";
 import {ECDSAStakeRegistrySetup} from "./ECDSAStakeRegistryUnit.t.sol";
 import {ECDSAStakeRegistryPermissioned} from
     "../../src/unaudited/examples/ECDSAStakeRegistryPermissioned.sol";
@@ -23,7 +23,8 @@ contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         permissionedRegistry =
             new ECDSAStakeRegistryPermissioned(IDelegationManager(address(mockDelegationManager)));
         IStrategy mockStrategy = IStrategy(address(0x1234));
-        Quorum memory quorum = Quorum({strategies: new StrategyParams[](1)});
+        IECDSAStakeRegistryTypes.Quorum memory quorum =
+            IECDSAStakeRegistryTypes.Quorum({strategies: new StrategyParams[](1)});
         quorum.strategies[0] = StrategyParams({strategy: mockStrategy, multiplier: 10_000});
         permissionedRegistry.initialize(address(mockServiceManager), 100, quorum);
 
@@ -75,7 +76,9 @@ contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
     function test_RevertsWhen_NotOperator_EjectOperator() public {
         address notOperator = address(0xBEEF);
-        vm.expectRevert(abi.encodeWithSelector(OperatorNotRegistered.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(IECDSAStakeRegistryErrors.OperatorNotRegistered.selector)
+        );
         permissionedRegistry.ejectOperator(notOperator);
     }
 

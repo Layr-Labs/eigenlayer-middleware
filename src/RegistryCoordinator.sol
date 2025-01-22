@@ -56,7 +56,7 @@ contract RegistryCoordinator is SlashingRegistryCoordinator, IRegistryCoordinato
     function registerOperator(
         bytes memory quorumNumbers,
         string memory socket,
-        IBLSApkRegistry.PubkeyRegistrationParams memory params,
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         require(!m2QuorumsDisabled, M2QuorumsAlreadyDisabled());
@@ -104,7 +104,7 @@ contract RegistryCoordinator is SlashingRegistryCoordinator, IRegistryCoordinato
     function registerOperatorWithChurn(
         bytes calldata quorumNumbers,
         string memory socket,
-        IBLSApkRegistry.PubkeyRegistrationParams memory params,
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params,
         OperatorKickParam[] memory operatorKickParams,
         SignatureWithSaltAndExpiry memory churnApproverSignature,
         SignatureWithSaltAndExpiry memory operatorSignature

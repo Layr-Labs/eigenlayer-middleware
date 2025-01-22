@@ -2,131 +2,167 @@
 pragma solidity ^0.8.27;
 
 import "../../src/interfaces/IRegistryCoordinator.sol";
-import "../../src/interfaces/ISlashingRegistryCoordinator.sol";
+import "../../src/libraries/BN254.sol";
 
+abstract contract RegistryCoordinatorMock is IRegistryCoordinator {
+    // Add missing function declarations from interface
+    function OPERATOR_CHURN_APPROVAL_TYPEHASH() external pure virtual returns (bytes32);
+    function PUBKEY_REGISTRATION_TYPEHASH() external pure virtual returns (bytes32);
+    function allocationManager() external view virtual returns (IAllocationManager);
+    function calculateOperatorChurnApprovalDigestHash(
+        address registeringOperator,
+        bytes32 registeringOperatorId,
+        OperatorKickParam[] memory operatorKickParams,
+        bytes32 salt,
+        uint256 expiry
+    ) external view virtual returns (bytes32);
+    function churnApprover() external view virtual returns (address);
+    function createSlashableStakeQuorum(
+        OperatorSetParam memory operatorSetParams,
+        uint96 minimumStake,
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams,
+        uint32 lookAheadPeriod
+    ) external virtual;
+    function createTotalDelegatedStakeQuorum(
+        OperatorSetParam memory operatorSetParams,
+        uint96 minimumStake,
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams
+    ) external virtual;
+    function deregisterOperator(
+        address operator,
+        uint32[] memory operatorSetIds
+    ) external virtual;
+    function ejectionCooldown() external view virtual returns (uint256);
+    function ejector() external view virtual returns (address);
+    function enableOperatorSets() external virtual;
+    function initialize(
+        address _initialOwner,
+        address _churnApprover,
+        address _ejector,
+        uint256 _initialPausedStatus,
+        OperatorSetParam[] memory _operatorSetParams,
+        uint96[] memory _minimumStakes,
+        IStakeRegistryTypes.StrategyParams[][] memory _strategyParams,
+        IStakeRegistryTypes.StakeType[] memory _stakeTypes,
+        uint32[] memory _lookAheadPeriods
+    ) external virtual;
+    function isChurnApproverSaltUsed(
+        bytes32 salt
+    ) external view virtual returns (bool);
+    function isUsingOperatorSets() external view virtual returns (bool);
+    function lastEjectionTimestamp(
+        address operator
+    ) external view virtual returns (uint256);
+    function registerOperator(
+        address operator,
+        uint32[] memory operatorSetIds,
+        bytes memory data
+    ) external virtual;
+    function registerOperator(
+        bytes memory quorumNumbers,
+        string memory socket,
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) external virtual;
+    function registerOperatorWithChurn(
+        bytes calldata quorumNumbers,
+        string memory socket,
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params,
+        OperatorKickParam[] memory operatorKickParams,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) external virtual;
+    function setChurnApprover(
+        address _churnApprover
+    ) external virtual;
+    function setEjectionCooldown(
+        uint256 _ejectionCooldown
+    ) external virtual;
+    function setEjector(
+        address _ejector
+    ) external virtual;
+    function setOperatorSetParams(
+        uint8 quorumNumber,
+        OperatorSetParam memory operatorSetParams
+    ) external virtual;
+    function updateOperators(
+        address[] memory operators
+    ) external virtual;
+    function updateOperatorsForQuorum(
+        address[][] memory operatorsPerQuorum,
+        bytes calldata quorumNumbers
+    ) external virtual;
+    function updateSocket(
+        string memory socket
+    ) external virtual;
 
-contract RegistryCoordinatorMock is ISlashingRegistryCoordinator, IRegistryCoordinator {
-    function blsApkRegistry() external view returns (IBLSApkRegistry) {}
-
-    function ejectOperator(address operator, bytes calldata quorumNumbers) external {}
-
+    // Keep existing implementations
+    function blsApkRegistry() external view virtual returns (IBLSApkRegistry) {}
+    function ejectOperator(address operator, bytes calldata quorumNumbers) external virtual {}
     function getOperatorSetParams(
         uint8 quorumNumber
-    ) external view returns (OperatorSetParam memory) {}
-
-    function indexRegistry() external view returns (IIndexRegistry) {}
-
-    function stakeRegistry() external view returns (IStakeRegistry) {}
-
-    function quorumCount() external view returns (uint8) {}
-    /// @notice Returns the bitmap of the quorums the operator is registered for.
-    function operatorIdToQuorumBitmap(
-        bytes32 pubkeyHash
-    ) external view returns (uint256) {}
-
+    ) external view virtual returns (OperatorSetParam memory) {}
+    function indexRegistry() external view virtual returns (IIndexRegistry) {}
+    function stakeRegistry() external view virtual returns (IStakeRegistry) {}
+    function quorumCount() external view virtual returns (uint8) {}
     function getOperator(
         address operator
-    ) external view returns (OperatorInfo memory) {}
-
-    /// @notice Returns the stored id for the specified `operator`.
+    ) external view virtual returns (OperatorInfo memory) {}
     function getOperatorId(
         address operator
-    ) external view returns (bytes32) {}
-
-    /// @notice Returns the operator address for the given `operatorId`
+    ) external view virtual returns (bytes32) {}
     function getOperatorFromId(
         bytes32 operatorId
-    ) external view returns (address) {}
-
-    /// @notice Returns the status for the given `operator`
-    function getOperatorStatus(address operator) external view returns (OperatorStatus){}
-
-    /// @notice Returns task number from when `operator` has been registered.
-    function getFromTaskNumberForOperator(
+    ) external view virtual returns (address) {}
+    function getOperatorStatus(
         address operator
-    ) external view returns (uint32) {}
-
+    ) external view virtual returns (OperatorStatus) {}
     function getQuorumBitmapIndicesAtBlockNumber(
         uint32 blockNumber,
         bytes32[] memory operatorIds
-    ) external view returns (uint32[] memory) {}
-
-    /// @notice Returns the quorum bitmap for the given `operatorId` at the given `blockNumber` via the `index`
+    ) external view virtual returns (uint32[] memory) {}
     function getQuorumBitmapAtBlockNumberByIndex(
         bytes32 operatorId,
         uint32 blockNumber,
         uint256 index
-    ) external view returns (uint192) {}
-
-    /// @notice Returns the `index`th entry in the operator with `operatorId`'s bitmap history
+    ) external view virtual returns (uint192) {}
     function getQuorumBitmapUpdateByIndex(
         bytes32 operatorId,
         uint256 index
-    ) external view returns (QuorumBitmapUpdate memory) {}
-
-    /// @notice Returns the current quorum bitmap for the given `operatorId`
+    ) external view virtual returns (QuorumBitmapUpdate memory) {}
     function getCurrentQuorumBitmap(
         bytes32 operatorId
-    ) external view returns (uint192) {}
-
-    /// @notice Returns the length of the quorum bitmap history for the given `operatorId`
+    ) external view virtual returns (uint192) {}
     function getQuorumBitmapHistoryLength(
         bytes32 operatorId
-    ) external view returns (uint256) {}
-
-    function numRegistries() external view returns (uint256) {}
-
+    ) external view virtual returns (uint256) {}
+    function numRegistries() external view virtual returns (uint256) {}
     function registries(
         uint256
-    ) external view returns (address) {}
-
-    function registerOperator(bytes memory quorumNumbers, bytes calldata) external {}
-
-    function deregisterOperator(bytes calldata quorumNumbers, bytes calldata) external {}
+    ) external view virtual returns (address) {}
+    function deregisterOperator(
+        bytes calldata quorumNumbers
+    ) external virtual {}
 
     function pubkeyRegistrationMessageHash(
         address operator
-    ) public view returns (BN254.G1Point memory) {
+    ) public view virtual returns (BN254.G1Point memory) {
         return BN254.hashToG1(keccak256(abi.encode(operator)));
     }
 
     function quorumUpdateBlockNumber(
         uint8 quorumNumber
-    ) external view returns (uint256) {}
-
-    function owner() external view returns (address) {}
-
-    function serviceManager() external view returns (IServiceManager) {}
+    ) external view virtual returns (uint256) {}
+    function owner() external view virtual returns (address) {}
+    function serviceManager() external view virtual returns (IServiceManager) {}
 
     function isM2Quorum(
         uint8 quorumNumber
-    ) external view returns (bool) {
+    ) external view virtual returns (bool) {
         return false;
     }
 
-    function accountIdentifier() external view returns (address) {}
-
-    function deregisterOperator(bytes memory quorumNumbers) external {}
-
-    function enableOperatorSets() external {}
-
-    function registerOperator(
-        bytes memory quorumNumbers,
-        string memory socket,
-        IBLSApkRegistry.PubkeyRegistrationParams memory params,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external {}
-
-    function registerOperatorWithChurn(
-        bytes calldata quorumNumbers,
-        string memory socket,
-        IBLSApkRegistry.PubkeyRegistrationParams memory params,
-        ISlashingRegistryCoordinator.OperatorKickParam[] memory operatorKickParams,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external {}
-
-    function disableM2QuorumRegistration() external {}
-
-    function operatorSetsEnabled() external view returns (bool) {}
+    function isOperatorSetAVS() external view virtual returns (bool) {
+        return false;
+    }
 }

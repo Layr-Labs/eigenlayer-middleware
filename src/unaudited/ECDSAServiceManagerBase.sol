@@ -12,7 +12,7 @@ import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy
 import {IStakeRegistry} from "../interfaces/IStakeRegistry.sol";
 import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
-import {Quorum} from "../interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
+import {IECDSAStakeRegistryTypes} from "../interfaces/IECDSAStakeRegistry.sol";
 import {ECDSAStakeRegistry} from "../unaudited/ECDSAStakeRegistry.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IAllocationManager} from
@@ -197,7 +197,7 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
      * @return strategies An array of addresses representing the strategies in the current quorum.
      */
     function _getRestakeableStrategies() internal view virtual returns (address[] memory) {
-        Quorum memory quorum = ECDSAStakeRegistry(stakeRegistry).quorum();
+        IECDSAStakeRegistryTypes.Quorum memory quorum = ECDSAStakeRegistry(stakeRegistry).quorum();
         address[] memory strategies = new address[](quorum.strategies.length);
         for (uint256 i = 0; i < quorum.strategies.length; i++) {
             strategies[i] = address(quorum.strategies[i].strategy);
@@ -226,7 +226,7 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
     function _getOperatorRestakedStrategies(
         address _operator
     ) internal view virtual returns (address[] memory) {
-        Quorum memory quorum = ECDSAStakeRegistry(stakeRegistry).quorum();
+        IECDSAStakeRegistryTypes.Quorum memory quorum = ECDSAStakeRegistry(stakeRegistry).quorum();
         uint256 count = quorum.strategies.length;
         IStrategy[] memory strategies = new IStrategy[](count);
         for (uint256 i; i < count; i++) {

@@ -58,8 +58,8 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
     /// @notice mapping from quorum number to the list of strategies considered for that specific quorum
     mapping(uint8 quorumNumber => IStrategy[]) public strategiesPerQuorum;
 
-    /// @notice mapping from quorum number to the StakeType for that specific quorum
-    mapping(uint8 quorumNumber => StakeType) public stakeTypePerQuorum;
+    /// @notice mapping from quorum number to the IStakeRegistryTypes.StakeType for that specific quorum
+    mapping(uint8 quorumNumber => IStakeRegistryTypes.StakeType) public stakeTypePerQuorum;
 
     /// @notice mapping from quorum number to the slashable stake look ahead time (in blocks)
     mapping(uint8 quorumNumber => uint32) public slashableStakeLookAheadPerQuorum;

@@ -95,9 +95,9 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
     ) internal {
         uint8 quorumNumber = nextQuorum;
 
-        IStakeRegistry.StrategyParams[] memory strategyParams =
-            new IStakeRegistry.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistry.StrategyParams(
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams(
             IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(quorumNumber)))))),
             uint96(WEIGHTING_DIVISOR)
         );
@@ -107,8 +107,12 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
         cheats.prank(address(registryCoordinator));
         stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
 
-        StakeType stakeType = stakeRegistry.stakeTypePerQuorum(quorumNumber);
-        assertEq(uint8(stakeType), uint8(StakeType.TOTAL_DELEGATED), "invalid stake type");
+        IStakeRegistryTypes.StakeType stakeType = stakeRegistry.stakeTypePerQuorum(quorumNumber);
+        assertEq(
+            uint8(stakeType),
+            uint8(IStakeRegistryTypes.StakeType.TOTAL_DELEGATED),
+            "invalid stake type"
+        );
 
         // Mark quorum initialized for other tests
         initializedQuorumBitmap = uint192(initializedQuorumBitmap.setBit(quorumNumber));
@@ -123,10 +127,10 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
     function _initializeQuorum(uint96 minimumStake, uint256 numStrats) internal returns (uint8) {
         uint8 quorumNumber = nextQuorum;
 
-        IStakeRegistry.StrategyParams[] memory strategyParams =
-            new IStakeRegistry.StrategyParams[](numStrats);
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](numStrats);
         for (uint256 i = 0; i < strategyParams.length; i++) {
-            strategyParams[i] = IStakeRegistry.StrategyParams(
+            strategyParams[i] = IStakeRegistryTypes.StrategyParams(
                 IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(quorumNumber, i)))))),
                 uint96(WEIGHTING_DIVISOR)
             );
@@ -583,7 +587,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
     function testFuzz_initializeQuorum_Revert_WhenNotRegistryCoordinator(
         uint8 quorumNumber,
         uint96 minimumStake,
-        IStakeRegistry.StrategyParams[] memory strategyParams
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams
     ) public {
         cheats.expectRevert(IStakeRegistryErrors.OnlySlashingRegistryCoordinator.selector);
         stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
@@ -592,7 +596,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
     function testFuzz_initializeQuorum_Revert_WhenQuorumAlreadyExists(
         uint8 quorumNumber,
         uint96 minimumStake,
-        IStakeRegistry.StrategyParams[] memory strategyParams
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams
     ) public fuzzOnlyInitializedQuorums(quorumNumber) {
         cheats.expectRevert(IStakeRegistryErrors.QuorumAlreadyExists.selector);
         cheats.prank(address(registryCoordinator));
@@ -604,15 +608,15 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         uint96 minimumStake
     ) public {
         cheats.assume(quorumNumber >= nextQuorum);
-        IStakeRegistry.StrategyParams[] memory strategyParams =
-            new IStakeRegistry.StrategyParams[](0);
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](0);
         cheats.expectRevert(IStakeRegistryErrors.InputArrayLengthZero.selector);
         cheats.prank(address(registryCoordinator));
         stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
 
-        strategyParams = new IStakeRegistry.StrategyParams[](MAX_WEIGHING_FUNCTION_LENGTH + 1);
+        strategyParams = new IStakeRegistryTypes.StrategyParams[](MAX_WEIGHING_FUNCTION_LENGTH + 1);
         for (uint256 i = 0; i < strategyParams.length; i++) {
-            strategyParams[i] = IStakeRegistry.StrategyParams(
+            strategyParams[i] = IStakeRegistryTypes.StrategyParams(
                 IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(i)))))), uint96(1)
             );
         }
@@ -621,46 +625,54 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
     }
 
-    event StakeTypeSet(StakeType newStakeType);
+    event StakeTypeSet(IStakeRegistryTypes.StakeType newStakeType);
 
     function test_initializeDelegatedStakeQuorum() public {
         uint8 quorumNumber = nextQuorum;
         uint96 minimumStake = 0;
-        IStakeRegistry.StrategyParams[] memory strategyParams =
-            new IStakeRegistry.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistry.StrategyParams(
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams(
             IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(quorumNumber)))))),
             uint96(WEIGHTING_DIVISOR)
         );
 
         cheats.prank(address(registryCoordinator));
         cheats.expectEmit(true, true, true, true);
-        emit StakeTypeSet(StakeType.TOTAL_DELEGATED);
+        emit StakeTypeSet(IStakeRegistryTypes.StakeType.TOTAL_DELEGATED);
         stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
 
-        StakeType stakeType = stakeRegistry.stakeTypePerQuorum(quorumNumber);
-        assertEq(uint8(stakeType), uint8(StakeType.TOTAL_DELEGATED), "invalid stake type");
+        IStakeRegistryTypes.StakeType stakeType = stakeRegistry.stakeTypePerQuorum(quorumNumber);
+        assertEq(
+            uint8(stakeType),
+            uint8(IStakeRegistryTypes.StakeType.TOTAL_DELEGATED),
+            "invalid stake type"
+        );
     }
 
     function test_initializeSlashableStakeQuorum() public {
         uint8 quorumNumber = nextQuorum;
         uint96 minimumStake = 0;
-        IStakeRegistry.StrategyParams[] memory strategyParams =
-            new IStakeRegistry.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistry.StrategyParams(
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams(
             IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(quorumNumber)))))),
             uint96(WEIGHTING_DIVISOR)
         );
 
         cheats.prank(address(registryCoordinator));
         cheats.expectEmit(true, true, true, true);
-        emit StakeTypeSet(StakeType.TOTAL_SLASHABLE);
+        emit StakeTypeSet(IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE);
         stakeRegistry.initializeSlashableStakeQuorum(
             quorumNumber, minimumStake, 7 days, strategyParams
         );
 
-        StakeType stakeType = stakeRegistry.stakeTypePerQuorum(quorumNumber);
-        assertEq(uint8(stakeType), uint8(StakeType.TOTAL_SLASHABLE), "invalid stake type");
+        IStakeRegistryTypes.StakeType stakeType = stakeRegistry.stakeTypePerQuorum(quorumNumber);
+        assertEq(
+            uint8(stakeType),
+            uint8(IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE),
+            "invalid stake type"
+        );
     }
 
     /**
@@ -674,11 +686,11 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
     ) public {
         cheats.assume(quorumNumber >= nextQuorum);
         cheats.assume(0 < multipliers.length && multipliers.length <= MAX_WEIGHING_FUNCTION_LENGTH);
-        IStakeRegistry.StrategyParams[] memory strategyParams =
-            new IStakeRegistry.StrategyParams[](multipliers.length);
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](multipliers.length);
         for (uint256 i = 0; i < strategyParams.length; i++) {
             cheats.assume(multipliers[i] > 0);
-            strategyParams[i] = IStakeRegistry.StrategyParams(
+            strategyParams[i] = IStakeRegistryTypes.StrategyParams(
                 IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(i)))))), multipliers[i]
             );
         }
@@ -764,7 +776,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
      */
     function testFuzz_addStrategies_Revert_WhenNotRegistryCoordinatorOwner(
         uint8 quorumNumber,
-        IStakeRegistry.StrategyParams[] memory strategyParams
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams
     ) public fuzzOnlyInitializedQuorums(quorumNumber) {
         cheats.expectRevert(IStakeRegistryErrors.OnlySlashingRegistryCoordinatorOwner.selector);
         stakeRegistry.addStrategies(quorumNumber, strategyParams);
@@ -772,7 +784,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
 
     function testFuzz_addStrategies_Revert_WhenInvalidQuorum(
         uint8 quorumNumber,
-        IStakeRegistry.StrategyParams[] memory strategyParams
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams
     ) public {
         // quorums [0,nextQuorum) are initialized, so use an invalid quorumNumber
         cheats.assume(quorumNumber >= nextQuorum);
@@ -786,10 +798,10 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
 
         IStrategy strat =
             IStrategy(address(uint160(uint256(keccak256(abi.encodePacked("duplicate strat"))))));
-        IStakeRegistry.StrategyParams[] memory strategyParams =
-            new IStakeRegistry.StrategyParams[](2);
-        strategyParams[0] = IStakeRegistry.StrategyParams(strat, uint96(WEIGHTING_DIVISOR));
-        strategyParams[1] = IStakeRegistry.StrategyParams(strat, uint96(WEIGHTING_DIVISOR));
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](2);
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams(strat, uint96(WEIGHTING_DIVISOR));
+        strategyParams[1] = IStakeRegistryTypes.StrategyParams(strat, uint96(WEIGHTING_DIVISOR));
 
         cheats.expectRevert(IStakeRegistryErrors.InputDuplicateStrategy.selector);
         cheats.prank(registryCoordinatorOwner);
@@ -801,9 +813,9 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
 
         IStrategy strat =
             IStrategy(address(uint160(uint256(keccak256(abi.encodePacked("duplicate strat"))))));
-        IStakeRegistry.StrategyParams[] memory strategyParams =
-            new IStakeRegistry.StrategyParams[](2);
-        strategyParams[0] = IStakeRegistry.StrategyParams(strat, 0);
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](2);
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams(strat, 0);
 
         cheats.expectRevert(IStakeRegistryErrors.InputMultiplierZero.selector);
         cheats.prank(registryCoordinatorOwner);
@@ -828,11 +840,11 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
             cheats.assume(multipliers[i] > 0);
         }
         // Expected events emitted
-        IStakeRegistry.StrategyParams[] memory strategyParams =
-            new IStakeRegistry.StrategyParams[](multipliers.length);
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](multipliers.length);
         for (uint256 i = 0; i < strategyParams.length; i++) {
             IStrategy strat = IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(i))))));
-            strategyParams[i] = IStakeRegistry.StrategyParams(strat, multipliers[i]);
+            strategyParams[i] = IStakeRegistryTypes.StrategyParams(strat, multipliers[i]);
 
             cheats.expectEmit(true, true, true, true, address(stakeRegistry));
             emit StrategyAddedToQuorum(quorumNumber, strat);
@@ -1878,7 +1890,7 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
                     "failed to remove delta from total stake"
                 );
                 assertEq(newOperatorStake.stake, 0, "operator stake should now be zero");
-                // Quorum should be added to return bitmap
+                // IECDSAStakeRegistryTypes.Quorum should be added to return bitmap
                 assertTrue(
                     quorumsToRemove.isSet(quorumNumber), "quorum should be in removal bitmap"
                 );
@@ -2091,7 +2103,7 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
                     );
                     // assertEq(prevTotalStake.stake - stakeRemoved, newTotalStake.stake, "failed to remove delta from total stake");
                     assertEq(newOperatorStake.stake, 0, "operator stake should now be zero");
-                    // Quorum should be added to return bitmap
+                    // IECDSAStakeRegistryTypes.Quorum should be added to return bitmap
                     assertTrue(
                         quorumsToRemove.isSet(quorumNumber), "quorum should be in removal bitmap"
                     );
@@ -2167,8 +2179,8 @@ contract StakeRegistryUnitTests_weightOfOperatorForQuorum is StakeRegistryUnitTe
 
         // Initialize quorum with strategies of fuzzed multipliers.
         // Bound multipliers and shares max values to prevent overflows
-        IStakeRegistry.StrategyParams[] memory strategyParams =
-            new IStakeRegistry.StrategyParams[](3);
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](3);
         for (uint256 i = 0; i < strategyParams.length; i++) {
             multipliers[i] = uint96(
                 _randUint({
@@ -2182,8 +2194,9 @@ contract StakeRegistryUnitTests_weightOfOperatorForQuorum is StakeRegistryUnitTe
             IStrategy strat = IStrategy(
                 address(uint160(uint256(keccak256(abi.encodePacked("Voteweighing test", i)))))
             );
-            strategyParams[i] =
-                IStakeRegistry.StrategyParams(strat, uint96(WEIGHTING_DIVISOR) + multipliers[i]);
+            strategyParams[i] = IStakeRegistryTypes.StrategyParams(
+                strat, uint96(WEIGHTING_DIVISOR) + multipliers[i]
+            );
         }
         cheats.prank(address(registryCoordinator));
         uint8 quorumNumber = nextQuorum;
@@ -2223,14 +2236,14 @@ contract StakeRegistryUnitTests_weightOfOperatorForQuorum is StakeRegistryUnitTe
         multipliers[1] = uint96(1_071_364_636_818_145_808);
         multipliers[2] = uint96(1_000_000_000_000_000_000);
 
-        IStakeRegistry.StrategyParams[] memory strategyParams =
-            new IStakeRegistry.StrategyParams[](3);
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](3);
         for (uint256 i = 0; i < strategyParams.length; i++) {
             shares[i] = uint96(_randUint({rand: bytes32(uint256(shares[i])), min: 0, max: 1e24}));
             IStrategy strat = IStrategy(
                 address(uint160(uint256(keccak256(abi.encodePacked("Voteweighing test", i)))))
             );
-            strategyParams[i] = IStakeRegistry.StrategyParams(strat, multipliers[i]);
+            strategyParams[i] = IStakeRegistryTypes.StrategyParams(strat, multipliers[i]);
         }
 
         // create a valid quorum

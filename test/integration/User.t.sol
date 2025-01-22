@@ -16,6 +16,7 @@ import "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
 import "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 
 // Middleware
+import "src/interfaces/IRegistryCoordinator.sol";
 import "src/RegistryCoordinator.sol";
 import "src/BLSApkRegistry.sol";
 import "src/IndexRegistry.sol";
@@ -66,7 +67,7 @@ contract User is Test {
 
     // BLS keypair:
     uint256 privKey;
-    IBLSApkRegistry.PubkeyRegistrationParams pubkeyParams;
+    IBLSApkRegistryTypes.PubkeyRegistrationParams pubkeyParams;
 
     // EIP1271 sigs:
     mapping(bytes32 => bool) digests;
@@ -75,7 +76,7 @@ contract User is Test {
     constructor(
         string memory name,
         uint256 _privKey,
-        IBLSApkRegistry.PubkeyRegistrationParams memory _pubkeyParams
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory _pubkeyParams
     ) {
         IUserDeployer deployer = IUserDeployer(msg.sender);
 
@@ -169,19 +170,21 @@ contract User is Test {
         uint256 stdIdx;
         while (churnIdx + stdIdx < allQuorums.length) {
             if (churnIdx == churnQuorums.length) {
-                kickParams[churnIdx + stdIdx] = ISlashingRegistryCoordinator.OperatorKickParam({
+                kickParams[churnIdx + stdIdx] = IRegistryCoordinatorTypes.OperatorKickParam({
                     quorumNumber: 0,
                     operator: address(0)
                 });
                 stdIdx++;
-            } else if (stdIdx == standardQuorums.length || churnQuorums[churnIdx] < standardQuorums[stdIdx]) {
-                kickParams[churnIdx + stdIdx] = ISlashingRegistryCoordinator.OperatorKickParam({
+            } else if (
+                stdIdx == standardQuorums.length || churnQuorums[churnIdx] < standardQuorums[stdIdx]
+            ) {
+                kickParams[churnIdx + stdIdx] = IRegistryCoordinatorTypes.OperatorKickParam({
                     quorumNumber: uint8(churnQuorums[churnIdx]),
                     operator: address(churnTargets[churnIdx])
                 });
                 churnIdx++;
             } else if (standardQuorums[stdIdx] < churnQuorums[churnIdx]) {
-                kickParams[churnIdx + stdIdx] = ISlashingRegistryCoordinator.OperatorKickParam({
+                kickParams[churnIdx + stdIdx] = IRegistryCoordinatorTypes.OperatorKickParam({
                     quorumNumber: 0,
                     operator: address(0)
                 });
@@ -386,7 +389,7 @@ contract User_AltMethods is User {
     constructor(
         string memory name,
         uint256 _privKey,
-        IBLSApkRegistry.PubkeyRegistrationParams memory _pubkeyParams
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory _pubkeyParams
     ) User(name, _privKey, _pubkeyParams) {}
 
     /// @dev Rather than calling deregisterOperator, this pranks the ejector and calls

@@ -3,7 +3,10 @@ pragma solidity ^0.8.27;
 
 import "../../src/BLSSignatureChecker.sol";
 import "../utils/BLSMockAVSDeployer.sol";
-import {IBLSSignatureCheckerErrors} from "../../src/interfaces/IBLSSignatureChecker.sol";
+import {
+    IBLSSignatureCheckerErrors,
+    IBLSSignatureCheckerTypes
+} from "../../src/interfaces/IBLSSignatureChecker.sol";
 import {IBLSApkRegistryErrors} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {QuorumBitmapHistoryLib} from "../../src/libraries/QuorumBitmapHistoryLib.sol";
 import {IStakeRegistryErrors} from "../../src/interfaces/IStakeRegistry.sol";
@@ -201,8 +204,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
             1, numNonSigners, quorumBitmap
         );
 
-        IBLSSignatureChecker.NonSignerStakesAndSignature memory incorrectLengthInputs =
-        IBLSSignatureChecker.NonSignerStakesAndSignature({
+        IBLSSignatureCheckerTypes.NonSignerStakesAndSignature memory incorrectLengthInputs =
+        IBLSSignatureCheckerTypes.NonSignerStakesAndSignature({
             nonSignerQuorumBitmapIndices: nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices,
             nonSignerPubkeys: nonSignerStakesAndSignature.nonSignerPubkeys,
             quorumApks: nonSignerStakesAndSignature.quorumApks,

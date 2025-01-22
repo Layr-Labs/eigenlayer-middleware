@@ -42,7 +42,7 @@ These methods allow operators to register for/deregister from one or more quorum
 function registerOperator(
     bytes calldata quorumNumbers,
     string calldata socket,
-    IBLSApkRegistry.PubkeyRegistrationParams calldata params,
+    IBLSApkRegistryTypes.PubkeyRegistrationParams calldata params,
     SignatureWithSaltAndExpiry memory operatorSignature
 ) 
     external 
@@ -88,7 +88,7 @@ If the Operator was not currently registered for any quorums, this method will r
 function registerOperatorWithChurn(
     bytes calldata quorumNumbers, 
     string calldata socket,
-    IBLSApkRegistry.PubkeyRegistrationParams calldata params,
+    IBLSApkRegistryTypes.PubkeyRegistrationParams calldata params,
     OperatorKickParam[] calldata operatorKickParams,
     SignatureWithSaltAndExpiry memory churnApproverSignature,
     SignatureWithSaltAndExpiry memory operatorSignature
@@ -256,7 +256,7 @@ These methods are used by the Owner to configure the `RegistryCoordinator`:
 function createQuorum(
     OperatorSetParam memory operatorSetParams,
     uint96 minimumStake,
-    IStakeRegistry.StrategyParams[] memory strategyParams
+    IStakeRegistryTypes.StrategyParams[] memory strategyParams
 ) 
     external
     virtual 

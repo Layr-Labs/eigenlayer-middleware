@@ -7,10 +7,9 @@ import {IDelegationManager} from
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 import {
-    ECDSAStakeRegistryEventsAndErrors,
-    Quorum,
-    StrategyParams
-} from "../../src/interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
+    IECDSAStakeRegistry,
+    IECDSAStakeRegistryTypes
+} from "../../src/interfaces/IECDSAStakeRegistry.sol";
 import {ECDSAStakeRegistrySetup} from "./ECDSAStakeRegistryUnit.t.sol";
 import {ECDSAStakeRegistryEqualWeight} from
     "../../src/unaudited/examples/ECDSAStakeRegistryEqualWeight.sol";
@@ -23,7 +22,8 @@ contract EqualWeightECDSARegistry is ECDSAStakeRegistrySetup {
         fixedWeightRegistry =
             new ECDSAStakeRegistryEqualWeight(IDelegationManager(address(mockDelegationManager)));
         IStrategy mockStrategy = IStrategy(address(0x1234));
-        Quorum memory quorum = Quorum({strategies: new StrategyParams[](1)});
+        IECDSAStakeRegistryTypes.Quorum memory quorum =
+            IECDSAStakeRegistryTypes.Quorum({strategies: new StrategyParams[](1)});
         quorum.strategies[0] = StrategyParams({strategy: mockStrategy, multiplier: 10_000});
         fixedWeightRegistry.initialize(address(mockServiceManager), 100, quorum);
 

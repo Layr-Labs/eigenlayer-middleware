@@ -11,7 +11,7 @@ import {IAllocationManager} from
 import {StakeRegistryStorage, IStrategy} from "./StakeRegistryStorage.sol";
 
 import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
-import {IStakeRegistry, StakeType} from "./interfaces/IStakeRegistry.sol";
+import {IStakeRegistry, IStakeRegistryTypes} from "./interfaces/IStakeRegistry.sol";
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 
@@ -64,19 +64,7 @@ contract StakeRegistry is StakeRegistryStorage {
      *
      */
 
-    /**
-     * @notice Registers the `operator` with `operatorId` for the specified `quorumNumbers`.
-     * @param operator The address of the operator to register.
-     * @param operatorId The id of the operator to register.
-     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
-     * @return The operator's current stake for each quorum, and the total stake for each quorum
-     * @dev access restricted to the RegistryCoordinator
-     * @dev Preconditions (these are assumed, not validated in this contract):
-     *         1) `quorumNumbers` has no duplicates
-     *         2) `quorumNumbers.length` != 0
-     *         3) `quorumNumbers` is ordered in ascending order
-     *         4) the operator is not already registered
-     */
+    /// @inheritdoc IStakeRegistry
     function registerOperator(
         address operator,
         bytes32 operatorId,
@@ -109,18 +97,7 @@ contract StakeRegistry is StakeRegistryStorage {
         return (currentStakes, totalStakes);
     }
 
-    /**
-     * @notice Deregisters the operator with `operatorId` for the specified `quorumNumbers`.
-     * @param operatorId The id of the operator to deregister.
-     * @param quorumNumbers The quorum numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
-     * @dev access restricted to the RegistryCoordinator
-     * @dev Preconditions (these are assumed, not validated in this contract):
-     *         1) `quorumNumbers` has no duplicates
-     *         2) `quorumNumbers.length` != 0
-     *         3) `quorumNumbers` is ordered in ascending order
-     *         4) the operator is not already deregistered
-     *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
-     */
+    /// @inheritdoc IStakeRegistry
     function deregisterOperator(
         bytes32 operatorId,
         bytes calldata quorumNumbers
@@ -145,15 +122,7 @@ contract StakeRegistry is StakeRegistryStorage {
         }
     }
 
-    /**
-     * @notice Called by the registry coordinator to update an operator's stake for one
-     * or more quorums.
-     *
-     * If the operator no longer has the minimum stake required for a quorum, they are
-     * added to the `quorumsToRemove`, which is returned to the registry coordinator
-     * @return A bitmap of quorums where the operator no longer meets the minimum stake
-     * and should be deregistered.
-     */
+    /// @inheritdoc IStakeRegistry
     function updateOperatorStake(
         address operator,
         bytes32 operatorId,
@@ -199,7 +168,7 @@ contract StakeRegistry is StakeRegistryStorage {
         return quorumsToRemove;
     }
 
-    /// @notice Initialize a new quorum and push its first history update
+    /// @inheritdoc IStakeRegistry
     function initializeDelegatedStakeQuorum(
         uint8 quorumNumber,
         uint96 minimumStake,
@@ -208,7 +177,7 @@ contract StakeRegistry is StakeRegistryStorage {
         require(!_quorumExists(quorumNumber), QuorumAlreadyExists());
         _addStrategyParams(quorumNumber, _strategyParams);
         _setMinimumStakeForQuorum(quorumNumber, minimumStake);
-        _setStakeType(quorumNumber, StakeType.TOTAL_DELEGATED);
+        _setStakeType(quorumNumber, IStakeRegistryTypes.StakeType.TOTAL_DELEGATED);
 
         _totalStakeHistory[quorumNumber].push(
             StakeUpdate({
@@ -219,7 +188,7 @@ contract StakeRegistry is StakeRegistryStorage {
         );
     }
 
-    /// @notice Initialize a new quorum and push its first history update
+    /// @inheritdoc IStakeRegistry
     function initializeSlashableStakeQuorum(
         uint8 quorumNumber,
         uint96 minimumStake,
@@ -229,7 +198,7 @@ contract StakeRegistry is StakeRegistryStorage {
         require(!_quorumExists(quorumNumber), QuorumAlreadyExists());
         _addStrategyParams(quorumNumber, _strategyParams);
         _setMinimumStakeForQuorum(quorumNumber, minimumStake);
-        _setStakeType(quorumNumber, StakeType.TOTAL_SLASHABLE);
+        _setStakeType(quorumNumber, IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE);
         _setLookAheadPeriod(quorumNumber, lookAheadPeriod);
 
         _totalStakeHistory[quorumNumber].push(
@@ -241,6 +210,7 @@ contract StakeRegistry is StakeRegistryStorage {
         );
     }
 
+    /// @inheritdoc IStakeRegistry
     function setMinimumStakeForQuorum(
         uint8 quorumNumber,
         uint96 minimumStake
@@ -248,11 +218,7 @@ contract StakeRegistry is StakeRegistryStorage {
         _setMinimumStakeForQuorum(quorumNumber, minimumStake);
     }
 
-    /**
-     * @notice Sets the look ahead time for checking operator shares for a specific quorum
-     * @param quorumNumber The quorum number to set the look ahead period for
-     * @param _lookAheadBlocks The number of blocks to look ahead when checking shares
-     */
+    /// @inheritdoc IStakeRegistry
     function setSlashableStakeLookahead(
         uint8 quorumNumber,
         uint32 _lookAheadBlocks
@@ -260,12 +226,7 @@ contract StakeRegistry is StakeRegistryStorage {
         _setLookAheadPeriod(quorumNumber, _lookAheadBlocks);
     }
 
-    /**
-     * @notice Adds strategies and weights to the quorum
-     * @dev Checks to make sure that the *same* strategy cannot be added multiple times (checks against both against existing and new strategies).
-     * @dev This function has no check to make sure that the strategies for a single quorum have the same underlying asset. This is a concious choice,
-     * since a middleware may want, e.g., a stablecoin quorum that accepts USDC, USDT, DAI, etc. as underlying assets and trades them as "equivalent".
-     */
+    /// @inheritdoc IStakeRegistry
     function addStrategies(
         uint8 quorumNumber,
         StrategyParams[] memory _strategyParams
@@ -287,11 +248,7 @@ contract StakeRegistry is StakeRegistryStorage {
         }
     }
 
-    /**
-     * @notice Remove strategies and their associated weights from the quorum's considered strategies
-     * @dev higher indices should be *first* in the list of @param indicesToRemove, since otherwise
-     * the removal of lower index entries will cause a shift in the indices of the other strategies to remove
-     */
+    /// @inheritdoc IStakeRegistry
     function removeStrategies(
         uint8 quorumNumber,
         uint256[] memory indicesToRemove
@@ -329,12 +286,7 @@ contract StakeRegistry is StakeRegistryStorage {
         }
     }
 
-    /**
-     * @notice Modifies the weights of existing strategies for a specific quorum
-     * @param quorumNumber is the quorum number to which the strategies belong
-     * @param strategyIndices are the indices of the strategies to change
-     * @param newMultipliers are the new multipliers for the strategies
-     */
+    /// @inheritdoc IStakeRegistry
     function modifyStrategyParams(
         uint8 quorumNumber,
         uint256[] calldata strategyIndices,
@@ -585,7 +537,7 @@ contract StakeRegistry is StakeRegistryStorage {
         StrategyParams memory strategyAndMultiplier;
         uint256[] memory strategyShares;
 
-        if (stakeTypePerQuorum[quorumNumber] == StakeType.TOTAL_SLASHABLE) {
+        if (stakeTypePerQuorum[quorumNumber] == IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE) {
             strategyShares = _getSlashableStakePerStrategy(quorumNumber, operator);
             for (uint256 i = 0; i < stratsLength; i++) {
                 strategyAndMultiplier = strategyParams[quorumNumber][i];
@@ -630,13 +582,7 @@ contract StakeRegistry is StakeRegistryStorage {
      *
      */
 
-    /**
-     * @notice Returns whether a quorum is an operator set quorum based on its stake type
-     * @dev A quorum is an operator set quorum if it has TOTAL_SLASHABLE stake type
-     * and is not an M2 quorum
-     * @param quorumNumber The quorum number to check
-     * @return True if the quorum is an operator set quorum
-     */
+    /// @inheritdoc IStakeRegistry
     function isOperatorSetQuorum(
         uint8 quorumNumber
     ) public view returns (bool) {
@@ -645,10 +591,7 @@ contract StakeRegistry is StakeRegistryStorage {
         return isOperatorSet && !isM2;
     }
 
-    /**
-     * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
-     * @dev reverts if the quorum does not exist
-     */
+    /// @inheritdoc IStakeRegistry
     function weightOfOperatorForQuorum(
         uint8 quorumNumber,
         address operator
@@ -657,14 +600,14 @@ contract StakeRegistry is StakeRegistryStorage {
         return stake;
     }
 
-    /// @notice Returns the length of the dynamic array stored in `strategyParams[quorumNumber]`.
+    /// @inheritdoc IStakeRegistry
     function strategyParamsLength(
         uint8 quorumNumber
     ) public view returns (uint256) {
         return strategyParams[quorumNumber].length;
     }
 
-    /// @notice Returns the strategy and weight multiplier for the `index`'th strategy in the quorum `quorumNumber`
+    /// @inheritdoc IStakeRegistry
     function strategyParamsByIndex(
         uint8 quorumNumber,
         uint256 index
@@ -678,9 +621,7 @@ contract StakeRegistry is StakeRegistryStorage {
      *
      */
 
-    /**
-     * @notice Returns the length of an operator's stake history for the given quorum
-     */
+    /// @inheritdoc IStakeRegistry
     function getStakeHistoryLength(
         bytes32 operatorId,
         uint8 quorumNumber
@@ -688,11 +629,7 @@ contract StakeRegistry is StakeRegistryStorage {
         return operatorStakeHistory[operatorId][quorumNumber].length;
     }
 
-    /**
-     * @notice Returns the entire `operatorStakeHistory[operatorId][quorumNumber]` array.
-     * @param operatorId The id of the operator of interest.
-     * @param quorumNumber The quorum number to get the stake for.
-     */
+    /// @inheritdoc IStakeRegistry
     function getStakeHistory(
         bytes32 operatorId,
         uint8 quorumNumber
@@ -700,10 +637,7 @@ contract StakeRegistry is StakeRegistryStorage {
         return operatorStakeHistory[operatorId][quorumNumber];
     }
 
-    /**
-     * @notice Returns the most recent stake weight for the `operatorId` for quorum `quorumNumber`
-     * @dev Function returns weight of **0** in the event that the operator has no stake history
-     */
+    /// @inheritdoc IStakeRegistry
     function getCurrentStake(
         bytes32 operatorId,
         uint8 quorumNumber
@@ -712,10 +646,7 @@ contract StakeRegistry is StakeRegistryStorage {
         return operatorStakeUpdate.stake;
     }
 
-    /**
-     * @notice Returns the most recent stake weight for the `operatorId` for a certain quorum
-     * @dev Function returns an StakeUpdate struct with **every entry equal to 0** in the event that the operator has no stake history
-     */
+    /// @inheritdoc IStakeRegistry
     function getLatestStakeUpdate(
         bytes32 operatorId,
         uint8 quorumNumber
@@ -730,13 +661,7 @@ contract StakeRegistry is StakeRegistryStorage {
         }
     }
 
-    /**
-     * @notice Returns the `index`-th entry in the `operatorStakeHistory[operatorId][quorumNumber]` array.
-     * @param quorumNumber The quorum number to get the stake for.
-     * @param operatorId The id of the operator of interest.
-     * @param index Array index for lookup, within the dynamic array `operatorStakeHistory[operatorId][quorumNumber]`.
-     * @dev Function will revert if `index` is out-of-bounds.
-     */
+    /// @inheritdoc IStakeRegistry
     function getStakeUpdateAtIndex(
         uint8 quorumNumber,
         bytes32 operatorId,
@@ -745,7 +670,7 @@ contract StakeRegistry is StakeRegistryStorage {
         return operatorStakeHistory[operatorId][quorumNumber][index];
     }
 
-    /// @notice Returns the stake of the operator for the provided `quorumNumber` at the given `blockNumber`
+    /// @inheritdoc IStakeRegistry
     function getStakeAtBlockNumber(
         bytes32 operatorId,
         uint8 quorumNumber,
@@ -756,7 +681,7 @@ contract StakeRegistry is StakeRegistryStorage {
         )].stake;
     }
 
-    /// @notice Returns the indices of the operator stakes for the provided `quorumNumber` at the given `blockNumber`
+    /// @inheritdoc IStakeRegistry
     function getStakeUpdateIndexAtBlockNumber(
         bytes32 operatorId,
         uint8 quorumNumber,
@@ -765,16 +690,7 @@ contract StakeRegistry is StakeRegistryStorage {
         return _getStakeUpdateIndexForOperatorAtBlockNumber(operatorId, quorumNumber, blockNumber);
     }
 
-    /**
-     * @notice Returns the stake weight corresponding to `operatorId` for quorum `quorumNumber`, at the
-     * `index`-th entry in the `operatorStakeHistory[operatorId][quorumNumber]` array if it was the operator's
-     * stake at `blockNumber`. Reverts otherwise.
-     * @param quorumNumber The quorum number to get the stake for.
-     * @param operatorId The id of the operator of interest.
-     * @param index Array index for lookup, within the dynamic array `operatorStakeHistory[operatorId][quorumNumber]`.
-     * @param blockNumber Block number to make sure the stake is from.
-     * @dev Function will revert if `index` is out-of-bounds.
-     */
+    /// @inheritdoc IStakeRegistry
     function getStakeAtBlockNumberAndIndex(
         uint8 quorumNumber,
         uint32 blockNumber,
@@ -793,30 +709,21 @@ contract StakeRegistry is StakeRegistryStorage {
      *
      */
 
-    /**
-     * @notice Returns the length of the total stake history for the given quorum
-     */
+    /// @inheritdoc IStakeRegistry
     function getTotalStakeHistoryLength(
         uint8 quorumNumber
     ) external view returns (uint256) {
         return _totalStakeHistory[quorumNumber].length;
     }
 
-    /**
-     * @notice Returns the stake weight from the latest entry in `_totalStakeHistory` for quorum `quorumNumber`.
-     * @dev Will revert if `_totalStakeHistory[quorumNumber]` is empty.
-     */
+    /// @inheritdoc IStakeRegistry
     function getCurrentTotalStake(
         uint8 quorumNumber
     ) external view returns (uint96) {
         return _totalStakeHistory[quorumNumber][_totalStakeHistory[quorumNumber].length - 1].stake;
     }
 
-    /**
-     * @notice Returns the `index`-th entry in the dynamic array of total stake, `_totalStakeHistory` for quorum `quorumNumber`.
-     * @param quorumNumber The quorum number to get the stake for.
-     * @param index Array index for lookup, within the dynamic array `_totalStakeHistory[quorumNumber]`.
-     */
+    /// @inheritdoc IStakeRegistry
     function getTotalStakeUpdateAtIndex(
         uint8 quorumNumber,
         uint256 index
@@ -824,14 +731,7 @@ contract StakeRegistry is StakeRegistryStorage {
         return _totalStakeHistory[quorumNumber][index];
     }
 
-    /**
-     * @notice Returns the total stake weight for quorum `quorumNumber`, at the `index`-th entry in the
-     * `_totalStakeHistory[quorumNumber]` array if it was the stake at `blockNumber`. Reverts otherwise.
-     * @param quorumNumber The quorum number to get the stake for.
-     * @param index Array index for lookup, within the dynamic array `_totalStakeHistory[quorumNumber]`.
-     * @param blockNumber Block number to make sure the stake is from.
-     * @dev Function will revert if `index` is out-of-bounds.
-     */
+    /// @inheritdoc IStakeRegistry
     function getTotalStakeAtBlockNumberFromIndex(
         uint8 quorumNumber,
         uint32 blockNumber,
@@ -842,12 +742,7 @@ contract StakeRegistry is StakeRegistryStorage {
         return totalStakeUpdate.stake;
     }
 
-    /**
-     * @notice Returns the indices of the total stakes for the provided `quorumNumbers` at the given `blockNumber`
-     * @param blockNumber Block number to retrieve the stake indices from.
-     * @param quorumNumbers The quorum numbers to get the stake indices for.
-     * @dev Function will revert if there are no indices for the given `blockNumber`
-     */
+    /// @inheritdoc IStakeRegistry
     function getTotalStakeIndicesAtBlockNumber(
         uint32 blockNumber,
         bytes calldata quorumNumbers
@@ -879,7 +774,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param quorumNumber The quorum number to set the stake type for
      * @param _stakeType The type of stake to track (TOTAL_DELEGATED, TOTAL_SLASHABLE, or BOTH)
      */
-    function _setStakeType(uint8 quorumNumber, StakeType _stakeType) internal {
+    function _setStakeType(uint8 quorumNumber, IStakeRegistryTypes.StakeType _stakeType) internal {
         stakeTypePerQuorum[quorumNumber] = _stakeType;
         emit StakeTypeSet(_stakeType);
     }

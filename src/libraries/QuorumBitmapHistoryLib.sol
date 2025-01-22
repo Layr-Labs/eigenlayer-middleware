@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {ISlashingRegistryCoordinator} from "../interfaces/ISlashingRegistryCoordinator.sol";
+import {
+    IRegistryCoordinator, IRegistryCoordinatorTypes
+} from "../interfaces/IRegistryCoordinator.sol";
 
 /// @title QuorumBitmapHistoryLib
 /// @notice This library operates on the _operatorBitmapHistory in the RegistryCoordinator
@@ -119,7 +121,7 @@ library QuorumBitmapHistoryLib {
         if (historyLength == 0) {
             // No prior bitmap history - push our first entry
             self[operatorId].push(
-                ISlashingRegistryCoordinator.QuorumBitmapUpdate({
+                IRegistryCoordinatorTypes.QuorumBitmapUpdate({
                     updateBlockNumber: uint32(block.number),
                     nextUpdateBlockNumber: 0,
                     quorumBitmap: newBitmap
@@ -139,7 +141,7 @@ library QuorumBitmapHistoryLib {
             } else {
                 lastUpdate.nextUpdateBlockNumber = uint32(block.number);
                 self[operatorId].push(
-                    ISlashingRegistryCoordinator.QuorumBitmapUpdate({
+                    IRegistryCoordinatorTypes.QuorumBitmapUpdate({
                         updateBlockNumber: uint32(block.number),
                         nextUpdateBlockNumber: 0,
                         quorumBitmap: newBitmap
