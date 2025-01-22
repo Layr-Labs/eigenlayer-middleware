@@ -10,7 +10,7 @@
 The `ServiceManagerBase` represents the AVS's address relative to EigenLayer core. When registering or deregistering an operator from an AVS, the AVS's `ServiceManagerBase` communicates this change to the core contracts, allowing the core contracts to maintain an up-to-date view on operator registration status with various AVSs.
 
 *As of M2*:
-* Currently, this contract is used by the `AVSDirectory` to keep track of operator registration and deregistration. Eventually, this relationship will be expanded to allow operators to opt in to slashing and payments for services.
+* Currently, this contract is used by the `AVSDirectory` to keep track of operator registration and deregistration. Eventually, this relationship will be expanded to allow operators to opt in to slashing and rewards for services.
 
 ---    
 

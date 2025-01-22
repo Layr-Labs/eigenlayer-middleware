@@ -57,20 +57,26 @@ contract BLSApkRegistryUnitTests is BLSMockAVSDeployer, IBLSApkRegistryEvents {
         addressIsExcludedFromFuzzedInputs[defaultOperator] = true;
         addressIsExcludedFromFuzzedInputs[address(proxyAdmin)] = true;
 
-        pubkeyRegistrationParams.pubkeyG1 = BN254.generatorG1().scalar_mul(privKey);
+        pubkeyRegistrationParams.pubkeyG1 = BN254.generatorG1().scalar_mul(
+            privKey
+        );
 
         defaultPubkey = pubkeyRegistrationParams.pubkeyG1;
         defaultPubkeyHash = BN254.hashG1Point(defaultPubkey);
 
         //privKey*G2
-        pubkeyRegistrationParams.pubkeyG2.X[1] =
-            19_101_821_850_089_705_274_637_533_855_249_918_363_070_101_489_527_618_151_493_230_256_975_900_223_847;
-        pubkeyRegistrationParams.pubkeyG2.X[0] =
-            5_334_410_886_741_819_556_325_359_147_377_682_006_012_228_123_419_628_681_352_847_439_302_316_235_957;
-        pubkeyRegistrationParams.pubkeyG2.Y[1] =
-            354_176_189_041_917_478_648_604_979_334_478_067_325_821_134_838_555_150_300_539_079_146_482_658_331;
-        pubkeyRegistrationParams.pubkeyG2.Y[0] =
-            4_185_483_097_059_047_421_902_184_823_581_361_466_320_657_066_600_218_863_748_375_739_772_335_928_910;
+        pubkeyRegistrationParams.pubkeyG2.X[
+                1
+            ] = 19_101_821_850_089_705_274_637_533_855_249_918_363_070_101_489_527_618_151_493_230_256_975_900_223_847;
+        pubkeyRegistrationParams.pubkeyG2.X[
+                0
+            ] = 5_334_410_886_741_819_556_325_359_147_377_682_006_012_228_123_419_628_681_352_847_439_302_316_235_957;
+        pubkeyRegistrationParams.pubkeyG2.Y[
+                1
+            ] = 354_176_189_041_917_478_648_604_979_334_478_067_325_821_134_838_555_150_300_539_079_146_482_658_331;
+        pubkeyRegistrationParams.pubkeyG2.Y[
+                0
+            ] = 4_185_483_097_059_047_421_902_184_823_581_361_466_320_657_066_600_218_863_748_375_739_772_335_928_910;
 
         // Initialize 3 quorums
         _initializeQuorum();
@@ -89,7 +95,9 @@ contract BLSApkRegistryUnitTests is BLSMockAVSDeployer, IBLSApkRegistryEvents {
         initializedQuorums[quorumNumber] = true;
 
         // Mark quorum initialized for other tests
-        initializedQuorumBitmap = uint192(initializedQuorumBitmap.setBit(quorumNumber));
+        initializedQuorumBitmap = uint192(
+            initializedQuorumBitmap.setBit(quorumNumber)
+        );
         initializedQuorumBytes = initializedQuorumBitmap.bitmapToBytesArray();
     }
 
@@ -105,7 +113,9 @@ contract BLSApkRegistryUnitTests is BLSMockAVSDeployer, IBLSApkRegistryEvents {
     /// @dev initializeQuorum based on passed in bitmap of quorum numbers
     /// assumes that bitmap does not contain already initailized quorums and doesn't increment nextQuorum
     function _initializeFuzzedQuorums(uint192 bitmap) internal {
-        bytes memory quorumNumbers = bitmapUtilsWrapper.bitmapToBytesArray(bitmap);
+        bytes memory quorumNumbers = bitmapUtilsWrapper.bitmapToBytesArray(
+            bitmap
+        );
 
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
@@ -131,7 +141,9 @@ contract BLSApkRegistryUnitTests is BLSMockAVSDeployer, IBLSApkRegistryEvents {
     }
 
     function _getRandBool(uint256 seed) internal view returns (bool) {
-        uint256 randomNumber = uint256(keccak256(abi.encodePacked(block.timestamp, seed)));
+        uint256 randomNumber = uint256(
+            keccak256(abi.encodePacked(block.timestamp, seed))
+        );
         return randomNumber % 2 == 0;
     }
 
@@ -141,8 +153,11 @@ contract BLSApkRegistryUnitTests is BLSMockAVSDeployer, IBLSApkRegistryEvents {
      *
      */
 
-    function _signMessage(address signer) internal view returns (BN254.G1Point memory) {
-        BN254.G1Point memory messageHash = registryCoordinator.pubkeyRegistrationMessageHash(signer);
+    function _signMessage(
+        address signer
+    ) internal view returns (BN254.G1Point memory) {
+        BN254.G1Point memory messageHash = registryCoordinator
+            .pubkeyRegistrationMessageHash(signer);
         return BN254.scalar_mul(messageHash, privKey);
     }
 
@@ -165,19 +180,31 @@ contract BLSApkRegistryUnitTests is BLSMockAVSDeployer, IBLSApkRegistryEvents {
     /**
      * @dev registering operator with the default preset BLS key
      */
-    function _registerDefaultBLSPubkey(address operator) internal returns (bytes32) {
-        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(operator);
-        BN254.G1Point memory messageHash =
-            registryCoordinator.pubkeyRegistrationMessageHash(operator);
+    function _registerDefaultBLSPubkey(
+        address operator
+    ) internal returns (bytes32) {
+        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(
+            operator
+        );
+        BN254.G1Point memory messageHash = registryCoordinator
+            .pubkeyRegistrationMessageHash(operator);
 
         cheats.prank(address(registryCoordinator));
-        return blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
+        return
+            blsApkRegistry.registerBLSPublicKey(
+                operator,
+                pubkeyRegistrationParams,
+                messageHash
+            );
     }
 
     /**
      * @dev register operator, assumes operator has a registered BLS public key and that quorumNumbers are valid
      */
-    function _registerOperator(address operator, bytes memory quorumNumbers) internal {
+    function _registerOperator(
+        address operator,
+        bytes memory quorumNumbers
+    ) internal {
         bytes32 operatorId = blsApkRegistry.getOperatorId(operator);
         cheats.prank(address(registryCoordinator));
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
@@ -188,7 +215,10 @@ contract BLSApkRegistryUnitTests is BLSMockAVSDeployer, IBLSApkRegistryEvents {
     /**
      * @dev deregister operator, assumes operator has a registered BLS public key and that quorumNumbers are valid
      */
-    function _deregisterOperator(address operator, bytes memory quorumNumbers) internal {
+    function _deregisterOperator(
+        address operator,
+        bytes memory quorumNumbers
+    ) internal {
         bytes32 operatorId = blsApkRegistry.getOperatorId(operator);
         cheats.prank(address(registryCoordinator));
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
@@ -202,8 +232,12 @@ contract BLSApkRegistryUnitTests is BLSMockAVSDeployer, IBLSApkRegistryEvents {
      *
      */
 
-    function _getApks(bytes memory quorumNumbers) internal view returns (BN254.G1Point[] memory) {
-        BN254.G1Point[] memory quorumApks = new BN254.G1Point[](quorumNumbers.length);
+    function _getApks(
+        bytes memory quorumNumbers
+    ) internal view returns (BN254.G1Point[] memory) {
+        BN254.G1Point[] memory quorumApks = new BN254.G1Point[](
+            quorumNumbers.length
+        );
         for (uint8 i = 0; i < quorumNumbers.length; i++) {
             quorumApks[i] = blsApkRegistry.getApk(uint8(quorumNumbers[i]));
         }
@@ -222,7 +256,9 @@ contract BLSApkRegistryUnitTests is BLSMockAVSDeployer, IBLSApkRegistryEvents {
             "apksBefore and quorumNumbers must be the same length"
         );
         assertEq(
-            apksBefore.length, apksAfter.length, "apksBefore and apksAfter must be the same length"
+            apksBefore.length,
+            apksAfter.length,
+            "apksBefore and apksAfter must be the same length"
         );
         for (uint256 i = 0; i < apksBefore.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
@@ -234,9 +270,11 @@ contract BLSApkRegistryUnitTests is BLSMockAVSDeployer, IBLSApkRegistryEvents {
                 "quorum apk not updated correctly adding the operator pubkey"
             );
 
-            uint32 quorumHistoryLength = blsApkRegistry.getApkHistoryLength(quorumNumber);
-            IBLSApkRegistry.ApkUpdate memory latestApkUpdate =
-                blsApkRegistry.getApkUpdateAtIndex(quorumNumber, quorumHistoryLength - 1);
+            uint32 quorumHistoryLength = blsApkRegistry.getApkHistoryLength(
+                quorumNumber
+            );
+            IBLSApkRegistry.ApkUpdate memory latestApkUpdate = blsApkRegistry
+                .getApkUpdateAtIndex(quorumNumber, quorumHistoryLength - 1);
             assertEq(
                 latestApkUpdate.apkHash,
                 bytes24(BN254.hashG1Point(apkAfter)),
@@ -279,7 +317,9 @@ contract BLSApkRegistryUnitTests_configAndGetters is BLSApkRegistryUnitTests {
 }
 
 /// @notice test for BLSApkRegistry.registerBLSPublicKey()
-contract BLSApkRegistryUnitTests_registerBLSPublicKey is BLSApkRegistryUnitTests {
+contract BLSApkRegistryUnitTests_registerBLSPublicKey is
+    BLSApkRegistryUnitTests
+{
     using BN254 for BN254.G1Point;
 
     function testFuzz_registerOperator_Revert_WhenNotRegistryCoordinator(
@@ -287,59 +327,99 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is BLSApkRegistryUnitTests
     ) public filterFuzzedAddressInputs(nonCoordinatorAddress) {
         cheats.assume(nonCoordinatorAddress != address(registryCoordinator));
 
-        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(defaultOperator);
-        BN254.G1Point memory messageHash =
-            registryCoordinator.pubkeyRegistrationMessageHash(defaultOperator);
+        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(
+            defaultOperator
+        );
+        BN254.G1Point memory messageHash = registryCoordinator
+            .pubkeyRegistrationMessageHash(defaultOperator);
 
         cheats.prank(address(nonCoordinatorAddress));
         cheats.expectRevert(
             "BLSApkRegistry.onlyRegistryCoordinator: caller is not the registry coordinator"
         );
-        blsApkRegistry.registerBLSPublicKey(defaultOperator, pubkeyRegistrationParams, messageHash);
+        blsApkRegistry.registerBLSPublicKey(
+            defaultOperator,
+            pubkeyRegistrationParams,
+            messageHash
+        );
     }
 
-    function testFuzz_registerOperator_Revert_WhenZeroPubkeyHash(address operator) public {
+    function testFuzz_registerOperator_Revert_WhenZeroPubkeyHash(
+        address operator
+    ) public filterFuzzedAddressInputs(operator) {
         pubkeyRegistrationParams.pubkeyG1.X = 0;
         pubkeyRegistrationParams.pubkeyG1.Y = 0;
-        BN254.G1Point memory messageHash =
-            registryCoordinator.pubkeyRegistrationMessageHash(operator);
+        BN254.G1Point memory messageHash = registryCoordinator
+            .pubkeyRegistrationMessageHash(operator);
 
         cheats.prank(address(registryCoordinator));
-        cheats.expectRevert("BLSApkRegistry.registerBLSPublicKey: cannot register zero pubkey");
-        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
+        cheats.expectRevert(
+            "BLSApkRegistry.registerBLSPublicKey: cannot register zero pubkey"
+        );
+        blsApkRegistry.registerBLSPublicKey(
+            operator,
+            pubkeyRegistrationParams,
+            messageHash
+        );
     }
 
-    function testFuzz_registerOperator_Revert_WhenOperatorAlreadyRegistered(address operator)
-        public
-    {
-        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(operator);
-        BN254.G1Point memory messageHash =
-            registryCoordinator.pubkeyRegistrationMessageHash(operator);
+    function testFuzz_registerOperator_Revert_WhenOperatorAlreadyRegistered(
+        address operator
+    ) public filterFuzzedAddressInputs(operator) {
+        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(
+            operator
+        );
+        BN254.G1Point memory messageHash = registryCoordinator
+            .pubkeyRegistrationMessageHash(operator);
 
         cheats.startPrank(address(registryCoordinator));
-        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
+        blsApkRegistry.registerBLSPublicKey(
+            operator,
+            pubkeyRegistrationParams,
+            messageHash
+        );
 
         cheats.expectRevert(
             "BLSApkRegistry.registerBLSPublicKey: operator already registered pubkey"
         );
-        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
+        blsApkRegistry.registerBLSPublicKey(
+            operator,
+            pubkeyRegistrationParams,
+            messageHash
+        );
     }
 
     function testFuzz_registerOperator_Revert_WhenPubkeyAlreadyRegistered(
         address operator,
         address operator2
-    ) public {
+    )
+        public
+        filterFuzzedAddressInputs(operator)
+        filterFuzzedAddressInputs(operator2)
+    {
         cheats.assume(operator != address(0));
         cheats.assume(operator != operator2);
-        BN254.G1Point memory messageHash =
-            registryCoordinator.pubkeyRegistrationMessageHash(operator);
-        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(operator);
+        BN254.G1Point memory messageHash = registryCoordinator
+            .pubkeyRegistrationMessageHash(operator);
+        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(
+            operator
+        );
 
         cheats.startPrank(address(registryCoordinator));
-        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
+        blsApkRegistry.registerBLSPublicKey(
+            operator,
+            pubkeyRegistrationParams,
+            messageHash
+        );
 
-        cheats.expectRevert("BLSApkRegistry.registerBLSPublicKey: public key already registered");
-        blsApkRegistry.registerBLSPublicKey(operator2, pubkeyRegistrationParams, messageHash);
+        cheats.expectRevert(
+            "BLSApkRegistry.registerBLSPublicKey: public key already registered"
+        );
+        blsApkRegistry.registerBLSPublicKey(
+            operator2,
+            pubkeyRegistrationParams,
+            messageHash
+        );
     }
 
     /**
@@ -349,10 +429,14 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is BLSApkRegistryUnitTests
     function testFuzz_registerOperator_Revert_WhenInvalidSignature(
         address operator,
         address invalidOperator
-    ) public {
+    )
+        public
+        filterFuzzedAddressInputs(operator)
+        filterFuzzedAddressInputs(invalidOperator)
+    {
         cheats.assume(invalidOperator != operator);
-        BN254.G1Point memory messageHash =
-            registryCoordinator.pubkeyRegistrationMessageHash(operator);
+        BN254.G1Point memory messageHash = registryCoordinator
+            .pubkeyRegistrationMessageHash(operator);
 
         BN254.G1Point memory invalidSignature = _signMessage(invalidOperator);
         pubkeyRegistrationParams.pubkeyRegistrationSignature = invalidSignature;
@@ -361,56 +445,88 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is BLSApkRegistryUnitTests
         cheats.expectRevert(
             "BLSApkRegistry.registerBLSPublicKey: either the G1 signature is wrong, or G1 and G2 private key do not match"
         );
-        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
+        blsApkRegistry.registerBLSPublicKey(
+            operator,
+            pubkeyRegistrationParams,
+            messageHash
+        );
     }
 
     /**
      * @dev operator is registering their public key but G1 and G2 private keys do not match
      */
-    function testFuzz_registerOperator_Revert_WhenInvalidSignatureMismatchKey(address operator)
-        public
-        filterFuzzedAddressInputs(operator)
-    {
-        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(operator);
+    function testFuzz_registerOperator_Revert_WhenInvalidSignatureMismatchKey(
+        address operator
+    ) public filterFuzzedAddressInputs(operator) {
+        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(
+            operator
+        );
         BN254.G1Point memory badPubkeyG1 = BN254.generatorG1().scalar_mul(420); // mismatch public keys
 
         pubkeyRegistrationParams.pubkeyG1 = badPubkeyG1;
 
-        BN254.G1Point memory messageHash =
-            registryCoordinator.pubkeyRegistrationMessageHash(operator);
+        BN254.G1Point memory messageHash = registryCoordinator
+            .pubkeyRegistrationMessageHash(operator);
         cheats.prank(address(registryCoordinator));
         cheats.expectRevert(
             "BLSApkRegistry.registerBLSPublicKey: either the G1 signature is wrong, or G1 and G2 private key do not match"
         );
-        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
+        blsApkRegistry.registerBLSPublicKey(
+            operator,
+            pubkeyRegistrationParams,
+            messageHash
+        );
     }
 
     /**
      * @dev fuzz tests for different operator addresses but uses the same BLS key for each.
      * Checks for storage mappings being set correctly.
      */
-    function testFuzz_registerBLSPublicKey(address operator)
-        public
-        filterFuzzedAddressInputs(operator)
-    {
+    function testFuzz_registerBLSPublicKey(
+        address operator
+    ) public filterFuzzedAddressInputs(operator) {
         // sign messagehash for operator with private key
-        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(operator);
-        BN254.G1Point memory messageHash =
-            registryCoordinator.pubkeyRegistrationMessageHash(operator);
+        pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(
+            operator
+        );
+        BN254.G1Point memory messageHash = registryCoordinator
+            .pubkeyRegistrationMessageHash(operator);
         cheats.prank(address(registryCoordinator));
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
         emit NewPubkeyRegistration(
-            operator, pubkeyRegistrationParams.pubkeyG1, pubkeyRegistrationParams.pubkeyG2
+            operator,
+            pubkeyRegistrationParams.pubkeyG1,
+            pubkeyRegistrationParams.pubkeyG2
         );
-        blsApkRegistry.registerBLSPublicKey(operator, pubkeyRegistrationParams, messageHash);
+        blsApkRegistry.registerBLSPublicKey(
+            operator,
+            pubkeyRegistrationParams,
+            messageHash
+        );
 
-        (BN254.G1Point memory registeredPubkey, bytes32 registeredpkHash) =
-            blsApkRegistry.getRegisteredPubkey(operator);
-        assertEq(registeredPubkey.X, defaultPubkey.X, "registeredPubkey not set correctly");
-        assertEq(registeredPubkey.Y, defaultPubkey.Y, "registeredPubkey not set correctly");
-        assertEq(registeredpkHash, defaultPubkeyHash, "registeredpkHash not set correctly");
+        (
+            BN254.G1Point memory registeredPubkey,
+            bytes32 registeredpkHash
+        ) = blsApkRegistry.getRegisteredPubkey(operator);
         assertEq(
-            blsApkRegistry.pubkeyHashToOperator(BN254.hashG1Point(defaultPubkey)),
+            registeredPubkey.X,
+            defaultPubkey.X,
+            "registeredPubkey not set correctly"
+        );
+        assertEq(
+            registeredPubkey.Y,
+            defaultPubkey.Y,
+            "registeredPubkey not set correctly"
+        );
+        assertEq(
+            registeredpkHash,
+            defaultPubkeyHash,
+            "registeredpkHash not set correctly"
+        );
+        assertEq(
+            blsApkRegistry.pubkeyHashToOperator(
+                BN254.hashG1Point(defaultPubkey)
+            ),
             operator,
             "operator address not stored correctly"
         );
@@ -434,12 +550,13 @@ contract BLSApkRegistryUnitTests_registerOperator is BLSApkRegistryUnitTests {
         blsApkRegistry.registerOperator(nonCoordinatorAddress, new bytes(0));
     }
 
-    function testFuzz_registerOperator_Revert_WhenOperatorDoesNotOwnPubkey(address operator)
-        public
-        filterFuzzedAddressInputs(operator)
-    {
+    function testFuzz_registerOperator_Revert_WhenOperatorDoesNotOwnPubkey(
+        address operator
+    ) public filterFuzzedAddressInputs(operator) {
         cheats.prank(address(registryCoordinator));
-        cheats.expectRevert("BLSApkRegistry.getRegisteredPubkey: operator is not registered");
+        cheats.expectRevert(
+            "BLSApkRegistry.getRegisteredPubkey: operator is not registered"
+        );
         blsApkRegistry.registerOperator(operator, new bytes(1));
     }
 
@@ -450,13 +567,19 @@ contract BLSApkRegistryUnitTests_registerOperator is BLSApkRegistryUnitTests {
         cheats.prank(address(registryCoordinator));
         cheats.assume(quorumBitmap > initializedQuorumBitmap);
         // mask out quorums that are already initialized
-        quorumBitmap = uint192(quorumBitmap.minus(uint256(initializedQuorumBitmap)));
-        bytes memory quorumNumbers = bitmapUtilsWrapper.bitmapToBytesArray(quorumBitmap);
+        quorumBitmap = uint192(
+            quorumBitmap.minus(uint256(initializedQuorumBitmap))
+        );
+        bytes memory quorumNumbers = bitmapUtilsWrapper.bitmapToBytesArray(
+            quorumBitmap
+        );
 
         _registerDefaultBLSPubkey(operator);
 
         cheats.prank(address(registryCoordinator));
-        cheats.expectRevert("BLSApkRegistry._processQuorumApkUpdate: quorum does not exist");
+        cheats.expectRevert(
+            "BLSApkRegistry._processQuorumApkUpdate: quorum does not exist"
+        );
         blsApkRegistry.registerOperator(operator, quorumNumbers);
     }
 
@@ -472,15 +595,26 @@ contract BLSApkRegistryUnitTests_registerOperator is BLSApkRegistryUnitTests {
     ) public filterFuzzedAddressInputs(operator) {
         // Test setup, initialize fuzzed quorums and register operator BLS pubkey
         cheats.assume(quorumBitmap > initializedQuorumBitmap);
-        uint192 initializingBitmap = uint192(quorumBitmap.minus(uint256(initializedQuorumBitmap)));
+        uint192 initializingBitmap = uint192(
+            quorumBitmap.minus(uint256(initializedQuorumBitmap))
+        );
         _initializeFuzzedQuorums(initializingBitmap);
-        bytes memory quorumNumbers = bitmapUtilsWrapper.bitmapToBytesArray(quorumBitmap);
-        (BN254.G1Point memory pubkey,) = _registerRandomBLSPubkey(operator, randomSeed);
+        bytes memory quorumNumbers = bitmapUtilsWrapper.bitmapToBytesArray(
+            quorumBitmap
+        );
+        (BN254.G1Point memory pubkey, ) = _registerRandomBLSPubkey(
+            operator,
+            randomSeed
+        );
 
         // get before values
-        BN254.G1Point[] memory quorumApksBefore = new BN254.G1Point[](quorumNumbers.length);
+        BN254.G1Point[] memory quorumApksBefore = new BN254.G1Point[](
+            quorumNumbers.length
+        );
         for (uint8 i = 0; i < quorumNumbers.length; i++) {
-            quorumApksBefore[i] = blsApkRegistry.getApk(uint8(quorumNumbers[i]));
+            quorumApksBefore[i] = blsApkRegistry.getApk(
+                uint8(quorumNumbers[i])
+            );
         }
 
         // registerOperator with expected OperatorAddedToQuorums event
@@ -494,16 +628,20 @@ contract BLSApkRegistryUnitTests_registerOperator is BLSApkRegistryUnitTests {
         for (uint8 i = 0; i < quorumNumbers.length; i++) {
             // Check currentApk[quorumNumber] values
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            BN254.G1Point memory quorumApkAfter = blsApkRegistry.getApk(uint8(quorumNumbers[i]));
+            BN254.G1Point memory quorumApkAfter = blsApkRegistry.getApk(
+                uint8(quorumNumbers[i])
+            );
             assertEq(
                 BN254.hashG1Point(quorumApkAfter),
                 BN254.hashG1Point(quorumApksBefore[i].plus(pubkey)),
                 "quorum apk not updated correctly adding the operator pubkey"
             );
             // Check the latest ApkUpdate values
-            uint32 quorumHistoryLength = blsApkRegistry.getApkHistoryLength(quorumNumber);
-            IBLSApkRegistry.ApkUpdate memory latestApkUpdate =
-                blsApkRegistry.getApkUpdateAtIndex(quorumNumber, quorumHistoryLength - 1);
+            uint32 quorumHistoryLength = blsApkRegistry.getApkHistoryLength(
+                quorumNumber
+            );
+            IBLSApkRegistry.ApkUpdate memory latestApkUpdate = blsApkRegistry
+                .getApkUpdateAtIndex(quorumNumber, quorumHistoryLength - 1);
             assertEq(
                 latestApkUpdate.apkHash,
                 bytes24(BN254.hashG1Point(quorumApkAfter)),
@@ -540,12 +678,13 @@ contract BLSApkRegistryUnitTests_deregisterOperator is BLSApkRegistryUnitTests {
         blsApkRegistry.deregisterOperator(nonCoordinatorAddress, new bytes(0));
     }
 
-    function testFuzz_deregisterOperator_Revert_WhenOperatorDoesNotOwnPubkey(address operator)
-        public
-        filterFuzzedAddressInputs(operator)
-    {
+    function testFuzz_deregisterOperator_Revert_WhenOperatorDoesNotOwnPubkey(
+        address operator
+    ) public filterFuzzedAddressInputs(operator) {
         cheats.prank(address(registryCoordinator));
-        cheats.expectRevert("BLSApkRegistry.getRegisteredPubkey: operator is not registered");
+        cheats.expectRevert(
+            "BLSApkRegistry.getRegisteredPubkey: operator is not registered"
+        );
         blsApkRegistry.registerOperator(operator, new bytes(1));
     }
 
@@ -556,16 +695,22 @@ contract BLSApkRegistryUnitTests_deregisterOperator is BLSApkRegistryUnitTests {
         cheats.prank(address(registryCoordinator));
         cheats.assume(quorumBitmap > initializedQuorumBitmap);
         // mask out quorums that are already initialized
-        quorumBitmap = uint192(quorumBitmap.minus(uint256(initializedQuorumBitmap)));
-        bytes memory validQuorumNumbers =
-            bitmapUtilsWrapper.bitmapToBytesArray(initializedQuorumBitmap);
-        bytes memory invalidQuorumNumbers = bitmapUtilsWrapper.bitmapToBytesArray(quorumBitmap);
+        quorumBitmap = uint192(
+            quorumBitmap.minus(uint256(initializedQuorumBitmap))
+        );
+        bytes memory validQuorumNumbers = bitmapUtilsWrapper.bitmapToBytesArray(
+            initializedQuorumBitmap
+        );
+        bytes memory invalidQuorumNumbers = bitmapUtilsWrapper
+            .bitmapToBytesArray(quorumBitmap);
 
         _registerDefaultBLSPubkey(operator);
         _registerOperator(operator, validQuorumNumbers);
 
         cheats.prank(address(registryCoordinator));
-        cheats.expectRevert("BLSApkRegistry._processQuorumApkUpdate: quorum does not exist");
+        cheats.expectRevert(
+            "BLSApkRegistry._processQuorumApkUpdate: quorum does not exist"
+        );
         blsApkRegistry.deregisterOperator(operator, invalidQuorumNumbers);
     }
 
@@ -581,16 +726,27 @@ contract BLSApkRegistryUnitTests_deregisterOperator is BLSApkRegistryUnitTests {
     ) public filterFuzzedAddressInputs(operator) {
         // Test setup, initialize fuzzed quorums and register operator BLS pubkey
         cheats.assume(quorumBitmap > initializedQuorumBitmap);
-        uint192 initializingBitmap = uint192(quorumBitmap.minus(uint256(initializedQuorumBitmap)));
+        uint192 initializingBitmap = uint192(
+            quorumBitmap.minus(uint256(initializedQuorumBitmap))
+        );
         _initializeFuzzedQuorums(initializingBitmap);
-        bytes memory quorumNumbers = bitmapUtilsWrapper.bitmapToBytesArray(quorumBitmap);
-        (BN254.G1Point memory pubkey,) = _registerRandomBLSPubkey(operator, randomSeed);
+        bytes memory quorumNumbers = bitmapUtilsWrapper.bitmapToBytesArray(
+            quorumBitmap
+        );
+        (BN254.G1Point memory pubkey, ) = _registerRandomBLSPubkey(
+            operator,
+            randomSeed
+        );
         _registerOperator(operator, quorumNumbers);
 
         // get before values
-        BN254.G1Point[] memory quorumApksBefore = new BN254.G1Point[](quorumNumbers.length);
+        BN254.G1Point[] memory quorumApksBefore = new BN254.G1Point[](
+            quorumNumbers.length
+        );
         for (uint8 i = 0; i < quorumNumbers.length; i++) {
-            quorumApksBefore[i] = blsApkRegistry.getApk(uint8(quorumNumbers[i]));
+            quorumApksBefore[i] = blsApkRegistry.getApk(
+                uint8(quorumNumbers[i])
+            );
         }
 
         // registerOperator with expected OperatorAddedToQuorums event
@@ -604,16 +760,20 @@ contract BLSApkRegistryUnitTests_deregisterOperator is BLSApkRegistryUnitTests {
         for (uint8 i = 0; i < quorumNumbers.length; i++) {
             // Check currentApk[quorumNumber] values
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            BN254.G1Point memory quorumApkAfter = blsApkRegistry.getApk(uint8(quorumNumbers[i]));
+            BN254.G1Point memory quorumApkAfter = blsApkRegistry.getApk(
+                uint8(quorumNumbers[i])
+            );
             assertEq(
                 BN254.hashG1Point(quorumApkAfter),
                 BN254.hashG1Point(quorumApksBefore[i].plus(pubkey.negate())),
                 "quorum apk not updated correctly removing the operator pubkey"
             );
             // Check the latest ApkUpdate values
-            uint32 quorumHistoryLength = blsApkRegistry.getApkHistoryLength(quorumNumber);
-            IBLSApkRegistry.ApkUpdate memory latestApkUpdate =
-                blsApkRegistry.getApkUpdateAtIndex(quorumNumber, quorumHistoryLength - 1);
+            uint32 quorumHistoryLength = blsApkRegistry.getApkHistoryLength(
+                quorumNumber
+            );
+            IBLSApkRegistry.ApkUpdate memory latestApkUpdate = blsApkRegistry
+                .getApkUpdateAtIndex(quorumNumber, quorumHistoryLength - 1);
             assertEq(
                 latestApkUpdate.apkHash,
                 bytes24(BN254.hashG1Point(quorumApkAfter)),
@@ -645,7 +805,10 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
      * @dev register/deregister up to 200 operators and check quorum apk updates
      * Test uses only the defaultQuorumNumber
      */
-    function testFuzz_quorumApkUpdates(uint256 numOperators, uint256[200] memory randSeed) public {
+    function testFuzz_quorumApkUpdates(
+        uint256 numOperators,
+        uint256[200] memory randSeed
+    ) public {
         cheats.assume(0 < numOperators && numOperators <= 200);
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
@@ -659,11 +822,17 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
             // register and check quorum apk updates
             BN254.G1Point[] memory quorumApksBefore = _getApks(quorumNumbers);
             address operator = _selectNewOperator();
-            (BN254.G1Point memory operatorPubkey,) = _registerRandomBLSPubkey(operator, randSeed[i]);
+            (BN254.G1Point memory operatorPubkey, ) = _registerRandomBLSPubkey(
+                operator,
+                randSeed[i]
+            );
             _registerOperator(operator, quorumNumbers);
             BN254.G1Point[] memory quorumApksAfter = _getApks(quorumNumbers);
             _assertQuorumApkUpdates(
-                quorumNumbers, quorumApksBefore, quorumApksAfter, operatorPubkey
+                quorumNumbers,
+                quorumApksBefore,
+                quorumApksAfter,
+                operatorPubkey
             );
 
             // deregister and check quorum apk updates
@@ -673,7 +842,10 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
                 _deregisterOperator(operator, quorumNumbers);
                 quorumApksAfter = _getApks(quorumNumbers);
                 _assertQuorumApkUpdates(
-                    quorumNumbers, quorumApksBefore, quorumApksAfter, operatorPubkey.negate()
+                    quorumNumbers,
+                    quorumApksBefore,
+                    quorumApksAfter,
+                    operatorPubkey.negate()
                 );
             }
         }
@@ -691,9 +863,13 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
         cheats.assume(0 < numOperators && numOperators <= 50);
         cheats.assume(quorumBitmap > initializedQuorumBitmap);
         // mask out quorums that are already initialized
-        uint192 initializingBitmap = uint192(quorumBitmap.minus(uint256(initializedQuorumBitmap)));
+        uint192 initializingBitmap = uint192(
+            quorumBitmap.minus(uint256(initializedQuorumBitmap))
+        );
         _initializeFuzzedQuorums(initializingBitmap);
-        bytes memory quorumNumbers = bitmapUtilsWrapper.bitmapToBytesArray(quorumBitmap);
+        bytes memory quorumNumbers = bitmapUtilsWrapper.bitmapToBytesArray(
+            quorumBitmap
+        );
 
         /**
          * For each operator, randomly proceed with either registering/deregistering an operator
@@ -704,11 +880,17 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
             // register and check quorum apk updates
             BN254.G1Point[] memory quorumApksBefore = _getApks(quorumNumbers);
             address operator = _selectNewOperator();
-            (BN254.G1Point memory operatorPubkey,) = _registerRandomBLSPubkey(operator, randSeed[i]);
+            (BN254.G1Point memory operatorPubkey, ) = _registerRandomBLSPubkey(
+                operator,
+                randSeed[i]
+            );
             _registerOperator(operator, quorumNumbers);
             BN254.G1Point[] memory quorumApksAfter = _getApks(quorumNumbers);
             _assertQuorumApkUpdates(
-                quorumNumbers, quorumApksBefore, quorumApksAfter, operatorPubkey
+                quorumNumbers,
+                quorumApksBefore,
+                quorumApksAfter,
+                operatorPubkey
             );
 
             // deregister and check quorum apk updates
@@ -718,7 +900,10 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
                 _deregisterOperator(operator, quorumNumbers);
                 quorumApksAfter = _getApks(quorumNumbers);
                 _assertQuorumApkUpdates(
-                    quorumNumbers, quorumApksBefore, quorumApksAfter, operatorPubkey.negate()
+                    quorumNumbers,
+                    quorumApksBefore,
+                    quorumApksAfter,
+                    operatorPubkey.negate()
                 );
             }
         }
@@ -740,9 +925,13 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
             _initializeFuzzedQuorum(quorumNumber2);
         }
 
-        BN254.G1Point[] memory quorumApksBefore = new BN254.G1Point[](quorumNumbers.length);
+        BN254.G1Point[] memory quorumApksBefore = new BN254.G1Point[](
+            quorumNumbers.length
+        );
         for (uint8 i = 0; i < quorumNumbers.length; i++) {
-            quorumApksBefore[i] = blsApkRegistry.getApk(uint8(quorumNumbers[i]));
+            quorumApksBefore[i] = blsApkRegistry.getApk(
+                uint8(quorumNumbers[i])
+            );
         }
 
         // use harnessed function to directly set the pubkey, bypassing the ordinary checks
@@ -753,9 +942,16 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
 
         //check quorum apk updates
         for (uint8 i = 0; i < quorumNumbers.length; i++) {
-            BN254.G1Point memory quorumApkAfter = blsApkRegistry.getApk(uint8(quorumNumbers[i]));
+            BN254.G1Point memory quorumApkAfter = blsApkRegistry.getApk(
+                uint8(quorumNumbers[i])
+            );
             assertEq(
-                BN254.hashG1Point(BN254.plus(quorumApkAfter, BN254.negate(quorumApksBefore[i]))),
+                BN254.hashG1Point(
+                    BN254.plus(
+                        quorumApkAfter,
+                        BN254.negate(quorumApksBefore[i])
+                    )
+                ),
                 BN254.hashG1Point(defaultPubKey),
                 "quorum apk not updated correctly"
             );
@@ -775,7 +971,9 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
         _registerRandomBLSPubkey(defaultOperator, randSeed);
         _registerOperator(defaultOperator, quorumNumbers);
 
-        BN254.G1Point memory quorumApk = blsApkRegistry.getApk(defaultQuorumNumber);
+        BN254.G1Point memory quorumApk = blsApkRegistry.getApk(
+            defaultQuorumNumber
+        );
         BN254.G1Point memory negatedQuorumApk = BN254.negate(quorumApk);
 
         //register for one quorum with negative quorum apk
@@ -800,8 +998,8 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
         uint256 blockGap,
         uint256 randSeed
     ) external {
-        numRegistrants = bound(numRegistrants, 1, 99);
-        blockGap = bound(blockGap, 0, 99);
+        numRegistrants = bound(numRegistrants, 1, 100);
+        blockGap = bound(blockGap, 0, 100);
 
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
@@ -811,18 +1009,23 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
         for (uint256 i = 0; i < numRegistrants; i++) {
             // generate operator and register them with BLS pubkey
             address operator = _selectNewOperator();
-            (BN254.G1Point memory operatorPubkey,) = _registerRandomBLSPubkey(
-                operator, uint256(keccak256(abi.encodePacked(operator, randSeed)))
+            (BN254.G1Point memory operatorPubkey, ) = _registerRandomBLSPubkey(
+                operator,
+                uint256(keccak256(abi.encodePacked(operator, randSeed)))
             );
             _registerOperator(operator, quorumNumbers);
 
             quorumApk = quorumApk.plus(operatorPubkey);
             quorumApkHash = bytes24(BN254.hashG1Point(quorumApk));
-            uint256 historyLength = blsApkRegistry.getApkHistoryLength(defaultQuorumNumber);
+            uint256 historyLength = blsApkRegistry.getApkHistoryLength(
+                defaultQuorumNumber
+            );
             assertEq(
                 quorumApkHash,
                 blsApkRegistry.getApkHashAtBlockNumberAndIndex(
-                    defaultQuorumNumber, uint32(block.number + blockGap), historyLength - 1
+                    defaultQuorumNumber,
+                    uint32(block.number + blockGap),
+                    historyLength - 1
                 ),
                 "incorrect quorum apk update"
             );
@@ -831,11 +1034,15 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
                 _deregisterOperator(operator, quorumNumbers);
                 quorumApk = quorumApk.plus(operatorPubkey.negate());
                 quorumApkHash = bytes24(BN254.hashG1Point(quorumApk));
-                historyLength = blsApkRegistry.getApkHistoryLength(defaultQuorumNumber);
+                historyLength = blsApkRegistry.getApkHistoryLength(
+                    defaultQuorumNumber
+                );
                 assertEq(
                     quorumApkHash,
                     blsApkRegistry.getApkHashAtBlockNumberAndIndex(
-                        defaultQuorumNumber, uint32(block.number + blockGap), historyLength - 1
+                        defaultQuorumNumber,
+                        uint32(block.number + blockGap),
+                        historyLength - 1
                     ),
                     "incorrect quorum apk update"
                 );
@@ -850,12 +1057,12 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
      * and checking the correct revert messages are emitted for wrong blocknumber inputs
      */
     function testFuzz_quorumApkUpdates_IncorrectBlockNumber(
-        uint32 numRegistrants,
+        uint256 numRegistrants,
         uint32 indexToCheck,
         uint32 wrongBlockNumber,
         uint256 randSeed
     ) external {
-        numRegistrants = uint32(bound(numRegistrants, 1, 99));
+        numRegistrants = bound(numRegistrants, 1, 100);
         cheats.assume(indexToCheck < numRegistrants - 1);
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
@@ -865,25 +1072,34 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
         for (uint256 i = 0; i < numRegistrants; i++) {
             address operator = _selectNewOperator();
             _registerRandomBLSPubkey(
-                operator, uint256(keccak256(abi.encodePacked(operator, randSeed)))
+                operator,
+                uint256(keccak256(abi.encodePacked(operator, randSeed)))
             );
             _registerOperator(operator, quorumNumbers);
             cheats.roll(block.number + 100);
         }
         if (wrongBlockNumber < startingBlockNumber + indexToCheck * 100) {
             emit log_named_uint("index too recent: ", indexToCheck);
-            cheats.expectRevert("BLSApkRegistry._validateApkHashAtBlockNumber: index too recent");
+            cheats.expectRevert(
+                "BLSApkRegistry._validateApkHashAtBlockNumber: index too recent"
+            );
             blsApkRegistry.getApkHashAtBlockNumberAndIndex(
-                defaultQuorumNumber, wrongBlockNumber, indexToCheck
+                defaultQuorumNumber,
+                wrongBlockNumber,
+                indexToCheck
             );
         }
-        if (wrongBlockNumber >= startingBlockNumber + (indexToCheck + 1) * 100) {
+        if (
+            wrongBlockNumber >= startingBlockNumber + (indexToCheck + 1) * 100
+        ) {
             emit log_named_uint("index not latest: ", indexToCheck);
             cheats.expectRevert(
                 "BLSApkRegistry._validateApkHashAtBlockNumber: not latest apk update"
             );
             blsApkRegistry.getApkHashAtBlockNumberAndIndex(
-                defaultQuorumNumber, wrongBlockNumber, indexToCheck
+                defaultQuorumNumber,
+                wrongBlockNumber,
+                indexToCheck
             );
         }
     }
@@ -909,7 +1125,9 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
 
         BN254.G1Point[] memory quorumApksBefore = new BN254.G1Point[](2);
         for (uint8 i = 0; i < quorumNumbers.length; i++) {
-            quorumApksBefore[i] = blsApkRegistry.getApk(uint8(quorumNumbers[i]));
+            quorumApksBefore[i] = blsApkRegistry.getApk(
+                uint8(quorumNumbers[i])
+            );
         }
 
         cheats.startPrank(address(registryCoordinator));
@@ -919,9 +1137,13 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
         BN254.G1Point memory quorumApkAfter;
         for (uint8 i = 0; i < quorumNumbers.length; i++) {
             quorumApkAfter = blsApkRegistry.getApk(uint8(quorumNumbers[i]));
-            BN254.G1Point memory quorumApk = blsApkRegistry.getApk(defaultQuorumNumber);
+            BN254.G1Point memory quorumApk = blsApkRegistry.getApk(
+                defaultQuorumNumber
+            );
             assertEq(
-                BN254.hashG1Point(quorumApksBefore[i].plus(defaultPubKey.negate())),
+                BN254.hashG1Point(
+                    quorumApksBefore[i].plus(defaultPubKey.negate())
+                ),
                 BN254.hashG1Point(quorumApkAfter),
                 "quorum apk not updated correctly"
             );

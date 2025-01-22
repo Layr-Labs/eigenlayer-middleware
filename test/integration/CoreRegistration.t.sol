@@ -6,6 +6,8 @@ import { AVSDirectory } from "eigenlayer-contracts/src/contracts/core/AVSDirecto
 import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import { DelegationManager } from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import { IDelegationManager } from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import { RewardsCoordinator } from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
+import { IRewardsCoordinator } from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 contract Test_CoreRegistration is MockAVSDeployer {
     // Contracts
@@ -62,10 +64,13 @@ contract Test_CoreRegistration is MockAVSDeployer {
             )
         );
 
+        // Deploy Mock RewardsCoordinator
+        rewardsCoordinatorMock = new RewardsCoordinatorMock();
 
         // Deploy New ServiceManager & RegistryCoordinator implementations
         serviceManagerImplementation = new ServiceManagerMock(
             avsDirectory,
+            rewardsCoordinatorMock,
             registryCoordinator,
             stakeRegistry
         );
@@ -74,7 +79,8 @@ contract Test_CoreRegistration is MockAVSDeployer {
             serviceManager,
             stakeRegistry,
             blsApkRegistry,
-            indexRegistry
+            indexRegistry,
+            socketRegistry
         );
 
         // Upgrade Registry Coordinator & ServiceManager

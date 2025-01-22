@@ -7,7 +7,7 @@ This document aims to describe and summarize how actively validated services (AV
 - enabling operators to continuously update their commitments to middlewares, and
 - enabling AVS to freeze operators for the purpose of slashing (the corresponding unfreeze actions are determined by the veto committee).
 
-We are currently in the process of implementing the API for payment flow from AVSs to operators in EigenLayer. Details of this API will be added to this document in the near future.
+We are currently in the process of implementing the API for rewards flow from AVSs to operators in EigenLayer. Details of this API will be added to this document in the near future.
 
 The following figure summarizes scope of this document: 
 ![Doc Outline](../images/middleware_outline_doc.png)

@@ -43,7 +43,7 @@ contract User is Test {
     using BitmapStrings for *;
     using BitmapUtils for *;
 
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     // Core contracts
     DelegationManager delegationManager;
@@ -117,6 +117,7 @@ contract User is Test {
     function registerOperator(bytes calldata quorums) public createSnapshot virtual returns (bytes32) {
         _log("registerOperator", quorums);
 
+        vm.warp(block.timestamp + 1);
         registryCoordinator.registerOperator({
             quorumNumbers: quorums,
             socket: NAME,
@@ -208,6 +209,7 @@ contract User is Test {
                 expiry: expiry
             });
 
+        vm.warp(block.timestamp + 1);
         registryCoordinator.registerOperatorWithChurn({
             quorumNumbers: allQuorums,
             socket: NAME,
@@ -397,7 +399,7 @@ contract User_AltMethods is User {
                 operatorsPerQuorum[i][j] = blsApkRegistry.getOperatorFromPubkeyHash(operatorIds[j]);
             }
 
-            Sort.sort(operatorsPerQuorum[i]);
+            operatorsPerQuorum[i] = Sort.sortAddresses(operatorsPerQuorum[i]);
         }
 
         registryCoordinator.updateOperatorsForQuorum(operatorsPerQuorum, allQuorums);

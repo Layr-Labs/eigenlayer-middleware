@@ -36,13 +36,20 @@ interface ECDSAStakeRegistryEventsAndErrors {
     /// @notice Emitted when the weight required to be an operator changes
     /// @param oldMinimumWeight The previous weight
     /// @param newMinimumWeight The updated weight
-    event UpdateMinimumWeight(uint256 oldMinimumWeight, uint256 newMinimumWeight);
+    event UpdateMinimumWeight(
+        uint256 oldMinimumWeight,
+        uint256 newMinimumWeight
+    );
 
     /// @notice Emitted when the system updates an operator's weight
     /// @param _operator The address of the operator updated
     /// @param oldWeight The operator's weight before the update
     /// @param newWeight The operator's weight after the update
-    event OperatorWeightUpdated(address indexed _operator, uint256 oldWeight, uint256 newWeight);
+    event OperatorWeightUpdated(
+        address indexed _operator,
+        uint256 oldWeight,
+        uint256 newWeight
+    );
 
     /// @notice Emitted when the system updates the total weight
     /// @param oldTotalWeight The total weight before the update
@@ -52,6 +59,17 @@ interface ECDSAStakeRegistryEventsAndErrors {
     /// @notice Emits when setting a new threshold weight.
     event ThresholdWeightUpdated(uint256 _thresholdWeight);
 
+    /// @notice Emitted when an operator's signing key is updated
+    /// @param operator The address of the operator whose signing key was updated
+    /// @param updateBlock The block number at which the signing key was updated
+    /// @param newSigningKey The operator's signing key after the update
+    /// @param oldSigningKey The operator's signing key before the update
+    event SigningKeyUpdate(
+        address indexed operator,
+        uint256 indexed updateBlock,
+        address indexed newSigningKey,
+        address oldSigningKey
+    );
     /// @notice Indicates when the lengths of the signers array and signatures array do not match.
     error LengthMismatch();
 
@@ -64,8 +82,11 @@ interface ECDSAStakeRegistryEventsAndErrors {
     /// @notice Thrown when the threshold update is greater than BPS
     error InvalidThreshold();
 
-    /// @notice Thrown when missing operators in an update 
+    /// @notice Thrown when missing operators in an update
     error MustUpdateAllOperators();
+
+    /// @notice Reference blocks must be for blocks that have already been confirmed
+    error InvalidReferenceBlock();
 
     /// @notice Indicates operator weights were out of sync and the signed weight exceed the total
     error InvalidSignedWeight();

@@ -3,6 +3,7 @@ src = "src"
 out = "out"
 libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./" }]
+gas_limit = 5000000000
 
 ffi = true
 no-match-contract = "FFI"

@@ -9,7 +9,7 @@ contract BLSApkRegistryFFITests is G2Operations {
     using BN254 for BN254.G1Point;
     using Strings for uint256;
 
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     BLSApkRegistry blsApkRegistry;
     IRegistryCoordinator registryCoordinator;
