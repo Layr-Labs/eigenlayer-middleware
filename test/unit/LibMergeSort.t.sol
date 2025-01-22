@@ -95,94 +95,93 @@ contract LibMergeSortTest is Test {
         }
     }
 
-function testMergeSortArrays_Sort() public {
-    address[] memory left = new address[](3);
-    address[] memory right = new address[](3);
+    function testMergeSortArrays_Sort() public {
+        address[] memory left = new address[](3);
+        address[] memory right = new address[](3);
 
-    left[0] = address(0x3);
-    left[1] = address(0x1);
-    left[2] = address(0x2);
+        left[0] = address(0x3);
+        left[1] = address(0x1);
+        left[2] = address(0x2);
 
-    right[0] = address(0x6);
-    right[1] = address(0x4);
-    right[2] = address(0x5);
+        right[0] = address(0x6);
+        right[1] = address(0x4);
+        right[2] = address(0x5);
 
-    left = left.sort();
-    right = right.sort();
+        left = left.sort();
+        right = right.sort();
 
-    address[] memory expected = new address[](6);
-    expected[0] = address(0x1);
-    expected[1] = address(0x2);
-    expected[2] = address(0x3);
-    expected[3] = address(0x4);
-    expected[4] = address(0x5);
-    expected[5] = address(0x6);
+        address[] memory expected = new address[](6);
+        expected[0] = address(0x1);
+        expected[1] = address(0x2);
+        expected[2] = address(0x3);
+        expected[3] = address(0x4);
+        expected[4] = address(0x5);
+        expected[5] = address(0x6);
 
-    address[] memory result = left.mergeSortArrays(right);
+        address[] memory result = left.mergeSortArrays(right);
 
-    for (uint256 i = 0; i < expected.length; i++) {
-        assertEq(result[i], expected[i], "Array elements are not sorted correctly");
+        for (uint256 i = 0; i < expected.length; i++) {
+            assertEq(result[i], expected[i], "Array elements are not sorted correctly");
+        }
     }
-}
 
-/// NOTE: we're assuming the input arrays themselves are unique.
-/// Demonstrating behavior of library
-function testMergeSortArraysWithDuplicateInLeft() public {
-    address[] memory left = new address[](4);
-    address[] memory right = new address[](3);
+    /// NOTE: we're assuming the input arrays themselves are unique.
+    /// Demonstrating behavior of library
+    function testMergeSortArraysWithDuplicateInLeft() public {
+        address[] memory left = new address[](4);
+        address[] memory right = new address[](3);
 
-    left[0] = address(0x1);
-    left[1] = address(0x3);
-    left[2] = address(0x3); // Duplicate
-    left[3] = address(0x5);
+        left[0] = address(0x1);
+        left[1] = address(0x3);
+        left[2] = address(0x3); // Duplicate
+        left[3] = address(0x5);
 
-    right[0] = address(0x2);
-    right[1] = address(0x4);
-    right[2] = address(0x6);
+        right[0] = address(0x2);
+        right[1] = address(0x4);
+        right[2] = address(0x6);
 
-    address[] memory expected = new address[](7);
-    expected[0] = address(0x1);
-    expected[1] = address(0x2);
-    expected[2] = address(0x3);
-    expected[3] = address(0x3);
-    expected[4] = address(0x4);
-    expected[5] = address(0x5);
-    expected[6] = address(0x6);
+        address[] memory expected = new address[](7);
+        expected[0] = address(0x1);
+        expected[1] = address(0x2);
+        expected[2] = address(0x3);
+        expected[3] = address(0x3);
+        expected[4] = address(0x4);
+        expected[5] = address(0x5);
+        expected[6] = address(0x6);
 
-    address[] memory result = left.mergeSortArrays(right);
+        address[] memory result = left.mergeSortArrays(right);
 
-    for (uint256 i = 0; i < expected.length; i++) {
-        assertEq(result[i], expected[i], "Array elements are not sorted correctly");
+        for (uint256 i = 0; i < expected.length; i++) {
+            assertEq(result[i], expected[i], "Array elements are not sorted correctly");
+        }
     }
-}
-function testMergeSortArraysWithDuplicateInRight() public {
-    address[] memory left = new address[](3);
-    address[] memory right = new address[](4);
 
-    left[0] = address(0x1);
-    left[1] = address(0x3);
-    left[2] = address(0x5);
+    function testMergeSortArraysWithDuplicateInRight() public {
+        address[] memory left = new address[](3);
+        address[] memory right = new address[](4);
 
-    right[0] = address(0x2);
-    right[1] = address(0x4);
-    right[2] = address(0x4); // Duplicate
-    right[3] = address(0x6);
+        left[0] = address(0x1);
+        left[1] = address(0x3);
+        left[2] = address(0x5);
 
-    address[] memory expected = new address[](7);
-    expected[0] = address(0x1);
-    expected[1] = address(0x2);
-    expected[2] = address(0x3);
-    expected[3] = address(0x4);
-    expected[4] = address(0x4);
-    expected[5] = address(0x5);
-    expected[6] = address(0x6);
+        right[0] = address(0x2);
+        right[1] = address(0x4);
+        right[2] = address(0x4); // Duplicate
+        right[3] = address(0x6);
 
-    address[] memory result = left.mergeSortArrays(right);
+        address[] memory expected = new address[](7);
+        expected[0] = address(0x1);
+        expected[1] = address(0x2);
+        expected[2] = address(0x3);
+        expected[3] = address(0x4);
+        expected[4] = address(0x4);
+        expected[5] = address(0x5);
+        expected[6] = address(0x6);
 
-    for (uint256 i = 0; i < expected.length; i++) {
-        assertEq(result[i], expected[i], "Array elements are not sorted correctly");
+        address[] memory result = left.mergeSortArrays(right);
+
+        for (uint256 i = 0; i < expected.length; i++) {
+            assertEq(result[i], expected[i], "Array elements are not sorted correctly");
+        }
     }
-}
-
-
 }

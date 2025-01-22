@@ -6,13 +6,14 @@ import "test/integration/User.t.sol";
 import "test/integration/IntegrationChecks.t.sol";
 
 contract Integration_Full_Register_Deregister is IntegrationChecks {
-
     using BitmapUtils for *;
 
     // 1. Register for all quorums by churning old operators
     // 2. Deregister from all quorums
     // 3. Re-register for all quorums without needing churn
-    function testFuzz_churnAll_deregisterAll_reregisterAll(uint24 _random) public {
+    function testFuzz_churnAll_deregisterAll_reregisterAll(
+        uint24 _random
+    ) public {
         _configRand({
             _randomSeed: _random,
             _userTypes: DEFAULT | ALT_METHODS,
@@ -60,7 +61,9 @@ contract Integration_Full_Register_Deregister is IntegrationChecks {
     // 2. Deregister from all quorums
     // 3. Old operators re-register for quorums
     // 4. Original operator re-registers for all quorums by churning old operators again
-    function testFuzz_churnAll_deregisterAll_oldReregisterAll(uint24 _random) public {
+    function testFuzz_churnAll_deregisterAll_oldReregisterAll(
+        uint24 _random
+    ) public {
         _configRand({
             _randomSeed: _random,
             _userTypes: DEFAULT | ALT_METHODS,
@@ -101,7 +104,7 @@ contract Integration_Full_Register_Deregister is IntegrationChecks {
 
         // 3. Old operators re-register for quorums
         // Note: churnTargets.length == quorums.length, so we do these one at a time
-        for (uint i = 0; i < churnTargets.length; i++) {
+        for (uint256 i = 0; i < churnTargets.length; i++) {
             User churnTarget = churnTargets[i];
             bytes memory quorum = new bytes(1);
             quorum[0] = quorums[i];
@@ -123,7 +126,9 @@ contract Integration_Full_Register_Deregister is IntegrationChecks {
     // 1. Register for *some* quorums with churn, and the rest without churn
     // 2. Deregister from all quorums
     // 3. Re-register for all quorums without needing churn
-    function testFuzz_churnSome_deregisterSome_deregisterRemaining(uint24 _random) public {
+    function testFuzz_churnSome_deregisterSome_deregisterRemaining(
+        uint24 _random
+    ) public {
         _configRand({
             _randomSeed: _random,
             _userTypes: DEFAULT | ALT_METHODS,
@@ -140,11 +145,9 @@ contract Integration_Full_Register_Deregister is IntegrationChecks {
 
         // Select some quorums to register using churn, and the rest without churn
         bytes memory churnQuorums = _selectRand(quorums);
-        bytes memory standardQuorums =
-            quorums
-                .orderedBytesArrayToBitmap()
-                .minus(churnQuorums.orderedBytesArrayToBitmap())
-                .bitmapToBytesArray();
+        bytes memory standardQuorums = quorums.orderedBytesArrayToBitmap().minus(
+            churnQuorums.orderedBytesArrayToBitmap()
+        ).bitmapToBytesArray();
 
         // Select churnable operators in each quorum. If needed, deals/deposits assets
         // for the operator, and deregisters operators from standardQuorums to make room

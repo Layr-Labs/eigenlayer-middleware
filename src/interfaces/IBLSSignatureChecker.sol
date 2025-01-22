@@ -54,7 +54,6 @@ interface IBLSSignatureChecker is IBLSSignatureCheckerErrors {
      * @notice this data structure is used for recording the details on the total stake of the registered
      * operators and those operators who are part of the quorum for a particular taskNumber
      */
-
     struct QuorumStakeTotals {
         // total stake of the operators in each quorum
         uint96[] signedStakeForQuorum;
@@ -95,11 +94,5 @@ interface IBLSSignatureChecker is IBLSSignatureCheckerErrors {
         bytes calldata quorumNumbers,
         uint32 referenceBlockNumber,
         NonSignerStakesAndSignature memory nonSignerStakesAndSignature
-    )
-        external
-        view
-        returns (
-            QuorumStakeTotals memory,
-            bytes32
-        );
+    ) external view returns (QuorumStakeTotals memory, bytes32);
 }

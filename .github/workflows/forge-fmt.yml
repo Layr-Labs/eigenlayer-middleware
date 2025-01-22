@@ -1,0 +1,30 @@
+name: Forge Fmt
+
+on:
+    workflow_dispatch:
+    push:
+      branches:
+        - master
+        - mainnet
+        - testnet-goerli
+        - dev
+    pull_request:
+
+jobs:
+  check:
+    name: CI
+    strategy:
+      fail-fast: true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+      - name: Run forge fmt
+        run: |
+          forge fmt --check
+        id: fmt

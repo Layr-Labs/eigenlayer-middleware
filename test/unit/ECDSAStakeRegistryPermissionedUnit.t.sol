@@ -2,46 +2,38 @@
 pragma solidity ^0.8.27;
 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IDelegationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
-import {ECDSAStakeRegistryEventsAndErrors, Quorum, StrategyParams} from "../../src/interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
+import {
+    ECDSAStakeRegistryEventsAndErrors,
+    Quorum,
+    StrategyParams
+} from "../../src/interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
 import {ECDSAStakeRegistrySetup} from "./ECDSAStakeRegistryUnit.t.sol";
-import {ECDSAStakeRegistryPermissioned} from "../../src/unaudited/examples/ECDSAStakeRegistryPermissioned.sol";
+import {ECDSAStakeRegistryPermissioned} from
+    "../../src/unaudited/examples/ECDSAStakeRegistryPermissioned.sol";
 
 contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     ECDSAStakeRegistryPermissioned internal permissionedRegistry;
 
     function setUp() public virtual override {
         super.setUp();
-        permissionedRegistry = new ECDSAStakeRegistryPermissioned(
-            IDelegationManager(address(mockDelegationManager))
-        );
+        permissionedRegistry =
+            new ECDSAStakeRegistryPermissioned(IDelegationManager(address(mockDelegationManager)));
         IStrategy mockStrategy = IStrategy(address(0x1234));
         Quorum memory quorum = Quorum({strategies: new StrategyParams[](1)});
-        quorum.strategies[0] = StrategyParams({
-            strategy: mockStrategy,
-            multiplier: 10000
-        });
-        permissionedRegistry.initialize(
-            address(mockServiceManager),
-            100,
-            quorum
-        );
+        quorum.strategies[0] = StrategyParams({strategy: mockStrategy, multiplier: 10_000});
+        permissionedRegistry.initialize(address(mockServiceManager), 100, quorum);
 
         permissionedRegistry.permitOperator(operator1);
         permissionedRegistry.permitOperator(operator2);
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
         vm.prank(operator1);
-        permissionedRegistry.registerOperatorWithSignature(
-            operatorSignature,
-            operator1
-        );
+        permissionedRegistry.registerOperatorWithSignature(operatorSignature, operator1);
         vm.prank(operator2);
-        permissionedRegistry.registerOperatorWithSignature(
-            operatorSignature,
-            operator1
-        );
+        permissionedRegistry.registerOperatorWithSignature(operatorSignature, operator1);
     }
 
     function test_RevertsWhen_NotOwner_PermitOperator() public {
@@ -96,15 +88,10 @@ contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
         vm.expectRevert(
-            abi.encodeWithSelector(
-                ECDSAStakeRegistryPermissioned.OperatorNotAllowlisted.selector
-            )
+            abi.encodeWithSelector(ECDSAStakeRegistryPermissioned.OperatorNotAllowlisted.selector)
         );
         vm.prank(operator3);
-        permissionedRegistry.registerOperatorWithSignature(
-            operatorSignature,
-            operator3
-        );
+        permissionedRegistry.registerOperatorWithSignature(operatorSignature, operator3);
     }
 
     function test_WhenAllowlisted_RegisterOperatorWithSig() public {
@@ -112,10 +99,7 @@ contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         permissionedRegistry.permitOperator(operator3);
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
         vm.prank(operator3);
-        permissionedRegistry.registerOperatorWithSignature(
-            operatorSignature,
-            operator3
-        );
+        permissionedRegistry.registerOperatorWithSignature(operatorSignature, operator3);
     }
 
     function test_DeregisterOperator() public {
@@ -123,10 +107,7 @@ contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         permissionedRegistry.permitOperator(operator3);
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
         vm.prank(operator3);
-        permissionedRegistry.registerOperatorWithSignature(
-            operatorSignature,
-            operator3
-        );
+        permissionedRegistry.registerOperatorWithSignature(operatorSignature, operator3);
 
         vm.prank(operator3);
         permissionedRegistry.deregisterOperator();

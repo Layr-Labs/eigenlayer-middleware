@@ -93,8 +93,7 @@ library QuorumBitmapHistoryLib {
          * - the next update block number should be either 0 or strictly greater than blockNumber
          */
         require(
-            blockNumber >= quorumBitmapUpdate.updateBlockNumber,
-            BitmapUpdateIsAfterBlockNumber()
+            blockNumber >= quorumBitmapUpdate.updateBlockNumber, BitmapUpdateIsAfterBlockNumber()
         );
         require(
             quorumBitmapUpdate.nextUpdateBlockNumber == 0

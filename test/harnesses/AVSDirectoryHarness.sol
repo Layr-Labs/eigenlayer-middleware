@@ -8,5 +8,5 @@ import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPa
 
 // wrapper around the AVSDirectory contract that exposes internal functionality, for unit testing
 contract AVSDirectoryHarness is AVSDirectory {
-    constructor(IDelegationManager _dm, IPauserRegistry _pauser)AVSDirectory(_dm, _pauser){}
+    constructor(IDelegationManager _dm, IPauserRegistry _pauser) AVSDirectory(_dm, _pauser) {}
 }

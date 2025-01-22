@@ -11,11 +11,15 @@ contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
 
     mapping(address => int256) public podShares;
 
-    constructor(IPauserRegistry _pauserRegistry) Pausable(_pauserRegistry){
+    constructor(
+        IPauserRegistry _pauserRegistry
+    ) Pausable(_pauserRegistry) {
         _setPausedStatus(0);
     }
 
-    function podOwnerShares(address podOwner) external view returns (int256) {
+    function podOwnerShares(
+        address podOwner
+    ) external view returns (int256) {
         return podShares[podOwner];
     }
 
@@ -27,77 +31,82 @@ contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
         return type(uint64).max;
     }
 
-    function createPod() external returns (address) {
-    }
+    function createPod() external returns (address) {}
 
-    function stake(bytes calldata pubkey, bytes calldata signature, bytes32 depositDataRoot) external payable {
-    }
+    function stake(
+        bytes calldata pubkey,
+        bytes calldata signature,
+        bytes32 depositDataRoot
+    ) external payable {}
 
     function recordBeaconChainETHBalanceUpdate(
         address podOwner,
         int256 sharesDelta,
         uint64 proportionPodBalanceDecrease
-    ) external {
-    }
+    ) external {}
 
-    function ownerToPod(address podOwner) external view returns (IEigenPod) {
-    }
+    function ownerToPod(
+        address podOwner
+    ) external view returns (IEigenPod) {}
 
-    function getPod(address podOwner) external view returns (IEigenPod) {
-    }
+    function getPod(
+        address podOwner
+    ) external view returns (IEigenPod) {}
 
-    function ethPOS() external view returns (IETHPOSDeposit) {
-    }
+    function ethPOS() external view returns (IETHPOSDeposit) {}
 
-    function eigenPodBeacon() external view returns (IBeacon) {
-    }
+    function eigenPodBeacon() external view returns (IBeacon) {}
 
-    function strategyManager() external view returns (IStrategyManager) {
-    }
+    function strategyManager() external view returns (IStrategyManager) {}
 
-    function hasPod(address podOwner) external view returns (bool) {
-    }
+    function hasPod(
+        address podOwner
+    ) external view returns (bool) {}
 
-    function numPods() external view returns (uint256) {
-    }
+    function numPods() external view returns (uint256) {}
 
-    function podOwnerDepositShares(address podOwner) external view returns (int256) {
-    }
+    function podOwnerDepositShares(
+        address podOwner
+    ) external view returns (int256) {}
 
-    function beaconChainETHStrategy() external view returns (IStrategy) {
-    }
+    function beaconChainETHStrategy() external view returns (IStrategy) {}
 
-    function removeDepositShares(address staker, IStrategy strategy, uint256 depositSharesToRemove) external {
-    }
+    function removeDepositShares(
+        address staker,
+        IStrategy strategy,
+        uint256 depositSharesToRemove
+    ) external {}
 
-    function stakerDepositShares(address user, IStrategy strategy) external view returns (uint256 depositShares) {
-    }
+    function stakerDepositShares(
+        address user,
+        IStrategy strategy
+    ) external view returns (uint256 depositShares) {}
 
-    function withdrawSharesAsTokens(address staker, IStrategy strategy, IERC20 token, uint256 shares) external{}
+    function withdrawSharesAsTokens(
+        address staker,
+        IStrategy strategy,
+        IERC20 token,
+        uint256 shares
+    ) external {}
 
     function addShares(
         address staker,
         IStrategy strategy,
         IERC20 token,
         uint256 shares
-    ) external returns (uint256, uint256) {
-    }
+    ) external returns (uint256, uint256) {}
 
     function beaconChainSlashingFactor(
         address staker
-    ) external view returns (uint64) {
-    }
+    ) external view returns (uint64) {}
 
     function recordBeaconChainETHBalanceUpdate(
         address podOwner,
         uint256 prevRestakedBalanceWei,
         int256 balanceDeltaWei
-    ) external {
-    }
+    ) external {}
 
-    function burnableETHShares() external view returns (uint256) {
-    }
+    function burnableETHShares() external view returns (uint256) {}
 
-    function increaseBurnableShares(IStrategy strategy, uint256 addedSharesToBurn) external {
-    }
+    function increaseBurnableShares(IStrategy strategy, uint256 addedSharesToBurn) external {}
 }

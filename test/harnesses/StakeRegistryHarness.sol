@@ -11,10 +11,21 @@ contract StakeRegistryHarness is StakeRegistry {
         IAVSDirectory _avsDirectory,
         IAllocationManager _allocationManager,
         IServiceManager _serviceManager
-    ) StakeRegistry(_registryCoordinator, _delegationManager, _avsDirectory, _allocationManager, _serviceManager) {
-    }
+    )
+        StakeRegistry(
+            _registryCoordinator,
+            _delegationManager,
+            _avsDirectory,
+            _allocationManager,
+            _serviceManager
+        )
+    {}
 
-    function recordOperatorStakeUpdate(bytes32 operatorId, uint8 quorumNumber, uint96 newStake) external returns(int256) {
+    function recordOperatorStakeUpdate(
+        bytes32 operatorId,
+        uint8 quorumNumber,
+        uint96 newStake
+    ) external returns (int256) {
         return _recordOperatorStakeUpdate(operatorId, quorumNumber, newStake);
     }
 
