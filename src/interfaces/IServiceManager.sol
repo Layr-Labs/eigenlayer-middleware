@@ -97,4 +97,12 @@ interface IServiceManager is IServiceManagerUI, IServiceManagerErrors {
         address target,
         bytes4 selector
     ) external;
+
+    /**
+     * @notice Deregisters an operator from specified operator sets
+     * @param operator The address of the operator to deregister
+     * @param operatorSetIds The IDs of the operator sets to deregister from
+     * @dev Only callable by the RegistryCoordinator
+     */
+    function deregisterOperatorFromOperatorSets(address operator, uint32[] memory operatorSetIds) external;
 }

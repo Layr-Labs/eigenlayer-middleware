@@ -45,4 +45,6 @@ contract ECDSAServiceManagerMock is ECDSAServiceManagerBase {
         address target,
         bytes4 selector
     ) external {}
+
+    function deregisterOperatorFromOperatorSets(address operator, uint32[] memory operatorSetIds) external {}
 }

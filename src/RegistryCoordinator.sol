@@ -553,6 +553,29 @@ contract RegistryCoordinator is
             operatorInfo.status == OperatorStatus.REGISTERED && !quorumsToRemove.isEmpty()
                 && quorumsToRemove.isSubsetOf(currentBitmap)
         ) {
+            // If using operator sets, check for non-M2 quorums
+            if (isUsingOperatorSets()) {
+                uint32[] memory nonM2OperatorSetIds = new uint32[](quorumNumbers.length);
+                uint256 numNonM2Quorums;
+
+                // Check each quorum's stake type
+                for (uint256 i = 0; i < quorumNumbers.length; i++) {
+                    uint8 quorumNumber = uint8(quorumNumbers[i]);
+                    if (isM2Quorum[quorumNumber]) {
+                        nonM2OperatorSetIds[numNonM2Quorums++] = quorumNumber;
+                    }
+                }
+
+                // If any non-M2 quorums found, deregister from AVS
+                if (numNonM2Quorums > 0) {
+                    // Resize array to exact size needed
+                    assembly {
+                        mstore(nonM2OperatorSetIds, numNonM2Quorums)
+                    }
+                    serviceManager.deregisterOperatorFromOperatorSets(operator, nonM2OperatorSetIds);
+                }
+            }
+
             _deregisterOperator({operator: operator, quorumNumbers: quorumNumbers});
         }
     }

@@ -20,7 +20,8 @@ contract ServiceManagerRouter_UnitTests is MockAVSDeployer {
             rewardsCoordinatorImplementation,
             registryCoordinatorImplementation,
             stakeRegistryImplementation,
-            permissionControllerMock
+            permissionControllerMock,
+            allocationManagerMock
         );
 
         _registerOperatorWithCoordinator(defaultOperator, MAX_QUORUM_BITMAP, defaultPubKey);

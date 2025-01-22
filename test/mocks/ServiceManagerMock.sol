@@ -9,14 +9,16 @@ contract ServiceManagerMock is ServiceManagerBase {
         IRewardsCoordinator _rewardsCoordinator,
         IRegistryCoordinator _registryCoordinator,
         IStakeRegistry _stakeRegistry,
-        IPermissionController _permissionController
+        IPermissionController _permissionController,
+        IAllocationManager _allocationManager
     )
         ServiceManagerBase(
             _avsDirectory,
             _rewardsCoordinator,
             _registryCoordinator,
             _stakeRegistry,
-            _permissionController
+            _permissionController,
+            _allocationManager
         )
     {}
 
