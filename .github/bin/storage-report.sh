@@ -37,7 +37,7 @@ for file in $(find src/ -name "*.sol" ! -path "*/interfaces/*" ! -path "*/librar
     log "Processing contract: $contract_name"
 
     # Run forge inspect and capture errors
-    if ! forge inspect "$contract_name" storage --pretty > "$OUTPUT_DIR/$contract_name.md"; then
+    if ! forge inspect "$contract_name" storage > "$OUTPUT_DIR/$contract_name.md"; then
         error "Failed to generate storage report for contract: $contract_name"
     else
         log "Storage report generated for contract: $contract_name"

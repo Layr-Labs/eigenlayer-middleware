@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {ECDSAStakeRegistryStorage, Quorum, StrategyParams} from "./ECDSAStakeRegistryStorage.sol";
+import {
+    IECDSAStakeRegistry,
+    ECDSAStakeRegistryStorage,
+    IECDSAStakeRegistryTypes
+} from "./ECDSAStakeRegistryStorage.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
@@ -37,206 +41,168 @@ contract ECDSAStakeRegistry is
 
     /// @notice Initializes the contract with the given parameters.
     /// @param _serviceManager The address of the service manager.
-    /// @param _thresholdWeight The threshold weight in basis points.
-    /// @param _quorum The quorum struct containing the details of the quorum thresholds.
+    /// @param thresholdWeight The threshold weight in basis points.
+    /// @param quorum The quorum struct containing the details of the quorum thresholds.
     function initialize(
         address _serviceManager,
-        uint256 _thresholdWeight,
-        Quorum memory _quorum
+        uint256 thresholdWeight,
+        IECDSAStakeRegistryTypes.Quorum memory quorum
     ) external initializer {
-        __ECDSAStakeRegistry_init(_serviceManager, _thresholdWeight, _quorum);
+        __ECDSAStakeRegistry_init(_serviceManager, thresholdWeight, quorum);
     }
 
-    /// @notice Registers a new operator using a provided signature and signing key
-    /// @param _operatorSignature Contains the operator's signature, salt, and expiry
-    /// @param _signingKey The signing key to add to the operator's history
+    /// @notice Initializes state for the StakeRegistry
+    /// @param _serviceManagerAddr The AVS' ServiceManager contract's address
+    function __ECDSAStakeRegistry_init(
+        address _serviceManagerAddr,
+        uint256 thresholdWeight,
+        IECDSAStakeRegistryTypes.Quorum memory quorum
+    ) internal onlyInitializing {
+        _serviceManager = _serviceManagerAddr;
+        _updateStakeThreshold(thresholdWeight);
+        _updateQuorumConfig(quorum);
+        __Ownable_init();
+    }
+
+    /// @inheritdoc IECDSAStakeRegistry
     function registerOperatorWithSignature(
-        ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature,
-        address _signingKey
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature,
+        address signingKey
     ) external {
-        _registerOperatorWithSig(msg.sender, _operatorSignature, _signingKey);
+        _registerOperatorWithSig(msg.sender, operatorSignature, signingKey);
     }
 
-    /// @notice Deregisters an existing operator
+    /// @inheritdoc IECDSAStakeRegistry
     function deregisterOperator() external {
         _deregisterOperator(msg.sender);
     }
 
-    /**
-     * @notice Updates the signing key for an operator
-     * @dev Only callable by the operator themselves
-     * @param _newSigningKey The new signing key to set for the operator
-     */
+    /// @inheritdoc IECDSAStakeRegistry
     function updateOperatorSigningKey(
-        address _newSigningKey
+        address newSigningKey
     ) external {
         if (!_operatorRegistered[msg.sender]) {
             revert OperatorNotRegistered();
         }
-        _updateOperatorSigningKey(msg.sender, _newSigningKey);
+        _updateOperatorSigningKey(msg.sender, newSigningKey);
     }
 
-    /**
-     * @notice Updates the StakeRegistry's view of one or more operators' stakes adding a new entry in their history of stake checkpoints,
-     * @dev Queries stakes from the Eigenlayer core DelegationManager contract
-     * @param _operators A list of operator addresses to update
-     */
+    /// @inheritdoc IECDSAStakeRegistry
     function updateOperators(
-        address[] memory _operators
+        address[] memory operators
     ) external {
-        _updateOperators(_operators);
+        _updateOperators(operators);
     }
 
-    /**
-     * @notice Updates the quorum configuration and the set of operators
-     * @dev Only callable by the contract owner.
-     * It first updates the quorum configuration and then updates the list of operators.
-     * @param _quorum The new quorum configuration, including strategies and their new weights
-     * @param _operators The list of operator addresses to update stakes for
-     */
+    /// @inheritdoc IECDSAStakeRegistry
     function updateQuorumConfig(
-        Quorum memory _quorum,
-        address[] memory _operators
+        IECDSAStakeRegistryTypes.Quorum memory quorum,
+        address[] memory operators
     ) external onlyOwner {
-        _updateQuorumConfig(_quorum);
-        _updateOperators(_operators);
+        _updateQuorumConfig(quorum);
+        _updateOperators(operators);
     }
 
-    /// @notice Updates the weight an operator must have to join the operator set
-    /// @dev Access controlled to the contract owner
-    /// @param _newMinimumWeight The new weight an operator must have to join the operator set
+    /// @inheritdoc IECDSAStakeRegistry
     function updateMinimumWeight(
-        uint256 _newMinimumWeight,
-        address[] memory _operators
+        uint256 newMinimumWeight,
+        address[] memory operators
     ) external onlyOwner {
-        _updateMinimumWeight(_newMinimumWeight);
-        _updateOperators(_operators);
+        _updateMinimumWeight(newMinimumWeight);
+        _updateOperators(operators);
     }
 
-    /**
-     * @notice Sets a new cumulative threshold weight for message validation by operator set signatures.
-     * @dev This function can only be invoked by the owner of the contract. It delegates the update to
-     * an internal function `_updateStakeThreshold`.
-     * @param _thresholdWeight The updated threshold weight required to validate a message. This is the
-     * cumulative weight that must be met or exceeded by the sum of the stakes of the signatories for
-     * a message to be deemed valid.
-     */
+    /// @inheritdoc IECDSAStakeRegistry
     function updateStakeThreshold(
-        uint256 _thresholdWeight
+        uint256 thresholdWeight
     ) external onlyOwner {
-        _updateStakeThreshold(_thresholdWeight);
+        _updateStakeThreshold(thresholdWeight);
     }
 
-    /// @notice Verifies if the provided signature data is valid for the given data hash.
-    /// @param _dataHash The hash of the data that was signed.
-    /// @param _signatureData Encoded signature data consisting of an array of operators, an array of signatures, and a reference block number.
-    /// @return The function selector that indicates the signature is valid according to ERC1271 standard.
     function isValidSignature(
-        bytes32 _dataHash,
+        bytes32 digest,
         bytes memory _signatureData
     ) external view returns (bytes4) {
         (address[] memory operators, bytes[] memory signatures, uint32 referenceBlock) =
             abi.decode(_signatureData, (address[], bytes[], uint32));
-        _checkSignatures(_dataHash, operators, signatures, referenceBlock);
+        _checkSignatures(digest, operators, signatures, referenceBlock);
         return IERC1271Upgradeable.isValidSignature.selector;
     }
 
-    /// @notice Retrieves the current stake quorum details.
-    /// @return Quorum - The current quorum of strategies and weights
-    function quorum() external view returns (Quorum memory) {
+    /// @inheritdoc IECDSAStakeRegistry
+    function quorum() external view returns (IECDSAStakeRegistryTypes.Quorum memory) {
         return _quorum;
     }
 
-    /**
-     * @notice Retrieves the latest signing key for a given operator.
-     * @param _operator The address of the operator.
-     * @return The latest signing key of the operator.
-     */
-    function getLastestOperatorSigningKey(
-        address _operator
+    /// @inheritdoc IECDSAStakeRegistry
+    function getLatestOperatorSigningKey(
+        address operator
     ) external view returns (address) {
-        return address(uint160(_operatorSigningKeyHistory[_operator].latest()));
+        return address(uint160(_operatorSigningKeyHistory[operator].latest()));
     }
 
-    /**
-     * @notice Retrieves the latest signing key for a given operator at a specific block number.
-     * @param _operator The address of the operator.
-     * @param _blockNumber The block number to get the operator's signing key.
-     * @return The signing key of the operator at the given block.
-     */
+    /// @inheritdoc IECDSAStakeRegistry
     function getOperatorSigningKeyAtBlock(
-        address _operator,
-        uint256 _blockNumber
+        address operator,
+        uint256 blockNumber
     ) external view returns (address) {
-        return address(uint160(_operatorSigningKeyHistory[_operator].getAtBlock(_blockNumber)));
+        return address(uint160(_operatorSigningKeyHistory[operator].getAtBlock(blockNumber)));
     }
 
-    /// @notice Retrieves the last recorded weight for a given operator.
-    /// @param _operator The address of the operator.
-    /// @return uint256 - The latest weight of the operator.
+    /// @inheritdoc IECDSAStakeRegistry
     function getLastCheckpointOperatorWeight(
-        address _operator
+        address operator
     ) external view returns (uint256) {
-        return _operatorWeightHistory[_operator].latest();
+        return _operatorWeightHistory[operator].latest();
     }
 
-    /// @notice Retrieves the last recorded total weight across all operators.
-    /// @return uint256 - The latest total weight.
+    /// @inheritdoc IECDSAStakeRegistry
     function getLastCheckpointTotalWeight() external view returns (uint256) {
         return _totalWeightHistory.latest();
     }
 
-    /// @notice Retrieves the last recorded threshold weight
-    /// @return uint256 - The latest threshold weight.
+    /// @inheritdoc IECDSAStakeRegistry
     function getLastCheckpointThresholdWeight() external view returns (uint256) {
         return _thresholdWeightHistory.latest();
     }
 
-    /// @notice Retrieves the operator's weight at a specific block number.
-    /// @param _operator The address of the operator.
-    /// @param _blockNumber The block number to get the operator weight for the quorum
-    /// @return uint256 - The weight of the operator at the given block.
+    /// @inheritdoc IECDSAStakeRegistry
     function getOperatorWeightAtBlock(
-        address _operator,
-        uint32 _blockNumber
+        address operator,
+        uint32 blockNumber
     ) external view returns (uint256) {
-        return _operatorWeightHistory[_operator].getAtBlock(_blockNumber);
+        return _operatorWeightHistory[operator].getAtBlock(blockNumber);
     }
 
-    /// @notice Retrieves the total weight at a specific block number.
-    /// @param _blockNumber The block number to get the total weight for the quorum
-    /// @return uint256 - The total weight at the given block.
+    /// @inheritdoc IECDSAStakeRegistry
     function getLastCheckpointTotalWeightAtBlock(
-        uint32 _blockNumber
+        uint32 blockNumber
     ) external view returns (uint256) {
-        return _totalWeightHistory.getAtBlock(_blockNumber);
+        return _totalWeightHistory.getAtBlock(blockNumber);
     }
 
-    /// @notice Retrieves the threshold weight at a specific block number.
-    /// @param _blockNumber The block number to get the threshold weight for the quorum
-    /// @return uint256 - The threshold weight the given block.
+    /// @inheritdoc IECDSAStakeRegistry
     function getLastCheckpointThresholdWeightAtBlock(
-        uint32 _blockNumber
+        uint32 blockNumber
     ) external view returns (uint256) {
-        return _thresholdWeightHistory.getAtBlock(_blockNumber);
+        return _thresholdWeightHistory.getAtBlock(blockNumber);
     }
 
+    /// @inheritdoc IECDSAStakeRegistry
     function operatorRegistered(
-        address _operator
+        address operator
     ) external view returns (bool) {
-        return _operatorRegistered[_operator];
+        return _operatorRegistered[operator];
     }
 
-    /// @notice Returns the weight an operator must have to contribute to validating an AVS
+    /// @inheritdoc IECDSAStakeRegistry
     function minimumWeight() external view returns (uint256) {
         return _minimumWeight;
     }
 
-    /// @notice Calculates the current weight of an operator based on their delegated stake in the strategies considered in the quorum
-    /// @param _operator The address of the operator.
-    /// @return uint256 - The current weight of the operator; returns 0 if below the threshold.
+    /// @inheritdoc IECDSAStakeRegistry
     function getOperatorWeight(
-        address _operator
+        address operator
     ) public view returns (uint256) {
         StrategyParams[] memory strategyParams = _quorum.strategies;
         uint256 weight;
@@ -244,7 +210,7 @@ contract ECDSAStakeRegistry is
         for (uint256 i; i < strategyParams.length; i++) {
             strategies[i] = strategyParams[i].strategy;
         }
-        uint256[] memory shares = DELEGATION_MANAGER.getOperatorShares(_operator, strategies);
+        uint256[] memory shares = DELEGATION_MANAGER.getOperatorShares(operator, strategies);
         for (uint256 i; i < strategyParams.length; i++) {
             weight += shares[i] * strategyParams[i].multiplier;
         }
@@ -257,22 +223,7 @@ contract ECDSAStakeRegistry is
         }
     }
 
-    /// @notice Initializes state for the StakeRegistry
-    /// @param _serviceManagerAddr The AVS' ServiceManager contract's address
-    function __ECDSAStakeRegistry_init(
-        address _serviceManagerAddr,
-        uint256 _thresholdWeight,
-        Quorum memory _quorum
-    ) internal onlyInitializing {
-        _serviceManager = _serviceManagerAddr;
-        _updateStakeThreshold(_thresholdWeight);
-        _updateQuorumConfig(_quorum);
-        __Ownable_init();
-    }
-
-    /// @notice Updates the set of operators for the first quorum.
-    /// @param operatorsPerQuorum An array of operator address arrays, one for each quorum.
-    /// @dev This interface maintains compatibility with avs-sync which handles multiquorums while this registry has a single quorum
+    /// @inheritdoc IECDSAStakeRegistry
     function updateOperatorsForQuorum(
         address[][] memory operatorsPerQuorum,
         bytes memory
@@ -282,138 +233,138 @@ contract ECDSAStakeRegistry is
 
     /// @dev Updates the list of operators if the provided list has the correct number of operators.
     /// Reverts if the provided list of operators does not match the expected total count of operators.
-    /// @param _operators The list of operator addresses to update.
+    /// @param operators The list of operator addresses to update.
     function _updateAllOperators(
-        address[] memory _operators
+        address[] memory operators
     ) internal {
-        if (_operators.length != _totalOperators) {
+        if (operators.length != _totalOperators) {
             revert MustUpdateAllOperators();
         }
-        _updateOperators(_operators);
+        _updateOperators(operators);
     }
 
     /// @dev Updates the weights for a given list of operator addresses.
     /// When passing an operator that isn't registered, then 0 is added to their history
-    /// @param _operators An array of addresses for which to update the weights.
+    /// @param operators An array of addresses for which to update the weights.
     function _updateOperators(
-        address[] memory _operators
+        address[] memory operators
     ) internal {
         int256 delta;
-        for (uint256 i; i < _operators.length; i++) {
-            delta += _updateOperatorWeight(_operators[i]);
+        for (uint256 i; i < operators.length; i++) {
+            delta += _updateOperatorWeight(operators[i]);
         }
         _updateTotalWeight(delta);
     }
 
     /// @dev Updates the stake threshold weight and records the history.
-    /// @param _thresholdWeight The new threshold weight to set and record in the history.
+    /// @param thresholdWeight The new threshold weight to set and record in the history.
     function _updateStakeThreshold(
-        uint256 _thresholdWeight
+        uint256 thresholdWeight
     ) internal {
-        _thresholdWeightHistory.push(_thresholdWeight);
-        emit ThresholdWeightUpdated(_thresholdWeight);
+        _thresholdWeightHistory.push(thresholdWeight);
+        emit ThresholdWeightUpdated(thresholdWeight);
     }
 
     /// @dev Updates the weight an operator must have to join the operator set
-    /// @param _newMinimumWeight The new weight an operator must have to join the operator set
+    /// @param newMinimumWeight The new weight an operator must have to join the operator set
     function _updateMinimumWeight(
-        uint256 _newMinimumWeight
+        uint256 newMinimumWeight
     ) internal {
         uint256 oldMinimumWeight = _minimumWeight;
-        _minimumWeight = _newMinimumWeight;
-        emit MinimumWeightUpdated(oldMinimumWeight, _newMinimumWeight);
+        _minimumWeight = newMinimumWeight;
+        emit MinimumWeightUpdated(oldMinimumWeight, newMinimumWeight);
     }
 
     /// @notice Updates the quorum configuration
-    /// @dev Replaces the current quorum configuration with `_newQuorum` if valid.
+    /// @dev Replaces the current quorum configuration with `newQuorum` if valid.
     /// Reverts with `InvalidQuorum` if the new quorum configuration is not valid.
     /// Emits `QuorumUpdated` event with the old and new quorum configurations.
-    /// @param _newQuorum The new quorum configuration to set.
+    /// @param newQuorum The new quorum configuration to set.
     function _updateQuorumConfig(
-        Quorum memory _newQuorum
+        IECDSAStakeRegistryTypes.Quorum memory newQuorum
     ) internal {
-        if (!_isValidQuorum(_newQuorum)) {
+        if (!_isValidQuorum(newQuorum)) {
             revert InvalidQuorum();
         }
-        Quorum memory oldQuorum = _quorum;
+        IECDSAStakeRegistryTypes.Quorum memory oldQuorum = _quorum;
         delete _quorum;
-        for (uint256 i; i < _newQuorum.strategies.length; i++) {
-            _quorum.strategies.push(_newQuorum.strategies[i]);
+        for (uint256 i; i < newQuorum.strategies.length; i++) {
+            _quorum.strategies.push(newQuorum.strategies[i]);
         }
-        emit QuorumUpdated(oldQuorum, _newQuorum);
+        emit QuorumUpdated(oldQuorum, newQuorum);
     }
 
     /// @dev Internal function to deregister an operator
-    /// @param _operator The operator's address to deregister
+    /// @param operator The operator's address to deregister
     function _deregisterOperator(
-        address _operator
+        address operator
     ) internal {
-        if (!_operatorRegistered[_operator]) {
+        if (!_operatorRegistered[operator]) {
             revert OperatorNotRegistered();
         }
         _totalOperators--;
-        delete _operatorRegistered[_operator];
-        int256 delta = _updateOperatorWeight(_operator);
+        delete _operatorRegistered[operator];
+        int256 delta = _updateOperatorWeight(operator);
         _updateTotalWeight(delta);
-        IServiceManager(_serviceManager).deregisterOperatorFromAVS(_operator);
-        emit OperatorDeregistered(_operator, address(_serviceManager));
+        IServiceManager(_serviceManager).deregisterOperatorFromAVS(operator);
+        emit OperatorDeregistered(operator, address(_serviceManager));
     }
 
     /// @dev registers an operator through a provided signature
-    /// @param _operatorSignature Contains the operator's signature, salt, and expiry
-    /// @param _signingKey The signing key to add to the operator's history
+    /// @param operatorSignature Contains the operator's signature, salt, and expiry
+    /// @param signingKey The signing key to add to the operator's history
     function _registerOperatorWithSig(
-        address _operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature,
-        address _signingKey
+        address operator,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature,
+        address signingKey
     ) internal virtual {
-        if (_operatorRegistered[_operator]) {
+        if (_operatorRegistered[operator]) {
             revert OperatorAlreadyRegistered();
         }
         _totalOperators++;
-        _operatorRegistered[_operator] = true;
-        int256 delta = _updateOperatorWeight(_operator);
+        _operatorRegistered[operator] = true;
+        int256 delta = _updateOperatorWeight(operator);
         _updateTotalWeight(delta);
-        _updateOperatorSigningKey(_operator, _signingKey);
-        IServiceManager(_serviceManager).registerOperatorToAVS(_operator, _operatorSignature);
-        emit OperatorRegistered(_operator, _serviceManager);
+        _updateOperatorSigningKey(operator, signingKey);
+        IServiceManager(_serviceManager).registerOperatorToAVS(operator, operatorSignature);
+        emit OperatorRegistered(operator, _serviceManager);
     }
 
     /// @dev Internal function to update an operator's signing key
-    /// @param _operator The address of the operator to update the signing key for
-    /// @param _newSigningKey The new signing key to set for the operator
-    function _updateOperatorSigningKey(address _operator, address _newSigningKey) internal {
-        address oldSigningKey = address(uint160(_operatorSigningKeyHistory[_operator].latest()));
-        if (_newSigningKey == oldSigningKey) {
+    /// @param operator The address of the operator to update the signing key for
+    /// @param newSigningKey The new signing key to set for the operator
+    function _updateOperatorSigningKey(address operator, address newSigningKey) internal {
+        address oldSigningKey = address(uint160(_operatorSigningKeyHistory[operator].latest()));
+        if (newSigningKey == oldSigningKey) {
             return;
         }
-        _operatorSigningKeyHistory[_operator].push(uint160(_newSigningKey));
-        emit SigningKeyUpdate(_operator, block.number, _newSigningKey, oldSigningKey);
+        _operatorSigningKeyHistory[operator].push(uint160(newSigningKey));
+        emit SigningKeyUpdate(operator, block.number, newSigningKey, oldSigningKey);
     }
 
     /// @notice Updates the weight of an operator and returns the previous and current weights.
-    /// @param _operator The address of the operator to update the weight of.
+    /// @param operator The address of the operator to update the weight of.
     function _updateOperatorWeight(
-        address _operator
+        address operator
     ) internal virtual returns (int256) {
         int256 delta;
         uint256 newWeight;
-        uint256 oldWeight = _operatorWeightHistory[_operator].latest();
-        if (!_operatorRegistered[_operator]) {
+        uint256 oldWeight = _operatorWeightHistory[operator].latest();
+        if (!_operatorRegistered[operator]) {
             delta -= int256(oldWeight);
             if (delta == 0) {
                 return delta;
             }
-            _operatorWeightHistory[_operator].push(0);
+            _operatorWeightHistory[operator].push(0);
         } else {
-            newWeight = getOperatorWeight(_operator);
+            newWeight = getOperatorWeight(operator);
             delta = int256(newWeight) - int256(oldWeight);
             if (delta == 0) {
                 return delta;
             }
-            _operatorWeightHistory[_operator].push(newWeight);
+            _operatorWeightHistory[operator].push(newWeight);
         }
-        emit OperatorWeightUpdated(_operator, oldWeight, newWeight);
+        emit OperatorWeightUpdated(operator, oldWeight, newWeight);
         return delta;
     }
 
@@ -435,13 +386,13 @@ contract ECDSAStakeRegistry is
      * @dev Verifies that a specified quorum configuration is valid. A valid quorum has:
      *      1. Weights that sum to exactly 10,000 basis points, ensuring proportional representation.
      *      2. Unique strategies without duplicates to maintain quorum integrity.
-     * @param _quorum The quorum configuration to be validated.
+     * @param quorum The quorum configuration to be validated.
      * @return bool True if the quorum configuration is valid, otherwise false.
      */
     function _isValidQuorum(
-        Quorum memory _quorum
+        IECDSAStakeRegistryTypes.Quorum memory quorum
     ) internal pure returns (bool) {
-        StrategyParams[] memory strategies = _quorum.strategies;
+        StrategyParams[] memory strategies = quorum.strategies;
         address lastStrategy;
         address currentStrategy;
         uint256 totalMultiplier;
@@ -460,141 +411,141 @@ contract ECDSAStakeRegistry is
 
     /**
      * @notice Common logic to verify a batch of ECDSA signatures against a hash, using either last stake weight or at a specific block.
-     * @param _dataHash The hash of the data the signers endorsed.
-     * @param _operators A collection of addresses that endorsed the data hash.
-     * @param _signatures A collection of signatures matching the signers.
-     * @param _referenceBlock The block number for evaluating stake weight; use max uint32 for latest weight.
+     * @param digest The hash of the data the signers endorsed.
+     * @param operators A collection of addresses that endorsed the data hash.
+     * @param signatures A collection of signatures matching the signers.
+     * @param referenceBlock The block number for evaluating stake weight; use max uint32 for latest weight.
      */
     function _checkSignatures(
-        bytes32 _dataHash,
-        address[] memory _operators,
-        bytes[] memory _signatures,
-        uint32 _referenceBlock
+        bytes32 digest,
+        address[] memory operators,
+        bytes[] memory signatures,
+        uint32 referenceBlock
     ) internal view {
-        uint256 signersLength = _operators.length;
+        uint256 signersLength = operators.length;
         address currentOperator;
         address lastOperator;
         address signer;
         uint256 signedWeight;
 
-        _validateSignaturesLength(signersLength, _signatures.length);
+        _validateSignaturesLength(signersLength, signatures.length);
         for (uint256 i; i < signersLength; i++) {
-            currentOperator = _operators[i];
-            signer = _getOperatorSigningKey(currentOperator, _referenceBlock);
+            currentOperator = operators[i];
+            signer = _getOperatorSigningKey(currentOperator, referenceBlock);
 
             _validateSortedSigners(lastOperator, currentOperator);
-            _validateSignature(signer, _dataHash, _signatures[i]);
+            _validateSignature(signer, digest, signatures[i]);
 
             lastOperator = currentOperator;
-            uint256 operatorWeight = _getOperatorWeight(currentOperator, _referenceBlock);
+            uint256 operatorWeight = _getOperatorWeight(currentOperator, referenceBlock);
             signedWeight += operatorWeight;
         }
 
-        _validateThresholdStake(signedWeight, _referenceBlock);
+        _validateThresholdStake(signedWeight, referenceBlock);
     }
 
     /// @notice Validates that the number of signers equals the number of signatures, and neither is zero.
-    /// @param _signersLength The number of signers.
-    /// @param _signaturesLength The number of signatures.
+    /// @param signersLength The number of signers.
+    /// @param signaturesLength The number of signatures.
     function _validateSignaturesLength(
-        uint256 _signersLength,
-        uint256 _signaturesLength
+        uint256 signersLength,
+        uint256 signaturesLength
     ) internal pure {
-        if (_signersLength != _signaturesLength) {
+        if (signersLength != signaturesLength) {
             revert LengthMismatch();
         }
-        if (_signersLength == 0) {
+        if (signersLength == 0) {
             revert InvalidLength();
         }
     }
 
     /// @notice Ensures that signers are sorted in ascending order by address.
-    /// @param _lastSigner The address of the last signer.
-    /// @param _currentSigner The address of the current signer.
-    function _validateSortedSigners(address _lastSigner, address _currentSigner) internal pure {
-        if (_lastSigner >= _currentSigner) {
+    /// @param lastSigner The address of the last signer.
+    /// @param currentSigner The address of the current signer.
+    function _validateSortedSigners(address lastSigner, address currentSigner) internal pure {
+        if (lastSigner >= currentSigner) {
             revert NotSorted();
         }
     }
 
     /// @notice Validates a given signature against the signer's address and data hash.
-    /// @param _signer The address of the signer to validate.
-    /// @param _dataHash The hash of the data that is signed.
-    /// @param _signature The signature to validate.
+    /// @param signer The address of the signer to validate.
+    /// @param digest The hash of the data that is signed.
+    /// @param signature The signature to validate.
     function _validateSignature(
-        address _signer,
-        bytes32 _dataHash,
-        bytes memory _signature
+        address signer,
+        bytes32 digest,
+        bytes memory signature
     ) internal view {
-        if (!_signer.isValidSignatureNow(_dataHash, _signature)) {
+        if (!signer.isValidSignatureNow(digest, signature)) {
             revert InvalidSignature();
         }
     }
 
     /// @notice Retrieves the operator weight for a signer, either at the last checkpoint or a specified block.
-    /// @param _operator The operator to query their signing key history for
-    /// @param _referenceBlock The block number to query the operator's weight at, or the maximum uint32 value for the last checkpoint.
+    /// @param operator The operator to query their signing key history for
+    /// @param referenceBlock The block number to query the operator's weight at, or the maximum uint32 value for the last checkpoint.
     /// @return The weight of the operator.
     function _getOperatorSigningKey(
-        address _operator,
-        uint32 _referenceBlock
+        address operator,
+        uint32 referenceBlock
     ) internal view returns (address) {
-        if (_referenceBlock >= block.number) {
+        if (referenceBlock >= block.number) {
             revert InvalidReferenceBlock();
         }
-        return address(uint160(_operatorSigningKeyHistory[_operator].getAtBlock(_referenceBlock)));
+        return address(uint160(_operatorSigningKeyHistory[operator].getAtBlock(referenceBlock)));
     }
 
     /// @notice Retrieves the operator weight for a signer, either at the last checkpoint or a specified block.
-    /// @param _signer The address of the signer whose weight is returned.
-    /// @param _referenceBlock The block number to query the operator's weight at, or the maximum uint32 value for the last checkpoint.
+    /// @param signer The address of the signer whose weight is returned.
+    /// @param referenceBlock The block number to query the operator's weight at, or the maximum uint32 value for the last checkpoint.
     /// @return The weight of the operator.
     function _getOperatorWeight(
-        address _signer,
-        uint32 _referenceBlock
+        address signer,
+        uint32 referenceBlock
     ) internal view returns (uint256) {
-        if (_referenceBlock >= block.number) {
+        if (referenceBlock >= block.number) {
             revert InvalidReferenceBlock();
         }
-        return _operatorWeightHistory[_signer].getAtBlock(_referenceBlock);
+        return _operatorWeightHistory[signer].getAtBlock(referenceBlock);
     }
 
     /// @notice Retrieve the total stake weight at a specific block or the latest if not specified.
-    /// @dev If the `_referenceBlock` is the maximum value for uint32, the latest total weight is returned.
-    /// @param _referenceBlock The block number to retrieve the total stake weight from.
+    /// @dev If the `referenceBlock` is the maximum value for uint32, the latest total weight is returned.
+    /// @param referenceBlock The block number to retrieve the total stake weight from.
     /// @return The total stake weight at the given block or the latest if the given block is the max uint32 value.
     function _getTotalWeight(
-        uint32 _referenceBlock
+        uint32 referenceBlock
     ) internal view returns (uint256) {
-        if (_referenceBlock >= block.number) {
+        if (referenceBlock >= block.number) {
             revert InvalidReferenceBlock();
         }
-        return _totalWeightHistory.getAtBlock(_referenceBlock);
+        return _totalWeightHistory.getAtBlock(referenceBlock);
     }
 
     /// @notice Retrieves the threshold stake for a given reference block.
-    /// @param _referenceBlock The block number to query the threshold stake for.
+    /// @param referenceBlock The block number to query the threshold stake for.
     /// If set to the maximum uint32 value, it retrieves the latest threshold stake.
     /// @return The threshold stake in basis points for the reference block.
     function _getThresholdStake(
-        uint32 _referenceBlock
+        uint32 referenceBlock
     ) internal view returns (uint256) {
-        if (_referenceBlock >= block.number) {
+        if (referenceBlock >= block.number) {
             revert InvalidReferenceBlock();
         }
-        return _thresholdWeightHistory.getAtBlock(_referenceBlock);
+        return _thresholdWeightHistory.getAtBlock(referenceBlock);
     }
 
     /// @notice Validates that the cumulative stake of signed messages meets or exceeds the required threshold.
-    /// @param _signedWeight The cumulative weight of the signers that have signed the message.
-    /// @param _referenceBlock The block number to verify the stake threshold for
-    function _validateThresholdStake(uint256 _signedWeight, uint32 _referenceBlock) internal view {
-        uint256 totalWeight = _getTotalWeight(_referenceBlock);
-        if (_signedWeight > totalWeight) {
+    /// @param signedWeight The cumulative weight of the signers that have signed the message.
+    /// @param referenceBlock The block number to verify the stake threshold for
+    function _validateThresholdStake(uint256 signedWeight, uint32 referenceBlock) internal view {
+        uint256 totalWeight = _getTotalWeight(referenceBlock);
+        if (signedWeight > totalWeight) {
             revert InvalidSignedWeight();
         }
-        uint256 thresholdStake = _getThresholdStake(_referenceBlock);
-        if (thresholdStake > _signedWeight) {
+        uint256 thresholdStake = _getThresholdStake(referenceBlock);
+        if (thresholdStake > signedWeight) {
             revert InsufficientSignedStake();
         }
     }

@@ -379,7 +379,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             rewardsInitiator: address(msg.sender)
         });
 
-        StakeType[] memory quorumStakeTypes = new StakeType[](0);
+        IStakeRegistryTypes.StakeType[] memory quorumStakeTypes =
+            new IStakeRegistryTypes.StakeType[](0);
         uint32[] memory slashableStakeQuorumLookAheadPeriods = new uint32[](0);
 
         RegistryCoordinator registryCoordinatorImplementation = new RegistryCoordinator(
@@ -399,7 +400,11 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 churnApprover,
                 ejector,
                 0, /*initialPausedStatus*/
-                address(serviceManager) // _accountIdentifier
+                new IRegistryCoordinator.OperatorSetParam[](0),
+                new uint96[](0),
+                new IStakeRegistryTypes.StrategyParams[][](0),
+                quorumStakeTypes,
+                slashableStakeQuorumLookAheadPeriods
             )
         );
 

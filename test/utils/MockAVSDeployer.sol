@@ -10,13 +10,15 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISi
 import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
 import {BN254} from "../../src/libraries/BN254.sol";
 
+import {IRegistryCoordinatorTypes} from "../../src/interfaces/IRegistryCoordinator.sol";
 import {OperatorStateRetriever} from "../../src/OperatorStateRetriever.sol";
 import {SlashingRegistryCoordinator} from "../../src/SlashingRegistryCoordinator.sol";
 import {RegistryCoordinator} from "../../src/RegistryCoordinator.sol";
 import {RegistryCoordinatorHarness} from "../harnesses/RegistryCoordinatorHarness.t.sol";
 import {BLSApkRegistry} from "../../src/BLSApkRegistry.sol";
+import {IBLSApkRegistryTypes} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {ServiceManagerMock} from "../mocks/ServiceManagerMock.sol";
-import {StakeRegistry, StakeType} from "../../src/StakeRegistry.sol";
+import {StakeRegistry, IStakeRegistryTypes} from "../../src/StakeRegistry.sol";
 import {IndexRegistry} from "../../src/IndexRegistry.sol";
 import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
@@ -125,7 +127,7 @@ contract MockAVSDeployer is Test {
     uint32 registrationBlockNumber = 100;
     uint32 blocksBetweenRegistrations = 10;
 
-    IBLSApkRegistry.PubkeyRegistrationParams pubkeyRegistrationParams;
+    IBLSApkRegistryTypes.PubkeyRegistrationParams pubkeyRegistrationParams;
 
     struct OperatorMetadata {
         uint256 quorumBitmap;
@@ -270,11 +272,12 @@ contract MockAVSDeployer is Test {
         }
 
         // setup the dummy quorum strategies
-        IStakeRegistry.StrategyParams[][] memory quorumStrategiesConsideredAndMultipliers =
-            new IStakeRegistry.StrategyParams[][](numQuorumsToAdd);
+        IStakeRegistryTypes.StrategyParams[][] memory quorumStrategiesConsideredAndMultipliers =
+            new IStakeRegistryTypes.StrategyParams[][](numQuorumsToAdd);
         for (uint256 i = 0; i < quorumStrategiesConsideredAndMultipliers.length; i++) {
-            quorumStrategiesConsideredAndMultipliers[i] = new IStakeRegistry.StrategyParams[](1);
-            quorumStrategiesConsideredAndMultipliers[i][0] = IStakeRegistry.StrategyParams(
+            quorumStrategiesConsideredAndMultipliers[i] =
+                new IStakeRegistryTypes.StrategyParams[](1);
+            quorumStrategiesConsideredAndMultipliers[i][0] = IStakeRegistryTypes.StrategyParams(
                 IStrategy(address(uint160(i))), uint96(WEIGHTING_DIVISOR)
             );
         }
@@ -307,7 +310,7 @@ contract MockAVSDeployer is Test {
             for (uint256 i = 0; i < numQuorumsToAdd; i++) {
                 // hard code these for now
                 operatorSetParams.push(
-                    ISlashingRegistryCoordinator.OperatorSetParam({
+                    IRegistryCoordinatorTypes.OperatorSetParam({
                         maxOperatorCount: defaultMaxOperatorCount,
                         kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
                         kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
@@ -315,18 +318,35 @@ contract MockAVSDeployer is Test {
                 );
             }
 
-            cheats.stopPrank();
+            // Create arrays for quorum types and lookahead periods
+            IStakeRegistryTypes.StakeType[] memory quorumStakeTypes =
+                new IStakeRegistryTypes.StakeType[](numQuorumsToAdd);
+            uint32[] memory slashableStakeQuorumLookAheadPeriods = new uint32[](numQuorumsToAdd);
 
             // add TOTAL_DELEGATED stake type quorums
             for (uint256 i = 0; i < numQuorumsToAdd; i++) {
-                cheats.prank(registryCoordinator.owner());
-                registryCoordinator.createTotalDelegatedStakeQuorum(
-                    operatorSetParams[i],
-                    minimumStakeForQuorum[i],
-                    quorumStrategiesConsideredAndMultipliers[i]
-                );
+                quorumStakeTypes[i] = IStakeRegistryTypes.StakeType.TOTAL_DELEGATED;
+                slashableStakeQuorumLookAheadPeriods[i] = 0;
             }
 
+            proxyAdmin.upgradeAndCall(
+                TransparentUpgradeableProxy(payable(address(registryCoordinator))),
+                address(registryCoordinatorImplementation),
+                abi.encodeCall(
+                    RegistryCoordinator.initialize,
+                    (
+                        registryCoordinatorOwner, // _initialOwner
+                        churnApprover, // _churnApprover
+                        ejector, // _ejector
+                        0, // _initialPausedStatus
+                        operatorSetParams, // _operatorSetParams
+                        minimumStakeForQuorum, // _minimumStakes
+                        quorumStrategiesConsideredAndMultipliers, // _strategyParams
+                        quorumStakeTypes, // _stakeTypes
+                        slashableStakeQuorumLookAheadPeriods // _lookAheadPeriods
+                    )
+                )
+            );
         }
 
         operatorStateRetriever = new OperatorStateRetriever();

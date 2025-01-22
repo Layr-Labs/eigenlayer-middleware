@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import "../../src/interfaces/IIndexRegistry.sol";
 import "../../src/IndexRegistry.sol";
 import "../harnesses/BitmapUtilsWrapper.sol";
-import {IIndexRegistryEvents} from "../events/IIndexRegistryEvents.sol";
+import {IIndexRegistryEvents} from "../../src/interfaces/IIndexRegistry.sol";
 
 import "../utils/MockAVSDeployer.sol";
 

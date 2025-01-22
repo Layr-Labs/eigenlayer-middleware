@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {IBLSSignatureChecker} from "./interfaces/IBLSSignatureChecker.sol";
-import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
-import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
-import {IStakeRegistry, IDelegationManager} from "./interfaces/IStakeRegistry.sol";
-
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {BN254} from "./libraries/BN254.sol";
+
+import "./BLSSignatureCheckerStorage.sol";
 
 /**
  * @title Used for checking BLS aggregate signatures from the operators of a `BLSRegistry`.
@@ -15,77 +12,34 @@ import {BN254} from "./libraries/BN254.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This is the contract for checking the validity of aggregate operator signatures.
  */
-contract BLSSignatureChecker is IBLSSignatureChecker {
+contract BLSSignatureChecker is BLSSignatureCheckerStorage {
     using BN254 for BN254.G1Point;
 
-    // CONSTANTS & IMMUTABLES
-
-    // gas cost of multiplying 2 pairings
-    uint256 internal constant PAIRING_EQUALITY_CHECK_GAS = 120_000;
-
-    ISlashingRegistryCoordinator public immutable registryCoordinator;
-    IStakeRegistry public immutable stakeRegistry;
-    IBLSApkRegistry public immutable blsApkRegistry;
-    IDelegationManager public immutable delegation;
-    /// @notice If true, check the staleness of the operator stakes and that its within the delegation withdrawalDelayBlocks window.
-    bool public staleStakesForbidden;
+    /// MODIFIERS
 
     modifier onlyCoordinatorOwner() {
         require(msg.sender == registryCoordinator.owner(), OnlyRegistryCoordinatorOwner());
         _;
     }
 
-    constructor(
-        ISlashingRegistryCoordinator _registryCoordinator
-    ) {
-        registryCoordinator = _registryCoordinator;
-        stakeRegistry = _registryCoordinator.stakeRegistry();
-        blsApkRegistry = _registryCoordinator.blsApkRegistry();
-        delegation = stakeRegistry.delegation();
-    }
+    /// CONSTRUCTION
 
-    /**
-     * /**
-     * RegistryCoordinator owner can either enforce or not that operator stakes are staler
-     * than the delegation.minWithdrawalDelayBlocks() window.
-     * @param value to toggle staleStakesForbidden
-     */
+    constructor(
+        IRegistryCoordinator _registryCoordinator
+    ) BLSSignatureCheckerStorage(_registryCoordinator) {}
+
+    /// ACTIONS
+
+    /// @inheritdoc IBLSSignatureChecker
     function setStaleStakesForbidden(
         bool value
     ) external onlyCoordinatorOwner {
         _setStaleStakesForbidden(value);
     }
 
-    struct NonSignerInfo {
-        uint256[] quorumBitmaps;
-        bytes32[] pubkeyHashes;
-    }
+    /// VIEW
 
-    /**
-     * @notice This function is called by disperser when it has aggregated all the signatures of the operators
-     * that are part of the quorum for a particular taskNumber and is asserting them into onchain. The function
-     * checks that the claim for aggregated signatures are valid.
-     *
-     * The thesis of this procedure entails:
-     * - getting the aggregated pubkey of all registered nodes at the time of pre-commit by the
-     * disperser (represented by apk in the parameters),
-     * - subtracting the pubkeys of all the signers not in the quorum (nonSignerPubkeys) and storing
-     * the output in apk to get aggregated pubkey of all operators that are part of quorum.
-     * - use this aggregated pubkey to verify the aggregated signature under BLS scheme.
-     *
-     * @dev Before signature verification, the function verifies operator stake information.  This includes ensuring that the provided `referenceBlockNumber`
-     * is correct, i.e., ensure that the stake returned from the specified block number is recent enough and that the stake is either the most recent update
-     * for the total stake (of the operator) or latest before the referenceBlockNumber.
-     * @param msgHash is the hash being signed
-     * @dev NOTE: Be careful to ensure `msgHash` is collision-resistant! This method does not hash
-     * `msgHash` in any way, so if an attacker is able to pass in an arbitrary value, they may be able
-     * to tamper with signature verification.
-     * @param quorumNumbers is the bytes array of quorum numbers that are being signed for
-     * @param referenceBlockNumber is the block number at which the stake information is being verified
-     * @param params is the struct containing information on nonsigners, stakes, quorum apks, and the aggregate signature
-     * @return quorumStakeTotals is the struct containing the total and signed stake for each quorum
-     * @return signatoryRecordHash is the hash of the signatory record, which is used for fraud proofs
-     */
+    /// @inheritdoc IBLSSignatureChecker
     function checkSignatures(
         bytes32 msgHash,
         bytes calldata quorumNumbers,
@@ -253,15 +207,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         return (stakeTotals, signatoryRecordHash);
     }
 
-    /**
-     * trySignatureAndApkVerification verifies a BLS aggregate signature and the veracity of a calculated G1 Public key
-     * @param msgHash is the hash being signed
-     * @param apk is the claimed G1 public key
-     * @param apkG2 is provided G2 public key
-     * @param sigma is the G1 point signature
-     * @return pairingSuccessful is true if the pairing precompile call was successful
-     * @return siganatureIsValid is true if the signature is valid
-     */
+    /// @inheritdoc IBLSSignatureChecker
     function trySignatureAndApkVerification(
         bytes32 msgHash,
         BN254.G1Point memory apk,
@@ -300,8 +246,4 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         staleStakesForbidden = value;
         emit StaleStakesForbiddenUpdate(value);
     }
-
-    // storage gap for upgradeability
-    // slither-disable-next-line shadowing-state
-    uint256[49] private __GAP;
 }

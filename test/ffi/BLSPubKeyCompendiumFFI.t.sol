@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import "../../src/BLSApkRegistry.sol";
 import "../ffi/util/G2Operations.sol";
-import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
+import {IBLSApkRegistry, IBLSApkRegistryTypes} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {ISlashingRegistryCoordinator} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 
 contract BLSApkRegistryFFITests is G2Operations {
@@ -16,7 +16,7 @@ contract BLSApkRegistryFFITests is G2Operations {
     ISlashingRegistryCoordinator registryCoordinator;
 
     uint256 privKey;
-    IBLSApkRegistry.PubkeyRegistrationParams pubkeyRegistrationParams;
+    IBLSApkRegistryTypes.PubkeyRegistrationParams pubkeyRegistrationParams;
 
     address alice = address(0x69);
 

@@ -10,10 +10,11 @@ import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy
 
 import {ECDSAStakeRegistry} from "../../src/unaudited/ECDSAStakeRegistry.sol";
 import {
-    ECDSAStakeRegistryEventsAndErrors,
-    Quorum,
-    StrategyParams
-} from "../../src/interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
+    IECDSAStakeRegistry,
+    IECDSAStakeRegistryErrors,
+    IECDSAStakeRegistryTypes,
+    IECDSAStakeRegistryEvents
+} from "../../src/interfaces/IECDSAStakeRegistry.sol";
 
 contract MockServiceManager {
     // solhint-disable-next-line
@@ -44,7 +45,7 @@ contract MockDelegationManager {
     }
 }
 
-contract ECDSAStakeRegistrySetup is Test, ECDSAStakeRegistryEventsAndErrors {
+contract ECDSAStakeRegistrySetup is Test, IECDSAStakeRegistryEvents {
     MockDelegationManager public mockDelegationManager;
     MockServiceManager public mockServiceManager;
     ECDSAStakeRegistry public registry;
@@ -64,8 +65,11 @@ contract ECDSAStakeRegistrySetup is Test, ECDSAStakeRegistryEventsAndErrors {
         mockDelegationManager = new MockDelegationManager();
         mockServiceManager = new MockServiceManager();
         IStrategy mockStrategy = IStrategy(address(0x1234));
-        Quorum memory quorum = Quorum({strategies: new StrategyParams[](1)});
-        quorum.strategies[0] = StrategyParams({strategy: mockStrategy, multiplier: 10_000});
+        IECDSAStakeRegistryTypes.Quorum memory quorum = IECDSAStakeRegistryTypes.Quorum({
+            strategies: new IECDSAStakeRegistryTypes.StrategyParams[](1)
+        });
+        quorum.strategies[0] =
+            IECDSAStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 10_000});
         registry = new ECDSAStakeRegistry(IDelegationManager(address(mockDelegationManager)));
         registry.initialize(address(mockServiceManager), 100, quorum);
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
@@ -81,9 +85,12 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     function test_UpdateQuorumConfig() public {
         IStrategy mockStrategy = IStrategy(address(420));
 
-        Quorum memory oldQuorum = registry.quorum();
-        Quorum memory newQuorum = Quorum({strategies: new StrategyParams[](1)});
-        newQuorum.strategies[0] = StrategyParams({strategy: mockStrategy, multiplier: 10_000});
+        IECDSAStakeRegistryTypes.Quorum memory oldQuorum = registry.quorum();
+        IECDSAStakeRegistryTypes.Quorum memory newQuorum = IECDSAStakeRegistryTypes.Quorum({
+            strategies: new IECDSAStakeRegistryTypes.StrategyParams[](1)
+        });
+        newQuorum.strategies[0] =
+            IECDSAStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 10_000});
         address[] memory operators = new address[](2);
         operators[0] = operator1;
         operators[1] = operator2;
@@ -95,8 +102,10 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     }
 
     function test_RevertsWhen_InvalidQuorum_UpdateQuourmConfig() public {
-        Quorum memory invalidQuorum = Quorum({strategies: new StrategyParams[](1)});
-        invalidQuorum.strategies[0] = StrategyParams({
+        IECDSAStakeRegistryTypes.Quorum memory invalidQuorum = IECDSAStakeRegistryTypes.Quorum({
+            strategies: new IECDSAStakeRegistryTypes.StrategyParams[](1)
+        });
+        invalidQuorum.strategies[0] = IECDSAStakeRegistryTypes.StrategyParams({
             /// TODO: Make mock strategy
             strategy: IStrategy(address(420)),
             multiplier: 5000 // This should cause the update to revert as it's not the total required
@@ -105,14 +114,18 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         operators[0] = operator1;
         operators[1] = operator2;
 
-        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InvalidQuorum.selector);
+        vm.expectRevert(IECDSAStakeRegistryErrors.InvalidQuorum.selector);
         registry.updateQuorumConfig(invalidQuorum, operators);
     }
 
     function test_RevertsWhen_NotOwner_UpdateQuorumConfig() public {
-        Quorum memory validQuorum = Quorum({strategies: new StrategyParams[](1)});
-        validQuorum.strategies[0] =
-            StrategyParams({strategy: IStrategy(address(420)), multiplier: 10_000});
+        IECDSAStakeRegistryTypes.Quorum memory validQuorum = IECDSAStakeRegistryTypes.Quorum({
+            strategies: new IECDSAStakeRegistryTypes.StrategyParams[](1)
+        });
+        validQuorum.strategies[0] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(420)),
+            multiplier: 10_000
+        });
 
         address[] memory operators = new address[](2);
         operators[0] = operator1;
@@ -126,7 +139,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     }
 
     function test_RevertsWhen_SameQuorum_UpdateQuorumConfig() public {
-        Quorum memory quorum = registry.quorum();
+        IECDSAStakeRegistryTypes.Quorum memory quorum = registry.quorum();
         address[] memory operators = new address[](2);
         operators[0] = operator1;
         operators[1] = operator2;
@@ -136,7 +149,8 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     }
 
     function test_RevertSWhen_Duplicate_UpdateQuorumConfig() public {
-        Quorum memory invalidQuorum = Quorum({strategies: new StrategyParams[](2)});
+        IECDSAStakeRegistryTypes.Quorum memory invalidQuorum =
+            IECDSAStakeRegistryTypes.Quorum({strategies: new StrategyParams[](2)});
         invalidQuorum.strategies[0] =
             StrategyParams({strategy: IStrategy(address(420)), multiplier: 5000});
         address[] memory operators = new address[](2);
@@ -145,12 +159,13 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
         invalidQuorum.strategies[1] =
             StrategyParams({strategy: IStrategy(address(420)), multiplier: 5000});
-        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
+        vm.expectRevert(IECDSAStakeRegistryErrors.NotSorted.selector);
         registry.updateQuorumConfig(invalidQuorum, operators);
     }
 
     function test_RevertSWhen_NotSorted_UpdateQuorumConfig() public {
-        Quorum memory invalidQuorum = Quorum({strategies: new StrategyParams[](2)});
+        IECDSAStakeRegistryTypes.Quorum memory invalidQuorum =
+            IECDSAStakeRegistryTypes.Quorum({strategies: new StrategyParams[](2)});
         invalidQuorum.strategies[0] =
             StrategyParams({strategy: IStrategy(address(420)), multiplier: 5000});
         address[] memory operators = new address[](2);
@@ -159,19 +174,20 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
         invalidQuorum.strategies[1] =
             StrategyParams({strategy: IStrategy(address(419)), multiplier: 5000});
-        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
+        vm.expectRevert(IECDSAStakeRegistryErrors.NotSorted.selector);
         registry.updateQuorumConfig(invalidQuorum, operators);
     }
 
     function test_RevertSWhen_OverMultiplierTotal_UpdateQuorumConfig() public {
-        Quorum memory invalidQuorum = Quorum({strategies: new StrategyParams[](1)});
+        IECDSAStakeRegistryTypes.Quorum memory invalidQuorum =
+            IECDSAStakeRegistryTypes.Quorum({strategies: new StrategyParams[](1)});
         invalidQuorum.strategies[0] =
             StrategyParams({strategy: IStrategy(address(420)), multiplier: 10_001});
         address[] memory operators = new address[](2);
         operators[0] = operator1;
         operators[1] = operator2;
 
-        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InvalidQuorum.selector);
+        vm.expectRevert(IECDSAStakeRegistryErrors.InvalidQuorum.selector);
         registry.updateQuorumConfig(invalidQuorum, operators);
     }
 
@@ -189,7 +205,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         assertEq(registry.getLastCheckpointTotalWeight(), 2000);
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory signature;
-        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.OperatorAlreadyRegistered.selector);
+        vm.expectRevert(IECDSAStakeRegistryErrors.OperatorAlreadyRegistered.selector);
         vm.prank(operator1);
         registry.registerOperatorWithSignature(signature, operator1);
     }
@@ -225,7 +241,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     function test_RevertsWhen_NotOperator_DeregisterOperator() public {
         address notOperator = address(0x2);
         vm.prank(notOperator);
-        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.OperatorNotRegistered.selector);
+        vm.expectRevert(IECDSAStakeRegistryErrors.OperatorNotRegistered.selector);
         registry.deregisterOperator();
     }
 
@@ -302,7 +318,8 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         IStrategy mockStrategy = IStrategy(address(420));
         IStrategy mockStrategy2 = IStrategy(address(421));
 
-        Quorum memory quorum = Quorum({strategies: new StrategyParams[](2)});
+        IECDSAStakeRegistryTypes.Quorum memory quorum =
+            IECDSAStakeRegistryTypes.Quorum({strategies: new StrategyParams[](2)});
         quorum.strategies[0] = StrategyParams({strategy: mockStrategy, multiplier: 5000});
         quorum.strategies[1] = StrategyParams({strategy: mockStrategy2, multiplier: 5000});
 
@@ -421,7 +438,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(operator1Pk, msgHash);
         signatures[0] = abi.encode(v, r, s);
 
-        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.LengthMismatch.selector);
+        vm.expectRevert(IECDSAStakeRegistryErrors.LengthMismatch.selector);
         registry.isValidSignature(msgHash, abi.encode(signers, signatures, block.number - 1));
     }
 
@@ -430,7 +447,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         address[] memory signers = new address[](0);
         bytes[] memory signatures = new bytes[](0);
 
-        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InvalidLength.selector);
+        vm.expectRevert(IECDSAStakeRegistryErrors.InvalidLength.selector);
         registry.isValidSignature(dataHash, abi.encode(signers, signatures, block.number - 1));
     }
 
@@ -445,7 +462,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         (v, r, s) = vm.sign(operator2Pk, msgHash);
         signatures[0] = abi.encodePacked(r, s, v);
 
-        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
+        vm.expectRevert(IECDSAStakeRegistryErrors.NotSorted.selector);
         registry.isValidSignature(msgHash, abi.encode(signers, signatures, block.number - 1));
     }
 
@@ -463,7 +480,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         signatures[0] = abi.encodePacked(r, s, v);
         signatures[1] = abi.encodePacked(r, s, v);
 
-        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
+        vm.expectRevert(IECDSAStakeRegistryErrors.NotSorted.selector);
         registry.isValidSignature(msgHash, abi.encode(signers, signatures, block.number - 1));
     }
 
@@ -474,7 +491,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         bytes[] memory signatures = new bytes[](1);
         signatures[0] = "invalid-signature";
 
-        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InvalidSignature.selector);
+        vm.expectRevert(IECDSAStakeRegistryErrors.InvalidSignature.selector);
         registry.isValidSignature(dataHash, abi.encode(signers, signatures, block.number - 1));
     }
 
@@ -502,7 +519,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
             abi.encode(50)
         );
 
-        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InsufficientSignedStake.selector);
+        vm.expectRevert(IECDSAStakeRegistryErrors.InsufficientSignedStake.selector);
         registry.isValidSignature(msgHash, abi.encode(signers, signatures, block.number - 1));
     }
 
@@ -514,7 +531,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         signers[1] = operator2;
         bytes[] memory signatures = new bytes[](1);
 
-        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.LengthMismatch.selector);
+        vm.expectRevert(IECDSAStakeRegistryErrors.LengthMismatch.selector);
         registry.isValidSignature(dataHash, abi.encode(signers, signatures, referenceBlock));
     }
 
@@ -524,7 +541,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         address[] memory signers = new address[](0);
         bytes[] memory signatures = new bytes[](0);
 
-        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InvalidLength.selector);
+        vm.expectRevert(IECDSAStakeRegistryErrors.InvalidLength.selector);
         registry.isValidSignature(dataHash, abi.encode(signers, signatures, referenceBlock));
     }
 
@@ -541,7 +558,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         (v, r, s) = vm.sign(operator2Pk, msgHash);
         signatures[0] = abi.encodePacked(r, s, v);
 
-        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
+        vm.expectRevert(IECDSAStakeRegistryErrors.NotSorted.selector);
         registry.isValidSignature(msgHash, abi.encode(signers, signatures, referenceBlock));
     }
 
@@ -570,7 +587,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
             abi.encode(50)
         );
 
-        vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.InsufficientSignedStake.selector);
+        vm.expectRevert(IECDSAStakeRegistryErrors.InsufficientSignedStake.selector);
         registry.isValidSignature(msgHash, abi.encode(signers, signatures, referenceBlock));
     }
 
@@ -643,7 +660,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         registry.registerOperatorWithSignature(operatorSignature, signer);
 
         // Verify that the signing key has been successfully registered for the operator
-        address registeredSigningKey = registry.getLastestOperatorSigningKey(operator);
+        address registeredSigningKey = registry.getLatestOperatorSigningKey(operator);
         assertEq(
             registeredSigningKey,
             signer,
@@ -665,7 +682,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         registry.updateOperatorSigningKey(address(420));
 
         // Verify that the signing key has been successfully registered for the operator
-        address registeredSigningKey = registry.getLastestOperatorSigningKey(operator);
+        address registeredSigningKey = registry.getLatestOperatorSigningKey(operator);
 
         vm.roll(block.number + 1);
         registeredSigningKey =

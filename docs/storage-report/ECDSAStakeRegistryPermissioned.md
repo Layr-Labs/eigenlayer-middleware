@@ -14,7 +14,7 @@
 |----------------------------+-----------------------------------------------------------+------+--------+-------+------------------------------------------------------------------------------------------|
 | _totalOperators            | uint256                                                   | 101  | 0      | 32    | src/unaudited/examples/ECDSAStakeRegistryPermissioned.sol:ECDSAStakeRegistryPermissioned |
 |----------------------------+-----------------------------------------------------------+------+--------+-------+------------------------------------------------------------------------------------------|
-| _quorum                    | struct Quorum                                             | 102  | 0      | 32    | src/unaudited/examples/ECDSAStakeRegistryPermissioned.sol:ECDSAStakeRegistryPermissioned |
+| _quorum                    | struct IECDSAStakeRegistryTypes.Quorum                    | 102  | 0      | 32    | src/unaudited/examples/ECDSAStakeRegistryPermissioned.sol:ECDSAStakeRegistryPermissioned |
 |----------------------------+-----------------------------------------------------------+------+--------+-------+------------------------------------------------------------------------------------------|
 | _minimumWeight             | uint256                                                   | 103  | 0      | 32    | src/unaudited/examples/ECDSAStakeRegistryPermissioned.sol:ECDSAStakeRegistryPermissioned |
 |----------------------------+-----------------------------------------------------------+------+--------+-------+------------------------------------------------------------------------------------------|

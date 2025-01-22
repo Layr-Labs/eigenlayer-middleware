@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {IndexRegistryStorage} from "./IndexRegistryStorage.sol";
+import {IIndexRegistry, IndexRegistryStorage} from "./IndexRegistryStorage.sol";
 import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
 
 /**
@@ -9,13 +9,11 @@ import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordi
  * @author Layr Labs, Inc.
  */
 contract IndexRegistry is IndexRegistryStorage {
-    /// @notice when applied to a function, only allows the RegistryCoordinator to call it
     modifier onlyRegistryCoordinator() {
         _checkRegistryCoordinator();
         _;
     }
 
-    /// @notice sets the (immutable) `registryCoordinator` address
     constructor(
         ISlashingRegistryCoordinator _slashingRegistryCoordinator
     ) IndexRegistryStorage(_slashingRegistryCoordinator) {}
@@ -26,18 +24,7 @@ contract IndexRegistry is IndexRegistryStorage {
      *
      */
 
-    /**
-     * @notice Registers the operator with the specified `operatorId` for the quorums specified by `quorumNumbers`.
-     * @param operatorId is the id of the operator that is being registered
-     * @param quorumNumbers is the quorum numbers the operator is registered for
-     * @return numOperatorsPerQuorum is a list of the number of operators (including the registering operator) in each of the quorums the operator is registered for
-     * @dev access restricted to the RegistryCoordinator
-     * @dev Preconditions (these are assumed, not validated in this contract):
-     *         1) `quorumNumbers` has no duplicates
-     *         2) `quorumNumbers.length` != 0
-     *         3) `quorumNumbers` is ordered in ascending order
-     *         4) the operator is not already registered
-     */
+    /// @inheritdoc IIndexRegistry
     function registerOperator(
         bytes32 operatorId,
         bytes calldata quorumNumbers
@@ -68,18 +55,7 @@ contract IndexRegistry is IndexRegistryStorage {
         return numOperatorsPerQuorum;
     }
 
-    /**
-     * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumNumbers`.
-     * @param operatorId is the id of the operator that is being deregistered
-     * @param quorumNumbers is the quorum numbers the operator is deregistered for
-     * @dev access restricted to the RegistryCoordinator
-     * @dev Preconditions (these are assumed, not validated in this contract):
-     *         1) `quorumNumbers` has no duplicates
-     *         2) `quorumNumbers.length` != 0
-     *         3) `quorumNumbers` is ordered in ascending order
-     *         4) the operator is not already deregistered
-     *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
-     */
+    /// @inheritdoc IIndexRegistry
     function deregisterOperator(
         bytes32 operatorId,
         bytes calldata quorumNumbers
@@ -109,10 +85,7 @@ contract IndexRegistry is IndexRegistryStorage {
         }
     }
 
-    /**
-     * @notice Initialize a quorum by pushing its first quorum update
-     * @param quorumNumber The number of the new quorum
-     */
+    /// @inheritdoc IIndexRegistry
     function initializeQuorum(
         uint8 quorumNumber
     ) public virtual onlyRegistryCoordinator {
@@ -129,9 +102,7 @@ contract IndexRegistry is IndexRegistryStorage {
      *
      */
 
-    /**
-     * @notice Increases the historical operator count by 1 and returns the new count
-     */
+    /// @notice Increases the historical operator count by 1 and returns the new count.
     function _increaseOperatorCount(
         uint8 quorumNumber
     ) internal returns (uint32) {
@@ -154,9 +125,7 @@ contract IndexRegistry is IndexRegistryStorage {
         return newOperatorCount;
     }
 
-    /**
-     * @notice Decreases the historical operator count by 1 and returns the new count
-     */
+    /// @notice Decreases the historical operator count by 1 and returns the new count.
     function _decreaseOperatorCount(
         uint8 quorumNumber
     ) internal returns (uint32) {
@@ -168,11 +137,9 @@ contract IndexRegistry is IndexRegistryStorage {
         return newOperatorCount;
     }
 
-    /**
-     * @notice Update `_operatorCountHistory` with a new operator count
-     * @dev If the lastUpdate was made in the this block, update the entry.
-     * Otherwise, push a new historical entry.
-     */
+    /// @notice Updates `_operatorCountHistory` with a new operator count.
+    /// @dev If the lastUpdate was made in this block, update the entry.
+    /// Otherwise, push a new historical entry.
     function _updateOperatorCountHistory(
         uint8 quorumNumber,
         QuorumUpdate storage lastUpdate,
@@ -187,11 +154,9 @@ contract IndexRegistry is IndexRegistryStorage {
         }
     }
 
-    /**
-     * @notice For a given quorum and operatorIndex, pop and return the last operatorId in the history
-     * @dev The last entry's operatorId is updated to OPERATOR_DOES_NOT_EXIST_ID
-     * @return The removed operatorId
-     */
+    /// @notice For a given quorum and operatorIndex, pop and return the last operatorId in the history.
+    /// @dev The last entry's operatorId is updated to OPERATOR_DOES_NOT_EXIST_ID.
+    /// @return The removed operatorId.
     function _popLastOperator(
         uint8 quorumNumber,
         uint32 operatorIndex
@@ -207,12 +172,10 @@ contract IndexRegistry is IndexRegistryStorage {
         return removedOperatorId;
     }
 
-    /**
-     * @notice Assign an operator to an index and update the index history
-     * @param operatorId operatorId of the operator to update
-     * @param quorumNumber quorumNumber of the operator to update
-     * @param operatorIndex the latest index of that operator in the list of operators registered for this quorum
-     */
+    /// @notice Assigns an operator to an index and updates the index history.
+    /// @param operatorId operatorId of the operator to update.
+    /// @param quorumNumber quorumNumber of the operator to update.
+    /// @param operatorIndex the latest index of that operator in the list of operators registered for this quorum.
     function _assignOperatorToIndex(
         bytes32 operatorId,
         uint8 quorumNumber,
@@ -227,11 +190,9 @@ contract IndexRegistry is IndexRegistryStorage {
         emit QuorumIndexUpdate(operatorId, quorumNumber, operatorIndex);
     }
 
-    /**
-     * @notice Update `_operatorIndexHistory` with a new operator id for the current block
-     * @dev If the lastUpdate was made in the this block, update the entry.
-     * Otherwise, push a new historical entry.
-     */
+    /// @notice Updates `_operatorIndexHistory` with a new operator id for the current block.
+    /// @dev If the lastUpdate was made in this block, update the entry.
+    /// Otherwise, push a new historical entry.
     function _updateOperatorIndexHistory(
         uint8 quorumNumber,
         uint32 operatorIndex,
@@ -247,8 +208,8 @@ contract IndexRegistry is IndexRegistryStorage {
         }
     }
 
-    /// @notice Returns the most recent operator count update for a quorum
-    /// @dev Reverts if the quorum does not exist (history length == 0)
+    /// @notice Returns the most recent operator count update for a quorum.
+    /// @dev Reverts if the quorum does not exist (history length == 0).
     function _latestQuorumUpdate(
         uint8 quorumNumber
     ) internal view returns (QuorumUpdate storage) {
@@ -256,8 +217,8 @@ contract IndexRegistry is IndexRegistryStorage {
         return _operatorCountHistory[quorumNumber][historyLength - 1];
     }
 
-    /// @notice Returns the most recent operator id update for an index
-    /// @dev Reverts if the index has never been used (history length == 0)
+    /// @notice Returns the most recent operator id update for an index.
+    /// @dev Reverts if the index has never been used (history length == 0).
     function _latestOperatorIndexUpdate(
         uint8 quorumNumber,
         uint32 operatorIndex
@@ -266,10 +227,8 @@ contract IndexRegistry is IndexRegistryStorage {
         return _operatorIndexHistory[quorumNumber][operatorIndex][historyLength - 1];
     }
 
-    /**
-     * @notice Returns the total number of operators of the service for the given `quorumNumber` at the given `blockNumber`
-     * @dev Reverts if the quorum does not exist, or if the blockNumber is from before the quorum existed
-     */
+    /// @notice Returns the total number of operators of the service for the given `quorumNumber` at the given `blockNumber`.
+    /// @dev Reverts if the quorum does not exist, or if the blockNumber is from before the quorum existed.
     function _operatorCountAtBlockNumber(
         uint8 quorumNumber,
         uint32 blockNumber
@@ -290,10 +249,8 @@ contract IndexRegistry is IndexRegistryStorage {
         );
     }
 
-    /**
-     * @return operatorId at the given `operatorIndex` at the given `blockNumber` for the given `quorumNumber`
-     * Precondition: requires that the operatorIndex was used active at the given block number for quorum
-     */
+    /// @notice Returns the operatorId at the given `operatorIndex` at the given `blockNumber` for the given `quorumNumber`.
+    /// @dev Requires that the operatorIndex was active at the given block number for quorum.
     function _operatorIdForIndexAtBlockNumber(
         uint8 quorumNumber,
         uint32 operatorIndex,
@@ -322,8 +279,7 @@ contract IndexRegistry is IndexRegistryStorage {
      *
      */
 
-    /// @notice Returns the _operatorIndexHistory entry for the specified `operatorIndex` and `quorumNumber`
-    /// at the specified `arrayIndex`
+    /// @inheritdoc IIndexRegistry
     function getOperatorUpdateAtIndex(
         uint8 quorumNumber,
         uint32 operatorIndex,
@@ -332,7 +288,7 @@ contract IndexRegistry is IndexRegistryStorage {
         return _operatorIndexHistory[quorumNumber][operatorIndex][arrayIndex];
     }
 
-    /// @notice Returns the _operatorCountHistory entry for the specified `quorumNumber` at the specified `quorumIndex`
+    /// @inheritdoc IIndexRegistry
     function getQuorumUpdateAtIndex(
         uint8 quorumNumber,
         uint32 quorumIndex
@@ -340,16 +296,14 @@ contract IndexRegistry is IndexRegistryStorage {
         return _operatorCountHistory[quorumNumber][quorumIndex];
     }
 
-    /// @notice Returns the most recent QuorumUpdate entry for the specified quorumNumber
-    /// @dev Reverts if the quorum does not exist
+    /// @inheritdoc IIndexRegistry
     function getLatestQuorumUpdate(
         uint8 quorumNumber
     ) external view returns (QuorumUpdate memory) {
         return _latestQuorumUpdate(quorumNumber);
     }
 
-    /// @notice Returns the most recent OperatorUpdate entry for the specified quorumNumber and operatorIndex
-    /// @dev Reverts if there is no update for the given operatorIndex
+    /// @inheritdoc IIndexRegistry
     function getLatestOperatorUpdate(
         uint8 quorumNumber,
         uint32 operatorIndex
@@ -357,7 +311,7 @@ contract IndexRegistry is IndexRegistryStorage {
         return _latestOperatorIndexUpdate(quorumNumber, operatorIndex);
     }
 
-    /// @notice Returns an ordered list of operators of the services for the given `quorumNumber` at the given `blockNumber`
+    /// @inheritdoc IIndexRegistry
     function getOperatorListAtBlockNumber(
         uint8 quorumNumber,
         uint32 blockNumber
@@ -371,8 +325,7 @@ contract IndexRegistry is IndexRegistryStorage {
         return operatorList;
     }
 
-    /// @notice Returns the total number of operators for a given `quorumNumber`
-    /// @dev This will revert if the quorum does not exist
+    /// @inheritdoc IIndexRegistry
     function totalOperatorsForQuorum(
         uint8 quorumNumber
     ) external view returns (uint32) {

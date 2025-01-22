@@ -10,7 +10,7 @@
 
 // import {ECDSAServiceManagerMock} from "../mocks/ECDSAServiceManagerMock.sol";
 // import {ECDSAStakeRegistryMock} from "../mocks/ECDSAStakeRegistryMock.sol";
-// import {Quorum, StrategyParams} from "../../src/interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
+// import {IECDSAStakeRegistryTypes.Quorum, StrategyParams} from "../../src/interfaces/IECDSAStakeRegistry.sol";
 
 // contract MockDelegationManager {
 //     function operatorShares(address, address) external pure returns (uint256) {
@@ -84,7 +84,7 @@
 //         operator2 = vm.addr(operator2Pk);
 
 //         // Create a quorum
-//         Quorum memory quorum = Quorum({strategies: new StrategyParams[](2)});
+//         IECDSAStakeRegistryTypes.Quorum memory quorum = IECDSAStakeRegistryTypes.Quorum({strategies: new StrategyParams[](2)});
 //         quorum.strategies[0] = StrategyParams({
 //             strategy: IStrategy(address(420)),
 //             multiplier: 5000

@@ -12,6 +12,19 @@ contract StakeRegistryMock is IStakeRegistry {
     // bitmap returned by the mocked `updateOperatorStake` function
     uint192 updateOperatorStakeReturnBitmap;
 
+    function isOperatorSetQuorum(
+        uint8 quorumNumber
+    ) external view returns (bool) {}
+
+    function getStakeHistoryLength(
+        bytes32 operatorId,
+        uint8 quorumNumber
+    ) external view returns (uint256) {}
+
+    function setMinimumStakeForQuorum(uint8 quorumNumber, uint96 minimumStake) external {}
+
+    function setSlashableStakeLookahead(uint8 quorumNumber, uint32 lookAheadBlocks) external {}
+
     function set_updateOperatorStakeReturnBitmap(
         uint192 newValue
     ) external {

@@ -6,12 +6,10 @@ import {IDelegationManager} from
 import {CheckpointsUpgradeable} from
     "@openzeppelin-upgrades/contracts/utils/CheckpointsUpgradeable.sol";
 import {
-    ECDSAStakeRegistryEventsAndErrors,
-    Quorum,
-    StrategyParams
-} from "../interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
+    IECDSAStakeRegistry, IECDSAStakeRegistryTypes
+} from "../interfaces/IECDSAStakeRegistry.sol";
 
-abstract contract ECDSAStakeRegistryStorage is ECDSAStakeRegistryEventsAndErrors {
+abstract contract ECDSAStakeRegistryStorage is IECDSAStakeRegistry {
     /// @notice Manages staking delegations through the DelegationManager interface
     IDelegationManager internal immutable DELEGATION_MANAGER;
 
@@ -22,7 +20,7 @@ abstract contract ECDSAStakeRegistryStorage is ECDSAStakeRegistryEventsAndErrors
     uint256 internal _totalOperators;
 
     /// @notice Stores the current quorum configuration
-    Quorum internal _quorum;
+    IECDSAStakeRegistryTypes.Quorum internal _quorum;
 
     /// @notice Specifies the weight required to become an operator
     uint256 internal _minimumWeight;
