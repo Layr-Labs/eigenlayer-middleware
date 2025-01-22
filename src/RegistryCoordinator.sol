@@ -399,6 +399,9 @@ contract RegistryCoordinator is
                 bytes memory singleQuorumNumber = new bytes(1);
                 singleQuorumNumber[0] = quorumNumbers[i];
                 _deregisterOperator(operatorKickParams[i].operator, singleQuorumNumber);
+                if (isUsingOperatorSets()) {
+                    _handleOperatorSetDeregistration(operatorKickParams[i].operator, singleQuorumNumber);
+                }
             }
         }
     }
