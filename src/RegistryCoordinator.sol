@@ -316,7 +316,7 @@ contract RegistryCoordinator is
         }
 
         // Handle churn or normal registration based on first byte in `data`
-        RegistrationType registrationType = abi.decode(data[0:1], (RegistrationType));
+        RegistrationType registrationType = RegistrationType(uint8(bytes1(data[0:1])));
         if (registrationType == RegistrationType.NORMAL) {
             (, string memory socket, IBLSApkRegistry.PubkeyRegistrationParams memory params) = abi.decode(data, (RegistrationType, string, IBLSApkRegistry.PubkeyRegistrationParams));
             bytes32 operatorId = _getOrCreateOperatorId(operator, params);
