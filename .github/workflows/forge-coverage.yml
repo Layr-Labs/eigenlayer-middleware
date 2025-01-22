@@ -50,7 +50,7 @@ jobs:
         RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
 
     - name: Prune coverage report
-      run: lcov --remove ./lcov.info -o ./lcov.info.pruned 'src/test/*' 'script/*' '*Storage.sol' --ignore-errors inconsistent
+      run: lcov --remove ./lcov.info -o ./lcov.info.pruned 'test/*' 'script/*' '*Storage.sol' --ignore-errors inconsistent
 
     - name: Generate reports
       run: genhtml -o report ./lcov.info.pruned
