@@ -8,7 +8,8 @@ import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
 import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IAllocationManagerTypes} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {AVSRegistrarMock} from "../mocks/AVSRegistrarMock.sol";
 import {console2 as console} from "forge-std/Test.sol";
 
@@ -25,18 +26,26 @@ contract AVSRegistrarTest is MockAVSDeployer {
 
     function testSetAVSRegistrar() public {
         vm.prank(address(serviceManager));
-        allocationManager.setAVSRegistrar(address(serviceManager), IAVSRegistrar(address(avsRegistrarMock)));
-        assertEq(address(allocationManager.getAVSRegistrar(address(serviceManager))), address(avsRegistrarMock));
+        allocationManager.setAVSRegistrar(
+            address(serviceManager), IAVSRegistrar(address(avsRegistrarMock))
+        );
+        assertEq(
+            address(allocationManager.getAVSRegistrar(address(serviceManager))),
+            address(avsRegistrarMock)
+        );
     }
 
     function testRegisterOperator() public {
         // Set up AVS registrar
         vm.prank(address(serviceManager));
-        allocationManager.setAVSRegistrar(address(serviceManager), IAVSRegistrar(address(avsRegistrarMock)));
+        allocationManager.setAVSRegistrar(
+            address(serviceManager), IAVSRegistrar(address(avsRegistrarMock))
+        );
 
         // Create operator set
         uint32 operatorSetId = 1;
-        IAllocationManagerTypes.CreateSetParams[] memory createSetParams = new IAllocationManagerTypes.CreateSetParams[](1);
+        IAllocationManagerTypes.CreateSetParams[] memory createSetParams =
+            new IAllocationManagerTypes.CreateSetParams[](1);
         createSetParams[0] = IAllocationManagerTypes.CreateSetParams({
             operatorSetId: operatorSetId,
             strategies: new IStrategy[](0)
@@ -57,17 +66,22 @@ contract AVSRegistrarTest is MockAVSDeployer {
         vm.prank(operator);
         allocationManager.registerForOperatorSets(
             address(operator),
-            IAllocationManagerTypes.RegisterParams(address(serviceManager), operatorSetIds, emptyBytes)
+            IAllocationManagerTypes.RegisterParams(
+                address(serviceManager), operatorSetIds, emptyBytes
+            )
         );
     }
 
     function testRegisterOperator_RevertsIfNotOperator() public {
         vm.prank(address(serviceManager));
-        allocationManager.setAVSRegistrar(address(serviceManager), IAVSRegistrar(address(avsRegistrarMock)));
+        allocationManager.setAVSRegistrar(
+            address(serviceManager), IAVSRegistrar(address(avsRegistrarMock))
+        );
 
         // Create operator set
         uint32 operatorSetId = 1;
-        IAllocationManagerTypes.CreateSetParams[] memory createSetParams = new IAllocationManagerTypes.CreateSetParams[](1);
+        IAllocationManagerTypes.CreateSetParams[] memory createSetParams =
+            new IAllocationManagerTypes.CreateSetParams[](1);
         createSetParams[0] = IAllocationManagerTypes.CreateSetParams({
             operatorSetId: operatorSetId,
             strategies: new IStrategy[](0)
@@ -90,11 +104,17 @@ contract AVSRegistrarTest is MockAVSDeployer {
         vm.expectRevert();
         allocationManager.registerForOperatorSets(
             address(operator),
-            IAllocationManagerTypes.RegisterParams(address(serviceManager), operatorSetIds, emptyBytes)
+            IAllocationManagerTypes.RegisterParams(
+                address(serviceManager), operatorSetIds, emptyBytes
+            )
         );
     }
+
     function testAllocationManagerDeployed() public {
         assertTrue(address(allocationManager) != address(0), "AllocationManager not deployed");
-        assertTrue(address(allocationManagerImplementation) != address(0), "AllocationManager implementation not deployed");
+        assertTrue(
+            address(allocationManagerImplementation) != address(0),
+            "AllocationManager implementation not deployed"
+        );
     }
 }

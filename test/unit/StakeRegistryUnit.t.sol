@@ -33,7 +33,9 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
 
     uint256 gasUsed;
 
-    modifier fuzzOnlyInitializedQuorums(uint8 quorumNumber) {
+    modifier fuzzOnlyInitializedQuorums(
+        uint8 quorumNumber
+    ) {
         cheats.assume(initializedQuorumBitmap.isSet(quorumNumber));
         _;
     }
@@ -54,7 +56,11 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
         );
 
         stakeRegistryImplementation = new StakeRegistryHarness(
-            IRegistryCoordinator(address(registryCoordinator)), delegationMock, avsDirectoryMock, allocationManager, serviceManager
+            IRegistryCoordinator(address(registryCoordinator)),
+            delegationMock,
+            avsDirectoryMock,
+            allocationManager,
+            serviceManager
         );
 
         stakeRegistry = StakeRegistryHarness(
@@ -88,7 +94,9 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
      * @dev Initialize a new quorum with `minimumStake`
      * The new quorum's number is sequential, starting with `nextQuorum`
      */
-    function _initializeQuorum(uint96 minimumStake) internal {
+    function _initializeQuorum(
+        uint96 minimumStake
+    ) internal {
         uint8 quorumNumber = nextQuorum;
 
         IStakeRegistry.StrategyParams[] memory strategyParams =
@@ -389,7 +397,9 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
 
     /// @notice Given a fuzzed bitmap input, returns a bitmap and array of quorum numbers
     /// that are guaranteed to be initialized.
-    function _fuzz_getQuorums(uint192 fuzzy_Bitmap) internal view returns (uint192, bytes memory) {
+    function _fuzz_getQuorums(
+        uint192 fuzzy_Bitmap
+    ) internal view returns (uint192, bytes memory) {
         fuzzy_Bitmap &= initializedQuorumBitmap;
         cheats.assume(!fuzzy_Bitmap.isEmpty());
 
@@ -399,7 +409,9 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
     /// @notice Returns a list of initialized quorums ending in a non-initialized quorum
     /// @param rand is used to determine how many legitimate quorums to insert, so we can
     /// check this works for lists of varying lengths
-    function _fuzz_getInvalidQuorums(bytes32 rand) internal returns (bytes memory) {
+    function _fuzz_getInvalidQuorums(
+        bytes32 rand
+    ) internal returns (bytes memory) {
         uint256 length = _randUint({rand: rand, min: 1, max: initializedQuorumBytes.length + 1});
         bytes memory invalidQuorums = new bytes(length);
 
@@ -431,11 +443,9 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
     }
 
     /// @dev Return the minimum stakes required for a list of quorums
-    function _getMinimumStakes(bytes memory quorumNumbers)
-        internal
-        view
-        returns (uint96[] memory)
-    {
+    function _getMinimumStakes(
+        bytes memory quorumNumbers
+    ) internal view returns (uint96[] memory) {
         uint96[] memory minimumStakes = new uint96[](quorumNumbers.length);
 
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
@@ -463,11 +473,9 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
     }
 
     /// @dev Return the most recent total stake update history entries
-    function _getLatestTotalStakeUpdates(bytes memory quorumNumbers)
-        internal
-        view
-        returns (IStakeRegistry.StakeUpdate[] memory)
-    {
+    function _getLatestTotalStakeUpdates(
+        bytes memory quorumNumbers
+    ) internal view returns (IStakeRegistry.StakeUpdate[] memory) {
         IStakeRegistry.StakeUpdate[] memory stakeUpdates =
             new IStakeRegistry.StakeUpdate[](quorumNumbers.length);
 
@@ -500,11 +508,9 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
     }
 
     /// @dev Return the lengths of the total stake update history
-    function _getTotalStakeHistoryLengths(bytes memory quorumNumbers)
-        internal
-        view
-        returns (uint256[] memory)
-    {
+    function _getTotalStakeHistoryLengths(
+        bytes memory quorumNumbers
+    ) internal view returns (uint256[] memory) {
         uint256[] memory historyLengths = new uint256[](quorumNumbers.length);
 
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
@@ -554,7 +560,9 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
     }
 
     /// @dev Sort to ensure that the array is in desscending order for removeStrategies
-    function _sortArrayDesc(uint256[] memory arr) internal pure returns (uint256[] memory) {
+    function _sortArrayDesc(
+        uint256[] memory arr
+    ) internal pure returns (uint256[] memory) {
         uint256 l = arr.length;
         for (uint256 i = 0; i < l; i++) {
             for (uint256 j = i + 1; j < l; j++) {
@@ -616,6 +624,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         cheats.prank(address(registryCoordinator));
         stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
     }
+
     event StakeTypeSet(StakeType newStakeType);
 
     function test_initializeDelegatedStakeQuorum() public {
@@ -631,11 +640,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         cheats.prank(address(registryCoordinator));
         cheats.expectEmit(true, true, true, true);
         emit StakeTypeSet(StakeType.TOTAL_DELEGATED);
-        stakeRegistry.initializeDelegatedStakeQuorum(
-            quorumNumber,
-            minimumStake,
-            strategyParams
-        );
+        stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
 
         StakeType stakeType = stakeRegistry.stakeTypePerQuorum(quorumNumber);
         assertEq(uint8(stakeType), uint8(StakeType.TOTAL_DELEGATED), "invalid stake type");
@@ -655,10 +660,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         cheats.expectEmit(true, true, true, true);
         emit StakeTypeSet(StakeType.TOTAL_SLASHABLE);
         stakeRegistry.initializeSlashableStakeQuorum(
-            quorumNumber,
-            minimumStake,
-            7 days,
-            strategyParams
+            quorumNumber, minimumStake, 7 days, strategyParams
         );
 
         StakeType stakeType = stakeRegistry.stakeTypePerQuorum(quorumNumber);
@@ -984,10 +986,9 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         stakeRegistry.modifyStrategyParams(quorumNumber, strategyIndices, newMultipliers);
     }
 
-    function testFuzz_modifyStrategyParams_Revert_WhenEmptyArray(uint8 quorumNumber)
-        public
-        fuzzOnlyInitializedQuorums(quorumNumber)
-    {
+    function testFuzz_modifyStrategyParams_Revert_WhenEmptyArray(
+        uint8 quorumNumber
+    ) public fuzzOnlyInitializedQuorums(quorumNumber) {
         uint256[] memory strategyIndices = new uint256[](0);
         uint96[] memory newMultipliers = new uint96[](0);
         cheats.expectRevert(IStakeRegistryErrors.InputArrayLengthZero.selector);
@@ -1065,7 +1066,9 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
         stakeRegistry.registerOperator(operator, operatorId, initializedQuorumBytes);
     }
 
-    function testFuzz_Revert_WhenQuorumDoesNotExist(bytes32 rand) public {
+    function testFuzz_Revert_WhenQuorumDoesNotExist(
+        bytes32 rand
+    ) public {
         RegisterSetup memory setup = _fuzz_setupRegisterOperator(initializedQuorumBitmap, 0);
 
         // Get a list of valid quorums ending in an invalid quorum number
@@ -1078,10 +1081,9 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
 
     /// @dev Attempt to register for all quorums, selecting one quorum to attempt with
     /// insufficient stake
-    function testFuzz_registerOperator_Revert_WhenInsufficientStake(uint8 failingQuorum)
-        public
-        fuzzOnlyInitializedQuorums(failingQuorum)
-    {
+    function testFuzz_registerOperator_Revert_WhenInsufficientStake(
+        uint8 failingQuorum
+    ) public fuzzOnlyInitializedQuorums(failingQuorum) {
         (address operator, bytes32 operatorId) = _selectNewOperator();
         bytes memory quorumNumbers = initializedQuorumBytes;
         uint96[] memory minimumStakes = _getMinimumStakes(quorumNumbers);
@@ -1415,7 +1417,9 @@ contract StakeRegistryUnitTests_Deregister is StakeRegistryUnitTests {
         stakeRegistry.deregisterOperator(setup.operatorId, setup.quorumsToRemove);
     }
 
-    function testFuzz_deregisterOperator_Revert_WhenQuorumDoesNotExist(bytes32 rand) public {
+    function testFuzz_deregisterOperator_Revert_WhenQuorumDoesNotExist(
+        bytes32 rand
+    ) public {
         // Create a new operator registered for all quorums
         DeregisterSetup memory setup = _fuzz_setupDeregisterOperator({
             registeredFor: initializedQuorumBitmap,
@@ -1777,7 +1781,9 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
         stakeRegistry.updateOperatorStake(setup.operator, setup.operatorId, setup.quorumNumbers);
     }
 
-    function testFuzz_updateOperatorStake_Revert_WhenQuorumDoesNotExist(bytes32 rand) public {
+    function testFuzz_updateOperatorStake_Revert_WhenQuorumDoesNotExist(
+        bytes32 rand
+    ) public {
         // Create a new operator registered for all quorums
         UpdateSetup memory setup =
             _fuzz_setupUpdateOperatorStake({registeredFor: initializedQuorumBitmap, fuzzy_Delta: 0});
@@ -1798,7 +1804,9 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
      * updateOperatorStake should then update the operator's stake using the new weight - we test
      * what happens when the operator remains at/above minimum stake, vs dipping below
      */
-    function testFuzz_updateOperatorStake_SingleOperator_SingleBlock(int8 stakeDelta) public {
+    function testFuzz_updateOperatorStake_SingleOperator_SingleBlock(
+        int8 stakeDelta
+    ) public {
         UpdateSetup memory setup = _fuzz_setupUpdateOperatorStake({
             registeredFor: initializedQuorumBitmap,
             fuzzy_Delta: stakeDelta
@@ -2183,7 +2191,9 @@ contract StakeRegistryUnitTests_weightOfOperatorForQuorum is StakeRegistryUnitTe
         }
         cheats.prank(address(registryCoordinator));
         uint8 quorumNumber = nextQuorum;
-        stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, 0, /* minimumStake */ strategyParams);
+        stakeRegistry.initializeDelegatedStakeQuorum(
+            quorumNumber, 0, /* minimumStake */ strategyParams
+        );
 
         // set the operator shares
         for (uint256 i = 0; i < strategyParams.length; i++) {
@@ -2230,7 +2240,9 @@ contract StakeRegistryUnitTests_weightOfOperatorForQuorum is StakeRegistryUnitTe
         // create a valid quorum
         cheats.prank(address(registryCoordinator));
         uint8 quorumNumber = nextQuorum;
-        stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, 0, /* minimumStake */ strategyParams);
+        stakeRegistry.initializeDelegatedStakeQuorum(
+            quorumNumber, 0, /* minimumStake */ strategyParams
+        );
 
         // set the operator shares
         for (uint256 i = 0; i < strategyParams.length; i++) {

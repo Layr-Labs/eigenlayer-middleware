@@ -8,7 +8,6 @@ import "test/ffi/util/G2Operations.sol";
 import "test/integration/utils/BitmapStrings.t.sol";
 
 contract Constants {
-
     /// Quorum Config:
 
     /// @dev Default OperatorSetParam values used to initialize quorums
@@ -16,22 +15,21 @@ contract Constants {
     ///       This is a low number because each operator receives its own BLS keypair, which
     ///       is very slow to generate.
     uint32 constant MAX_OPERATOR_COUNT = 5;
-    uint16 constant KICK_BIPS_OPERATOR_STAKE = 15000;
+    uint16 constant KICK_BIPS_OPERATOR_STAKE = 15_000;
     uint16 constant KICK_BIPS_TOTAL_STAKE = 150;
 
     /// Other:
 
     /// @dev Number of BLS keypairs to pregenerate. This is a slow operation,
     /// so I've set this to a low number.
-    uint constant NUM_GENERATED_OPERATORS = MAX_OPERATOR_COUNT + 5;
+    uint256 constant NUM_GENERATED_OPERATORS = MAX_OPERATOR_COUNT + 5;
 
-    uint constant MAX_QUORUM_COUNT = 192;  // From RegistryCoordinator.MAX_QUORUM_COUNT
+    uint256 constant MAX_QUORUM_COUNT = 192; // From RegistryCoordinator.MAX_QUORUM_COUNT
 
-    uint16 internal constant BIPS_DENOMINATOR = 10000;
+    uint16 internal constant BIPS_DENOMINATOR = 10_000;
 }
 
 contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
-
     using BitmapStrings for *;
     using Strings for *;
     using BN254 for *;
@@ -48,42 +46,42 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
     bytes minStakeFlags;
     bytes fillTypeFlags;
 
-    uint constant FLAG = 1;
+    uint256 constant FLAG = 1;
 
     /// @dev Flags for userTypes
-    uint constant DEFAULT = (FLAG << 0);
-    uint constant ALT_METHODS = (FLAG << 1);
+    uint256 constant DEFAULT = (FLAG << 0);
+    uint256 constant ALT_METHODS = (FLAG << 1);
 
     /// @dev Flags for numQuorums and numStrategies
-    uint constant ONE = (FLAG << 0);
-    uint constant TWO = (FLAG << 1);
-    uint constant MANY = (FLAG << 2);
-    uint constant FIFTEEN = (FLAG << 3);
-    uint constant TWENTY = (FLAG << 4);
-    uint constant TWENTYFIVE = (FLAG << 5);
+    uint256 constant ONE = (FLAG << 0);
+    uint256 constant TWO = (FLAG << 1);
+    uint256 constant MANY = (FLAG << 2);
+    uint256 constant FIFTEEN = (FLAG << 3);
+    uint256 constant TWENTY = (FLAG << 4);
+    uint256 constant TWENTYFIVE = (FLAG << 5);
 
     /// @dev Flags for minimumStake
-    uint constant NO_MINIMUM = (FLAG << 0);
-    uint constant HAS_MINIMUM = (FLAG << 1);
+    uint256 constant NO_MINIMUM = (FLAG << 0);
+    uint256 constant HAS_MINIMUM = (FLAG << 1);
 
     /// @dev Flags for fillTypes
-    uint constant EMPTY = (FLAG << 0);
-    uint constant SOME_FILL = (FLAG << 1);
-    uint constant FULL = (FLAG << 2);
+    uint256 constant EMPTY = (FLAG << 0);
+    uint256 constant SOME_FILL = (FLAG << 1);
+    uint256 constant FULL = (FLAG << 2);
 
     /// @dev Tracking variables for pregenerated BLS keypairs:
     /// (See _fetchKeypair)
-    uint fetchIdx = 0;
-    uint[] privKeys;
+    uint256 fetchIdx = 0;
+    uint256[] privKeys;
     IBLSApkRegistry.PubkeyRegistrationParams[] pubkeys;
 
     /// @dev Current initialized quorums are tracked here:
-    uint quorumCount;
+    uint256 quorumCount;
     uint192 quorumBitmap;
     bytes quorumArray;
 
     /// @dev Number of operators generated so far
-    uint numOperators = 0;
+    uint256 numOperators = 0;
     /// @dev current array of operatorIds registered so far per quorum.
     /// does not update and remove if an operator is deregistered however, used for testing updateOperatorsForQuorum
     mapping(uint8 => address[]) operatorsForQuorum;
@@ -94,9 +92,9 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
      * so this is the best way to speed things up when running multiple tests.
      */
     constructor() {
-        for (uint i = 0; i < NUM_GENERATED_OPERATORS; i++) {
+        for (uint256 i = 0; i < NUM_GENERATED_OPERATORS; i++) {
             IBLSApkRegistry.PubkeyRegistrationParams memory pubkey;
-            uint privKey = uint(keccak256(abi.encodePacked(i + 1)));
+            uint256 privKey = uint256(keccak256(abi.encodePacked(i + 1)));
 
             pubkey.pubkeyG1 = BN254.generatorG1().scalar_mul(privKey);
             pubkey.pubkeyG2 = G2Operations.mul(privKey);
@@ -112,15 +110,15 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
      */
     struct QuorumConfig {
         /// @dev The number of quorums created during setup
-        uint numQuorums;     // ONE | TWO | MANY
+        uint256 numQuorums; // ONE | TWO | MANY
         /// @dev The number of strategies a quorum will consider
-        uint numStrategies;  // ONE | TWO | MANY
+        uint256 numStrategies; // ONE | TWO | MANY
         /// @dev Whether each quorum has a minimum stake
         /// NOTE: Minimum stake is currently MIN_BALANCE by default
-        uint minimumStake;   // NO_MINIMUM | HAS_MINIMUM
+        uint256 minimumStake; // NO_MINIMUM | HAS_MINIMUM
         /// @dev Whether each quorum created is pre-populated with operators
         /// NOTE: Default
-        uint fillTypes;      // EMPTY | SOME_FILL | FULL
+        uint256 fillTypes; // EMPTY | SOME_FILL | FULL
     }
 
     /**
@@ -131,7 +129,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
      */
     function _configRand(
         uint24 _randomSeed,
-        uint _userTypes,
+        uint256 _userTypes,
         QuorumConfig memory _quorumConfig
     ) internal {
         emit log_named_uint("_configRand: set random seed to", _randomSeed);
@@ -147,7 +145,9 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
         // Sanity check config
         assertTrue(userFlags.length != 0, "_configRand: invalid _userTypes, no flags passed");
         assertTrue(numQuorumFlags.length != 0, "_configRand: invalid numQuorums, no flags passed");
-        assertTrue(numStrategyFlags.length != 0, "_configRand: invalid numStrategies, no flags passed");
+        assertTrue(
+            numStrategyFlags.length != 0, "_configRand: invalid numStrategies, no flags passed"
+        );
         assertTrue(minStakeFlags.length != 0, "_configRand: invalid minimumStake, no flags passed");
         assertTrue(fillTypeFlags.length != 0, "_configRand: invalid fillTypes, no flags passed");
 
@@ -158,14 +158,15 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
         emit log_named_uint("_configRand: number of quorums being initialized", quorumCount);
 
         // Default OperatorSetParams for all quorums
-        IRegistryCoordinator.OperatorSetParam memory operatorSet = IRegistryCoordinator.OperatorSetParam({
+        IRegistryCoordinator.OperatorSetParam memory operatorSet = IRegistryCoordinator
+            .OperatorSetParam({
             maxOperatorCount: MAX_OPERATOR_COUNT,
             kickBIPsOfOperatorStake: KICK_BIPS_OPERATOR_STAKE,
             kickBIPsOfTotalStake: KICK_BIPS_TOTAL_STAKE
         });
 
         // Initialize each quorum
-        for (uint i = 0; i < quorumCount; i++) {
+        for (uint256 i = 0; i < quorumCount; i++) {
             IStakeRegistry.StrategyParams[] memory strategyParams = _randStrategyParams();
             uint96 minimumStake = _randMinStake();
 
@@ -183,15 +184,19 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
         }
 
         // Decide how many operators to register for each quorum initially
-        uint initialOperators = _randInitialOperators(operatorSet);
-        emit log(string.concat("Registering ", initialOperators.toString(), " initial operators in each quorum"));
+        uint256 initialOperators = _randInitialOperators(operatorSet);
+        emit log(
+            string.concat(
+                "Registering ", initialOperators.toString(), " initial operators in each quorum"
+            )
+        );
 
         // For each initial operator, register for all quorums
-        for (uint j = 0; j < initialOperators; j++) {
+        for (uint256 j = 0; j < initialOperators; j++) {
             User operator = _newRandomOperator();
 
             operator.registerOperator(quorumArray);
-            for (uint k = 0; k < quorumArray.length; k++) {
+            for (uint256 k = 0; k < quorumArray.length; k++) {
                 uint8 quorum = uint8(quorumArray[k]);
                 operatorsForQuorum[quorum].push(address(operator));
             }
@@ -205,29 +210,34 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
     /**
      * Gen/Init methods:
      */
-
     function _newRandomOperator() internal returns (User) {
         string memory operatorName = string.concat("Operator", numOperators.toString());
         numOperators++;
 
-        (User operator, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser(operatorName);
+        (User operator, IStrategy[] memory strategies, uint256[] memory tokenBalances) =
+            _randUser(operatorName);
 
         operator.registerAsOperator();
         operator.depositIntoEigenlayer(strategies, tokenBalances);
 
-        assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
+        assertTrue(
+            delegationManager.isOperator(address(operator)),
+            "_newRandomOperator: operator should be registered"
+        );
 
         return operator;
     }
 
     /// @dev Create a new user with token balances in ALL core-whitelisted strategies
-    function _randUser(string memory name) internal returns (User, IStrategy[] memory, uint[] memory) {
+    function _randUser(
+        string memory name
+    ) internal returns (User, IStrategy[] memory, uint256[] memory) {
         // Create User contract and give it a unique BLS keypair
-        (uint privKey, IBLSApkRegistry.PubkeyRegistrationParams memory pubkey) = _fetchKeypair();
+        (uint256 privKey, IBLSApkRegistry.PubkeyRegistrationParams memory pubkey) = _fetchKeypair();
 
         // Use userFlags to pick the kind of user to generate
         User user;
-        uint userType = _randValue(userFlags);
+        uint256 userType = _randValue(userFlags);
 
         if (userType == DEFAULT) {
             user = new User(name, privKey, pubkey);
@@ -238,21 +248,23 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
 
         emit log_named_string("_randUser: Created user", user.NAME());
 
-        (IStrategy[] memory strategies, uint[] memory balances) = _dealRandTokens(user);
+        (IStrategy[] memory strategies, uint256[] memory balances) = _dealRandTokens(user);
         return (user, strategies, balances);
     }
 
-    function _dealRandTokens(User user) internal returns (IStrategy[] memory, uint[] memory) {
+    function _dealRandTokens(
+        User user
+    ) internal returns (IStrategy[] memory, uint256[] memory) {
         IStrategy[] memory strategies = new IStrategy[](allStrats.length);
-        uint[] memory balances = new uint[](allStrats.length);
+        uint256[] memory balances = new uint256[](allStrats.length);
         emit log_named_string("_dealRandTokens: dealing assets to", user.NAME());
 
         // Deal the user a random balance between [MIN_BALANCE, MAX_BALANCE] for each existing strategy
-        for (uint i = 0; i < allStrats.length; i++) {
+        for (uint256 i = 0; i < allStrats.length; i++) {
             IStrategy strat = allStrats[i];
             IERC20 underlyingToken = strat.underlyingToken();
 
-            uint balance = _randUint({ min: MIN_BALANCE, max: MAX_BALANCE });
+            uint256 balance = _randUint({min: MIN_BALANCE, max: MAX_BALANCE});
             StdCheats.deal(address(underlyingToken), address(user), balance);
 
             strategies[i] = strat;
@@ -262,17 +274,19 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
         return (strategies, balances);
     }
 
-    function _dealMaxTokens(User user) internal returns (IStrategy[] memory, uint[] memory) {
+    function _dealMaxTokens(
+        User user
+    ) internal returns (IStrategy[] memory, uint256[] memory) {
         IStrategy[] memory strategies = new IStrategy[](allStrats.length);
-        uint[] memory balances = new uint[](allStrats.length);
+        uint256[] memory balances = new uint256[](allStrats.length);
         emit log_named_string("_dealMaxTokens: dealing assets to", user.NAME());
 
         // Deal the user the 100 * MAX_BALANCE for each existing strategy
-        for (uint i = 0; i < allStrats.length; i++) {
+        for (uint256 i = 0; i < allStrats.length; i++) {
             IStrategy strat = allStrats[i];
             IERC20 underlyingToken = strat.underlyingToken();
 
-            uint balance = 100 * MAX_BALANCE;
+            uint256 balance = 100 * MAX_BALANCE;
             StdCheats.deal(address(underlyingToken), address(user), balance);
 
             strategies[i] = strat;
@@ -301,32 +315,45 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
         // For each churn quorum, select operators as churn targets
         User[] memory churnTargets = new User[](churnQuorums.length);
 
-        for (uint i = 0; i < churnQuorums.length; i++) {
+        for (uint256 i = 0; i < churnQuorums.length; i++) {
             uint8 quorum = uint8(churnQuorums[i]);
 
-            IRegistryCoordinator.OperatorSetParam memory params
-                = registryCoordinator.getOperatorSetParams(quorum);
+            IRegistryCoordinator.OperatorSetParam memory params =
+                registryCoordinator.getOperatorSetParams(quorum);
 
             // Sanity check - make sure we're at the operator cap
             uint32 curNumOperators = indexRegistry.totalOperatorsForQuorum(quorum);
-            assertTrue(curNumOperators >= params.maxOperatorCount, "_getChurnTargets: non-full quorum cannot be churned");
+            assertTrue(
+                curNumOperators >= params.maxOperatorCount,
+                "_getChurnTargets: non-full quorum cannot be churned"
+            );
 
             // Get a random registered operator
             churnTargets[i] = _selectRandRegisteredOperator(quorum);
             emit log_named_string(
-                string.concat("_getChurnTargets: selected churn target for quorum ", uint(quorum).toString()),
-                churnTargets[i].NAME());
+                string.concat(
+                    "_getChurnTargets: selected churn target for quorum ",
+                    uint256(quorum).toString()
+                ),
+                churnTargets[i].NAME()
+            );
 
             uint96 currentTotalStake = stakeRegistry.getCurrentTotalStake(quorum);
-            uint96 operatorToChurnStake = stakeRegistry.getCurrentStake(churnTargets[i].operatorId(), quorum);
+            uint96 operatorToChurnStake =
+                stakeRegistry.getCurrentStake(churnTargets[i].operatorId(), quorum);
 
             // Ensure the incoming operator exceeds the individual stake threshold --
             // more stake than the outgoing operator by kickBIPsOfOperatorStake
             while (
-                _getWeight(quorum, incomingOperator) <= _individualKickThreshold(operatorToChurnStake, params) ||
-                operatorToChurnStake >= _totalKickThreshold(currentTotalStake + _getWeight(quorum, incomingOperator), params)
+                _getWeight(quorum, incomingOperator)
+                    <= _individualKickThreshold(operatorToChurnStake, params)
+                    || operatorToChurnStake
+                        >= _totalKickThreshold(
+                            currentTotalStake + _getWeight(quorum, incomingOperator), params
+                        )
             ) {
-                (IStrategy[] memory strategies, uint[] memory balances) = _dealMaxTokens(incomingOperator);
+                (IStrategy[] memory strategies, uint256[] memory balances) =
+                    _dealMaxTokens(incomingOperator);
                 incomingOperator.depositIntoEigenlayer(strategies, balances);
             }
         }
@@ -351,19 +378,21 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
         return totalStake * setParams.kickBIPsOfTotalStake / BIPS_DENOMINATOR;
     }
 
-    function _getWeight(
-        uint8 quorum,
-        User operator
-    ) internal view returns (uint96) {
+    function _getWeight(uint8 quorum, User operator) internal view returns (uint96) {
         return stakeRegistry.weightOfOperatorForQuorum(quorum, address(operator));
     }
 
-    function _makeRoom(bytes memory quorums) private {
-        emit log_named_string("_getChurnTargets: making room by removing operators from quorums", quorums.toString());
+    function _makeRoom(
+        bytes memory quorums
+    ) private {
+        emit log_named_string(
+            "_getChurnTargets: making room by removing operators from quorums", quorums.toString()
+        );
 
-        for (uint i = 0; i < quorums.length; i++) {
+        for (uint256 i = 0; i < quorums.length; i++) {
             uint8 quorum = uint8(quorums[i]);
-            uint32 maxOperatorCount = registryCoordinator.getOperatorSetParams(quorum).maxOperatorCount;
+            uint32 maxOperatorCount =
+                registryCoordinator.getOperatorSetParams(quorum).maxOperatorCount;
 
             // Continue deregistering until we're under the cap
             // This uses while in case we tested a config change that lowered the max count
@@ -378,24 +407,31 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
         }
     }
 
-    function _selectRandRegisteredOperator(uint8 quorum) internal returns (User) {
+    function _selectRandRegisteredOperator(
+        uint8 quorum
+    ) internal returns (User) {
         uint32 curNumOperators = indexRegistry.totalOperatorsForQuorum(quorum);
 
         bytes32 randId = indexRegistry.getLatestOperatorUpdate({
             quorumNumber: quorum,
-            operatorIndex: uint32(_randUint({ min: 0, max: curNumOperators - 1 }))
+            operatorIndex: uint32(_randUint({min: 0, max: curNumOperators - 1}))
         }).operatorId;
 
         return User(blsApkRegistry.getOperatorFromPubkeyHash(randId));
     }
 
-    function _fetchKeypair() internal returns (uint, IBLSApkRegistry.PubkeyRegistrationParams memory) {
+    function _fetchKeypair()
+        internal
+        returns (uint256, IBLSApkRegistry.PubkeyRegistrationParams memory)
+    {
         // should probably just generate another keypair at this point
         if (fetchIdx == privKeys.length) {
-            revert("_fetchKeypair: not enough generated keys. Check IntegrationDeployer.constructor");
+            revert(
+                "_fetchKeypair: not enough generated keys. Check IntegrationDeployer.constructor"
+            );
         }
 
-        uint privKey = privKeys[fetchIdx];
+        uint256 privKey = privKeys[fetchIdx];
         IBLSApkRegistry.PubkeyRegistrationParams memory pubkey = pubkeys[fetchIdx];
         fetchIdx++;
 
@@ -404,12 +440,12 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
 
     /// @dev Uses `random` to return a random uint, with a range given by `min` and `max` (inclusive)
     /// @return `min` <= result <= `max`
-    function _randUint(uint min, uint max) internal returns (uint) {
-        uint range = max - min + 1;
+    function _randUint(uint256 min, uint256 max) internal returns (uint256) {
+        uint256 range = max - min + 1;
 
         // calculate the number of bits needed for the range
-        uint bitsNeeded = 0;
-        uint tempRange = range;
+        uint256 bitsNeeded = 0;
+        uint256 tempRange = range;
         while (tempRange > 0) {
             bitsNeeded++;
             tempRange >>= 1;
@@ -417,8 +453,8 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
 
         // create a mask for the required number of bits
         // and extract the value from the hash
-        uint mask = (1 << bitsNeeded) - 1;
-        uint value = uint(random) & mask;
+        uint256 mask = (1 << bitsNeeded) - 1;
+        uint256 value = uint256(random) & mask;
 
         // in case value is out of range, wrap around or retry
         while (value >= range) {
@@ -431,14 +467,16 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
     }
 
     function _randBool() internal returns (bool) {
-        return _randUint({ min: 0, max: 1 }) == 0;
+        return _randUint({min: 0, max: 1}) == 0;
     }
 
-    function _selectRand(bytes memory quorums) internal returns (bytes memory) {
+    function _selectRand(
+        bytes memory quorums
+    ) internal returns (bytes memory) {
         assertTrue(quorums.length != 0, "_selectRand: tried to select from empty quorum list");
 
         uint192 result;
-        for (uint i = 0; i < quorums.length; i++) {
+        for (uint256 i = 0; i < quorums.length; i++) {
             if (_randBool()) {
                 result = uint192(result.setBit(uint8(quorums[i])));
             }
@@ -457,19 +495,21 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
     }
 
     /// @dev Select a random value from `arr` and return it. Reverts if arr is empty
-    function _randValue(bytes memory arr) internal returns (uint) {
+    function _randValue(
+        bytes memory arr
+    ) internal returns (uint256) {
         assertTrue(arr.length > 0, "_randValue: tried to select value from empty array");
 
-        uint idx = _randUint({ min: 0, max: arr.length - 1 });
-        return uint(uint8(arr[idx]));
+        uint256 idx = _randUint({min: 0, max: arr.length - 1});
+        return uint256(uint8(arr[idx]));
     }
 
     /// Private _randX methods used by _configRand:
 
     /// @dev Select a random number of quorums to initialize
     /// NOTE: This should only be used when initializing quorums for the first time (in _configRand)
-    function _randQuorumCount() private returns (uint) {
-        uint quorumFlag = _randValue(numQuorumFlags);
+    function _randQuorumCount() private returns (uint256) {
+        uint256 quorumFlag = _randValue(numQuorumFlags);
 
         if (quorumFlag == ONE) {
             return 1;
@@ -478,7 +518,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
         } else if (quorumFlag == MANY) {
             // Ideally this would be MAX_QUORUM_COUNT, but that really slows tests
             // that have users register for all quorums
-            return _randUint({ min: 3, max: 10 });
+            return _randUint({min: 3, max: 10});
         } else {
             revert("_randQuorumCount: flag not recognized");
         }
@@ -489,15 +529,15 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
     /// selecting strategies to add after the quorum has been initialized, this is likely to
     /// return duplicates.
     function _randStrategyParams() private returns (IStakeRegistry.StrategyParams[] memory) {
-        uint strategyFlag = _randValue(numStrategyFlags);
-        uint strategyCount;
+        uint256 strategyFlag = _randValue(numStrategyFlags);
+        uint256 strategyCount;
 
         if (strategyFlag == ONE) {
             strategyCount = 1;
         } else if (strategyFlag == TWO) {
             strategyCount = 2;
         } else if (strategyFlag == MANY) {
-            strategyCount = _randUint({ min: 3, max: allStrats.length - 1 });
+            strategyCount = _randUint({min: 3, max: allStrats.length - 1});
         } else if (strategyFlag == FIFTEEN) {
             strategyCount = 15;
         } else if (strategyFlag == TWENTY) {
@@ -508,9 +548,10 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
             revert("_randStrategyCount: flag not recognized");
         }
 
-        IStakeRegistry.StrategyParams[] memory params = new IStakeRegistry.StrategyParams[](strategyCount);
+        IStakeRegistry.StrategyParams[] memory params =
+            new IStakeRegistry.StrategyParams[](strategyCount);
 
-        for (uint i = 0; i < params.length; i++) {
+        for (uint256 i = 0; i < params.length; i++) {
             params[i] = IStakeRegistry.StrategyParams({
                 strategy: allStrats[i],
                 multiplier: DEFAULT_STRATEGY_MULTIPLIER
@@ -524,13 +565,15 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
      * @dev Uses _randFillType to determine how many operators to register for a quorum initially
      * @return The number of operators to register
      */
-    function _randInitialOperators(IRegistryCoordinator.OperatorSetParam memory operatorSet) private returns (uint) {
-        uint fillTypeFlag = _randValue(fillTypeFlags);
+    function _randInitialOperators(
+        IRegistryCoordinator.OperatorSetParam memory operatorSet
+    ) private returns (uint256) {
+        uint256 fillTypeFlag = _randValue(fillTypeFlags);
 
         if (fillTypeFlag == EMPTY) {
             return 0;
         } else if (fillTypeFlag == SOME_FILL) {
-            return _randUint({ min: 1, max: operatorSet.maxOperatorCount - 1 });
+            return _randUint({min: 1, max: operatorSet.maxOperatorCount - 1});
         } else if (fillTypeFlag == FULL) {
             return operatorSet.maxOperatorCount;
         } else {
@@ -540,7 +583,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
 
     /// @dev Select a random number of quorums to initialize
     function _randMinStake() private returns (uint96) {
-        uint minStakeFlag = _randValue(minStakeFlags);
+        uint256 minStakeFlag = _randValue(minStakeFlags);
 
         if (minStakeFlag == NO_MINIMUM) {
             return 0;
@@ -555,10 +598,12 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
      * @dev Converts a bitmap into an array of bytes
      * @dev Each byte in the input is processed as indicating a single bit to flip in the bitmap
      */
-    function _bitmapToBytes(uint bitmap) internal pure returns (bytes memory bytesArray) {
-        for (uint i = 0; i < 256; ++i) {
+    function _bitmapToBytes(
+        uint256 bitmap
+    ) internal pure returns (bytes memory bytesArray) {
+        for (uint256 i = 0; i < 256; ++i) {
             // Mask for i-th bit
-            uint mask = uint(1 << i);
+            uint256 mask = uint256(1 << i);
 
             // emit log_named_uint("mask: ", mask);
 

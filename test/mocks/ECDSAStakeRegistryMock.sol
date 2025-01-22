@@ -8,7 +8,7 @@ import "../../src/unaudited/ECDSAStakeRegistry.sol";
  * @dev This contract is a mock implementation of the ECDSAStakeRegistry for testing purposes.
  */
 contract ECDSAStakeRegistryMock is ECDSAStakeRegistry {
-
-    constructor(IDelegationManager _delegationManager) ECDSAStakeRegistry(_delegationManager) {
-    }
+    constructor(
+        IDelegationManager _delegationManager
+    ) ECDSAStakeRegistry(_delegationManager) {}
 }

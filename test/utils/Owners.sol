@@ -13,26 +13,30 @@ contract Owners is Test {
         ownersConfigJson = vm.readFile("./src/test/test-data/owners.json");
     }
 
-    function ownerPrefix(uint256 index) public pure returns(string memory) {
+    function ownerPrefix(
+        uint256 index
+    ) public pure returns (string memory) {
         return string.concat(".owners[", string.concat(vm.toString(index), "]."));
     }
 
-    function getNumOperators() public view returns(uint256) {
+    function getNumOperators() public view returns (uint256) {
         return stdJson.readUint(ownersConfigJson, ".numOwners");
     }
 
-    function getOwnerAddress(uint256 index) public view returns(address) {
+    function getOwnerAddress(
+        uint256 index
+    ) public view returns (address) {
         return stdJson.readAddress(ownersConfigJson, string.concat(ownerPrefix(index), "Address"));
     }
 
-    function getOwnerAddresses() public returns(address[] memory) {
+    function getOwnerAddresses() public returns (address[] memory) {
         for (uint256 i = 0; i < getNumOperators(); i++) {
             addresses.push(getOwnerAddress(i));
         }
         return addresses;
     }
 
-    function getReputedOwnerAddresses() public returns(address[] memory) {
+    function getReputedOwnerAddresses() public returns (address[] memory) {
         resetOwnersConfigJson("reputedOwners.json");
         for (uint256 i = 0; i < getNumOperators(); i++) {
             addresses.push(getOwnerAddress(i));
@@ -40,8 +44,9 @@ contract Owners is Test {
         return addresses;
     }
 
-    function resetOwnersConfigJson(string memory newConfig) public {
+    function resetOwnersConfigJson(
+        string memory newConfig
+    ) public {
         ownersConfigJson = vm.readFile(newConfig);
     }
-
 }

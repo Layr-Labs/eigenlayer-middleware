@@ -58,21 +58,15 @@ interface IBLSApkRegistry is IRegistry, IBLSApkRegistryErrors {
 
     // EVENTS
     /// @notice Emitted when `operator` registers with the public keys `pubkeyG1` and `pubkeyG2`.
-    event NewPubkeyRegistration(address indexed operator, BN254.G1Point pubkeyG1, BN254.G2Point pubkeyG2);
+    event NewPubkeyRegistration(
+        address indexed operator, BN254.G1Point pubkeyG1, BN254.G2Point pubkeyG2
+    );
 
     // @notice Emitted when a new operator pubkey is registered for a set of quorums
-    event OperatorAddedToQuorums(
-        address operator,
-        bytes32 operatorId,
-        bytes quorumNumbers
-    );
+    event OperatorAddedToQuorums(address operator, bytes32 operatorId, bytes quorumNumbers);
 
     // @notice Emitted when an operator pubkey is removed from a set of quorums
-    event OperatorRemovedFromQuorums(
-        address operator,
-        bytes32 operatorId,
-        bytes quorumNumbers
-    );
+    event OperatorRemovedFromQuorums(address operator, bytes32 operatorId, bytes quorumNumbers);
 
     /**
      * @notice Registers the `operator`'s pubkey for the specified `quorumNumbers`.
@@ -105,20 +99,26 @@ interface IBLSApkRegistry is IRegistry, IBLSApkRegistryErrors {
      * @notice Initializes a new quorum by pushing its first apk update
      * @param quorumNumber The number of the new quorum
      */
-    function initializeQuorum(uint8 quorumNumber) external;
+    function initializeQuorum(
+        uint8 quorumNumber
+    ) external;
 
     /**
      * @notice mapping from operator address to pubkey hash.
      * Returns *zero* if the `operator` has never registered, and otherwise returns the hash of the public key of the operator.
      */
-    function operatorToPubkeyHash(address operator) external view returns (bytes32);
+    function operatorToPubkeyHash(
+        address operator
+    ) external view returns (bytes32);
 
     /**
      * @notice mapping from pubkey hash to operator address.
      * Returns *zero* if no operator has ever registered the public key corresponding to `pubkeyHash`,
      * and otherwise returns the (unique) registered operator who owns the BLS public key that is the preimage of `pubkeyHash`.
      */
-    function pubkeyHashToOperator(bytes32 pubkeyHash) external view returns (address);
+    function pubkeyHashToOperator(
+        bytes32 pubkeyHash
+    ) external view returns (address);
 
     /**
      * @notice Called by the RegistryCoordinator register an operator as the owner of a BLS public key.
@@ -136,19 +136,31 @@ interface IBLSApkRegistry is IRegistry, IBLSApkRegistryErrors {
      * @notice Returns the pubkey and pubkey hash of an operator
      * @dev Reverts if the operator has not registered a valid pubkey
      */
-    function getRegisteredPubkey(address operator) external view returns (BN254.G1Point memory, bytes32);
+    function getRegisteredPubkey(
+        address operator
+    ) external view returns (BN254.G1Point memory, bytes32);
 
     /// @notice Returns the current APK for the provided `quorumNumber `
-    function getApk(uint8 quorumNumber) external view returns (BN254.G1Point memory);
+    function getApk(
+        uint8 quorumNumber
+    ) external view returns (BN254.G1Point memory);
 
     /// @notice Returns the index of the quorumApk index at `blockNumber` for the provided `quorumNumber`
-    function getApkIndicesAtBlockNumber(bytes calldata quorumNumbers, uint256 blockNumber) external view returns(uint32[] memory);
+    function getApkIndicesAtBlockNumber(
+        bytes calldata quorumNumbers,
+        uint256 blockNumber
+    ) external view returns (uint32[] memory);
 
     /// @notice Returns the `ApkUpdate` struct at `index` in the list of APK updates for the `quorumNumber`
-    function getApkUpdateAtIndex(uint8 quorumNumber, uint256 index) external view returns (ApkUpdate memory);
+    function getApkUpdateAtIndex(
+        uint8 quorumNumber,
+        uint256 index
+    ) external view returns (ApkUpdate memory);
 
     /// @notice Returns the operator address for the given `pubkeyHash`
-    function getOperatorFromPubkeyHash(bytes32 pubkeyHash) external view returns (address);
+    function getOperatorFromPubkeyHash(
+        bytes32 pubkeyHash
+    ) external view returns (address);
 
     /**
      * @notice get 24 byte hash of the apk of `quorumNumber` at `blockNumber` using the provided `index`;
@@ -157,9 +169,15 @@ interface IBLSApkRegistry is IRegistry, IBLSApkRegistryErrors {
      * @param blockNumber is the number of the block for which the latest ApkHash will be retrieved
      * @param index is the index of the apkUpdate being retrieved from the list of quorum apkUpdates in storage
      */
-    function getApkHashAtBlockNumberAndIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes24);
+    function getApkHashAtBlockNumberAndIndex(
+        uint8 quorumNumber,
+        uint32 blockNumber,
+        uint256 index
+    ) external view returns (bytes24);
 
     /// @notice returns the ID used to identify the `operator` within this AVS.
     /// @dev Returns zero in the event that the `operator` has never registered for the AVS
-    function getOperatorId(address operator) external view returns (bytes32);
+    function getOperatorId(
+        address operator
+    ) external view returns (bytes32);
 }

@@ -1,13 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
-import {CheckpointsUpgradeable} from "@openzeppelin-upgrades/contracts/utils/CheckpointsUpgradeable.sol";
-import {ECDSAStakeRegistryEventsAndErrors, Quorum, StrategyParams} from "../interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
+import {IDelegationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {CheckpointsUpgradeable} from
+    "@openzeppelin-upgrades/contracts/utils/CheckpointsUpgradeable.sol";
+import {
+    ECDSAStakeRegistryEventsAndErrors,
+    Quorum,
+    StrategyParams
+} from "../interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
 
-abstract contract ECDSAStakeRegistryStorage is
-    ECDSAStakeRegistryEventsAndErrors
-{
+abstract contract ECDSAStakeRegistryStorage is ECDSAStakeRegistryEventsAndErrors {
     /// @notice Manages staking delegations through the DelegationManager interface
     IDelegationManager internal immutable DELEGATION_MANAGER;
 
@@ -30,8 +34,7 @@ abstract contract ECDSAStakeRegistryStorage is
     uint256 internal _stakeExpiry;
 
     /// @notice Maps an operator to their signing key history using checkpoints
-    mapping(address => CheckpointsUpgradeable.History)
-        internal _operatorSigningKeyHistory;
+    mapping(address => CheckpointsUpgradeable.History) internal _operatorSigningKeyHistory;
 
     /// @notice Tracks the total stake history over time using checkpoints
     CheckpointsUpgradeable.History internal _totalWeightHistory;
@@ -40,14 +43,15 @@ abstract contract ECDSAStakeRegistryStorage is
     CheckpointsUpgradeable.History internal _thresholdWeightHistory;
 
     /// @notice Maps operator addresses to their respective stake histories using checkpoints
-    mapping(address => CheckpointsUpgradeable.History)
-        internal _operatorWeightHistory;
+    mapping(address => CheckpointsUpgradeable.History) internal _operatorWeightHistory;
 
     /// @notice Maps an operator to their registration status
     mapping(address => bool) internal _operatorRegistered;
 
     /// @param _delegationManager Connects this registry with the DelegationManager
-    constructor(IDelegationManager _delegationManager) {
+    constructor(
+        IDelegationManager _delegationManager
+    ) {
         DELEGATION_MANAGER = _delegationManager;
     }
 

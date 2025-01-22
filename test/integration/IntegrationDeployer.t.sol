@@ -107,7 +107,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     /// @notice Upper bound start range is ~1 month into the future, multiple of CALCULATION_INTERVAL_SECONDS
     uint32 MAX_FUTURE_LENGTH = 28 days;
     /// @notice absolute min timestamp that a rewards can start at
-    uint32 GENESIS_REWARDS_TIMESTAMP = 1712188800;
+    uint32 GENESIS_REWARDS_TIMESTAMP = 1_712_188_800;
     /// @notice Equivalent to 100%, but in basis points.
     uint16 internal constant ONE_HUNDRED_IN_BIPS = 10_000;
 
@@ -163,33 +163,41 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             )
         );
 
-        permissionController = PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
+        permissionController = PermissionController(
+            address(
+                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
+            )
+        );
 
         rewardsCoordinator = RewardsCoordinator(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), ""))
+            address(
+                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
+            )
         );
 
         // Deploy EigenPod Contracts
-        pod = new EigenPod(
-            ethPOSDeposit,
-            eigenPodManager,
-            GENESIS_TIME_LOCAL
-        );
+        pod = new EigenPod(ethPOSDeposit, eigenPodManager, GENESIS_TIME_LOCAL);
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
         PermissionController permissionControllerImplementation = new PermissionController();
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        DelegationManager delegationImplementation =
-            new DelegationManager(strategyManager, eigenPodManager, allocationManager, pauserRegistry, permissionController, 0);
+        DelegationManager delegationImplementation = new DelegationManager(
+            strategyManager,
+            eigenPodManager,
+            allocationManager,
+            pauserRegistry,
+            permissionController,
+            0
+        );
         StrategyManager strategyManagerImplementation =
             new StrategyManager(delegationManager, pauserRegistry);
-        EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
-            ethPOSDeposit, eigenPodBeacon, delegationManager, pauserRegistry
-        );
+        EigenPodManager eigenPodManagerImplementation =
+            new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegationManager, pauserRegistry);
         console.log("HERE Impl");
-        AVSDirectory avsDirectoryImplementation = new AVSDirectory(delegationManager, pauserRegistry);
+        AVSDirectory avsDirectoryImplementation =
+            new AVSDirectory(delegationManager, pauserRegistry);
 
         RewardsCoordinator rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManager,
@@ -209,7 +217,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             pauserRegistry,
             permissionController,
             uint32(7 days), // DEALLOCATION_DELAY
-            uint32(1 days)  // ALLOCATION_CONFIGURATION_DELAY
+            uint32(1 days) // ALLOCATION_CONFIGURATION_DELAY
         );
 
         // Third, upgrade the proxy contracts to point to the implementations
@@ -332,7 +340,11 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         cheats.stopPrank();
 
         StakeRegistry stakeRegistryImplementation = new StakeRegistry(
-            IRegistryCoordinator(registryCoordinator), IDelegationManager(delegationManager), IAVSDirectory(avsDirectory), allocationManager, IServiceManager(serviceManager)
+            IRegistryCoordinator(registryCoordinator),
+            IDelegationManager(delegationManager),
+            IAVSDirectory(avsDirectory),
+            allocationManager,
+            IServiceManager(serviceManager)
         );
         BLSApkRegistry blsApkRegistryImplementation =
             new BLSApkRegistry(IRegistryCoordinator(registryCoordinator));
@@ -374,8 +386,14 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         StakeType[] memory quorumStakeTypes = new StakeType[](0);
         uint32[] memory slashableStakeQuorumLookAheadPeriods = new uint32[](0);
 
-        RegistryCoordinator registryCoordinatorImplementation =
-            new RegistryCoordinator(serviceManager, stakeRegistry, blsApkRegistry, indexRegistry, allocationManager, pauserRegistry);
+        RegistryCoordinator registryCoordinatorImplementation = new RegistryCoordinator(
+            serviceManager,
+            stakeRegistry,
+            blsApkRegistry,
+            indexRegistry,
+            allocationManager,
+            pauserRegistry
+        );
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(registryCoordinator))),
             address(registryCoordinatorImplementation),
@@ -423,9 +441,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         bool[] memory thirdPartyTransfersForbiddenValues = new bool[](1);
         strategies[0] = strategy;
         cheats.prank(strategyManager.strategyWhitelister());
-        strategyManager.addStrategiesToDepositWhitelist(
-            strategies
-        );
+        strategyManager.addStrategiesToDepositWhitelist(strategies);
 
         // Add to allStrats
         allStrats.push(strategy);

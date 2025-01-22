@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
-import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IRewardsCoordinator} from
+    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {IServiceManagerUI} from "./IServiceManagerUI.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IAllocationManagerTypes} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IAllocationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 
@@ -41,18 +44,24 @@ interface IServiceManager is IServiceManagerUI, IServiceManagerErrors {
      * @dev This function will revert if the `rewardsSubmission` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
-    function createAVSRewardsSubmission(IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions) external;
+    function createAVSRewardsSubmission(
+        IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions
+    ) external;
 
-    /*******************************************************************************
-                                PERMISSIONCONTROLLER FUNCTIONS
-    *******************************************************************************/
+    /**
+     *
+     *                             PERMISSIONCONTROLLER FUNCTIONS
+     *
+     */
     /**
      * @notice Calls `addPendingAdmin` on the `PermissionController` contract
      * with `account` being the address of this contract.
      * @param admin The address of the admin to add
      * @dev Only callable by the owner of the contract
      */
-    function addPendingAdmin(address admin) external;
+    function addPendingAdmin(
+        address admin
+    ) external;
 
     /**
      * @notice Calls `removePendingAdmin` on the `PermissionController` contract
@@ -60,7 +69,9 @@ interface IServiceManager is IServiceManagerUI, IServiceManagerErrors {
      * @param pendingAdmin The address of the pending admin to remove
      * @dev Only callable by the owner of the contract
      */
-    function removePendingAdmin(address pendingAdmin) external;
+    function removePendingAdmin(
+        address pendingAdmin
+    ) external;
 
     /**
      * @notice Calls `removeAdmin` on the `PermissionController` contract
@@ -68,7 +79,9 @@ interface IServiceManager is IServiceManagerUI, IServiceManagerErrors {
      * @param admin The address of the admin to remove
      * @dev Only callable by the owner of the contract
      */
-    function removeAdmin(address admin) external;
+    function removeAdmin(
+        address admin
+    ) external;
 
     /**
      * @notice Calls `setAppointee` on the `PermissionController` contract
@@ -78,11 +91,7 @@ interface IServiceManager is IServiceManagerUI, IServiceManagerErrors {
      * @param selector The function selector to set the appointee for
      * @dev Only callable by the owner of the contract
      */
-    function setAppointee(
-        address appointee,
-        address target,
-        bytes4 selector
-    ) external;
+    function setAppointee(address appointee, address target, bytes4 selector) external;
 
     /**
      * @notice Calls `removeAppointee` on the `PermissionController` contract
@@ -92,9 +101,5 @@ interface IServiceManager is IServiceManagerUI, IServiceManagerErrors {
      * @param selector The function selector to remove the appointee for
      * @dev Only callable by the owner of the contract
      */
-    function removeAppointee(
-        address appointee,
-        address target,
-        bytes4 selector
-    ) external;
+    function removeAppointee(address appointee, address target, bytes4 selector) external;
 }

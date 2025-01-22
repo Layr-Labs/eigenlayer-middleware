@@ -7,7 +7,8 @@ import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSD
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
-import {IPermissionController} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {IPermissionController} from
+    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 
 import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
@@ -67,39 +68,32 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     }
 
     /// @inheritdoc IServiceManager
-    function addPendingAdmin(address admin) external onlyOwner {
-        _permissionController.addPendingAdmin({
-            account: address(this),
-            admin: admin
-        });
-    }
-
-    /// @inheritdoc IServiceManager
-    function removePendingAdmin(address pendingAdmin) external onlyOwner {
-        _permissionController.removePendingAdmin({
-            account: address(this), 
-            admin: pendingAdmin
-        });
-    }
-
-    /// @inheritdoc IServiceManager
-    function removeAdmin(address admin) external onlyOwner {
-        _permissionController.removeAdmin({
-            account: address(this), 
-            admin: admin
-        });
-    }
-
-    /// @inheritdoc IServiceManager
-    function setAppointee(
-        address appointee,
-        address target,
-        bytes4 selector
+    function addPendingAdmin(
+        address admin
     ) external onlyOwner {
+        _permissionController.addPendingAdmin({account: address(this), admin: admin});
+    }
+
+    /// @inheritdoc IServiceManager
+    function removePendingAdmin(
+        address pendingAdmin
+    ) external onlyOwner {
+        _permissionController.removePendingAdmin({account: address(this), admin: pendingAdmin});
+    }
+
+    /// @inheritdoc IServiceManager
+    function removeAdmin(
+        address admin
+    ) external onlyOwner {
+        _permissionController.removeAdmin({account: address(this), admin: admin});
+    }
+
+    /// @inheritdoc IServiceManager
+    function setAppointee(address appointee, address target, bytes4 selector) external onlyOwner {
         _permissionController.setAppointee({
-            account: address(this), 
-            appointee: appointee, 
-            target: target, 
+            account: address(this),
+            appointee: appointee,
+            target: target,
             selector: selector
         });
     }
@@ -123,7 +117,9 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      * @param _metadataURI is the metadata URI for the AVS
      * @dev only callable by the owner
      */
-    function updateAVSMetadataURI(string memory _metadataURI) public virtual onlyOwner {
+    function updateAVSMetadataURI(
+        string memory _metadataURI
+    ) public virtual onlyOwner {
         _avsDirectory.updateAVSMetadataURI(_metadataURI);
     }
 
@@ -173,7 +169,9 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      * @notice Forwards a call to EigenLayer's AVSDirectory contract to confirm operator deregistration from the AVS
      * @param operator The address of the operator to deregister.
      */
-    function deregisterOperatorFromAVS(address operator) public virtual onlyRegistryCoordinator {
+    function deregisterOperatorFromAVS(
+        address operator
+    ) public virtual onlyRegistryCoordinator {
         _avsDirectory.deregisterOperatorFromAVS(operator);
     }
 
@@ -182,11 +180,15 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      * @param newRewardsInitiator The new rewards initiator address
      * @dev only callable by the owner
      */
-    function setRewardsInitiator(address newRewardsInitiator) external onlyOwner {
+    function setRewardsInitiator(
+        address newRewardsInitiator
+    ) external onlyOwner {
         _setRewardsInitiator(newRewardsInitiator);
     }
 
-    function _setRewardsInitiator(address newRewardsInitiator) internal {
+    function _setRewardsInitiator(
+        address newRewardsInitiator
+    ) internal {
         emit RewardsInitiatorUpdated(rewardsInitiator, newRewardsInitiator);
         rewardsInitiator = newRewardsInitiator;
     }
@@ -197,7 +199,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      * @dev No guarantee is made on uniqueness of each element in the returned array.
      *      The off-chain service should do that validation separately
      */
-    function getRestakeableStrategies() external virtual view returns (address[] memory) {
+    function getRestakeableStrategies() external view virtual returns (address[] memory) {
         uint256 quorumCount = _registryCoordinator.quorumCount();
 
         if (quorumCount == 0) {
@@ -229,12 +231,9 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      * @dev No guarantee is made on whether the operator has shares for a strategy in a quorum or uniqueness
      *      of each element in the returned array. The off-chain service should do that validation separately
      */
-    function getOperatorRestakedStrategies(address operator)
-        external
-        virtual
-        view
-        returns (address[] memory)
-    {
+    function getOperatorRestakedStrategies(
+        address operator
+    ) external view virtual returns (address[] memory) {
         bytes32 operatorId = _registryCoordinator.getOperatorId(operator);
         uint192 operatorBitmap = _registryCoordinator.getCurrentQuorumBitmap(operatorId);
 

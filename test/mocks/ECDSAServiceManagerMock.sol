@@ -2,7 +2,8 @@
 pragma solidity ^0.8.27;
 
 import "../../src/unaudited/ECDSAServiceManagerBase.sol";
-import {IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IAllocationManagerTypes} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
 contract ECDSAServiceManagerMock is ECDSAServiceManagerBase {
     constructor(
@@ -28,21 +29,19 @@ contract ECDSAServiceManagerMock is ECDSAServiceManagerBase {
         __ServiceManagerBase_init(initialOwner, rewardsInitiator);
     }
 
-    function addPendingAdmin(address admin) external {}
-
-    function removePendingAdmin(address pendingAdmin) external {}
-
-    function removeAdmin(address admin) external {}
-
-    function setAppointee(
-        address appointee,
-        address target,
-        bytes4 selector
+    function addPendingAdmin(
+        address admin
     ) external {}
 
-    function removeAppointee(
-        address appointee,
-        address target,
-        bytes4 selector
+    function removePendingAdmin(
+        address pendingAdmin
     ) external {}
+
+    function removeAdmin(
+        address admin
+    ) external {}
+
+    function setAppointee(address appointee, address target, bytes4 selector) external {}
+
+    function removeAppointee(address appointee, address target, bytes4 selector) external {}
 }

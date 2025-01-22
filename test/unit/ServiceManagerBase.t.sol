@@ -8,7 +8,8 @@ import {
     IRewardsCoordinatorTypes,
     IERC20
 } from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
-import {PermissionController} from "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
+import {PermissionController} from
+    "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
 import {StrategyBase} from "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IServiceManagerBaseEvents} from "../events/IServiceManagerBaseEvents.sol";
@@ -25,8 +26,10 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
     uint32 MAX_FUTURE_LENGTH = 28 days;
     uint32 GENESIS_REWARDS_TIMESTAMP = 1_712_188_800;
     uint256 MAX_REWARDS_AMOUNT = 1e38 - 1;
-    uint32 OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP = 0; /// TODO: what values should these have
-    uint32 OPERATOR_SET_MAX_RETROACTIVE_LENGTH = 0; /// TODO: What values these should have
+    uint32 OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP = 0;
+    /// TODO: what values should these have
+    uint32 OPERATOR_SET_MAX_RETROACTIVE_LENGTH = 0;
+    /// TODO: What values these should have
 
     /// @notice Delay in timestamp before a posted root can be claimed against
     uint32 activationDelay = 7 days;
@@ -47,7 +50,9 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
     // mapping to setting fuzzed inputs
     mapping(address => bool) public addressIsExcludedFromFuzzedInputs;
 
-    modifier filterFuzzedAddressInputs(address fuzzedAddress) {
+    modifier filterFuzzedAddressInputs(
+        address fuzzedAddress
+    ) {
         cheats.assume(!addressIsExcludedFromFuzzedInputs[fuzzedAddress]);
         _;
     }
@@ -99,7 +104,10 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
                     address(serviceManagerImplementation),
                     address(proxyAdmin),
                     abi.encodeWithSelector(
-                        ServiceManagerMock.initialize.selector, serviceManager.owner(), msg.sender, msg.sender
+                        ServiceManagerMock.initialize.selector,
+                        serviceManager.owner(),
+                        msg.sender,
+                        msg.sender
                     )
                 )
             )
@@ -150,7 +158,8 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         IERC20 token3 = new ERC20PresetFixedSupply(
             "pepe wif avs", "MOCK3", mockTokenInitialSupply, address(this)
         );
-        strategyImplementation = new StrategyBase(IStrategyManager(address(strategyManagerMock)), pauserRegistry);
+        strategyImplementation =
+            new StrategyBase(IStrategyManager(address(strategyManagerMock)), pauserRegistry);
         strategyMock1 = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
@@ -200,7 +209,9 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
     }
 
     /// @dev Sort to ensure that the array is in ascending order for strategies
-    function _sortArrayAsc(IStrategy[] memory arr) internal pure returns (IStrategy[] memory) {
+    function _sortArrayAsc(
+        IStrategy[] memory arr
+    ) internal pure returns (IStrategy[] memory) {
         uint256 l = arr.length;
         for (uint256 i = 0; i < l; i++) {
             for (uint256 j = i + 1; j < l; j++) {
@@ -218,10 +229,9 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         return timestamp1 > timestamp2 ? timestamp1 : timestamp2;
     }
 
-    function testFuzz_createAVSRewardsSubmission_Revert_WhenNotOwner(address caller)
-        public
-        filterFuzzedAddressInputs(caller)
-    {
+    function testFuzz_createAVSRewardsSubmission_Revert_WhenNotOwner(
+        address caller
+    ) public filterFuzzedAddressInputs(caller) {
         cheats.assume(caller != rewardsInitiator);
         IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions;
 
@@ -289,15 +299,14 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         rewardToken.approve(address(serviceManager), amount);
 
         // 4. call createAVSRewardsSubmission() with expected event emitted
-        uint256 rewardsInitiatorBalanceBefore =
-            rewardToken.balanceOf(address(rewardsInitiator));
-        uint256 rewardsCoordinatorBalanceBefore =
-            rewardToken.balanceOf(address(rewardsCoordinator));
+        uint256 rewardsInitiatorBalanceBefore = rewardToken.balanceOf(address(rewardsInitiator));
+        uint256 rewardsCoordinatorBalanceBefore = rewardToken.balanceOf(address(rewardsCoordinator));
 
         rewardToken.approve(address(rewardsCoordinator), amount);
         uint256 currSubmissionNonce = rewardsCoordinator.submissionNonce(address(serviceManager));
-        bytes32 avsSubmissionHash =
-            keccak256(abi.encode(address(serviceManager), currSubmissionNonce, rewardsSubmissions[0]));
+        bytes32 avsSubmissionHash = keccak256(
+            abi.encode(address(serviceManager), currSubmissionNonce, rewardsSubmissions[0])
+        );
 
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
         emit AVSRewardsSubmissionCreated(
@@ -307,7 +316,9 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         cheats.stopPrank();
 
         assertTrue(
-            rewardsCoordinator.isAVSRewardsSubmissionHash(address(serviceManager), avsSubmissionHash),
+            rewardsCoordinator.isAVSRewardsSubmissionHash(
+                address(serviceManager), avsSubmissionHash
+            ),
             "reward submission hash not submitted"
         );
         assertEq(
@@ -342,8 +353,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         uint256 startSubmissionNonce = rewardsCoordinator.submissionNonce(address(serviceManager));
         _deployMockRewardTokens(rewardsInitiator, numSubmissions);
 
-        uint256[] memory avsBalancesBefore =
-            _getBalanceForTokens(rewardTokens, rewardsInitiator);
+        uint256[] memory avsBalancesBefore = _getBalanceForTokens(rewardTokens, rewardsInitiator);
         uint256[] memory rewardsCoordinatorBalancesBefore =
             _getBalanceForTokens(rewardTokens, address(rewardsCoordinator));
         uint256[] memory amounts = new uint256[](numSubmissions);
@@ -367,7 +377,8 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
             startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
             // 2. Create reward submission input param
-            IRewardsCoordinatorTypes.RewardsSubmission memory rewardsSubmission = IRewardsCoordinatorTypes.RewardsSubmission({
+            IRewardsCoordinatorTypes.RewardsSubmission memory rewardsSubmission =
+            IRewardsCoordinatorTypes.RewardsSubmission({
                 strategiesAndMultipliers: defaultStrategyAndMultipliers,
                 token: rewardTokens[i],
                 amount: amounts[i],
@@ -439,8 +450,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         cheats.prank(rewardsInitiator);
         rewardToken.approve(address(serviceManager), mockTokenInitialSupply);
         uint256 avsBalanceBefore = rewardToken.balanceOf(rewardsInitiator);
-        uint256 rewardsCoordinatorBalanceBefore =
-            rewardToken.balanceOf(address(rewardsCoordinator));
+        uint256 rewardsCoordinatorBalanceBefore = rewardToken.balanceOf(address(rewardsCoordinator));
         uint256 totalAmount = 0;
 
         uint256[] memory amounts = new uint256[](numSubmissions);
@@ -465,7 +475,8 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
             startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
             // 2. Create reward submission input param
-            IRewardsCoordinatorTypes.RewardsSubmission memory rewardsSubmission = IRewardsCoordinatorTypes.RewardsSubmission({
+            IRewardsCoordinatorTypes.RewardsSubmission memory rewardsSubmission =
+            IRewardsCoordinatorTypes.RewardsSubmission({
                 strategiesAndMultipliers: defaultStrategyAndMultipliers,
                 token: rewardToken,
                 amount: amounts[i],

@@ -15,7 +15,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
 
     event StaleStakesForbiddenUpdate(bool value);
 
-    function setUp() virtual public {
+    function setUp() public virtual {
         _setUpBLSMockAVSDeployer();
 
         blsSignatureChecker = new BLSSignatureChecker(registryCoordinator);
@@ -31,7 +31,9 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         testFuzz_setStaleStakesForbidden(true);
     }
 
-    function testFuzz_setStaleStakesForbidden(bool newState) public {
+    function testFuzz_setStaleStakesForbidden(
+        bool newState
+    ) public {
         cheats.expectEmit(true, true, true, true, address(blsSignatureChecker));
         emit StaleStakesForbiddenUpdate(newState);
         cheats.prank(registryCoordinatorOwner);
@@ -42,35 +44,46 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
     // this test checks that a valid signature from maxOperatorsToRegister with a random number of nonsigners is checked
     // correctly on the BLSSignatureChecker contract when all operators are only regsitered for a single quorum and
     // the signature is only checked for stakes on that quorum
-    function testFuzz_checkSignatures_SingleQuorum(uint256 pseudoRandomNumber) public {
+    function testFuzz_checkSignatures_SingleQuorum(
+        uint256 pseudoRandomNumber
+    ) public {
         uint256 numNonSigners = pseudoRandomNumber % (maxOperatorsToRegister - 1);
         uint256 quorumBitmap = 1;
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
-        (uint32 referenceBlockNumber, BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature) =
-            _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(pseudoRandomNumber, numNonSigners, quorumBitmap);
+        (
+            uint32 referenceBlockNumber,
+            BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
+        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(
+            pseudoRandomNumber, numNonSigners, quorumBitmap
+        );
 
-        bytes32[] memory pubkeyHashes = new bytes32[](nonSignerStakesAndSignature.nonSignerPubkeys.length);
+        bytes32[] memory pubkeyHashes =
+            new bytes32[](nonSignerStakesAndSignature.nonSignerPubkeys.length);
         for (uint256 i = 0; i < nonSignerStakesAndSignature.nonSignerPubkeys.length; ++i) {
             pubkeyHashes[i] = nonSignerStakesAndSignature.nonSignerPubkeys[i].hashG1Point();
         }
-        bytes32 expectedSignatoryRecordHash = keccak256(abi.encodePacked(referenceBlockNumber, pubkeyHashes));
+        bytes32 expectedSignatoryRecordHash =
+            keccak256(abi.encodePacked(referenceBlockNumber, pubkeyHashes));
 
         uint256 gasBefore = gasleft();
         (
             BLSSignatureChecker.QuorumStakeTotals memory quorumStakeTotals,
             bytes32 signatoryRecordHash
         ) = blsSignatureChecker.checkSignatures(
-            msgHash,
-            quorumNumbers,
-            referenceBlockNumber,
-            nonSignerStakesAndSignature
+            msgHash, quorumNumbers, referenceBlockNumber, nonSignerStakesAndSignature
         );
         uint256 gasAfter = gasleft();
         emit log_named_uint("gasUsed", gasBefore - gasAfter);
 
-        assertTrue(quorumStakeTotals.signedStakeForQuorum[0] > 0, "signedStakeForQuorum should be nonzero");
-        assertEq(expectedSignatoryRecordHash, signatoryRecordHash, "signatoryRecordHash does not match expectation");
+        assertTrue(
+            quorumStakeTotals.signedStakeForQuorum[0] > 0, "signedStakeForQuorum should be nonzero"
+        );
+        assertEq(
+            expectedSignatoryRecordHash,
+            signatoryRecordHash,
+            "signatoryRecordHash does not match expectation"
+        );
         // 0 nonSigners: 159908
         // 1 nonSigner: 178683
         // 2 nonSigners: 197410
@@ -82,82 +95,114 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         uint256 quorumBitmap = 1;
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
-        (uint32 referenceBlockNumber, BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature) =
-            _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(nonRandomNumber, numNonSigners, quorumBitmap);
+        (
+            uint32 referenceBlockNumber,
+            BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
+        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(
+            nonRandomNumber, numNonSigners, quorumBitmap
+        );
 
-        bytes32[] memory pubkeyHashes = new bytes32[](nonSignerStakesAndSignature.nonSignerPubkeys.length);
+        bytes32[] memory pubkeyHashes =
+            new bytes32[](nonSignerStakesAndSignature.nonSignerPubkeys.length);
         for (uint256 i = 0; i < nonSignerStakesAndSignature.nonSignerPubkeys.length; ++i) {
             pubkeyHashes[i] = nonSignerStakesAndSignature.nonSignerPubkeys[i].hashG1Point();
         }
-        bytes32 expectedSignatoryRecordHash = keccak256(abi.encodePacked(referenceBlockNumber, pubkeyHashes));
+        bytes32 expectedSignatoryRecordHash =
+            keccak256(abi.encodePacked(referenceBlockNumber, pubkeyHashes));
 
         uint256 gasBefore = gasleft();
         (
             BLSSignatureChecker.QuorumStakeTotals memory quorumStakeTotals,
             bytes32 signatoryRecordHash
         ) = blsSignatureChecker.checkSignatures(
-            msgHash,
-            quorumNumbers,
-            referenceBlockNumber,
-            nonSignerStakesAndSignature
+            msgHash, quorumNumbers, referenceBlockNumber, nonSignerStakesAndSignature
         );
         uint256 gasAfter = gasleft();
         emit log_named_uint("gasUsed", gasBefore - gasAfter);
 
-        assertEq(expectedSignatoryRecordHash, signatoryRecordHash, "signatoryRecordHash does not match expectation");
+        assertEq(
+            expectedSignatoryRecordHash,
+            signatoryRecordHash,
+            "signatoryRecordHash does not match expectation"
+        );
 
-        assertEq(quorumStakeTotals.signedStakeForQuorum[0], 3000000000000000000, "signedStakeForQuorum incorrect");
-        assertEq(quorumStakeTotals.totalStakeForQuorum[0], 4000000000000000000, "totalStakeForQuorum incorrect");
+        assertEq(
+            quorumStakeTotals.signedStakeForQuorum[0],
+            3_000_000_000_000_000_000,
+            "signedStakeForQuorum incorrect"
+        );
+        assertEq(
+            quorumStakeTotals.totalStakeForQuorum[0],
+            4_000_000_000_000_000_000,
+            "totalStakeForQuorum incorrect"
+        );
     }
 
     // this test checks that a valid signature from maxOperatorsToRegister with a random number of nonsigners is checked
     // correctly on the BLSSignatureChecker contract when all operators are registered for the first 100 quorums
     // and the signature is only checked for stakes on those quorums
-    function test_checkSignatures_100Quorums(uint256 pseudoRandomNumber) public {
+    function test_checkSignatures_100Quorums(
+        uint256 pseudoRandomNumber
+    ) public {
         uint256 numNonSigners = pseudoRandomNumber % (maxOperatorsToRegister - 1);
         // 100 set bits
         uint256 quorumBitmap = (1 << 100) - 1;
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
-        (uint32 referenceBlockNumber, BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature) =
-            _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(pseudoRandomNumber, numNonSigners, quorumBitmap);
+        (
+            uint32 referenceBlockNumber,
+            BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
+        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(
+            pseudoRandomNumber, numNonSigners, quorumBitmap
+        );
 
         nonSignerStakesAndSignature.sigma = sigma.scalar_mul(quorumNumbers.length);
         nonSignerStakesAndSignature.apkG2 = oneHundredQuorumApkG2;
 
-        bytes32[] memory pubkeyHashes = new bytes32[](nonSignerStakesAndSignature.nonSignerPubkeys.length);
+        bytes32[] memory pubkeyHashes =
+            new bytes32[](nonSignerStakesAndSignature.nonSignerPubkeys.length);
         for (uint256 i = 0; i < nonSignerStakesAndSignature.nonSignerPubkeys.length; ++i) {
             pubkeyHashes[i] = nonSignerStakesAndSignature.nonSignerPubkeys[i].hashG1Point();
         }
-        bytes32 expectedSignatoryRecordHash = keccak256(abi.encodePacked(referenceBlockNumber, pubkeyHashes));
+        bytes32 expectedSignatoryRecordHash =
+            keccak256(abi.encodePacked(referenceBlockNumber, pubkeyHashes));
 
         uint256 gasBefore = gasleft();
         (
             BLSSignatureChecker.QuorumStakeTotals memory quorumStakeTotals,
             bytes32 signatoryRecordHash
         ) = blsSignatureChecker.checkSignatures(
-            msgHash,
-            quorumNumbers,
-            referenceBlockNumber,
-            nonSignerStakesAndSignature
+            msgHash, quorumNumbers, referenceBlockNumber, nonSignerStakesAndSignature
         );
         uint256 gasAfter = gasleft();
         emit log_named_uint("gasUsed", gasBefore - gasAfter);
 
         for (uint256 i = 0; i < quorumStakeTotals.signedStakeForQuorum.length; ++i) {
-            assertTrue(quorumStakeTotals.signedStakeForQuorum[i] > 0, "signedStakeForQuorum should be nonzero");
+            assertTrue(
+                quorumStakeTotals.signedStakeForQuorum[i] > 0,
+                "signedStakeForQuorum should be nonzero"
+            );
         }
-        assertEq(expectedSignatoryRecordHash, signatoryRecordHash, "signatoryRecordHash does not match expectation");
+        assertEq(
+            expectedSignatoryRecordHash,
+            signatoryRecordHash,
+            "signatoryRecordHash does not match expectation"
+        );
     }
 
     function test_checkSignatures_revert_inputLengthMismatch() public {
         uint256 numNonSigners = 0;
         uint256 quorumBitmap = 1;
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
-        (uint32 referenceBlockNumber, BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature) =
-            _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(1, numNonSigners, quorumBitmap);
+        (
+            uint32 referenceBlockNumber,
+            BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
+        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(
+            1, numNonSigners, quorumBitmap
+        );
 
-        IBLSSignatureChecker.NonSignerStakesAndSignature memory incorrectLengthInputs = IBLSSignatureChecker.NonSignerStakesAndSignature({
+        IBLSSignatureChecker.NonSignerStakesAndSignature memory incorrectLengthInputs =
+        IBLSSignatureChecker.NonSignerStakesAndSignature({
             nonSignerQuorumBitmapIndices: nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices,
             nonSignerPubkeys: nonSignerStakesAndSignature.nonSignerPubkeys,
             quorumApks: nonSignerStakesAndSignature.quorumApks,
@@ -172,10 +217,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
 
         cheats.expectRevert(IBLSSignatureCheckerErrors.InputArrayLengthMismatch.selector);
         blsSignatureChecker.checkSignatures(
-            msgHash,
-            quorumNumbers,
-            referenceBlockNumber,
-            incorrectLengthInputs
+            msgHash, quorumNumbers, referenceBlockNumber, incorrectLengthInputs
         );
 
         // reset the input to correct values
@@ -184,10 +226,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         incorrectLengthInputs.quorumApkIndices = new uint32[](5);
         cheats.expectRevert(IBLSSignatureCheckerErrors.InputArrayLengthMismatch.selector);
         blsSignatureChecker.checkSignatures(
-            msgHash,
-            quorumNumbers,
-            referenceBlockNumber,
-            incorrectLengthInputs
+            msgHash, quorumNumbers, referenceBlockNumber, incorrectLengthInputs
         );
 
         // reset the input to correct values
@@ -196,10 +235,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         incorrectLengthInputs.totalStakeIndices = new uint32[](5);
         cheats.expectRevert(IBLSSignatureCheckerErrors.InputArrayLengthMismatch.selector);
         blsSignatureChecker.checkSignatures(
-            msgHash,
-            quorumNumbers,
-            referenceBlockNumber,
-            incorrectLengthInputs
+            msgHash, quorumNumbers, referenceBlockNumber, incorrectLengthInputs
         );
 
         // reset the input to correct values
@@ -208,51 +244,47 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         incorrectLengthInputs.nonSignerStakeIndices = new uint32[][](5);
         cheats.expectRevert(IBLSSignatureCheckerErrors.InputArrayLengthMismatch.selector);
         blsSignatureChecker.checkSignatures(
-            msgHash,
-            quorumNumbers,
-            referenceBlockNumber,
-            incorrectLengthInputs
+            msgHash, quorumNumbers, referenceBlockNumber, incorrectLengthInputs
         );
 
         // reset the input to correct values
-        incorrectLengthInputs.nonSignerStakeIndices = nonSignerStakesAndSignature.nonSignerStakeIndices;
+        incorrectLengthInputs.nonSignerStakeIndices =
+            nonSignerStakesAndSignature.nonSignerStakeIndices;
         // make one part of the input incorrect length
-        incorrectLengthInputs.nonSignerQuorumBitmapIndices = new uint32[](nonSignerStakesAndSignature.nonSignerPubkeys.length + 1);
+        incorrectLengthInputs.nonSignerQuorumBitmapIndices =
+            new uint32[](nonSignerStakesAndSignature.nonSignerPubkeys.length + 1);
         cheats.expectRevert(IBLSSignatureCheckerErrors.InputNonSignerLengthMismatch.selector);
         blsSignatureChecker.checkSignatures(
-            msgHash,
-            quorumNumbers,
-            referenceBlockNumber,
-            incorrectLengthInputs
+            msgHash, quorumNumbers, referenceBlockNumber, incorrectLengthInputs
         );
 
         // reset the input to correct values
-        incorrectLengthInputs.nonSignerQuorumBitmapIndices = nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices;
+        incorrectLengthInputs.nonSignerQuorumBitmapIndices =
+            nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices;
         // sanity check for call passing with the correct values
         blsSignatureChecker.checkSignatures(
-            msgHash,
-            quorumNumbers,
-            referenceBlockNumber,
-            incorrectLengthInputs
+            msgHash, quorumNumbers, referenceBlockNumber, incorrectLengthInputs
         );
     }
 
-    function test_checkSignatures_revert_referenceBlockNumberInFuture(uint256 pseudoRandomNumber) public {
+    function test_checkSignatures_revert_referenceBlockNumberInFuture(
+        uint256 pseudoRandomNumber
+    ) public {
         uint256 numNonSigners = pseudoRandomNumber % (maxOperatorsToRegister - 2) + 1;
         uint256 quorumBitmap = 1;
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
-        (/*uint32 referenceBlockNumber*/, BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature) =
-            _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(pseudoRandomNumber, numNonSigners, quorumBitmap);
+        ( /*uint32 referenceBlockNumber*/
+            , BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
+        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(
+            pseudoRandomNumber, numNonSigners, quorumBitmap
+        );
 
         // Create an invalid reference block: any block number >= the current block
         uint32 invalidReferenceBlock = uint32(block.number + (pseudoRandomNumber % 20));
         cheats.expectRevert(IBLSSignatureCheckerErrors.InvalidReferenceBlocknumber.selector);
         blsSignatureChecker.checkSignatures(
-            msgHash,
-            quorumNumbers,
-            invalidReferenceBlock,
-            nonSignerStakesAndSignature
+            msgHash, quorumNumbers, invalidReferenceBlock, nonSignerStakesAndSignature
         );
     }
 
@@ -262,17 +294,19 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         uint256 nonRandomNumber = 777;
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
-        (uint32 referenceBlockNumber, BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature) =
-            _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(nonRandomNumber, numNonSigners, quorumBitmap);
+        (
+            uint32 referenceBlockNumber,
+            BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
+        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(
+            nonRandomNumber, numNonSigners, quorumBitmap
+        );
 
         // swap out a pubkey to make sure there is a duplicate
-        nonSignerStakesAndSignature.nonSignerPubkeys[1] = nonSignerStakesAndSignature.nonSignerPubkeys[0];
+        nonSignerStakesAndSignature.nonSignerPubkeys[1] =
+            nonSignerStakesAndSignature.nonSignerPubkeys[0];
         cheats.expectRevert(IBLSSignatureCheckerErrors.NonSignerPubkeysNotSorted.selector);
         blsSignatureChecker.checkSignatures(
-            msgHash,
-            quorumNumbers,
-            referenceBlockNumber,
-            nonSignerStakesAndSignature
+            msgHash, quorumNumbers, referenceBlockNumber, nonSignerStakesAndSignature
         );
     }
 
@@ -282,18 +316,24 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         uint256 nonRandomNumber = 777;
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
-        (uint32 referenceBlockNumber, BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature) =
-            _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(nonRandomNumber, numNonSigners, quorumBitmap);
+        (
+            uint32 referenceBlockNumber,
+            BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
+        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(
+            nonRandomNumber, numNonSigners, quorumBitmap
+        );
 
         // swap two pubkeys to ensure ordering is wrong
-        (nonSignerStakesAndSignature.nonSignerPubkeys[0], nonSignerStakesAndSignature.nonSignerPubkeys[1]) =
-            (nonSignerStakesAndSignature.nonSignerPubkeys[1], nonSignerStakesAndSignature.nonSignerPubkeys[0]);
+        (
+            nonSignerStakesAndSignature.nonSignerPubkeys[0],
+            nonSignerStakesAndSignature.nonSignerPubkeys[1]
+        ) = (
+            nonSignerStakesAndSignature.nonSignerPubkeys[1],
+            nonSignerStakesAndSignature.nonSignerPubkeys[0]
+        );
         cheats.expectRevert(IBLSSignatureCheckerErrors.NonSignerPubkeysNotSorted.selector);
         blsSignatureChecker.checkSignatures(
-            msgHash,
-            quorumNumbers,
-            referenceBlockNumber,
-            nonSignerStakesAndSignature
+            msgHash, quorumNumbers, referenceBlockNumber, nonSignerStakesAndSignature
         );
     }
 
@@ -303,31 +343,34 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         uint256 nonRandomNumber = 777;
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
-        (uint32 referenceBlockNumber, BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature) =
-            _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(nonRandomNumber, numNonSigners, quorumBitmap);
+        (
+            uint32 referenceBlockNumber,
+            BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
+        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(
+            nonRandomNumber, numNonSigners, quorumBitmap
+        );
 
         // make sure the `staleStakesForbidden` flag is set to 'true'
         testFuzz_setStaleStakesForbidden(true);
 
         uint256 stalestUpdateBlock = type(uint256).max;
         for (uint256 i = 0; i < quorumNumbers.length; ++i) {
-            uint256 quorumUpdateBlockNumber = registryCoordinator.quorumUpdateBlockNumber(uint8(quorumNumbers[i]));
+            uint256 quorumUpdateBlockNumber =
+                registryCoordinator.quorumUpdateBlockNumber(uint8(quorumNumbers[i]));
             if (quorumUpdateBlockNumber < stalestUpdateBlock) {
                 stalestUpdateBlock = quorumUpdateBlockNumber;
             }
         }
 
         // move referenceBlockNumber forward to a block number the last block number where the stakes will be considered "not stale"
-        referenceBlockNumber = uint32(stalestUpdateBlock + delegationMock.minWithdrawalDelayBlocks()) - 1;
+        referenceBlockNumber =
+            uint32(stalestUpdateBlock + delegationMock.minWithdrawalDelayBlocks()) - 1;
         // roll forward to make the reference block number valid
         // we roll to referenceBlockNumber + 1 because the current block number is not a valid reference block
 
         cheats.roll(referenceBlockNumber + 1);
         blsSignatureChecker.checkSignatures(
-            msgHash,
-            quorumNumbers,
-            referenceBlockNumber,
-            nonSignerStakesAndSignature
+            msgHash, quorumNumbers, referenceBlockNumber, nonSignerStakesAndSignature
         );
 
         // move referenceBlockNumber forward one more block, making the stakes "stale"
@@ -336,153 +379,172 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         cheats.roll(referenceBlockNumber + 1);
         cheats.expectRevert(IBLSSignatureCheckerErrors.StaleStakesForbidden.selector);
         blsSignatureChecker.checkSignatures(
-            msgHash,
-            quorumNumbers,
-            referenceBlockNumber,
-            nonSignerStakesAndSignature
+            msgHash, quorumNumbers, referenceBlockNumber, nonSignerStakesAndSignature
         );
     }
 
-    function test_checkSignatures_revert_incorrectQuorumBitmapIndex(uint256 pseudoRandomNumber) public {
+    function test_checkSignatures_revert_incorrectQuorumBitmapIndex(
+        uint256 pseudoRandomNumber
+    ) public {
         uint256 numNonSigners = pseudoRandomNumber % (maxOperatorsToRegister - 2) + 1;
         uint256 quorumBitmap = 1;
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
-        (uint32 referenceBlockNumber, BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature) =
-            _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(pseudoRandomNumber, numNonSigners, quorumBitmap);
+        (
+            uint32 referenceBlockNumber,
+            BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
+        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(
+            pseudoRandomNumber, numNonSigners, quorumBitmap
+        );
 
         // record a quorumBitmap update via a harnessed function
-        registryCoordinator._updateOperatorBitmapExternal(nonSignerStakesAndSignature.nonSignerPubkeys[0].hashG1Point(), uint192(quorumBitmap | 2));
+        registryCoordinator._updateOperatorBitmapExternal(
+            nonSignerStakesAndSignature.nonSignerPubkeys[0].hashG1Point(), uint192(quorumBitmap | 2)
+        );
 
         // set the nonSignerQuorumBitmapIndices to a different value
         nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices[0] = 1;
 
         cheats.expectRevert(QuorumBitmapHistoryLib.BitmapUpdateIsAfterBlockNumber.selector);
         blsSignatureChecker.checkSignatures(
-            msgHash,
-            quorumNumbers,
-            referenceBlockNumber,
-            nonSignerStakesAndSignature
+            msgHash, quorumNumbers, referenceBlockNumber, nonSignerStakesAndSignature
         );
     }
 
-    function test_checkSignatures_revert_incorrectTotalStakeIndex(uint256 pseudoRandomNumber) public {
+    function test_checkSignatures_revert_incorrectTotalStakeIndex(
+        uint256 pseudoRandomNumber
+    ) public {
         uint256 numNonSigners = pseudoRandomNumber % (maxOperatorsToRegister - 2) + 1;
         uint256 quorumBitmap = 1;
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
-        (uint32 referenceBlockNumber, BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature) =
-            _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(pseudoRandomNumber, numNonSigners, quorumBitmap);
+        (
+            uint32 referenceBlockNumber,
+            BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
+        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(
+            pseudoRandomNumber, numNonSigners, quorumBitmap
+        );
 
         // set the totalStakeIndices to a different value
         nonSignerStakesAndSignature.totalStakeIndices[0] = 0;
 
         cheats.expectRevert(IStakeRegistryErrors.InvalidBlockNumber.selector);
         blsSignatureChecker.checkSignatures(
-            msgHash,
-            quorumNumbers,
-            referenceBlockNumber,
-            nonSignerStakesAndSignature
+            msgHash, quorumNumbers, referenceBlockNumber, nonSignerStakesAndSignature
         );
     }
 
-    function test_checkSignatures_revert_incorrectNonSignerStakeIndex(uint256 pseudoRandomNumber) public {
+    function test_checkSignatures_revert_incorrectNonSignerStakeIndex(
+        uint256 pseudoRandomNumber
+    ) public {
         uint256 numNonSigners = pseudoRandomNumber % (maxOperatorsToRegister - 2) + 1;
         uint256 quorumBitmap = 1;
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
-        (uint32 referenceBlockNumber, BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature) =
-            _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(pseudoRandomNumber, numNonSigners, quorumBitmap);
+        (
+            uint32 referenceBlockNumber,
+            BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
+        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(
+            pseudoRandomNumber, numNonSigners, quorumBitmap
+        );
 
         bytes32 nonSignerOperatorId = nonSignerStakesAndSignature.nonSignerPubkeys[0].hashG1Point();
 
         // record a stake update
-        stakeRegistry.recordOperatorStakeUpdate(
-            nonSignerOperatorId,
-            uint8(quorumNumbers[0]),
-            1234
-        );
+        stakeRegistry.recordOperatorStakeUpdate(nonSignerOperatorId, uint8(quorumNumbers[0]), 1234);
 
         // set the nonSignerStakeIndices to a different value
         nonSignerStakesAndSignature.nonSignerStakeIndices[0][0] = 1;
 
         cheats.expectRevert(IStakeRegistryErrors.InvalidBlockNumber.selector);
         blsSignatureChecker.checkSignatures(
-            msgHash,
-            quorumNumbers,
-            referenceBlockNumber,
-            nonSignerStakesAndSignature
+            msgHash, quorumNumbers, referenceBlockNumber, nonSignerStakesAndSignature
         );
-
     }
 
-    function test_checkSignatures_revert_incorrectQuorumAPKIndex(uint256 pseudoRandomNumber) public {
+    function test_checkSignatures_revert_incorrectQuorumAPKIndex(
+        uint256 pseudoRandomNumber
+    ) public {
         uint256 numNonSigners = pseudoRandomNumber % (maxOperatorsToRegister - 2) + 1;
         uint256 quorumBitmap = 1;
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
-        (uint32 referenceBlockNumber, BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature) =
-            _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(pseudoRandomNumber, numNonSigners, quorumBitmap);
+        (
+            uint32 referenceBlockNumber,
+            BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
+        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(
+            pseudoRandomNumber, numNonSigners, quorumBitmap
+        );
 
         // set the quorumApkIndices to a different value
         nonSignerStakesAndSignature.quorumApkIndices[0] = 0;
 
         cheats.expectRevert(IBLSApkRegistryErrors.BlockNumberNotLatest.selector);
         blsSignatureChecker.checkSignatures(
-            msgHash,
-            quorumNumbers,
-            referenceBlockNumber,
-            nonSignerStakesAndSignature
+            msgHash, quorumNumbers, referenceBlockNumber, nonSignerStakesAndSignature
         );
     }
 
-    function test_checkSignatures_revert_incorrectQuorumAPK(uint256 pseudoRandomNumber) public {
+    function test_checkSignatures_revert_incorrectQuorumAPK(
+        uint256 pseudoRandomNumber
+    ) public {
         uint256 numNonSigners = pseudoRandomNumber % (maxOperatorsToRegister - 2) + 1;
         uint256 quorumBitmap = 1;
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
-        (uint32 referenceBlockNumber, BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature) =
-            _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(pseudoRandomNumber, numNonSigners, quorumBitmap);
+        (
+            uint32 referenceBlockNumber,
+            BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
+        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(
+            pseudoRandomNumber, numNonSigners, quorumBitmap
+        );
 
         // set the quorumApk to a different value
-        nonSignerStakesAndSignature.quorumApks[0] = nonSignerStakesAndSignature.quorumApks[0].negate();
+        nonSignerStakesAndSignature.quorumApks[0] =
+            nonSignerStakesAndSignature.quorumApks[0].negate();
 
         cheats.expectRevert(IBLSSignatureCheckerErrors.InvalidQuorumApkHash.selector);
         blsSignatureChecker.checkSignatures(
-            msgHash,
-            quorumNumbers,
-            referenceBlockNumber,
-            nonSignerStakesAndSignature
+            msgHash, quorumNumbers, referenceBlockNumber, nonSignerStakesAndSignature
         );
     }
 
-    function test_checkSignatures_revert_incorrectSignature(uint256 pseudoRandomNumber) public {
+    function test_checkSignatures_revert_incorrectSignature(
+        uint256 pseudoRandomNumber
+    ) public {
         uint256 numNonSigners = pseudoRandomNumber % (maxOperatorsToRegister - 2) + 1;
         uint256 quorumBitmap = 1;
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
-        (uint32 referenceBlockNumber, BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature) =
-            _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(pseudoRandomNumber, numNonSigners, quorumBitmap);
+        (
+            uint32 referenceBlockNumber,
+            BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
+        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(
+            pseudoRandomNumber, numNonSigners, quorumBitmap
+        );
 
         // set the sigma to a different value
         nonSignerStakesAndSignature.sigma = nonSignerStakesAndSignature.sigma.negate();
 
         cheats.expectRevert(IBLSSignatureCheckerErrors.InvalidBLSSignature.selector);
         blsSignatureChecker.checkSignatures(
-            msgHash,
-            quorumNumbers,
-            referenceBlockNumber,
-            nonSignerStakesAndSignature
+            msgHash, quorumNumbers, referenceBlockNumber, nonSignerStakesAndSignature
         );
     }
 
-    function test_checkSignatures_revert_invalidSignature(uint256 pseudoRandomNumber) public {
+    function test_checkSignatures_revert_invalidSignature(
+        uint256 pseudoRandomNumber
+    ) public {
         uint256 numNonSigners = pseudoRandomNumber % (maxOperatorsToRegister - 2) + 1;
         uint256 quorumBitmap = 1;
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
-        (uint32 referenceBlockNumber, BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature) =
-            _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(pseudoRandomNumber, numNonSigners, quorumBitmap);
+        (
+            uint32 referenceBlockNumber,
+            BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
+        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(
+            pseudoRandomNumber, numNonSigners, quorumBitmap
+        );
 
         // set the sigma to a different value
         nonSignerStakesAndSignature.sigma.X++;
@@ -490,20 +552,23 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         // expect a non-specific low-level revert, since this call will ultimately fail as part of the precompile call
         cheats.expectRevert();
         blsSignatureChecker.checkSignatures(
-            msgHash,
-            quorumNumbers,
-            referenceBlockNumber,
-            nonSignerStakesAndSignature
+            msgHash, quorumNumbers, referenceBlockNumber, nonSignerStakesAndSignature
         );
     }
 
-    function testBLSSignatureChecker_reverts_emptyQuorums(uint256 pseudoRandomNumber) public {
+    function testBLSSignatureChecker_reverts_emptyQuorums(
+        uint256 pseudoRandomNumber
+    ) public {
         uint256 numNonSigners = pseudoRandomNumber % (maxOperatorsToRegister - 2) + 1;
 
         uint256 quorumBitmap = 1;
 
-        (uint32 referenceBlockNumber, BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature) =
-            _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(pseudoRandomNumber, numNonSigners, quorumBitmap);
+        (
+            uint32 referenceBlockNumber,
+            BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
+        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(
+            pseudoRandomNumber, numNonSigners, quorumBitmap
+        );
 
         // Create an empty quorumNumbers array
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(0);
@@ -511,10 +576,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         // expect a non-specific low-level revert, since this call will ultimately fail as part of the precompile call
         cheats.expectRevert(IBLSSignatureCheckerErrors.InputEmptyQuorumNumbers.selector);
         blsSignatureChecker.checkSignatures(
-            msgHash,
-            quorumNumbers,
-            referenceBlockNumber,
-            nonSignerStakesAndSignature
+            msgHash, quorumNumbers, referenceBlockNumber, nonSignerStakesAndSignature
         );
     }
 }

@@ -1,9 +1,10 @@
-
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
 library LibMergeSort {
-    function sort(address[] memory array) internal pure returns (address[] memory) {
+    function sort(
+        address[] memory array
+    ) internal pure returns (address[] memory) {
         if (array.length <= 1) {
             return array;
         }
@@ -21,7 +22,11 @@ library LibMergeSort {
 
         return mergeSortArrays(sort(left), sort(right));
     }
-    function mergeSortArrays(address[] memory left, address[] memory right) internal pure returns (address[] memory) {
+
+    function mergeSortArrays(
+        address[] memory left,
+        address[] memory right
+    ) internal pure returns (address[] memory) {
         uint256 leftLength = left.length;
         uint256 rightLength = right.length;
         address[] memory merged = new address[](leftLength + rightLength);
@@ -53,9 +58,10 @@ library LibMergeSort {
         }
 
         // Resize the merged array to remove unused space
-        assembly { mstore(merged, k) }
+        assembly {
+            mstore(merged, k)
+        }
 
         return merged;
     }
-
 }

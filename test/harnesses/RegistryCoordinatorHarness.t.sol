@@ -14,11 +14,22 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         IIndexRegistry _indexRegistry,
         IAllocationManager _allocationManager,
         IPauserRegistry _pauserRegistry
-    ) RegistryCoordinator(_serviceManager, _stakeRegistry, _blsApkRegistry, _indexRegistry, _allocationManager, _pauserRegistry) {
+    )
+        RegistryCoordinator(
+            _serviceManager,
+            _stakeRegistry,
+            _blsApkRegistry,
+            _indexRegistry,
+            _allocationManager,
+            _pauserRegistry
+        )
+    {
         _transferOwnership(msg.sender);
     }
 
-    function setQuorumCount(uint8 count) external {
+    function setQuorumCount(
+        uint8 count
+    ) external {
         quorumCount = count;
     }
 
@@ -38,10 +49,7 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
     }
 
     // @notice exposes the internal `_deregisterOperator` function, overriding all access controls
-    function _deregisterOperatorExternal(
-        address operator,
-        bytes calldata quorumNumbers
-    ) external {
+    function _deregisterOperatorExternal(address operator, bytes calldata quorumNumbers) external {
         _deregisterOperator(operator, quorumNumbers);
     }
 
