@@ -39,7 +39,7 @@ contract IndexRegistryUnitTests is MockAVSDeployer, IIndexRegistryEvents {
 
         bitmapUtilsWrapper = new BitmapUtilsWrapper();
 
-        // Initialize quorums and set initailizedQuorumBitmap
+        // Initialize quorums and set initializedQuorumBitmap
         _initializeQuorum();
         _initializeQuorum();
         _initializeQuorum();
@@ -74,7 +74,7 @@ contract IndexRegistryUnitTests is MockAVSDeployer, IIndexRegistryEvents {
     }
 
     /// @dev initializeQuorum based on passed in bitmap of quorum numbers
-    /// assumes that bitmap does not contain already initailized quorums and doesn't increment nextQuorum
+    /// assumes that bitmap does not contain already initialized quorums and doesn't increment nextQuorum
     function _initializeFuzzedQuorums(uint192 bitmap) internal {
         bytes memory quorumNumbers = bitmapUtilsWrapper.bitmapToBytesArray(bitmap);
 
