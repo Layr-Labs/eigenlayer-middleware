@@ -77,9 +77,13 @@ abstract contract SlashingRegistryCoordinatorStorage is ISlashingRegistryCoordin
     /// @notice the delay in seconds before an operator can reregister after being ejected
     uint256 public ejectionCooldown;
 
-    /// @notice Whether this AVS uses operator sets for registration
-    /// @dev If true, operators must register to operator sets via the AllocationManager
-    bool public isOperatorSetAVS;
+    /// @notice Whether this AVS allows operator sets for registration
+    /// @dev If true, operators may register to operator sets via the AllocationManager
+    bool public operatorSetsEnabled;
+
+    /// @notice Whether this AVS allows M2 quorums for registration
+    /// @dev If true, operators may **not** register to M2 quorums. Deregistration is still allowed.
+    bool public m2QuorumsDisabled;
 
     /// @notice The account identifier for this AVS (used for UAM integration in EigenLayer)
     /// @dev NOTE: Updating this value will break existing OperatorSets and UAM integration.

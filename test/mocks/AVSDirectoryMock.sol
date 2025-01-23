@@ -68,7 +68,7 @@ contract AVSDirectoryMock is IAVSDirectory {
 
     function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool) {}
 
-    function isOperatorSetAVS(
+    function operatorSetsEnabled(
         address avs
     ) external view returns (bool) {}
 

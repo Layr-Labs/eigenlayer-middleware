@@ -2208,7 +2208,7 @@ contract RegistryCoordinatorUnitTests_BeforeMigration is RegistryCoordinatorUnit
         _deployMockEigenLayerAndAVS(0);
         cheats.prank(registryCoordinatorOwner);
         registryCoordinator.enableOperatorSets();
-        assertTrue(registryCoordinator.isOperatorSetAVS());
+        assertTrue(registryCoordinator.operatorSetsEnabled());
     }
 }
 
@@ -2217,7 +2217,7 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
     function test_MigrateToOperatorSets() public {
         cheats.prank(registryCoordinatorOwner);
         registryCoordinator.enableOperatorSets();
-        assertTrue(registryCoordinator.isOperatorSetAVS());
+        assertTrue(registryCoordinator.operatorSetsEnabled());
     }
 
     function test_M2_Deregister() public {
@@ -2582,8 +2582,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         registryCoordinator.enableOperatorSets();
 
         assertTrue(
-            registryCoordinator.isOperatorSetAVS(),
-            "isOperatorSetAVS should be true"
+            registryCoordinator.operatorSetsEnabled(),
+            "operatorSetsEnabled should be true"
         );
 
         // Create quorum params

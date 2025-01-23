@@ -1968,7 +1968,7 @@
 //         _deployMockEigenLayerAndAVS(0);
 //         cheats.prank(registryCoordinatorOwner);
 //         registryCoordinator.enableOperatorSets();
-//         assertTrue(registryCoordinator.isOperatorSetAVS());
+//         assertTrue(registryCoordinator.operatorSetsEnabled());
 //     }
 // }
 
@@ -1976,7 +1976,7 @@
 //     function test_MigrateToOperatorSets() public {
 //         cheats.prank(registryCoordinatorOwner);
 //         registryCoordinator.enableOperatorSets();
-//         assertTrue(registryCoordinator.isOperatorSetAVS());
+//         assertTrue(registryCoordinator.operatorSetsEnabled());
 //     }
 
 //     function test_M2_Deregister() public {

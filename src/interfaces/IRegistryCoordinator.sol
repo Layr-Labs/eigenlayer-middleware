@@ -6,7 +6,12 @@ import {IBLSApkRegistry} from "./IBLSApkRegistry.sol";
 import {ISlashingRegistryCoordinator} from "./ISlashingRegistryCoordinator.sol";
 
 interface IRegistryCoordinator {
-    
+
+    /// Emits when operator sets mode is enabled
+    event OperatorSetsEnabled();
+    /// Emits when M2 quorums are disabled
+    event M2QuorumsDisabled();
+
     /**
      * @notice Registers msg.sender as an operator for one or more quorums. If any quorum exceeds its maximum
      * operator capacity after the operator is registered, this method will fail.
@@ -52,10 +57,16 @@ interface IRegistryCoordinator {
     function deregisterOperator(bytes memory quorumNumbers) external;
 
     /**
-     * @notice Enables operator sets mode. This is by default initialized to set `isOperatorSetAVS` to True.
+     * @notice Enables operator sets mode. This is by default initialized to set `operatorSetsEnabled` to True.
      * So this is only meant to be called for existing AVSs that have a existing quorums and a previously deployed
      * version of middleware contracts.
      * @dev This is only callable by the owner of the RegistryCoordinator
      */
     function enableOperatorSets() external;
+
+    /**
+     * @notice Disables M2 quorums. This is only callable by the owner of the RegistryCoordinator.
+     * @dev This is only callable if `operatorSetsEnabled` is True.
+     */
+    function disableM2Quorums() external;
 }

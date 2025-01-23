@@ -635,7 +635,7 @@ contract StakeRegistry is StakeRegistryStorage {
      */
     function isOperatorSetQuorum(uint8 quorumNumber) public view returns (bool) {
         bool isM2 = ISlashingRegistryCoordinator(registryCoordinator).isM2Quorum(quorumNumber);
-        bool isOperatorSet = ISlashingRegistryCoordinator(registryCoordinator).isOperatorSetAVS();
+        bool isOperatorSet = ISlashingRegistryCoordinator(registryCoordinator).operatorSetsEnabled();
         return isOperatorSet && !isM2;
     }
 

@@ -105,7 +105,10 @@ contract SlashingRegistryCoordinator is
         registries.push(address(indexRegistry));
 
         // Set the AVS to be OperatorSets compatible
-        isOperatorSetAVS = true;
+        operatorSetsEnabled = true;
+
+        // Set the AVS to not accept M2 quorums
+        m2QuorumsDisabled = true;
     }
 
     /**
@@ -133,7 +136,7 @@ contract SlashingRegistryCoordinator is
         IStakeRegistry.StrategyParams[] memory strategyParams,
         uint32 lookAheadPeriod
     ) external virtual onlyOwner {
-        require(isOperatorSetAVS, OperatorSetsNotEnabled());
+        require(operatorSetsEnabled, OperatorSetsNotEnabled());
         _createQuorum(operatorSetParams, minimumStake, strategyParams, StakeType.TOTAL_SLASHABLE, lookAheadPeriod);
     }
 
@@ -142,7 +145,7 @@ contract SlashingRegistryCoordinator is
         uint32[] memory operatorSetIds,
         bytes calldata data
     ) external override onlyAllocationManager onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        require(isOperatorSetAVS, OperatorSetsNotEnabled());
+        require(operatorSetsEnabled, OperatorSetsNotEnabled());
         bytes memory quorumNumbers = _getQuorumNumbers(operatorSetIds);
 
         (
@@ -220,7 +223,7 @@ contract SlashingRegistryCoordinator is
         address operator,
         uint32[] memory operatorSetIds
     ) external override onlyAllocationManager onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
-        require(isOperatorSetAVS, OperatorSetsNotEnabled());
+        require(operatorSetsEnabled, OperatorSetsNotEnabled());
         bytes memory quorumNumbers = _getQuorumNumbers(operatorSetIds);
         _deregisterOperator(operator, quorumNumbers);
     }
@@ -360,7 +363,7 @@ contract SlashingRegistryCoordinator is
         ) {
             _deregisterOperator({operator: operator, quorumNumbers: quorumNumbers});
 
-            if (isOperatorSetAVS) {
+            if (operatorSetsEnabled) {
                 _forceDeregisterOperator(operator, quorumNumbers);
             }
         }
@@ -534,7 +537,7 @@ contract SlashingRegistryCoordinator is
                 singleQuorumNumber[0] = quorumNumbers[i];
                 _deregisterOperator(operatorKickParams[i].operator, singleQuorumNumber);
 
-                if (isOperatorSetAVS) {
+                if (operatorSetsEnabled) {
                     _forceDeregisterOperator(operatorKickParams[i].operator, singleQuorumNumber);
                 }
             }
@@ -839,7 +842,7 @@ contract SlashingRegistryCoordinator is
         _setOperatorSetParams(quorumNumber, operatorSetParams);
 
         /// Update the AllocationManager if operatorSetQuorum
-        if (isOperatorSetAVS && !_isM2Quorum(quorumNumber)) {
+        if (operatorSetsEnabled && !_isM2Quorum(quorumNumber)) {
             // Create array of CreateSetParams for the new quorum
             IAllocationManagerTypes.CreateSetParams[] memory createSetParams = new IAllocationManagerTypes.CreateSetParams[](1);
 

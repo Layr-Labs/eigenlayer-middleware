@@ -58,7 +58,7 @@ contract RegistryCoordinator is SlashingRegistryCoordinator, IRegistryCoordinato
         IBLSApkRegistry.PubkeyRegistrationParams memory params,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        require(!isOperatorSetAVS, OperatorSetsEnabled());
+        require(!m2QuorumsDisabled, M2QuorumsAlreadyDisabled());
         /**
          * If the operator has NEVER registered a pubkey before, use `params` to register
          * their pubkey in blsApkRegistry
@@ -108,7 +108,7 @@ contract RegistryCoordinator is SlashingRegistryCoordinator, IRegistryCoordinato
         SignatureWithSaltAndExpiry memory churnApproverSignature,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        require(!isOperatorSetAVS, OperatorSetsEnabled());
+        require(!m2QuorumsDisabled, M2QuorumsAlreadyDisabled());
 
         /**
          * If the operator has NEVER registered a pubkey before, use `params` to register
@@ -143,23 +143,33 @@ contract RegistryCoordinator is SlashingRegistryCoordinator, IRegistryCoordinato
     function deregisterOperator(
         bytes memory quorumNumbers
     ) external onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
-        // Check that the quorum numbers are M2 quorums and not operator sets
-        // if operator sets are enabled
+        // Check that the quorum numbers are M2 quorums
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            require(!isOperatorSetAVS || _isM2Quorum(uint8(quorumNumbers[i])), OperatorSetsEnabled());
+            require(!operatorSetsEnabled || _isM2Quorum(uint8(quorumNumbers[i])), OperatorSetsAlreadyEnabled());
         }
         _deregisterOperator({operator: msg.sender, quorumNumbers: quorumNumbers});
     }
 
     /// @inheritdoc IRegistryCoordinator
     function enableOperatorSets() external onlyOwner {
-        require(!isOperatorSetAVS, OperatorSetsEnabled());
+        require(!operatorSetsEnabled, OperatorSetsAlreadyEnabled());
 
         // Set the bitmap for M2 quorums
         M2quorumBitmap = _getQuorumBitmap(quorumCount);
 
         // Enable operator sets mode
-        isOperatorSetAVS = true;
+        operatorSetsEnabled = true;
+
+        emit OperatorSetsEnabled();
+    }
+
+    /// @inheritdoc IRegistryCoordinator
+    function disableM2Quorums() external onlyOwner {
+        require(operatorSetsEnabled, OperatorSetsNotEnabled());
+
+        m2QuorumsDisabled = true;
+
+        emit M2QuorumsDisabled();
     }
 
     /// @dev Hook to allow for any post-deregister logic

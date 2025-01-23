@@ -104,10 +104,6 @@ contract RegistryCoordinatorMock is ISlashingRegistryCoordinator, IRegistryCoord
         return false;
     }
 
-    function isOperatorSetAVS() external view returns (bool) {
-        return false;
-    }
-
     function accountIdentifier() external view returns (address) {}
 
     function deregisterOperator(bytes memory quorumNumbers) external {}
@@ -129,4 +125,8 @@ contract RegistryCoordinatorMock is ISlashingRegistryCoordinator, IRegistryCoord
         ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external {}
+
+    function disableM2Quorums() external {}
+
+    function operatorSetsEnabled() external view returns (bool) {}
 }
