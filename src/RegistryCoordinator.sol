@@ -164,7 +164,7 @@ contract RegistryCoordinator is SlashingRegistryCoordinator, IRegistryCoordinato
     }
 
     /// @inheritdoc IRegistryCoordinator
-    function disableM2Quorums() external onlyOwner {
+    function disableM2QuorumRegistration() external onlyOwner {
         require(operatorSetsEnabled, OperatorSetsNotEnabled());
 
         m2QuorumsDisabled = true;

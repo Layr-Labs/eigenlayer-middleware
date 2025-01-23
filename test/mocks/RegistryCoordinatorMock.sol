@@ -126,7 +126,7 @@ contract RegistryCoordinatorMock is ISlashingRegistryCoordinator, IRegistryCoord
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external {}
 
-    function disableM2Quorums() external {}
+    function disableM2QuorumRegistration() external {}
 
     function operatorSetsEnabled() external view returns (bool) {}
 }

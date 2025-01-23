@@ -65,8 +65,8 @@ interface IRegistryCoordinator {
     function enableOperatorSets() external;
 
     /**
-     * @notice Disables M2 quorums. This is only callable by the owner of the RegistryCoordinator.
+     * @notice Disables registration to M2 quorums. This is only callable by the owner of the RegistryCoordinator.
      * @dev This is only callable if `operatorSetsEnabled` is True.
      */
-    function disableM2Quorums() external;
+    function disableM2QuorumRegistration() external;
 }
