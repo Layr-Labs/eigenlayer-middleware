@@ -39,6 +39,11 @@ interface IRegistryCoordinatorErrors {
 interface ISlashingRegistryCoordinator is IRegistryCoordinatorErrors {
     // EVENTS
 
+    /// Emits when an operator is registered
+    event OperatorRegistered(address indexed operator, bytes32 indexed operatorId);
+    /// Emits when an operator is deregistered
+    event OperatorDeregistered(address indexed operator, bytes32 indexed operatorId);
+
     event OperatorSetParamsUpdated(uint8 indexed quorumNumber, OperatorSetParam operatorSetParams);
 
     event ChurnApproverUpdated(address prevChurnApprover, address newChurnApprover);

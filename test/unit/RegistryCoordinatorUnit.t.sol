@@ -1560,15 +1560,14 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         emit QuorumIndexUpdate(operatorToRegisterId, defaultQuorumNumber, numOperators);
 
         // Then expect the deregistration events
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit OperatorDeregistered(operatorKickParams[0].operator, operatorToKickId);
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
         emit OperatorRemovedFromQuorums(operatorKickParams[0].operator, operatorToKickId, quorumNumbers);
         cheats.expectEmit(true, true, true, true, address(stakeRegistry));
         emit OperatorStakeUpdate(operatorToKickId, defaultQuorumNumber, 0);
         cheats.expectEmit(true, true, true, true, address(indexRegistry));
         emit QuorumIndexUpdate(operatorToRegisterId, defaultQuorumNumber, numOperators - 1);
-        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
-        emit OperatorDeregistered(operatorKickParams[0].operator, operatorToKickId);
-
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
         emit OperatorRegistered(operatorToRegister, operatorToRegisterId);
 

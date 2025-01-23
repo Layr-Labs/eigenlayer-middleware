@@ -6,11 +6,6 @@ import {IBLSApkRegistry} from "./IBLSApkRegistry.sol";
 import {ISlashingRegistryCoordinator} from "./ISlashingRegistryCoordinator.sol";
 
 interface IRegistryCoordinator {
-
-    /// Emits when an operator is registered
-    event OperatorRegistered(address indexed operator, bytes32 indexed operatorId);
-    /// Emits when an operator is deregistered
-    event OperatorDeregistered(address indexed operator, bytes32 indexed operatorId);
     
     /**
      * @notice Registers msg.sender as an operator for one or more quorums. If any quorum exceeds its maximum

@@ -15,7 +15,6 @@ import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {BN254} from "./libraries/BN254.sol";
 import {SignatureCheckerLib} from "./libraries/SignatureCheckerLib.sol";
 import {QuorumBitmapHistoryLib} from "./libraries/QuorumBitmapHistoryLib.sol";
-import {AVSRegistrar} from "./AVSRegistrar.sol";
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
@@ -39,7 +38,7 @@ contract SlashingRegistryCoordinator is
     Pausable,
     OwnableUpgradeable,
     SlashingRegistryCoordinatorStorage,
-    AVSRegistrar,
+    IAVSRegistrar,
     ISocketUpdater,
     ISignatureUtils
 {
@@ -213,6 +212,7 @@ contract SlashingRegistryCoordinator is
         // and register them with this AVS in EigenLayer core (DelegationManager)
         if (_operatorInfo[operator].status != OperatorStatus.REGISTERED) {
             _operatorInfo[operator] = OperatorInfo(operatorId, OperatorStatus.REGISTERED);
+            emit OperatorRegistered(msg.sender, operatorId);
         }
     }
 
@@ -582,6 +582,13 @@ contract SlashingRegistryCoordinator is
         // Update operator's bitmap and status
         _updateOperatorBitmap({operatorId: operatorId, newBitmap: newBitmap});
 
+        // If the operator is no longer registered for any quorums, update their status and deregister
+        // them from the AVS via the EigenLayer core contracts
+        if (newBitmap.isEmpty()) {
+            _operatorInfo[operator].status = OperatorStatus.DEREGISTERED;
+            emit OperatorDeregistered(operator, operatorId);
+        }
+
         // Deregister operator with each of the registry contracts
         blsApkRegistry.deregisterOperator(operator, quorumNumbers);
         stakeRegistry.deregisterOperator(operatorId, quorumNumbers);
@@ -605,7 +612,7 @@ contract SlashingRegistryCoordinator is
         // Check each quorum's stake type
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            if (isM2Quorum[quorumNumber]) {
+            if (_isM2Quorum(quorumNumber)) {
                 operatorSetIds[numOperatorSetQuorums++] = quorumNumber;
             }
         }
@@ -832,7 +839,7 @@ contract SlashingRegistryCoordinator is
         _setOperatorSetParams(quorumNumber, operatorSetParams);
 
         /// Update the AllocationManager if operatorSetQuorum
-        if (isOperatorSetAVS && !isM2Quorum[quorumNumber]) {
+        if (isOperatorSetAVS && !_isM2Quorum(quorumNumber)) {
             // Create array of CreateSetParams for the new quorum
             IAllocationManagerTypes.CreateSetParams[] memory createSetParams = new IAllocationManagerTypes.CreateSetParams[](1);
 
@@ -897,6 +904,12 @@ contract SlashingRegistryCoordinator is
             quorumNumbers[i] = bytes1(uint8(operatorSetIds[i]));
         }
         return quorumNumbers;
+    }
+
+    /// @notice Returns true if the quorum number is an M2 quorum
+    /// @dev We use bitwise and to check if the quorum number is an M2 quorum
+    function _isM2Quorum(uint8 quorumNumber) internal view returns (bool) {
+        return M2quorumBitmap.isSet(quorumNumber);
     }
 
     function _setOperatorSetParams(
@@ -970,6 +983,11 @@ contract SlashingRegistryCoordinator is
         returns (ISlashingRegistryCoordinator.OperatorStatus)
     {
         return _operatorInfo[operator].status;
+    }
+
+    /// @notice Returns true if the quorum number is an M2 quorum
+    function isM2Quorum(uint8 quorumNumber) external view returns (bool) {
+        return _isM2Quorum(quorumNumber);
     }
 
     /**

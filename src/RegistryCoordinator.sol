@@ -146,7 +146,7 @@ contract RegistryCoordinator is SlashingRegistryCoordinator, IRegistryCoordinato
         // Check that the quorum numbers are M2 quorums and not operator sets
         // if operator sets are enabled
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            require(!isOperatorSetAVS || isM2Quorum[uint8(quorumNumbers[i])], OperatorSetsEnabled());
+            require(!isOperatorSetAVS || _isM2Quorum(uint8(quorumNumbers[i])), OperatorSetsEnabled());
         }
         _deregisterOperator({operator: msg.sender, quorumNumbers: quorumNumbers});
     }
@@ -155,10 +155,8 @@ contract RegistryCoordinator is SlashingRegistryCoordinator, IRegistryCoordinato
     function enableOperatorSets() external onlyOwner {
         require(!isOperatorSetAVS, OperatorSetsEnabled());
 
-        // Set all existing quorums as m2 quorums
-        for (uint8 i = 0; i < quorumCount; i++) {
-            isM2Quorum[i] = true;
-        }
+        // Set the bitmap for M2 quorums
+        M2quorumBitmap = _getQuorumBitmap(quorumCount);
 
         // Enable operator sets mode
         isOperatorSetAVS = true;
@@ -166,12 +164,22 @@ contract RegistryCoordinator is SlashingRegistryCoordinator, IRegistryCoordinato
 
     /// @dev Hook to allow for any post-deregister logic
     function _afterDeregisterOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers, uint192 newBitmap) internal virtual override {
-        // If the operator is no longer registered for any quorums, update their status and deregister
+        uint256 operatorM2QuorumBitmap = newBitmap.minus(M2quorumBitmap);
+        // If the operator is no longer registered for any M2 quorums, update their status and deregister
         // them from the AVS via the EigenLayer core contracts
-        if (newBitmap.isEmpty()) {
-            _operatorInfo[operator].status = OperatorStatus.DEREGISTERED;
+        if (operatorM2QuorumBitmap.isEmpty()) {
             serviceManager.deregisterOperatorFromAVS(operator);
-            emit OperatorDeregistered(operator, operatorId);
         }
+    }
+
+    /// @dev Returns a bitmap with all bits set up to `quorumCount`. Used for bit-masking quorum numbers
+    /// and differentiating between operator sets and M2 quorums
+    function _getQuorumBitmap(uint256 quorumCount) internal pure returns (uint256) {
+        // This creates a number where all bits up to quorumCount are set to 1
+        // For example: 
+        // quorumCount = 3 -> 0111 (7 in decimal)
+        // quorumCount = 5 -> 011111 (31 in decimal)
+        // This is a safe operation since we limit MAX_QUORUM_COUNT to 192
+        return (1 << quorumCount) - 1;
     }
 }

@@ -86,9 +86,9 @@ abstract contract SlashingRegistryCoordinatorStorage is ISlashingRegistryCoordin
     /// This value should only be set once.
     address public accountIdentifier;
 
-    /// @notice Mapping from quorum number to whether the quorum is an M2 quorum
-    /// @dev M2 quorums are pre-operator sets and track total delegated stake only
-    mapping(uint8 => bool) public isM2Quorum;
+    /// @notice The bitmap containing all M2 quorums. This is only used for existing AVS middlewares that have M2 quorums
+    /// and need to call `enableOperatorSets()` to enable operator sets mode.
+    uint256 internal M2quorumBitmap;
 
     constructor(
         IStakeRegistry _stakeRegistry,
