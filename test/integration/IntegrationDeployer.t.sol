@@ -170,7 +170,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit, eigenPodBeacon, strategyManager, slasher, delegationManager
         );
-        AVSDirectory avsDirectoryImplemntation = new AVSDirectory(delegationManager);
+        AVSDirectory avsDirectoryImplementation = new AVSDirectory(delegationManager);
         // RewardsCoordinator rewardsCoordinatorImplementation = new RewardsCoordinator(
         //     delegationManager,
         //     IStrategyManager(address(strategyManager)),
@@ -235,7 +235,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         // AVSDirectory
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(avsDirectory))),
-            address(avsDirectoryImplemntation),
+            address(avsDirectoryImplementation),
             abi.encodeWithSelector(
                 AVSDirectory.initialize.selector,
                 eigenLayerReputedMultisig, // initialOwner
