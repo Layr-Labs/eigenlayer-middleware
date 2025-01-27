@@ -11,50 +11,14 @@ import {IIndexRegistry} from "./IIndexRegistry.sol";
 import {BN254} from "../libraries/BN254.sol";
 
 interface IRegistryCoordinatorErrors {
-    /// @notice Thrown when array lengths in input parameters don't match.
-    error InputLengthMismatch();
-    // /// @notice Thrown when M2 operations are attempted while operator sets are enabled.
-    // error OperatorSetsEnabled();
+    /// @notice Thrown when operator sets mode is already enabled.
+    error OperatorSetsAlreadyEnabled();
     /// @notice Thrown when operator set operations are attempted while not enabled.
     error OperatorSetsNotEnabled();
-    /// @notice Thrown when operator set operations target an unsupported quorum.
-    error OperatorSetsNotSupported();
-    /// @notice Thrown when non-allocation manager calls restricted function.
-    error OnlyAllocationManager();
-    /// @notice Thrown when non-ejector calls restricted function.
-    error OnlyEjector();
-    /// @notice Thrown when operating on a non-existent quorum.
-    error QuorumDoesNotExist();
-    /// @notice Thrown when registering/deregistering with empty bitmap.
-    error BitmapEmpty();
-    /// @notice Thrown when registering for already registered quorums.
-    error AlreadyRegisteredForQuorums();
-    /// @notice Thrown when registering before ejection cooldown expires.
-    error CannotReregisterYet();
-    /// @notice Thrown when unregistered operator attempts restricted operation.
-    error NotRegistered();
-    /// @notice Thrown when operator attempts self-churn.
-    error CannotChurnSelf();
-    /// @notice Thrown when operator count doesn't match quorum requirements.
-    error QuorumOperatorCountMismatch();
-    /// @notice Thrown when operator has insufficient stake for churn.
-    error InsufficientStakeForChurn();
-    /// @notice Thrown when attempting to kick operator above stake threshold.
-    error CannotKickOperatorAboveThreshold();
-    /// @notice Thrown when updating to zero bitmap.
-    error BitmapCannotBeZero();
-    /// @notice Thrown when deregistering from unregistered quorum.
-    error NotRegisteredForQuorum();
     /// @notice Thrown when maximum quorum count is reached.
     error MaxQuorumsReached();
-    /// @notice Thrown when using previously used salt.
-    error SaltAlreadyUsed();
-    /// @notice Thrown when registry coordinator signature is expired.
-    error RegistryCoordinatorSignatureExpired();
-    /// @notice Thrown when churn approver salt is already used.
-    error ChurnApproverSaltUsed();
-    /// @notice Thrown when operators or quorums list is not sorted ascending.
-    error NotSorted();
+    /// @notice Thrown when M2 quorums are already disabled.
+    error M2QuorumsAlreadyDisabled();
 }
 
 interface IRegistryCoordinatorTypes {
