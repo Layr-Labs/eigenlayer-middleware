@@ -45,7 +45,8 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
             )
         );
 
-        ejectionManagerImplementation = new EjectionManager(registryCoordinator, stakeRegistry);
+        ejectionManagerImplementation =
+            new EjectionManager(IRegistryCoordinator(address(registryCoordinator)), stakeRegistry);
 
         address[] memory ejectors = new address[](1);
         ejectors[0] = ejector;

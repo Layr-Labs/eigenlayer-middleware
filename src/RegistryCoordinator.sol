@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
+import {IBLSApkRegistry, IBLSApkRegistryTypes} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
@@ -21,7 +21,7 @@ import {SlashingRegistryCoordinator} from "./SlashingRegistryCoordinator.sol";
  *
  * @author Layr Labs, Inc.
  */
-contract RegistryCoordinator is SlashingRegistryCoordinator, IRegistryCoordinator {
+contract RegistryCoordinator is SlashingRegistryCoordinator {
     using BitmapUtils for *;
 
     /// @notice the ServiceManager for this AVS, which forwards calls onto EigenLayer's core contracts
@@ -52,7 +52,7 @@ contract RegistryCoordinator is SlashingRegistryCoordinator, IRegistryCoordinato
      *
      */
 
-    /// @inheritdoc IRegistryCoordinator
+    // /// @inheritdoc IRegistryCoordinator
     function registerOperator(
         bytes memory quorumNumbers,
         string memory socket,
@@ -100,7 +100,7 @@ contract RegistryCoordinator is SlashingRegistryCoordinator, IRegistryCoordinato
         }
     }
 
-    /// @inheritdoc IRegistryCoordinator
+    // /// @inheritdoc IRegistryCoordinator
     function registerOperatorWithChurn(
         bytes calldata quorumNumbers,
         string memory socket,
@@ -140,7 +140,7 @@ contract RegistryCoordinator is SlashingRegistryCoordinator, IRegistryCoordinato
         }
     }
 
-    /// @inheritdoc IRegistryCoordinator
+    // /// @inheritdoc IRegistryCoordinator
     function deregisterOperator(
         bytes memory quorumNumbers
     ) external onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
@@ -154,7 +154,7 @@ contract RegistryCoordinator is SlashingRegistryCoordinator, IRegistryCoordinato
         _deregisterOperator({operator: msg.sender, quorumNumbers: quorumNumbers});
     }
 
-    /// @inheritdoc IRegistryCoordinator
+    // /// @inheritdoc IRegistryCoordinator
     function enableOperatorSets() external onlyOwner {
         require(!operatorSetsEnabled, OperatorSetsAlreadyEnabled());
 
@@ -167,7 +167,7 @@ contract RegistryCoordinator is SlashingRegistryCoordinator, IRegistryCoordinato
         emit OperatorSetsEnabled();
     }
 
-    /// @inheritdoc IRegistryCoordinator
+    // /// @inheritdoc IRegistryCoordinator
     function disableM2QuorumRegistration() external onlyOwner {
         require(operatorSetsEnabled, OperatorSetsNotEnabled());
 

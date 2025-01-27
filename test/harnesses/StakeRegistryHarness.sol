@@ -10,8 +10,7 @@ contract StakeRegistryHarness is StakeRegistry {
         IDelegationManager _delegationManager,
         IAVSDirectory _avsDirectory,
         IAllocationManager _allocationManager
-    ) StakeRegistry(_registryCoordinator, _delegationManager, _avsDirectory, _allocationManager) {
-    }
+    ) StakeRegistry(_registryCoordinator, _delegationManager, _avsDirectory, _allocationManager) {}
 
     function recordOperatorStakeUpdate(
         bytes32 operatorId,

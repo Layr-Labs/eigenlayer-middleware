@@ -37,7 +37,10 @@ contract ECDSAServiceManagerMock is ECDSAServiceManagerBase {
         address pendingAdmin
     ) external {}
 
-    function deregisterOperatorFromOperatorSets(address operator, uint32[] memory operatorSetIds) external {}
+    function deregisterOperatorFromOperatorSets(
+        address operator,
+        uint32[] memory operatorSetIds
+    ) external {}
 
     function removeAdmin(
         address admin

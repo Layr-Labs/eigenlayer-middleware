@@ -213,8 +213,12 @@ contract MockAVSDeployer is Test {
 
         cheats.startPrank(proxyAdminOwner);
 
-        stakeRegistryImplementation =
-            new StakeRegistryHarness(ISlashingRegistryCoordinator(registryCoordinator), delegationMock, avsDirectory, allocationManagerMock);
+        stakeRegistryImplementation = new StakeRegistryHarness(
+            ISlashingRegistryCoordinator(registryCoordinator),
+            delegationMock,
+            avsDirectory,
+            allocationManagerMock
+        );
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(stakeRegistry))),
             address(stakeRegistryImplementation)
@@ -333,17 +337,13 @@ contract MockAVSDeployer is Test {
                 TransparentUpgradeableProxy(payable(address(registryCoordinator))),
                 address(registryCoordinatorImplementation),
                 abi.encodeCall(
-                    RegistryCoordinator.initialize,
+                    SlashingRegistryCoordinator.initialize,
                     (
                         registryCoordinatorOwner, // _initialOwner
                         churnApprover, // _churnApprover
                         ejector, // _ejector
                         0, // _initialPausedStatus
-                        operatorSetParams, // _operatorSetParams
-                        minimumStakeForQuorum, // _minimumStakes
-                        quorumStrategiesConsideredAndMultipliers, // _strategyParams
-                        quorumStakeTypes, // _stakeTypes
-                        slashableStakeQuorumLookAheadPeriods // _lookAheadPeriods
+                        address(serviceManager) // _accountIdentifier
                     )
                 )
             );

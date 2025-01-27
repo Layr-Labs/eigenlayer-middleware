@@ -2,7 +2,12 @@
 pragma solidity ^0.8.27;
 
 import "../utils/MockAVSDeployer.sol";
-import {ISlashingRegistryCoordinator, IRegistryCoordinatorErrors} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
+import {
+    ISlashingRegistryCoordinator,
+    ISlashingRegistryCoordinatorTypes,
+    IRegistryCoordinatorTypes,
+    IRegistryCoordinatorErrors
+} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 import {QuorumBitmapHistoryLib} from "../../src/libraries/QuorumBitmapHistoryLib.sol";
 import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
 import {console} from "forge-std/console.sol";
@@ -130,12 +135,8 @@ contract RegistryCoordinatorUnitTests_Initialization_Setters is RegistryCoordina
             registryCoordinatorOwner,
             churnApprover,
             ejector,
-            0, /*initialPausedStatus*/
-            operatorSetParams,
-            new uint96[](0),
-            new IStakeRegistryTypes.StrategyParams[][](0),
-            new IStakeRegistryTypes.StakeType[](0),
-            new uint32[](0)
+            0, // _initialPausedStatus
+            address(serviceManager) // _accountIdentifier
         );
     }
 
@@ -716,7 +717,6 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
         uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
-
 
         quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
@@ -1727,7 +1727,9 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
         emit OperatorDeregistered(operatorKickParams[0].operator, operatorToKickId);
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit OperatorRemovedFromQuorums(operatorKickParams[0].operator, operatorToKickId, quorumNumbers);
+        emit OperatorRemovedFromQuorums(
+            operatorKickParams[0].operator, operatorToKickId, quorumNumbers
+        );
         cheats.expectEmit(true, true, true, true, address(stakeRegistry));
         emit OperatorStakeUpdate(operatorToKickId, defaultQuorumNumber, 0);
         cheats.expectEmit(true, true, true, true, address(indexRegistry));
@@ -2418,7 +2420,6 @@ contract RegistryCoordinatorUnitTests_BeforeMigration is RegistryCoordinatorUnit
 }
 
 contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitTests {
-
     function test_MigrateToOperatorSets() public {
         cheats.prank(registryCoordinatorOwner);
         registryCoordinator.enableOperatorSets();
@@ -2576,11 +2577,7 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
 
         // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);
-        registryCoordinator.createTotalDelegatedStakeQuorum(
-            operatorSetParams,
-            0,
-            strategyParams
-        );
+        registryCoordinator.createTotalDelegatedStakeQuorum(operatorSetParams, 0, strategyParams);
 
         uint32[] memory operatorSetIds = new uint32[](1);
         operatorSetIds[0] = 0;
@@ -2595,11 +2592,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         // });
 
         // Encode with RegistrationType.NORMAL
-        bytes memory data = abi.encode(
-            ISlashingRegistryCoordinator.RegistrationType.NORMAL,
-            socket,
-            params
-        );
+        bytes memory data =
+            abi.encode(ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, params);
 
         cheats.prank(address(registryCoordinator.allocationManager()));
         registryCoordinator.registerOperator(defaultOperator, operatorSetIds, data);
@@ -2653,7 +2647,7 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
 
         // Encode with RegistrationType.CHURN
         bytes memory data = abi.encode(
-            ISlashingRegistryCoordinator.RegistrationType.CHURN,
+            ISlashingRegistryCoordinatorTypes.RegistrationType.CHURN,
             socket,
             params,
             operatorKickParams,
@@ -2734,11 +2728,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         // });
 
         // Encode with RegistrationType.NORMAL
-        bytes memory data = abi.encode(
-            ISlashingRegistryCoordinator.RegistrationType.NORMAL,
-            socket,
-            params
-        );
+        bytes memory data =
+            abi.encode(ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, params);
 
         cheats.startPrank(address(registryCoordinator.allocationManager()));
         registryCoordinator.registerOperator(defaultOperator, operatorSetIds, data);
@@ -2773,11 +2764,7 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
 
         // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);
-        registryCoordinator.createTotalDelegatedStakeQuorum(
-            operatorSetParams,
-            0,
-            strategyParams
-        );
+        registryCoordinator.createTotalDelegatedStakeQuorum(operatorSetParams, 0, strategyParams);
 
         uint32[] memory operatorSetIds = new uint32[](1);
         operatorSetIds[0] = 0;
@@ -2792,11 +2779,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         // });
 
         // Encode with RegistrationType.NORMAL
-        bytes memory data = abi.encode(
-            ISlashingRegistryCoordinator.RegistrationType.NORMAL,
-            socket,
-            params
-        );
+        bytes memory data =
+            abi.encode(ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, params);
 
         vm.expectRevert();
         registryCoordinator.registerOperator(defaultOperator, operatorSetIds, data);
@@ -2809,10 +2793,7 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         cheats.prank(registryCoordinatorOwner);
         registryCoordinator.enableOperatorSets();
 
-        assertTrue(
-            registryCoordinator.operatorSetsEnabled(),
-            "operatorSetsEnabled should be true"
-        );
+        assertTrue(registryCoordinator.operatorSetsEnabled(), "operatorSetsEnabled should be true");
 
         // Create quorum params
         IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
@@ -2847,11 +2828,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         //     pubkeySignature: defaultPubKeySignature
         // });
 
-        bytes memory data = abi.encode(
-            ISlashingRegistryCoordinator.RegistrationType.NORMAL,
-            socket,
-            params
-        );
+        bytes memory data =
+            abi.encode(ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, params);
 
         cheats.prank(address(registryCoordinator.allocationManager()));
         registryCoordinator.registerOperator(defaultOperator, operatorSetIds, data);

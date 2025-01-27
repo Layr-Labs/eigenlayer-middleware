@@ -259,8 +259,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         uint256 quorumBitmapThree = 3;
 
         assertFalse(
-            registryCoordinator.operatorSetsEnabled(),
-            "operatorSetsEnabled should be false"
+            registryCoordinator.operatorSetsEnabled(), "operatorSetsEnabled should be false"
         );
 
         cheats.roll(registrationBlockNumber);

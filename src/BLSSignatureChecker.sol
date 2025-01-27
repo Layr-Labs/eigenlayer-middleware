@@ -25,7 +25,7 @@ contract BLSSignatureChecker is BLSSignatureCheckerStorage {
     /// CONSTRUCTION
 
     constructor(
-        IRegistryCoordinator _registryCoordinator
+        ISlashingRegistryCoordinator _registryCoordinator
     ) BLSSignatureCheckerStorage(_registryCoordinator) {}
 
     /// ACTIONS
