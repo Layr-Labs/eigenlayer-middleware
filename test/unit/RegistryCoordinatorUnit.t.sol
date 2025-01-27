@@ -8,6 +8,7 @@ import {
     IRegistryCoordinatorTypes,
     IRegistryCoordinatorErrors
 } from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
+import {IBLSApkRegistryTypes} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {QuorumBitmapHistoryLib} from "../../src/libraries/QuorumBitmapHistoryLib.sol";
 import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
 import {console} from "forge-std/console.sol";
