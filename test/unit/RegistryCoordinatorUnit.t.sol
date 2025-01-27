@@ -689,7 +689,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
-        cheats.expectRevert(bytes4(keccak256("OperatorSetQuorum()")));
+        cheats.expectRevert(bytes4(keccak256("NotRegistered()")));
         cheats.prank(defaultOperator);
         registryCoordinator.deregisterOperator(quorumNumbers);
     }
