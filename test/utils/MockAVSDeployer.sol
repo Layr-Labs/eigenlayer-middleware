@@ -22,7 +22,10 @@ import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
 import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
-import {IRegistryCoordinatorTypes, ISlashingRegistryCoordinatorTypes} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
+import {
+    IRegistryCoordinatorTypes,
+    ISlashingRegistryCoordinatorTypes
+} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 
 import {ISlashingRegistryCoordinator} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
