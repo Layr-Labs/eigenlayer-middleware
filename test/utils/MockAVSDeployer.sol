@@ -10,13 +10,11 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISi
 import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
 import {BN254} from "../../src/libraries/BN254.sol";
 
-import {IRegistryCoordinatorTypes} from "../../src/interfaces/IRegistryCoordinator.sol";
 import {OperatorStateRetriever} from "../../src/OperatorStateRetriever.sol";
 import {SlashingRegistryCoordinator} from "../../src/SlashingRegistryCoordinator.sol";
 import {RegistryCoordinator} from "../../src/RegistryCoordinator.sol";
 import {RegistryCoordinatorHarness} from "../harnesses/RegistryCoordinatorHarness.t.sol";
 import {BLSApkRegistry} from "../../src/BLSApkRegistry.sol";
-import {IBLSApkRegistryTypes} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {ServiceManagerMock} from "../mocks/ServiceManagerMock.sol";
 import {StakeRegistry, IStakeRegistryTypes} from "../../src/StakeRegistry.sol";
 import {IndexRegistry} from "../../src/IndexRegistry.sol";
@@ -24,6 +22,7 @@ import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
 import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
+import {IRegistryCoordinatorTypes, ISlashingRegistryCoordinatorTypes} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 
 import {ISlashingRegistryCoordinator} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
@@ -120,14 +119,14 @@ contract MockAVSDeployer is Test {
     uint16 defaultKickBIPsOfTotalStake = 150;
     uint8 numQuorums = 192;
 
-    ISlashingRegistryCoordinator.OperatorSetParam[] operatorSetParams;
+    IRegistryCoordinatorTypes.OperatorSetParam[] operatorSetParams;
 
     uint8 maxQuorumsToRegisterFor = 4;
     uint256 maxOperatorsToRegister = 4;
     uint32 registrationBlockNumber = 100;
     uint32 blocksBetweenRegistrations = 10;
 
-    IBLSApkRegistryTypes.PubkeyRegistrationParams pubkeyRegistrationParams;
+    IBLSApkRegistry.PubkeyRegistrationParams pubkeyRegistrationParams;
 
     struct OperatorMetadata {
         uint256 quorumBitmap;
@@ -322,31 +321,17 @@ contract MockAVSDeployer is Test {
                 );
             }
 
-            // Create arrays for quorum types and lookahead periods
-            IStakeRegistryTypes.StakeType[] memory quorumStakeTypes =
-                new IStakeRegistryTypes.StakeType[](numQuorumsToAdd);
-            uint32[] memory slashableStakeQuorumLookAheadPeriods = new uint32[](numQuorumsToAdd);
+            cheats.stopPrank();
 
             // add TOTAL_DELEGATED stake type quorums
             for (uint256 i = 0; i < numQuorumsToAdd; i++) {
-                quorumStakeTypes[i] = IStakeRegistryTypes.StakeType.TOTAL_DELEGATED;
-                slashableStakeQuorumLookAheadPeriods[i] = 0;
+                cheats.prank(registryCoordinator.owner());
+                registryCoordinator.createTotalDelegatedStakeQuorum(
+                    operatorSetParams[i],
+                    minimumStakeForQuorum[i],
+                    quorumStrategiesConsideredAndMultipliers[i]
+                );
             }
-
-            proxyAdmin.upgradeAndCall(
-                TransparentUpgradeableProxy(payable(address(registryCoordinator))),
-                address(registryCoordinatorImplementation),
-                abi.encodeCall(
-                    SlashingRegistryCoordinator.initialize,
-                    (
-                        registryCoordinatorOwner, // _initialOwner
-                        churnApprover, // _churnApprover
-                        ejector, // _ejector
-                        0, // _initialPausedStatus
-                        address(serviceManager) // _accountIdentifier
-                    )
-                )
-            );
         }
 
         operatorStateRetriever = new OperatorStateRetriever();

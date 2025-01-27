@@ -46,7 +46,7 @@
 //     // emitted when an operator's index in the orderd operator list for the quorum with number `quorumNumber` is updated
 //     event QuorumIndexUpdate(bytes32 indexed operatorId, uint8 quorumNumber, uint32 newIndex);
 
-//     event OperatorSetParamsUpdated(uint8 indexed quorumNumber, ISlashingRegistryCoordinator.OperatorSetParam operatorSetParams);
+//     event OperatorSetParamsUpdated(uint8 indexed quorumNumber, IRegistryCoordinatorTypes.OperatorSetParam operatorSetParams);
 
 //     event ChurnApproverUpdated(address prevChurnApprover, address newChurnApprover);
 
@@ -203,9 +203,9 @@
 //     }
 
 //     function test_createQuorum_revert_notOwner() public {
-//         ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams;
+//         IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams;
 //         uint96 minimumStake;
-//         IStakeRegistry.StrategyParams[] memory strategyParams;
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams;
 
 //         cheats.expectRevert("Ownable: caller is not the owner");
 //         cheats.prank(defaultOperator);
@@ -217,16 +217,16 @@
 //         // this is necessary since the default setup already configures the max number of quorums, preventing adding more
 //         _deployMockEigenLayerAndAVS(0);
 
-//         ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams =
-//             ISlashingRegistryCoordinator.OperatorSetParam({
+//         IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+//             IRegistryCoordinatorTypes.OperatorSetParam({
 //                     maxOperatorCount: defaultMaxOperatorCount,
 //                     kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
 //                     kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
 //             });
 //         uint96 minimumStake = 1;
-//         IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
 //         strategyParams[0] =
-//             IStakeRegistry.StrategyParams({
+//             IStakeRegistryTypes.StrategyParams({
 //                 strategy: IStrategy(address(1000)),
 //                 multiplier: 1e16
 //             });
@@ -1902,14 +1902,14 @@
 //     function test_CreateTotalDelegatedStakeQuorum() public {
 //         _deployMockEigenLayerAndAVS(0);
 //         // Set up test params
-//         ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinator.OperatorSetParam({
+//         IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = IRegistryCoordinatorTypes.OperatorSetParam({
 //             maxOperatorCount: 10,
 //             kickBIPsOfOperatorStake: 0,
 //             kickBIPsOfTotalStake: 0
 //         });
 //         uint96 minimumStake = 100;
-//         IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
-//         strategyParams[0] = IStakeRegistry.StrategyParams({
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
+//         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
 //             strategy: IStrategy(address(0x1)),
 //             multiplier: 1000
 //         });
@@ -1929,7 +1929,7 @@
 //         assertEq(registryCoordinator.quorumCount(), initialQuorumCount + 1);
 
 //         // Verify quorum params were set correctly
-//         ISlashingRegistryCoordinator.OperatorSetParam memory storedParams = registryCoordinator.getOperatorSetParams(initialQuorumCount);
+//         IRegistryCoordinatorTypes.OperatorSetParam memory storedParams = registryCoordinator.getOperatorSetParams(initialQuorumCount);
 //         assertEq(storedParams.maxOperatorCount, operatorSetParams.maxOperatorCount);
 //         assertEq(storedParams.kickBIPsOfOperatorStake, operatorSetParams.kickBIPsOfOperatorStake);
 //         assertEq(storedParams.kickBIPsOfTotalStake, operatorSetParams.kickBIPsOfTotalStake);
@@ -1937,14 +1937,14 @@
 
 //     function test_CreateSlashableStakeQuorum_Reverts() public {
 //         _deployMockEigenLayerAndAVS(0);
-//        ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinator.OperatorSetParam({
+//        IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = IRegistryCoordinatorTypes.OperatorSetParam({
 //             maxOperatorCount: 10,
 //             kickBIPsOfOperatorStake: 0,
 //             kickBIPsOfTotalStake: 0
 //         });
 //         uint96 minimumStake = 100;
-//         IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
-//         strategyParams[0] = IStakeRegistry.StrategyParams({
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
+//         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
 //             strategy: IStrategy(address(0x1)),
 //             multiplier: 1000
 //         });
@@ -2059,14 +2059,14 @@
 //         registryCoordinator.enableOperatorSets();
 
 //         // Create quorum params
-//         ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinator.OperatorSetParam({
+//         IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = IRegistryCoordinatorTypes.OperatorSetParam({
 //             maxOperatorCount: 10,
 //             kickBIPsOfOperatorStake: 1000,
 //             kickBIPsOfTotalStake: 100
 //         });
 //         uint96 minimumStake = 100;
-//         IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
-//         strategyParams[0] = IStakeRegistry.StrategyParams({
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
+//         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
 //             strategy: IStrategy(address(1)),
 //             multiplier: 1
 //         });
@@ -2091,14 +2091,14 @@
 //         registryCoordinator.enableOperatorSets();
 
 //         // Create quorum params
-//         ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinator.OperatorSetParam({
+//         IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = IRegistryCoordinatorTypes.OperatorSetParam({
 //             maxOperatorCount: 10,
 //             kickBIPsOfOperatorStake: 1000,
 //             kickBIPsOfTotalStake: 100
 //         });
 //         uint96 minimumStake = 100;
-//         IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
-//         strategyParams[0] = IStakeRegistry.StrategyParams({
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
+//         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
 //             strategy: IStrategy(address(1)),
 //             multiplier: 10000
 //         });
@@ -2121,15 +2121,15 @@
 //         registryCoordinator.enableOperatorSets();
 
 //         // Create quorum params
-//         ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinator.OperatorSetParam({
+//         IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = IRegistryCoordinatorTypes.OperatorSetParam({
 //             maxOperatorCount: 10,
 //             kickBIPsOfOperatorStake: 1000,
 //             kickBIPsOfTotalStake: 100
 //         });
 
 //         uint96 minimumStake = 100;
-//         IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
-//         strategyParams[0] = IStakeRegistry.StrategyParams({
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
+//         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
 //             strategy: IStrategy(address(1)),
 //             multiplier: 10000
 //         });
@@ -2167,15 +2167,15 @@
 //         registryCoordinator.enableOperatorSets();
 
 //         // Create quorum params
-//         ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinator.OperatorSetParam({
+//         IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = IRegistryCoordinatorTypes.OperatorSetParam({
 //             maxOperatorCount: 10,
 //             kickBIPsOfOperatorStake: 1000,
 //             kickBIPsOfTotalStake: 100
 //         });
 
 //         uint96 minimumStake = 100;
-//         IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
-//         strategyParams[0] = IStakeRegistry.StrategyParams({
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
+//         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
 //             strategy: IStrategy(address(1)),
 //             multiplier: 10000
 //         });
@@ -2226,15 +2226,15 @@
 //         vm.skip(true);
 //         _deployMockEigenLayerAndAVS(0);
 
-//         ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinator.OperatorSetParam({
+//         IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = IRegistryCoordinatorTypes.OperatorSetParam({
 //             maxOperatorCount: defaultMaxOperatorCount,
 //             kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
 //             kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
 //         });
 
 //         uint96 minimumStake = 100;
-//         IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
-//         strategyParams[0] = IStakeRegistry.StrategyParams({
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
+//         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
 //             strategy: IStrategy(address(1)),
 //             multiplier: 10000
 //         });
@@ -2259,15 +2259,15 @@
 //         registryCoordinator.enableOperatorSets();
 
 //         // Create quorum params
-//         ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinator.OperatorSetParam({
+//         IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = IRegistryCoordinatorTypes.OperatorSetParam({
 //             maxOperatorCount: 10,
 //             kickBIPsOfOperatorStake: 1000,
 //             kickBIPsOfTotalStake: 100
 //         });
 
 //         uint96 minimumStake = 100;
-//         IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
-//         strategyParams[0] = IStakeRegistry.StrategyParams({
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
+//         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
 //             strategy: IStrategy(address(1)),
 //             multiplier: 10000
 //         });
@@ -2311,15 +2311,15 @@
 //         registryCoordinator.enableOperatorSets();
 
 //         // Create quorum params
-//         ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinator.OperatorSetParam({
+//         IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = IRegistryCoordinatorTypes.OperatorSetParam({
 //             maxOperatorCount: 10,
 //             kickBIPsOfOperatorStake: 1000,
 //             kickBIPsOfTotalStake: 100
 //         });
 
 //         uint96 minimumStake = 100;
-//         IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
-//         strategyParams[0] = IStakeRegistry.StrategyParams({
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
+//         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
 //             strategy: IStrategy(address(1)),
 //             multiplier: 10000
 //         });
@@ -2358,15 +2358,15 @@
 //         registryCoordinator.enableOperatorSets();
 
 //         // Create quorum params
-//         ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinator.OperatorSetParam({
+//         IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = IRegistryCoordinatorTypes.OperatorSetParam({
 //             maxOperatorCount: 10,
 //             kickBIPsOfOperatorStake: 1000,
 //             kickBIPsOfTotalStake: 100
 //         });
 
 //         uint96 minimumStake = 100;
-//         IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
-//         strategyParams[0] = IStakeRegistry.StrategyParams({
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
+//         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
 //             strategy: IStrategy(address(1)),
 //             multiplier: 10000
 //         });

@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import "../utils/MockAVSDeployer.sol";
 import {IStakeRegistryErrors} from "../../src/interfaces/IStakeRegistry.sol";
+import {IRegistryCoordinatorTypes} from "../../src/interfaces/IRegistryCoordinator.sol";
 
 contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
     using BN254 for BN254.G1Point;

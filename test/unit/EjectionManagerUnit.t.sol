@@ -8,6 +8,7 @@ import {
     IEjectionManagerErrors,
     IEjectionManagerTypes
 } from "../../src/interfaces/IEjectionManager.sol";
+import {IRegistryCoordinatorTypes} from "../../src/interfaces/IRegistryCoordinator.sol";
 import "../utils/MockAVSDeployer.sol";
 
 contract EjectionManagerUnitTests is MockAVSDeployer {

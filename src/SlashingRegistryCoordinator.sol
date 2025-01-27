@@ -129,7 +129,7 @@ contract SlashingRegistryCoordinator is
     function createTotalDelegatedStakeQuorum(
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
-        IStakeRegistry.StrategyParams[] memory strategyParams
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams
     ) external virtual onlyOwner {
         _createQuorum(
             operatorSetParams,
@@ -143,7 +143,7 @@ contract SlashingRegistryCoordinator is
     function createSlashableStakeQuorum(
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
-        IStakeRegistry.StrategyParams[] memory strategyParams,
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams,
         uint32 lookAheadPeriod
     ) external virtual onlyOwner {
         require(operatorSetsEnabled, OperatorSetsNotEnabled());
@@ -814,7 +814,7 @@ contract SlashingRegistryCoordinator is
     function _createQuorum(
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
-        IStakeRegistry.StrategyParams[] memory strategyParams,
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams,
         IStakeRegistryTypes.StakeType stakeType,
         uint32 lookAheadPeriod
     ) internal {

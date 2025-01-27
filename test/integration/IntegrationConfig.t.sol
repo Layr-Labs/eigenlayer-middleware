@@ -6,6 +6,7 @@ import "forge-std/Test.sol";
 import "test/integration/IntegrationDeployer.t.sol";
 import "test/ffi/util/G2Operations.sol";
 import "test/integration/utils/BitmapStrings.t.sol";
+import {ISlashingRegistryCoordinatorTypes} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 
 contract Constants {
     /// IECDSAStakeRegistryTypes.Quorum Config:
@@ -319,7 +320,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
         for (uint256 i = 0; i < churnQuorums.length; i++) {
             uint8 quorum = uint8(churnQuorums[i]);
 
-            ISlashingRegistryCoordinator.OperatorSetParam memory params =
+            IRegistryCoordinatorTypes.OperatorSetParam memory params =
                 registryCoordinator.getOperatorSetParams(quorum);
 
             // Sanity check - make sure we're at the operator cap
@@ -366,7 +367,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
     /// From RegistryCoordinator._individualKickThreshold
     function _individualKickThreshold(
         uint96 operatorStake,
-        ISlashingRegistryCoordinator.OperatorSetParam memory setParams
+        IRegistryCoordinatorTypes.OperatorSetParam memory setParams
     ) internal pure returns (uint96) {
         return operatorStake * setParams.kickBIPsOfOperatorStake / BIPS_DENOMINATOR;
     }
@@ -374,7 +375,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
     /// From RegistryCoordinator._totalKickThreshold
     function _totalKickThreshold(
         uint96 totalStake,
-        ISlashingRegistryCoordinator.OperatorSetParam memory setParams
+        IRegistryCoordinatorTypes.OperatorSetParam memory setParams
     ) internal pure returns (uint96) {
         return totalStake * setParams.kickBIPsOfTotalStake / BIPS_DENOMINATOR;
     }
@@ -567,7 +568,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
      * @return The number of operators to register
      */
     function _randInitialOperators(
-        ISlashingRegistryCoordinator.OperatorSetParam memory operatorSet
+        IRegistryCoordinatorTypes.OperatorSetParam memory operatorSet
     ) private returns (uint256) {
         uint256 fillTypeFlag = _randValue(fillTypeFlags);
 
