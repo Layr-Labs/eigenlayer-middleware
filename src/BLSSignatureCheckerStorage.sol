@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import {IBLSSignatureChecker} from "./interfaces/IBLSSignatureChecker.sol";
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
 import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry, IDelegationManager} from "./interfaces/IStakeRegistry.sol";
 
@@ -11,7 +11,7 @@ abstract contract BLSSignatureCheckerStorage is IBLSSignatureChecker {
     uint256 internal constant PAIRING_EQUALITY_CHECK_GAS = 120_000;
 
     /// @inheritdoc IBLSSignatureChecker
-    IRegistryCoordinator public immutable registryCoordinator;
+    ISlashingRegistryCoordinator public immutable registryCoordinator;
     /// @inheritdoc IBLSSignatureChecker
     IStakeRegistry public immutable stakeRegistry;
     /// @inheritdoc IBLSSignatureChecker
@@ -25,7 +25,7 @@ abstract contract BLSSignatureCheckerStorage is IBLSSignatureChecker {
     bool public staleStakesForbidden;
 
     constructor(
-        IRegistryCoordinator _registryCoordinator
+        ISlashingRegistryCoordinator _registryCoordinator
     ) {
         registryCoordinator = _registryCoordinator;
         stakeRegistry = _registryCoordinator.stakeRegistry();

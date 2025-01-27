@@ -1,128 +1,61 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import {
+    IRegistryCoordinator,
+    IRegistryCoordinatorErrors,
+    IRegistryCoordinatorEvents,
+    IRegistryCoordinatorTypes
+} from "./IRegistryCoordinator.sol";
 import {IServiceManager} from "./IServiceManager.sol";
 import {IBLSApkRegistry} from "./IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./IStakeRegistry.sol";
 import {IIndexRegistry} from "./IIndexRegistry.sol";
 import {BN254} from "../libraries/BN254.sol";
 
-interface IRegistryCoordinatorErrors {
-    error InputLengthMismatch();
+interface ISlashingRegistryCoordinatorErrors is IRegistryCoordinatorErrors {
+    /// @notice Thrown when operator sets mode is already enabled.
     error OperatorSetsAlreadyEnabled();
-    error OperatorSetsNotEnabled();
+    /// @notice Thrown when M2 quorums are already disabled.
     error M2QuorumsAlreadyDisabled();
-    error OnlyAllocationManager();
-    error OnlyEjector();
-    error QuorumDoesNotExist();
-    error BitmapEmpty();
-    error AlreadyRegisteredForQuorums();
-    error CannotReregisterYet();
-    error NotRegistered();
-    error CannotChurnSelf();
-    error QuorumOperatorCountMismatch();
-    error InsufficientStakeForChurn();
-    error CannotKickOperatorAboveThreshold();
-    error BitmapCannotBeZero();
-    error NotRegisteredForQuorum();
-    error MaxQuorumsReached();
-    error SaltAlreadyUsed();
-    error RegistryCoordinatorSignatureExpired();
-    error ChurnApproverSaltUsed();
-    error NotSorted();
+    /// @notice Thrown when an invalid registration type is provided.
     error InvalidRegistrationType();
 }
-/**
- * @title Interface for a contract that coordinates between various registries for an AVS.
- * @author Layr Labs, Inc.
- */
 
-interface ISlashingRegistryCoordinator is IRegistryCoordinatorErrors {
-    // EVENTS
-
-    /// Emits when an operator is registered
-    event OperatorRegistered(address indexed operator, bytes32 indexed operatorId);
-    /// Emits when an operator is deregistered
-    event OperatorDeregistered(address indexed operator, bytes32 indexed operatorId);
-
-    event OperatorSetParamsUpdated(uint8 indexed quorumNumber, OperatorSetParam operatorSetParams);
-
-    event ChurnApproverUpdated(address prevChurnApprover, address newChurnApprover);
-
-    event EjectorUpdated(address prevEjector, address newEjector);
-
-    /// @notice emitted when all the operators for a quorum are updated at once
-    event QuorumBlockNumberUpdated(uint8 indexed quorumNumber, uint256 blocknumber);
-
-    // DATA STRUCTURES
-    enum OperatorStatus {
-        // default is NEVER_REGISTERED
-        NEVER_REGISTERED,
-        REGISTERED,
-        DEREGISTERED
-    }
-
+interface ISlashingRegistryCoordinatorTypes is IRegistryCoordinatorTypes {
+    /**
+     * @notice Enum representing the type of operator registration.
+     * @custom:enum NORMAL Represents a normal operator registration.
+     * @custom:enum CHURN Represents an operator registration during a churn event.
+     */
     enum RegistrationType {
         NORMAL,
         CHURN
     }
 
-    // STRUCTS
-
     /**
-     * @notice Data structure for storing info on operators
-     */
-    struct OperatorInfo {
-        // the id of the operator, which is likely the keccak256 hash of the operator's public key if using BLSRegistry
-        bytes32 operatorId;
-        // indicates whether the operator is actively registered for serving the middleware or not
-        OperatorStatus status;
-    }
-
-    /**
-     * @notice Data structure for storing info on quorum bitmap updates where the `quorumBitmap` is the bitmap of the
-     * quorums the operator is registered for starting at (inclusive)`updateBlockNumber` and ending at (exclusive) `nextUpdateBlockNumber`
-     * @dev nextUpdateBlockNumber is initialized to 0 for the latest update
-     */
-    struct QuorumBitmapUpdate {
-        uint32 updateBlockNumber;
-        uint32 nextUpdateBlockNumber;
-        uint192 quorumBitmap;
-    }
-
-    /**
-     * @notice Data structure for storing the results of a registerOperator call
-     * @dev For each quorum the operator registered for, numOperatorsPerQuorum is the number of operators registered
-     * @dev For each quorum the operator registered for, operatorStakes is the stake of the operator in the quorum
-     * @dev For each quorum the operator registered for, totalStakes is the total stake of the quorum
+     * @notice Data structure for storing the results of a registerOperator call.
+     * @dev Contains arrays storing per-quorum information about operator counts and stakes.
+     * @param numOperatorsPerQuorum For each quorum the operator registered for, stores the number of operators registered.
+     * @param operatorStakes For each quorum the operator registered for, stores the stake of the operator in the quorum.
+     * @param totalStakes For each quorum the operator registered for, stores the total stake of the quorum.
      */
     struct RegisterResults {
         uint32[] numOperatorsPerQuorum;
         uint96[] operatorStakes;
         uint96[] totalStakes;
     }
+}
 
-    /**
-     * @notice Data structure for storing operator set params for a given quorum. Specifically the
-     * `maxOperatorCount` is the maximum number of operators that can be registered for the quorum,
-     * `kickBIPsOfOperatorStake` is the basis points of a new operator needs to have of an operator they are trying to kick from the quorum,
-     * and `kickBIPsOfTotalStake` is the basis points of the total stake of the quorum that an operator needs to be below to be kicked.
-     */
-    struct OperatorSetParam {
-        uint32 maxOperatorCount;
-        uint16 kickBIPsOfOperatorStake;
-        uint16 kickBIPsOfTotalStake;
-    }
+interface ISlashingRegistryCoordinatorEvents is
+    IRegistryCoordinatorEvents,
+    ISlashingRegistryCoordinatorTypes
+{}
 
-    /**
-     * @notice Data structure for the parameters needed to kick an operator from a quorum with number `quorumNumber`, used during registration churn.
-     * `operator` is the address of the operator to kick
-     */
-    struct OperatorKickParam {
-        uint8 quorumNumber;
-        address operator;
-    }
-
+interface ISlashingRegistryCoordinator is
+    ISlashingRegistryCoordinatorErrors,
+    ISlashingRegistryCoordinatorEvents
+{
     /// @notice Returns the operator set params for the given `quorumNumber`
     function getOperatorSetParams(
         uint8 quorumNumber
@@ -211,7 +144,10 @@ interface ISlashingRegistryCoordinator is IRegistryCoordinatorErrors {
         uint8 quorumNumber
     ) external view returns (bool);
 
-    /// @notice Returns whether operator sets mode is enabled
+    /**
+     * @notice Returns whether operator sets mode is enabled.
+     * @return True if operator sets mode is enabled, false otherwise.
+     */
     function operatorSetsEnabled() external view returns (bool);
 
     /**
@@ -231,9 +167,9 @@ interface ISlashingRegistryCoordinator is IRegistryCoordinatorErrors {
     function owner() external view returns (address);
 
     /**
-     * @notice The account identifier for this AVS (used for UAM integration in EigenLayer)
-     * @dev NOTE: Updating this value will break existing OperatorSets and UAM integration.
-     * This value should only be set once.
+     * @notice The account identifier for this AVS (used for UAM integration in EigenLayer).
+     * @dev NOTE: Updating this value will break existing OperatorSets and UAM integration. This value should only be set once.
+     * @return The account identifier address.
      */
     function accountIdentifier() external view returns (address);
 }

@@ -3,7 +3,6 @@ pragma solidity ^0.8.27;
 
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 
-
 contract AVSRegistrarMock is IAVSRegistrar {
     function registerOperator(
         address operator,

@@ -2,8 +2,9 @@
 pragma solidity ^0.8.27;
 
 import {
-    IRegistryCoordinator, IRegistryCoordinatorTypes
-} from "../interfaces/IRegistryCoordinator.sol";
+    ISlashingRegistryCoordinator,
+    IRegistryCoordinatorTypes
+} from "../interfaces/ISlashingRegistryCoordinator.sol";
 
 /// @title QuorumBitmapHistoryLib
 /// @notice This library operates on the _operatorBitmapHistory in the RegistryCoordinator

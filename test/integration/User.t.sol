@@ -161,8 +161,8 @@ contract User is Test {
 
         bytes memory allQuorums = churnBitmap.plus(standardBitmap).bitmapToBytesArray();
 
-        ISlashingRegistryCoordinator.OperatorKickParam[] memory kickParams
-            = new ISlashingRegistryCoordinator.OperatorKickParam[](allQuorums.length);
+        ISlashingRegistryCoordinator.OperatorKickParam[] memory kickParams =
+            new ISlashingRegistryCoordinator.OperatorKickParam[](allQuorums.length);
 
         // this constructs OperatorKickParam[] in ascending quorum order
         // (yikes)

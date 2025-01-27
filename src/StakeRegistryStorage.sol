@@ -12,7 +12,7 @@ import {
 } from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 
 import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
-import {IStakeRegistry, StakeType} from "./interfaces/IStakeRegistry.sol";
+import {IStakeRegistry, IStakeRegistryTypes} from "./interfaces/IStakeRegistry.sol";
 
 /**
  * @title Storage variables for the `StakeRegistry` contract.

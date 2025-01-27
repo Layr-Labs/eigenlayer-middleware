@@ -319,8 +319,8 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
         for (uint256 i = 0; i < churnQuorums.length; i++) {
             uint8 quorum = uint8(churnQuorums[i]);
 
-            ISlashingRegistryCoordinator.OperatorSetParam memory params
-                = registryCoordinator.getOperatorSetParams(quorum);
+            ISlashingRegistryCoordinator.OperatorSetParam memory params =
+                registryCoordinator.getOperatorSetParams(quorum);
 
             // Sanity check - make sure we're at the operator cap
             uint32 curNumOperators = indexRegistry.totalOperatorsForQuorum(quorum);
@@ -566,8 +566,10 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
      * @dev Uses _randFillType to determine how many operators to register for a quorum initially
      * @return The number of operators to register
      */
-    function _randInitialOperators(ISlashingRegistryCoordinator.OperatorSetParam memory operatorSet) private returns (uint) {
-        uint fillTypeFlag = _randValue(fillTypeFlags);
+    function _randInitialOperators(
+        ISlashingRegistryCoordinator.OperatorSetParam memory operatorSet
+    ) private returns (uint256) {
+        uint256 fillTypeFlag = _randValue(fillTypeFlags);
 
         if (fillTypeFlag == EMPTY) {
             return 0;

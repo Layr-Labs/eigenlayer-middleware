@@ -13,8 +13,8 @@ import {BN254} from "../libraries/BN254.sol";
 interface IRegistryCoordinatorErrors {
     /// @notice Thrown when array lengths in input parameters don't match.
     error InputLengthMismatch();
-    /// @notice Thrown when M2 operations are attempted while operator sets are enabled.
-    error OperatorSetsEnabled();
+    // /// @notice Thrown when M2 operations are attempted while operator sets are enabled.
+    // error OperatorSetsEnabled();
     /// @notice Thrown when operator set operations are attempted while not enabled.
     error OperatorSetsNotEnabled();
     /// @notice Thrown when operator set operations target an unsupported quorum.
@@ -168,6 +168,18 @@ interface IRegistryCoordinatorEvents is IRegistryCoordinatorTypes {
      * @param socket The new socket address for the operator (typically an IP address).
      */
     event OperatorSocketUpdate(bytes32 indexed operatorId, string socket);
+
+    /**
+     * @notice Emitted when operator sets mode is enabled.
+     * @dev Emitted in enableOperatorSets().
+     */
+    event OperatorSetsEnabled();
+
+    /**
+     * @notice Emitted when M2 quorums are disabled.
+     * @dev Emitted in disableM2QuorumRegistration().
+     */
+    event M2QuorumsDisabled();
 }
 
 interface IRegistryCoordinator is IRegistryCoordinatorErrors, IRegistryCoordinatorEvents {
@@ -293,30 +305,6 @@ interface IRegistryCoordinator is IRegistryCoordinatorErrors, IRegistryCoordinat
     ) external view returns (bool);
 
     /// ACTIONS
-
-    /**
-     * @notice Initializes the registry coordinator with initial configuration.
-     * @param _initialOwner The address that will own the contract.
-     * @param _churnApprover The address that will approve operator churn.
-     * @param _ejector The address that will have ejection privileges.
-     * @param _initialPausedStatus The initial pause configuration.
-     * @param _operatorSetParams Parameters for operator set configuration per quorum.
-     * @param _minimumStakes Minimum stake requirements per quorum.
-     * @param _strategyParams Strategy configurations per quorum.
-     * @param _stakeTypes Type of stake tracking per quorum.
-     * @param _lookAheadPeriods Look ahead periods for slashable stake calculation.
-     */
-    function initialize(
-        address _initialOwner,
-        address _churnApprover,
-        address _ejector,
-        uint256 _initialPausedStatus,
-        OperatorSetParam[] memory _operatorSetParams,
-        uint96[] memory _minimumStakes,
-        IStakeRegistryTypes.StrategyParams[][] memory _strategyParams,
-        IStakeRegistryTypes.StakeType[] memory _stakeTypes,
-        uint32[] memory _lookAheadPeriods
-    ) external;
 
     /**
      * @notice Registers an operator for service in specified quorums. If any quorum exceeds its maximum

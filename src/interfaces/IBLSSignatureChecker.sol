@@ -83,7 +83,7 @@ interface IBLSSignatureChecker is IBLSSignatureCheckerErrors, IBLSSignatureCheck
      * @return The address of the registry coordinator.
      * @dev This value is immutable and set during contract construction.
      */
-    function registryCoordinator() external view returns (IRegistryCoordinator);
+    function registryCoordinator() external view returns (ISlashingRegistryCoordinator);
 
     /*
      * @notice Returns the address of the stake registry contract.

@@ -9,9 +9,9 @@ import {
     OperatorSet,
     IAllocationManagerTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {ISocketUpdater} from "./interfaces/ISocketUpdater.sol";
-import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
-import {IStakeRegistry, StakeType} from "./interfaces/IStakeRegistry.sol";
+
+import {IBLSApkRegistry, IBLSApkRegistryTypes} from "./interfaces/IBLSApkRegistry.sol";
+import {IStakeRegistry, IStakeRegistryTypes} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
 
@@ -43,7 +43,6 @@ contract SlashingRegistryCoordinator is
     OwnableUpgradeable,
     SlashingRegistryCoordinatorStorage,
     IAVSRegistrar,
-    ISocketUpdater,
     ISignatureUtils
 {
     using BitmapUtils for *;
@@ -132,7 +131,13 @@ contract SlashingRegistryCoordinator is
         uint96 minimumStake,
         IStakeRegistry.StrategyParams[] memory strategyParams
     ) external virtual onlyOwner {
-        _createQuorum(operatorSetParams, minimumStake, strategyParams, StakeType.TOTAL_DELEGATED, 0);
+        _createQuorum(
+            operatorSetParams,
+            minimumStake,
+            strategyParams,
+            IStakeRegistryTypes.StakeType.TOTAL_DELEGATED,
+            0
+        );
     }
 
     function createSlashableStakeQuorum(
@@ -146,7 +151,7 @@ contract SlashingRegistryCoordinator is
             operatorSetParams,
             minimumStake,
             strategyParams,
-            StakeType.TOTAL_SLASHABLE,
+            IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE,
             lookAheadPeriod
         );
     }
@@ -155,15 +160,17 @@ contract SlashingRegistryCoordinator is
         address operator,
         uint32[] memory operatorSetIds,
         bytes calldata data
-    ) external override onlyAllocationManager onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
+    ) external onlyAllocationManager onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         require(operatorSetsEnabled, OperatorSetsNotEnabled());
         bytes memory quorumNumbers = _getQuorumNumbers(operatorSetIds);
 
         (
             RegistrationType registrationType,
             string memory socket,
-            IBLSApkRegistry.PubkeyRegistrationParams memory params
-        ) = abi.decode(data, (RegistrationType, string, IBLSApkRegistry.PubkeyRegistrationParams));
+            IBLSApkRegistryTypes.PubkeyRegistrationParams memory params
+        ) = abi.decode(
+            data, (RegistrationType, string, IBLSApkRegistryTypes.PubkeyRegistrationParams)
+        );
 
         /**
          * If the operator has NEVER registered a pubkey before, use `params` to register
@@ -205,7 +212,7 @@ contract SlashingRegistryCoordinator is
                 (
                     RegistrationType,
                     string,
-                    IBLSApkRegistry.PubkeyRegistrationParams,
+                    IBLSApkRegistryTypes.PubkeyRegistrationParams,
                     OperatorKickParam[],
                     SignatureWithSaltAndExpiry
                 )
@@ -666,7 +673,7 @@ contract SlashingRegistryCoordinator is
      */
     function _getOrCreateOperatorId(
         address operator,
-        IBLSApkRegistry.PubkeyRegistrationParams memory params
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params
     ) internal returns (bytes32 operatorId) {
         operatorId = blsApkRegistry.getOperatorId(operator);
         if (operatorId == 0) {
@@ -808,7 +815,7 @@ contract SlashingRegistryCoordinator is
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
         IStakeRegistry.StrategyParams[] memory strategyParams,
-        StakeType stakeType,
+        IStakeRegistryTypes.StakeType stakeType,
         uint32 lookAheadPeriod
     ) internal {
         // Increment the total quorum count. Fails if we're already at the max
@@ -842,9 +849,9 @@ contract SlashingRegistryCoordinator is
             allocationManager.createOperatorSets({avs: accountIdentifier, params: createSetParams});
         }
         // Initialize stake registry based on stake type
-        if (stakeType == StakeType.TOTAL_DELEGATED) {
+        if (stakeType == IStakeRegistryTypes.StakeType.TOTAL_DELEGATED) {
             stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
-        } else if (stakeType == StakeType.TOTAL_SLASHABLE) {
+        } else if (stakeType == IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE) {
             stakeRegistry.initializeSlashableStakeQuorum(
                 quorumNumber, minimumStake, lookAheadPeriod, strategyParams
             );
