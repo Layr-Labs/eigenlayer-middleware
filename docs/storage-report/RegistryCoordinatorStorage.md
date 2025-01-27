@@ -4,11 +4,11 @@
 +=============================================================================================================================================================================================+
 | quorumCount             | uint8                                                                     | 0    | 0      | 1     | src/RegistryCoordinatorStorage.sol:RegistryCoordinatorStorage |
 |-------------------------+---------------------------------------------------------------------------+------+--------+-------+---------------------------------------------------------------|
-| _quorumParams           | mapping(uint8 => struct IRegistryCoordinatorTypes.OperatorSetParam)       | 1    | 0      | 32    | src/RegistryCoordinatorStorage.sol:RegistryCoordinatorStorage |
+| _quorumParams           | mapping(uint8 => struct ISlashingRegistryCoordinatorTypes.OperatorSetParam)       | 1    | 0      | 32    | src/RegistryCoordinatorStorage.sol:RegistryCoordinatorStorage |
 |-------------------------+---------------------------------------------------------------------------+------+--------+-------+---------------------------------------------------------------|
-| _operatorBitmapHistory  | mapping(bytes32 => struct IRegistryCoordinatorTypes.QuorumBitmapUpdate[]) | 2    | 0      | 32    | src/RegistryCoordinatorStorage.sol:RegistryCoordinatorStorage |
+| _operatorBitmapHistory  | mapping(bytes32 => struct ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate[]) | 2    | 0      | 32    | src/RegistryCoordinatorStorage.sol:RegistryCoordinatorStorage |
 |-------------------------+---------------------------------------------------------------------------+------+--------+-------+---------------------------------------------------------------|
-| _operatorInfo           | mapping(address => struct IRegistryCoordinatorTypes.OperatorInfo)         | 3    | 0      | 32    | src/RegistryCoordinatorStorage.sol:RegistryCoordinatorStorage |
+| _operatorInfo           | mapping(address => struct ISlashingRegistryCoordinatorTypes.OperatorInfo)         | 3    | 0      | 32    | src/RegistryCoordinatorStorage.sol:RegistryCoordinatorStorage |
 |-------------------------+---------------------------------------------------------------------------+------+--------+-------+---------------------------------------------------------------|
 | isChurnApproverSaltUsed | mapping(bytes32 => bool)                                                  | 4    | 0      | 32    | src/RegistryCoordinatorStorage.sol:RegistryCoordinatorStorage |
 |-------------------------+---------------------------------------------------------------------------+------+--------+-------+---------------------------------------------------------------|

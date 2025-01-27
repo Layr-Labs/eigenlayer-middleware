@@ -20,11 +20,11 @@
 |-----------------------------+---------------------------------------------------------------------------+------+--------+-------+-------------------------------------------------|
 | quorumCount                 | uint8                                                                     | 150  | 0      | 1     | src/RegistryCoordinator.sol:RegistryCoordinator |
 |-----------------------------+---------------------------------------------------------------------------+------+--------+-------+-------------------------------------------------|
-| _quorumParams               | mapping(uint8 => struct IRegistryCoordinatorTypes.OperatorSetParam)       | 151  | 0      | 32    | src/RegistryCoordinator.sol:RegistryCoordinator |
+| _quorumParams               | mapping(uint8 => struct ISlashingRegistryCoordinatorTypes.OperatorSetParam)       | 151  | 0      | 32    | src/RegistryCoordinator.sol:RegistryCoordinator |
 |-----------------------------+---------------------------------------------------------------------------+------+--------+-------+-------------------------------------------------|
-| _operatorBitmapHistory      | mapping(bytes32 => struct IRegistryCoordinatorTypes.QuorumBitmapUpdate[]) | 152  | 0      | 32    | src/RegistryCoordinator.sol:RegistryCoordinator |
+| _operatorBitmapHistory      | mapping(bytes32 => struct ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate[]) | 152  | 0      | 32    | src/RegistryCoordinator.sol:RegistryCoordinator |
 |-----------------------------+---------------------------------------------------------------------------+------+--------+-------+-------------------------------------------------|
-| _operatorInfo               | mapping(address => struct IRegistryCoordinatorTypes.OperatorInfo)         | 153  | 0      | 32    | src/RegistryCoordinator.sol:RegistryCoordinator |
+| _operatorInfo               | mapping(address => struct ISlashingRegistryCoordinatorTypes.OperatorInfo)         | 153  | 0      | 32    | src/RegistryCoordinator.sol:RegistryCoordinator |
 |-----------------------------+---------------------------------------------------------------------------+------+--------+-------+-------------------------------------------------|
 | isChurnApproverSaltUsed     | mapping(bytes32 => bool)                                                  | 154  | 0      | 32    | src/RegistryCoordinator.sol:RegistryCoordinator |
 |-----------------------------+---------------------------------------------------------------------------+------+--------+-------+-------------------------------------------------|

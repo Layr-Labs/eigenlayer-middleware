@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "../../src/interfaces/IRegistryCoordinator.sol";
+import "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 import "../../src/libraries/BN254.sol";
 
 abstract contract RegistryCoordinatorMock is IRegistryCoordinator {
@@ -49,7 +50,6 @@ abstract contract RegistryCoordinatorMock is IRegistryCoordinator {
     function isChurnApproverSaltUsed(
         bytes32 salt
     ) external view virtual returns (bool);
-    function isUsingOperatorSets() external view virtual returns (bool);
     function lastEjectionTimestamp(
         address operator
     ) external view virtual returns (uint256);
@@ -159,10 +159,6 @@ abstract contract RegistryCoordinatorMock is IRegistryCoordinator {
     function isM2Quorum(
         uint8 quorumNumber
     ) external view virtual returns (bool) {
-        return false;
-    }
-
-    function isOperatorSetAVS() external view virtual returns (bool) {
         return false;
     }
 }

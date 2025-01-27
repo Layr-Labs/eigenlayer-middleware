@@ -23,7 +23,7 @@ import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
 import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
 import {
-    IRegistryCoordinatorTypes,
+    ISlashingRegistryCoordinatorTypes,
     ISlashingRegistryCoordinatorTypes
 } from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 
@@ -122,7 +122,7 @@ contract MockAVSDeployer is Test {
     uint16 defaultKickBIPsOfTotalStake = 150;
     uint8 numQuorums = 192;
 
-    IRegistryCoordinatorTypes.OperatorSetParam[] operatorSetParams;
+    ISlashingRegistryCoordinatorTypes.OperatorSetParam[] operatorSetParams;
 
     uint8 maxQuorumsToRegisterFor = 4;
     uint256 maxOperatorsToRegister = 4;
@@ -316,7 +316,7 @@ contract MockAVSDeployer is Test {
             for (uint256 i = 0; i < numQuorumsToAdd; i++) {
                 // hard code these for now
                 operatorSetParams.push(
-                    IRegistryCoordinatorTypes.OperatorSetParam({
+                    ISlashingRegistryCoordinatorTypes.OperatorSetParam({
                         maxOperatorCount: defaultMaxOperatorCount,
                         kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
                         kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake

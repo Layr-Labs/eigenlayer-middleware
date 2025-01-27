@@ -42,7 +42,6 @@ contract SlashingRegistryCoordinator is
     Pausable,
     OwnableUpgradeable,
     SlashingRegistryCoordinatorStorage,
-    IAVSRegistrar,
     ISignatureUtils
 {
     using BitmapUtils for *;
@@ -160,7 +159,7 @@ contract SlashingRegistryCoordinator is
         address operator,
         uint32[] memory operatorSetIds,
         bytes calldata data
-    ) external onlyAllocationManager onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
+    ) external override onlyAllocationManager onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         require(operatorSetsEnabled, OperatorSetsNotEnabled());
         bytes memory quorumNumbers = _getQuorumNumbers(operatorSetIds);
 
@@ -240,7 +239,7 @@ contract SlashingRegistryCoordinator is
     function deregisterOperator(
         address operator,
         uint32[] memory operatorSetIds
-    ) external onlyAllocationManager onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
+    ) external override onlyAllocationManager onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
         require(operatorSetsEnabled, OperatorSetsNotEnabled());
         bytes memory quorumNumbers = _getQuorumNumbers(operatorSetIds);
         _deregisterOperator(operator, quorumNumbers);
@@ -1121,6 +1120,7 @@ contract SlashingRegistryCoordinator is
     function owner()
         public
         view
+        virtual
         override(OwnableUpgradeable, ISlashingRegistryCoordinator)
         returns (address)
     {

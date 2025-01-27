@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import "../utils/MockAVSDeployer.sol";
 import {IStakeRegistryErrors} from "../../src/interfaces/IStakeRegistry.sol";
-import {IRegistryCoordinatorTypes} from "../../src/interfaces/IRegistryCoordinator.sol";
+import {ISlashingRegistryCoordinatorTypes} from "../../src/interfaces/IRegistryCoordinator.sol";
 
 contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
     using BN254 for BN254.G1Point;
@@ -82,8 +82,8 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
 
     function test_getOperatorState_revert_quorumNotCreatedAtReferenceBlockNumber() public {
         cheats.roll(registrationBlockNumber);
-        IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        IRegistryCoordinatorTypes.OperatorSetParam({
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: defaultMaxOperatorCount,
             kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
             kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
@@ -226,8 +226,8 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         bytes32[] memory nonSignerOperatorIds = new bytes32[](1);
         nonSignerOperatorIds[0] = defaultOperatorId;
 
-        IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        IRegistryCoordinatorTypes.OperatorSetParam({
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: defaultMaxOperatorCount,
             kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
             kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
