@@ -273,7 +273,7 @@ interface IRegistryCoordinator is IRegistryCoordinatorErrors, IRegistryCoordinat
     /**
      * @notice Registers an operator for service in specified quorums. If any quorum exceeds its maximum
      * operator capacity after the operator is registered, this method will fail.
-     * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for.
+     * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for AVSDirectory.
      * @param socket is the socket of the operator (typically an IP address).
      * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership.
      * @param operatorSignature is the signature of the operator used by the AVS to register the operator in the delegation manager.
@@ -290,7 +290,7 @@ interface IRegistryCoordinator is IRegistryCoordinatorErrors, IRegistryCoordinat
     /**
      * @notice Registers an operator while replacing existing operators in full quorums. If any quorum reaches its maximum operator
      * capacity, `operatorKickParams` is used to replace an old operator with the new one.
-     * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for.
+     * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for AVSDirectory.
      * @param socket is the socket of the operator (typically an IP address).
      * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership.
      * @param operatorKickParams used to determine which operator is removed to maintain quorum capacity as the
