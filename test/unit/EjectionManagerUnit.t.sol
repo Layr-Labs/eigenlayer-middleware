@@ -463,7 +463,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
             })
         );
 
-        stakeRegistry.recordTotalStakeUpdate(1, 2_000_000_000 * 1 ether);
+        stakeRegistry.recordTotalStakeUpdate(1, 2000000000 * 1 ether);
 
         ejectionManager.amountEjectableForQuorum(1);
     }

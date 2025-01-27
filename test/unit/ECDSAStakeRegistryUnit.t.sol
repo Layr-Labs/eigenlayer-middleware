@@ -69,7 +69,7 @@ contract ECDSAStakeRegistrySetup is Test, IECDSAStakeRegistryEvents {
             strategies: new IECDSAStakeRegistryTypes.StrategyParams[](1)
         });
         quorum.strategies[0] =
-            IECDSAStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 10_000});
+            IECDSAStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 10000});
         registry = new ECDSAStakeRegistry(IDelegationManager(address(mockDelegationManager)));
         registry.initialize(address(mockServiceManager), 100, quorum);
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
@@ -90,7 +90,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
             strategies: new IECDSAStakeRegistryTypes.StrategyParams[](1)
         });
         newQuorum.strategies[0] =
-            IECDSAStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 10_000});
+            IECDSAStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 10000});
         address[] memory operators = new address[](2);
         operators[0] = operator1;
         operators[1] = operator2;
@@ -124,7 +124,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         });
         validQuorum.strategies[0] = IECDSAStakeRegistryTypes.StrategyParams({
             strategy: IStrategy(address(420)),
-            multiplier: 10_000
+            multiplier: 10000
         });
 
         address[] memory operators = new address[](2);
@@ -182,7 +182,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         IECDSAStakeRegistryTypes.Quorum memory invalidQuorum =
             IECDSAStakeRegistryTypes.Quorum({strategies: new StrategyParams[](1)});
         invalidQuorum.strategies[0] =
-            StrategyParams({strategy: IStrategy(address(420)), multiplier: 10_001});
+            StrategyParams({strategy: IStrategy(address(420)), multiplier: 10001});
         address[] memory operators = new address[](2);
         operators[0] = operator1;
         operators[1] = operator2;
@@ -404,13 +404,13 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     }
 
     function testUpdateThresholdStake_UpdateThresholdStake() public {
-        uint256 thresholdWeight = 10_000_000_000;
+        uint256 thresholdWeight = 10000000000;
         vm.prank(registry.owner());
         registry.updateStakeThreshold(thresholdWeight);
     }
 
     function test_RevertsWhen_NotOwner_UpdateThresholdStake() public {
-        uint256 thresholdWeight = 10_000_000_000;
+        uint256 thresholdWeight = 10000000000;
         address notOwner = address(0x123);
         vm.prank(notOwner);
         vm.expectRevert("Ownable: caller is not the owner");
@@ -506,7 +506,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         (v, r, s) = vm.sign(operator2Pk, msgHash);
         signatures[1] = abi.encodePacked(r, s, v);
 
-        uint256 thresholdWeight = 10_000_000_000;
+        uint256 thresholdWeight = 10000000000;
         vm.prank(registry.owner());
         registry.updateStakeThreshold(thresholdWeight);
         vm.roll(block.number + 1);
@@ -574,7 +574,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         (v, r, s) = vm.sign(operator2Pk, msgHash);
         signatures[1] = abi.encodePacked(r, s, v);
 
-        uint256 thresholdWeight = 10_000_000_000;
+        uint256 thresholdWeight = 10000000000;
         vm.prank(registry.owner());
         registry.updateStakeThreshold(thresholdWeight);
         vm.roll(referenceBlock + 1);

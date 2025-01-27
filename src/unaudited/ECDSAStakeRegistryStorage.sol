@@ -14,7 +14,7 @@ abstract contract ECDSAStakeRegistryStorage is IECDSAStakeRegistry {
     IDelegationManager internal immutable DELEGATION_MANAGER;
 
     /// @dev The total amount of multipliers to weigh stakes
-    uint256 internal constant BPS = 10_000;
+    uint256 internal constant BPS = 10000;
 
     /// @notice The size of the current operator set
     uint256 internal _totalOperators;

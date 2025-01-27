@@ -8,7 +8,7 @@ import {IStakeRegistry, IDelegationManager} from "./interfaces/IStakeRegistry.so
 
 abstract contract BLSSignatureCheckerStorage is IBLSSignatureChecker {
     /// @dev Returns the assumed gas cost of multiplying 2 pairings.
-    uint256 internal constant PAIRING_EQUALITY_CHECK_GAS = 120_000;
+    uint256 internal constant PAIRING_EQUALITY_CHECK_GAS = 120000;
 
     /// @inheritdoc IBLSSignatureChecker
     ISlashingRegistryCoordinator public immutable registryCoordinator;

@@ -32,7 +32,9 @@ abstract contract IntegrationBase is IntegrationConfig {
         ISlashingRegistryCoordinatorTypes.OperatorInfo memory info = _getOperatorInfo(user);
 
         assertEq(info.operatorId, bytes32(0), err);
-        assertTrue(info.status == ISlashingRegistryCoordinatorTypes.OperatorStatus.NEVER_REGISTERED, err);
+        assertTrue(
+            info.status == ISlashingRegistryCoordinatorTypes.OperatorStatus.NEVER_REGISTERED, err
+        );
     }
 
     function assert_HasRegisteredStatus(User user, string memory err) internal {

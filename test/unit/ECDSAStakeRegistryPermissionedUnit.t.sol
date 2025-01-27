@@ -25,7 +25,7 @@ contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         IStrategy mockStrategy = IStrategy(address(0x1234));
         IECDSAStakeRegistryTypes.Quorum memory quorum =
             IECDSAStakeRegistryTypes.Quorum({strategies: new StrategyParams[](1)});
-        quorum.strategies[0] = StrategyParams({strategy: mockStrategy, multiplier: 10_000});
+        quorum.strategies[0] = StrategyParams({strategy: mockStrategy, multiplier: 10000});
         permissionedRegistry.initialize(address(mockServiceManager), 100, quorum);
 
         permissionedRegistry.permitOperator(operator1);

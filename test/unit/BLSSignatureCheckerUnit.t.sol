@@ -131,12 +131,12 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
 
         assertEq(
             quorumStakeTotals.signedStakeForQuorum[0],
-            3_000_000_000_000_000_000,
+            3000000000000000000,
             "signedStakeForQuorum incorrect"
         );
         assertEq(
             quorumStakeTotals.totalStakeForQuorum[0],
-            4_000_000_000_000_000_000,
+            4000000000000000000,
             "totalStakeForQuorum incorrect"
         );
     }

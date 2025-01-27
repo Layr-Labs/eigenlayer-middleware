@@ -42,7 +42,8 @@ contract RegistryCoordinatorUnitTests is MockAVSDeployer {
     event QuorumIndexUpdate(bytes32 indexed operatorId, uint8 quorumNumber, uint32 newIndex);
 
     event OperatorSetParamsUpdated(
-        uint8 indexed quorumNumber, ISlashingRegistryCoordinatorTypes.OperatorSetParam operatorSetParams
+        uint8 indexed quorumNumber,
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam operatorSetParams
     );
 
     event ChurnApproverUpdated(address prevChurnApprover, address newChurnApprover);
@@ -1846,7 +1847,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         _setOperatorWeight(
             operatorToRegister,
             defaultQuorumNumber,
-            operatorToKickStake * defaultKickBIPsOfOperatorStake / 10_000 + 1
+            operatorToKickStake * defaultKickBIPsOfOperatorStake / 10000 + 1
         );
 
         cheats.roll(registrationBlockNumber);
@@ -2527,10 +2528,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(1)),
-            multiplier: 10_000
-        });
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
 
         // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);
@@ -2559,10 +2558,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(1)),
-            multiplier: 10_000
-        });
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
 
         // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);
@@ -2606,10 +2603,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(1)),
-            multiplier: 10_000
-        });
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
 
         // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);
@@ -2629,8 +2624,10 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
 
         ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams =
             new ISlashingRegistryCoordinatorTypes.OperatorKickParam[](1);
-        operatorKickParams[0] =
-            ISlashingRegistryCoordinatorTypes.OperatorKickParam({operator: address(0x1), quorumNumber: 0});
+        operatorKickParams[0] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
+            operator: address(0x1),
+            quorumNumber: 0
+        });
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature;
 
@@ -2662,10 +2659,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(1)),
-            multiplier: 10_000
-        });
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
 
         cheats.prank(registryCoordinatorOwner);
         registryCoordinator.createTotalDelegatedStakeQuorum(
@@ -2694,10 +2689,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(1)),
-            multiplier: 10_000
-        });
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
 
         // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);
@@ -2746,10 +2739,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(1)),
-            multiplier: 10_000
-        });
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
 
         // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);
@@ -2795,10 +2786,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(1)),
-            multiplier: 10_000
-        });
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
 
         // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);
