@@ -11,6 +11,7 @@ import {IBLSApkRegistry} from "./IBLSApkRegistry.sol";
 import {IStakeRegistry, IStakeRegistryTypes} from "./IStakeRegistry.sol";
 import {IIndexRegistry} from "./IIndexRegistry.sol";
 import {BN254} from "../libraries/BN254.sol";
+import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 
 interface ISlashingRegistryCoordinatorErrors {
     /// @notice Thrown when array lengths in input parameters don't match.
@@ -192,6 +193,7 @@ interface ISlashingRegistryCoordinatorEvents is ISlashingRegistryCoordinatorType
 }
 
 interface ISlashingRegistryCoordinator is
+    IAVSRegistrar,
     ISlashingRegistryCoordinatorErrors,
     ISlashingRegistryCoordinatorEvents
 {
@@ -320,6 +322,7 @@ interface ISlashingRegistryCoordinator is
      * @param data Additional registration data containing the operator's socket and BLS public key parameters.
      * @dev Can only be called by the allocation manager.
      * @dev Will revert if operator sets are not enabled or if registering for M2 quorums.
+     * @dev This function implements the Slashing registration pathway specified by the IAVSRegistrar interface.
      */
     function registerOperator(
         address operator,
@@ -333,6 +336,7 @@ interface ISlashingRegistryCoordinator is
      * @param operatorSetIds The operator set IDs to deregister from (corresponds to quorum numbers).
      * @dev Can only be called by the allocation manager.
      * @dev Will revert if operator sets are not enabled or if deregistering from M2 quorums.
+     * @dev This function implements the Slashing deregistration pathway specified by the IAVSRegistrar interface.
      */
     function deregisterOperator(address operator, uint32[] memory operatorSetIds) external;
 
