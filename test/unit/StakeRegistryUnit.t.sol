@@ -2235,9 +2235,9 @@ contract StakeRegistryUnitTests_weightOfOperatorForQuorum is StakeRegistryUnitTe
     ) public {
         // 3 LST Strat multipliers, rETH, stETH, ETH
         uint96[] memory multipliers = new uint96[](3);
-        multipliers[0] = uint96(1_070_136_092_289_993_178);
-        multipliers[1] = uint96(1_071_364_636_818_145_808);
-        multipliers[2] = uint96(1_000_000_000_000_000_000);
+        multipliers[0] = uint96(1070136092289993178);
+        multipliers[1] = uint96(1071364636818145808);
+        multipliers[2] = uint96(1000000000000000000);
 
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](3);

@@ -283,6 +283,6 @@ contract DelegationMock is DelegationIntermediate {
     }
 
     function minWithdrawalDelayBlocks() external view override returns (uint32) {
-        return 10_000;
+        return 10000;
     }
 }

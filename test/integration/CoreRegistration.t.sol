@@ -57,7 +57,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
                         address(this),
                         pauserRegistry,
                         0, // 0 is initialPausedStatus
-                        50_400, // Initial withdrawal delay blocks
+                        50400, // Initial withdrawal delay blocks
                         initializeStrategiesToSetDelayBlocks,
                         initializeWithdrawalDelayBlocks
                     )

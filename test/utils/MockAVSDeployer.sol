@@ -23,7 +23,7 @@ import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
 import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
 import {
-    IRegistryCoordinatorTypes,
+    ISlashingRegistryCoordinatorTypes,
     ISlashingRegistryCoordinatorTypes
 } from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 
@@ -110,19 +110,19 @@ contract MockAVSDeployer is Test {
     address defaultOperator = address(uint160(uint256(keccak256("defaultOperator"))));
     bytes32 defaultOperatorId;
     BN254.G1Point internal defaultPubKey = BN254.G1Point(
-        18_260_007_818_883_133_054_078_754_218_619_977_578_772_505_796_600_400_998_181_738_095_793_040_006_897,
-        3_432_351_341_799_135_763_167_709_827_653_955_074_218_841_517_684_851_694_584_291_831_827_675_065_899
+        18260007818883133054078754218619977578772505796600400998181738095793040006897,
+        3432351341799135763167709827653955074218841517684851694584291831827675065899
     );
     string defaultSocket = "69.69.69.69:420";
     uint96 defaultStake = 1 ether;
     uint8 defaultQuorumNumber = 0;
 
     uint32 defaultMaxOperatorCount = 10;
-    uint16 defaultKickBIPsOfOperatorStake = 15_000;
+    uint16 defaultKickBIPsOfOperatorStake = 15000;
     uint16 defaultKickBIPsOfTotalStake = 150;
     uint8 numQuorums = 192;
 
-    IRegistryCoordinatorTypes.OperatorSetParam[] operatorSetParams;
+    ISlashingRegistryCoordinatorTypes.OperatorSetParam[] operatorSetParams;
 
     uint8 maxQuorumsToRegisterFor = 4;
     uint256 maxOperatorsToRegister = 4;
@@ -316,7 +316,7 @@ contract MockAVSDeployer is Test {
             for (uint256 i = 0; i < numQuorumsToAdd; i++) {
                 // hard code these for now
                 operatorSetParams.push(
-                    IRegistryCoordinatorTypes.OperatorSetParam({
+                    ISlashingRegistryCoordinatorTypes.OperatorSetParam({
                         maxOperatorCount: defaultMaxOperatorCount,
                         kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
                         kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake

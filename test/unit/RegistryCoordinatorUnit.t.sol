@@ -5,9 +5,9 @@ import "../utils/MockAVSDeployer.sol";
 import {
     ISlashingRegistryCoordinator,
     ISlashingRegistryCoordinatorTypes,
-    IRegistryCoordinatorTypes,
-    IRegistryCoordinatorErrors
+    ISlashingRegistryCoordinatorErrors
 } from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
+
 import {IBLSApkRegistryTypes} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {QuorumBitmapHistoryLib} from "../../src/libraries/QuorumBitmapHistoryLib.sol";
 import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
@@ -42,7 +42,8 @@ contract RegistryCoordinatorUnitTests is MockAVSDeployer {
     event QuorumIndexUpdate(bytes32 indexed operatorId, uint8 quorumNumber, uint32 newIndex);
 
     event OperatorSetParamsUpdated(
-        uint8 indexed quorumNumber, IRegistryCoordinatorTypes.OperatorSetParam operatorSetParams
+        uint8 indexed quorumNumber,
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam operatorSetParams
     );
 
     event ChurnApproverUpdated(address prevChurnApprover, address newChurnApprover);
@@ -64,7 +65,7 @@ contract RegistryCoordinatorUnitTests is MockAVSDeployer {
         returns (
             address operatorToRegister,
             BN254.G1Point memory operatorToRegisterPubKey,
-            IRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams
+            ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams
         )
     {
         uint32 kickRegistrationBlockNumber = 100;
@@ -89,7 +90,7 @@ contract RegistryCoordinatorUnitTests is MockAVSDeployer {
         address operatorToKick;
 
         // register last operator before kick
-        operatorKickParams = new IRegistryCoordinatorTypes.OperatorKickParam[](1);
+        operatorKickParams = new ISlashingRegistryCoordinatorTypes.OperatorKickParam[](1);
         {
             BN254.G1Point memory pubKey = BN254.hashToG1(
                 keccak256(abi.encodePacked(pseudoRandomNumber, defaultMaxOperatorCount - 1))
@@ -106,7 +107,7 @@ contract RegistryCoordinatorUnitTests is MockAVSDeployer {
             // operatorIdsToSwap[0] = operatorToRegisterId
             operatorIdsToSwap[0] = operatorToRegisterId;
 
-            operatorKickParams[0] = IRegistryCoordinatorTypes.OperatorKickParam({
+            operatorKickParams[0] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
                 quorumNumber: uint8(quorumNumbers[0]),
                 operator: operatorToKick
             });
@@ -211,7 +212,7 @@ contract RegistryCoordinatorUnitTests_Initialization_Setters is RegistryCoordina
     }
 
     function test_createQuorum_revert_notOwner() public {
-        IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams;
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams;
         uint96 minimumStake;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams;
 
@@ -227,8 +228,8 @@ contract RegistryCoordinatorUnitTests_Initialization_Setters is RegistryCoordina
         // this is necessary since the default setup already configures the max number of quorums, preventing adding more
         _deployMockEigenLayerAndAVS(0);
 
-        IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        IRegistryCoordinatorTypes.OperatorSetParam({
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: defaultMaxOperatorCount,
             kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
             kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
@@ -347,9 +348,9 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
             keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.OperatorInfo({
+                    ISlashingRegistryCoordinatorTypes.OperatorInfo({
                         operatorId: defaultOperatorId,
-                        status: IRegistryCoordinatorTypes.OperatorStatus.REGISTERED
+                        status: ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED
                     })
                 )
             )
@@ -361,7 +362,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
             ),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.QuorumBitmapUpdate({
+                    ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
                         quorumBitmap: uint192(quorumBitmap),
                         updateBlockNumber: uint32(block.number),
                         nextUpdateBlockNumber: 0
@@ -415,9 +416,9 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
             keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.OperatorInfo({
+                    ISlashingRegistryCoordinatorTypes.OperatorInfo({
                         operatorId: defaultOperatorId,
-                        status: IRegistryCoordinatorTypes.OperatorStatus.REGISTERED
+                        status: ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED
                     })
                 )
             )
@@ -429,7 +430,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
             ),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.QuorumBitmapUpdate({
+                    ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
                         quorumBitmap: uint192(quorumBitmap),
                         updateBlockNumber: uint32(block.number),
                         nextUpdateBlockNumber: 0
@@ -482,9 +483,9 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
             keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.OperatorInfo({
+                    ISlashingRegistryCoordinatorTypes.OperatorInfo({
                         operatorId: defaultOperatorId,
-                        status: IRegistryCoordinatorTypes.OperatorStatus.REGISTERED
+                        status: ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED
                     })
                 )
             )
@@ -496,7 +497,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
             ),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.QuorumBitmapUpdate({
+                    ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
                         quorumBitmap: uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers)),
                         updateBlockNumber: uint32(registrationBlockNumber),
                         nextUpdateBlockNumber: uint32(nextRegistrationBlockNumber)
@@ -510,7 +511,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
             ),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.QuorumBitmapUpdate({
+                    ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
                         quorumBitmap: uint192(quorumBitmap),
                         updateBlockNumber: uint32(nextRegistrationBlockNumber),
                         nextUpdateBlockNumber: 0
@@ -649,7 +650,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
             ),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.QuorumBitmapUpdate({
+                    ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
                         quorumBitmap: uint192(quorumBitmap),
                         updateBlockNumber: uint32(block.number),
                         nextUpdateBlockNumber: 0
@@ -688,7 +689,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
-        cheats.expectRevert(bytes4(keccak256("NotRegistered()")));
+        cheats.expectRevert(bytes4(keccak256("OperatorSetQuorum()")));
         cheats.prank(defaultOperator);
         registryCoordinator.deregisterOperator(quorumNumbers);
     }
@@ -697,6 +698,8 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         // enable operatorSets
         cheats.prank(registryCoordinator.owner());
         registryCoordinator.enableOperatorSets();
+
+        console.log("quorumCount", registryCoordinator.quorumCount());
 
         assertTrue(
             registryCoordinator.isM2Quorum(uint8(defaultQuorumNumber)),
@@ -752,9 +755,9 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
             keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.OperatorInfo({
+                    ISlashingRegistryCoordinatorTypes.OperatorInfo({
                         operatorId: defaultOperatorId,
-                        status: IRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED
+                        status: ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED
                     })
                 )
             )
@@ -766,7 +769,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
             ),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.QuorumBitmapUpdate({
+                    ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
                         quorumBitmap: uint192(quorumBitmap),
                         updateBlockNumber: registrationBlockNumber,
                         nextUpdateBlockNumber: deregistrationBlockNumber
@@ -821,9 +824,9 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
             keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.OperatorInfo({
+                    ISlashingRegistryCoordinatorTypes.OperatorInfo({
                         operatorId: defaultOperatorId,
-                        status: IRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED
+                        status: ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED
                     })
                 )
             )
@@ -835,7 +838,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
             ),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.QuorumBitmapUpdate({
+                    ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
                         quorumBitmap: uint192(quorumBitmap),
                         updateBlockNumber: registrationBlockNumber,
                         nextUpdateBlockNumber: deregistrationBlockNumber
@@ -902,9 +905,9 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
                 keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))),
                 keccak256(
                     abi.encode(
-                        IRegistryCoordinatorTypes.OperatorInfo({
+                        ISlashingRegistryCoordinatorTypes.OperatorInfo({
                             operatorId: defaultOperatorId,
-                            status: IRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED
+                            status: ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED
                         })
                     )
                 )
@@ -914,9 +917,9 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
                 keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))),
                 keccak256(
                     abi.encode(
-                        IRegistryCoordinatorTypes.OperatorInfo({
+                        ISlashingRegistryCoordinatorTypes.OperatorInfo({
                             operatorId: defaultOperatorId,
-                            status: IRegistryCoordinatorTypes.OperatorStatus.REGISTERED
+                            status: ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED
                         })
                     )
                 )
@@ -935,7 +938,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
             ),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.QuorumBitmapUpdate({
+                    ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
                         quorumBitmap: uint192(registrationQuorumBitmap),
                         updateBlockNumber: registrationBlockNumber,
                         nextUpdateBlockNumber: deregistrationBlockNumber
@@ -953,7 +956,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
                 ),
                 keccak256(
                     abi.encode(
-                        IRegistryCoordinatorTypes.QuorumBitmapUpdate({
+                        ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
                             quorumBitmap: uint192(expectedQuorumBitmap),
                             updateBlockNumber: deregistrationBlockNumber,
                             nextUpdateBlockNumber: 0
@@ -1038,9 +1041,9 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
             keccak256(abi.encode(registryCoordinator.getOperator(operatorToDeregister))),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.OperatorInfo({
+                    ISlashingRegistryCoordinatorTypes.OperatorInfo({
                         operatorId: operatorToDeregisterId,
-                        status: IRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED
+                        status: ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED
                     })
                 )
             )
@@ -1054,7 +1057,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
             ),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.QuorumBitmapUpdate({
+                    ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
                         quorumBitmap: uint192(operatorToDeregisterQuorumBitmap),
                         updateBlockNumber: registrationBlockNumber,
                         nextUpdateBlockNumber: deregistrationBlockNumber
@@ -1079,7 +1082,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         cheats.roll(reregistrationBlockNumber);
 
         // store data before registering, to check against later
-        IRegistryCoordinatorTypes.QuorumBitmapUpdate memory previousQuorumBitmapUpdate =
+        ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate memory previousQuorumBitmapUpdate =
             registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0);
 
         // re-register the operator
@@ -1093,9 +1096,9 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
             keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.OperatorInfo({
+                    ISlashingRegistryCoordinatorTypes.OperatorInfo({
                         operatorId: defaultOperatorId,
-                        status: IRegistryCoordinatorTypes.OperatorStatus.REGISTERED
+                        status: ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED
                     })
                 )
             ),
@@ -1122,7 +1125,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
             ),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.QuorumBitmapUpdate({
+                    ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
                         quorumBitmap: uint192(quorumBitmap),
                         updateBlockNumber: uint32(reregistrationBlockNumber),
                         nextUpdateBlockNumber: 0
@@ -1305,9 +1308,9 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
                 keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))),
                 keccak256(
                     abi.encode(
-                        IRegistryCoordinatorTypes.OperatorInfo({
+                        ISlashingRegistryCoordinatorTypes.OperatorInfo({
                             operatorId: defaultOperatorId,
-                            status: IRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED
+                            status: ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED
                         })
                     )
                 )
@@ -1317,9 +1320,9 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
                 keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))),
                 keccak256(
                     abi.encode(
-                        IRegistryCoordinatorTypes.OperatorInfo({
+                        ISlashingRegistryCoordinatorTypes.OperatorInfo({
                             operatorId: defaultOperatorId,
-                            status: IRegistryCoordinatorTypes.OperatorStatus.REGISTERED
+                            status: ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED
                         })
                     )
                 )
@@ -1338,7 +1341,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
             ),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.QuorumBitmapUpdate({
+                    ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
                         quorumBitmap: uint192(registrationQuorumBitmap),
                         updateBlockNumber: registrationBlockNumber,
                         nextUpdateBlockNumber: deregistrationBlockNumber
@@ -1356,7 +1359,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
                 ),
                 keccak256(
                     abi.encode(
-                        IRegistryCoordinatorTypes.QuorumBitmapUpdate({
+                        ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
                             quorumBitmap: uint192(expectedQuorumBitmap),
                             updateBlockNumber: deregistrationBlockNumber,
                             nextUpdateBlockNumber: 0
@@ -1395,9 +1398,9 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
             keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.OperatorInfo({
+                    ISlashingRegistryCoordinatorTypes.OperatorInfo({
                         operatorId: defaultOperatorId,
-                        status: IRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED
+                        status: ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED
                     })
                 )
             )
@@ -1440,9 +1443,9 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
             keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.OperatorInfo({
+                    ISlashingRegistryCoordinatorTypes.OperatorInfo({
                         operatorId: defaultOperatorId,
-                        status: IRegistryCoordinatorTypes.OperatorStatus.REGISTERED
+                        status: ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED
                     })
                 )
             )
@@ -1676,8 +1679,8 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         address operatorToKick;
 
         // register last operator before kick
-        IRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams =
-            new IRegistryCoordinatorTypes.OperatorKickParam[](1);
+        ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams =
+            new ISlashingRegistryCoordinatorTypes.OperatorKickParam[](1);
         {
             BN254.G1Point memory pubKey =
                 BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, numOperators - 1)));
@@ -1690,7 +1693,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
             // operatorIdsToSwap[0] = operatorToRegisterId
             operatorIdsToSwap[0] = operatorToRegisterId;
 
-            operatorKickParams[0] = IRegistryCoordinatorTypes.OperatorKickParam({
+            operatorKickParams[0] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
                 quorumNumber: defaultQuorumNumber,
                 operator: operatorToKick
             });
@@ -1754,9 +1757,9 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
             keccak256(abi.encode(registryCoordinator.getOperator(operatorToRegister))),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.OperatorInfo({
+                    ISlashingRegistryCoordinatorTypes.OperatorInfo({
                         operatorId: operatorToRegisterId,
-                        status: IRegistryCoordinatorTypes.OperatorStatus.REGISTERED
+                        status: ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED
                     })
                 )
             )
@@ -1765,9 +1768,9 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
             keccak256(abi.encode(registryCoordinator.getOperator(operatorToKick))),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.OperatorInfo({
+                    ISlashingRegistryCoordinatorTypes.OperatorInfo({
                         operatorId: operatorToKickId,
-                        status: IRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED
+                        status: ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED
                     })
                 )
             )
@@ -1778,7 +1781,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
             ),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.QuorumBitmapUpdate({
+                    ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
                         quorumBitmap: uint192(quorumBitmap),
                         updateBlockNumber: kickRegistrationBlockNumber,
                         nextUpdateBlockNumber: registrationBlockNumber
@@ -1798,7 +1801,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         (
             address operatorToRegister,
             BN254.G1Point memory operatorToRegisterPubKey,
-            IRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams
+            ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams
         ) = _test_registerOperatorWithChurn_SetUp(pseudoRandomNumber, quorumNumbers, defaultStake);
         bytes32 operatorToRegisterId = BN254.hashG1Point(operatorToRegisterPubKey);
 
@@ -1836,7 +1839,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         (
             address operatorToRegister,
             BN254.G1Point memory operatorToRegisterPubKey,
-            IRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams
+            ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams
         ) = _test_registerOperatorWithChurn_SetUp(
             pseudoRandomNumber, quorumNumbers, operatorToKickStake
         );
@@ -1846,7 +1849,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         _setOperatorWeight(
             operatorToRegister,
             defaultQuorumNumber,
-            operatorToKickStake * defaultKickBIPsOfOperatorStake / 10_000 + 1
+            operatorToKickStake * defaultKickBIPsOfOperatorStake / 10000 + 1
         );
 
         cheats.roll(registrationBlockNumber);
@@ -1880,7 +1883,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         (
             address operatorToRegister,
             ,
-            IRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams
+            ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams
         ) = _test_registerOperatorWithChurn_SetUp(pseudoRandomNumber, quorumNumbers, defaultStake);
 
         uint96 registeringStake = defaultKickBIPsOfOperatorStake * defaultStake;
@@ -1914,7 +1917,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         (
             address operatorToRegister,
             BN254.G1Point memory operatorToRegisterPubKey,
-            IRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams
+            ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams
         ) = _test_registerOperatorWithChurn_SetUp(pseudoRandomNumber, quorumNumbers, defaultStake);
         bytes32 operatorToRegisterId = BN254.hashG1Point(operatorToRegisterPubKey);
 
@@ -2244,7 +2247,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
             ),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.QuorumBitmapUpdate({
+                    ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
                         quorumBitmap: uint192(newBitmap),
                         updateBlockNumber: uint32(block.number),
                         nextUpdateBlockNumber: 0
@@ -2268,7 +2271,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
             ),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.QuorumBitmapUpdate({
+                    ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
                         quorumBitmap: uint192(newBitmap),
                         updateBlockNumber: uint32(block.number),
                         nextUpdateBlockNumber: 0
@@ -2296,7 +2299,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
             ),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.QuorumBitmapUpdate({
+                    ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
                         quorumBitmap: uint192(pastBitmap),
                         updateBlockNumber: uint32(previousBlockNumber),
                         nextUpdateBlockNumber: uint32(block.number)
@@ -2310,7 +2313,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
             ),
             keccak256(
                 abi.encode(
-                    IRegistryCoordinatorTypes.QuorumBitmapUpdate({
+                    ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
                         quorumBitmap: uint192(newBitmap),
                         updateBlockNumber: uint32(block.number),
                         nextUpdateBlockNumber: 0
@@ -2341,8 +2344,8 @@ contract RegistryCoordinatorUnitTests_BeforeMigration is RegistryCoordinatorUnit
     function test_CreateTotalDelegatedStakeQuorum() public {
         _deployMockEigenLayerAndAVS(0);
         // Set up test params
-        IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        IRegistryCoordinatorTypes.OperatorSetParam({
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: 10,
             kickBIPsOfOperatorStake: 0,
             kickBIPsOfTotalStake: 0
@@ -2368,7 +2371,7 @@ contract RegistryCoordinatorUnitTests_BeforeMigration is RegistryCoordinatorUnit
         assertEq(registryCoordinator.quorumCount(), initialQuorumCount + 1);
 
         // Verify quorum params were set correctly
-        IRegistryCoordinatorTypes.OperatorSetParam memory storedParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory storedParams =
             registryCoordinator.getOperatorSetParams(initialQuorumCount);
         assertEq(storedParams.maxOperatorCount, operatorSetParams.maxOperatorCount);
         assertEq(storedParams.kickBIPsOfOperatorStake, operatorSetParams.kickBIPsOfOperatorStake);
@@ -2377,8 +2380,8 @@ contract RegistryCoordinatorUnitTests_BeforeMigration is RegistryCoordinatorUnit
 
     function test_CreateSlashableStakeQuorum_Reverts() public {
         _deployMockEigenLayerAndAVS(0);
-        IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        IRegistryCoordinatorTypes.OperatorSetParam({
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: 10,
             kickBIPsOfOperatorStake: 0,
             kickBIPsOfTotalStake: 0
@@ -2456,11 +2459,11 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         assertEq(bitmap, 0, "Operator bitmap should be empty after deregistration");
 
         // Verify operator status is NEVER_REGISTERED
-        IRegistryCoordinatorTypes.OperatorStatus status =
+        ISlashingRegistryCoordinatorTypes.OperatorStatus status =
             registryCoordinator.getOperatorStatus(operatorToRegister);
         assertEq(
             uint8(status),
-            uint8(IRegistryCoordinatorTypes.OperatorStatus.NEVER_REGISTERED),
+            uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.NEVER_REGISTERED),
             "Operator status should be NEVER_REGISTERED"
         );
     }
@@ -2489,8 +2492,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         registryCoordinator.enableOperatorSets();
 
         // Create quorum params
-        IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        IRegistryCoordinatorTypes.OperatorSetParam({
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: 10,
             kickBIPsOfOperatorStake: 1000,
             kickBIPsOfTotalStake: 100
@@ -2518,8 +2521,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         registryCoordinator.enableOperatorSets();
 
         // Create quorum params
-        IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        IRegistryCoordinatorTypes.OperatorSetParam({
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: 10,
             kickBIPsOfOperatorStake: 1000,
             kickBIPsOfTotalStake: 100
@@ -2527,10 +2530,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(1)),
-            multiplier: 10_000
-        });
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
 
         // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);
@@ -2549,8 +2550,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         registryCoordinator.enableOperatorSets();
 
         // Create quorum params
-        IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        IRegistryCoordinatorTypes.OperatorSetParam({
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: 10,
             kickBIPsOfOperatorStake: 1000,
             kickBIPsOfTotalStake: 100
@@ -2559,10 +2560,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(1)),
-            multiplier: 10_000
-        });
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
 
         // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);
@@ -2596,8 +2595,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         registryCoordinator.enableOperatorSets();
 
         // Create quorum params
-        IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        IRegistryCoordinatorTypes.OperatorSetParam({
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: 10,
             kickBIPsOfOperatorStake: 1000,
             kickBIPsOfTotalStake: 100
@@ -2606,10 +2605,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(1)),
-            multiplier: 10_000
-        });
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
 
         // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);
@@ -2627,10 +2624,12 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         //     pubkeySignature: defaultPubKeySignature
         // });
 
-        IRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams =
-            new IRegistryCoordinatorTypes.OperatorKickParam[](1);
-        operatorKickParams[0] =
-            IRegistryCoordinatorTypes.OperatorKickParam({operator: address(0x1), quorumNumber: 0});
+        ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams =
+            new ISlashingRegistryCoordinatorTypes.OperatorKickParam[](1);
+        operatorKickParams[0] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
+            operator: address(0x1),
+            quorumNumber: 0
+        });
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature;
 
@@ -2652,8 +2651,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         vm.skip(true);
         _deployMockEigenLayerAndAVS(0);
 
-        IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        IRegistryCoordinatorTypes.OperatorSetParam({
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: defaultMaxOperatorCount,
             kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
             kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
@@ -2662,10 +2661,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(1)),
-            multiplier: 10_000
-        });
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
 
         cheats.prank(registryCoordinatorOwner);
         registryCoordinator.createTotalDelegatedStakeQuorum(
@@ -2684,8 +2681,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         registryCoordinator.enableOperatorSets();
 
         // Create quorum params
-        IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        IRegistryCoordinatorTypes.OperatorSetParam({
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: 10,
             kickBIPsOfOperatorStake: 1000,
             kickBIPsOfTotalStake: 100
@@ -2694,10 +2691,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(1)),
-            multiplier: 10_000
-        });
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
 
         // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);
@@ -2736,8 +2731,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         registryCoordinator.enableOperatorSets();
 
         // Create quorum params
-        IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        IRegistryCoordinatorTypes.OperatorSetParam({
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: 10,
             kickBIPsOfOperatorStake: 1000,
             kickBIPsOfTotalStake: 100
@@ -2746,10 +2741,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(1)),
-            multiplier: 10_000
-        });
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
 
         // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);
@@ -2785,8 +2778,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         assertTrue(registryCoordinator.operatorSetsEnabled(), "operatorSetsEnabled should be true");
 
         // Create quorum params
-        IRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        IRegistryCoordinatorTypes.OperatorSetParam({
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: 10,
             kickBIPsOfOperatorStake: 1000,
             kickBIPsOfTotalStake: 100
@@ -2795,10 +2788,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(1)),
-            multiplier: 10_000
-        });
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
 
         // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);

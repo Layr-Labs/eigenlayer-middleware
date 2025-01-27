@@ -29,24 +29,26 @@ abstract contract IntegrationBase is IntegrationConfig {
 
     /// @dev Also checks that the user has NEVER_REGISTERED status
     function assert_HasNoOperatorInfo(User user, string memory err) internal {
-        IRegistryCoordinatorTypes.OperatorInfo memory info = _getOperatorInfo(user);
+        ISlashingRegistryCoordinatorTypes.OperatorInfo memory info = _getOperatorInfo(user);
 
         assertEq(info.operatorId, bytes32(0), err);
-        assertTrue(info.status == IRegistryCoordinatorTypes.OperatorStatus.NEVER_REGISTERED, err);
+        assertTrue(
+            info.status == ISlashingRegistryCoordinatorTypes.OperatorStatus.NEVER_REGISTERED, err
+        );
     }
 
     function assert_HasRegisteredStatus(User user, string memory err) internal {
-        IRegistryCoordinatorTypes.OperatorStatus status =
+        ISlashingRegistryCoordinatorTypes.OperatorStatus status =
             registryCoordinator.getOperatorStatus(address(user));
 
-        assertTrue(status == IRegistryCoordinatorTypes.OperatorStatus.REGISTERED, err);
+        assertTrue(status == ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED, err);
     }
 
     function assert_HasDeregisteredStatus(User user, string memory err) internal {
-        IRegistryCoordinatorTypes.OperatorStatus status =
+        ISlashingRegistryCoordinatorTypes.OperatorStatus status =
             registryCoordinator.getOperatorStatus(address(user));
 
-        assertTrue(status == IRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED, err);
+        assertTrue(status == ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED, err);
     }
 
     function assert_EmptyQuorumBitmap(User user, string memory err) internal {
@@ -243,8 +245,8 @@ abstract contract IntegrationBase is IntegrationConfig {
     }
 
     function assert_Snap_Unchanged_OperatorInfo(User user, string memory err) internal {
-        IRegistryCoordinatorTypes.OperatorInfo memory curInfo = _getOperatorInfo(user);
-        IRegistryCoordinatorTypes.OperatorInfo memory prevInfo = _getPrevOperatorInfo(user);
+        ISlashingRegistryCoordinatorTypes.OperatorInfo memory curInfo = _getOperatorInfo(user);
+        ISlashingRegistryCoordinatorTypes.OperatorInfo memory prevInfo = _getPrevOperatorInfo(user);
 
         assertEq(prevInfo.operatorId, curInfo.operatorId, err);
         assertTrue(prevInfo.status == curInfo.status, err);
@@ -866,13 +868,13 @@ abstract contract IntegrationBase is IntegrationConfig {
 
     function _getOperatorInfo(
         User user
-    ) internal view returns (IRegistryCoordinatorTypes.OperatorInfo memory) {
+    ) internal view returns (ISlashingRegistryCoordinatorTypes.OperatorInfo memory) {
         return registryCoordinator.getOperator(address(user));
     }
 
     function _getPrevOperatorInfo(
         User user
-    ) internal timewarp returns (IRegistryCoordinatorTypes.OperatorInfo memory) {
+    ) internal timewarp returns (ISlashingRegistryCoordinatorTypes.OperatorInfo memory) {
         return _getOperatorInfo(user);
     }
 

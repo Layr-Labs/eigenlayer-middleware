@@ -12,6 +12,8 @@ import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {SlashingRegistryCoordinator} from "./SlashingRegistryCoordinator.sol";
+import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
+import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
 /**
  * @title A `RegistryCoordinator` that has three registries:
@@ -21,7 +23,7 @@ import {SlashingRegistryCoordinator} from "./SlashingRegistryCoordinator.sol";
  *
  * @author Layr Labs, Inc.
  */
-contract RegistryCoordinator is SlashingRegistryCoordinator {
+contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinator {
     using BitmapUtils for *;
 
     /// @notice the ServiceManager for this AVS, which forwards calls onto EigenLayer's core contracts
@@ -52,7 +54,7 @@ contract RegistryCoordinator is SlashingRegistryCoordinator {
      *
      */
 
-    // /// @inheritdoc IRegistryCoordinator
+    /// @inheritdoc IRegistryCoordinator
     function registerOperator(
         bytes memory quorumNumbers,
         string memory socket,
@@ -100,7 +102,7 @@ contract RegistryCoordinator is SlashingRegistryCoordinator {
         }
     }
 
-    // /// @inheritdoc IRegistryCoordinator
+    /// @inheritdoc IRegistryCoordinator
     function registerOperatorWithChurn(
         bytes calldata quorumNumbers,
         string memory socket,
@@ -140,21 +142,20 @@ contract RegistryCoordinator is SlashingRegistryCoordinator {
         }
     }
 
-    // /// @inheritdoc IRegistryCoordinator
+    /// @inheritdoc IRegistryCoordinator
     function deregisterOperator(
         bytes memory quorumNumbers
-    ) external onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
+    ) external override onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
         // Check that the quorum numbers are M2 quorums
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             require(
-                !operatorSetsEnabled || _isM2Quorum(uint8(quorumNumbers[i])),
-                OperatorSetsAlreadyEnabled()
+                !operatorSetsEnabled || _isM2Quorum(uint8(quorumNumbers[i])), OperatorSetQuorum()
             );
         }
         _deregisterOperator({operator: msg.sender, quorumNumbers: quorumNumbers});
     }
 
-    // /// @inheritdoc IRegistryCoordinator
+    /// @inheritdoc IRegistryCoordinator
     function enableOperatorSets() external onlyOwner {
         require(!operatorSetsEnabled, OperatorSetsAlreadyEnabled());
 
@@ -167,7 +168,7 @@ contract RegistryCoordinator is SlashingRegistryCoordinator {
         emit OperatorSetsEnabled();
     }
 
-    // /// @inheritdoc IRegistryCoordinator
+    /// @inheritdoc IRegistryCoordinator
     function disableM2QuorumRegistration() external onlyOwner {
         require(operatorSetsEnabled, OperatorSetsNotEnabled());
 
@@ -202,5 +203,15 @@ contract RegistryCoordinator is SlashingRegistryCoordinator {
         // quorumCount = 5 -> 011111 (31 in decimal)
         // This is a safe operation since we limit MAX_QUORUM_COUNT to 192
         return (1 << quorumCount) - 1;
+    }
+
+    /// @dev need to override function here since its defined in both these contracts
+    function owner()
+        public
+        view
+        override(SlashingRegistryCoordinator, ISlashingRegistryCoordinator)
+        returns (address)
+    {
+        return OwnableUpgradeable.owner();
     }
 }

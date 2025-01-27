@@ -107,9 +107,9 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     /// @notice Upper bound start range is ~1 month into the future, multiple of CALCULATION_INTERVAL_SECONDS
     uint32 MAX_FUTURE_LENGTH = 28 days;
     /// @notice absolute min timestamp that a rewards can start at
-    uint32 GENESIS_REWARDS_TIMESTAMP = 1_712_188_800;
+    uint32 GENESIS_REWARDS_TIMESTAMP = 1712188800;
     /// @notice Equivalent to 100%, but in basis points.
-    uint16 internal constant ONE_HUNDRED_IN_BIPS = 10_000;
+    uint16 internal constant ONE_HUNDRED_IN_BIPS = 10000;
 
     uint32 defaultOperatorSplitBips = 1000;
     /// @notice Delay in timestamp before a posted root can be claimed against

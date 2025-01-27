@@ -25,7 +25,7 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
     /// @notice Maximum length of dynamic arrays in the `strategyParams` mapping.
     uint8 public constant MAX_WEIGHING_FUNCTION_LENGTH = 32;
     /// @notice Constant used as a divisor in dealing with BIPS amounts.
-    uint256 internal constant MAX_BIPS = 10_000;
+    uint256 internal constant MAX_BIPS = 10000;
 
     /// @notice The address of the Delegation contract for EigenLayer.
     IDelegationManager public immutable delegation;

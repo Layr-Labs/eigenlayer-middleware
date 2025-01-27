@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import {
     ISlashingRegistryCoordinator,
-    IRegistryCoordinatorTypes
+    ISlashingRegistryCoordinatorTypes
 } from "../interfaces/ISlashingRegistryCoordinator.sol";
 
 /// @title QuorumBitmapHistoryLib
@@ -122,7 +122,7 @@ library QuorumBitmapHistoryLib {
         if (historyLength == 0) {
             // No prior bitmap history - push our first entry
             self[operatorId].push(
-                IRegistryCoordinatorTypes.QuorumBitmapUpdate({
+                ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
                     updateBlockNumber: uint32(block.number),
                     nextUpdateBlockNumber: 0,
                     quorumBitmap: newBitmap
@@ -142,7 +142,7 @@ library QuorumBitmapHistoryLib {
             } else {
                 lastUpdate.nextUpdateBlockNumber = uint32(block.number);
                 self[operatorId].push(
-                    IRegistryCoordinatorTypes.QuorumBitmapUpdate({
+                    ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
                         updateBlockNumber: uint32(block.number),
                         nextUpdateBlockNumber: 0,
                         quorumBitmap: newBitmap

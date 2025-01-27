@@ -170,7 +170,7 @@ contract User is Test {
         uint256 stdIdx;
         while (churnIdx + stdIdx < allQuorums.length) {
             if (churnIdx == churnQuorums.length) {
-                kickParams[churnIdx + stdIdx] = IRegistryCoordinatorTypes.OperatorKickParam({
+                kickParams[churnIdx + stdIdx] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
                     quorumNumber: 0,
                     operator: address(0)
                 });
@@ -178,13 +178,13 @@ contract User is Test {
             } else if (
                 stdIdx == standardQuorums.length || churnQuorums[churnIdx] < standardQuorums[stdIdx]
             ) {
-                kickParams[churnIdx + stdIdx] = IRegistryCoordinatorTypes.OperatorKickParam({
+                kickParams[churnIdx + stdIdx] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
                     quorumNumber: uint8(churnQuorums[churnIdx]),
                     operator: address(churnTargets[churnIdx])
                 });
                 churnIdx++;
             } else if (standardQuorums[stdIdx] < churnQuorums[churnIdx]) {
-                kickParams[churnIdx + stdIdx] = IRegistryCoordinatorTypes.OperatorKickParam({
+                kickParams[churnIdx + stdIdx] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
                     quorumNumber: 0,
                     operator: address(0)
                 });

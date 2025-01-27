@@ -298,7 +298,7 @@ contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
 
     function test_bitmapToBytesArrayToBitmap_distributedTenEntriesBitmap() public {
         // 2^0+2^10+2^20+2^30+2^40+2^50+2^60+2^70+2^80+2^90
-        uint256 originalBitmap = 1_239_150_146_850_664_126_585_242_625;
+        uint256 originalBitmap = 1239150146850664126585242625;
         testFuzz_bitmapToBytesArrayToBitmap(originalBitmap);
     }
 }

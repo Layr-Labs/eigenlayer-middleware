@@ -24,7 +24,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
     uint32 MAX_REWARDS_DURATION = 70 days;
     uint32 MAX_RETROACTIVE_LENGTH = 84 days;
     uint32 MAX_FUTURE_LENGTH = 28 days;
-    uint32 GENESIS_REWARDS_TIMESTAMP = 1_712_188_800;
+    uint32 GENESIS_REWARDS_TIMESTAMP = 1712188800;
     uint256 MAX_REWARDS_AMOUNT = 1e38 - 1;
     uint32 OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP = 0;
     /// TODO: what values should these have

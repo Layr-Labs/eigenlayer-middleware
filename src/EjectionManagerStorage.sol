@@ -7,7 +7,7 @@ import {IEjectionManager} from "./interfaces/IEjectionManager.sol";
 
 abstract contract EjectionManagerStorage is IEjectionManager {
     /// @notice The basis point denominator for the ejectable stake percent
-    uint16 internal constant BIPS_DENOMINATOR = 10_000;
+    uint16 internal constant BIPS_DENOMINATOR = 10000;
     /// @notice The max number of quorums
     uint8 internal constant MAX_QUORUM_COUNT = 192;
 
