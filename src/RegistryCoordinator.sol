@@ -15,7 +15,6 @@ import {SlashingRegistryCoordinator} from "./SlashingRegistryCoordinator.sol";
 import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
-
 /**
  * @title A `RegistryCoordinator` that has three registries:
  *      1) a `StakeRegistry` that keeps track of operators' stakes
@@ -150,8 +149,7 @@ contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinato
         // Check that the quorum numbers are M2 quorums
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             require(
-                !operatorSetsEnabled || _isM2Quorum(uint8(quorumNumbers[i])),
-                OperatorSetQuorum()
+                !operatorSetsEnabled || _isM2Quorum(uint8(quorumNumbers[i])), OperatorSetQuorum()
             );
         }
         _deregisterOperator({operator: msg.sender, quorumNumbers: quorumNumbers});

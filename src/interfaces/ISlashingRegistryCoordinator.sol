@@ -55,7 +55,6 @@ interface ISlashingRegistryCoordinatorErrors {
 }
 
 interface ISlashingRegistryCoordinatorTypes {
-
     /// @notice Core data structure for tracking operator information.
     /// @dev Links an operator's unique identifier with their current registration status.
     /// @param operatorId Unique identifier for the operator, typically derived from their BLS public key.
@@ -133,8 +132,7 @@ interface ISlashingRegistryCoordinatorTypes {
     }
 }
 
-interface ISlashingRegistryCoordinatorEvents is ISlashingRegistryCoordinatorTypes
-{
+interface ISlashingRegistryCoordinatorEvents is ISlashingRegistryCoordinatorTypes {
     /**
      * @notice Emitted when an operator registers for service in one or more quorums.
      * @dev Emitted in _registerOperator() and _registerOperatorToOperatorSet().
@@ -236,7 +234,7 @@ interface ISlashingRegistryCoordinator is
      */
     function allocationManager() external view returns (IAllocationManager);
 
-   /// STORAGE
+    /// STORAGE
 
     /**
      * @notice The total number of quorums that have been created.
@@ -315,7 +313,7 @@ interface ISlashingRegistryCoordinator is
 
     /// ACTIONS
 
-     /**
+    /**
      * @notice Registers an operator through the allocation manager for operator set quorums.
      * @param operator The operator address to register.
      * @param operatorSetIds The operator set IDs to register for (corresponds to quorum numbers).

@@ -22,7 +22,10 @@ interface IRegistryCoordinatorErrors is ISlashingRegistryCoordinatorErrors {
 
 interface IRegistryCoordinatorTypes is ISlashingRegistryCoordinatorTypes {}
 
-interface IRegistryCoordinatorEvents is ISlashingRegistryCoordinatorEvents, IRegistryCoordinatorTypes {
+interface IRegistryCoordinatorEvents is
+    ISlashingRegistryCoordinatorEvents,
+    IRegistryCoordinatorTypes
+{
     /**
      * @notice Emitted when operator sets mode is enabled.
      * @dev Emitted in enableOperatorSets().
@@ -36,8 +39,11 @@ interface IRegistryCoordinatorEvents is ISlashingRegistryCoordinatorEvents, IReg
     event M2QuorumsDisabled();
 }
 
-interface IRegistryCoordinator is IRegistryCoordinatorErrors, IRegistryCoordinatorEvents, ISlashingRegistryCoordinator {
-
+interface IRegistryCoordinator is
+    IRegistryCoordinatorErrors,
+    IRegistryCoordinatorEvents,
+    ISlashingRegistryCoordinator
+{
     /**
      * @notice Reference to the ServiceManager contract.
      * @return The ServiceManager contract interface.
