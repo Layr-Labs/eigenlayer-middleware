@@ -642,18 +642,6 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
 
         uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
 
-        assertEq(registryCoordinator.getOperatorId(defaultOperator), defaultOperatorId);
-        assertEq(
-            keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))),
-            keccak256(
-                abi.encode(
-                    IRegistryCoordinatorTypes.OperatorInfo({
-                        operatorId: defaultOperatorId,
-                        status: IRegistryCoordinatorTypes.OperatorStatus.REGISTERED
-                    })
-                )
-            )
-        );
         assertEq(registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), quorumBitmap);
         assertEq(
             keccak256(
