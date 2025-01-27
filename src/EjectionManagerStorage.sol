@@ -28,7 +28,7 @@ abstract contract EjectionManagerStorage is IEjectionManager {
         stakeRegistry = _stakeRegistry;
     }
 
-    /// @dev This was missing before the slashing release, if your contract 
+    /// @dev This was missing before the slashing release, if your contract
     /// was deployed pre-slashing, you should double check your storage layout.
     uint256[47] private __gap;
 }
