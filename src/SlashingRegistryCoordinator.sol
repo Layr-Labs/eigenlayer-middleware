@@ -240,7 +240,7 @@ contract SlashingRegistryCoordinator is
     function deregisterOperator(
         address operator,
         uint32[] memory operatorSetIds
-    ) external override onlyAllocationManager onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
+    ) external onlyAllocationManager onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
         require(operatorSetsEnabled, OperatorSetsNotEnabled());
         bytes memory quorumNumbers = _getQuorumNumbers(operatorSetIds);
         _deregisterOperator(operator, quorumNumbers);
