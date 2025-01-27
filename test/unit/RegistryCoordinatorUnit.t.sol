@@ -689,7 +689,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
-        cheats.expectRevert(bytes4(keccak256("NotRegistered()")));
+        cheats.expectRevert(bytes4(keccak256("OperatorSetQuorum()")));
         cheats.prank(defaultOperator);
         registryCoordinator.deregisterOperator(quorumNumbers);
     }
@@ -698,6 +698,8 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         // enable operatorSets
         cheats.prank(registryCoordinator.owner());
         registryCoordinator.enableOperatorSets();
+
+        console.log("quorumCount", registryCoordinator.quorumCount());
 
         assertTrue(
             registryCoordinator.isM2Quorum(uint8(defaultQuorumNumber)),

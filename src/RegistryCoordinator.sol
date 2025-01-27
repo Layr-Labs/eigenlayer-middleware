@@ -160,7 +160,7 @@ contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinato
         require(!operatorSetsEnabled, OperatorSetsAlreadyEnabled());
 
         // Set the bitmap for M2 quorums
-        uint256 M2quorumBitmap = _getQuorumBitmap(quorumCount);
+        M2quorumBitmap = _getQuorumBitmap(quorumCount);
 
         // Enable operator sets mode
         operatorSetsEnabled = true;
