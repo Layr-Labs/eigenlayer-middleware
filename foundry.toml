@@ -74,7 +74,7 @@
     # Quotation mark style
     quote_style = "double"  # Options: "double", "single", "preserve"
     # Style of underscores in number literals
-    number_underscore = "thousands"  # Options: "preserve", "thousands", "remove"
+    number_underscore = "remove"  # Options: "preserve", "thousands", "remove"
     # Whether or not to wrap comments at line_length
     wrap_comments = false  
     # List of files to ignore during formatting (can use glob patterns)
