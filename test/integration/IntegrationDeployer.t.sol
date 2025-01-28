@@ -364,9 +364,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             permissionController,
             allocationManager
         );
-        SocketRegistry socketRegistryImplementation = new SocketRegistry(
-            IRegistryCoordinator(registryCoordinator)
-        );
+        SocketRegistry socketRegistryImplementation =
+            new SocketRegistry(IRegistryCoordinator(registryCoordinator));
 
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(stakeRegistry))),

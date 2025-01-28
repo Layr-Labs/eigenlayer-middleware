@@ -5,7 +5,6 @@ import "../../src/RegistryCoordinator.sol";
 
 import {ISocketRegistry} from "../../src/interfaces/ISocketRegistry.sol";
 
-
 import "forge-std/Test.sol";
 
 // wrapper around the RegistryCoordinator contract that exposes the internal functions for unit testing.

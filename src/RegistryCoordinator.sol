@@ -11,7 +11,6 @@ import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {ISocketRegistry} from "./interfaces/ISocketRegistry.sol";
 
-
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {SlashingRegistryCoordinator} from "./SlashingRegistryCoordinator.sol";
 import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";

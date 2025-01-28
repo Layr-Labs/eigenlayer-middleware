@@ -6,5 +6,7 @@ interface ISocketRegistry {
     function setOperatorSocket(bytes32 _operatorId, string memory _socket) external;
 
     /// @notice gets the stored socket for an operator
-    function getOperatorSocket(bytes32 _operatorId) external view returns (string memory);
+    function getOperatorSocket(
+        bytes32 _operatorId
+    ) external view returns (string memory);
 }

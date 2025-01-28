@@ -51,16 +51,17 @@ contract EjectionManager is OwnableUpgradeable, EjectionManagerStorage {
             uint32 ejectedOperators;
 
             bool ratelimitHit;
-            if(amountEjectable > 0 || msg.sender == owner()){
-                for(uint8 j = 0; j < operatorIds[i].length; ++j) {
-                    uint256 operatorStake = stakeRegistry.getCurrentStake(operatorIds[i][j], quorumNumber);
+            if (amountEjectable > 0 || msg.sender == owner()) {
+                for (uint8 j = 0; j < operatorIds[i].length; ++j) {
+                    uint256 operatorStake =
+                        stakeRegistry.getCurrentStake(operatorIds[i][j], quorumNumber);
 
                     //if caller is ejector enforce ratelimit
-                    if(
-                        isEjector[msg.sender] &&
-                        quorumEjectionParams[quorumNumber].rateLimitWindow > 0 &&
-                        stakeForEjection + operatorStake > amountEjectable
-                    ){
+                    if (
+                        isEjector[msg.sender]
+                            && quorumEjectionParams[quorumNumber].rateLimitWindow > 0
+                            && stakeForEjection + operatorStake > amountEjectable
+                    ) {
                         ratelimitHit = true;
 
                         stakeForEjection += operatorStake;
@@ -89,11 +90,10 @@ contract EjectionManager is OwnableUpgradeable, EjectionManagerStorage {
             }
 
             //record the stake ejected if ejector and ratelimit enforced
-            if(isEjector[msg.sender] && stakeForEjection > 0){
-                stakeEjectedForQuorum[quorumNumber].push(StakeEjection({
-                    timestamp: block.timestamp,
-                    stakeEjected: stakeForEjection
-                }));
+            if (isEjector[msg.sender] && stakeForEjection > 0) {
+                stakeEjectedForQuorum[quorumNumber].push(
+                    StakeEjection({timestamp: block.timestamp, stakeEjected: stakeForEjection})
+                );
             }
 
             emit QuorumEjection(ejectedOperators, ratelimitHit);

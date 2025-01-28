@@ -20,10 +20,7 @@ import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSR
 import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
-abstract contract ECDSAServiceManagerBase is
-    IServiceManager,
-    OwnableUpgradeable
-{
+abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable {
     using SafeERC20 for IERC20;
 
     /// @notice Address of the stake registry contract, which manages registration and stake recording.
@@ -115,15 +112,15 @@ abstract contract ECDSAServiceManagerBase is
     }
 
     function createOperatorDirectedAVSRewardsSubmission(
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            calldata operatorDirectedRewardsSubmissions
-    ) external virtual onlyRewardsInitiator {
-        _createOperatorDirectedAVSRewardsSubmission(
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[] calldata
             operatorDirectedRewardsSubmissions
-        );
+    ) external virtual onlyRewardsInitiator {
+        _createOperatorDirectedAVSRewardsSubmission(operatorDirectedRewardsSubmissions);
     }
 
-    function setClaimerFor(address claimer) external virtual onlyOwner {
+    function setClaimerFor(
+        address claimer
+    ) external virtual onlyOwner {
         _setClaimerFor(claimer);
     }
 
@@ -199,13 +196,10 @@ abstract contract ECDSAServiceManagerBase is
     ) internal virtual {
         for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
             rewardsSubmissions[i].token.safeTransferFrom(
-                msg.sender,
-                address(this),
-                rewardsSubmissions[i].amount
+                msg.sender, address(this), rewardsSubmissions[i].amount
             );
             rewardsSubmissions[i].token.safeIncreaseAllowance(
-                rewardsCoordinator,
-                rewardsSubmissions[i].amount
+                rewardsCoordinator, rewardsSubmissions[i].amount
             );
         }
 
@@ -218,52 +212,40 @@ abstract contract ECDSAServiceManagerBase is
      * @param operatorDirectedRewardsSubmissions The operator-directed rewards submissions being created.
      */
     function _createOperatorDirectedAVSRewardsSubmission(
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            calldata operatorDirectedRewardsSubmissions
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[] calldata
+            operatorDirectedRewardsSubmissions
     ) internal virtual {
-        for (
-            uint256 i = 0;
-            i < operatorDirectedRewardsSubmissions.length;
-            ++i
-        ) {
+        for (uint256 i = 0; i < operatorDirectedRewardsSubmissions.length; ++i) {
             // Calculate total amount of token to transfer
             uint256 totalAmount = 0;
             for (
-                uint256 j = 0;
-                j <
-                operatorDirectedRewardsSubmissions[i].operatorRewards.length;
-                ++j
+                uint256 j = 0; j < operatorDirectedRewardsSubmissions[i].operatorRewards.length; ++j
             ) {
-                totalAmount += operatorDirectedRewardsSubmissions[i]
-                    .operatorRewards[j]
-                    .amount;
+                totalAmount += operatorDirectedRewardsSubmissions[i].operatorRewards[j].amount;
             }
 
             // Transfer token to ServiceManager and approve RewardsCoordinator to transfer again
             // in createOperatorDirectedAVSRewardsSubmission() call
             operatorDirectedRewardsSubmissions[i].token.safeTransferFrom(
-                msg.sender,
-                address(this),
-                totalAmount
+                msg.sender, address(this), totalAmount
             );
             operatorDirectedRewardsSubmissions[i].token.safeIncreaseAllowance(
-                rewardsCoordinator,
-                totalAmount
+                rewardsCoordinator, totalAmount
             );
         }
 
-        IRewardsCoordinator(rewardsCoordinator)
-            .createOperatorDirectedAVSRewardsSubmission(
-                address(this),
-                operatorDirectedRewardsSubmissions
-            );
+        IRewardsCoordinator(rewardsCoordinator).createOperatorDirectedAVSRewardsSubmission(
+            address(this), operatorDirectedRewardsSubmissions
+        );
     }
 
     /**
      * @notice Forwards a call to Eigenlayer's RewardsCoordinator contract to set the address of the entity that can call `processClaim` on behalf of this contract.
      * @param claimer The address of the entity that can call `processClaim` on behalf of the earner.
      */
-    function _setClaimerFor(address claimer) internal virtual {
+    function _setClaimerFor(
+        address claimer
+    ) internal virtual {
         IRewardsCoordinator(rewardsCoordinator).setClaimerFor(claimer);
     }
 

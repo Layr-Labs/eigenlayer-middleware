@@ -16,7 +16,6 @@ import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
 import {ISocketRegistry} from "./interfaces/ISocketRegistry.sol";
 
-
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {BN254} from "./libraries/BN254.sol";
 import {SignatureCheckerLib} from "./libraries/SignatureCheckerLib.sol";
@@ -341,7 +340,9 @@ contract SlashingRegistryCoordinator is
      * @notice Updates the socket of the msg.sender given they are a registered operator
      * @param socket is the new socket of the operator
      */
-    function updateSocket(string memory socket) external {
+    function updateSocket(
+        string memory socket
+    ) external {
         require(_operatorInfo[msg.sender].status == OperatorStatus.REGISTERED, NotRegistered());
         _setOperatorSocket(_operatorInfo[msg.sender].operatorId, socket);
     }

@@ -10,7 +10,6 @@ import {IStakeRegistry, IStakeRegistryErrors} from "src/interfaces/IStakeRegistr
 import {IStakeRegistryEvents} from "test/events/IStakeRegistryEvents.sol";
 import {ISocketRegistry} from "src/interfaces/ISocketRegistry.sol";
 
-
 import "../utils/MockAVSDeployer.sol";
 
 contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
