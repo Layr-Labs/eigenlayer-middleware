@@ -101,6 +101,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
             stakeRegistry,
             blsApkRegistry,
             indexRegistry,
+            socketRegistry,
             allocationManager,
             pauserRegistry
         );

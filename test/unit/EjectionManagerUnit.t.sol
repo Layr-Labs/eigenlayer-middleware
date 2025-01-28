@@ -10,6 +10,7 @@ import {
 } from "../../src/interfaces/IEjectionManager.sol";
 import {ISlashingRegistryCoordinatorTypes} from "../../src/interfaces/IRegistryCoordinator.sol";
 import "../utils/MockAVSDeployer.sol";
+import {ISlashingRegistryCoordinatorTypes} from "../../src/interfaces/IRegistryCoordinator.sol";
 
 contract EjectionManagerUnitTests is MockAVSDeployer {
     event EjectorUpdated(address ejector, bool status);
@@ -147,7 +148,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
     }
 
     function testEjectOperators_MultipleOperatorOutsideRatelimit() public {
-        uint8 operatorsCanEject = 1;
+        uint8 operatorsCanEject = 2;
         uint8 operatorsToEject = 10;
         uint8 numOperators = 10;
         uint96 stake = 1 ether;
@@ -191,6 +192,55 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
                 uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))),
                 uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED)
             );
+        }
+    }
+
+    function testEjectOperators_NoEjectionForNoEjectableStake() public {
+        uint8 operatorsCanEject = 2;
+        uint8 operatorsToEject = 10;
+        uint8 numOperators = 10;
+        uint96 stake = 1 ether;
+        _registerOperaters(numOperators, stake);
+
+        bytes32[][] memory operatorIds = new bytes32[][](numQuorums);
+        for (uint8 i = 0; i < numQuorums; i++) {
+            operatorIds[i] = new bytes32[](operatorsToEject);
+            for (uint j = 0; j < operatorsToEject; j++) {
+                operatorIds[i][j] = registryCoordinator.getOperatorId(_incrementAddress(defaultOperator, j));
+            }
+        }
+
+        for(uint8 i = 0; i < operatorsToEject; i++) {
+            assertEq(uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))), uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED));
+        }
+
+        for(uint8 i = 0; i < numQuorums; i++) {
+            for(uint8 j = 0; j < operatorsCanEject; j++) {
+                cheats.expectEmit(true, true, true, true, address(ejectionManager));
+                emit OperatorEjected(operatorIds[i][j], i);
+            }
+        }
+
+        cheats.prank(ejector);
+        ejectionManager.ejectOperators(operatorIds);
+
+        for(uint8 i = 0; i < operatorsCanEject; i++) {
+            assertEq(uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))), uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED));
+        }
+
+        for(uint8 i = operatorsCanEject; i < operatorsToEject; i++) {
+            assertEq(uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))), uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED));
+        }
+
+        cheats.prank(ejector);
+        ejectionManager.ejectOperators(operatorIds);
+
+        for(uint8 i = 0; i < operatorsCanEject; i++) {
+            assertEq(uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))), uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED));
+        }
+
+        for(uint8 i = operatorsCanEject; i < operatorsToEject; i++) {
+            assertEq(uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))), uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED));
         }
     }
 

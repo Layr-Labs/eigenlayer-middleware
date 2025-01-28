@@ -31,6 +31,7 @@ import "src/IndexRegistry.sol";
 import "src/BLSApkRegistry.sol";
 import "test/mocks/ServiceManagerMock.sol";
 import "src/OperatorStateRetriever.sol";
+import "src/SocketRegistry.sol";
 
 // Mocks and More
 import "src/libraries/BN254.sol";
@@ -67,6 +68,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     BLSApkRegistry blsApkRegistry;
     StakeRegistry stakeRegistry;
     IndexRegistry indexRegistry;
+    SocketRegistry socketRegistry;
     OperatorStateRetriever operatorStateRetriever;
 
     TimeMachine public timeMachine;
@@ -319,6 +321,12 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             )
         );
 
+        socketRegistry = SocketRegistry(
+            address(
+                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
+            )
+        );
+
         indexRegistry = IndexRegistry(
             address(
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
@@ -356,6 +364,9 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             permissionController,
             allocationManager
         );
+        SocketRegistry socketRegistryImplementation = new SocketRegistry(
+            IRegistryCoordinator(registryCoordinator)
+        );
 
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(stakeRegistry))),
@@ -377,6 +388,11 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             address(serviceManagerImplementation)
         );
 
+        proxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(socketRegistry))),
+            address(socketRegistryImplementation)
+        );
+
         serviceManager.initialize({
             initialOwner: registryCoordinatorOwner,
             rewardsInitiator: address(msg.sender)
@@ -391,6 +407,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             stakeRegistry,
             blsApkRegistry,
             indexRegistry,
+            socketRegistry,
             allocationManager,
             pauserRegistry
         );

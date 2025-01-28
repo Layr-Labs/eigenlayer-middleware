@@ -8,6 +8,8 @@ import "test/utils/MockAVSDeployer.sol";
 import {StakeRegistry} from "src/StakeRegistry.sol";
 import {IStakeRegistry, IStakeRegistryErrors} from "src/interfaces/IStakeRegistry.sol";
 import {IStakeRegistryEvents} from "test/events/IStakeRegistryEvents.sol";
+import {ISocketRegistry} from "src/interfaces/ISocketRegistry.sol";
+
 
 import "../utils/MockAVSDeployer.sol";
 
@@ -51,6 +53,7 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
             stakeRegistry,
             IBLSApkRegistry(blsApkRegistry),
             IIndexRegistry(indexRegistry),
+            ISocketRegistry(socketRegistry),
             allocationManager,
             pauserRegistry
         );

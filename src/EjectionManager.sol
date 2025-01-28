@@ -51,38 +51,49 @@ contract EjectionManager is OwnableUpgradeable, EjectionManagerStorage {
             uint32 ejectedOperators;
 
             bool ratelimitHit;
-            for (uint8 j = 0; j < operatorIds[i].length; ++j) {
-                uint256 operatorStake =
-                    stakeRegistry.getCurrentStake(operatorIds[i][j], quorumNumber);
+            if(amountEjectable > 0 || msg.sender == owner()){
+                for(uint8 j = 0; j < operatorIds[i].length; ++j) {
+                    uint256 operatorStake = stakeRegistry.getCurrentStake(operatorIds[i][j], quorumNumber);
 
-                //if caller is ejector enforce ratelimit
-                if (
-                    isEjector[msg.sender] && quorumEjectionParams[quorumNumber].rateLimitWindow > 0
-                        && stakeForEjection + operatorStake > amountEjectable
-                ) {
-                    stakeEjectedForQuorum[quorumNumber].push(
-                        StakeEjection({timestamp: block.timestamp, stakeEjected: stakeForEjection})
+                    //if caller is ejector enforce ratelimit
+                    if(
+                        isEjector[msg.sender] &&
+                        quorumEjectionParams[quorumNumber].rateLimitWindow > 0 &&
+                        stakeForEjection + operatorStake > amountEjectable
+                    ){
+                        ratelimitHit = true;
+
+                        stakeForEjection += operatorStake;
+                        ++ejectedOperators;
+
+                        registryCoordinator.ejectOperator(
+                            registryCoordinator.getOperatorFromId(operatorIds[i][j]),
+                            abi.encodePacked(quorumNumber)
+                        );
+
+                        emit OperatorEjected(operatorIds[i][j], quorumNumber);
+
+                        break;
+                    }
+
+                    stakeForEjection += operatorStake;
+                    ++ejectedOperators;
+
+                    registryCoordinator.ejectOperator(
+                        registryCoordinator.getOperatorFromId(operatorIds[i][j]),
+                        abi.encodePacked(quorumNumber)
                     );
-                    ratelimitHit = true;
-                    break;
+
+                    emit OperatorEjected(operatorIds[i][j], quorumNumber);
                 }
-
-                stakeForEjection += operatorStake;
-                ++ejectedOperators;
-
-                registryCoordinator.ejectOperator(
-                    registryCoordinator.getOperatorFromId(operatorIds[i][j]),
-                    abi.encodePacked(quorumNumber)
-                );
-
-                emit OperatorEjected(operatorIds[i][j], quorumNumber);
             }
 
             //record the stake ejected if ejector and ratelimit enforced
-            if (!ratelimitHit && isEjector[msg.sender]) {
-                stakeEjectedForQuorum[quorumNumber].push(
-                    StakeEjection({timestamp: block.timestamp, stakeEjected: stakeForEjection})
-                );
+            if(isEjector[msg.sender] && stakeForEjection > 0){
+                stakeEjectedForQuorum[quorumNumber].push(StakeEjection({
+                    timestamp: block.timestamp,
+                    stakeEjected: stakeForEjection
+                }));
             }
 
             emit QuorumEjection(ejectedOperators, ratelimitHit);

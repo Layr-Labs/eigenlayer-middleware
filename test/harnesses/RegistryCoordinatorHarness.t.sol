@@ -3,6 +3,9 @@ pragma solidity ^0.8.27;
 
 import "../../src/RegistryCoordinator.sol";
 
+import {ISocketRegistry} from "../../src/interfaces/ISocketRegistry.sol";
+
+
 import "forge-std/Test.sol";
 
 // wrapper around the RegistryCoordinator contract that exposes the internal functions for unit testing.
@@ -12,6 +15,7 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         IStakeRegistry _stakeRegistry,
         IBLSApkRegistry _blsApkRegistry,
         IIndexRegistry _indexRegistry,
+        ISocketRegistry _socketRegistry,
         IAllocationManager _allocationManager,
         IPauserRegistry _pauserRegistry
     )
@@ -20,6 +24,7 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
             _stakeRegistry,
             _blsApkRegistry,
             _indexRegistry,
+            _socketRegistry,
             _allocationManager,
             _pauserRegistry
         )

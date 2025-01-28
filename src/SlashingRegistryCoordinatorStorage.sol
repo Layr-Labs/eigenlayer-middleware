@@ -12,6 +12,7 @@ import {
     IAllocationManagerTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
+import {ISocketRegistry} from "./interfaces/ISocketRegistry.sol";
 
 abstract contract SlashingRegistryCoordinatorStorage is ISlashingRegistryCoordinator {
     /**
@@ -40,6 +41,8 @@ abstract contract SlashingRegistryCoordinatorStorage is ISlashingRegistryCoordin
     /// @notice The maximum number of quorums this contract supports
     uint8 internal constant MAX_QUORUM_COUNT = 192;
 
+    /// @notice
+    ISocketRegistry public immutable socketRegistry;
     /// @notice the BLS Aggregate Pubkey Registry contract that will keep track of operators' aggregate BLS public keys per quorum
     IBLSApkRegistry public immutable blsApkRegistry;
     /// @notice the Stake Registry contract that will keep track of operators' stakes
@@ -103,11 +106,13 @@ abstract contract SlashingRegistryCoordinatorStorage is ISlashingRegistryCoordin
         IStakeRegistry _stakeRegistry,
         IBLSApkRegistry _blsApkRegistry,
         IIndexRegistry _indexRegistry,
+        ISocketRegistry _socketRegistry,
         IAllocationManager _allocationManager
     ) {
         stakeRegistry = _stakeRegistry;
         blsApkRegistry = _blsApkRegistry;
         indexRegistry = _indexRegistry;
+        socketRegistry = _socketRegistry;
         allocationManager = _allocationManager;
     }
 

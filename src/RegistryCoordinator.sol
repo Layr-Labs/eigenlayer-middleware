@@ -9,6 +9,8 @@ import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {ISocketRegistry} from "./interfaces/ISocketRegistry.sol";
+
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {SlashingRegistryCoordinator} from "./SlashingRegistryCoordinator.sol";
@@ -34,6 +36,7 @@ contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinato
         IStakeRegistry _stakeRegistry,
         IBLSApkRegistry _blsApkRegistry,
         IIndexRegistry _indexRegistry,
+        ISocketRegistry _socketRegistry,
         IAllocationManager _allocationManager,
         IPauserRegistry _pauserRegistry
     )
@@ -41,6 +44,7 @@ contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinato
             _stakeRegistry,
             _blsApkRegistry,
             _indexRegistry,
+            _socketRegistry,
             _allocationManager,
             _pauserRegistry
         )

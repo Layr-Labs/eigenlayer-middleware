@@ -14,6 +14,8 @@ import {IBLSApkRegistry, IBLSApkRegistryTypes} from "./interfaces/IBLSApkRegistr
 import {IStakeRegistry, IStakeRegistryTypes} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
+import {ISocketRegistry} from "./interfaces/ISocketRegistry.sol";
+
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {BN254} from "./libraries/BN254.sol";
@@ -69,6 +71,7 @@ contract SlashingRegistryCoordinator is
         IStakeRegistry _stakeRegistry,
         IBLSApkRegistry _blsApkRegistry,
         IIndexRegistry _indexRegistry,
+        ISocketRegistry _socketRegistry,
         IAllocationManager _allocationManager,
         IPauserRegistry _pauserRegistry
     )
@@ -76,6 +79,7 @@ contract SlashingRegistryCoordinator is
             _stakeRegistry,
             _blsApkRegistry,
             _indexRegistry,
+            _socketRegistry,
             _allocationManager
         )
         EIP712("AVSRegistryCoordinator", "v0.0.1")
@@ -337,11 +341,9 @@ contract SlashingRegistryCoordinator is
      * @notice Updates the socket of the msg.sender given they are a registered operator
      * @param socket is the new socket of the operator
      */
-    function updateSocket(
-        string memory socket
-    ) external {
+    function updateSocket(string memory socket) external {
         require(_operatorInfo[msg.sender].status == OperatorStatus.REGISTERED, NotRegistered());
-        emit OperatorSocketUpdate(_operatorInfo[msg.sender].operatorId, socket);
+        _setOperatorSocket(_operatorInfo[msg.sender].operatorId, socket);
     }
 
     /**
@@ -771,6 +773,17 @@ contract SlashingRegistryCoordinator is
         OperatorSetParam memory setParams
     ) internal pure returns (uint96) {
         return totalStake * setParams.kickBIPsOfTotalStake / BIPS_DENOMINATOR;
+    }
+
+    /**
+     * @notice Updates an operator's socket address in the SocketRegistry
+     * @param operatorId The unique identifier of the operator
+     * @param socket The new socket address to set for the operator
+     * @dev Emits an OperatorSocketUpdate event after updating
+     */
+    function _setOperatorSocket(bytes32 operatorId, string memory socket) internal {
+        socketRegistry.setOperatorSocket(operatorId, socket);
+        emit OperatorSocketUpdate(operatorId, socket);
     }
 
     /// @notice verifies churnApprover's signature on operator churn approval and increments the churnApprover nonce

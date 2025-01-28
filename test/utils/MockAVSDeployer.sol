@@ -29,6 +29,7 @@ import {
 
 import {ISlashingRegistryCoordinator} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
+import {SocketRegistry} from "../../src/SocketRegistry.sol";
 
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
 import {EigenPodManagerMock} from "../mocks/EigenPodManagerMock.sol";
@@ -70,12 +71,14 @@ contract MockAVSDeployer is Test {
     IBLSApkRegistry public blsApkRegistryImplementation;
     IIndexRegistry public indexRegistryImplementation;
     ServiceManagerMock public serviceManagerImplementation;
+    SocketRegistry public socketRegistryImplementation;
 
     OperatorStateRetriever public operatorStateRetriever;
     RegistryCoordinatorHarness public registryCoordinator;
     StakeRegistryHarness public stakeRegistry;
     BLSApkRegistryHarness public blsApkRegistry;
     IIndexRegistry public indexRegistry;
+    SocketRegistry public socketRegistry;
     ServiceManagerMock public serviceManager;
 
     StrategyManagerMock public strategyManagerMock;
@@ -211,6 +214,12 @@ contract MockAVSDeployer is Test {
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
+
+        socketRegistry = SocketRegistry(
+            address(
+                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
+            )
+        );
         cheats.stopPrank();
 
         cheats.startPrank(proxyAdminOwner);
@@ -224,6 +233,13 @@ contract MockAVSDeployer is Test {
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(stakeRegistry))),
             address(stakeRegistryImplementation)
+        );
+
+        socketRegistryImplementation = new SocketRegistry(registryCoordinator);
+
+        proxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(socketRegistry))),
+            address(socketRegistryImplementation)
         );
 
         blsApkRegistryImplementation = new BLSApkRegistryHarness(registryCoordinator);
@@ -293,6 +309,7 @@ contract MockAVSDeployer is Test {
             stakeRegistry,
             blsApkRegistry,
             indexRegistry,
+            socketRegistry,
             allocationManagerMock,
             pauserRegistry
         );
