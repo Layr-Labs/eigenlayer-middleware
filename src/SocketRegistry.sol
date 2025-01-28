@@ -3,18 +3,13 @@ pragma solidity ^0.8.12;
 
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {ISocketRegistry} from "./interfaces/ISocketRegistry.sol";
+import {SocketRegistryStorage} from "./SocketRegistryStorage.sol";
 
 /**
  * @title A `Registry` that keeps track of operator sockets.
  * @author Layr Labs, Inc.
  */
-contract SocketRegistry is ISocketRegistry {
-    /// @notice The address of the RegistryCoordinator
-    address public immutable registryCoordinator;
-
-    /// @notice A mapping from operator IDs to their sockets
-    mapping(bytes32 => string) public operatorIdToSocket;
-
+contract SocketRegistry is ISocketRegistry, SocketRegistryStorage {
     /// @notice A modifier that only allows the RegistryCoordinator to call a function
     modifier onlyRegistryCoordinator() {
         require(
@@ -35,9 +30,7 @@ contract SocketRegistry is ISocketRegistry {
 
     constructor(
         IRegistryCoordinator _registryCoordinator
-    ) {
-        registryCoordinator = address(_registryCoordinator);
-    }
+    ) SocketRegistryStorage(address(_registryCoordinator)) {}
 
     /// @notice sets the socket for an operator only callable by the RegistryCoordinator
     function setOperatorSocket(
