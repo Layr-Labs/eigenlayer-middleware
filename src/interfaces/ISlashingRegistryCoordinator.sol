@@ -352,12 +352,15 @@ interface ISlashingRegistryCoordinator is
      * @notice For each quorum in `quorumNumbers`, updates the StakeRegistry's view of ALL its registered operators' stakes.
      * Each quorum's `quorumUpdateBlockNumber` is also updated, which tracks the most recent block number when ALL registered
      * operators were updated.
+     * @dev stakes are queried from the Eigenlayer core DelegationManager contract
      * @param operatorsPerQuorum for each quorum in `quorumNumbers`, this has a corresponding list of operators to update.
-     * @param quorumNumbers is an ordered byte array containing the quorum numbers being updated.
-     * @dev Each list of operator addresses MUST be sorted in ascending order.
-     * @dev Each list of operator addresses MUST represent the entire list of registered operators for the corresponding quorum.
-     * @dev Stakes are queried from the Eigenlayer core DelegationManager contract.
-     * @dev Will revert if an operator registers/deregisters for any quorum in `quorumNumbers` after transaction broadcast but before execution.
+     * @dev Each list of operator addresses MUST be sorted in ascending order
+     * @dev Each list of operator addresses MUST represent the entire list of registered operators for the corresponding quorum
+     * @param quorumNumbers is an ordered byte array containing the quorum numbers being updated
+     * @dev invariant: Each list of `operatorsPerQuorum` MUST be a sorted version of `IndexRegistry.getOperatorListAtBlockNumber`
+     * for the corresponding quorum.
+     * @dev note on race condition: if an operator registers/deregisters for any quorum in `quorumNumbers` after a txn to
+     * this method is broadcast (but before it is executed), the method will fail
      */
     function updateOperatorsForQuorum(
         address[][] memory operatorsPerQuorum,
@@ -451,6 +454,16 @@ interface ISlashingRegistryCoordinator is
      */
     function setEjectionCooldown(
         uint256 _ejectionCooldown
+    ) external;
+
+    /**
+     * @notice Updates the account identifier for this AVS (used for UAM integration in EigenLayer)
+     * @param _accountIdentifier The new account identifier address
+     * @dev Can only be called by the contract owner
+     * @dev NOTE: Updating this value will break existing OperatorSets and UAM integration. This value should only be set once.
+     */
+    function setAccountIdentifier(
+        address _accountIdentifier
     ) external;
 
     /// VIEW
