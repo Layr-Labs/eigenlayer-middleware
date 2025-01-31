@@ -20,8 +20,7 @@ contract VetoableSlasher is SlasherBase {
 
     constructor(
         IAllocationManager _allocationManager,
-        ISlashingRegistryCoordinator _slashingRegistryCoordinator,
-        address _slasher
+        ISlashingRegistryCoordinator _slashingRegistryCoordinator
     ) SlasherBase(_allocationManager, _slashingRegistryCoordinator) {}
 
     function initialize(address _vetoCommittee, address _slasher) external virtual initializer {
@@ -30,7 +29,7 @@ contract VetoableSlasher is SlasherBase {
     }
 
     function queueSlashingRequest(
-        IAllocationManager.SlashingParams memory params
+        IAllocationManager.SlashingParams calldata params
     ) external virtual onlySlasher {
         _queueSlashingRequest(params);
     }
@@ -63,7 +62,7 @@ contract VetoableSlasher is SlasherBase {
     }
 
     function _queueSlashingRequest(
-        IAllocationManager.SlashingParams memory params
+        IAllocationManager.SlashingParams calldata params
     ) internal virtual {
         uint256 requestId = nextRequestId++;
         slashingRequests[requestId] = SlashingRequest({
