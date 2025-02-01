@@ -116,17 +116,7 @@ contract SlashingRegistryCoordinator is
         m2QuorumsDisabled = true;
     }
 
-    /**
-     * @notice Creates a quorum and initializes it in each registry contract
-     * @param operatorSetParams configures the quorum's max operator count and churn parameters
-     * @param minimumStake sets the minimum stake required for an operator to register or remain
-     * registered
-     * @param strategyParams a list of strategies and multipliers used by the StakeRegistry to
-     * calculate an operator's stake weight for the quorum
-     *  @dev For m2 AVS this function has the same behavior as createQuorum before
-     *       For migrated AVS that enable operator sets this will create a quorum that measures total delegated stake for operator set
-     *
-     */
+    /// @inheritdoc ISlashingRegistryCoordinator
     function createTotalDelegatedStakeQuorum(
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
@@ -141,6 +131,7 @@ contract SlashingRegistryCoordinator is
         );
     }
 
+    /// @inheritdoc ISlashingRegistryCoordinator
     function createSlashableStakeQuorum(
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
@@ -157,6 +148,7 @@ contract SlashingRegistryCoordinator is
         );
     }
 
+    /// @inheritdoc ISlashingRegistryCoordinator
     function registerOperator(
         address operator,
         uint32[] memory operatorSetIds,
@@ -238,6 +230,7 @@ contract SlashingRegistryCoordinator is
         }
     }
 
+    /// @inheritdoc ISlashingRegistryCoordinator
     function deregisterOperator(
         address operator,
         uint32[] memory operatorSetIds
@@ -247,12 +240,7 @@ contract SlashingRegistryCoordinator is
         _deregisterOperator(operator, quorumNumbers);
     }
 
-    /**
-     * @notice Updates the StakeRegistry's view of one or more operators' stakes. If any operator
-     * is found to be below the minimum stake for the quorum, they are deregistered.
-     * @dev stakes are queried from the Eigenlayer core DelegationManager contract
-     * @param operators a list of operator addresses to update
-     */
+    /// @inheritdoc ISlashingRegistryCoordinator
     function updateOperators(
         address[] memory operators
     ) external onlyWhenNotPaused(PAUSED_UPDATE_OPERATOR) {
@@ -268,20 +256,7 @@ contract SlashingRegistryCoordinator is
         }
     }
 
-    /**
-     * @notice For each quorum in `quorumNumbers`, updates the StakeRegistry's view of ALL its registered operators' stakes.
-     * Each quorum's `quorumUpdateBlockNumber` is also updated, which tracks the most recent block number when ALL registered
-     * operators were updated.
-     * @dev stakes are queried from the Eigenlayer core DelegationManager contract
-     * @param operatorsPerQuorum for each quorum in `quorumNumbers`, this has a corresponding list of operators to update.
-     * @dev Each list of operator addresses MUST be sorted in ascending order
-     * @dev Each list of operator addresses MUST represent the entire list of registered operators for the corresponding quorum
-     * @param quorumNumbers is an ordered byte array containing the quorum numbers being updated
-     * @dev invariant: Each list of `operatorsPerQuorum` MUST be a sorted version of `IndexRegistry.getOperatorListAtBlockNumber`
-     * for the corresponding quorum.
-     * @dev note on race condition: if an operator registers/deregisters for any quorum in `quorumNumbers` after a txn to
-     * this method is broadcast (but before it is executed), the method will fail
-     */
+    /// @inheritdoc ISlashingRegistryCoordinator
     function updateOperatorsForQuorum(
         address[][] memory operatorsPerQuorum,
         bytes calldata quorumNumbers
@@ -336,10 +311,7 @@ contract SlashingRegistryCoordinator is
         }
     }
 
-    /**
-     * @notice Updates the socket of the msg.sender given they are a registered operator
-     * @param socket is the new socket of the operator
-     */
+    /// @inheritdoc ISlashingRegistryCoordinator
     function updateSocket(
         string memory socket
     ) external {
@@ -353,12 +325,7 @@ contract SlashingRegistryCoordinator is
      *
      */
 
-    /**
-     * @notice Forcibly deregisters an operator from one or more quorums
-     * @param operator the operator to eject
-     * @param quorumNumbers the quorum numbers to eject the operator from
-     * @dev possible race condition if prior to being ejected for a set of quorums the operator self deregisters from a subset
-     */
+    /// @inheritdoc ISlashingRegistryCoordinator
     function ejectOperator(address operator, bytes memory quorumNumbers) external onlyEjector {
         lastEjectionTimestamp[operator] = block.timestamp;
 
@@ -385,13 +352,7 @@ contract SlashingRegistryCoordinator is
      *
      */
 
-    /**
-     * @notice Updates an existing quorum's configuration with a new max operator count
-     * and operator churn parameters
-     * @param quorumNumber the quorum number to update
-     * @param operatorSetParams the new config
-     * @dev only callable by the owner
-     */
+    /// @inheritdoc ISlashingRegistryCoordinator
     function setOperatorSetParams(
         uint8 quorumNumber,
         OperatorSetParam memory operatorSetParams
@@ -411,34 +372,21 @@ contract SlashingRegistryCoordinator is
         _setChurnApprover(_churnApprover);
     }
 
-    /**
-     * @notice Sets the ejector, which can force-deregister operators from quorums
-     * @param _ejector the new ejector
-     * @dev only callable by the owner
-     */
+    /// @inheritdoc ISlashingRegistryCoordinator
     function setEjector(
         address _ejector
     ) external onlyOwner {
         _setEjector(_ejector);
     }
 
-    /**
-     * @notice Sets the account identifier for this AVS (used for UAM integration in EigenLayer)
-     * @param _accountIdentifier the new account identifier
-     * @dev only callable by the owner
-     */
+    /// @inheritdoc ISlashingRegistryCoordinator
     function setAccountIdentifier(
         address _accountIdentifier
     ) external onlyOwner {
         _setAccountIdentifier(_accountIdentifier);
     }
 
-    /**
-     * @notice Sets the ejection cooldown, which is the time an operator must wait in
-     * seconds afer ejection before registering for any quorum
-     * @param _ejectionCooldown the new ejection cooldown in seconds
-     * @dev only callable by the owner
-     */
+    /// @inheritdoc ISlashingRegistryCoordinator
     function setEjectionCooldown(
         uint256 _ejectionCooldown
     ) external onlyOwner {
