@@ -770,6 +770,9 @@ contract SlashingRegistryCoordinator is
         // The previous count is the new quorum's number
         uint8 quorumNumber = prevQuorumCount;
 
+        // Hook to allow for any pre-create quorum logic
+        _beforeCreateQuorum(quorumNumber);
+
         // Initialize the quorum here and in each registry
         _setOperatorSetParams(quorumNumber, operatorSetParams);
 
@@ -801,6 +804,9 @@ contract SlashingRegistryCoordinator is
 
         indexRegistry.initializeQuorum(quorumNumber);
         blsApkRegistry.initializeQuorum(quorumNumber);
+
+        // Hook to allow for any post-create quorum logic
+        _afterCreateQuorum(quorumNumber);
     }
 
     /**
@@ -883,6 +889,16 @@ contract SlashingRegistryCoordinator is
         accountIdentifier = _accountIdentifier;
     }
 
+    /// @dev Hook to allow for any pre-create quorum logic
+    function _beforeCreateQuorum(
+        uint8 quorumNumber
+    ) internal virtual {}
+
+    /// @dev Hook to allow for any post-create quorum logic
+    function _afterCreateQuorum(
+        uint8 quorumNumber
+    ) internal virtual {}
+    
     /// @dev Hook to allow for any pre-register logic in `_registerOperator`
     function _beforeRegisterOperator(
         address operator,

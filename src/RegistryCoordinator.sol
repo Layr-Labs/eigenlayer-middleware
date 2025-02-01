@@ -139,7 +139,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
 
     /// @inheritdoc IRegistryCoordinator
     function disableM2QuorumRegistration() external onlyOwner {
-        require(operatorSetsEnabled, OperatorSetsNotEnabled());
+        require(!isM2QuorumRegistrationDisabled, M2QuorumRegistrationIsDisabled());
 
         isM2QuorumRegistrationDisabled = true;
 
@@ -154,14 +154,19 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
 
     /// @dev override the _forceDeregisterOperator function to handle M2 quorum deregistration
     function _forceDeregisterOperator(address operator, bytes memory quorumNumbers) internal virtual override {
-        if (operatorSetsEnabled) {
-            // filter out M2 quorums from the quorum numbers
-            uint256 operatorSetBitmap = quorumNumbers.orderedBytesArrayToBitmap().minus(m2QuorumBitmap);
-            if (!operatorSetBitmap.isEmpty()) {
-                // call the parent _forceDeregisterOperator function for operator sets quorums
-                super._forceDeregisterOperator(operator, operatorSetBitmap.bitmapToBytesArray());
-            }
+        // filter out M2 quorums from the quorum numbers
+        uint256 operatorSetBitmap = quorumNumbers.orderedBytesArrayToBitmap().minus(m2QuorumBitmap);
+        if (!operatorSetBitmap.isEmpty()) {
+            // call the parent _forceDeregisterOperator function for operator sets quorums
+            super._forceDeregisterOperator(operator, operatorSetBitmap.bitmapToBytesArray());
         }
+    }
+
+    /// @dev Hook to prevent any new quorums from being created if operator sets are not enabled
+    function _beforeCreateQuorum(
+        uint8 quorumNumber
+    ) internal virtual override {
+        require(operatorSetsEnabled, OperatorSetsNotEnabled());
     }
 
     /// @dev Hook to allow for any post-deregister logic

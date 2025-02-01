@@ -29,8 +29,8 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator, SlashingRe
      *
      */
 
-    /// @notice Whether this AVS allows operator sets for registration
-    /// @dev If true, operators may register to operator sets via the AllocationManager
+    /// @notice Whether this AVS allows operator sets for creation/registration
+    /// @dev If true, then operator sets may be created and operators may register to operator sets via the AllocationManager
     bool public operatorSetsEnabled;
 
     /// @notice Whether this AVS allows M2 quorums for registration
