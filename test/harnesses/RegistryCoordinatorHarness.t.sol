@@ -49,7 +49,13 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         string memory socket,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external returns (RegisterResults memory results) {
-        return _registerOperator(operator, operatorId, quorumNumbers, socket);
+        return _registerOperator({
+            operator: operator,
+            operatorId: operatorId,
+            quorumNumbers: quorumNumbers,
+            socket: socket,
+            checkMaxOperatorCount: true
+        });
     }
 
     // @notice exposes the internal `_deregisterOperator` function, overriding all access controls
@@ -77,9 +83,9 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         operatorSetsEnabled = enabled;
     }
 
-    function setM2QuorumsDisabled(
+    function setM2QuorumRegistrationDisabled(
         bool disabled
     ) external {
-        m2QuorumsDisabled = disabled;
+        isM2QuorumRegistrationDisabled = disabled;
     }
 }

@@ -50,8 +50,6 @@ interface ISlashingRegistryCoordinatorErrors {
     error NotSorted();
     /// @notice Thrown when maximum quorum count is reached.
     error MaxQuorumsReached();
-    /// @notice Thrown when operator set operations are attempted while not enabled.
-    error OperatorSetsNotEnabled();
 }
 
 interface ISlashingRegistryCoordinatorTypes {
@@ -295,21 +293,6 @@ interface ISlashingRegistryCoordinator is
      * @return The cooldown duration in seconds.
      */
     function ejectionCooldown() external view returns (uint256);
-
-    /**
-     * @notice Checks if a quorum is an M2 quorum.
-     * @param quorumNumber The quorum identifier.
-     * @return True if the quorum is M2, false otherwise.
-     */
-    function isM2Quorum(
-        uint8 quorumNumber
-    ) external view returns (bool);
-
-    /**
-     * @notice Whether operator sets mode is enabled.
-     * @return True if operator sets mode is enabled, false otherwise.
-     */
-    function operatorSetsEnabled() external view returns (bool);
 
     /// ACTIONS
 
@@ -602,13 +585,6 @@ interface ISlashingRegistryCoordinator is
     function pubkeyRegistrationMessageHash(
         address operator
     ) external view returns (BN254.G1Point memory);
-
-    /**
-     * @notice Returns the address of the contract owner.
-     * @return The owner's address.
-     * @dev The owner can update contract configuration and create new quorums.
-     */
-    function owner() external view returns (address);
 
     /**
      * @notice Returns the account identifier for this AVS (used for UAM integration in EigenLayer)

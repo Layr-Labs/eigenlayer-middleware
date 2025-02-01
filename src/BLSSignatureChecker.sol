@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {BN254} from "./libraries/BN254.sol";
 
@@ -18,7 +20,7 @@ contract BLSSignatureChecker is BLSSignatureCheckerStorage {
     /// MODIFIERS
 
     modifier onlyCoordinatorOwner() {
-        require(msg.sender == registryCoordinator.owner(), OnlyRegistryCoordinatorOwner());
+        require(msg.sender == Ownable(address(registryCoordinator)).owner(), OnlyRegistryCoordinatorOwner());
         _;
     }
 

@@ -29,6 +29,8 @@ interface IStakeRegistryErrors {
     error InvalidBlockNumber();
     /// @notice Thrown when attempting to access stake history that doesn't exist for a quorum.
     error EmptyStakeHistory();
+    /// @notice Thrown when the quorum is not slashable and the caller attempts to set the look ahead period.
+    error QuorumNotSlashable();
 }
 
 interface IStakeRegistryTypes {
@@ -248,16 +250,7 @@ interface IStakeRegistry is IStakeRegistryErrors, IStakeRegistryEvents {
     ) external;
 
     /// VIEW
-
-    /**
-     * @notice Returns whether a quorum is an operator set quorum.
-     * @param quorumNumber The quorum number to query.
-     * @return Whether the quorum is an operator set quorum.
-     */
-    function isOperatorSetQuorum(
-        uint8 quorumNumber
-    ) external view returns (bool);
-
+    
     /**
      * @notice Returns the minimum stake requirement for a quorum `quorumNumber`.
      * @dev In order to register for a quorum i, an operator must have at least `minimumStakeForQuorum[i]`.

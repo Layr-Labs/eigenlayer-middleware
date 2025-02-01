@@ -358,7 +358,7 @@ contract MockAVSDeployer is Test {
         operatorStateRetriever = new OperatorStateRetriever();
 
         registryCoordinator.setOperatorSetsEnabled(false);
-        registryCoordinator.setM2QuorumsDisabled(false);
+        registryCoordinator.setM2QuorumRegistrationDisabled(false);
     }
 
     function _labelContracts() internal {

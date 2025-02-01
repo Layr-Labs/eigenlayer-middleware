@@ -17,7 +17,9 @@ interface IRegistryCoordinatorErrors is ISlashingRegistryCoordinatorErrors {
     /// @notice Thrown when a quorum is an operator set quorum.
     error OperatorSetQuorum();
     /// @notice Thrown when M2 quorums are already disabled.
-    error M2QuorumsAlreadyDisabled();
+    error M2QuorumRegistrationIsDisabled();
+    /// @notice Thrown when operator set operations are attempted while not enabled.
+    error OperatorSetsNotEnabled();
 }
 
 interface IRegistryCoordinatorTypes is ISlashingRegistryCoordinatorTypes {}
@@ -33,10 +35,10 @@ interface IRegistryCoordinatorEvents is
     event OperatorSetsEnabled();
 
     /**
-     * @notice Emitted when M2 quorums are disabled.
+     * @notice Emitted when M2 quorum registration is disabled.
      * @dev Emitted in disableM2QuorumRegistration().
      */
-    event M2QuorumsDisabled();
+    event M2QuorumRegistrationDisabled();
 }
 
 interface IRegistryCoordinator is
@@ -112,6 +114,15 @@ interface IRegistryCoordinator is
      * created as either M2 or operator set quorums.
      */
     function enableOperatorSets() external;
+
+    /**
+     * @notice Checks if a quorum is an M2 quorum.
+     * @param quorumNumber The quorum identifier.
+     * @return True if the quorum is M2, false otherwise.
+     */
+    function isM2Quorum(
+        uint8 quorumNumber
+    ) external view returns (bool);
 
     /**
      * @notice Disables M2 quorum registration for the AVS. Once disabled, this cannot be enabled.

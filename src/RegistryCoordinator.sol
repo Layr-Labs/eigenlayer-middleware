@@ -15,6 +15,7 @@ import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {SlashingRegistryCoordinator} from "./SlashingRegistryCoordinator.sol";
 import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import {RegistryCoordinatorStorage} from "./RegistryCoordinatorStorage.sol";
 
 /**
  * @title A `RegistryCoordinator` that has three registries:
@@ -24,11 +25,8 @@ import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/Ownabl
  *
  * @author Layr Labs, Inc.
  */
-contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinator {
+contract RegistryCoordinator is RegistryCoordinatorStorage {
     using BitmapUtils for *;
-
-    /// @notice the ServiceManager for this AVS, which forwards calls onto EigenLayer's core contracts
-    IServiceManager public immutable serviceManager;
 
     constructor(
         IServiceManager _serviceManager,
@@ -39,17 +37,16 @@ contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinato
         IAllocationManager _allocationManager,
         IPauserRegistry _pauserRegistry
     )
-        SlashingRegistryCoordinator(
+        RegistryCoordinatorStorage(
+            _serviceManager,
             _stakeRegistry,
             _blsApkRegistry,
             _indexRegistry,
             _socketRegistry,
             _allocationManager,
             _pauserRegistry
-        )
-    {
-        serviceManager = _serviceManager;
-    }
+        ) 
+    {}
 
     /**
      *
@@ -64,44 +61,23 @@ contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinato
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory params,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        require(!m2QuorumsDisabled, M2QuorumsAlreadyDisabled());
-        /**
-         * If the operator has NEVER registered a pubkey before, use `params` to register
-         * their pubkey in blsApkRegistry
-         *
-         * If the operator HAS registered a pubkey, `params` is ignored and the pubkey hash
-         * (operatorId) is fetched instead
-         */
-        bytes32 operatorId = _getOrCreateOperatorId(msg.sender, params);
+        require(!isM2QuorumRegistrationDisabled, M2QuorumRegistrationIsDisabled());
+        
+        // Check if the operator has registered before
+        bool operatorRegisteredBefore = _operatorInfo[msg.sender].status == OperatorStatus.REGISTERED;
 
-        // Register the operator in each of the registry contracts and update the operator's
-        // quorum bitmap and registration status
-        uint32[] memory numOperatorsPerQuorum = _registerOperator({
+        // register the operator with the registry coordinator
+        _registerOperator({
             operator: msg.sender,
-            operatorId: operatorId,
+            operatorId: _getOrCreateOperatorId(msg.sender, params),
             quorumNumbers: quorumNumbers,
-            socket: socket
-        }).numOperatorsPerQuorum;
+            socket: socket,
+            checkMaxOperatorCount: true
+        });
 
-        // For each quorum, validate that the new operator count does not exceed the maximum
-        // (If it does, an operator needs to be replaced -- see `registerOperatorWithChurn`)
-        for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            uint8 quorumNumber = uint8(quorumNumbers[i]);
-
-            require(
-                numOperatorsPerQuorum[i] <= _quorumParams[quorumNumber].maxOperatorCount,
-                MaxQuorumsReached()
-            );
-        }
-
-        // If the operator wasn't registered for any quorums, update their status
-        // and register them with this AVS in EigenLayer core (DelegationManager)
-        if (_operatorInfo[msg.sender].status != OperatorStatus.REGISTERED) {
-            _operatorInfo[msg.sender] =
-                OperatorInfo({operatorId: operatorId, status: OperatorStatus.REGISTERED});
-
+        // If the operator has never registered before, register them with the AVSDirectory
+        if (!operatorRegisteredBefore) {
             serviceManager.registerOperatorToAVS(msg.sender, operatorSignature);
-            emit OperatorRegistered(msg.sender, operatorId);
         }
     }
 
@@ -114,34 +90,24 @@ contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinato
         SignatureWithSaltAndExpiry memory churnApproverSignature,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        require(!m2QuorumsDisabled, M2QuorumsAlreadyDisabled());
+        require(!isM2QuorumRegistrationDisabled, M2QuorumRegistrationIsDisabled());
 
-        /**
-         * If the operator has NEVER registered a pubkey before, use `params` to register
-         * their pubkey in blsApkRegistry
-         *
-         * If the operator HAS registered a pubkey, `params` is ignored and the pubkey hash
-         * (operatorId) is fetched instead
-         */
-        bytes32 operatorId = _getOrCreateOperatorId(msg.sender, params);
+        // Check if the operator has registered before
+        bool operatorRegisteredBefore = _operatorInfo[msg.sender].status == OperatorStatus.REGISTERED;
 
+        // register the operator with the registry coordinator with churn
         _registerOperatorWithChurn({
             operator: msg.sender,
-            operatorId: operatorId,
+            operatorId: _getOrCreateOperatorId(msg.sender, params),
             quorumNumbers: quorumNumbers,
             socket: socket,
             operatorKickParams: operatorKickParams,
             churnApproverSignature: churnApproverSignature
         });
 
-        // If the operator wasn't registered for any quorums, update their status
-        // and register them with this AVS in EigenLayer core (DelegationManager)
-        if (_operatorInfo[msg.sender].status != OperatorStatus.REGISTERED) {
-            _operatorInfo[msg.sender] =
-                OperatorInfo({operatorId: operatorId, status: OperatorStatus.REGISTERED});
-
+        // If the operator has never registered before, register them with the AVSDirectory
+        if (!operatorRegisteredBefore) {
             serviceManager.registerOperatorToAVS(msg.sender, operatorSignature);
-            emit OperatorRegistered(msg.sender, operatorId);
         }
     }
 
@@ -163,7 +129,7 @@ contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinato
         require(!operatorSetsEnabled, OperatorSetsAlreadyEnabled());
 
         // Set the bitmap for M2 quorums
-        M2quorumBitmap = _getQuorumBitmap(quorumCount);
+        m2QuorumBitmap = _getQuorumBitmap(quorumCount);
 
         // Enable operator sets mode
         operatorSetsEnabled = true;
@@ -175,9 +141,27 @@ contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinato
     function disableM2QuorumRegistration() external onlyOwner {
         require(operatorSetsEnabled, OperatorSetsNotEnabled());
 
-        m2QuorumsDisabled = true;
+        isM2QuorumRegistrationDisabled = true;
 
-        emit M2QuorumsDisabled();
+        emit M2QuorumRegistrationDisabled();
+    }
+
+    /**
+     *
+     *                            INTERNAL FUNCTIONS
+     *
+     */
+
+    /// @dev override the _forceDeregisterOperator function to handle M2 quorum deregistration
+    function _forceDeregisterOperator(address operator, bytes memory quorumNumbers) internal virtual override {
+        if (operatorSetsEnabled) {
+            // filter out M2 quorums from the quorum numbers
+            uint256 operatorSetBitmap = quorumNumbers.orderedBytesArrayToBitmap().minus(m2QuorumBitmap);
+            if (!operatorSetBitmap.isEmpty()) {
+                // call the parent _forceDeregisterOperator function for operator sets quorums
+                super._forceDeregisterOperator(operator, operatorSetBitmap.bitmapToBytesArray());
+            }
+        }
     }
 
     /// @dev Hook to allow for any post-deregister logic
@@ -187,7 +171,7 @@ contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinato
         bytes memory quorumNumbers,
         uint192 newBitmap
     ) internal virtual override {
-        uint256 operatorM2QuorumBitmap = newBitmap.minus(M2quorumBitmap);
+        uint256 operatorM2QuorumBitmap = newBitmap.minus(m2QuorumBitmap);
         // If the operator is no longer registered for any M2 quorums, update their status and deregister
         // them from the AVS via the EigenLayer core contracts
         if (operatorM2QuorumBitmap.isEmpty()) {
@@ -208,6 +192,27 @@ contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinato
         return (1 << quorumCount) - 1;
     }
 
+    /// @notice Returns true if the quorum number is an M2 quorum
+    /// @dev We use bitwise and to check if the quorum number is an M2 quorum
+    function _isM2Quorum(
+        uint8 quorumNumber
+    ) internal view returns (bool) {
+        return m2QuorumBitmap.isSet(quorumNumber);
+    }
+
+    /**
+     *
+     *                            VIEW FUNCTIONS
+     *
+     */
+
+    /// @notice Returns true if the quorum number is an M2 quorum
+    function isM2Quorum(
+        uint8 quorumNumber
+    ) external view returns (bool) {
+        return _isM2Quorum(quorumNumber);
+    }
+
     /**
      * @notice Returns the message hash that an operator must sign to register their BLS public key.
      * @param operator is the address of the operator registering their BLS public key
@@ -216,15 +221,5 @@ contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinato
         address operator
     ) public view returns (bytes32) {
         return _hashTypedDataV4(keccak256(abi.encode(PUBKEY_REGISTRATION_TYPEHASH, operator)));
-    }
-
-    /// @dev need to override function here since its defined in both these contracts
-    function owner()
-        public
-        view
-        override(SlashingRegistryCoordinator, ISlashingRegistryCoordinator)
-        returns (address)
-    {
-        return OwnableUpgradeable.owner();
     }
 }

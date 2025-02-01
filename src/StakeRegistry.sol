@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
@@ -235,13 +237,14 @@ contract StakeRegistry is StakeRegistryStorage {
 
         uint256 numStratsToAdd = _strategyParams.length;
 
-        if (isOperatorSetQuorum(quorumNumber)) {
+        address avs = registryCoordinator.accountIdentifier();
+        if (allocationManager.isOperatorSet(OperatorSet(avs, quorumNumber))) {
             IStrategy[] memory strategiesToAdd = new IStrategy[](numStratsToAdd);
             for (uint256 i = 0; i < numStratsToAdd; i++) {
                 strategiesToAdd[i] = _strategyParams[i].strategy;
             }
             allocationManager.addStrategiesToOperatorSet({
-                avs: ISlashingRegistryCoordinator(registryCoordinator).accountIdentifier(),
+                avs: avs,
                 operatorSetId: quorumNumber,
                 strategies: strategiesToAdd
             });
@@ -277,9 +280,10 @@ contract StakeRegistry is StakeRegistryStorage {
             _strategiesPerQuorum.pop();
         }
 
-        if (isOperatorSetQuorum(quorumNumber)) {
+        address avs = registryCoordinator.accountIdentifier();
+        if (allocationManager.isOperatorSet(OperatorSet(avs, quorumNumber))) {
             allocationManager.removeStrategiesFromOperatorSet({
-                avs: ISlashingRegistryCoordinator(registryCoordinator).accountIdentifier(),
+                avs: avs,
                 operatorSetId: quorumNumber,
                 strategies: _strategiesToRemove
             });
@@ -507,16 +511,16 @@ contract StakeRegistry is StakeRegistryStorage {
     ) internal view returns (uint256[] memory) {
         address[] memory operators = new address[](1);
         operators[0] = operator;
-        uint32 beforeTimestamp =
+        uint32 beforeBlock =
             uint32(block.number + slashableStakeLookAheadPerQuorum[quorumNumber]);
 
         uint256[][] memory slashableShares = allocationManager.getMinimumSlashableStake(
             OperatorSet(
-                ISlashingRegistryCoordinator(registryCoordinator).accountIdentifier(), quorumNumber
+                registryCoordinator.accountIdentifier(), quorumNumber
             ),
             operators,
             strategiesPerQuorum[quorumNumber],
-            beforeTimestamp
+            beforeBlock
         );
 
         return slashableShares[0];
@@ -538,21 +542,14 @@ contract StakeRegistry is StakeRegistryStorage {
         uint256[] memory strategyShares;
 
         if (stakeTypePerQuorum[quorumNumber] == IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE) {
+            // get slashable stake for the operator from AllocationManager
             strategyShares = _getSlashableStakePerStrategy(quorumNumber, operator);
-            for (uint256 i = 0; i < stratsLength; i++) {
-                strategyAndMultiplier = strategyParams[quorumNumber][i];
-                if (strategyShares[i] > 0) {
-                    weight += uint96(
-                        strategyShares[i] * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR
-                    );
-                }
-            }
         } else {
-            /// M2 Concept of delegated stake
-            strategyShares =
-                delegation.getOperatorShares(operator, strategiesPerQuorum[quorumNumber]);
-            for (uint256 i = 0; i < stratsLength; i++) {
-                // accessing i^th StrategyParams struct for the quorumNumber
+            // get delegated stake for the operator from DelegationManager
+            strategyShares = delegation.getOperatorShares(operator, strategiesPerQuorum[quorumNumber]);
+        }
+        for (uint256 i = 0; i < stratsLength; i++) {
+                // accessing i'th StrategyParams struct for the quorumNumber
                 strategyAndMultiplier = strategyParams[quorumNumber][i];
 
                 // add the weight from the shares for this strategy to the total weight
@@ -560,11 +557,10 @@ contract StakeRegistry is StakeRegistryStorage {
                     weight += uint96(
                         strategyShares[i] * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR
                     );
-                }
             }
         }
 
-        // Return the weight, and `true` if the operator meets the quorum's minimum stake
+        // return the weight, and `true` if the operator meets the quorum's minimum stake
         bool hasMinimumStake = weight >= minimumStakeForQuorum[quorumNumber];
         return (weight, hasMinimumStake);
     }
@@ -581,15 +577,6 @@ contract StakeRegistry is StakeRegistryStorage {
      *                         VIEW FUNCTIONS
      *
      */
-
-    /// @inheritdoc IStakeRegistry
-    function isOperatorSetQuorum(
-        uint8 quorumNumber
-    ) public view returns (bool) {
-        bool isM2 = ISlashingRegistryCoordinator(registryCoordinator).isM2Quorum(quorumNumber);
-        bool isOperatorSet = ISlashingRegistryCoordinator(registryCoordinator).operatorSetsEnabled();
-        return isOperatorSet && !isM2;
-    }
 
     /// @inheritdoc IStakeRegistry
     function weightOfOperatorForQuorum(
@@ -785,18 +772,19 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param _lookAheadBlocks The number of blocks to look ahead when checking shares
      */
     function _setLookAheadPeriod(uint8 quorumNumber, uint32 _lookAheadBlocks) internal {
+        require(stakeTypePerQuorum[quorumNumber] == IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE, QuorumNotSlashable());
         uint32 oldLookAheadDays = slashableStakeLookAheadPerQuorum[quorumNumber];
         slashableStakeLookAheadPerQuorum[quorumNumber] = _lookAheadBlocks;
         emit LookAheadPeriodChanged(oldLookAheadDays, _lookAheadBlocks);
     }
 
     function _checkSlashingRegistryCoordinator() internal view {
-        require(msg.sender == registryCoordinator, OnlySlashingRegistryCoordinator());
+        require(msg.sender == address(registryCoordinator), OnlySlashingRegistryCoordinator());
     }
 
     function _checkSlashingRegistryCoordinatorOwner() internal view {
         require(
-            msg.sender == ISlashingRegistryCoordinator(registryCoordinator).owner(),
+            msg.sender == Ownable(address(registryCoordinator)).owner(),
             OnlySlashingRegistryCoordinatorOwner()
         );
     }
