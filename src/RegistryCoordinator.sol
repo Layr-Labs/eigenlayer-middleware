@@ -62,6 +62,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         require(!isM2QuorumRegistrationDisabled, M2QuorumRegistrationIsDisabled());
+        require(quorumNumbers.orderedBytesArrayToBitmap().isSubsetOf(m2QuorumBitmap), OnlyM2QuorumsAllowed());
         
         // Check if the operator has registered before
         bool operatorRegisteredBefore = _operatorInfo[msg.sender].status == OperatorStatus.REGISTERED;
@@ -91,7 +92,8 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         require(!isM2QuorumRegistrationDisabled, M2QuorumRegistrationIsDisabled());
-
+        require(quorumNumbers.orderedBytesArrayToBitmap().isSubsetOf(m2QuorumBitmap), OnlyM2QuorumsAllowed());
+        
         // Check if the operator has registered before
         bool operatorRegisteredBefore = _operatorInfo[msg.sender].status == OperatorStatus.REGISTERED;
 

@@ -20,6 +20,8 @@ interface IRegistryCoordinatorErrors is ISlashingRegistryCoordinatorErrors {
     error M2QuorumRegistrationIsDisabled();
     /// @notice Thrown when operator set operations are attempted while not enabled.
     error OperatorSetsNotEnabled();
+    /// @notice Thrown when only M2 quorums are allowed.
+    error OnlyM2QuorumsAllowed();
 }
 
 interface IRegistryCoordinatorTypes is ISlashingRegistryCoordinatorTypes {}
