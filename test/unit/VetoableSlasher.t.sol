@@ -10,44 +10,124 @@ import {ISlashingRegistryCoordinator} from "../../src/interfaces/ISlashingRegist
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
+import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
+import {PermissionController} from "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
+import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
+import {DelegationMock} from "../mocks/DelegationMock.sol";
+import {SlashingRegistryCoordinator} from "../../src/SlashingRegistryCoordinator.sol";
+import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
+import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
+import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
+import {ISocketRegistry} from "../../src/interfaces/ISocketRegistry.sol";
 
 contract VetoableSlasherTest is Test {
     VetoableSlasher public vetoableSlasher;
     VetoableSlasher public vetoableSlasherImplementation;
     ProxyAdmin public proxyAdmin;
     EmptyContract public emptyContract;
+    AllocationManager public allocationManager;
+    AllocationManager public allocationManagerImplementation;
+    PermissionController public permissionController;
+    PauserRegistry public pauserRegistry;
+    DelegationMock public delegationMock;
+    SlashingRegistryCoordinator public slashingRegistryCoordinator;
+    SlashingRegistryCoordinator public slashingRegistryCoordinatorImplementation;
 
-    address public allocationManager;
-    address public slashingRegistryCoordinator;
     address public vetoCommittee;
     address public slasher;
+    address public serviceManager;
     address public operator;
     IStrategy public mockStrategy;
     address public proxyAdminOwner = address(uint160(uint256(keccak256("proxyAdminOwner"))));
+    address public pauser = address(uint160(uint256(keccak256("pauser"))));
+    address public unpauser = address(uint160(uint256(keccak256("unpauser"))));
+    address public churnApprover = address(uint160(uint256(keccak256("churnApprover"))));
+    address public ejector = address(uint160(uint256(keccak256("ejector"))));
 
     uint256 constant VETO_PERIOD = 3 days;
+    uint32 constant DEALLOCATION_DELAY = 7 days;
+    uint32 constant ALLOCATION_CONFIGURATION_DELAY = 1 days;
 
     function setUp() public {
-        allocationManager = address(0x1);
+        serviceManager = address(0x1);
         vetoCommittee = address(0x2);
         slasher = address(0x3);
         operator = address(0x4);
         mockStrategy = IStrategy(address(0x5));
-        slashingRegistryCoordinator = address(0x6);
 
         vm.startPrank(proxyAdminOwner);
         proxyAdmin = new ProxyAdmin();
         emptyContract = new EmptyContract();
 
-        vetoableSlasher = VetoableSlasher(
+        address[] memory pausers = new address[](1);
+        pausers[0] = pauser;
+        pauserRegistry = new PauserRegistry(pausers, unpauser);
+
+        delegationMock = new DelegationMock();
+
+        permissionController = new PermissionController();
+
+        allocationManagerImplementation = new AllocationManager(
+            delegationMock,
+            pauserRegistry,
+            permissionController,
+            DEALLOCATION_DELAY,
+            ALLOCATION_CONFIGURATION_DELAY
+        );
+
+        allocationManager = AllocationManager(
             address(
-                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
+                new TransparentUpgradeableProxy(
+                    address(allocationManagerImplementation),
+                    address(proxyAdmin),
+                    ""
+                )
             )
+        );
+
+        allocationManager.initialize(proxyAdminOwner, 0);
+
+        // Deploy and set up SlashingRegistryCoordinator
+        slashingRegistryCoordinatorImplementation = new SlashingRegistryCoordinator(
+            IStakeRegistry(address(0)), // Mock stake registry
+            IBLSApkRegistry(address(0)), // Mock BLS APK registry
+            IIndexRegistry(address(0)), // Mock index registry
+            ISocketRegistry(address(0)), // Mock socket registry
+            allocationManager,
+            pauserRegistry
+        );
+
+        slashingRegistryCoordinator = SlashingRegistryCoordinator(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(slashingRegistryCoordinatorImplementation),
+                    address(proxyAdmin),
+                    ""
+                )
+            )
+        );
+
+        slashingRegistryCoordinator.initialize(
+            proxyAdminOwner,
+            churnApprover,
+            ejector,
+            0, // Initial paused status
+            serviceManager
         );
 
         vetoableSlasherImplementation = new VetoableSlasher(
             IAllocationManager(allocationManager),
             ISlashingRegistryCoordinator(slashingRegistryCoordinator)
+        );
+
+        vetoableSlasher = VetoableSlasher(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(emptyContract),
+                    address(proxyAdmin),
+                    ""
+                )
+            )
         );
 
         proxyAdmin.upgrade(
@@ -57,6 +137,14 @@ contract VetoableSlasherTest is Test {
         vm.stopPrank();
 
         vetoableSlasher.initialize(vetoCommittee, slasher);
+
+        vm.prank(serviceManager);
+        permissionController.setAppointee(
+            address(serviceManager),
+            address(vetoableSlasher),
+            address(allocationManager),
+            AllocationManager.slashOperator.selector
+        );
     }
 
     function test_initialization() public {
@@ -150,7 +238,7 @@ contract VetoableSlasherTest is Test {
     }
 
     function test_fulfillSlashingRequest() public {
-        vm.skip(true);
+        vm.skip(true); /// TODO:
         IAllocationManagerTypes.SlashingParams memory params = _createMockSlashingParams();
 
         vm.prank(slasher);
