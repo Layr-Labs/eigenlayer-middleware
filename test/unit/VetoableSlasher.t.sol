@@ -35,19 +35,16 @@ contract VetoableSlasherTest is Test {
         mockStrategy = IStrategy(address(0x5));
         slashingRegistryCoordinator = address(0x6);
 
-        // Deploy proxy admin
         vm.startPrank(proxyAdminOwner);
         proxyAdmin = new ProxyAdmin();
         emptyContract = new EmptyContract();
 
-        // Deploy vetoable slasher behind proxy
         vetoableSlasher = VetoableSlasher(
             address(
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
 
-        // Deploy implementation and upgrade
         vetoableSlasherImplementation = new VetoableSlasher(
             IAllocationManager(allocationManager),
             ISlashingRegistryCoordinator(slashingRegistryCoordinator)
@@ -59,7 +56,6 @@ contract VetoableSlasherTest is Test {
         );
         vm.stopPrank();
 
-        // Initialize
         vetoableSlasher.initialize(vetoCommittee, slasher);
     }
 
@@ -96,7 +92,6 @@ contract VetoableSlasherTest is Test {
         vm.prank(slasher);
         vetoableSlasher.queueSlashingRequest(params);
 
-        // Get the request from storage and verify
         (IAllocationManagerTypes.SlashingParams memory resultParams, uint256 requestTimestamp, ISlasherTypes.SlashingStatus status) = vetoableSlasher.slashingRequests(0);
         ISlasherTypes.SlashingRequest memory request = ISlasherTypes.SlashingRequest(params, requestTimestamp, status);
         assertEq(resultParams.operator, operator);
@@ -108,57 +103,47 @@ contract VetoableSlasherTest is Test {
     }
 
     function test_cancelSlashingRequest_revert_notVetoCommittee() public {
-        // First queue a request
         IAllocationManagerTypes.SlashingParams memory params = _createMockSlashingParams();
 
         vm.prank(slasher);
         vetoableSlasher.queueSlashingRequest(params);
 
-        // Try to cancel from non-veto committee
         vm.expectRevert(ISlasherErrors.OnlyVetoCommittee.selector);
         vetoableSlasher.cancelSlashingRequest(0);
     }
 
     function test_cancelSlashingRequest_revert_afterVetoPeriod() public {
-        // First queue a request
         IAllocationManagerTypes.SlashingParams memory params = _createMockSlashingParams();
 
         vm.prank(slasher);
         vetoableSlasher.queueSlashingRequest(params);
 
-        // Move time past veto period
         vm.warp(block.timestamp + VETO_PERIOD + 1);
 
-        // Try to cancel
         vm.prank(vetoCommittee);
         vm.expectRevert(ISlasherErrors.VetoPeriodPassed.selector);
         vetoableSlasher.cancelSlashingRequest(0);
     }
 
     function test_cancelSlashingRequest() public {
-        // First queue a request
         IAllocationManagerTypes.SlashingParams memory params = _createMockSlashingParams();
 
         vm.prank(slasher);
         vetoableSlasher.queueSlashingRequest(params);
 
-        // Cancel within veto period
         vm.prank(vetoCommittee);
         vetoableSlasher.cancelSlashingRequest(0);
 
-        // Verify request is cancelled
         (IAllocationManagerTypes.SlashingParams memory resultParams, uint256 requestTimestamp, ISlasherTypes.SlashingStatus status) = vetoableSlasher.slashingRequests(0);
         assertEq(uint8(status), uint8(ISlasherTypes.SlashingStatus.Cancelled));
     }
 
     function test_fulfillSlashingRequest_revert_beforeVetoPeriod() public {
-        // First queue a request
         IAllocationManagerTypes.SlashingParams memory params = _createMockSlashingParams();
 
         vm.prank(slasher);
         vetoableSlasher.queueSlashingRequest(params);
 
-        // Try to fulfill before veto period
         vm.prank(slasher);
         vm.expectRevert(ISlasherErrors.VetoPeriodNotPassed.selector);
         vetoableSlasher.fulfillSlashingRequest(0);

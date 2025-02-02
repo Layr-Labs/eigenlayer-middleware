@@ -31,19 +31,16 @@ contract InstantSlasherTest is Test {
         mockStrategy = IStrategy(address(0x5));
         slashingRegistryCoordinator = address(0x6);
 
-        // Deploy proxy admin
         vm.startPrank(proxyAdminOwner);
         proxyAdmin = new ProxyAdmin();
         emptyContract = new EmptyContract();
 
-        // Deploy instant slasher behind proxy
         instantSlasher = InstantSlasher(
             address(
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
 
-        // Deploy implementation and upgrade
         instantSlasherImplementation = new InstantSlasher(
             IAllocationManager(allocationManager),
             ISlashingRegistryCoordinator(slashingRegistryCoordinator),
@@ -56,7 +53,6 @@ contract InstantSlasherTest is Test {
         );
         vm.stopPrank();
 
-        // Initialize
         instantSlasher.initialize(slasher);
     }
 
