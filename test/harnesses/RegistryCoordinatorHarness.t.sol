@@ -63,15 +63,6 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         _deregisterOperator(operator, quorumNumbers);
     }
 
-    // @notice exposes the internal `_updateOperator` function, overriding all access controls
-    function _updateOperatorExternal(
-        address operator,
-        OperatorInfo memory operatorInfo,
-        bytes memory quorumsToUpdate
-    ) external {
-        _updateOperator(operator, operatorInfo, quorumsToUpdate);
-    }
-
     // @notice exposes the internal `_updateOperatorBitmap` function, overriding all access controls
     function _updateOperatorBitmapExternal(bytes32 operatorId, uint192 quorumBitmap) external {
         _updateOperatorBitmap(operatorId, quorumBitmap);

@@ -240,10 +240,22 @@ contract User is Test {
     function updateStakes() public virtual createSnapshot {
         _log("updateStakes (updateOperators)");
 
-        address[] memory addrs = new address[](1);
-        addrs[0] = address(this);
+        // get all quorums this operator is registered for
+        uint192 currentBitmap = registryCoordinator.getCurrentQuorumBitmap(operatorId);
+        bytes memory quorumNumbers = currentBitmap.bitmapToBytesArray();
 
-        registryCoordinator.updateOperators(addrs);
+        // get all operators in those quorums
+        address[][] memory operatorsPerQuorum = new address[][](quorumNumbers.length);
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            bytes32[] memory operatorIds = indexRegistry.getOperatorListAtBlockNumber(
+                uint8(quorumNumbers[i]), uint32(block.number)
+            );
+            operatorsPerQuorum[i] = new address[](operatorIds.length);
+            for (uint256 j = 0; j < operatorIds.length; j++) {
+                operatorsPerQuorum[i][j] = blsApkRegistry.pubkeyHashToOperator(operatorIds[j]);
+            }
+        }
+        registryCoordinator.updateOperatorsForQuorum(operatorsPerQuorum, quorumNumbers);
     }
 
     /**

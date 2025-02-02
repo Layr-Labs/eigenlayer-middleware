@@ -13,7 +13,10 @@ import {ISocketRegistry} from "./interfaces/ISocketRegistry.sol";
 
 import {SlashingRegistryCoordinator} from "./SlashingRegistryCoordinator.sol";
 
-abstract contract RegistryCoordinatorStorage is IRegistryCoordinator, SlashingRegistryCoordinator {
+abstract contract RegistryCoordinatorStorage is
+    IRegistryCoordinator,
+    SlashingRegistryCoordinator
+{
     /**
      *
      *                            CONSTANTS AND IMMUTABLES

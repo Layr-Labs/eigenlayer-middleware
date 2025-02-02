@@ -20,7 +20,10 @@ contract BLSSignatureChecker is BLSSignatureCheckerStorage {
     /// MODIFIERS
 
     modifier onlyCoordinatorOwner() {
-        require(msg.sender == Ownable(address(registryCoordinator)).owner(), OnlyRegistryCoordinatorOwner());
+        require(
+            msg.sender == Ownable(address(registryCoordinator)).owner(),
+            OnlyRegistryCoordinatorOwner()
+        );
         _;
     }
 

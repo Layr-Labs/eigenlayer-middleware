@@ -1953,91 +1953,91 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
 }
 
 contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnitTests {
-    function test_updateOperators_revert_paused() public {
-        cheats.prank(pauser);
-        registryCoordinator.pause(2 ** PAUSED_UPDATE_OPERATOR);
+    // function test_updateOperators_revert_paused() public {
+    //     cheats.prank(pauser);
+    //     registryCoordinator.pause(2 ** PAUSED_UPDATE_OPERATOR);
 
-        address[] memory operatorsToUpdate = new address[](1);
-        operatorsToUpdate[0] = defaultOperator;
+    //     address[] memory operatorsToUpdate = new address[](1);
+    //     operatorsToUpdate[0] = defaultOperator;
 
-        cheats.expectRevert(bytes4(keccak256("CurrentlyPaused()")));
-        registryCoordinator.updateOperators(operatorsToUpdate);
-    }
+    //     cheats.expectRevert(bytes4(keccak256("CurrentlyPaused()")));
+    //     registryCoordinator.updateOperators(operatorsToUpdate);
+    // }
 
-    // @notice tests the `updateOperators` function with a single registered operator as input
-    function test_updateOperators_singleOperator() public {
-        // register the default operator
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
-        uint32 registrationBlockNumber = 100;
-        bytes memory quorumNumbers = new bytes(1);
-        quorumNumbers[0] = bytes1(defaultQuorumNumber);
-        _setOperatorWeight(defaultOperator, uint8(quorumNumbers[0]), defaultStake);
-        cheats.startPrank(defaultOperator);
-        cheats.roll(registrationBlockNumber);
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+    // // @notice tests the `updateOperators` function with a single registered operator as input
+    // function test_updateOperators_singleOperator() public {
+    //     // register the default operator
+    //     ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+    //     uint32 registrationBlockNumber = 100;
+    //     bytes memory quorumNumbers = new bytes(1);
+    //     quorumNumbers[0] = bytes1(defaultQuorumNumber);
+    //     _setOperatorWeight(defaultOperator, uint8(quorumNumbers[0]), defaultStake);
+    //     cheats.startPrank(defaultOperator);
+    //     cheats.roll(registrationBlockNumber);
+    //     registryCoordinator.registerOperator(
+    //         quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
+    //     );
 
-        address[] memory operatorsToUpdate = new address[](1);
-        operatorsToUpdate[0] = defaultOperator;
+    //     address[] memory operatorsToUpdate = new address[](1);
+    //     operatorsToUpdate[0] = defaultOperator;
 
-        registryCoordinator.updateOperators(operatorsToUpdate);
-    }
+    //     registryCoordinator.updateOperators(operatorsToUpdate);
+    // }
 
-    // @notice tests the `updateOperators` function with a single registered operator as input
-    // @dev also sets up return data from the StakeRegistry
-    function testFuzz_updateOperators_singleOperator(
-        uint192 registrationBitmap,
-        uint192 mockReturnData
-    ) public {
-        // filter fuzzed inputs to only valid inputs
-        cheats.assume(registrationBitmap != 0);
-        mockReturnData = (mockReturnData & registrationBitmap);
-        emit log_named_uint("mockReturnData", mockReturnData);
+    // // @notice tests the `updateOperators` function with a single registered operator as input
+    // // @dev also sets up return data from the StakeRegistry
+    // function testFuzz_updateOperators_singleOperator(
+    //     uint192 registrationBitmap,
+    //     uint192 mockReturnData
+    // ) public {
+    //     // filter fuzzed inputs to only valid inputs
+    //     cheats.assume(registrationBitmap != 0);
+    //     mockReturnData = (mockReturnData & registrationBitmap);
+    //     emit log_named_uint("mockReturnData", mockReturnData);
 
-        // register the default operator
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
-        uint32 registrationBlockNumber = 100;
-        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(registrationBitmap);
-        for (uint256 i = 0; i < quorumNumbers.length; ++i) {
-            _setOperatorWeight(defaultOperator, uint8(quorumNumbers[i]), defaultStake);
-        }
-        cheats.startPrank(defaultOperator);
-        cheats.roll(registrationBlockNumber);
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+    //     // register the default operator
+    //     ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+    //     uint32 registrationBlockNumber = 100;
+    //     bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(registrationBitmap);
+    //     for (uint256 i = 0; i < quorumNumbers.length; ++i) {
+    //         _setOperatorWeight(defaultOperator, uint8(quorumNumbers[i]), defaultStake);
+    //     }
+    //     cheats.startPrank(defaultOperator);
+    //     cheats.roll(registrationBlockNumber);
+    //     registryCoordinator.registerOperator(
+    //         quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
+    //     );
 
-        address[] memory operatorsToUpdate = new address[](1);
-        operatorsToUpdate[0] = defaultOperator;
+    //     address[] memory operatorsToUpdate = new address[](1);
+    //     operatorsToUpdate[0] = defaultOperator;
 
-        uint192 quorumBitmapBefore = registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId);
-        assertEq(quorumBitmapBefore, registrationBitmap, "operator bitmap somehow incorrect");
+    //     uint192 quorumBitmapBefore = registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId);
+    //     assertEq(quorumBitmapBefore, registrationBitmap, "operator bitmap somehow incorrect");
 
-        // make the stake registry return info that the operator should be removed from quorums
-        uint192 quorumBitmapToRemove = mockReturnData;
-        bytes memory quorumNumbersToRemove = BitmapUtils.bitmapToBytesArray(quorumBitmapToRemove);
-        for (uint256 i = 0; i < quorumNumbersToRemove.length; ++i) {
-            _setOperatorWeight(defaultOperator, uint8(quorumNumbersToRemove[i]), 0);
-        }
-        uint256 expectedQuorumBitmap = BitmapUtils.minus(quorumBitmapBefore, quorumBitmapToRemove);
+    //     // make the stake registry return info that the operator should be removed from quorums
+    //     uint192 quorumBitmapToRemove = mockReturnData;
+    //     bytes memory quorumNumbersToRemove = BitmapUtils.bitmapToBytesArray(quorumBitmapToRemove);
+    //     for (uint256 i = 0; i < quorumNumbersToRemove.length; ++i) {
+    //         _setOperatorWeight(defaultOperator, uint8(quorumNumbersToRemove[i]), 0);
+    //     }
+    //     uint256 expectedQuorumBitmap = BitmapUtils.minus(quorumBitmapBefore, quorumBitmapToRemove);
 
-        registryCoordinator.updateOperators(operatorsToUpdate);
-        uint192 quorumBitmapAfter = registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId);
-        assertEq(expectedQuorumBitmap, quorumBitmapAfter, "quorum bitmap did not update correctly");
-    }
+    //     registryCoordinator.updateOperators(operatorsToUpdate);
+    //     uint192 quorumBitmapAfter = registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId);
+    //     assertEq(expectedQuorumBitmap, quorumBitmapAfter, "quorum bitmap did not update correctly");
+    // }
 
-    // @notice tests the `updateOperators` function with a single *un*registered operator as input
-    function test_updateOperators_unregisteredOperator() public view {
-        address[] memory operatorsToUpdate = new address[](1);
-        operatorsToUpdate[0] = defaultOperator;
+    // // @notice tests the `updateOperators` function with a single *un*registered operator as input
+    // function test_updateOperators_unregisteredOperator() public view {
+    //     address[] memory operatorsToUpdate = new address[](1);
+    //     operatorsToUpdate[0] = defaultOperator;
 
-        // force a staticcall to the `updateOperators` function -- this should *pass* because the call should be a strict no-op!
-        (bool success,) = address(registryCoordinator).staticcall(
-            abi.encodeWithSignature("updateOperators(address[])", operatorsToUpdate)
-        );
-        require(success, "staticcall failed!");
-    }
+    //     // force a staticcall to the `updateOperators` function -- this should *pass* because the call should be a strict no-op!
+    //     (bool success,) = address(registryCoordinator).staticcall(
+    //         abi.encodeWithSignature("updateOperators(address[])", operatorsToUpdate)
+    //     );
+    //     require(success, "staticcall failed!");
+    // }
 
     function test_updateOperatorsForQuorum_revert_paused() public {
         cheats.prank(pauser);

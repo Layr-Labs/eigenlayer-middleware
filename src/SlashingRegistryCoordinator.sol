@@ -226,22 +226,6 @@ contract SlashingRegistryCoordinator is
     }
 
     /// @inheritdoc ISlashingRegistryCoordinator
-    function updateOperators(
-        address[] memory operators
-    ) external onlyWhenNotPaused(PAUSED_UPDATE_OPERATOR) {
-        for (uint256 i = 0; i < operators.length; i++) {
-            address operator = operators[i];
-            OperatorInfo memory operatorInfo = _operatorInfo[operator];
-            bytes32 operatorId = operatorInfo.operatorId;
-
-            // Update the operator's stake for their active quorums
-            uint192 currentBitmap = _currentOperatorBitmap(operatorId);
-            bytes memory quorumsToUpdate = BitmapUtils.bitmapToBytesArray(currentBitmap);
-            _updateOperator(operator, operatorInfo, quorumsToUpdate);
-        }
-    }
-
-    /// @inheritdoc ISlashingRegistryCoordinator
     function updateOperatorsForQuorum(
         address[][] memory operatorsPerQuorum,
         bytes calldata quorumNumbers
@@ -264,6 +248,7 @@ contract SlashingRegistryCoordinator is
                 QuorumOperatorCountMismatch()
             );
 
+            bytes32[] memory operatorIds = new bytes32[](currQuorumOperators.length);
             address prevOperatorAddress = address(0);
             // For each operator:
             // - check that they are registered for this quorum
@@ -272,11 +257,9 @@ contract SlashingRegistryCoordinator is
             for (uint256 j = 0; j < currQuorumOperators.length; ++j) {
                 address operator = currQuorumOperators[j];
 
-                OperatorInfo memory operatorInfo = _operatorInfo[operator];
-                bytes32 operatorId = operatorInfo.operatorId;
-
+                operatorIds[j] = _operatorInfo[operator].operatorId;
                 {
-                    uint192 currentBitmap = _currentOperatorBitmap(operatorId);
+                    uint192 currentBitmap = _currentOperatorBitmap(operatorIds[j]);
                     // Check that the operator is registered
                     require(
                         BitmapUtils.isSet(currentBitmap, quorumNumber), NotRegisteredForQuorum()
@@ -285,9 +268,16 @@ contract SlashingRegistryCoordinator is
                     require(operator > prevOperatorAddress, NotSorted());
                 }
 
-                // Update the operator
-                _updateOperator(operator, operatorInfo, quorumNumbers[i:i + 1]);
                 prevOperatorAddress = operator;
+            }
+            bytes memory quorumNumberBytes = new bytes(1);
+            quorumNumberBytes[0] = bytes1(quorumNumber);
+            bool[] memory shouldBeDeregistered =
+                stakeRegistry.updateOperatorsStake(currQuorumOperators, operatorIds, quorumNumber);
+            for (uint256 j = 0; j < currQuorumOperators.length; ++j) {
+                if (shouldBeDeregistered[j]) {
+                    _deregisterOperator(currQuorumOperators[j], quorumNumberBytes);
+                }
             }
 
             // Update timestamp that all operators in quorum have been updated all at once
@@ -439,7 +429,10 @@ contract SlashingRegistryCoordinator is
         if (checkMaxOperatorCount) {
             for (uint256 i = 0; i < quorumNumbers.length; i++) {
                 OperatorSetParam memory operatorSetParams = _quorumParams[uint8(quorumNumbers[i])];
-                require(results.numOperatorsPerQuorum[i] <= operatorSetParams.maxOperatorCount, MaxQuorumsReached());
+                require(
+                    results.numOperatorsPerQuorum[i] <= operatorSetParams.maxOperatorCount,
+                    MaxQuorumsReached()
+                );
             }
         }
 
@@ -469,14 +462,13 @@ contract SlashingRegistryCoordinator is
 
         // Register the operator in each of the registry contracts and update the operator's
         // quorum bitmap and registration status
-        RegisterResults memory results =
-            _registerOperator({
-                operator: operator, 
-                operatorId: operatorId, 
-                quorumNumbers: quorumNumbers, 
-                socket: socket, 
-                checkMaxOperatorCount: false
-            });
+        RegisterResults memory results = _registerOperator({
+            operator: operator,
+            operatorId: operatorId,
+            quorumNumbers: quorumNumbers,
+            socket: socket,
+            checkMaxOperatorCount: false
+        });
 
         // Check that each quorum's operator count is below the configured maximum. If the max
         // is exceeded, use `operatorKickParams` to deregister an existing operator to make space
@@ -563,7 +555,10 @@ contract SlashingRegistryCoordinator is
      * @param operator The operator to deregister
      * @param quorumNumbers The quorum numbers the operator is force-deregistered from
      */
-    function _forceDeregisterOperator(address operator, bytes memory quorumNumbers) internal virtual {
+    function _forceDeregisterOperator(
+        address operator,
+        bytes memory quorumNumbers
+    ) internal virtual {
         allocationManager.deregisterFromOperatorSets(
             IAllocationManagerTypes.DeregisterParams({
                 operator: operator,
@@ -658,32 +653,6 @@ contract SlashingRegistryCoordinator is
             operatorToKickStake < _totalKickThreshold(totalQuorumStake, setParams),
             CannotKickOperatorAboveThreshold()
         );
-    }
-
-    /**
-     * @notice Updates the StakeRegistry's view of the operator's stake in one or more quorums.
-     * For any quorums where the StakeRegistry finds the operator is under the configured minimum
-     * stake, `quorumsToRemove` is returned and used to deregister the operator from those quorums
-     * @dev does nothing if operator is not registered for any quorums.
-     */
-    function _updateOperator(
-        address operator,
-        OperatorInfo memory operatorInfo,
-        bytes memory quorumsToUpdate
-    ) internal {
-        if (operatorInfo.status != OperatorStatus.REGISTERED) {
-            return;
-        }
-        bytes32 operatorId = operatorInfo.operatorId;
-        uint192 quorumsToRemove =
-            stakeRegistry.updateOperatorStake(operator, operatorId, quorumsToUpdate);
-
-        if (!quorumsToRemove.isEmpty()) {
-            _deregisterOperator({
-                operator: operator,
-                quorumNumbers: BitmapUtils.bitmapToBytesArray(quorumsToRemove)
-            });
-        }
     }
 
     /**
@@ -898,7 +867,7 @@ contract SlashingRegistryCoordinator is
     function _afterCreateQuorum(
         uint8 quorumNumber
     ) internal virtual {}
-    
+
     /// @dev Hook to allow for any pre-register logic in `_registerOperator`
     function _beforeRegisterOperator(
         address operator,

@@ -322,16 +322,6 @@ interface ISlashingRegistryCoordinator is
     function deregisterOperator(address operator, uint32[] memory operatorSetIds) external;
 
     /**
-     * @notice Updates stake weights for specified operators. If any operator is found to be below
-     * the minimum stake for their registered quorums, they are deregistered from those quorums.
-     * @param operators The operators whose stakes should be updated.
-     * @dev Stakes are queried from the Eigenlayer core DelegationManager contract.
-     */
-    function updateOperators(
-        address[] memory operators
-    ) external;
-
-    /**
      * @notice For each quorum in `quorumNumbers`, updates the StakeRegistry's view of ALL its registered operators' stakes.
      * Each quorum's `quorumUpdateBlockNumber` is also updated, which tracks the most recent block number when ALL registered
      * operators were updated.

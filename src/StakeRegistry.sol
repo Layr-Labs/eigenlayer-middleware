@@ -125,12 +125,12 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     /// @inheritdoc IStakeRegistry
-    function updateOperatorStake(
-        address operator,
-        bytes32 operatorId,
-        bytes calldata quorumNumbers
-    ) external onlySlashingRegistryCoordinator returns (uint192) {
-        uint192 quorumsToRemove;
+    function updateOperatorsStake(
+        address[] memory operators,
+        bytes32[] memory operatorIds,
+        uint8 quorumNumber
+    ) external onlySlashingRegistryCoordinator returns (bool[] memory) {
+        bool[] memory shouldBeDeregistered = new bool[](operators.length);
 
         /**
          * For each quorum, update the operator's stake and record the delta
@@ -140,34 +140,37 @@ contract StakeRegistry is StakeRegistryStorage {
          * in the quorum, the quorum number is added to `quorumsToRemove`, which
          * is returned to the registry coordinator.
          */
-        for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            uint8 quorumNumber = uint8(quorumNumbers[i]);
-            _checkQuorumExists(quorumNumber);
+        _checkQuorumExists(quorumNumber);
 
-            // Fetch the operator's current stake, applying weighting parameters and checking
-            // against the minimum stake requirements for the quorum.
-            (uint96 stakeWeight, bool hasMinimumStake) =
-                _weightOfOperatorForQuorum(quorumNumber, operator);
-            // If the operator no longer meets the minimum stake, set their stake to zero and mark them for removal
-            /// also handle setting the operator's stake to 0 and remove them from the quorum
-            if (!hasMinimumStake) {
-                stakeWeight = 0;
-                quorumsToRemove = uint192(quorumsToRemove.setBit(quorumNumber));
+        // Fetch the operators' current stake, applying weighting parameters and checking
+        // against the minimum stake requirements for the quorum.
+        (uint96[] memory stakeWeights, bool[] memory hasMinimumStakes) =
+            _weightOfOperatorsForQuorum(quorumNumber, operators);
+
+        int256 totalStakeDelta = 0;
+        // If the operator no longer meets the minimum stake, set their stake to zero and mark them for removal
+        /// also handle setting the operator's stake to 0 and remove them from the quorum
+        for (uint256 i = 0; i < operators.length; i++) {
+            if (!hasMinimumStakes[i]) {
+                stakeWeights[i] = 0;
+                shouldBeDeregistered[i] = true;
             }
 
             // Update the operator's stake and retrieve the delta
             // If we're deregistering them, their weight is set to 0
             int256 stakeDelta = _recordOperatorStakeUpdate({
-                operatorId: operatorId,
+                operatorId: operatorIds[i],
                 quorumNumber: quorumNumber,
-                newStake: stakeWeight
+                newStake: stakeWeights[i]
             });
 
-            // Apply the delta to the quorum's total stake
-            _recordTotalStakeUpdate(quorumNumber, stakeDelta);
+            totalStakeDelta += stakeDelta;
         }
 
-        return quorumsToRemove;
+        // Apply the delta to the quorum's total stake
+        _recordTotalStakeUpdate(quorumNumber, totalStakeDelta);
+
+        return shouldBeDeregistered;
     }
 
     /// @inheritdoc IStakeRegistry
@@ -504,65 +507,80 @@ contract StakeRegistry is StakeRegistryStorage {
         );
     }
 
-    /// Returns total Slashable stake for an operator per strategy that can have the weights applied based on strategy multipliers
+    /// Returns total Slashable stake for a list of operators per strategy that can have the weights applied based on strategy multipliers
     function _getSlashableStakePerStrategy(
         uint8 quorumNumber,
-        address operator
-    ) internal view returns (uint256[] memory) {
-        address[] memory operators = new address[](1);
-        operators[0] = operator;
-        uint32 beforeBlock =
-            uint32(block.number + slashableStakeLookAheadPerQuorum[quorumNumber]);
+        address[] memory operators
+    ) internal view returns (uint256[][] memory) {
+        uint32 beforeBlock = uint32(block.number + slashableStakeLookAheadPerQuorum[quorumNumber]);
 
         uint256[][] memory slashableShares = allocationManager.getMinimumSlashableStake(
-            OperatorSet(
-                registryCoordinator.accountIdentifier(), quorumNumber
-            ),
+            OperatorSet(registryCoordinator.accountIdentifier(), quorumNumber),
             operators,
             strategiesPerQuorum[quorumNumber],
             beforeBlock
         );
 
-        return slashableShares[0];
+        return slashableShares;
     }
 
     /**
-     * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
+     * @notice This function computes the total weight of the @param operators in the quorum @param quorumNumber.
      * @dev this method DOES NOT check that the quorum exists
-     * @return `uint96` The weighted sum of the operator's shares across each strategy considered by the quorum
-     * @return `bool` True if the operator meets the quorum's minimum stake
+     * @return `uint96[] memory` The weighted sum of the operators' shares across each strategy considered by the quorum
+     * @return `bool[] memory` True if the respective operator meets the quorum's minimum stake
      */
+    function _weightOfOperatorsForQuorum(
+        uint8 quorumNumber,
+        address[] memory operators
+    ) internal view virtual returns (uint96[] memory, bool[] memory) {
+        uint96[] memory weights;
+        bool[] memory hasMinimumStakes;
+
+        uint256 stratsLength = strategyParamsLength(quorumNumber);
+        StrategyParams memory strategyAndMultiplier;
+        uint256[][] memory strategyShares;
+
+        if (stakeTypePerQuorum[quorumNumber] == IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE) {
+            // get slashable stake for the operators from AllocationManager
+            strategyShares = _getSlashableStakePerStrategy(quorumNumber, operators);
+        } else {
+            // get delegated stake for the operators from DelegationManager
+            strategyShares =
+                delegation.getOperatorsShares(operators, strategiesPerQuorum[quorumNumber]);
+        }
+
+        for (uint256 stratIndex = 0; stratIndex < stratsLength; stratIndex++) {
+            // accessing i'th StrategyParams struct for the quorumNumber
+            strategyAndMultiplier = strategyParams[quorumNumber][stratIndex];
+
+            for (uint256 opIndex = 0; opIndex < operators.length; opIndex++) {
+                // add the weight from the shares for this strategy to the total weight
+                if (strategyShares[opIndex][stratIndex] > 0) {
+                    weights[opIndex] += uint96(
+                        strategyShares[opIndex][stratIndex] * strategyAndMultiplier.multiplier
+                            / WEIGHTING_DIVISOR
+                    );
+                }
+            }
+
+            // check if the operator meets the quorum's minimum stake
+            hasMinimumStakes[stratIndex] =
+                weights[stratIndex] >= minimumStakeForQuorum[quorumNumber];
+        }
+
+        return (weights, hasMinimumStakes);
+    }
+
     function _weightOfOperatorForQuorum(
         uint8 quorumNumber,
         address operator
     ) internal view virtual returns (uint96, bool) {
-        uint96 weight;
-        uint256 stratsLength = strategyParamsLength(quorumNumber);
-        StrategyParams memory strategyAndMultiplier;
-        uint256[] memory strategyShares;
-
-        if (stakeTypePerQuorum[quorumNumber] == IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE) {
-            // get slashable stake for the operator from AllocationManager
-            strategyShares = _getSlashableStakePerStrategy(quorumNumber, operator);
-        } else {
-            // get delegated stake for the operator from DelegationManager
-            strategyShares = delegation.getOperatorShares(operator, strategiesPerQuorum[quorumNumber]);
-        }
-        for (uint256 i = 0; i < stratsLength; i++) {
-                // accessing i'th StrategyParams struct for the quorumNumber
-                strategyAndMultiplier = strategyParams[quorumNumber][i];
-
-                // add the weight from the shares for this strategy to the total weight
-                if (strategyShares[i] > 0) {
-                    weight += uint96(
-                        strategyShares[i] * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR
-                    );
-            }
-        }
-
-        // return the weight, and `true` if the operator meets the quorum's minimum stake
-        bool hasMinimumStake = weight >= minimumStakeForQuorum[quorumNumber];
-        return (weight, hasMinimumStake);
+        address[] memory operators = new address[](1);
+        operators[0] = operator;
+        (uint96[] memory weights, bool[] memory hasMinimumStakes) =
+            _weightOfOperatorsForQuorum(quorumNumber, operators);
+        return (weights[0], hasMinimumStakes[0]);
     }
 
     /// @notice Returns `true` if the quorum has been initialized
@@ -772,7 +790,10 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param _lookAheadBlocks The number of blocks to look ahead when checking shares
      */
     function _setLookAheadPeriod(uint8 quorumNumber, uint32 _lookAheadBlocks) internal {
-        require(stakeTypePerQuorum[quorumNumber] == IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE, QuorumNotSlashable());
+        require(
+            stakeTypePerQuorum[quorumNumber] == IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE,
+            QuorumNotSlashable()
+        );
         uint32 oldLookAheadDays = slashableStakeLookAheadPerQuorum[quorumNumber];
         slashableStakeLookAheadPerQuorum[quorumNumber] = _lookAheadBlocks;
         emit LookAheadPeriodChanged(oldLookAheadDays, _lookAheadBlocks);

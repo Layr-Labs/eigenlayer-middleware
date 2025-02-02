@@ -45,7 +45,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
             _socketRegistry,
             _allocationManager,
             _pauserRegistry
-        ) 
+        )
     {}
 
     /**
@@ -62,10 +62,14 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         require(!isM2QuorumRegistrationDisabled, M2QuorumRegistrationIsDisabled());
-        require(quorumNumbers.orderedBytesArrayToBitmap().isSubsetOf(m2QuorumBitmap), OnlyM2QuorumsAllowed());
-        
+        require(
+            quorumNumbers.orderedBytesArrayToBitmap().isSubsetOf(m2QuorumBitmap),
+            OnlyM2QuorumsAllowed()
+        );
+
         // Check if the operator has registered before
-        bool operatorRegisteredBefore = _operatorInfo[msg.sender].status == OperatorStatus.REGISTERED;
+        bool operatorRegisteredBefore =
+            _operatorInfo[msg.sender].status == OperatorStatus.REGISTERED;
 
         // register the operator with the registry coordinator
         _registerOperator({
@@ -92,10 +96,14 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         require(!isM2QuorumRegistrationDisabled, M2QuorumRegistrationIsDisabled());
-        require(quorumNumbers.orderedBytesArrayToBitmap().isSubsetOf(m2QuorumBitmap), OnlyM2QuorumsAllowed());
-        
+        require(
+            quorumNumbers.orderedBytesArrayToBitmap().isSubsetOf(m2QuorumBitmap),
+            OnlyM2QuorumsAllowed()
+        );
+
         // Check if the operator has registered before
-        bool operatorRegisteredBefore = _operatorInfo[msg.sender].status == OperatorStatus.REGISTERED;
+        bool operatorRegisteredBefore =
+            _operatorInfo[msg.sender].status == OperatorStatus.REGISTERED;
 
         // register the operator with the registry coordinator with churn
         _registerOperatorWithChurn({
@@ -155,7 +163,10 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
      */
 
     /// @dev override the _forceDeregisterOperator function to handle M2 quorum deregistration
-    function _forceDeregisterOperator(address operator, bytes memory quorumNumbers) internal virtual override {
+    function _forceDeregisterOperator(
+        address operator,
+        bytes memory quorumNumbers
+    ) internal virtual override {
         // filter out M2 quorums from the quorum numbers
         uint256 operatorSetBitmap = quorumNumbers.orderedBytesArrayToBitmap().minus(m2QuorumBitmap);
         if (!operatorSetBitmap.isEmpty()) {
