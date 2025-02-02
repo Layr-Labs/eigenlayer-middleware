@@ -84,7 +84,6 @@ contract VetoableSlasher is SlasherBase {
 
     /// @notice Internal function to create and store a new slashing request
     /// @param params Parameters defining the slashing request
-    /// @dev Emits a SlashingRequested event
     function _queueSlashingRequest(
         IAllocationManager.SlashingParams calldata params
     ) internal virtual {
@@ -102,7 +101,6 @@ contract VetoableSlasher is SlasherBase {
 
     /// @notice Internal function to mark a slashing request as cancelled
     /// @param requestId The ID of the slashing request to cancel
-    /// @dev Emits a SlashingRequestCancelled event
     function _cancelSlashingRequest(
         uint256 requestId
     ) internal virtual {
