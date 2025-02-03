@@ -6,25 +6,60 @@ import {BN254} from "src/libraries/BN254.sol";
 import {BN256G2} from "./BN256G2.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
+struct Wallet {
+    uint256 privateKey;
+    address addr;
+}
+
+struct BLSWallet {
+    uint256 privateKey;
+    BN254.G2Point publicKeyG2;
+    BN254.G1Point publicKeyG1;
+}
+
+struct Operator {
+    Wallet key;
+    BLSWallet signingKey;
+}
+
+library OperatorKeyOperationsLib {
+    Vm private constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+    function sign(
+        Wallet memory wallet,
+        bytes32 digest
+    ) internal pure returns (bytes memory) {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(wallet.privateKey, digest);
+        return abi.encodePacked(r, s, v);
+    }
+}
+
+library SigningKeyOperationsLib {
+    using BN254 for BN254.G1Point;
+
+    function sign(
+        BLSWallet memory blsWallet,
+        bytes32 messageHash
+    ) internal view returns (BN254.G1Point memory) {
+        // Hash the message to a point on G1
+        BN254.G1Point memory messagePoint = BN254.hashToG1(messageHash);
+
+        // Sign by multiplying the hashed message point with the private key
+        return messagePoint.scalar_mul(blsWallet.privateKey);
+    }
+
+    function aggregate(
+        BN254.G2Point memory pk1,
+        BN254.G2Point memory pk2
+    ) internal view returns (BN254.G2Point memory apk) {
+        (apk.X[0], apk.X[1], apk.Y[0], apk.Y[1]) =
+            BN256G2.ECTwistAdd(pk1.X[0], pk1.X[1], pk1.Y[0], pk1.Y[1], pk2.X[0], pk2.X[1], pk2.Y[0], pk2.Y[1]);
+    }
+
+}
+
 library OperatorWalletLib {
     using BN254 for *;
     using Strings for uint256;
-
-    struct Wallet {
-        uint256 privateKey;
-        address addr;
-    }
-
-    struct BLSWallet {
-        uint256 privateKey;
-        BN254.G2Point publicKeyG2;
-        BN254.G1Point publicKeyG1;
-    }
-
-    struct Operator {
-        Wallet key;
-        BLSWallet signingKey;
-    }
 
     Vm private constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
