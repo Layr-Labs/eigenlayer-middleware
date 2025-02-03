@@ -63,7 +63,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         require(!isM2QuorumRegistrationDisabled, M2QuorumRegistrationIsDisabled());
         require(
-            quorumNumbers.orderedBytesArrayToBitmap().isSubsetOf(m2QuorumBitmap),
+            !operatorSetsEnabled || quorumNumbers.orderedBytesArrayToBitmap().isSubsetOf(m2QuorumBitmap),
             OnlyM2QuorumsAllowed()
         );
 
@@ -97,7 +97,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         require(!isM2QuorumRegistrationDisabled, M2QuorumRegistrationIsDisabled());
         require(
-            quorumNumbers.orderedBytesArrayToBitmap().isSubsetOf(m2QuorumBitmap),
+            !operatorSetsEnabled || quorumNumbers.orderedBytesArrayToBitmap().isSubsetOf(m2QuorumBitmap),
             OnlyM2QuorumsAllowed()
         );
 
