@@ -63,6 +63,11 @@ library CoreDeploymentLib {
         address initialOwner;
     }
 
+    struct AVSDirectoryConfig {
+        uint256 initPausedStatus;
+        address initialOwner;
+    }
+
     struct RewardsCoordinatorConfig {
         uint256 initPausedStatus;
         address initialOwner;
@@ -76,6 +81,14 @@ library CoreDeploymentLib {
         uint32 genesisRewardsTimestamp;
     }
 
+    struct ETHPOSDepositConfig {
+        address ethPOSDepositAddress;
+    }
+
+    struct EigenPodConfig {
+        uint64 genesisTimestamp;
+    }
+
     struct DeploymentConfigData {
         StrategyManagerConfig strategyManager;
         DelegationManagerConfig delegationManager;
@@ -83,6 +96,9 @@ library CoreDeploymentLib {
         AllocationManagerConfig allocationManager;
         StrategyFactoryConfig strategyFactory;
         RewardsCoordinatorConfig rewardsCoordinator;
+        AVSDirectoryConfig avsDirectory;
+        ETHPOSDepositConfig ethPOSDeposit;
+        EigenPodConfig eigenPod;
     }
 
     struct DeploymentData {
@@ -102,9 +118,7 @@ library CoreDeploymentLib {
     function deployContracts(
         address proxyAdmin,
         DeploymentConfigData memory configData
-    ) internal returns (DeploymentData memory) {
-        DeploymentData memory result;
-
+    ) internal returns (DeploymentData memory result) {
         // Deploy proxy contracts
         result.delegationManager = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         result.avsDirectory = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
@@ -119,7 +133,6 @@ library CoreDeploymentLib {
 
         // Deploy implementation contracts
         address permissionControllerImpl = address(new PermissionController());
-
 
         address strategyManagerImpl = address(
             new StrategyManager(
@@ -156,13 +169,13 @@ library CoreDeploymentLib {
             )
         );
 
-        address ethPOSDeposit;
-        if (block.chainid == 1) {
-            ethPOSDeposit = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
-        } else {
-            // For non-mainnet chains, deploy a mock
-            /// TODO: Handle Eth pos deposit contract
-            ethPOSDeposit = address(0);
+        address ethPOSDeposit = configData.ethPOSDeposit.ethPOSDepositAddress;
+        if (ethPOSDeposit == address(0)) {
+            if (block.chainid == 1) {
+                ethPOSDeposit = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
+            } else {
+                revert("DEPLOY_MOCK_ETHPOS_CONTRACT");
+            }
         }
 
         address eigenPodManagerImpl = address(
@@ -178,7 +191,7 @@ library CoreDeploymentLib {
             new EigenPod(
                 IETHPOSDeposit(ethPOSDeposit),
                 IEigenPodManager(result.eigenPodManager),
-                uint64(block.timestamp) // Use current timestamp as genesis time for testing
+                configData.eigenPod.genesisTimestamp == 0 ? uint64(block.timestamp) : configData.eigenPod.genesisTimestamp // Use configured timestamp or current timestamp as fallback
             )
         );
 
@@ -213,11 +226,13 @@ library CoreDeploymentLib {
             )
         );
 
-        // Deploy and configure the strategy beacon
         result.strategyBeacon = address(new UpgradeableBeacon(baseStrategyImpl));
 
+        // Upgrade contracts
+        UpgradeableProxyLib.upgrade(result.eigenPodBeacon, eigenPodBeaconImpl);
+
         UpgradeableProxyLib.upgrade(result.permissionController, permissionControllerImpl);
-        // Initialize contracts
+
         bytes memory upgradeCall;
 
         upgradeCall = abi.encodeCall(
@@ -229,8 +244,6 @@ library CoreDeploymentLib {
             )
         );
 
-        // Upgrade the eigenPodBeacon with the eigenPodBeaconImpl
-        UpgradeableProxyLib.upgrade(result.eigenPodBeacon, eigenPodBeaconImpl);
 
         UpgradeableProxyLib.upgradeAndCall(result.strategyManager, strategyManagerImpl, upgradeCall);
 
@@ -255,10 +268,11 @@ library CoreDeploymentLib {
         upgradeCall = abi.encodeCall(
             AVSDirectory.initialize,
             (
-                proxyAdmin, // initialOwner
-                0 // initialPausedStatus
+                configData.avsDirectory.initialOwner,
+                configData.avsDirectory.initPausedStatus
             )
         );
+
         UpgradeableProxyLib.upgradeAndCall(result.avsDirectory, avsDirectoryImpl, upgradeCall);
 
         upgradeCall = abi.encodeCall(
@@ -290,6 +304,7 @@ library CoreDeploymentLib {
                 configData.rewardsCoordinator.defaultSplitBips
             )
         );
+
         UpgradeableProxyLib.upgradeAndCall(result.rewardsCoordinator, rewardsCoordinatorImpl, upgradeCall);
 
         return result;
