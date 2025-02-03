@@ -6,7 +6,7 @@ import {BN254} from "src/libraries/BN254.sol";
 import {BN256G2} from "./BN256G2.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
-library OperatorLib {
+library OperatorWalletLib {
     using BN254 for *;
     using Strings for uint256;
 
@@ -21,47 +21,46 @@ library OperatorLib {
         BN254.G1Point publicKeyG1;
     }
 
-    Vm private constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
-
     struct Operator {
         Wallet key;
         BLSWallet signingKey;
     }
 
-    function createBLSWallet(uint256 salt) internal returns (BLSWallet memory) {
+    Vm private constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+
+    function createBLSWallet(
+        uint256 salt
+    ) internal returns (BLSWallet memory) {
         uint256 privateKey = uint256(keccak256(abi.encodePacked(salt)));
         BN254.G1Point memory publicKeyG1 = BN254.generatorG1().scalar_mul(privateKey);
         BN254.G2Point memory publicKeyG2 = mul(privateKey);
 
-        return BLSWallet({
-            privateKey: privateKey,
-            publicKeyG2: publicKeyG2,
-            publicKeyG1: publicKeyG1
-        });
+        return
+            BLSWallet({privateKey: privateKey, publicKeyG2: publicKeyG2, publicKeyG1: publicKeyG1});
     }
 
-    function createWallet(uint256 salt) internal pure returns (Wallet memory) {
+    function createWallet(
+        uint256 salt
+    ) internal pure returns (Wallet memory) {
         uint256 privateKey = uint256(keccak256(abi.encodePacked(salt)));
         address addr = vm.addr(privateKey);
 
-        return Wallet({
-            privateKey: privateKey,
-            addr: addr
-        });
+        return Wallet({privateKey: privateKey, addr: addr});
     }
 
-    function createOperator(string memory name) internal returns (Operator memory) {
+    function createOperator(
+        string memory name
+    ) internal returns (Operator memory) {
         uint256 salt = uint256(keccak256(abi.encodePacked(name)));
         Wallet memory vmWallet = createWallet(salt);
         BLSWallet memory blsWallet = createBLSWallet(salt);
 
-        return Operator({
-            key: vmWallet,
-            signingKey: blsWallet
-        });
+        return Operator({key: vmWallet, signingKey: blsWallet});
     }
 
-        function mul(uint256 x) internal returns (BN254.G2Point memory g2Point) {
+    function mul(
+        uint256 x
+    ) internal returns (BN254.G2Point memory g2Point) {
         string[] memory inputs = new string[](5);
         inputs[0] = "go";
         inputs[1] = "run";
@@ -84,5 +83,4 @@ library OperatorLib {
         res = vm.ffi(inputs);
         g2Point.Y[0] = abi.decode(res, (uint256));
     }
-
 }
