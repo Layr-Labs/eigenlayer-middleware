@@ -125,55 +125,117 @@ library CoreDeploymentLib {
         address proxyAdmin,
         DeploymentConfigData memory configData
     ) internal returns (DeploymentData memory result) {
-        // Deploy proxy contracts
-        result.delegationManager = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
-        result.avsDirectory = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
-        result.strategyManager = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
-        result.eigenPodManager = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
-        result.allocationManager = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
-        result.eigenPodBeacon = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
-        result.pauserRegistry = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
-        result.strategyFactory = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
-        result.rewardsCoordinator = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
-        result.permissionController = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
+        result = deployEmptyProxies(proxyAdmin);
 
-        // Deploy implementation contracts
+        deployAndConfigureCore(result, configData);
+        deployAndConfigurePods(result, configData);
+        deployAndConfigureStrategies(result, configData);
+        deployAndConfigureRewards(result, configData);
+
+        return result;
+    }
+
+    function deployEmptyProxies(
+        address proxyAdmin
+    ) internal returns (DeploymentData memory proxies) {
+        proxies.delegationManager = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
+        proxies.avsDirectory = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
+        proxies.strategyManager = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
+        proxies.eigenPodManager = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
+        proxies.allocationManager = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
+        proxies.eigenPodBeacon = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
+        proxies.pauserRegistry = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
+        proxies.strategyFactory = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
+        proxies.rewardsCoordinator = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
+        proxies.permissionController = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
+        return proxies;
+    }
+
+    function deployAndConfigureCore(
+        DeploymentData memory deployments,
+        DeploymentConfigData memory config
+    ) internal {
+        // Deploy core implementations
         address permissionControllerImpl = address(new PermissionController());
 
         address strategyManagerImpl = address(
             new StrategyManager(
-                IDelegationManager(result.delegationManager), IPauserRegistry(result.pauserRegistry)
+                IDelegationManager(deployments.delegationManager),
+                IPauserRegistry(deployments.pauserRegistry)
             )
         );
 
         address allocationManagerImpl = address(
             new AllocationManager(
-                IDelegationManager(result.delegationManager),
-                IPauserRegistry(result.pauserRegistry),
-                IPermissionController(result.permissionController),
-                configData.allocationManager.deallocationDelay,
-                configData.allocationManager.allocationConfigurationDelay
+                IDelegationManager(deployments.delegationManager),
+                IPauserRegistry(deployments.pauserRegistry),
+                IPermissionController(deployments.permissionController),
+                config.allocationManager.deallocationDelay,
+                config.allocationManager.allocationConfigurationDelay
             )
         );
 
         address delegationManagerImpl = address(
             new DelegationManager(
-                IStrategyManager(result.strategyManager),
-                IEigenPodManager(result.eigenPodManager),
-                IAllocationManager(result.allocationManager),
-                IPauserRegistry(result.pauserRegistry),
-                IPermissionController(result.permissionController),
-                configData.delegationManager.minWithdrawalDelayBlocks
+                IStrategyManager(deployments.strategyManager),
+                IEigenPodManager(deployments.eigenPodManager),
+                IAllocationManager(deployments.allocationManager),
+                IPauserRegistry(deployments.pauserRegistry),
+                IPermissionController(deployments.permissionController),
+                config.delegationManager.minWithdrawalDelayBlocks
             )
         );
 
         address avsDirectoryImpl = address(
             new AVSDirectory(
-                IDelegationManager(result.delegationManager), IPauserRegistry(result.pauserRegistry)
+                IDelegationManager(deployments.delegationManager),
+                IPauserRegistry(deployments.pauserRegistry)
             )
         );
 
-        address ethPOSDeposit = configData.ethPOSDeposit.ethPOSDepositAddress;
+        // Initialize core contracts
+        UpgradeableProxyLib.upgrade(deployments.permissionController, permissionControllerImpl);
+
+        bytes memory upgradeCall = abi.encodeCall(
+            StrategyManager.initialize,
+            (
+                config.strategyManager.initialOwner,
+                config.strategyManager.initialStrategyWhitelister,
+                config.strategyManager.initPausedStatus
+            )
+        );
+        UpgradeableProxyLib.upgradeAndCall(
+            deployments.strategyManager, strategyManagerImpl, upgradeCall
+        );
+
+        upgradeCall = abi.encodeCall(
+            DelegationManager.initialize,
+            (config.delegationManager.initialOwner, config.delegationManager.initPausedStatus)
+        );
+        UpgradeableProxyLib.upgradeAndCall(
+            deployments.delegationManager, delegationManagerImpl, upgradeCall
+        );
+
+        upgradeCall = abi.encodeCall(
+            AllocationManager.initialize,
+            (config.allocationManager.initialOwner, config.allocationManager.initPausedStatus)
+        );
+        UpgradeableProxyLib.upgradeAndCall(
+            deployments.allocationManager, allocationManagerImpl, upgradeCall
+        );
+
+        upgradeCall = abi.encodeCall(
+            AVSDirectory.initialize,
+            (config.avsDirectory.initialOwner, config.avsDirectory.initPausedStatus)
+        );
+        UpgradeableProxyLib.upgradeAndCall(deployments.avsDirectory, avsDirectoryImpl, upgradeCall);
+    }
+
+    function deployAndConfigurePods(
+        DeploymentData memory deployments,
+        DeploymentConfigData memory config
+    ) internal {
+        address ethPOSDeposit = config.ethPOSDeposit.ethPOSDepositAddress;
         if (ethPOSDeposit == address(0)) {
             if (block.chainid == 1) {
                 ethPOSDeposit = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
@@ -182,134 +244,102 @@ library CoreDeploymentLib {
             }
         }
 
-        address eigenPodManagerImpl = address(
-            new EigenPodManager(
-                IETHPOSDeposit(ethPOSDeposit),
-                IBeacon(result.eigenPodBeacon),
-                IDelegationManager(result.delegationManager),
-                IPauserRegistry(result.pauserRegistry)
-            )
-        );
-
         address eigenPodImpl = address(
             new EigenPod(
                 IETHPOSDeposit(ethPOSDeposit),
-                IEigenPodManager(result.eigenPodManager),
-                configData.eigenPod.genesisTimestamp == 0
+                IEigenPodManager(deployments.eigenPodManager),
+                config.eigenPod.genesisTimestamp == 0
                     ? uint64(block.timestamp)
-                    : configData.eigenPod.genesisTimestamp // Use configured timestamp or current timestamp as fallback
+                    : config.eigenPod.genesisTimestamp
             )
         );
 
         address eigenPodBeaconImpl = address(new UpgradeableBeacon(eigenPodImpl));
+        UpgradeableProxyLib.upgrade(deployments.eigenPodBeacon, eigenPodBeaconImpl);
 
-        address baseStrategyImpl = address(
-            new StrategyBase(
-                IStrategyManager(result.strategyManager), IPauserRegistry(result.pauserRegistry)
+        address eigenPodManagerImpl = address(
+            new EigenPodManager(
+                IETHPOSDeposit(ethPOSDeposit),
+                IBeacon(deployments.eigenPodBeacon),
+                IDelegationManager(deployments.delegationManager),
+                IPauserRegistry(deployments.pauserRegistry)
             )
         );
+
+        bytes memory upgradeCall = abi.encodeCall(
+            EigenPodManager.initialize,
+            (config.eigenPodManager.initialOwner, config.eigenPodManager.initPausedStatus)
+        );
+        UpgradeableProxyLib.upgradeAndCall(
+            deployments.eigenPodManager, eigenPodManagerImpl, upgradeCall
+        );
+    }
+
+    function deployAndConfigureStrategies(
+        DeploymentData memory deployments,
+        DeploymentConfigData memory config
+    ) internal {
+        address baseStrategyImpl = address(
+            new StrategyBase(
+                IStrategyManager(deployments.strategyManager),
+                IPauserRegistry(deployments.pauserRegistry)
+            )
+        );
+
+        deployments.strategyBeacon = address(new UpgradeableBeacon(baseStrategyImpl));
 
         address strategyFactoryImpl = address(
             new StrategyFactory(
-                IStrategyManager(result.strategyManager), IPauserRegistry(result.pauserRegistry)
+                IStrategyManager(deployments.strategyManager),
+                IPauserRegistry(deployments.pauserRegistry)
             )
         );
 
-        address rewardsCoordinatorImpl = address(
-            new RewardsCoordinator(
-                IDelegationManager(result.delegationManager),
-                IStrategyManager(result.strategyManager),
-                IAllocationManager(result.allocationManager),
-                IPauserRegistry(result.pauserRegistry),
-                IPermissionController(result.permissionController),
-                configData.rewardsCoordinator.calculationIntervalSeconds,
-                configData.rewardsCoordinator.maxRewardsDuration,
-                configData.rewardsCoordinator.maxRetroactiveLength,
-                configData.rewardsCoordinator.maxFutureLength,
-                configData.rewardsCoordinator.genesisRewardsTimestamp
-            )
-        );
-
-        result.strategyBeacon = address(new UpgradeableBeacon(baseStrategyImpl));
-
-        // Upgrade contracts
-        UpgradeableProxyLib.upgrade(result.eigenPodBeacon, eigenPodBeaconImpl);
-
-        UpgradeableProxyLib.upgrade(result.permissionController, permissionControllerImpl);
-
-        bytes memory upgradeCall;
-
-        upgradeCall = abi.encodeCall(
-            StrategyManager.initialize,
-            (
-                configData.strategyManager.initialOwner,
-                configData.strategyManager.initialStrategyWhitelister,
-                configData.strategyManager.initPausedStatus
-            )
-        );
-
-        UpgradeableProxyLib.upgradeAndCall(result.strategyManager, strategyManagerImpl, upgradeCall);
-
-        upgradeCall = abi.encodeCall(
-            DelegationManager.initialize,
-            (
-                configData.delegationManager.initialOwner,
-                configData.delegationManager.initPausedStatus
-            )
-        );
-        UpgradeableProxyLib.upgradeAndCall(
-            result.delegationManager, delegationManagerImpl, upgradeCall
-        );
-
-        upgradeCall = abi.encodeCall(
-            AllocationManager.initialize,
-            (
-                configData.allocationManager.initialOwner,
-                configData.allocationManager.initPausedStatus
-            )
-        );
-        UpgradeableProxyLib.upgradeAndCall(
-            result.allocationManager, allocationManagerImpl, upgradeCall
-        );
-
-        upgradeCall = abi.encodeCall(
-            AVSDirectory.initialize,
-            (configData.avsDirectory.initialOwner, configData.avsDirectory.initPausedStatus)
-        );
-
-        UpgradeableProxyLib.upgradeAndCall(result.avsDirectory, avsDirectoryImpl, upgradeCall);
-
-        upgradeCall = abi.encodeCall(
-            EigenPodManager.initialize,
-            (configData.eigenPodManager.initialOwner, configData.eigenPodManager.initPausedStatus)
-        );
-        UpgradeableProxyLib.upgradeAndCall(result.eigenPodManager, eigenPodManagerImpl, upgradeCall);
-
-        upgradeCall = abi.encodeCall(
+        bytes memory upgradeCall = abi.encodeCall(
             StrategyFactory.initialize,
             (
-                configData.strategyFactory.initialOwner,
-                configData.strategyFactory.initPausedStatus,
-                IBeacon(result.strategyBeacon)
+                config.strategyFactory.initialOwner,
+                config.strategyFactory.initPausedStatus,
+                IBeacon(deployments.strategyBeacon)
             )
         );
-        UpgradeableProxyLib.upgradeAndCall(result.strategyFactory, strategyFactoryImpl, upgradeCall);
+        UpgradeableProxyLib.upgradeAndCall(
+            deployments.strategyFactory, strategyFactoryImpl, upgradeCall
+        );
+    }
 
-        upgradeCall = abi.encodeCall(
+    function deployAndConfigureRewards(
+        DeploymentData memory deployments,
+        DeploymentConfigData memory config
+    ) internal {
+        address rewardsCoordinatorImpl = address(
+            new RewardsCoordinator(
+                IDelegationManager(deployments.delegationManager),
+                IStrategyManager(deployments.strategyManager),
+                IAllocationManager(deployments.allocationManager),
+                IPauserRegistry(deployments.pauserRegistry),
+                IPermissionController(deployments.permissionController),
+                config.rewardsCoordinator.calculationIntervalSeconds,
+                config.rewardsCoordinator.maxRewardsDuration,
+                config.rewardsCoordinator.maxRetroactiveLength,
+                config.rewardsCoordinator.maxFutureLength,
+                config.rewardsCoordinator.genesisRewardsTimestamp
+            )
+        );
+
+        bytes memory upgradeCall = abi.encodeCall(
             RewardsCoordinator.initialize,
             (
-                configData.rewardsCoordinator.initialOwner,
-                configData.rewardsCoordinator.initPausedStatus,
-                configData.rewardsCoordinator.rewardsUpdater,
-                configData.rewardsCoordinator.activationDelay,
-                configData.rewardsCoordinator.defaultSplitBips
+                config.rewardsCoordinator.initialOwner,
+                config.rewardsCoordinator.initPausedStatus,
+                config.rewardsCoordinator.rewardsUpdater,
+                config.rewardsCoordinator.activationDelay,
+                config.rewardsCoordinator.defaultSplitBips
             )
         );
 
         UpgradeableProxyLib.upgradeAndCall(
-            result.rewardsCoordinator, rewardsCoordinatorImpl, upgradeCall
+            deployments.rewardsCoordinator, rewardsCoordinatorImpl, upgradeCall
         );
-
-        return result;
     }
 }
