@@ -27,6 +27,7 @@ import {StrategyFactory} from "eigenlayer-contracts/src/contracts/strategies/Str
 import {IPermissionController} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
+import {PermissionController} from "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
 
 import {UpgradeableProxyLib} from "../unit/UpgradeableProxyLib.sol";
 
@@ -82,7 +83,6 @@ library CoreDeploymentLib {
         AllocationManagerConfig allocationManager;
         StrategyFactoryConfig strategyFactory;
         RewardsCoordinatorConfig rewardsCoordinator;
-        address permissionController;
     }
 
     struct DeploymentData {
@@ -96,6 +96,7 @@ library CoreDeploymentLib {
         address strategyFactory;
         address strategyBeacon;
         address rewardsCoordinator;
+        address permissionController;
     }
 
     function deployContracts(
@@ -114,8 +115,12 @@ library CoreDeploymentLib {
         result.pauserRegistry = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         result.strategyFactory = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         result.rewardsCoordinator = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
+        result.permissionController = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
 
         // Deploy implementation contracts
+        address permissionControllerImpl = address(new PermissionController());
+
+
         address strategyManagerImpl = address(
             new StrategyManager(
                 IDelegationManager(result.delegationManager),
@@ -127,7 +132,7 @@ library CoreDeploymentLib {
             new AllocationManager(
                 IDelegationManager(result.delegationManager),
                 IPauserRegistry(result.pauserRegistry),
-                IPermissionController(configData.permissionController),
+                IPermissionController(result.permissionController),
                 configData.allocationManager.deallocationDelay,
                 configData.allocationManager.allocationConfigurationDelay
             )
@@ -139,7 +144,7 @@ library CoreDeploymentLib {
                 IEigenPodManager(result.eigenPodManager),
                 IAllocationManager(result.allocationManager),
                 IPauserRegistry(result.pauserRegistry),
-                IPermissionController(configData.permissionController),
+                IPermissionController(result.permissionController),
                 configData.delegationManager.minWithdrawalDelayBlocks
             )
         );
@@ -199,7 +204,7 @@ library CoreDeploymentLib {
                 IStrategyManager(result.strategyManager),
                 IAllocationManager(result.allocationManager),
                 IPauserRegistry(result.pauserRegistry),
-                IPermissionController(configData.permissionController),
+                IPermissionController(result.permissionController),
                 configData.rewardsCoordinator.calculationIntervalSeconds,
                 configData.rewardsCoordinator.maxRewardsDuration,
                 configData.rewardsCoordinator.maxRetroactiveLength,
@@ -211,8 +216,11 @@ library CoreDeploymentLib {
         // Deploy and configure the strategy beacon
         result.strategyBeacon = address(new UpgradeableBeacon(baseStrategyImpl));
 
+        UpgradeableProxyLib.upgrade(result.permissionController, permissionControllerImpl);
         // Initialize contracts
-        bytes memory upgradeCall = abi.encodeCall(
+        bytes memory upgradeCall;
+
+        upgradeCall = abi.encodeCall(
             StrategyManager.initialize,
             (
                 configData.strategyManager.initialOwner,
@@ -220,6 +228,10 @@ library CoreDeploymentLib {
                 configData.strategyManager.initPausedStatus
             )
         );
+
+        // Upgrade the eigenPodBeacon with the eigenPodBeaconImpl
+        UpgradeableProxyLib.upgrade(result.eigenPodBeacon, eigenPodBeaconImpl);
+
         UpgradeableProxyLib.upgradeAndCall(result.strategyManager, strategyManagerImpl, upgradeCall);
 
         upgradeCall = abi.encodeCall(
