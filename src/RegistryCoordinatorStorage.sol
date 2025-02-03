@@ -65,5 +65,5 @@ abstract contract RegistryCoordinatorStorage is
         serviceManager = _serviceManager;
     }
 
-    uint256[47] private __GAP;
+    uint256[48] private __GAP;
 }

@@ -106,5 +106,5 @@ abstract contract SlashingRegistryCoordinatorStorage is ISlashingRegistryCoordin
 
     // storage gap for upgradeability
     // slither-disable-next-line shadowing-state
-    uint256[40] private __GAP;
+    uint256[38] private __GAP;
 }

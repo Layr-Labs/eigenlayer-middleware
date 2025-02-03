@@ -149,6 +149,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
 
     /// @inheritdoc IRegistryCoordinator
     function disableM2QuorumRegistration() external onlyOwner {
+        require(operatorSetsEnabled, OperatorSetsNotEnabled());
         require(!isM2QuorumRegistrationDisabled, M2QuorumRegistrationIsDisabled());
 
         isM2QuorumRegistrationDisabled = true;
@@ -177,7 +178,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
 
     /// @dev Hook to prevent any new quorums from being created if operator sets are not enabled
     function _beforeCreateQuorum(
-        uint8 quorumNumber
+        uint8
     ) internal virtual override {
         require(operatorSetsEnabled, OperatorSetsNotEnabled());
     }
@@ -185,8 +186,8 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
     /// @dev Hook to allow for any post-deregister logic
     function _afterDeregisterOperator(
         address operator,
-        bytes32 operatorId,
-        bytes memory quorumNumbers,
+        bytes32,
+        bytes memory,
         uint192 newBitmap
     ) internal virtual override {
         uint256 operatorM2QuorumBitmap = newBitmap.minus(m2QuorumBitmap);
