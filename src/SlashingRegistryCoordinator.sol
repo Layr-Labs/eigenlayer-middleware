@@ -411,7 +411,7 @@ contract SlashingRegistryCoordinator is
          */
         _updateOperatorBitmap({operatorId: operatorId, newBitmap: newBitmap});
 
-        emit OperatorSocketUpdate(operatorId, socket);
+        _setOperatorSocket(operatorId, socket);
 
         // If the operator wasn't registered for any quorums, update their status
         // and register them with this AVS in EigenLayer core (DelegationManager)
