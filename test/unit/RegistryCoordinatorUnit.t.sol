@@ -12,7 +12,12 @@ import {IBLSApkRegistryTypes} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {QuorumBitmapHistoryLib} from "../../src/libraries/QuorumBitmapHistoryLib.sol";
 import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
 import {console} from "forge-std/console.sol";
-import {OperatorWalletLib, SigningKeyOperationsLib, OperatorKeyOperationsLib, Operator} from "../utils/OperatorWalletLib.sol";
+import {
+    OperatorWalletLib,
+    SigningKeyOperationsLib,
+    OperatorKeyOperationsLib,
+    Operator
+} from "../utils/OperatorWalletLib.sol";
 
 contract RegistryCoordinatorUnitTests is MockAVSDeployer {
     using BN254 for BN254.G1Point;
@@ -2428,29 +2433,25 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         /// NOTE: resolves stack too deep
         {
             // Set operator shares for quorum 0
-            (IStrategy strategy, ) = stakeRegistry.strategyParams(0, 0);
+            (IStrategy strategy,) = stakeRegistry.strategyParams(0, 0);
             delegationMock.setOperatorShares(operatorToRegister.key.addr, strategy, 1 ether);
         }
         bytes32 salt = bytes32(uint256(1));
         uint256 expiry = block.timestamp + 1 days;
         bytes32 digestHash = avsDirectory.calculateOperatorAVSRegistrationDigestHash(
-            operatorToRegister.key.addr,
-            address(registryCoordinator),
-            salt,
-            expiry
+            operatorToRegister.key.addr, address(registryCoordinator), salt, expiry
         );
         bytes memory signature = OperatorKeyOperationsLib.sign(operatorToRegister.key, digestHash);
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = ISignatureUtils
-            .SignatureWithSaltAndExpiry({
-                signature: signature,
-                salt: salt,
-                expiry: expiry
-            });
+            .SignatureWithSaltAndExpiry({signature: signature, salt: salt, expiry: expiry});
 
-        bytes32 messageHash = registryCoordinator.calculatePubkeyRegistrationMessageHash(operatorToRegister.key.addr);
+        bytes32 messageHash =
+            registryCoordinator.calculatePubkeyRegistrationMessageHash(operatorToRegister.key.addr);
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory operatorRegisterApkParams =
         IBLSApkRegistryTypes.PubkeyRegistrationParams({
-            pubkeyRegistrationSignature: SigningKeyOperationsLib.sign(operatorToRegister.signingKey, messageHash),
+            pubkeyRegistrationSignature: SigningKeyOperationsLib.sign(
+                operatorToRegister.signingKey, messageHash
+            ),
             pubkeyG1: operatorToRegister.signingKey.publicKeyG1,
             pubkeyG2: operatorToRegister.signingKey.publicKeyG2
         });

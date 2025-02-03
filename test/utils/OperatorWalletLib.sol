@@ -24,10 +24,8 @@ struct Operator {
 
 library OperatorKeyOperationsLib {
     Vm private constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
-    function sign(
-        Wallet memory wallet,
-        bytes32 digest
-    ) internal pure returns (bytes memory) {
+
+    function sign(Wallet memory wallet, bytes32 digest) internal pure returns (bytes memory) {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(wallet.privateKey, digest);
         return abi.encodePacked(r, s, v);
     }
@@ -51,10 +49,10 @@ library SigningKeyOperationsLib {
         BN254.G2Point memory pk1,
         BN254.G2Point memory pk2
     ) internal view returns (BN254.G2Point memory apk) {
-        (apk.X[0], apk.X[1], apk.Y[0], apk.Y[1]) =
-            BN256G2.ECTwistAdd(pk1.X[0], pk1.X[1], pk1.Y[0], pk1.Y[1], pk2.X[0], pk2.X[1], pk2.Y[0], pk2.Y[1]);
+        (apk.X[0], apk.X[1], apk.Y[0], apk.Y[1]) = BN256G2.ECTwistAdd(
+            pk1.X[0], pk1.X[1], pk1.Y[0], pk1.Y[1], pk2.X[0], pk2.X[1], pk2.Y[0], pk2.Y[1]
+        );
     }
-
 }
 
 library OperatorWalletLib {

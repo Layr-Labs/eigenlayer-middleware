@@ -2,7 +2,8 @@
 pragma solidity ^0.8.0;
 
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {TransparentUpgradeableProxy} from
+    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {DelegationManager} from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import {StrategyManager} from "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
@@ -12,22 +13,27 @@ import {RewardsCoordinator} from "eigenlayer-contracts/src/contracts/core/Reward
 import {StrategyBase} from "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import {EigenPod} from "eigenlayer-contracts/src/contracts/pods/EigenPod.sol";
 import {IETHPOSDeposit} from "eigenlayer-contracts/src/contracts/interfaces/IETHPOSDeposit.sol";
-import {StrategyBaseTVLLimits} from "eigenlayer-contracts/src/contracts/strategies/StrategyBaseTVLLimits.sol";
+import {StrategyBaseTVLLimits} from
+    "eigenlayer-contracts/src/contracts/strategies/StrategyBaseTVLLimits.sol";
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IDelegationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IEigenPodManager} from "eigenlayer-contracts/src/contracts/interfaces/IEigenPodManager.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {StrategyFactory} from "eigenlayer-contracts/src/contracts/strategies/StrategyFactory.sol";
-import {IPermissionController} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
-import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IPermissionController} from
+    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {IAllocationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
-import {PermissionController} from "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
+import {PermissionController} from
+    "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
 
 import {UpgradeableProxyLib} from "../unit/UpgradeableProxyLib.sol";
 
@@ -136,8 +142,7 @@ library CoreDeploymentLib {
 
         address strategyManagerImpl = address(
             new StrategyManager(
-                IDelegationManager(result.delegationManager),
-                IPauserRegistry(result.pauserRegistry)
+                IDelegationManager(result.delegationManager), IPauserRegistry(result.pauserRegistry)
             )
         );
 
@@ -164,8 +169,7 @@ library CoreDeploymentLib {
 
         address avsDirectoryImpl = address(
             new AVSDirectory(
-                IDelegationManager(result.delegationManager),
-                IPauserRegistry(result.pauserRegistry)
+                IDelegationManager(result.delegationManager), IPauserRegistry(result.pauserRegistry)
             )
         );
 
@@ -191,7 +195,9 @@ library CoreDeploymentLib {
             new EigenPod(
                 IETHPOSDeposit(ethPOSDeposit),
                 IEigenPodManager(result.eigenPodManager),
-                configData.eigenPod.genesisTimestamp == 0 ? uint64(block.timestamp) : configData.eigenPod.genesisTimestamp // Use configured timestamp or current timestamp as fallback
+                configData.eigenPod.genesisTimestamp == 0
+                    ? uint64(block.timestamp)
+                    : configData.eigenPod.genesisTimestamp // Use configured timestamp or current timestamp as fallback
             )
         );
 
@@ -199,15 +205,13 @@ library CoreDeploymentLib {
 
         address baseStrategyImpl = address(
             new StrategyBase(
-                IStrategyManager(result.strategyManager),
-                IPauserRegistry(result.pauserRegistry)
+                IStrategyManager(result.strategyManager), IPauserRegistry(result.pauserRegistry)
             )
         );
 
         address strategyFactoryImpl = address(
             new StrategyFactory(
-                IStrategyManager(result.strategyManager),
-                IPauserRegistry(result.pauserRegistry)
+                IStrategyManager(result.strategyManager), IPauserRegistry(result.pauserRegistry)
             )
         );
 
@@ -244,7 +248,6 @@ library CoreDeploymentLib {
             )
         );
 
-
         UpgradeableProxyLib.upgradeAndCall(result.strategyManager, strategyManagerImpl, upgradeCall);
 
         upgradeCall = abi.encodeCall(
@@ -254,7 +257,9 @@ library CoreDeploymentLib {
                 configData.delegationManager.initPausedStatus
             )
         );
-        UpgradeableProxyLib.upgradeAndCall(result.delegationManager, delegationManagerImpl, upgradeCall);
+        UpgradeableProxyLib.upgradeAndCall(
+            result.delegationManager, delegationManagerImpl, upgradeCall
+        );
 
         upgradeCall = abi.encodeCall(
             AllocationManager.initialize,
@@ -263,24 +268,20 @@ library CoreDeploymentLib {
                 configData.allocationManager.initPausedStatus
             )
         );
-        UpgradeableProxyLib.upgradeAndCall(result.allocationManager, allocationManagerImpl, upgradeCall);
+        UpgradeableProxyLib.upgradeAndCall(
+            result.allocationManager, allocationManagerImpl, upgradeCall
+        );
 
         upgradeCall = abi.encodeCall(
             AVSDirectory.initialize,
-            (
-                configData.avsDirectory.initialOwner,
-                configData.avsDirectory.initPausedStatus
-            )
+            (configData.avsDirectory.initialOwner, configData.avsDirectory.initPausedStatus)
         );
 
         UpgradeableProxyLib.upgradeAndCall(result.avsDirectory, avsDirectoryImpl, upgradeCall);
 
         upgradeCall = abi.encodeCall(
             EigenPodManager.initialize,
-            (
-                configData.eigenPodManager.initialOwner,
-                configData.eigenPodManager.initPausedStatus
-            )
+            (configData.eigenPodManager.initialOwner, configData.eigenPodManager.initPausedStatus)
         );
         UpgradeableProxyLib.upgradeAndCall(result.eigenPodManager, eigenPodManagerImpl, upgradeCall);
 
@@ -305,7 +306,9 @@ library CoreDeploymentLib {
             )
         );
 
-        UpgradeableProxyLib.upgradeAndCall(result.rewardsCoordinator, rewardsCoordinatorImpl, upgradeCall);
+        UpgradeableProxyLib.upgradeAndCall(
+            result.rewardsCoordinator, rewardsCoordinatorImpl, upgradeCall
+        );
 
         return result;
     }

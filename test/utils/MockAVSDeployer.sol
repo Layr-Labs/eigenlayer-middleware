@@ -553,8 +553,7 @@ contract MockAVSDeployer is Test {
         uint256 numOperators,
         uint256 startIndex
     ) internal returns (Operator[] memory) {
-        Operator[] memory operators =
-            new Operator[](numOperators);
+        Operator[] memory operators = new Operator[](numOperators);
         for (uint256 i = 0; i < numOperators; i++) {
             operators[i] = OperatorWalletLib.createOperator(
                 string(abi.encodePacked("operator-", i + startIndex))

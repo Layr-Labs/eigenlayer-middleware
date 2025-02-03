@@ -208,7 +208,6 @@ contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinato
         return (1 << quorumCount) - 1;
     }
 
-
     /**
      * @notice Returns the message hash that an operator must sign to register their BLS public key.
      * @param operator is the address of the operator registering their BLS public key
@@ -216,14 +215,7 @@ contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinato
     function calculatePubkeyRegistrationMessageHash(
         address operator
     ) public view returns (bytes32) {
-        return _hashTypedDataV4(
-            keccak256(
-                abi.encode(
-                    PUBKEY_REGISTRATION_TYPEHASH,
-                    operator
-                )
-            )
-        );
+        return _hashTypedDataV4(keccak256(abi.encode(PUBKEY_REGISTRATION_TYPEHASH, operator)));
     }
 
     /// @dev need to override function here since its defined in both these contracts
