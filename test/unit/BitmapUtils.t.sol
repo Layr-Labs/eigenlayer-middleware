@@ -173,20 +173,16 @@ contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
 
     // ensure that converting bytes array => bitmap => bytes array returns the original bytes array (i.e. is lossless and artifactless)
     // note that this only works on ordered arrays, because unordered arrays will be returned ordered
-    function testFuzz_BytesArrayToBitmapToBytesArray(
-        uint8 a,
-        uint8 b,
-        uint8 c
-    ) public view {
+    function testFuzz_BytesArrayToBitmapToBytesArray(uint8 a, uint8 b, uint8 c) public view {
         a = uint8(bound(a, 0, 31));
         b = uint8(bound(b, 0, 31));
         c = uint8(bound(c, 0, 31));
-        
+
         // Create ordered bytes array
         bytes memory originalBytesArray = new bytes(a);
         uint8 currentValue = b;
-        
-        for(uint8 i = 0; i < a; i++) {
+
+        for (uint8 i = 0; i < a; i++) {
             originalBytesArray[i] = bytes1(currentValue);
             currentValue++;
         }
@@ -210,12 +206,12 @@ contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
         a = uint8(bound(a, 0, 31));
         b = uint8(bound(b, 0, 31));
         c = uint8(bound(c, 0, 31));
-        
+
         // Create ordered bytes array
         bytes memory originalBytesArray = new bytes(a);
         uint8 currentValue = b;
-        
-        for(uint8 i = 0; i < a; i++) {
+
+        for (uint8 i = 0; i < a; i++) {
             originalBytesArray[i] = bytes1(currentValue);
             currentValue++;
         }
@@ -248,12 +244,12 @@ contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
         a = uint8(bound(a, 0, 31));
         b = uint8(bound(b, 0, 31));
         c = uint8(bound(c, 0, 31));
-        
+
         // Create ordered bytes array
         bytes memory originalBytesArray = new bytes(a);
         uint8 currentValue = b;
-        
-        for(uint8 i = 0; i < a; i++) {
+
+        for (uint8 i = 0; i < a; i++) {
             originalBytesArray[i] = bytes1(currentValue);
             currentValue++;
         }

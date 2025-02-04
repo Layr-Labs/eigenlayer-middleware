@@ -684,16 +684,13 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
      * @dev Initializes a quorum with StrategyParams with fuzzed multipliers inputs and corresponding
      * strategy addresses.
      */
-    function testFuzz_initializeQuorum(
-        uint8 quorumNumber,
-        uint96 minimumStake
-    ) public {
+    function testFuzz_initializeQuorum(uint8 quorumNumber, uint96 minimumStake) public {
         quorumNumber = uint8(bound(uint256(quorumNumber), nextQuorum, type(uint8).max));
-        
+
         // Create multipliers array with bounded length
         uint256 multiplierLength = bound(1, 1, MAX_WEIGHING_FUNCTION_LENGTH);
         uint96[] memory multipliers = new uint96[](multiplierLength);
-        
+
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](multipliers.length);
         for (uint256 i = 0; i < strategyParams.length; i++) {
