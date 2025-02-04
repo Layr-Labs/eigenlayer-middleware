@@ -731,16 +731,16 @@ contract SlashingRegistryCoordinator is
         IStakeRegistryTypes.StakeType stakeType,
         uint32 lookAheadPeriod
     ) internal {
-        // Increment the total quorum count. Fails if we're already at the max
-        uint8 prevQuorumCount = quorumCount;
-        require(prevQuorumCount < MAX_QUORUM_COUNT, MaxQuorumsReached());
-        quorumCount = prevQuorumCount + 1;
-
-        // The previous count is the new quorum's number
-        uint8 quorumNumber = prevQuorumCount;
+        // The previous quorum count is the new quorum's number,
+        // this is because quorum numbers begin from index 0.
+        uint8 quorumNumber = quorumCount;
 
         // Hook to allow for any pre-create quorum logic
         _beforeCreateQuorum(quorumNumber);
+
+        // Increment the total quorum count. Fails if we're already at the max
+        require(quorumNumber < MAX_QUORUM_COUNT, MaxQuorumsReached());
+        quorumCount += 1;
 
         // Initialize the quorum here and in each registry
         _setOperatorSetParams(quorumNumber, operatorSetParams);

@@ -534,11 +534,11 @@ contract StakeRegistry is StakeRegistryStorage {
         uint8 quorumNumber,
         address[] memory operators
     ) internal view virtual returns (uint96[] memory, bool[] memory) {
-        uint96[] memory weights;
-        bool[] memory hasMinimumStakes;
+        uint96[] memory weights = new uint96[](operators.length);
+        bool[] memory hasMinimumStakes = new bool[](operators.length);
 
         uint256 stratsLength = strategyParamsLength(quorumNumber);
-        StrategyParams memory strategyAndMultiplier;
+        StrategyParams[] memory stratsAndMultipliers = strategyParams[quorumNumber];
         uint256[][] memory strategyShares;
 
         if (stakeTypePerQuorum[quorumNumber] == IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE) {
@@ -550,12 +550,15 @@ contract StakeRegistry is StakeRegistryStorage {
                 delegation.getOperatorsShares(operators, strategiesPerQuorum[quorumNumber]);
         }
 
-        for (uint256 stratIndex = 0; stratIndex < stratsLength; stratIndex++) {
-            // accessing i'th StrategyParams struct for the quorumNumber
-            strategyAndMultiplier = strategyParams[quorumNumber][stratIndex];
+        // Calculate weight of each operator and whether they contain minimum stake for the quorum
+        for (uint256 opIndex = 0; opIndex < operators.length; opIndex++) {
+            // 1. For the given operator, loop through the strategies and calculate the operator's
+            // weight for the quorum
+            for (uint256 stratIndex = 0; stratIndex < stratsLength; stratIndex++) {
+                // get multiplier for strategy
+                StrategyParams memory strategyAndMultiplier = stratsAndMultipliers[stratIndex];
 
-            for (uint256 opIndex = 0; opIndex < operators.length; opIndex++) {
-                // add the weight from the shares for this strategy to the total weight
+                // calculate added weight for strategy and multiplier
                 if (strategyShares[opIndex][stratIndex] > 0) {
                     weights[opIndex] += uint96(
                         strategyShares[opIndex][stratIndex] * strategyAndMultiplier.multiplier
@@ -564,9 +567,8 @@ contract StakeRegistry is StakeRegistryStorage {
                 }
             }
 
-            // check if the operator meets the quorum's minimum stake
-            hasMinimumStakes[stratIndex] =
-                weights[stratIndex] >= minimumStakeForQuorum[quorumNumber];
+            // 2. Check whether operator is above minimum stake threshold
+            hasMinimumStakes[opIndex] = weights[opIndex] >= minimumStakeForQuorum[quorumNumber];
         }
 
         return (weights, hasMinimumStakes);
