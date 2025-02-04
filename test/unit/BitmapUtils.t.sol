@@ -174,10 +174,23 @@ contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
     // ensure that converting bytes array => bitmap => bytes array returns the original bytes array (i.e. is lossless and artifactless)
     // note that this only works on ordered arrays, because unordered arrays will be returned ordered
     function testFuzz_BytesArrayToBitmapToBytesArray(
-        bytes memory originalBytesArray
-    ) public {
-        // filter down to only ordered inputs
-        cheats.assume(bitmapUtilsWrapper.isArrayStrictlyAscendingOrdered(originalBytesArray));
+        uint8 a,
+        uint8 b,
+        uint8 c
+    ) public view {
+        a = uint8(bound(a, 0, 31));
+        b = uint8(bound(b, 0, 31));
+        c = uint8(bound(c, 0, 31));
+        
+        // Create ordered bytes array
+        bytes memory originalBytesArray = new bytes(a);
+        uint8 currentValue = b;
+        
+        for(uint8 i = 0; i < a; i++) {
+            originalBytesArray[i] = bytes1(currentValue);
+            currentValue++;
+        }
+
         uint256 bitmap = bitmapUtilsWrapper.orderedBytesArrayToBitmap(originalBytesArray);
         bytes memory returnedBytesArray = bitmapUtilsWrapper.bitmapToBytesArray(bitmap);
         assertEq(
@@ -190,10 +203,22 @@ contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
     // ensure that converting bytes array => bitmap => bytes array returns the original bytes array (i.e. is lossless and artifactless)
     // note that this only works on ordered arrays
     function testFuzz_BytesArrayToBitmapToBytesArray_OrderedVersion(
-        bytes memory originalBytesArray
-    ) public {
-        // filter down to only ordered inputs
-        cheats.assume(bitmapUtilsWrapper.isArrayStrictlyAscendingOrdered(originalBytesArray));
+        uint8 a,
+        uint8 b,
+        uint8 c
+    ) public view {
+        a = uint8(bound(a, 0, 31));
+        b = uint8(bound(b, 0, 31));
+        c = uint8(bound(c, 0, 31));
+        
+        // Create ordered bytes array
+        bytes memory originalBytesArray = new bytes(a);
+        uint8 currentValue = b;
+        
+        for(uint8 i = 0; i < a; i++) {
+            originalBytesArray[i] = bytes1(currentValue);
+            currentValue++;
+        }
         uint256 bitmap = bitmapUtilsWrapper.orderedBytesArrayToBitmap(originalBytesArray);
         bytes memory returnedBytesArray = bitmapUtilsWrapper.bitmapToBytesArray(bitmap);
         assertEq(
@@ -216,10 +241,22 @@ contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
     // ensure that converting bytes array => bitmap => bytes array returns the original bytes array (i.e. is lossless and artifactless)
     // note that this only works on ordered arrays
     function testFuzz_BytesArrayToBitmapToBytesArray_OrderedVersion_Yul(
-        bytes memory originalBytesArray
-    ) public {
-        // filter down to only ordered inputs
-        cheats.assume(bitmapUtilsWrapper.isArrayStrictlyAscendingOrdered(originalBytesArray));
+        uint8 a,
+        uint8 b,
+        uint8 c
+    ) public view {
+        a = uint8(bound(a, 0, 31));
+        b = uint8(bound(b, 0, 31));
+        c = uint8(bound(c, 0, 31));
+        
+        // Create ordered bytes array
+        bytes memory originalBytesArray = new bytes(a);
+        uint8 currentValue = b;
+        
+        for(uint8 i = 0; i < a; i++) {
+            originalBytesArray[i] = bytes1(currentValue);
+            currentValue++;
+        }
         uint256 bitmap = bitmapUtilsWrapper.orderedBytesArrayToBitmap(originalBytesArray);
         bytes memory returnedBytesArray = bitmapUtilsWrapper.bitmapToBytesArray(bitmap);
         assertEq(

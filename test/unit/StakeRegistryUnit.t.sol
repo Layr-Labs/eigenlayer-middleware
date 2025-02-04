@@ -686,15 +686,18 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
      */
     function testFuzz_initializeQuorum(
         uint8 quorumNumber,
-        uint96 minimumStake,
-        uint96[] memory multipliers
+        uint96 minimumStake
     ) public {
-        cheats.assume(quorumNumber >= nextQuorum);
-        cheats.assume(0 < multipliers.length && multipliers.length <= MAX_WEIGHING_FUNCTION_LENGTH);
+        quorumNumber = uint8(bound(uint256(quorumNumber), nextQuorum, type(uint8).max));
+        
+        // Create multipliers array with bounded length
+        uint256 multiplierLength = bound(1, 1, MAX_WEIGHING_FUNCTION_LENGTH);
+        uint96[] memory multipliers = new uint96[](multiplierLength);
+        
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](multipliers.length);
         for (uint256 i = 0; i < strategyParams.length; i++) {
-            cheats.assume(multipliers[i] > 0);
+            multipliers[i] = uint96(vm.randomUint(1, type(uint96).max));
             strategyParams[i] = IStakeRegistryTypes.StrategyParams(
                 IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(i)))))), multipliers[i]
             );
@@ -832,17 +835,13 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
      * quorumNumber.
      */
     function testFuzz_addStrategies(
-        uint8 quorumNumber,
-        uint96[] memory multipliers
+        uint8 quorumNumber
     ) public fuzzOnlyInitializedQuorums(quorumNumber) {
         uint256 currNumStrategies = stakeRegistry.strategyParamsLength(quorumNumber);
-        // Assume nonzero multipliers, and total added strategies length is less than MAX_WEIGHING_FUNCTION_LENGTH
-        cheats.assume(
-            0 < multipliers.length
-                && multipliers.length <= MAX_WEIGHING_FUNCTION_LENGTH - currNumStrategies
-        );
+        uint96[] memory multipliers =
+            new uint96[](vm.randomUint(1, MAX_WEIGHING_FUNCTION_LENGTH - currNumStrategies));
         for (uint256 i = 0; i < multipliers.length; i++) {
-            cheats.assume(multipliers[i] > 0);
+            multipliers[i] = uint96(vm.randomUint(1, type(uint96).max));
         }
         // Expected events emitted
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
@@ -936,8 +935,8 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         uint8 numStrategiesToAdd,
         uint8 numStrategiesToRemove
     ) public {
-        cheats.assume(0 < numStrategiesToAdd && numStrategiesToAdd <= MAX_WEIGHING_FUNCTION_LENGTH);
-        cheats.assume(0 < numStrategiesToRemove && numStrategiesToRemove <= numStrategiesToAdd);
+        numStrategiesToAdd = uint8(bound(numStrategiesToAdd, 1, MAX_WEIGHING_FUNCTION_LENGTH));
+        numStrategiesToRemove = uint8(bound(numStrategiesToRemove, 1, numStrategiesToAdd));
         uint8 quorumNumber = _initializeQuorum(minimumStake, numStrategiesToAdd);
 
         // Create array of indicesToRemove, sort desc, and assume no duplicates
@@ -1029,8 +1028,8 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         uint8 numStrategiesToAdd,
         uint8 numStrategiesToModify
     ) public {
-        cheats.assume(0 < numStrategiesToAdd && numStrategiesToAdd <= MAX_WEIGHING_FUNCTION_LENGTH);
-        cheats.assume(0 < numStrategiesToModify && numStrategiesToModify <= numStrategiesToAdd);
+        numStrategiesToAdd = uint8(bound(numStrategiesToAdd, 1, MAX_WEIGHING_FUNCTION_LENGTH));
+        numStrategiesToModify = uint8(bound(numStrategiesToModify, 1, numStrategiesToAdd));
         uint256 prevIndex;
         uint256[] memory strategyIndices = new uint256[](numStrategiesToModify);
         uint96[] memory newMultipliers = new uint96[](numStrategiesToModify);
@@ -1318,8 +1317,8 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
     ) public {
         // We want between [1, 4] unique operators to register for all quorums each block,
         // and we want to test this for [2, 5] blocks
-        cheats.assume(operatorsPerBlock >= 1 && operatorsPerBlock <= 4);
-        cheats.assume(totalBlocks >= 2 && totalBlocks <= 5);
+        operatorsPerBlock = uint8(bound(operatorsPerBlock, 1, 4));
+        totalBlocks = uint8(bound(totalBlocks, 2, 5));
 
         uint256 startBlock = block.number;
         for (uint256 i = 1; i <= totalBlocks; i++) {
@@ -1674,8 +1673,8 @@ contract StakeRegistryUnitTests_Deregister is StakeRegistryUnitTests {
     ) public {
         /// We want between [1, 4] unique operators to register for all quorums each block,
         /// and we want to test this for [2, 5] blocks
-        cheats.assume(operatorsPerBlock >= 1 && operatorsPerBlock <= 4);
-        cheats.assume(totalBlocks >= 2 && totalBlocks <= 5);
+        operatorsPerBlock = uint8(bound(operatorsPerBlock, 1, 4));
+        totalBlocks = uint8(bound(totalBlocks, 2, 5));
 
         uint256 numOperators = operatorsPerBlock * totalBlocks;
         uint256 operatorIdx; // track index in setups over test
