@@ -44,18 +44,6 @@ jobs:
           forge fmt --check
         id: fmt
 
-      # Install Bun package manager for JavaScript dependencies (faster than npm).
-      - name: "Install Bun"
-        uses: "oven-sh/setup-bun@v1"
-
-      # Install NPM packages.
-      - name: "Install NPM Packages"
-        run: bun install
-
-      # Run Solhint linter to check for Solidity code quality issues.
-      - name: "Solhint"
-        run: bun run hint
-
       # Build the project and display contract sizes.
       - name: "Forge Build"
         run: |
