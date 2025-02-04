@@ -63,7 +63,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         require(!isM2QuorumRegistrationDisabled, M2QuorumRegistrationIsDisabled());
         require(
-            !operatorSetsEnabled || quorumNumbers.orderedBytesArrayToBitmap().isSubsetOf(m2QuorumBitmap),
+            quorumNumbers.orderedBytesArrayToBitmap().isSubsetOf(m2QuorumBitmap()),
             OnlyM2QuorumsAllowed()
         );
 
@@ -97,7 +97,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         require(!isM2QuorumRegistrationDisabled, M2QuorumRegistrationIsDisabled());
         require(
-            !operatorSetsEnabled || quorumNumbers.orderedBytesArrayToBitmap().isSubsetOf(m2QuorumBitmap),
+            quorumNumbers.orderedBytesArrayToBitmap().isSubsetOf(m2QuorumBitmap()),
             OnlyM2QuorumsAllowed()
         );
 
@@ -127,24 +127,9 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
     ) external override onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
         // Check that the quorum numbers are M2 quorums
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            require(
-                !operatorSetsEnabled || _isM2Quorum(uint8(quorumNumbers[i])), OperatorSetQuorum()
-            );
+            require(_isM2Quorum(uint8(quorumNumbers[i])), OperatorSetQuorum());
         }
         _deregisterOperator({operator: msg.sender, quorumNumbers: quorumNumbers});
-    }
-
-    /// @inheritdoc IRegistryCoordinator
-    function enableOperatorSets() external onlyOwner {
-        require(!operatorSetsEnabled, OperatorSetsAlreadyEnabled());
-
-        // Set the bitmap for M2 quorums
-        m2QuorumBitmap = _getQuorumBitmap(quorumCount);
-
-        // Enable operator sets mode
-        operatorSetsEnabled = true;
-
-        emit OperatorSetsEnabled();
     }
 
     /// @inheritdoc IRegistryCoordinator
@@ -169,7 +154,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         bytes memory quorumNumbers
     ) internal virtual override {
         // filter out M2 quorums from the quorum numbers
-        uint256 operatorSetBitmap = quorumNumbers.orderedBytesArrayToBitmap().minus(m2QuorumBitmap);
+        uint256 operatorSetBitmap = quorumNumbers.orderedBytesArrayToBitmap().minus(m2QuorumBitmap());
         if (!operatorSetBitmap.isEmpty()) {
             // call the parent _forceDeregisterOperator function for operator sets quorums
             super._forceDeregisterOperator(operator, operatorSetBitmap.bitmapToBytesArray());
@@ -180,7 +165,12 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
     function _beforeCreateQuorum(
         uint8
     ) internal virtual override {
-        require(operatorSetsEnabled, OperatorSetsNotEnabled());
+        // If operator sets are not enabled, set the m2 quorum bitmap to the current m2 quorum bitmap
+        // and enable operator sets
+        if (!operatorSetsEnabled) {
+            _m2QuorumBitmap = m2QuorumBitmap();
+            operatorSetsEnabled = true;
+        }
     }
 
     /// @dev Hook to allow for any post-deregister logic
@@ -190,7 +180,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         bytes memory,
         uint192 newBitmap
     ) internal virtual override {
-        uint256 operatorM2QuorumBitmap = newBitmap.minus(m2QuorumBitmap);
+        uint256 operatorM2QuorumBitmap = newBitmap.minus(m2QuorumBitmap());
         // If the operator is no longer registered for any M2 quorums, update their status and deregister
         // them from the AVS via the EigenLayer core contracts
         if (operatorM2QuorumBitmap.isEmpty()) {
@@ -200,9 +190,12 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
 
     /// @dev Returns a bitmap with all bits set up to `quorumCount`. Used for bit-masking quorum numbers
     /// and differentiating between operator sets and M2 quorums
-    function _getQuorumBitmap(
-        uint256 quorumCount
-    ) internal pure returns (uint256) {
+    function m2QuorumBitmap() public view returns (uint256) {
+        // If operator sets are enabled, return the current m2 quorum bitmap
+        if (operatorSetsEnabled) {
+            return _m2QuorumBitmap;
+        }
+
         // This creates a number where all bits up to quorumCount are set to 1
         // For example:
         // quorumCount = 3 -> 0111 (7 in decimal)
@@ -216,7 +209,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
     function _isM2Quorum(
         uint8 quorumNumber
     ) internal view returns (bool) {
-        return m2QuorumBitmap.isSet(quorumNumber);
+        return m2QuorumBitmap().isSet(quorumNumber);
     }
 
     /**

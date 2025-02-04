@@ -111,13 +111,6 @@ interface IRegistryCoordinator is
     ) external;
 
     /**
-     * @notice Enables operator sets mode for the AVS. Once enabled, this cannot be disabled.
-     * @dev When enabled, all existing quorums are marked as M2 quorums and future quorums must be explicitly
-     * created as either M2 or operator set quorums.
-     */
-    function enableOperatorSets() external;
-
-    /**
      * @notice Checks if a quorum is an M2 quorum.
      * @param quorumNumber The quorum identifier.
      * @return True if the quorum is M2, false otherwise.

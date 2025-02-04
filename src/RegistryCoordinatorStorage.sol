@@ -42,7 +42,7 @@ abstract contract RegistryCoordinatorStorage is
 
     /// @notice The bitmap containing all M2 quorums. This is only used for existing AVS middlewares that have M2 quorums
     /// and need to call `enableOperatorSets()` to enable operator sets mode.
-    uint256 internal m2QuorumBitmap;
+    uint256 internal _m2QuorumBitmap;
 
     constructor(
         IServiceManager _serviceManager,
