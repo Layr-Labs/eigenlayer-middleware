@@ -710,7 +710,6 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         IERC20 rewardToken = new ERC20PresetFixedSupply(
             "dog wif hat", "MOCK1", mockTokenInitialSupply, rewardsInitiator
         );
-        // 1. Bound fuzz inputs to valid ranges and amounts using randSeed for each
         amount = bound(amount, 1, MAX_REWARDS_AMOUNT);
         duration = bound(duration, 0, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
@@ -725,14 +724,19 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         );
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
-        // 2. Create operator rewards
-        IRewardsCoordinatorTypes.OperatorReward[] memory operatorRewards =
-            new IRewardsCoordinatorTypes.OperatorReward[](1);
-        operatorRewards[0] =
-            IRewardsCoordinatorTypes.OperatorReward({operator: address(0x1), amount: amount});
+        vm.warp(startTimestamp + duration + 1);
 
-        // 3. Create reward submission input param
-        IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[] memory rewardsSubmissions =
+        // 2. Create reward submission input param
+        // Create operator rewards array
+        IRewardsCoordinatorTypes.OperatorReward[] memory operatorRewards = 
+            new IRewardsCoordinatorTypes.OperatorReward[](1);
+        operatorRewards[0] = IRewardsCoordinatorTypes.OperatorReward({
+            operator: address(0x1),
+            amount: amount
+        });
+
+        // Create rewards submission
+        IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[] memory rewardsSubmissions = 
             new IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[](1);
         rewardsSubmissions[0] = IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
@@ -743,11 +747,11 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
             description: "Test Rewards"
         });
 
-        // 4. Approve serviceManager for ERC20
+        // 3. Approve serviceManager for ERC20
         cheats.startPrank(rewardsInitiator);
         rewardToken.approve(address(serviceManager), amount);
 
-        // 5. call createOperatorDirectedAVSRewardsSubmission() with expected event emitted
+        // 4. call createAVSRewardsSubmission() with expected event emitted
         uint256 rewardsInitiatorBalanceBefore = rewardToken.balanceOf(address(rewardsInitiator));
         uint256 rewardsCoordinatorBalanceBefore = rewardToken.balanceOf(address(rewardsCoordinator));
 
@@ -757,10 +761,19 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
             abi.encode(address(serviceManager), currSubmissionNonce, rewardsSubmissions[0])
         );
 
-        vm.warp(block.timestamp + MAX_RETROACTIVE_LENGTH + 1);
+        // cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        // emit AVSRewardsSubmissionCreated(
+        //     address(serviceManager), currSubmissionNonce, avsSubmissionHash, rewardsSubmissions[0]
+        // );
         serviceManager.createOperatorDirectedAVSRewardsSubmission(rewardsSubmissions);
         cheats.stopPrank();
 
+        assertTrue(
+            rewardsCoordinator.isOperatorDirectedAVSRewardsSubmissionHash(
+                address(serviceManager), avsSubmissionHash
+            ),
+            "reward submission hash not submitted"
+        );
         assertEq(
             currSubmissionNonce + 1,
             rewardsCoordinator.submissionNonce(address(serviceManager)),
@@ -776,6 +789,114 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
             rewardToken.balanceOf(address(rewardsCoordinator)),
             "RewardsCoordinator balance not incremented by amount of reward submission"
         );
+    }
+
+    function testFuzz_createOperatorDirectedAVSRewardsSubmission_MultipleSubmissions(
+        uint256 startTimestamp,
+        uint256 duration,
+        uint256 amount,
+        uint256 numSubmissions
+    ) public {
+        numSubmissions = bound(numSubmissions, 2, 10);
+        cheats.prank(rewardsCoordinator.owner());
+
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[] memory rewardsSubmissions =
+            new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](numSubmissions);
+        bytes32[] memory avsSubmissionHashes = new bytes32[](numSubmissions);
+        uint256 startSubmissionNonce = rewardsCoordinator.submissionNonce(address(serviceManager));
+        _deployMockRewardTokens(rewardsInitiator, numSubmissions);
+
+        uint256[] memory avsBalancesBefore = _getBalanceForTokens(rewardTokens, rewardsInitiator);
+        uint256[] memory rewardsCoordinatorBalancesBefore =
+            _getBalanceForTokens(rewardTokens, address(rewardsCoordinator));
+        // uint256[] memory amounts = new uint256[](numSubmissions);
+
+        uint256 latestStartTimestamp = 0;
+        uint256 longestDuration = 0;
+
+        // Create multiple rewards submissions and their expected event
+        for (uint256 i = 0; i < numSubmissions; ++i) {
+            
+            // 1. Bound fuzz inputs to valid ranges and amounts using randSeed for each
+            amount = bound(amount + i, 1, MAX_REWARDS_AMOUNT);
+            // amounts[i] = amount;
+            duration = bound(duration + i, 0, MAX_REWARDS_DURATION);
+            duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+            startTimestamp = bound(
+                startTimestamp + i,
+                uint256(
+                    _maxTimestamp(
+                        GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH
+                    )
+                ) + CALCULATION_INTERVAL_SECONDS - 1,
+                block.timestamp - 1 // Must be in past for operator directed rewards
+            );
+            startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+            // loop and find the latest startTimestamp and the longest duration, then warp start + duration + 1
+
+            if (startTimestamp > latestStartTimestamp) {
+                latestStartTimestamp = startTimestamp;
+            }
+            if (duration > longestDuration) {
+                longestDuration = duration;
+            }
+
+            // 2. Create reward submission input param
+            IRewardsCoordinatorTypes.OperatorReward[] memory operatorRewards = new IRewardsCoordinatorTypes.OperatorReward[](1);
+            operatorRewards[0] = IRewardsCoordinatorTypes.OperatorReward({
+                operator: address(0x1),
+                amount: amount
+            });
+
+            IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission memory rewardsSubmission =
+            IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission({
+                strategiesAndMultipliers: defaultStrategyAndMultipliers,
+                token: rewardTokens[i],
+                operatorRewards: operatorRewards,
+                startTimestamp: uint32(startTimestamp),
+                duration: uint32(duration),
+                description: "Test Rewards"
+            });
+            rewardsSubmissions[i] = rewardsSubmission;
+
+            // 3. expected event emitted for this rewardsSubmission
+            avsSubmissionHashes[i] = keccak256(
+                abi.encode(address(serviceManager), startSubmissionNonce + i, rewardsSubmissions[i])
+            );
+        }
+
+        vm.warp(latestStartTimestamp + longestDuration + 1);
+
+        // 4. call createOperatorDirectedAVSRewardsSubmission()
+        cheats.prank(rewardsInitiator);
+        serviceManager.createOperatorDirectedAVSRewardsSubmission(rewardsSubmissions);
+
+        // 5. Check for submissionNonce() and avsSubmissionHashes being set
+        assertEq(
+            startSubmissionNonce + numSubmissions,
+            rewardsCoordinator.submissionNonce(address(serviceManager)),
+            "avs submission nonce not incremented properly"
+        );
+
+        for (uint256 i = 0; i < numSubmissions; ++i) {
+            assertTrue(
+                rewardsCoordinator.isOperatorDirectedAVSRewardsSubmissionHash(
+                    address(serviceManager), avsSubmissionHashes[i]
+                ),
+                "rewards submission hash not submitted"
+            );
+            // assertEq(
+            //     avsBalancesBefore[i] - amounts[i],
+            //     rewardTokens[i].balanceOf(rewardsInitiator),
+            //     "AVS balance not decremented by amount of rewards submission"
+            // );
+            // assertEq(
+            //     rewardsCoordinatorBalancesBefore[i] + amounts[i],
+            //     rewardTokens[i].balanceOf(address(rewardsCoordinator)),
+            //     "RewardsCoordinator balance not incremented by amount of rewards submission"
+            // );
+        }
     }
 
     function testFuzz_deregisterOperatorFromOperatorSets(
