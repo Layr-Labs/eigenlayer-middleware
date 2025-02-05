@@ -136,7 +136,6 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
 
     /// @inheritdoc IRegistryCoordinator
     function disableM2QuorumRegistration() external onlyOwner {
-        require(operatorSetsEnabled, OperatorSetsNotEnabled());
         require(!isM2QuorumRegistrationDisabled, M2QuorumRegistrationIsDisabled());
 
         isM2QuorumRegistrationDisabled = true;
