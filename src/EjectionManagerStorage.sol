@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IEjectionManager} from "./interfaces/IEjectionManager.sol";
 
@@ -12,7 +12,7 @@ abstract contract EjectionManagerStorage is IEjectionManager {
     uint8 internal constant MAX_QUORUM_COUNT = 192;
 
     /// @inheritdoc IEjectionManager
-    IRegistryCoordinator public immutable registryCoordinator;
+    ISlashingRegistryCoordinator public immutable slashingRegistryCoordinator;
     /// @inheritdoc IEjectionManager
     IStakeRegistry public immutable stakeRegistry;
 
@@ -23,8 +23,8 @@ abstract contract EjectionManagerStorage is IEjectionManager {
     /// @inheritdoc IEjectionManager
     mapping(uint8 => QuorumEjectionParams) public quorumEjectionParams;
 
-    constructor(IRegistryCoordinator _registryCoordinator, IStakeRegistry _stakeRegistry) {
-        registryCoordinator = _registryCoordinator;
+    constructor(ISlashingRegistryCoordinator _slashingRegistryCoordinator, IStakeRegistry _stakeRegistry) {
+        slashingRegistryCoordinator = _slashingRegistryCoordinator;
         stakeRegistry = _stakeRegistry;
     }
 
