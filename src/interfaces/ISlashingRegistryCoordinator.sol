@@ -472,7 +472,9 @@ interface ISlashingRegistryCoordinator is
      * @notice Returns the hash of the message that operators must sign with their BLS key to register
      * @param operator The operator's Ethereum address
      */
-    function calculatePubkeyRegistrationMessageHash(address operator) external view returns (bytes32);
+    function calculatePubkeyRegistrationMessageHash(
+        address operator
+    ) external view returns (bytes32);
 
     /**
      * @notice Returns the operator set parameters for a given quorum.

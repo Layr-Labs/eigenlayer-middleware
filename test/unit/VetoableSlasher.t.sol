@@ -3,7 +3,10 @@ pragma solidity ^0.8.27;
 
 import {Test} from "forge-std/Test.sol";
 import {VetoableSlasher} from "../../src/slashers/VetoableSlasher.sol";
-import {IAllocationManager, IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IAllocationManager,
+    IAllocationManagerTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
@@ -12,22 +15,32 @@ import {ISlasher, ISlasherTypes, ISlasherErrors} from "../../src/interfaces/ISla
 import {ISlashingRegistryCoordinator} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 import {IStakeRegistry, IStakeRegistryTypes} from "../../src/interfaces/IStakeRegistry.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {TransparentUpgradeableProxy} from
+    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
-import {PermissionController} from "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
+import {PermissionController} from
+    "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
-import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IDelegationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {DelegationMock} from "../mocks/DelegationMock.sol";
 import {SlashingRegistryCoordinator} from "../../src/SlashingRegistryCoordinator.sol";
-import {ISlashingRegistryCoordinatorTypes} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
+import {ISlashingRegistryCoordinatorTypes} from
+    "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 import {IBLSApkRegistry, IBLSApkRegistryTypes} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
 import {ISocketRegistry} from "../../src/interfaces/ISocketRegistry.sol";
 import {CoreDeploymentLib} from "../utils/CoreDeployLib.sol";
-import {OperatorWalletLib, Operator, Wallet, BLSWallet, SigningKeyOperationsLib} from "../utils/OperatorWalletLib.sol";
+import {
+    OperatorWalletLib,
+    Operator,
+    Wallet,
+    BLSWallet,
+    SigningKeyOperationsLib
+} from "../utils/OperatorWalletLib.sol";
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/ERC20Mock.sol";
@@ -109,7 +122,8 @@ contract VetoableSlasherTest is Test {
         configData.avsDirectory.initPausedStatus = 0;
 
         configData.rewardsCoordinator.initialOwner = proxyAdminOwner;
-        configData.rewardsCoordinator.rewardsUpdater = address(0x14dC79964da2C08b23698B3D3cc7Ca32193d9955);
+        configData.rewardsCoordinator.rewardsUpdater =
+            address(0x14dC79964da2C08b23698B3D3cc7Ca32193d9955);
         configData.rewardsCoordinator.initPausedStatus = 0;
         configData.rewardsCoordinator.activationDelay = 0;
         configData.rewardsCoordinator.defaultSplitBips = 1000;
@@ -127,50 +141,40 @@ contract VetoableSlasherTest is Test {
         vm.stopPrank();
 
         vm.startPrank(strategyManagerOwner);
-        IStrategyManager(coreDeployment.strategyManager).setStrategyWhitelister(coreDeployment.strategyFactory);
+        IStrategyManager(coreDeployment.strategyManager).setStrategyWhitelister(
+            coreDeployment.strategyFactory
+        );
         vm.stopPrank();
 
         vm.startPrank(proxyAdminOwner);
-        mockStrategy = IStrategy(StrategyFactory(coreDeployment.strategyFactory).deployNewStrategy(IERC20(address(mockToken))));
+        mockStrategy = IStrategy(
+            StrategyFactory(coreDeployment.strategyFactory).deployNewStrategy(
+                IERC20(address(mockToken))
+            )
+        );
 
         // Deploy empty proxies for all registries
         stakeRegistry = StakeRegistry(
             address(
-                new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
+                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
 
         blsApkRegistry = BLSApkRegistry(
             address(
-                new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
+                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
 
         indexRegistry = IndexRegistry(
             address(
-                new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
+                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
 
         socketRegistry = SocketRegistry(
             address(
-                new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
+                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
 
@@ -186,9 +190,7 @@ contract VetoableSlasherTest is Test {
         slashingRegistryCoordinator = SlashingRegistryCoordinator(
             address(
                 new TransparentUpgradeableProxy(
-                    address(slashingRegistryCoordinatorImplementation),
-                    address(proxyAdmin),
-                    ""
+                    address(slashingRegistryCoordinatorImplementation), address(proxyAdmin), ""
                 )
             )
         );
@@ -200,9 +202,12 @@ contract VetoableSlasherTest is Test {
             IAVSDirectory(coreDeployment.avsDirectory),
             IAllocationManager(coreDeployment.allocationManager)
         );
-        BLSApkRegistry blsApkRegistryImplementation = new BLSApkRegistry(ISlashingRegistryCoordinator(address(slashingRegistryCoordinator)));
-        IndexRegistry indexRegistryImplementation = new IndexRegistry(ISlashingRegistryCoordinator(address(slashingRegistryCoordinator)));
-        SocketRegistry socketRegistryImplementation = new SocketRegistry(IRegistryCoordinator(address(slashingRegistryCoordinator)));
+        BLSApkRegistry blsApkRegistryImplementation =
+            new BLSApkRegistry(ISlashingRegistryCoordinator(address(slashingRegistryCoordinator)));
+        IndexRegistry indexRegistryImplementation =
+            new IndexRegistry(ISlashingRegistryCoordinator(address(slashingRegistryCoordinator)));
+        SocketRegistry socketRegistryImplementation =
+            new SocketRegistry(IRegistryCoordinator(address(slashingRegistryCoordinator)));
 
         // Upgrade all registry proxies
         proxyAdmin.upgrade(
@@ -224,11 +229,7 @@ contract VetoableSlasherTest is Test {
 
         // Initialize the SlashingRegistryCoordinator first
         slashingRegistryCoordinator.initialize(
-            proxyAdminOwner,
-            churnApprover,
-            ejector,
-            0,
-            serviceManager
+            proxyAdminOwner, churnApprover, ejector, 0, serviceManager
         );
 
         vm.stopPrank();
@@ -241,11 +242,7 @@ contract VetoableSlasherTest is Test {
         vm.startPrank(proxyAdminOwner);
         vetoableSlasher = VetoableSlasher(
             address(
-                new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
+                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
 
@@ -281,13 +278,13 @@ contract VetoableSlasherTest is Test {
         uint96[] memory minimumStakes = new uint96[](1);
         minimumStakes[0] = 1 ether;
 
-        IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: mockStrategy,
-            multiplier: 1 ether
-        });
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 1 ether});
 
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: 10,
             kickBIPsOfOperatorStake: 0,
             kickBIPsOfTotalStake: 0
@@ -295,17 +292,17 @@ contract VetoableSlasherTest is Test {
 
         vm.startPrank(proxyAdminOwner);
         slashingRegistryCoordinator.createSlashableStakeQuorum(
-            operatorSetParams,
-            1 ether,
-            strategyParams,
-            0
+            operatorSetParams, 1 ether, strategyParams, 0
         );
         vm.stopPrank();
 
         vm.label(address(vetoableSlasher), "VetoableSlasher Proxy");
         vm.label(address(vetoableSlasherImplementation), "VetoableSlasher Implementation");
         vm.label(address(slashingRegistryCoordinator), "SlashingRegistryCoordinator Proxy");
-        vm.label(address(slashingRegistryCoordinatorImplementation), "SlashingRegistryCoordinator Implementation");
+        vm.label(
+            address(slashingRegistryCoordinatorImplementation),
+            "SlashingRegistryCoordinator Implementation"
+        );
         vm.label(address(proxyAdmin), "ProxyAdmin");
         vm.label(coreDeployment.allocationManager, "AllocationManager Proxy");
     }
@@ -315,7 +312,11 @@ contract VetoableSlasherTest is Test {
         assertEq(vetoableSlasher.VETO_PERIOD(), VETO_PERIOD);
     }
 
-    function _createMockSlashingParams() internal view returns (IAllocationManagerTypes.SlashingParams memory) {
+    function _createMockSlashingParams()
+        internal
+        view
+        returns (IAllocationManagerTypes.SlashingParams memory)
+    {
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = mockStrategy;
 
@@ -343,8 +344,13 @@ contract VetoableSlasherTest is Test {
         vm.prank(slasher);
         vetoableSlasher.queueSlashingRequest(params);
 
-        (IAllocationManagerTypes.SlashingParams memory resultParams, uint256 requestTimestamp, ISlasherTypes.SlashingStatus status) = vetoableSlasher.slashingRequests(0);
-        ISlasherTypes.SlashingRequest memory request = ISlasherTypes.SlashingRequest(params, requestTimestamp, status);
+        (
+            IAllocationManagerTypes.SlashingParams memory resultParams,
+            uint256 requestTimestamp,
+            ISlasherTypes.SlashingStatus status
+        ) = vetoableSlasher.slashingRequests(0);
+        ISlasherTypes.SlashingRequest memory request =
+            ISlasherTypes.SlashingRequest(params, requestTimestamp, status);
         assertEq(resultParams.operator, operatorWallet.key.addr);
         assertEq(resultParams.operatorSetId, 1);
         assertEq(resultParams.wadsToSlash[0], 0.5e18);
@@ -385,7 +391,11 @@ contract VetoableSlasherTest is Test {
         vm.prank(vetoCommittee);
         vetoableSlasher.cancelSlashingRequest(0);
 
-        (IAllocationManagerTypes.SlashingParams memory resultParams, uint256 requestTimestamp, ISlasherTypes.SlashingStatus status) = vetoableSlasher.slashingRequests(0);
+        (
+            IAllocationManagerTypes.SlashingParams memory resultParams,
+            uint256 requestTimestamp,
+            ISlasherTypes.SlashingStatus status
+        ) = vetoableSlasher.slashingRequests(0);
         assertEq(uint8(status), uint8(ISlasherTypes.SlashingStatus.Cancelled));
     }
 
@@ -403,15 +413,21 @@ contract VetoableSlasherTest is Test {
     function test_fulfillSlashingRequest() public {
         vm.skip(false);
         vm.startPrank(operatorWallet.key.addr);
-        IDelegationManager(coreDeployment.delegationManager).registerAsOperator(address(0), 1, "metadata");
+        IDelegationManager(coreDeployment.delegationManager).registerAsOperator(
+            address(0), 1, "metadata"
+        );
 
         uint256 depositAmount = 1 ether;
         mockToken.mint(operatorWallet.key.addr, depositAmount);
         mockToken.approve(address(coreDeployment.strategyManager), depositAmount);
-        IStrategyManager(coreDeployment.strategyManager).depositIntoStrategy(mockStrategy, mockToken, depositAmount);
+        IStrategyManager(coreDeployment.strategyManager).depositIntoStrategy(
+            mockStrategy, mockToken, depositAmount
+        );
 
         uint32 minDelay = 1;
-        IAllocationManager(coreDeployment.allocationManager).setAllocationDelay(operatorWallet.key.addr, minDelay);
+        IAllocationManager(coreDeployment.allocationManager).setAllocationDelay(
+            operatorWallet.key.addr, minDelay
+        );
         vm.stopPrank();
 
         vm.roll(block.number + ALLOCATION_CONFIGURATION_DELAY + 1);
@@ -422,40 +438,40 @@ contract VetoableSlasherTest is Test {
         uint64[] memory magnitudes = new uint64[](1);
         magnitudes[0] = uint64(1 ether); // Allocate full magnitude
 
-        OperatorSet memory operatorSet = OperatorSet({
-            avs: address(serviceManager),
-            id: 0
-        });
+        OperatorSet memory operatorSet = OperatorSet({avs: address(serviceManager), id: 0});
 
         vm.startPrank(serviceManager);
-        IAllocationManagerTypes.CreateSetParams[] memory createParams = new IAllocationManagerTypes.CreateSetParams[](1);
-        createParams[0] = IAllocationManagerTypes.CreateSetParams({
-            operatorSetId: 0,
-            strategies: allocStrategies
-        });
+        IAllocationManagerTypes.CreateSetParams[] memory createParams =
+            new IAllocationManagerTypes.CreateSetParams[](1);
+        createParams[0] =
+            IAllocationManagerTypes.CreateSetParams({operatorSetId: 0, strategies: allocStrategies});
         IAllocationManager(coreDeployment.allocationManager).setAVSRegistrar(
-            address(serviceManager),
-            IAVSRegistrar(address(slashingRegistryCoordinator))
+            address(serviceManager), IAVSRegistrar(address(slashingRegistryCoordinator))
         );
         vm.stopPrank();
 
         vm.startPrank(operatorWallet.key.addr);
 
-        IAllocationManagerTypes.AllocateParams[] memory allocParams = new IAllocationManagerTypes.AllocateParams[](1);
+        IAllocationManagerTypes.AllocateParams[] memory allocParams =
+            new IAllocationManagerTypes.AllocateParams[](1);
         allocParams[0] = IAllocationManagerTypes.AllocateParams({
             operatorSet: operatorSet,
             strategies: allocStrategies,
             newMagnitudes: magnitudes
         });
 
-        IAllocationManager(coreDeployment.allocationManager).modifyAllocations(operatorWallet.key.addr, allocParams);
+        IAllocationManager(coreDeployment.allocationManager).modifyAllocations(
+            operatorWallet.key.addr, allocParams
+        );
         vm.roll(block.number + 100);
 
         uint32[] memory operatorSetIds = new uint32[](1);
         operatorSetIds[0] = 0;
-        bytes32 messageHash = slashingRegistryCoordinator.calculatePubkeyRegistrationMessageHash(operatorWallet.key.addr);
-        IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
-        IBLSApkRegistryTypes.PubkeyRegistrationParams({
+        bytes32 messageHash = slashingRegistryCoordinator.calculatePubkeyRegistrationMessageHash(
+            operatorWallet.key.addr
+        );
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams = IBLSApkRegistryTypes
+            .PubkeyRegistrationParams({
             pubkeyRegistrationSignature: SigningKeyOperationsLib.sign(
                 operatorWallet.signingKey, messageHash
             ),
@@ -464,23 +480,25 @@ contract VetoableSlasherTest is Test {
         });
 
         bytes memory registrationData = abi.encode(
-            ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL,
-            "socket",
-            pubkeyParams
+            ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, "socket", pubkeyParams
         );
 
-        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes.RegisterParams({
+        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
+            .RegisterParams({
             avs: address(serviceManager),
             operatorSetIds: operatorSetIds,
             data: registrationData
         });
-        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(operatorWallet.key.addr, registerParams);
+        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
+            operatorWallet.key.addr, registerParams
+        );
         vm.stopPrank();
 
         vm.roll(block.number + 100);
 
         // Create slashing params
-        IAllocationManagerTypes.SlashingParams memory params = IAllocationManagerTypes.SlashingParams({
+        IAllocationManagerTypes.SlashingParams memory params = IAllocationManagerTypes
+            .SlashingParams({
             operator: operatorWallet.key.addr,
             operatorSetId: 0,
             strategies: allocStrategies,
@@ -489,7 +507,7 @@ contract VetoableSlasherTest is Test {
         });
 
         // Set each wad to slash to 1e18 (100% slash)
-        for(uint256 i = 0; i < params.wadsToSlash.length; i++) {
+        for (uint256 i = 0; i < params.wadsToSlash.length; i++) {
             params.wadsToSlash[i] = 1e18;
         }
 
@@ -502,7 +520,11 @@ contract VetoableSlasherTest is Test {
         vm.prank(slasher);
         vetoableSlasher.fulfillSlashingRequest(0);
 
-        (IAllocationManagerTypes.SlashingParams memory resultParams, uint256 requestTimestamp, ISlasherTypes.SlashingStatus status) = vetoableSlasher.slashingRequests(0);
+        (
+            IAllocationManagerTypes.SlashingParams memory resultParams,
+            uint256 requestTimestamp,
+            ISlasherTypes.SlashingStatus status
+        ) = vetoableSlasher.slashingRequests(0);
         assertEq(uint8(status), uint8(ISlasherTypes.SlashingStatus.Completed));
     }
 }
