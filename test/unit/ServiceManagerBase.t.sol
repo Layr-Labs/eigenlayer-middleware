@@ -15,6 +15,11 @@ import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IS
 import {IServiceManagerBaseEvents} from "../events/IServiceManagerBaseEvents.sol";
 import {IServiceManagerErrors} from "../../src/interfaces/IServiceManager.sol";
 
+import {
+    IAllocationManagerTypes,
+    IAllocationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+
 import "../utils/MockAVSDeployer.sol";
 
 contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEvents {
@@ -771,5 +776,39 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
             rewardToken.balanceOf(address(rewardsCoordinator)),
             "RewardsCoordinator balance not incremented by amount of reward submission"
         );
+    }
+
+    function testFuzz_deregisterOperatorFromOperatorSets(
+        address operator,
+        uint32[] memory operatorSetIds
+    ) public {
+        // Mock the expected call to allocationManager
+        IAllocationManagerTypes.DeregisterParams memory expectedParams = IAllocationManagerTypes
+            .DeregisterParams({
+            operator: operator,
+            avs: address(serviceManager),
+            operatorSetIds: operatorSetIds
+        });
+
+        cheats.expectCall(
+            address(allocationManagerMock),
+            abi.encodeCall(IAllocationManager.deregisterFromOperatorSets, (expectedParams))
+        );
+
+        // Call should only work from registryCoordinator
+        cheats.prank(address(registryCoordinatorImplementation));
+        serviceManager.deregisterOperatorFromOperatorSets(operator, operatorSetIds);
+    }
+
+    function testFuzz_deregisterOperatorFromOperatorSets_revert_notRegistryCoordinator(
+        address operator,
+        uint32[] memory operatorSetIds,
+        address caller
+    ) public filterFuzzedAddressInputs(caller) {
+        cheats.assume(caller != address(registryCoordinatorImplementation));
+
+        cheats.prank(caller);
+        cheats.expectRevert(IServiceManagerErrors.OnlyRegistryCoordinator.selector);
+        serviceManager.deregisterOperatorFromOperatorSets(operator, operatorSetIds);
     }
 }
