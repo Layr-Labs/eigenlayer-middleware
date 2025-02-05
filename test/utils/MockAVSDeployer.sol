@@ -53,6 +53,7 @@ import {BLSApkRegistryHarness} from "../harnesses/BLSApkRegistryHarness.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 
 import {StakeRegistryHarness} from "../harnesses/StakeRegistryHarness.sol";
+import {OperatorWalletLib, Operator} from "../utils/OperatorWalletLib.sol";
 
 import "forge-std/Test.sol";
 
@@ -546,5 +547,18 @@ contract MockAVSDeployer is Test {
             expiry: expiry,
             salt: salt
         });
+    }
+
+    function _createOperators(
+        uint256 numOperators,
+        uint256 startIndex
+    ) internal returns (Operator[] memory) {
+        Operator[] memory operators = new Operator[](numOperators);
+        for (uint256 i = 0; i < numOperators; i++) {
+            operators[i] = OperatorWalletLib.createOperator(
+                string(abi.encodePacked("operator-", i + startIndex))
+            );
+        }
+        return operators;
     }
 }

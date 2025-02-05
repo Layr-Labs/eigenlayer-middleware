@@ -12,6 +12,12 @@ import {IBLSApkRegistryTypes} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {QuorumBitmapHistoryLib} from "../../src/libraries/QuorumBitmapHistoryLib.sol";
 import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
 import {console} from "forge-std/console.sol";
+import {
+    OperatorWalletLib,
+    SigningKeyOperationsLib,
+    OperatorKeyOperationsLib,
+    Operator
+} from "../utils/OperatorWalletLib.sol";
 
 contract RegistryCoordinatorUnitTests is MockAVSDeployer {
     using BN254 for BN254.G1Point;
@@ -2418,52 +2424,68 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         assertTrue(registryCoordinator.operatorSetsEnabled());
     }
 
+    ///
     function test_M2_Deregister() public {
-        vm.skip(true);
-        /// Create 2 M2 quorums
         _deployMockEigenLayerAndAVS(2);
 
-        address operatorToRegister = address(420);
+        Operator memory operatorToRegister = OperatorWalletLib.createOperator("4");
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignature = ISignatureUtils
-            .SignatureWithSaltAndExpiry({signature: new bytes(0), salt: bytes32(0), expiry: 0});
+        /// NOTE: resolves stack too deep
+        {
+            // Set operator shares for quorum 0
+            (IStrategy strategy,) = stakeRegistry.strategyParams(0, 0);
+            delegationMock.setOperatorShares(operatorToRegister.key.addr, strategy, 1 ether);
+        }
+        bytes32 salt = bytes32(uint256(1));
+        uint256 expiry = block.timestamp + 1 days;
+        bytes32 digestHash = avsDirectory.calculateOperatorAVSRegistrationDigestHash(
+            operatorToRegister.key.addr, address(registryCoordinator), salt, expiry
+        );
+        bytes memory signature = OperatorKeyOperationsLib.sign(operatorToRegister.key, digestHash);
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = ISignatureUtils
+            .SignatureWithSaltAndExpiry({signature: signature, salt: salt, expiry: expiry});
 
+        bytes32 messageHash =
+            registryCoordinator.calculatePubkeyRegistrationMessageHash(operatorToRegister.key.addr);
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory operatorRegisterApkParams =
         IBLSApkRegistryTypes.PubkeyRegistrationParams({
-            pubkeyRegistrationSignature: BN254.G1Point({X: 0, Y: 0}),
-            pubkeyG1: BN254.G1Point({X: 0, Y: 0}),
-            pubkeyG2: BN254.G2Point({X: [uint256(0), uint256(0)], Y: [uint256(0), uint256(0)]})
+            pubkeyRegistrationSignature: SigningKeyOperationsLib.sign(
+                operatorToRegister.signingKey, messageHash
+            ),
+            pubkeyG1: operatorToRegister.signingKey.publicKeyG1,
+            pubkeyG2: operatorToRegister.signingKey.publicKeyG2
         });
 
         string memory socket = "socket";
 
         // register for quorum 0
-        vm.prank(operatorToRegister);
+        vm.prank(operatorToRegister.key.addr);
         registryCoordinator.registerOperator(
             new bytes(1), // Convert 0 to bytes1 first
             socket,
             operatorRegisterApkParams,
-            emptySignature
+            operatorSignature
         );
 
         /// migrate to operator sets
+        vm.prank(registryCoordinatorOwner);
         registryCoordinator.enableOperatorSets();
 
         /// Deregistration for m2 should for the first two operator sets
-        vm.prank(defaultOperator);
+        vm.prank(operatorToRegister.key.addr);
         registryCoordinator.deregisterOperator(new bytes(1));
 
         // Verify operator was deregistered by checking their bitmap is empty
-        bytes32 operatorId = registryCoordinator.getOperatorId(operatorToRegister);
+        bytes32 operatorId = registryCoordinator.getOperatorId(operatorToRegister.key.addr);
         uint192 bitmap = registryCoordinator.getCurrentQuorumBitmap(operatorId);
         assertEq(bitmap, 0, "Operator bitmap should be empty after deregistration");
 
         // Verify operator status is NEVER_REGISTERED
         ISlashingRegistryCoordinatorTypes.OperatorStatus status =
-            registryCoordinator.getOperatorStatus(operatorToRegister);
+            registryCoordinator.getOperatorStatus(operatorToRegister.key.addr);
         assertEq(
             uint8(status),
-            uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.NEVER_REGISTERED),
+            uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED),
             "Operator status should be NEVER_REGISTERED"
         );
     }
