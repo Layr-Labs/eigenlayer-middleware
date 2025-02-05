@@ -453,6 +453,14 @@ interface ISlashingRegistryCoordinator is
     /// VIEW
 
     /**
+     * @notice Returns the hash of the message that operators must sign with their BLS key to register
+     * @param operator The operator's Ethereum address
+     */
+    function calculatePubkeyRegistrationMessageHash(
+        address operator
+    ) external view returns (bytes32);
+
+    /**
      * @notice Returns the operator set parameters for a given quorum.
      * @param quorumNumber The identifier of the quorum to query.
      * @return The OperatorSetParam struct containing max operator count and churn thresholds.
