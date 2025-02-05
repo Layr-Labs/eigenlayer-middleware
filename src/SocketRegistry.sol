@@ -13,10 +13,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 contract SocketRegistry is ISocketRegistry, SocketRegistryStorage {
     /// @notice A modifier that only allows the RegistryCoordinator to call a function
     modifier onlySlashingRegistryCoordinator() {
-        require(
-            msg.sender == slashingRegistryCoordinator,
-            OnlySlashingRegistryCoordinator()
-        );
+        require(msg.sender == slashingRegistryCoordinator, OnlySlashingRegistryCoordinator());
         _;
     }
 
