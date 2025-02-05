@@ -705,7 +705,6 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
     }
 
     function test_deregisterOperator_revert_incorrectQuorums() public {
-
         console.log("quorumCount", registryCoordinator.quorumCount());
 
         assertTrue(
@@ -2403,26 +2402,15 @@ contract RegistryCoordinatorUnitTests_BeforeMigration is RegistryCoordinatorUnit
         });
         uint32 lookAheadPeriod = 100;
 
-        assertEq(
-            registryCoordinator.quorumCount(),
-            0,
-            "No quorums should exist before"
-        );
+        assertEq(registryCoordinator.quorumCount(), 0, "No quorums should exist before");
 
         // Attempt to create quorum with slashable stake type before enabling operator sets
         cheats.prank(registryCoordinatorOwner);
         registryCoordinator.createSlashableStakeQuorum(
             operatorSetParams, minimumStake, strategyParams, lookAheadPeriod
         );
-        assertEq(
-            registryCoordinator.quorumCount(),
-            1,
-            "New quorum 0 should be created"
-        );
-        assertFalse(
-            registryCoordinator.isM2Quorum(0),
-            "Quorum created should not be an M2 quorum"
-        );
+        assertEq(registryCoordinator.quorumCount(), 1, "New quorum 0 should be created");
+        assertFalse(registryCoordinator.isM2Quorum(0), "Quorum created should not be an M2 quorum");
     }
 }
 
@@ -2595,7 +2583,6 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
     function test_registerHook_WithChurn() public {
         vm.skip(true);
         _deployMockEigenLayerAndAVS(0);
-
 
         // Create quorum params
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =

@@ -80,7 +80,9 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         isM2QuorumRegistrationDisabled = disabled;
     }
 
-    function setM2QuorumBitmap(uint256 bitmap) external {
+    function setM2QuorumBitmap(
+        uint256 bitmap
+    ) external {
         _m2QuorumBitmap = bitmap;
     }
 }

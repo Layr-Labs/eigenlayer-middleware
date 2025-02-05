@@ -498,7 +498,9 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     }
 
     /// @notice Overwrite RegistryCoordinator._m2QuorumBitmap to the specified value
-    function _setM2QuorumBitmap(uint256 m2QuorumBitmap) internal {
+    function _setM2QuorumBitmap(
+        uint256 m2QuorumBitmap
+    ) internal {
         bytes32 currentSlot = cheats.load(address(registryCoordinator), bytes32(uint256(200)));
 
         cheats.store(address(registryCoordinator), bytes32(uint256(200)), bytes32(m2QuorumBitmap));
