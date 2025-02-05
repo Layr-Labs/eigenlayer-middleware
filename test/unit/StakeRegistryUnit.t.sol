@@ -1782,12 +1782,30 @@ contract StakeRegistryUnitTests_Deregister is StakeRegistryUnitTests {
 contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
     using BitmapUtils for *;
 
+    function _wrap(
+        address operator
+    ) internal pure returns (address[] memory) {
+        address[] memory operators = new address[](1);
+        operators[0] = operator;
+        return operators;
+    }
+
+    function _wrap(
+        bytes32 operatorId
+    ) internal pure returns (bytes32[] memory) {
+        bytes32[] memory operatorIds = new bytes32[](1);
+        operatorIds[0] = operatorId;
+        return operatorIds;
+    }
+
     function test_updateOperatorStake_Revert_WhenNotRegistryCoordinator() public {
         UpdateSetup memory setup =
             _fuzz_setupUpdateOperatorStake({registeredFor: initializedQuorumBitmap, fuzzy_Delta: 0});
 
         cheats.expectRevert(IStakeRegistryErrors.OnlySlashingRegistryCoordinator.selector);
-        stakeRegistry.updateOperatorStake(setup.operator, setup.operatorId, setup.quorumNumbers);
+        stakeRegistry.updateOperatorsStake(
+            _wrap(setup.operator), _wrap(setup.operatorId), uint8(setup.quorumNumbers[0])
+        );
     }
 
     function testFuzz_updateOperatorStake_Revert_WhenQuorumDoesNotExist(
@@ -1799,10 +1817,13 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
 
         // Get a list of valid quorums ending in an invalid quorum number
         bytes memory invalidQuorums = _fuzz_getInvalidQuorums(rand);
+        uint256 length = invalidQuorums.length;
 
         cheats.expectRevert(IStakeRegistryErrors.QuorumDoesNotExist.selector);
         cheats.prank(address(registryCoordinator));
-        stakeRegistry.updateOperatorStake(setup.operator, setup.operatorId, invalidQuorums);
+        stakeRegistry.updateOperatorsStake(
+            _wrap(setup.operator), _wrap(setup.operatorId), uint8(invalidQuorums[length - 1])
+        );
     }
 
     /**
@@ -1828,9 +1849,14 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
             _getLatestTotalStakeUpdates(setup.quorumNumbers);
 
         // updateOperatorStake
-        cheats.prank(address(registryCoordinator));
-        uint192 quorumsToRemove =
-            stakeRegistry.updateOperatorStake(setup.operator, setup.operatorId, setup.quorumNumbers);
+        bool[] memory shouldBeDeregistered = new bool[](setup.quorumNumbers.length);
+        for (uint256 i = 0; i < setup.quorumNumbers.length; i++) {
+            cheats.prank(address(registryCoordinator));
+            bool[] memory shouldBeDeregisteredForQuorum = stakeRegistry.updateOperatorsStake(
+                _wrap(setup.operator), _wrap(setup.operatorId), uint8(setup.quorumNumbers[i])
+            );
+            shouldBeDeregistered[i] = shouldBeDeregisteredForQuorum[0];
+        }
 
         // Get ending state
         IStakeRegistry.StakeUpdate[] memory newOperatorStakes =
@@ -1873,7 +1899,8 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
                 );
                 // Return value should be empty since we're still above the minimum
                 assertTrue(
-                    quorumsToRemove.isEmpty(), "positive stake delta should not remove any quorums"
+                    !shouldBeDeregistered[i],
+                    "positive stake delta should not lead to deregistration"
                 );
             } else if (endingWeight < minimumStake) {
                 // Check updating an operator who is now below the minimum:
@@ -1892,9 +1919,7 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
                 );
                 assertEq(newOperatorStake.stake, 0, "operator stake should now be zero");
                 // IECDSAStakeRegistryTypes.Quorum should be added to return bitmap
-                assertTrue(
-                    quorumsToRemove.isSet(quorumNumber), "quorum should be in removal bitmap"
-                );
+                assertTrue(shouldBeDeregistered[i], "operator should be deregistered");
             } else {
                 // Check that no update occurs if weight remains the same
                 assertTrue(
@@ -1907,7 +1932,8 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
                 );
                 // Check that return value is empty - we're still at the minimum, so no quorums should be removed
                 assertTrue(
-                    quorumsToRemove.isEmpty(), "neutral stake delta should not remove any quorums"
+                    !shouldBeDeregistered[i],
+                    "neutral stake delta should not lead to deregistration"
                 );
             }
         }
@@ -1946,8 +1972,12 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
             UpdateSetup memory setup = setups[i];
 
             // updateOperatorStake
-            cheats.prank(address(registryCoordinator));
-            stakeRegistry.updateOperatorStake(setup.operator, setup.operatorId, setup.quorumNumbers);
+            for (uint256 j = 0; j < setup.quorumNumbers.length; j++) {
+                cheats.prank(address(registryCoordinator));
+                stakeRegistry.updateOperatorsStake(
+                    _wrap(setup.operator), _wrap(setup.operatorId), uint8(setup.quorumNumbers[j])
+                );
+            }
         }
 
         // Check final results for each quorum
@@ -2036,11 +2066,15 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
             uint256 currBlock = startBlock + j;
             cheats.roll(currBlock);
 
-            // updateOperatorStake
-            cheats.prank(address(registryCoordinator));
-            uint192 quorumsToRemove = stakeRegistry.updateOperatorStake(
-                setup.operator, setup.operatorId, setup.quorumNumbers
-            );
+            // updateOperatorsStake
+            bool[] memory shouldBeDeregistered = new bool[](setup.quorumNumbers.length);
+            for (uint256 i = 0; i < setup.quorumNumbers.length; i++) {
+                cheats.prank(address(registryCoordinator));
+                bool[] memory shouldBeDeregisteredForQuorum = stakeRegistry.updateOperatorsStake(
+                    _wrap(setup.operator), _wrap(setup.operatorId), uint8(setup.quorumNumbers[i])
+                );
+                shouldBeDeregistered[i] = shouldBeDeregisteredForQuorum[0];
+            }
 
             // Get ending state
             IStakeRegistry.StakeUpdate[] memory newOperatorStakes =
@@ -2084,8 +2118,8 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
                     );
                     // Return value should be empty since we're still above the minimum
                     assertTrue(
-                        quorumsToRemove.isEmpty(),
-                        "positive stake delta should not remove any quorums"
+                        !shouldBeDeregistered[i],
+                        "positive stake delta should not lead to deregistration"
                     );
                     assertEq(
                         prevOperatorHistoryLengths[i] + 1,
@@ -2105,9 +2139,7 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
                     // assertEq(prevTotalStake.stake - stakeRemoved, newTotalStake.stake, "failed to remove delta from total stake");
                     assertEq(newOperatorStake.stake, 0, "operator stake should now be zero");
                     // IECDSAStakeRegistryTypes.Quorum should be added to return bitmap
-                    assertTrue(
-                        quorumsToRemove.isSet(quorumNumber), "quorum should be in removal bitmap"
-                    );
+                    assertTrue(shouldBeDeregistered[i], "operator should be deregistered");
                     if (prevOperatorStake.stake >= minimumStake) {
                         // Total stakes and operator history should be updated
                         assertEq(
@@ -2145,7 +2177,7 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
                     );
                     // Check that return value is empty - we're still at the minimum, so no quorums should be removed
                     assertTrue(
-                        quorumsToRemove.isEmpty(),
+                        !shouldBeDeregistered[i],
                         "neutral stake delta should not remove any quorums"
                     );
                     assertEq(

@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
 import {ISocketRegistry} from "./interfaces/ISocketRegistry.sol";
 import {SocketRegistryStorage} from "./SocketRegistryStorage.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title A `Registry` that keeps track of operator sockets.
@@ -11,32 +12,29 @@ import {SocketRegistryStorage} from "./SocketRegistryStorage.sol";
  */
 contract SocketRegistry is ISocketRegistry, SocketRegistryStorage {
     /// @notice A modifier that only allows the RegistryCoordinator to call a function
-    modifier onlyRegistryCoordinator() {
-        require(
-            msg.sender == address(registryCoordinator),
-            "SocketRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator"
-        );
+    modifier onlySlashingRegistryCoordinator() {
+        require(msg.sender == slashingRegistryCoordinator, OnlySlashingRegistryCoordinator());
         _;
     }
 
-    /// @notice A modifier that only allows the owner of the RegistryCoordinator to call a function
+    /// @notice A modifier that only allows the owner of the SlashingRegistryCoordinator to call a function
     modifier onlyCoordinatorOwner() {
         require(
-            msg.sender == IRegistryCoordinator(registryCoordinator).owner(),
-            "SocketRegistry.onlyCoordinatorOwner: caller is not the owner of the registryCoordinator"
+            msg.sender == Ownable(slashingRegistryCoordinator).owner(),
+            OnlySlashingRegistryCoordinatorOwner()
         );
         _;
     }
 
     constructor(
-        IRegistryCoordinator _registryCoordinator
-    ) SocketRegistryStorage(address(_registryCoordinator)) {}
+        ISlashingRegistryCoordinator _slashingRegistryCoordinator
+    ) SocketRegistryStorage(address(_slashingRegistryCoordinator)) {}
 
     /// @notice sets the socket for an operator only callable by the RegistryCoordinator
     function setOperatorSocket(
         bytes32 _operatorId,
         string memory _socket
-    ) external onlyRegistryCoordinator {
+    ) external onlySlashingRegistryCoordinator {
         operatorIdToSocket[_operatorId] = _socket;
     }
 

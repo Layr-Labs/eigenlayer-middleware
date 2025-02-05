@@ -264,12 +264,12 @@ contract StakeRegistryMock is IStakeRegistry {
      * If the operator no longer has the minimum stake required for a quorum, they are
      * added to the
      */
-    function updateOperatorStake(
-        address, /*operator*/
-        bytes32, /*operatorId*/
-        bytes calldata /*quorumNumbers*/
-    ) external returns (uint192) {
-        return updateOperatorStakeReturnBitmap;
+    function updateOperatorsStake(
+        address[] memory operators,
+        bytes32[] memory,
+        uint8
+    ) external pure returns (bool[] memory) {
+        return new bool[](operators.length);
     }
 
     function getMockOperatorId(

@@ -37,7 +37,7 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
     IAllocationManager public immutable allocationManager;
 
     /// @notice the coordinator contract that this registry is associated with
-    address public immutable registryCoordinator;
+    ISlashingRegistryCoordinator public immutable registryCoordinator;
 
     /// @notice In order to register for a quorum i, an operator must have at least `minimumStakeForQuorum[i]`
     /// evaluated by this contract's 'VoteWeigher' logic.
@@ -70,7 +70,7 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
         IAVSDirectory _avsDirectory,
         IAllocationManager _allocationManager
     ) {
-        registryCoordinator = address(_slashingRegistryCoordinator);
+        registryCoordinator = _slashingRegistryCoordinator;
         delegation = _delegationManager;
         avsDirectory = _avsDirectory;
         allocationManager = _allocationManager;
