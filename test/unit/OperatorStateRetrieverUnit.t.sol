@@ -649,4 +649,92 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
             }
         }
     }
+
+    function test_getBatchOperatorId_emptyArray() public {
+        address[] memory operators = new address[](0);
+        bytes32[] memory operatorIds = operatorStateRetriever.getBatchOperatorId(
+            registryCoordinator,
+            operators
+        );
+        assertEq(operatorIds.length, 0, "Should return empty array for empty input");
+    }
+
+    function test_getBatchOperatorId_unregisteredOperators() public {
+        address[] memory operators = new address[](2);
+        operators[0] = address(1);
+        operators[1] = address(2);
+        
+        bytes32[] memory operatorIds = operatorStateRetriever.getBatchOperatorId(
+            registryCoordinator,
+            operators
+        );
+        
+        assertEq(operatorIds.length, 2, "Should return array of same length as input");
+        assertEq(operatorIds[0], bytes32(0), "Unregistered operator should return 0");
+        assertEq(operatorIds[1], bytes32(0), "Unregistered operator should return 0");
+    }
+
+    function test_getBatchOperatorId_mixedRegistration() public {
+        // Register one operator
+        cheats.roll(registrationBlockNumber);
+        _registerOperatorWithCoordinator(defaultOperator, 1, defaultPubKey);
+
+        // Create test array with one registered and one unregistered operator
+        address[] memory operators = new address[](2);
+        operators[0] = defaultOperator;
+        operators[1] = address(2); // unregistered
+
+        bytes32[] memory operatorIds = operatorStateRetriever.getBatchOperatorId(
+            registryCoordinator,
+            operators
+        );
+
+        assertEq(operatorIds.length, 2, "Should return array of same length as input");
+        assertEq(operatorIds[0], defaultOperatorId, "Should return correct ID for registered operator");
+        assertEq(operatorIds[1], bytes32(0), "Should return 0 for unregistered operator");
+    }
+
+    function test_getBatchOperatorFromId_emptyArray() public {
+        bytes32[] memory operatorIds = new bytes32[](0);
+        address[] memory operators = operatorStateRetriever.getBatchOperatorFromId(
+            registryCoordinator,
+            operatorIds
+        );
+        assertEq(operators.length, 0, "Should return empty array for empty input");
+    }
+
+    function test_getBatchOperatorFromId_unregisteredIds() public {
+        bytes32[] memory operatorIds = new bytes32[](2);
+        operatorIds[0] = bytes32(uint256(1));
+        operatorIds[1] = bytes32(uint256(2));
+        
+        address[] memory operators = operatorStateRetriever.getBatchOperatorFromId(
+            registryCoordinator,
+            operatorIds
+        );
+        
+        assertEq(operators.length, 2, "Should return array of same length as input");
+        assertEq(operators[0], address(0), "Unregistered ID should return address(0)");
+        assertEq(operators[1], address(0), "Unregistered ID should return address(0)");
+    }
+
+    function test_getBatchOperatorFromId_mixedRegistration() public {
+        // Register one operator
+        cheats.roll(registrationBlockNumber);
+        _registerOperatorWithCoordinator(defaultOperator, 1, defaultPubKey);
+
+        // Create test array with one registered and one unregistered operator ID
+        bytes32[] memory operatorIds = new bytes32[](2);
+        operatorIds[0] = defaultOperatorId;
+        operatorIds[1] = bytes32(uint256(2)); // unregistered
+
+        address[] memory operators = operatorStateRetriever.getBatchOperatorFromId(
+            registryCoordinator,
+            operatorIds
+        );
+
+        assertEq(operators.length, 2, "Should return array of same length as input");
+        assertEq(operators[0], defaultOperator, "Should return correct address for registered ID");
+        assertEq(operators[1], address(0), "Should return address(0) for unregistered ID");
+    }
 }
