@@ -20,9 +20,7 @@ contract SocketRegistryUnitTests is MockAVSDeployer {
 
     function test_setOperatorSocket_revert_notSlashingRegistryCoordinator() public {
         vm.startPrank(address(0));
-        vm.expectRevert(
-            ISocketRegistryErrors.OnlySlashingRegistryCoordinator.selector
-        );
+        vm.expectRevert(ISocketRegistryErrors.OnlySlashingRegistryCoordinator.selector);
         socketRegistry.setOperatorSocket(defaultOperatorId, "testSocket");
     }
 }
