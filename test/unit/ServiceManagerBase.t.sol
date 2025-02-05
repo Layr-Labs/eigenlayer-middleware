@@ -615,4 +615,154 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         cheats.prank(caller);
         serviceManager.removeAdmin(admin);
     }
+
+    function testFuzz_removeAppointee(
+        address appointee,
+        address target,
+        bytes4 selector
+    ) public filterFuzzedAddressInputs(appointee) filterFuzzedAddressInputs(target) {
+        // Mock the expected call to permissionController
+        cheats.expectCall(
+            address(permissionControllerMock),
+            abi.encodeCall(
+                PermissionController.removeAppointee,
+                (address(serviceManager), appointee, target, selector)
+            )
+        );
+
+        // Call should only work from owner
+        cheats.prank(serviceManagerOwner);
+        serviceManager.removeAppointee(appointee, target, selector);
+    }
+
+    function testFuzz_removeAppointee_revert_notOwner(
+        address appointee,
+        address target,
+        bytes4 selector,
+        address caller
+    ) public filterFuzzedAddressInputs(appointee) filterFuzzedAddressInputs(target) filterFuzzedAddressInputs(caller) {
+        cheats.assume(caller != serviceManagerOwner);
+        
+        cheats.expectRevert("Ownable: caller is not the owner");
+        cheats.prank(caller);
+        serviceManager.removeAppointee(appointee, target, selector);
+    }
+
+    function testFuzz_createOperatorDirectedAVSRewardsSubmission_Revert_WhenNotOwner(
+        address caller
+    ) public filterFuzzedAddressInputs(caller) {
+        cheats.assume(caller != rewardsInitiator);
+        IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[] memory rewardsSubmissions;
+
+        cheats.prank(caller);
+        cheats.expectRevert(IServiceManagerErrors.OnlyRewardsInitiator.selector);
+        serviceManager.createOperatorDirectedAVSRewardsSubmission(rewardsSubmissions);
+    }
+
+    function test_createOperatorDirectedAVSRewardsSubmission_Revert_WhenERC20NotApproved() public {
+        IERC20 token = new ERC20PresetFixedSupply(
+            "dog wif hat", "MOCK1", mockTokenInitialSupply, rewardsInitiator
+        );
+
+        IRewardsCoordinatorTypes.OperatorReward[] memory operatorRewards = 
+            new IRewardsCoordinatorTypes.OperatorReward[](1);
+        operatorRewards[0] = IRewardsCoordinatorTypes.OperatorReward({
+            operator: address(0x1),
+            amount: 100
+        });
+
+        IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[] memory rewardsSubmissions =
+            new IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[](1);
+        rewardsSubmissions[0] = IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: token,
+            operatorRewards: operatorRewards,
+            startTimestamp: uint32(block.timestamp),
+            duration: uint32(1 weeks),
+            description: "Test Rewards"
+        });
+
+        cheats.prank(rewardsInitiator);
+        cheats.expectRevert("ERC20: insufficient allowance");
+        serviceManager.createOperatorDirectedAVSRewardsSubmission(rewardsSubmissions);
+    }
+
+    function testFuzz_createOperatorDirectedAVSRewardsSubmission_SingleSubmission(
+        uint256 startTimestamp,
+        uint256 duration,
+        uint256 amount
+    ) public {
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply(
+            "dog wif hat", "MOCK1", mockTokenInitialSupply, rewardsInitiator
+        );
+        // 1. Bound fuzz inputs to valid ranges and amounts using randSeed for each
+        amount = bound(amount, 1, MAX_REWARDS_AMOUNT);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(
+                _maxTimestamp(
+                    GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH
+                )
+            ) + CALCULATION_INTERVAL_SECONDS - 1,
+            block.timestamp + uint256(MAX_FUTURE_LENGTH)
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator rewards
+        IRewardsCoordinatorTypes.OperatorReward[] memory operatorRewards = 
+            new IRewardsCoordinatorTypes.OperatorReward[](1);
+        operatorRewards[0] = IRewardsCoordinatorTypes.OperatorReward({
+            operator: address(0x1),
+            amount: amount
+        });
+
+        // 3. Create reward submission input param
+        IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[] memory rewardsSubmissions =
+            new IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[](1);
+        rewardsSubmissions[0] = IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            operatorRewards: operatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: "Test Rewards"
+        });
+
+        // 4. Approve serviceManager for ERC20
+        cheats.startPrank(rewardsInitiator);
+        rewardToken.approve(address(serviceManager), amount);
+
+        // 5. call createOperatorDirectedAVSRewardsSubmission() with expected event emitted
+        uint256 rewardsInitiatorBalanceBefore = rewardToken.balanceOf(address(rewardsInitiator));
+        uint256 rewardsCoordinatorBalanceBefore = rewardToken.balanceOf(address(rewardsCoordinator));
+
+        rewardToken.approve(address(rewardsCoordinator), amount);
+        uint256 currSubmissionNonce = rewardsCoordinator.submissionNonce(address(serviceManager));
+        bytes32 avsSubmissionHash = keccak256(
+            abi.encode(address(serviceManager), currSubmissionNonce, rewardsSubmissions[0])
+        );
+
+        vm.warp(block.timestamp + MAX_RETROACTIVE_LENGTH + 1);
+        serviceManager.createOperatorDirectedAVSRewardsSubmission(rewardsSubmissions);
+        cheats.stopPrank();
+
+        assertEq(
+            currSubmissionNonce + 1,
+            rewardsCoordinator.submissionNonce(address(serviceManager)),
+            "submission nonce not incremented"
+        );
+        assertEq(
+            rewardsInitiatorBalanceBefore - amount,
+            rewardToken.balanceOf(rewardsInitiator),
+            "rewardsInitiator balance not decremented by amount of reward submission"
+        );
+        assertEq(
+            rewardsCoordinatorBalanceBefore + amount,
+            rewardToken.balanceOf(address(rewardsCoordinator)),
+            "RewardsCoordinator balance not incremented by amount of reward submission"
+        );
+    }
 }
