@@ -6,31 +6,29 @@ import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {SlasherBase} from "./base/SlasherBase.sol";
 import {ISlashingRegistryCoordinator} from "../interfaces/ISlashingRegistryCoordinator.sol";
+import {IInstantSlasher} from "../interfaces/IInstantSlasher.sol";
 
 /// @title InstantSlasher
 /// @notice A slashing contract that immediately executes slashing requests without any delay or veto period
 /// @dev Extends SlasherBase to provide access controlled slashing functionality
-contract InstantSlasher is SlasherBase {
+contract InstantSlasher is IInstantSlasher, SlasherBase {
     constructor(
         IAllocationManager _allocationManager,
         ISlashingRegistryCoordinator _slashingRegistryCoordinator,
         address _slasher
     ) SlasherBase(_allocationManager, _slashingRegistryCoordinator) {}
 
-    /// @notice Initializes the contract with a slasher address
-    /// @param _slasher Address authorized to create and fulfill slashing requests
+    /// @inheritdoc IInstantSlasher
     function initialize(
         address _slasher
-    ) external initializer {
+    ) external override initializer {
         __SlasherBase_init(_slasher);
     }
 
-    /// @notice Immediately executes a slashing request
-    /// @param _slashingParams Parameters defining the slashing request including operator and amount
-    /// @dev Can only be called by the authorized slasher
+    /// @inheritdoc IInstantSlasher
     function fulfillSlashingRequest(
-        IAllocationManager.SlashingParams memory _slashingParams
-    ) external virtual onlySlasher {
+        IAllocationManager.SlashingParams calldata _slashingParams
+    ) external virtual override(IInstantSlasher) onlySlasher {
         uint256 requestId = nextRequestId++;
         _fulfillSlashingRequest(requestId, _slashingParams);
     }

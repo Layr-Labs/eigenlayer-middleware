@@ -6,20 +6,20 @@ import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {SlasherBase} from "./base/SlasherBase.sol";
 import {ISlashingRegistryCoordinator} from "../interfaces/ISlashingRegistryCoordinator.sol";
+import {IVetoableSlasher, IVetoableSlasherTypes} from "../interfaces/IVetoableSlasher.sol";
 
 /// @title VetoableSlasher
 /// @notice A slashing contract that implements a veto mechanism allowing a designated committee to cancel slashing requests
 /// @dev Extends SlasherBase and adds a veto period during which slashing requests can be cancelled
-contract VetoableSlasher is SlasherBase {
-    /// @notice Duration of the veto period during which the veto committee can cancel slashing requests
-    /// @dev Set to 3 days (259,200 seconds)
-    uint256 public constant VETO_PERIOD = 3 days;
+contract VetoableSlasher is IVetoableSlasher, SlasherBase {
+    /// @inheritdoc IVetoableSlasher
+    uint256 public constant override VETO_PERIOD = 3 days;
 
-    /// @notice Address of the committee that has veto power over slashing requests
-    address public vetoCommittee;
+    /// @inheritdoc IVetoableSlasher
+    address public override vetoCommittee;
 
     /// @notice Mapping of request IDs to their corresponding slashing request details
-    mapping(uint256 => SlashingRequest) public slashingRequests;
+    mapping(uint256 => IVetoableSlasherTypes.VetoableSlashingRequest) public slashingRequests;
 
     /// @notice Modifier to restrict function access to only the veto committee
     modifier onlyVetoCommittee() {
@@ -32,52 +32,50 @@ contract VetoableSlasher is SlasherBase {
         ISlashingRegistryCoordinator _slashingRegistryCoordinator
     ) SlasherBase(_allocationManager, _slashingRegistryCoordinator) {}
 
-    /// @notice Initializes the contract with a veto committee and slasher address
-    /// @param _vetoCommittee Address of the committee that can veto slashing requests
-    /// @param _slasher Address authorized to create and fulfill slashing requests
-    function initialize(address _vetoCommittee, address _slasher) external virtual initializer {
+    /// @inheritdoc IVetoableSlasher
+    function initialize(
+        address _vetoCommittee,
+        address _slasher
+    ) external virtual override initializer {
         __SlasherBase_init(_slasher);
         vetoCommittee = _vetoCommittee;
     }
 
-    /// @notice Queues a new slashing request
-    /// @param params Parameters defining the slashing request including operator and amount
-    /// @dev Can only be called by the authorized slasher
+    /// @inheritdoc IVetoableSlasher
     function queueSlashingRequest(
         IAllocationManager.SlashingParams calldata params
-    ) external virtual onlySlasher {
+    ) external virtual override onlySlasher {
         _queueSlashingRequest(params);
     }
 
-    /// @notice Cancels a pending slashing request
-    /// @param requestId The ID of the slashing request to cancel
-    /// @dev Can only be called by the veto committee during the veto period
+    /// @inheritdoc IVetoableSlasher
     function cancelSlashingRequest(
         uint256 requestId
-    ) external virtual onlyVetoCommittee {
+    ) external virtual override onlyVetoCommittee {
         require(
             block.timestamp < slashingRequests[requestId].requestTimestamp + VETO_PERIOD,
             VetoPeriodPassed()
         );
         require(
-            slashingRequests[requestId].status == SlashingStatus.Requested,
+            slashingRequests[requestId].status == IVetoableSlasherTypes.SlashingStatus.Requested,
             SlashingRequestNotRequested()
         );
 
         _cancelSlashingRequest(requestId);
     }
 
-    /// @notice Executes a slashing request after the veto period has passed
-    /// @param requestId The ID of the slashing request to fulfill
-    /// @dev Can only be called by the authorized slasher after the veto period
+    /// @inheritdoc IVetoableSlasher
     function fulfillSlashingRequest(
         uint256 requestId
-    ) external virtual onlySlasher {
-        SlashingRequest storage request = slashingRequests[requestId];
+    ) external virtual override onlySlasher {
+        IVetoableSlasherTypes.VetoableSlashingRequest storage request = slashingRequests[requestId];
         require(block.timestamp >= request.requestTimestamp + VETO_PERIOD, VetoPeriodNotPassed());
-        require(request.status == SlashingStatus.Requested, SlashingRequestIsCancelled());
+        require(
+            request.status == IVetoableSlasherTypes.SlashingStatus.Requested,
+            SlashingRequestIsCancelled()
+        );
 
-        request.status = SlashingStatus.Completed;
+        request.status = IVetoableSlasherTypes.SlashingStatus.Completed;
 
         _fulfillSlashingRequest(requestId, request.params);
     }
@@ -88,10 +86,10 @@ contract VetoableSlasher is SlasherBase {
         IAllocationManager.SlashingParams calldata params
     ) internal virtual {
         uint256 requestId = nextRequestId++;
-        slashingRequests[requestId] = SlashingRequest({
+        slashingRequests[requestId] = IVetoableSlasherTypes.VetoableSlashingRequest({
             params: params,
             requestTimestamp: block.timestamp,
-            status: SlashingStatus.Requested
+            status: IVetoableSlasherTypes.SlashingStatus.Requested
         });
 
         emit SlashingRequested(
@@ -104,7 +102,7 @@ contract VetoableSlasher is SlasherBase {
     function _cancelSlashingRequest(
         uint256 requestId
     ) internal virtual {
-        slashingRequests[requestId].status = SlashingStatus.Cancelled;
+        slashingRequests[requestId].status = IVetoableSlasherTypes.SlashingStatus.Cancelled;
         emit SlashingRequestCancelled(requestId);
     }
 

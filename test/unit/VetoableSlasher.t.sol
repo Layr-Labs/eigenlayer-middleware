@@ -48,8 +48,10 @@ import {StrategyFactory} from "eigenlayer-contracts/src/contracts/strategies/Str
 import {StakeRegistry} from "../../src/StakeRegistry.sol";
 import {BLSApkRegistry} from "../../src/BLSApkRegistry.sol";
 import {IndexRegistry} from "../../src/IndexRegistry.sol";
+import {IVetoableSlasherTypes} from "../../src/interfaces/IVetoableSlasher.sol";
 import {SocketRegistry} from "../../src/SocketRegistry.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IVetoableSlasherErrors} from "../../src/interfaces/IVetoableSlasher.sol";
 
 contract VetoableSlasherTest is Test {
     VetoableSlasher public vetoableSlasher;
@@ -347,15 +349,15 @@ contract VetoableSlasherTest is Test {
         (
             IAllocationManagerTypes.SlashingParams memory resultParams,
             uint256 requestTimestamp,
-            ISlasherTypes.SlashingStatus status
+            IVetoableSlasherTypes.SlashingStatus status
         ) = vetoableSlasher.slashingRequests(0);
-        ISlasherTypes.SlashingRequest memory request =
-            ISlasherTypes.SlashingRequest(params, requestTimestamp, status);
+        IVetoableSlasherTypes.VetoableSlashingRequest memory request =
+            IVetoableSlasherTypes.VetoableSlashingRequest(params, requestTimestamp, status);
         assertEq(resultParams.operator, operatorWallet.key.addr);
         assertEq(resultParams.operatorSetId, 1);
         assertEq(resultParams.wadsToSlash[0], 0.5e18);
         assertEq(resultParams.description, "Test slashing");
-        assertEq(uint8(status), uint8(ISlasherTypes.SlashingStatus.Requested));
+        assertEq(uint8(status), uint8(IVetoableSlasherTypes.SlashingStatus.Requested));
         assertEq(requestTimestamp, block.timestamp);
     }
 
@@ -365,7 +367,7 @@ contract VetoableSlasherTest is Test {
         vm.prank(slasher);
         vetoableSlasher.queueSlashingRequest(params);
 
-        vm.expectRevert(ISlasherErrors.OnlyVetoCommittee.selector);
+        vm.expectRevert(IVetoableSlasherErrors.OnlyVetoCommittee.selector);
         vetoableSlasher.cancelSlashingRequest(0);
     }
 
@@ -378,7 +380,7 @@ contract VetoableSlasherTest is Test {
         vm.warp(block.timestamp + VETO_PERIOD + 1);
 
         vm.prank(vetoCommittee);
-        vm.expectRevert(ISlasherErrors.VetoPeriodPassed.selector);
+        vm.expectRevert(IVetoableSlasherErrors.VetoPeriodPassed.selector);
         vetoableSlasher.cancelSlashingRequest(0);
     }
 
@@ -394,9 +396,9 @@ contract VetoableSlasherTest is Test {
         (
             IAllocationManagerTypes.SlashingParams memory resultParams,
             uint256 requestTimestamp,
-            ISlasherTypes.SlashingStatus status
+            IVetoableSlasherTypes.SlashingStatus status
         ) = vetoableSlasher.slashingRequests(0);
-        assertEq(uint8(status), uint8(ISlasherTypes.SlashingStatus.Cancelled));
+        assertEq(uint8(status), uint8(IVetoableSlasherTypes.SlashingStatus.Cancelled));
     }
 
     function test_fulfillSlashingRequest_revert_beforeVetoPeriod() public {
@@ -406,7 +408,7 @@ contract VetoableSlasherTest is Test {
         vetoableSlasher.queueSlashingRequest(params);
 
         vm.prank(slasher);
-        vm.expectRevert(ISlasherErrors.VetoPeriodNotPassed.selector);
+        vm.expectRevert(IVetoableSlasherErrors.VetoPeriodNotPassed.selector);
         vetoableSlasher.fulfillSlashingRequest(0);
     }
 
@@ -523,8 +525,8 @@ contract VetoableSlasherTest is Test {
         (
             IAllocationManagerTypes.SlashingParams memory resultParams,
             uint256 requestTimestamp,
-            ISlasherTypes.SlashingStatus status
+            IVetoableSlasherTypes.SlashingStatus status
         ) = vetoableSlasher.slashingRequests(0);
-        assertEq(uint8(status), uint8(ISlasherTypes.SlashingStatus.Completed));
+        assertEq(uint8(status), uint8(IVetoableSlasherTypes.SlashingStatus.Completed));
     }
 }
