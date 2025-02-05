@@ -582,4 +582,75 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
             msgHash, quorumNumbers, referenceBlockNumber, nonSignerStakesAndSignature
         );
     }
+
+    function test_trySignatureAndApkVerification_success() public {
+        uint256 numNonSigners = 0;
+        uint256 quorumBitmap = 1;
+        (
+            uint32 referenceBlockNumber,
+            BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
+        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(
+            1, numNonSigners, quorumBitmap
+        );
+
+        (bool pairingSuccessful, bool signatureIsValid) = blsSignatureChecker
+            .trySignatureAndApkVerification(
+            msgHash,
+            nonSignerStakesAndSignature.quorumApks[0],
+            nonSignerStakesAndSignature.apkG2,
+            nonSignerStakesAndSignature.sigma
+        );
+
+        assertTrue(pairingSuccessful, "Pairing should be successful");
+        assertTrue(signatureIsValid, "Signature should be valid");
+    }
+
+    function test_trySignatureAndApkVerification_invalidSignature() public {
+        uint256 numNonSigners = 0;
+        uint256 quorumBitmap = 1;
+        (
+            uint32 referenceBlockNumber,
+            BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
+        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(
+            1, numNonSigners, quorumBitmap
+        );
+
+        // Modify sigma to make it invalid
+        nonSignerStakesAndSignature.sigma.X++;
+
+        cheats.expectRevert();
+        blsSignatureChecker.trySignatureAndApkVerification(
+            msgHash,
+            nonSignerStakesAndSignature.quorumApks[0],
+            nonSignerStakesAndSignature.apkG2,
+            nonSignerStakesAndSignature.sigma
+        );
+    }
+
+    function test_trySignatureAndApkVerification_invalidPairing() public {
+        uint256 numNonSigners = 0;
+        uint256 quorumBitmap = 1;
+        (
+            uint32 referenceBlockNumber,
+            BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
+        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(
+            1, numNonSigners, quorumBitmap
+        );
+
+        // Create invalid G2 point
+        BN254.G2Point memory invalidG2Point = BN254.G2Point(
+            [type(uint256).max, type(uint256).max], [type(uint256).max, type(uint256).max]
+        );
+
+        (bool pairingSuccessful, bool signatureIsValid) = blsSignatureChecker
+            .trySignatureAndApkVerification(
+            msgHash,
+            nonSignerStakesAndSignature.quorumApks[0],
+            invalidG2Point,
+            nonSignerStakesAndSignature.sigma
+        );
+
+        assertFalse(pairingSuccessful, "Pairing should fail");
+        assertFalse(signatureIsValid, "Signature should be invalid");
+    }
 }
