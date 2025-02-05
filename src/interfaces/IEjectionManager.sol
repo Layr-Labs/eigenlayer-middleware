@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {IRegistryCoordinator} from "./IRegistryCoordinator.sol";
+import {ISlashingRegistryCoordinator} from "./ISlashingRegistryCoordinator.sol";
 import {IStakeRegistry} from "./IStakeRegistry.sol";
 
 interface IEjectionManagerErrors {
@@ -66,11 +66,11 @@ interface IEjectionManager is IEjectionManagerErrors, IEjectionManagerEvents {
     /* STATE */
 
     /*
-     * @notice Returns the address of the registry coordinator contract.
-     * @return The address of the registry coordinator.
+     * @notice Returns the address of the slashing registry coordinator contract.
+     * @return The address of the slashing registry coordinator.
      * @dev This value is immutable and set during contract construction.
      */
-    function registryCoordinator() external view returns (IRegistryCoordinator);
+    function slashingRegistryCoordinator() external view returns (ISlashingRegistryCoordinator);
 
     /*
      * @notice Returns the address of the stake registry contract.
