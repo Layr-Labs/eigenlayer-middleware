@@ -126,9 +126,11 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         bytes memory quorumNumbers
     ) external override onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
         // Check that the quorum numbers are M2 quorums
-        for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            require(_isM2Quorum(uint8(quorumNumbers[i])), OperatorSetQuorum());
-        }
+        require(
+            quorumNumbers.orderedBytesArrayToBitmap().isSubsetOf(m2QuorumBitmap()),
+            OnlyM2QuorumsAllowed()
+        );
+
         _deregisterOperator({operator: msg.sender, quorumNumbers: quorumNumbers});
     }
 
@@ -154,7 +156,8 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         bytes memory quorumNumbers
     ) internal virtual override {
         // filter out M2 quorums from the quorum numbers
-        uint256 operatorSetBitmap = quorumNumbers.orderedBytesArrayToBitmap().minus(m2QuorumBitmap());
+        uint256 operatorSetBitmap =
+            quorumNumbers.orderedBytesArrayToBitmap().minus(m2QuorumBitmap());
         if (!operatorSetBitmap.isEmpty()) {
             // call the parent _forceDeregisterOperator function for operator sets quorums
             super._forceDeregisterOperator(operator, operatorSetBitmap.bitmapToBytesArray());
@@ -180,7 +183,13 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         bytes memory,
         uint192 newBitmap
     ) internal virtual override {
-        uint256 operatorM2QuorumBitmap = newBitmap.minus(m2QuorumBitmap());
+        // Bitmap representing all quorums including M2 and OperatorSet quorums
+        uint256 totalQuorumBitmap = _getTotalQuorumBitmap();
+        // Bitmap representing only OperatorSet quorums. Equal to 0 if operatorSets not enabled
+        uint256 operatorSetQuorumBitmap = totalQuorumBitmap.minus(m2QuorumBitmap());
+        // Operators updated M2 quorum bitmap, clear all the bits of operatorSetQuorumBitmap which gives the
+        // operator's M2 quorum bitmap.
+        uint256 operatorM2QuorumBitmap = newBitmap.minus(operatorSetQuorumBitmap);
         // If the operator is no longer registered for any M2 quorums, update their status and deregister
         // them from the AVS via the EigenLayer core contracts
         if (operatorM2QuorumBitmap.isEmpty()) {
@@ -188,14 +197,8 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         }
     }
 
-    /// @dev Returns a bitmap with all bits set up to `quorumCount`. Used for bit-masking quorum numbers
-    /// and differentiating between operator sets and M2 quorums
-    function m2QuorumBitmap() public view returns (uint256) {
-        // If operator sets are enabled, return the current m2 quorum bitmap
-        if (operatorSetsEnabled) {
-            return _m2QuorumBitmap;
-        }
-
+    /// @notice Return bitmap representing all quorums(Legacy M2 and OperatorSet) quorums
+    function _getTotalQuorumBitmap() internal view returns (uint256) {
         // This creates a number where all bits up to quorumCount are set to 1
         // For example:
         // quorumCount = 3 -> 0111 (7 in decimal)
@@ -217,6 +220,17 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
      *                            VIEW FUNCTIONS
      *
      */
+
+    /// @dev Returns a bitmap with all bits set up to `quorumCount`. Used for bit-masking quorum numbers
+    /// and differentiating between operator sets and M2 quorums
+    function m2QuorumBitmap() public view returns (uint256) {
+        // If operator sets are enabled, return the current m2 quorum bitmap
+        if (operatorSetsEnabled) {
+            return _m2QuorumBitmap;
+        }
+
+        return _getTotalQuorumBitmap();
+    }
 
     /// @notice Returns true if the quorum number is an M2 quorum
     function isM2Quorum(

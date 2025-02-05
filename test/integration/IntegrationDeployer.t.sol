@@ -419,11 +419,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 churnApprover,
                 ejector,
                 0, /*initialPausedStatus*/
-                new IRegistryCoordinator.OperatorSetParam[](0),
-                new uint96[](0),
-                new IStakeRegistryTypes.StrategyParams[][](0),
-                quorumStakeTypes,
-                slashableStakeQuorumLookAheadPeriods
+                address(serviceManager) /* accountIdentifier */
             )
         );
 
@@ -465,6 +461,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
         _setOperatorSetsEnabled(false);
         _setM2QuorumsDisabled(false);
+        _setM2QuorumBitmap(0);
     }
 
     /// @notice Overwrite RegistryCoordinator.operatorSetsEnabled to the specified value.
@@ -474,14 +471,14 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     ) internal {
         // 1. First read the current value of the entire slot
         // which holds operatorSetsEnabled, m2QuorumsDisabled, and accountIdentifier
-        bytes32 currentSlot = cheats.load(address(registryCoordinator), bytes32(uint256(161)));
+        bytes32 currentSlot = cheats.load(address(registryCoordinator), bytes32(uint256(200)));
 
         // 2. Clear only the first byte (operatorSetsEnabled) while keeping the rest
         bytes32 newSlot = (currentSlot & ~bytes32(uint256(0xff)))
             | bytes32(uint256(operatorSetsEnabled ? 0x01 : 0x00));
 
         // 3. Store the modified slot
-        cheats.store(address(registryCoordinator), bytes32(uint256(161)), newSlot);
+        cheats.store(address(registryCoordinator), bytes32(uint256(200)), newSlot);
     }
 
     /// @notice Overwrite RegistryCoordinator.m2QuorumsDisabled to the specified value.
@@ -490,14 +487,21 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     ) internal {
         // 1. First read the current value of the entire slot
         // which holds operatorSetsEnabled, m2QuorumsDisabled, and accountIdentifier
-        bytes32 currentSlot = cheats.load(address(registryCoordinator), bytes32(uint256(161)));
+        bytes32 currentSlot = cheats.load(address(registryCoordinator), bytes32(uint256(200)));
 
         // 2. Clear only the second byte (m2QuorumsDisabled) while keeping the rest
         bytes32 newSlot = (currentSlot & ~bytes32(uint256(0xff) << 8))
             | bytes32(uint256(m2QuorumsDisabled ? 0x01 : 0x00) << 8);
 
         // 3. Store the modified slot
-        cheats.store(address(registryCoordinator), bytes32(uint256(161)), newSlot);
+        cheats.store(address(registryCoordinator), bytes32(uint256(200)), newSlot);
+    }
+
+    /// @notice Overwrite RegistryCoordinator._m2QuorumBitmap to the specified value
+    function _setM2QuorumBitmap(uint256 m2QuorumBitmap) internal {
+        bytes32 currentSlot = cheats.load(address(registryCoordinator), bytes32(uint256(200)));
+
+        cheats.store(address(registryCoordinator), bytes32(uint256(200)), bytes32(m2QuorumBitmap));
     }
 
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist

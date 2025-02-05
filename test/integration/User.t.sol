@@ -254,6 +254,8 @@ contract User is Test {
             for (uint256 j = 0; j < operatorIds.length; j++) {
                 operatorsPerQuorum[i][j] = blsApkRegistry.pubkeyHashToOperator(operatorIds[j]);
             }
+
+            operatorsPerQuorum[i] = Sort.sortAddresses(operatorsPerQuorum[i]);
         }
         registryCoordinator.updateOperatorsForQuorum(operatorsPerQuorum, quorumNumbers);
     }

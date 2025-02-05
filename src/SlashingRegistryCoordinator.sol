@@ -241,9 +241,10 @@ contract SlashingRegistryCoordinator is
             for (uint256 j = 0; j < quorumNumbers.length; j++) {
                 // update the operator's stake for each quorum
                 uint8 quorumNumber = uint8(quorumNumbers[j]);
-                bool[] memory shouldBeDeregistered =
-                    stakeRegistry.updateOperatorsStake(singleOperator, singleOperatorId, quorumNumber);
-               
+                bool[] memory shouldBeDeregistered = stakeRegistry.updateOperatorsStake(
+                    singleOperator, singleOperatorId, quorumNumber
+                );
+
                 if (shouldBeDeregistered[0]) {
                     bytes memory singleQuorumNumber = new bytes(1);
                     singleQuorumNumber[0] = quorumNumbers[j];
@@ -303,7 +304,7 @@ contract SlashingRegistryCoordinator is
                 stakeRegistry.updateOperatorsStake(currQuorumOperators, operatorIds, quorumNumber);
             for (uint256 j = 0; j < currQuorumOperators.length; ++j) {
                 if (shouldBeDeregistered[j]) {
-                    _deregisterOperator(currQuorumOperators[j], quorumNumbers[i:i+1]);
+                    _deregisterOperator(currQuorumOperators[j], quorumNumbers[i:i + 1]);
                 }
             }
 

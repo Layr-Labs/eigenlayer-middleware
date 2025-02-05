@@ -188,14 +188,20 @@ contract Test_CoreRegistration is MockAVSDeployer {
         emit log_named_bytes("quorumNumbers", quorumNumbers);
         _registerOperator(quorumNumbers);
 
+        IAVSDirectoryTypes.OperatorAVSRegistrationStatus operatorStatus =
+            avsDirectory.avsOperatorStatus(address(serviceManager), operator);
+        assertEq(
+            uint8(operatorStatus),
+            uint8(IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED)
+        );
+
         // Deregister Operator with single quorum
         quorumNumbers = new bytes(1);
         cheats.prank(operator);
         registryCoordinator.deregisterOperator(quorumNumbers);
 
         // Check operator is still registered
-        IAVSDirectoryTypes.OperatorAVSRegistrationStatus operatorStatus =
-            avsDirectory.avsOperatorStatus(address(serviceManager), operator);
+        operatorStatus = avsDirectory.avsOperatorStatus(address(serviceManager), operator);
         assertEq(
             uint8(operatorStatus),
             uint8(IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED)

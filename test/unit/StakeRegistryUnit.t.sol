@@ -1817,11 +1817,12 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
 
         // Get a list of valid quorums ending in an invalid quorum number
         bytes memory invalidQuorums = _fuzz_getInvalidQuorums(rand);
+        uint256 length = invalidQuorums.length;
 
         cheats.expectRevert(IStakeRegistryErrors.QuorumDoesNotExist.selector);
         cheats.prank(address(registryCoordinator));
         stakeRegistry.updateOperatorsStake(
-            _wrap(setup.operator), _wrap(setup.operatorId), uint8(invalidQuorums[0])
+            _wrap(setup.operator), _wrap(setup.operatorId), uint8(invalidQuorums[length - 1])
         );
     }
 
@@ -1848,13 +1849,13 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
             _getLatestTotalStakeUpdates(setup.quorumNumbers);
 
         // updateOperatorStake
-        cheats.prank(address(registryCoordinator));
         bool[] memory shouldBeDeregistered = new bool[](setup.quorumNumbers.length);
         for (uint256 i = 0; i < setup.quorumNumbers.length; i++) {
+            cheats.prank(address(registryCoordinator));
             bool[] memory shouldBeDeregisteredForQuorum = stakeRegistry.updateOperatorsStake(
                 _wrap(setup.operator), _wrap(setup.operatorId), uint8(setup.quorumNumbers[i])
             );
-            shouldBeDeregistered[i] = shouldBeDeregisteredForQuorum[i];
+            shouldBeDeregistered[i] = shouldBeDeregisteredForQuorum[0];
         }
 
         // Get ending state
@@ -1971,8 +1972,8 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
             UpdateSetup memory setup = setups[i];
 
             // updateOperatorStake
-            cheats.prank(address(registryCoordinator));
             for (uint256 j = 0; j < setup.quorumNumbers.length; j++) {
+                cheats.prank(address(registryCoordinator));
                 stakeRegistry.updateOperatorsStake(
                     _wrap(setup.operator), _wrap(setup.operatorId), uint8(setup.quorumNumbers[j])
                 );
@@ -2065,14 +2066,14 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
             uint256 currBlock = startBlock + j;
             cheats.roll(currBlock);
 
-            // updateOperatorStake
-            cheats.prank(address(registryCoordinator));
+            // updateOperatorsStake
             bool[] memory shouldBeDeregistered = new bool[](setup.quorumNumbers.length);
             for (uint256 i = 0; i < setup.quorumNumbers.length; i++) {
+                cheats.prank(address(registryCoordinator));
                 bool[] memory shouldBeDeregisteredForQuorum = stakeRegistry.updateOperatorsStake(
                     _wrap(setup.operator), _wrap(setup.operatorId), uint8(setup.quorumNumbers[i])
                 );
-                shouldBeDeregistered[i] = shouldBeDeregisteredForQuorum[i];
+                shouldBeDeregistered[i] = shouldBeDeregisteredForQuorum[0];
             }
 
             // Get ending state
