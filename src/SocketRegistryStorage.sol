@@ -7,15 +7,15 @@ pragma solidity ^0.8.12;
  */
 contract SocketRegistryStorage {
     /// @notice The address of the RegistryCoordinator
-    address public immutable registryCoordinator;
+    address public immutable slashingRegistryCoordinator;
 
     /// @notice A mapping from operator IDs to their sockets
     mapping(bytes32 => string) public operatorIdToSocket;
 
     constructor(
-        address _registryCoordinator
+        address _slashingRegistryCoordinator
     ) {
-        registryCoordinator = _registryCoordinator;
+        slashingRegistryCoordinator = _slashingRegistryCoordinator;
     }
 
     uint256[48] private __GAP;

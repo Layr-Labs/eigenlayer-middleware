@@ -5,21 +5,21 @@ import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/Ownabl
 import {
     EjectionManagerStorage,
     IEjectionManager,
-    IRegistryCoordinator,
+    ISlashingRegistryCoordinator,
     IStakeRegistry
 } from "./EjectionManagerStorage.sol";
 
 // TODO: double check order of inheritance since we separated storage from logic...
 
 /**
- * @title Used for automated ejection of operators from the RegistryCoordinator under a ratelimit
+ * @title Used for automated ejection of operators from the SlashingRegistryCoordinator under a ratelimit
  * @author Layr Labs, Inc.
  */
 contract EjectionManager is OwnableUpgradeable, EjectionManagerStorage {
     constructor(
-        IRegistryCoordinator _registryCoordinator,
+        ISlashingRegistryCoordinator _slashingRegistryCoordinator,
         IStakeRegistry _stakeRegistry
-    ) EjectionManagerStorage(_registryCoordinator, _stakeRegistry) {
+    ) EjectionManagerStorage(_slashingRegistryCoordinator, _stakeRegistry) {
         _disableInitializers();
     }
 
@@ -67,8 +67,8 @@ contract EjectionManager is OwnableUpgradeable, EjectionManagerStorage {
                         stakeForEjection += operatorStake;
                         ++ejectedOperators;
 
-                        registryCoordinator.ejectOperator(
-                            registryCoordinator.getOperatorFromId(operatorIds[i][j]),
+                        slashingRegistryCoordinator.ejectOperator(
+                            slashingRegistryCoordinator.getOperatorFromId(operatorIds[i][j]),
                             abi.encodePacked(quorumNumber)
                         );
 
@@ -80,8 +80,8 @@ contract EjectionManager is OwnableUpgradeable, EjectionManagerStorage {
                     stakeForEjection += operatorStake;
                     ++ejectedOperators;
 
-                    registryCoordinator.ejectOperator(
-                        registryCoordinator.getOperatorFromId(operatorIds[i][j]),
+                    slashingRegistryCoordinator.ejectOperator(
+                        slashingRegistryCoordinator.getOperatorFromId(operatorIds[i][j]),
                         abi.encodePacked(quorumNumber)
                     );
 
