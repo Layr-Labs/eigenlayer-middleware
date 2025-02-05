@@ -13,25 +13,24 @@ import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.s
 import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 import {PermissionController} from "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
+import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {DelegationMock} from "../mocks/DelegationMock.sol";
 import {SlashingRegistryCoordinator} from "../../src/SlashingRegistryCoordinator.sol";
 import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
 import {ISocketRegistry} from "../../src/interfaces/ISocketRegistry.sol";
+import {CoreDeploymentLib} from "../utils/CoreDeployLib.sol";
 
 contract InstantSlasherTest is Test {
     InstantSlasher public instantSlasher;
     InstantSlasher public instantSlasherImplementation;
     ProxyAdmin public proxyAdmin;
     EmptyContract public emptyContract;
-    AllocationManager public allocationManager;
-    AllocationManager public allocationManagerImplementation;
-    PermissionController public permissionController;
-    PauserRegistry public pauserRegistry;
-    DelegationMock public delegationMock;
     SlashingRegistryCoordinator public slashingRegistryCoordinator;
     SlashingRegistryCoordinator public slashingRegistryCoordinatorImplementation;
+    CoreDeploymentLib.DeploymentData public coreDeployment;
+    PauserRegistry public pauserRegistry;
 
     address public slasher;
     address public serviceManager;
@@ -56,33 +55,50 @@ contract InstantSlasherTest is Test {
         proxyAdmin = new ProxyAdmin();
         emptyContract = new EmptyContract();
 
+        // Setup PauserRegistry
         address[] memory pausers = new address[](1);
         pausers[0] = pauser;
         pauserRegistry = new PauserRegistry(pausers, unpauser);
 
-        delegationMock = new DelegationMock();
+        // Setup core deployment config
+        CoreDeploymentLib.DeploymentConfigData memory configData;
+        configData.strategyManager.initialOwner = proxyAdminOwner;
+        configData.strategyManager.initialStrategyWhitelister = proxyAdminOwner;
+        configData.strategyManager.initPausedStatus = 0;
 
-        permissionController = new PermissionController();
+        configData.delegationManager.initialOwner = proxyAdminOwner;
+        configData.delegationManager.minWithdrawalDelayBlocks = 50400;
+        configData.delegationManager.initPausedStatus = 0;
 
-        allocationManagerImplementation = new AllocationManager(
-            delegationMock,
-            pauserRegistry,
-            permissionController,
-            DEALLOCATION_DELAY,
-            ALLOCATION_CONFIGURATION_DELAY
-        );
+        configData.eigenPodManager.initialOwner = proxyAdminOwner;
+        configData.eigenPodManager.initPausedStatus = 0;
 
-        allocationManager = AllocationManager(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(allocationManagerImplementation),
-                    address(proxyAdmin),
-                    ""
-                )
-            )
-        );
+        configData.allocationManager.initialOwner = proxyAdminOwner;
+        configData.allocationManager.deallocationDelay = DEALLOCATION_DELAY;
+        configData.allocationManager.allocationConfigurationDelay = ALLOCATION_CONFIGURATION_DELAY;
+        configData.allocationManager.initPausedStatus = 0;
 
-        allocationManager.initialize(proxyAdminOwner, 0);
+        configData.strategyFactory.initialOwner = proxyAdminOwner;
+        configData.strategyFactory.initPausedStatus = 0;
+
+        configData.avsDirectory.initialOwner = proxyAdminOwner;
+        configData.avsDirectory.initPausedStatus = 0;
+
+        configData.rewardsCoordinator.initialOwner = proxyAdminOwner;
+        configData.rewardsCoordinator.rewardsUpdater = address(0x14dC79964da2C08b23698B3D3cc7Ca32193d9955);
+        configData.rewardsCoordinator.initPausedStatus = 0;
+        configData.rewardsCoordinator.activationDelay = 0;
+        configData.rewardsCoordinator.defaultSplitBips = 1000;
+        configData.rewardsCoordinator.calculationIntervalSeconds = 86400;
+        configData.rewardsCoordinator.maxRewardsDuration = 864000;
+        configData.rewardsCoordinator.maxRetroactiveLength = 86400;
+        configData.rewardsCoordinator.maxFutureLength = 86400;
+        configData.rewardsCoordinator.genesisRewardsTimestamp = 1672531200;
+
+        configData.ethPOSDeposit.ethPOSDepositAddress = address(0x123); // Mock ETH POS deposit contract address to avoid revert
+
+        // Deploy core contracts
+        coreDeployment = CoreDeploymentLib.deployContracts(address(proxyAdmin), configData);
 
         // Deploy and set up SlashingRegistryCoordinator
         slashingRegistryCoordinatorImplementation = new SlashingRegistryCoordinator(
@@ -90,8 +106,8 @@ contract InstantSlasherTest is Test {
             IBLSApkRegistry(address(0)), // Mock BLS APK registry
             IIndexRegistry(address(0)), // Mock index registry
             ISocketRegistry(address(0)), // Mock socket registry
-            allocationManager,
-            pauserRegistry
+            IAllocationManager(coreDeployment.allocationManager),
+            IPauserRegistry(address(pauserRegistry))
         );
 
         slashingRegistryCoordinator = SlashingRegistryCoordinator(
@@ -115,7 +131,7 @@ contract InstantSlasherTest is Test {
         vm.stopPrank();
 
         instantSlasherImplementation = new InstantSlasher(
-            allocationManager,
+            IAllocationManager(coreDeployment.allocationManager),
             ISlashingRegistryCoordinator(slashingRegistryCoordinator),
             slasher
         );
@@ -137,14 +153,13 @@ contract InstantSlasherTest is Test {
         );
         vm.stopPrank();
 
-
         instantSlasher.initialize(slasher);
 
         vm.prank(serviceManager);
-        permissionController.setAppointee(
+        PermissionController(coreDeployment.permissionController).setAppointee(
             address(serviceManager),
             address(instantSlasher),
-            address(allocationManager),
+            coreDeployment.allocationManager,
             AllocationManager.slashOperator.selector
         );
     }
