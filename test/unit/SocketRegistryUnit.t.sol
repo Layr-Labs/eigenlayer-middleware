@@ -3,6 +3,7 @@
 pragma solidity ^0.8.12;
 
 import {SocketRegistry} from "../../src/SocketRegistry.sol";
+import {ISocketRegistry, ISocketRegistryErrors} from "../../src/interfaces/ISocketRegistry.sol";
 import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
 import "../utils/MockAVSDeployer.sol";
 
@@ -20,7 +21,7 @@ contract SocketRegistryUnitTests is MockAVSDeployer {
     function test_setOperatorSocket_revert_notSlashingRegistryCoordinator() public {
         vm.startPrank(address(0));
         vm.expectRevert(
-            "SocketRegistry.onlySlashingRegistryCoordinator: caller is not the SlashingRegistryCoordinator"
+            ISocketRegistryErrors.OnlySlashingRegistryCoordinator.selector
         );
         socketRegistry.setOperatorSocket(defaultOperatorId, "testSocket");
     }
