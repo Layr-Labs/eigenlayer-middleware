@@ -593,7 +593,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
             1, numNonSigners, quorumBitmap
         );
 
-        (bool pairingSuccessful, bool signatureIsValid) = blsSignatureChecker.trySignatureAndApkVerification(
+        (bool pairingSuccessful, bool signatureIsValid) = blsSignatureChecker
+            .trySignatureAndApkVerification(
             msgHash,
             nonSignerStakesAndSignature.quorumApks[0],
             nonSignerStakesAndSignature.apkG2,
@@ -638,11 +639,11 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
 
         // Create invalid G2 point
         BN254.G2Point memory invalidG2Point = BN254.G2Point(
-            [type(uint256).max, type(uint256).max],
-            [type(uint256).max, type(uint256).max]
+            [type(uint256).max, type(uint256).max], [type(uint256).max, type(uint256).max]
         );
 
-        (bool pairingSuccessful, bool signatureIsValid) = blsSignatureChecker.trySignatureAndApkVerification(
+        (bool pairingSuccessful, bool signatureIsValid) = blsSignatureChecker
+            .trySignatureAndApkVerification(
             msgHash,
             nonSignerStakesAndSignature.quorumApks[0],
             invalidG2Point,

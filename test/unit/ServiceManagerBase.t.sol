@@ -545,7 +545,9 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         serviceManager.setRewardsInitiator(newRewardsInitiator);
     }
 
-    function testFuzz_addPendingAdmin(address admin) public filterFuzzedAddressInputs(admin) {
+    function testFuzz_addPendingAdmin(
+        address admin
+    ) public filterFuzzedAddressInputs(admin) {
         // Mock the expected call to permissionController
         cheats.expectCall(
             address(permissionControllerMock),
@@ -562,7 +564,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         address caller
     ) public filterFuzzedAddressInputs(admin) filterFuzzedAddressInputs(caller) {
         cheats.assume(caller != serviceManagerOwner);
-        
+
         cheats.expectRevert("Ownable: caller is not the owner");
         cheats.prank(caller);
         serviceManager.addPendingAdmin(admin);
@@ -574,7 +576,9 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         // Mock the expected call to permissionController
         cheats.expectCall(
             address(permissionControllerMock),
-            abi.encodeCall(PermissionController.removePendingAdmin, (address(serviceManager), pendingAdmin))
+            abi.encodeCall(
+                PermissionController.removePendingAdmin, (address(serviceManager), pendingAdmin)
+            )
         );
 
         // Call should only work from owner
@@ -587,13 +591,15 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         address caller
     ) public filterFuzzedAddressInputs(pendingAdmin) filterFuzzedAddressInputs(caller) {
         cheats.assume(caller != serviceManagerOwner);
-        
+
         cheats.expectRevert("Ownable: caller is not the owner");
         cheats.prank(caller);
         serviceManager.removePendingAdmin(pendingAdmin);
     }
 
-    function testFuzz_removeAdmin(address admin) public filterFuzzedAddressInputs(admin) {
+    function testFuzz_removeAdmin(
+        address admin
+    ) public filterFuzzedAddressInputs(admin) {
         // Mock the expected call to permissionController
         cheats.expectCall(
             address(permissionControllerMock),
@@ -610,7 +616,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         address caller
     ) public filterFuzzedAddressInputs(admin) filterFuzzedAddressInputs(caller) {
         cheats.assume(caller != serviceManagerOwner);
-        
+
         cheats.expectRevert("Ownable: caller is not the owner");
         cheats.prank(caller);
         serviceManager.removeAdmin(admin);
@@ -640,9 +646,14 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         address target,
         bytes4 selector,
         address caller
-    ) public filterFuzzedAddressInputs(appointee) filterFuzzedAddressInputs(target) filterFuzzedAddressInputs(caller) {
+    )
+        public
+        filterFuzzedAddressInputs(appointee)
+        filterFuzzedAddressInputs(target)
+        filterFuzzedAddressInputs(caller)
+    {
         cheats.assume(caller != serviceManagerOwner);
-        
+
         cheats.expectRevert("Ownable: caller is not the owner");
         cheats.prank(caller);
         serviceManager.removeAppointee(appointee, target, selector);
@@ -664,12 +675,10 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
             "dog wif hat", "MOCK1", mockTokenInitialSupply, rewardsInitiator
         );
 
-        IRewardsCoordinatorTypes.OperatorReward[] memory operatorRewards = 
+        IRewardsCoordinatorTypes.OperatorReward[] memory operatorRewards =
             new IRewardsCoordinatorTypes.OperatorReward[](1);
-        operatorRewards[0] = IRewardsCoordinatorTypes.OperatorReward({
-            operator: address(0x1),
-            amount: 100
-        });
+        operatorRewards[0] =
+            IRewardsCoordinatorTypes.OperatorReward({operator: address(0x1), amount: 100});
 
         IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[] memory rewardsSubmissions =
             new IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[](1);
@@ -712,12 +721,10 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator rewards
-        IRewardsCoordinatorTypes.OperatorReward[] memory operatorRewards = 
+        IRewardsCoordinatorTypes.OperatorReward[] memory operatorRewards =
             new IRewardsCoordinatorTypes.OperatorReward[](1);
-        operatorRewards[0] = IRewardsCoordinatorTypes.OperatorReward({
-            operator: address(0x1),
-            amount: amount
-        });
+        operatorRewards[0] =
+            IRewardsCoordinatorTypes.OperatorReward({operator: address(0x1), amount: amount});
 
         // 3. Create reward submission input param
         IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[] memory rewardsSubmissions =
