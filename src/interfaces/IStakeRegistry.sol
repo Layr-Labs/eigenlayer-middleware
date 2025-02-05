@@ -29,6 +29,8 @@ interface IStakeRegistryErrors {
     error InvalidBlockNumber();
     /// @notice Thrown when attempting to access stake history that doesn't exist for a quorum.
     error EmptyStakeHistory();
+    /// @notice Thrown when the quorum is not slashable and the caller attempts to set the look ahead period.
+    error QuorumNotSlashable();
 }
 
 interface IStakeRegistryTypes {
@@ -164,17 +166,17 @@ interface IStakeRegistry is IStakeRegistryErrors, IStakeRegistryEvents {
     function deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) external;
 
     /**
-     * @notice Called by the registry coordinator to update an operator's stake for one or more quorums.
-     * @param operator The address of the operator to update.
-     * @param operatorId The id of the operator to update.
-     * @param quorumNumbers The quorum numbers to update the stake for.
-     * @return A bitmap of quorums where the operator no longer meets the minimum stake and should be deregistered.
+     * @notice Called by the registry coordinator to update the stake of a list of operators for a specific quorum.
+     * @param operators The addresses of the operators to update.
+     * @param operatorIds The ids of the operators to update.
+     * @param quorumNumber The quorum number to update the stake for.
+     * @return A list of bools, true if the corresponding operator should be deregistered since they no longer meet the minimum stake requirement.
      */
-    function updateOperatorStake(
-        address operator,
-        bytes32 operatorId,
-        bytes calldata quorumNumbers
-    ) external returns (uint192);
+    function updateOperatorsStake(
+        address[] memory operators,
+        bytes32[] memory operatorIds,
+        uint8 quorumNumber
+    ) external returns (bool[] memory);
 
     /**
      * @notice Initialize a new quorum created by the registry coordinator by setting strategies, weights, and minimum stake.
@@ -248,15 +250,6 @@ interface IStakeRegistry is IStakeRegistryErrors, IStakeRegistryEvents {
     ) external;
 
     /// VIEW
-
-    /**
-     * @notice Returns whether a quorum is an operator set quorum.
-     * @param quorumNumber The quorum number to query.
-     * @return Whether the quorum is an operator set quorum.
-     */
-    function isOperatorSetQuorum(
-        uint8 quorumNumber
-    ) external view returns (bool);
 
     /**
      * @notice Returns the minimum stake requirement for a quorum `quorumNumber`.
