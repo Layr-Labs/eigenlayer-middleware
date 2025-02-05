@@ -646,7 +646,7 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
      * Test uses only the defaultQuorumNumber
      */
     function testFuzz_quorumApkUpdates(uint256 numOperators, uint256[200] memory randSeed) public {
-        cheats.assume(0 < numOperators && numOperators <= 200);
+        numOperators = uint256(bound(numOperators, 1, 200));
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
@@ -688,8 +688,8 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
         uint256 numOperators,
         uint256[50] memory randSeed
     ) public {
-        cheats.assume(0 < numOperators && numOperators <= 50);
-        cheats.assume(quorumBitmap > initializedQuorumBitmap);
+        numOperators = uint256(bound(numOperators, 1, 50));
+        quorumBitmap = uint32(bound(quorumBitmap, initializedQuorumBitmap, type(uint32).max));
         // mask out quorums that are already initialized
         uint192 initializingBitmap = uint192(quorumBitmap.minus(uint256(initializedQuorumBitmap)));
         _initializeFuzzedQuorums(initializingBitmap);

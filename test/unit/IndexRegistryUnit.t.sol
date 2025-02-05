@@ -618,7 +618,7 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
         uint192 bitmap
     ) public {
         // mask out quorums that are already initialized
-        cheats.assume(bitmap <= 192);
+        bitmap = uint192(bound(bitmap, initializedQuorumBitmap, 192));
         bitmap = uint192(bitmap.minus(uint256(initializedQuorumBitmap)));
         bytes memory quorumNumbers = bitmapUtilsWrapper.bitmapToBytesArray(bitmap);
         // Initialize fuzzed quorum numbers

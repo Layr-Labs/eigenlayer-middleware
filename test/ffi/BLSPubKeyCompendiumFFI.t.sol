@@ -27,7 +27,7 @@ contract BLSApkRegistryFFITests is G2Operations {
     function testRegisterBLSPublicKey(
         uint256 _privKey
     ) public {
-        cheats.assume(_privKey != 0);
+        _privKey = uint256(bound(_privKey, 1, SECP256K1_ORDER - 1));
         _setKeys(_privKey);
 
         pubkeyRegistrationParams.pubkeyRegistrationSignature = _signMessage(alice);

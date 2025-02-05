@@ -345,7 +345,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         uint256 amount,
         uint256 numSubmissions
     ) public {
-        cheats.assume(2 <= numSubmissions && numSubmissions <= 10);
+        numSubmissions = bound(numSubmissions, 2, 10);
         cheats.prank(rewardsCoordinator.owner());
 
         IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions =
@@ -438,7 +438,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         uint256 amount,
         uint256 numSubmissions
     ) public {
-        cheats.assume(2 <= numSubmissions && numSubmissions <= 10);
+        numSubmissions = bound(numSubmissions, 2, 10);
         cheats.prank(rewardsCoordinator.owner());
 
         IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions =

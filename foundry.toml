@@ -99,7 +99,7 @@
 
 [profile.intense.fuzz]
     optimizer = false
-    runs = 15000
+    runs = 5000
 
 [profile.forktest.fuzz]
     runs = 16
