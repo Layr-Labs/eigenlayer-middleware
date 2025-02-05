@@ -23,7 +23,10 @@ abstract contract EjectionManagerStorage is IEjectionManager {
     /// @inheritdoc IEjectionManager
     mapping(uint8 => QuorumEjectionParams) public quorumEjectionParams;
 
-    constructor(ISlashingRegistryCoordinator _slashingRegistryCoordinator, IStakeRegistry _stakeRegistry) {
+    constructor(
+        ISlashingRegistryCoordinator _slashingRegistryCoordinator,
+        IStakeRegistry _stakeRegistry
+    ) {
         slashingRegistryCoordinator = _slashingRegistryCoordinator;
         stakeRegistry = _stakeRegistry;
     }
