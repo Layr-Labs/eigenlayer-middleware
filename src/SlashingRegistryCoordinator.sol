@@ -1066,4 +1066,14 @@ contract SlashingRegistryCoordinator is
             _hashTypedDataV4(keccak256(abi.encode(PUBKEY_REGISTRATION_TYPEHASH, operator)))
         );
     }
+
+    /**
+     * @notice Returns the message hash that an operator must sign to register their BLS public key.
+     * @param operator is the address of the operator registering their BLS public key
+     */
+    function calculatePubkeyRegistrationMessageHash(
+        address operator
+    ) public view returns (bytes32) {
+        return _hashTypedDataV4(keccak256(abi.encode(PUBKEY_REGISTRATION_TYPEHASH, operator)));
+    }
 }
