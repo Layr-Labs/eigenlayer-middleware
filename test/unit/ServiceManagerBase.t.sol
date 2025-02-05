@@ -728,15 +728,13 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
 
         // 2. Create reward submission input param
         // Create operator rewards array
-        IRewardsCoordinatorTypes.OperatorReward[] memory operatorRewards = 
+        IRewardsCoordinatorTypes.OperatorReward[] memory operatorRewards =
             new IRewardsCoordinatorTypes.OperatorReward[](1);
-        operatorRewards[0] = IRewardsCoordinatorTypes.OperatorReward({
-            operator: address(0x1),
-            amount: amount
-        });
+        operatorRewards[0] =
+            IRewardsCoordinatorTypes.OperatorReward({operator: address(0x1), amount: amount});
 
         // Create rewards submission
-        IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[] memory rewardsSubmissions = 
+        IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[] memory rewardsSubmissions =
             new IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[](1);
         rewardsSubmissions[0] = IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
@@ -816,7 +814,6 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
 
         // Create multiple rewards submissions and their expected event
         for (uint256 i = 0; i < numSubmissions; ++i) {
-            
             // 1. Bound fuzz inputs to valid ranges and amounts using randSeed for each
             amount = bound(amount + i, 1, MAX_REWARDS_AMOUNT);
             // amounts[i] = amount;
@@ -843,11 +840,10 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
             }
 
             // 2. Create reward submission input param
-            IRewardsCoordinatorTypes.OperatorReward[] memory operatorRewards = new IRewardsCoordinatorTypes.OperatorReward[](1);
-            operatorRewards[0] = IRewardsCoordinatorTypes.OperatorReward({
-                operator: address(0x1),
-                amount: amount
-            });
+            IRewardsCoordinatorTypes.OperatorReward[] memory operatorRewards =
+                new IRewardsCoordinatorTypes.OperatorReward[](1);
+            operatorRewards[0] =
+                IRewardsCoordinatorTypes.OperatorReward({operator: address(0x1), amount: amount});
 
             IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission memory rewardsSubmission =
             IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission({
