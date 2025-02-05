@@ -226,6 +226,34 @@ contract SlashingRegistryCoordinator is
     }
 
     /// @inheritdoc ISlashingRegistryCoordinator
+    function updateOperators(
+        address[] memory operators
+    ) external override onlyWhenNotPaused(PAUSED_UPDATE_OPERATOR) {
+        for (uint256 i = 0; i < operators.length; i++) {
+            // create single-element arrays for the operator and operatorId
+            address[] memory singleOperator = new address[](1);
+            singleOperator[0] = operators[i];
+            bytes32[] memory singleOperatorId = new bytes32[](1);
+            singleOperatorId[0] = _operatorInfo[operators[i]].operatorId;
+
+            uint192 currentBitmap = _currentOperatorBitmap(singleOperatorId[0]);
+            bytes memory quorumNumbers = currentBitmap.bitmapToBytesArray();
+            for (uint256 j = 0; j < quorumNumbers.length; j++) {
+                // update the operator's stake for each quorum
+                uint8 quorumNumber = uint8(quorumNumbers[j]);
+                bool[] memory shouldBeDeregistered =
+                    stakeRegistry.updateOperatorsStake(singleOperator, singleOperatorId, quorumNumber);
+               
+                if (shouldBeDeregistered[0]) {
+                    bytes memory singleQuorumNumber = new bytes(1);
+                    singleQuorumNumber[0] = quorumNumbers[j];
+                    _deregisterOperator(operators[i], singleQuorumNumber);
+                }
+            }
+        }
+    }
+
+    /// @inheritdoc ISlashingRegistryCoordinator
     function updateOperatorsForQuorum(
         address[][] memory operatorsPerQuorum,
         bytes calldata quorumNumbers
@@ -270,13 +298,12 @@ contract SlashingRegistryCoordinator is
 
                 prevOperatorAddress = operator;
             }
-            bytes memory quorumNumberBytes = new bytes(1);
-            quorumNumberBytes[0] = bytes1(quorumNumber);
+
             bool[] memory shouldBeDeregistered =
                 stakeRegistry.updateOperatorsStake(currQuorumOperators, operatorIds, quorumNumber);
             for (uint256 j = 0; j < currQuorumOperators.length; ++j) {
                 if (shouldBeDeregistered[j]) {
-                    _deregisterOperator(currQuorumOperators[j], quorumNumberBytes);
+                    _deregisterOperator(currQuorumOperators[j], quorumNumbers[i:i+1]);
                 }
             }
 
