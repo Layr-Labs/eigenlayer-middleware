@@ -544,4 +544,75 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         cheats.prank(caller);
         serviceManager.setRewardsInitiator(newRewardsInitiator);
     }
+
+    function testFuzz_addPendingAdmin(address admin) public filterFuzzedAddressInputs(admin) {
+        // Mock the expected call to permissionController
+        cheats.expectCall(
+            address(permissionControllerMock),
+            abi.encodeCall(PermissionController.addPendingAdmin, (address(serviceManager), admin))
+        );
+
+        // Call should only work from owner
+        cheats.prank(serviceManagerOwner);
+        serviceManager.addPendingAdmin(admin);
+    }
+
+    function testFuzz_addPendingAdmin_revert_notOwner(
+        address admin,
+        address caller
+    ) public filterFuzzedAddressInputs(admin) filterFuzzedAddressInputs(caller) {
+        cheats.assume(caller != serviceManagerOwner);
+        
+        cheats.expectRevert("Ownable: caller is not the owner");
+        cheats.prank(caller);
+        serviceManager.addPendingAdmin(admin);
+    }
+
+    function testFuzz_removePendingAdmin(
+        address pendingAdmin
+    ) public filterFuzzedAddressInputs(pendingAdmin) {
+        // Mock the expected call to permissionController
+        cheats.expectCall(
+            address(permissionControllerMock),
+            abi.encodeCall(PermissionController.removePendingAdmin, (address(serviceManager), pendingAdmin))
+        );
+
+        // Call should only work from owner
+        cheats.prank(serviceManagerOwner);
+        serviceManager.removePendingAdmin(pendingAdmin);
+    }
+
+    function testFuzz_removePendingAdmin_revert_notOwner(
+        address pendingAdmin,
+        address caller
+    ) public filterFuzzedAddressInputs(pendingAdmin) filterFuzzedAddressInputs(caller) {
+        cheats.assume(caller != serviceManagerOwner);
+        
+        cheats.expectRevert("Ownable: caller is not the owner");
+        cheats.prank(caller);
+        serviceManager.removePendingAdmin(pendingAdmin);
+    }
+
+    function testFuzz_removeAdmin(address admin) public filterFuzzedAddressInputs(admin) {
+        // Mock the expected call to permissionController
+        cheats.expectCall(
+            address(permissionControllerMock),
+            abi.encodeCall(PermissionController.removeAdmin, (address(serviceManager), admin))
+        );
+
+        // Call should only work from owner
+        cheats.prank(serviceManagerOwner);
+        serviceManager.removeAdmin(admin);
+    }
+
+    function testFuzz_removeAdmin_revert_notOwner(
+        address admin,
+        address caller
+    ) public filterFuzzedAddressInputs(admin) filterFuzzedAddressInputs(caller) {
+        cheats.assume(caller != serviceManagerOwner);
+        
+        cheats.expectRevert("Ownable: caller is not the owner");
+        cheats.prank(caller);
+        serviceManager.removeAdmin(admin);
+    }
 }
