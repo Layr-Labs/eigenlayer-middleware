@@ -185,6 +185,13 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
             });
         }
 
+        /// Setup the RegistryCoordinator as M2 RegistryCoordinator with M2 quorums
+        /// TODO: refactor Integration framework to test both M2 upgrade path and new
+        /// registration/deregistration flow of operatorSets
+        _setOperatorSetsEnabled(false);
+        _setM2QuorumsDisabled(false);
+        _setM2QuorumBitmap(0);
+
         // Decide how many operators to register for each quorum initially
         uint256 initialOperators = _randInitialOperators(operatorSet);
         emit log(

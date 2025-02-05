@@ -357,8 +357,10 @@ contract MockAVSDeployer is Test {
 
         operatorStateRetriever = new OperatorStateRetriever();
 
+        // Set RegistryCoordinator as M2 state with existing quorums
+        registryCoordinator.setM2QuorumBitmap(0);
         registryCoordinator.setOperatorSetsEnabled(false);
-        registryCoordinator.setM2QuorumsDisabled(false);
+        registryCoordinator.setM2QuorumRegistrationDisabled(false);
     }
 
     function _labelContracts() internal {

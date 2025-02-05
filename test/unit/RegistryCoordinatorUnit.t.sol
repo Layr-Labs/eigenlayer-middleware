@@ -8,6 +8,12 @@ import {
     ISlashingRegistryCoordinatorErrors
 } from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 
+import {
+    IRegistryCoordinator,
+    IRegistryCoordinatorTypes,
+    IRegistryCoordinatorErrors
+} from "../../src/interfaces/IRegistryCoordinator.sol";
+
 import {IBLSApkRegistryTypes} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {QuorumBitmapHistoryLib} from "../../src/libraries/QuorumBitmapHistoryLib.sol";
 import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
@@ -302,7 +308,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
 
         quorumNumbersTooLarge[0] = 0xC0;
 
-        cheats.expectRevert(BitmapUtils.BitmapValueTooLarge.selector);
+        cheats.expectRevert(IRegistryCoordinatorErrors.OnlyM2QuorumsAllowed.selector);
         cheats.prank(defaultOperator);
         registryCoordinator.registerOperator(
             quorumNumbersTooLarge, defaultSocket, pubkeyRegistrationParams, emptySig
@@ -317,7 +323,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         quorumNumbersNotCreated[0] = 0x0B;
 
         cheats.prank(defaultOperator);
-        cheats.expectRevert(BitmapUtils.BitmapValueTooLarge.selector);
+        cheats.expectRevert(IRegistryCoordinatorErrors.OnlyM2QuorumsAllowed.selector);
         registryCoordinator.registerOperator(
             quorumNumbersNotCreated, defaultSocket, pubkeyRegistrationParams, emptySig
         );
@@ -395,6 +401,8 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
 
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
         emit OperatorSocketUpdate(defaultOperatorId, defaultSocket);
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit OperatorRegistered(defaultOperator, defaultOperatorId);
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
         emit OperatorAddedToQuorums(defaultOperator, defaultOperatorId, quorumNumbers);
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
@@ -405,8 +413,6 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
             cheats.expectEmit(true, true, true, true, address(indexRegistry));
             emit QuorumIndexUpdate(defaultOperatorId, uint8(quorumNumbers[i]), 0);
         }
-        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
-        emit OperatorRegistered(defaultOperator, defaultOperatorId);
 
         uint256 gasBefore = gasleft();
         cheats.prank(defaultOperator);
@@ -636,6 +642,8 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
 
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
         emit OperatorSocketUpdate(defaultOperatorId, defaultSocket);
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit OperatorRegistered(defaultOperator, defaultOperatorId);
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
         emit OperatorAddedToQuorums(defaultOperator, defaultOperatorId, quorumNumbers);
         cheats.expectEmit(true, true, true, true, address(stakeRegistry));
@@ -688,10 +696,6 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
     }
 
     function test_deregisterOperator_revert_notRegistered() public {
-        // enable operatorSets
-        cheats.prank(registryCoordinator.owner());
-        registryCoordinator.enableOperatorSets();
-
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
@@ -701,10 +705,6 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
     }
 
     function test_deregisterOperator_revert_incorrectQuorums() public {
-        // enable operatorSets
-        cheats.prank(registryCoordinator.owner());
-        registryCoordinator.enableOperatorSets();
-
         console.log("quorumCount", registryCoordinator.quorumCount());
 
         assertTrue(
@@ -1714,6 +1714,9 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
         emit OperatorSocketUpdate(operatorToRegisterId, defaultSocket);
 
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit OperatorRegistered(operatorToRegister, operatorToRegisterId);
+
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
         emit OperatorAddedToQuorums(operatorToRegister, operatorToRegisterId, quorumNumbers);
         cheats.expectEmit(true, true, true, false, address(stakeRegistry));
@@ -1732,8 +1735,6 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         emit OperatorStakeUpdate(operatorToKickId, defaultQuorumNumber, 0);
         cheats.expectEmit(true, true, true, true, address(indexRegistry));
         emit QuorumIndexUpdate(operatorToRegisterId, defaultQuorumNumber, numOperators - 1);
-        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
-        emit OperatorRegistered(operatorToRegister, operatorToRegisterId);
 
         {
             ISignatureUtils.SignatureWithSaltAndExpiry memory emptyAVSRegSig;
@@ -2401,30 +2402,19 @@ contract RegistryCoordinatorUnitTests_BeforeMigration is RegistryCoordinatorUnit
         });
         uint32 lookAheadPeriod = 100;
 
+        assertEq(registryCoordinator.quorumCount(), 0, "No quorums should exist before");
+
         // Attempt to create quorum with slashable stake type before enabling operator sets
         cheats.prank(registryCoordinatorOwner);
-        cheats.expectRevert();
         registryCoordinator.createSlashableStakeQuorum(
             operatorSetParams, minimumStake, strategyParams, lookAheadPeriod
         );
-    }
-
-    function test_MigrateToOperatorSets() public {
-        _deployMockEigenLayerAndAVS(0);
-        cheats.prank(registryCoordinatorOwner);
-        registryCoordinator.enableOperatorSets();
-        assertTrue(registryCoordinator.operatorSetsEnabled());
+        assertEq(registryCoordinator.quorumCount(), 1, "New quorum 0 should be created");
+        assertFalse(registryCoordinator.isM2Quorum(0), "Quorum created should not be an M2 quorum");
     }
 }
 
 contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitTests {
-    function test_MigrateToOperatorSets() public {
-        cheats.prank(registryCoordinatorOwner);
-        registryCoordinator.enableOperatorSets();
-        assertTrue(registryCoordinator.operatorSetsEnabled());
-    }
-
-    ///
     function test_M2_Deregister() public {
         _deployMockEigenLayerAndAVS(2);
 
@@ -2467,10 +2457,6 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
             operatorSignature
         );
 
-        /// migrate to operator sets
-        vm.prank(registryCoordinatorOwner);
-        registryCoordinator.enableOperatorSets();
-
         /// Deregistration for m2 should for the first two operator sets
         vm.prank(operatorToRegister.key.addr);
         registryCoordinator.deregisterOperator(new bytes(1));
@@ -2491,9 +2477,6 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
     }
 
     function test_M2_Register_Reverts() public {
-        cheats.prank(registryCoordinatorOwner);
-        registryCoordinator.enableOperatorSets();
-
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(uint8(0));
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory params;
@@ -2508,10 +2491,6 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
     function test_createSlashableStakeQuorum() public {
         // Deploy with 0 quorums
         _deployMockEigenLayerAndAVS(0);
-
-        // Enable operator sets first
-        cheats.prank(registryCoordinatorOwner);
-        registryCoordinator.enableOperatorSets();
 
         // Create quorum params
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
@@ -2538,10 +2517,6 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         // Deploy with 0 quorums
         _deployMockEigenLayerAndAVS(0);
 
-        // Enable operator sets first
-        cheats.prank(registryCoordinatorOwner);
-        registryCoordinator.enableOperatorSets();
-
         // Create quorum params
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
         ISlashingRegistryCoordinatorTypes.OperatorSetParam({
@@ -2566,10 +2541,6 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         vm.skip(true);
 
         _deployMockEigenLayerAndAVS(0);
-
-        // Enable operator sets first
-        cheats.prank(registryCoordinatorOwner);
-        registryCoordinator.enableOperatorSets();
 
         // Create quorum params
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
@@ -2612,9 +2583,6 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
     function test_registerHook_WithChurn() public {
         vm.skip(true);
         _deployMockEigenLayerAndAVS(0);
-        // Enable operator sets first
-        cheats.prank(registryCoordinatorOwner);
-        registryCoordinator.enableOperatorSets();
 
         // Create quorum params
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
@@ -2698,9 +2666,6 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
 
     function test_deregisterHook() public {
         _deployMockEigenLayerAndAVS(0);
-        // Enable operator sets first
-        cheats.prank(registryCoordinatorOwner);
-        registryCoordinator.enableOperatorSets();
 
         // Create quorum params
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
@@ -2748,10 +2713,6 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
     function test_registerHook_Reverts_WhenNotALM() public {
         _deployMockEigenLayerAndAVS(0);
 
-        // Enable operator sets first
-        cheats.prank(registryCoordinatorOwner);
-        registryCoordinator.enableOperatorSets();
-
         // Create quorum params
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
         ISlashingRegistryCoordinatorTypes.OperatorSetParam({
@@ -2793,12 +2754,6 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
     function test_deregisterHook_Reverts_WhenNotALM() public {
         _deployMockEigenLayerAndAVS(0);
 
-        // Enable operator sets first
-        cheats.prank(registryCoordinatorOwner);
-        registryCoordinator.enableOperatorSets();
-
-        assertTrue(registryCoordinator.operatorSetsEnabled(), "operatorSetsEnabled should be true");
-
         // Create quorum params
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
         ISlashingRegistryCoordinatorTypes.OperatorSetParam({
@@ -2816,6 +2771,9 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);
         registryCoordinator.createTotalDelegatedStakeQuorum(operatorSetParams, 0, strategyParams);
+
+        // operator sets should be enabled after creating a new quorum
+        assertTrue(registryCoordinator.operatorSetsEnabled(), "operatorSetsEnabled should be true");
 
         // Prank as allocation manager and call register hook
         uint32[] memory operatorSetIds = new uint32[](1);

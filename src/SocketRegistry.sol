@@ -4,6 +4,7 @@ pragma solidity ^0.8.12;
 import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
 import {ISocketRegistry} from "./interfaces/ISocketRegistry.sol";
 import {SocketRegistryStorage} from "./SocketRegistryStorage.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title A `Registry` that keeps track of operator sockets.
@@ -12,18 +13,15 @@ import {SocketRegistryStorage} from "./SocketRegistryStorage.sol";
 contract SocketRegistry is ISocketRegistry, SocketRegistryStorage {
     /// @notice A modifier that only allows the RegistryCoordinator to call a function
     modifier onlySlashingRegistryCoordinator() {
-        require(
-            msg.sender == address(slashingRegistryCoordinator),
-            "SocketRegistry.onlySlashingRegistryCoordinator: caller is not the SlashingRegistryCoordinator"
-        );
+        require(msg.sender == slashingRegistryCoordinator, OnlySlashingRegistryCoordinator());
         _;
     }
 
     /// @notice A modifier that only allows the owner of the SlashingRegistryCoordinator to call a function
     modifier onlyCoordinatorOwner() {
         require(
-            msg.sender == ISlashingRegistryCoordinator(slashingRegistryCoordinator).owner(),
-            "SocketRegistry.onlyCoordinatorOwner: caller is not the owner of the slashingRegistryCoordinator"
+            msg.sender == Ownable(slashingRegistryCoordinator).owner(),
+            OnlySlashingRegistryCoordinatorOwner()
         );
         _;
     }
