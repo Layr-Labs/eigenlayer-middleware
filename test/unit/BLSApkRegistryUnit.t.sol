@@ -927,4 +927,33 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
             assertEq(quorumApk.Y, 0, "quorum apk not set to zero");
         }
     }
+
+    /**
+     * @dev test that attempting to get APK indices for a block number before the first update reverts
+     */
+    function testFuzz_quorumApkUpdates_BlockNumberBeforeFirstUpdate(
+        uint32 blockNumber,
+        uint8 quorumNumber
+    ) external {
+        // Initialize quorum if not already initialized
+        if (!initializedQuorums[quorumNumber]) {
+            _initializeFuzzedQuorum(quorumNumber);
+        }
+
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(quorumNumber);
+
+        // Register an operator to create first update
+        address operator = _selectNewOperator();
+        _registerDefaultBLSPubkey(operator);
+        _registerOperator(operator, quorumNumbers);
+        uint32 firstUpdateBlock = uint32(block.number);
+
+        // Ensure blockNumber is before first update
+        cheats.assume(blockNumber < firstUpdateBlock);
+
+        // Expect revert when querying block before first update
+        cheats.expectRevert(IBLSApkRegistryErrors.BlockNumberBeforeFirstUpdate.selector);
+        blsApkRegistry.getApkIndicesAtBlockNumber(quorumNumbers, blockNumber);
+    }
 }

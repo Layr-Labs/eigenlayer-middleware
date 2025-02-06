@@ -189,9 +189,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
                 quorumApkUpdatesLength == 0
                     || blockNumber < apkHistory[quorumNumber][0].updateBlockNumber
             ) {
-                revert(
-                    "BLSApkRegistry.getApkIndicesAtBlockNumber: blockNumber is before the first update"
-                );
+                revert BlockNumberBeforeFirstUpdate();
             }
 
             // Loop backward through apkHistory until we find an entry that preceeds `blockNumber`
