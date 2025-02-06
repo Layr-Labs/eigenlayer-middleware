@@ -24,6 +24,8 @@ interface IBLSApkRegistryErrors {
     error BlockNumberTooRecent();
     /// @notice Thrown when blocknumber and index provided is not the latest apk update.
     error BlockNumberNotLatest();
+    /// @notice Thrown when the block number is before the first update.
+    error BlockNumberBeforeFirstUpdate();
 }
 
 interface IBLSApkRegistryTypes {
