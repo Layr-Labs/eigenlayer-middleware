@@ -2,11 +2,14 @@
 pragma solidity ^0.8.0;
 
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {TransparentUpgradeableProxy} from
+    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
-import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IAllocationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
-import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IDelegationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 import {InstantSlasher} from "../../src/slashers/InstantSlasher.sol";
@@ -32,10 +35,10 @@ library MiddlewareDeployLib {
     }
 
     struct SlashingRegistryCoordinatorConfig {
-        uint256 initPausedStatus;
         address initialOwner;
         address churnApprover;
         address ejector;
+        uint256 initPausedStatus;
         address serviceManager;
     }
 
@@ -62,7 +65,7 @@ library MiddlewareDeployLib {
         address initialOwner;
     }
 
-    struct DeploymentConfigData {
+    struct MiddlewareDeployConfig {
         InstantSlasherConfig instantSlasher;
         SlashingRegistryCoordinatorConfig slashingRegistryCoordinator;
         SocketRegistryConfig socketRegistry;
@@ -71,7 +74,7 @@ library MiddlewareDeployLib {
         BLSApkRegistryConfig blsApkRegistry;
     }
 
-    struct DeploymentData {
+    struct MiddlewareDeployData {
         address instantSlasher;
         address slashingRegistryCoordinator;
         address socketRegistry;
@@ -80,55 +83,26 @@ library MiddlewareDeployLib {
         address blsApkRegistry;
     }
 
-    function deployContracts(
+    function deployMiddleware(
         address proxyAdmin,
         address allocationManager,
         address pauserRegistry,
-        DeploymentConfigData memory configData
-    ) internal returns (DeploymentData memory result) {
+        MiddlewareDeployConfig memory config
+    ) internal returns (MiddlewareDeployData memory result) {
         result = deployEmptyProxies(proxyAdmin);
 
-        // First, deploy and configure registries
-        deployAndConfigureRegistries(
-            result,
-            allocationManager,
-            pauserRegistry,
-            configData
+        upgradeRegistries(result, allocationManager, pauserRegistry, config);
+        upgradeCoordinator(
+            result, allocationManager, pauserRegistry, config.slashingRegistryCoordinator
         );
-
-        // Now, deploy and initialize SlashingRegistryCoordinator
-        address slashingRegistryCoordinatorImpl = address(
-            new SlashingRegistryCoordinator(
-                IStakeRegistry(result.stakeRegistry),
-                IBLSApkRegistry(result.blsApkRegistry),
-                IIndexRegistry(result.indexRegistry),
-                ISocketRegistry(result.socketRegistry),
-                IAllocationManager(allocationManager),
-                IPauserRegistry(pauserRegistry)
-            )
-        );
-        bytes memory upgradeCall = abi.encodeCall(
-            SlashingRegistryCoordinator.initialize,
-            (
-                configData.slashingRegistryCoordinator.initialOwner,
-                configData.slashingRegistryCoordinator.churnApprover,
-                configData.slashingRegistryCoordinator.ejector,
-                configData.slashingRegistryCoordinator.initPausedStatus,
-                configData.slashingRegistryCoordinator.serviceManager
-            )
-        );
-        UpgradeableProxyLib.upgradeAndCall(
-            result.slashingRegistryCoordinator,
-            slashingRegistryCoordinatorImpl,
-            upgradeCall
-        );
-
-        deployAndConfigureSlasher(result, allocationManager, configData);
+        upgradeInstantSlasher(result, allocationManager, config.instantSlasher);
 
         return result;
     }
 
-    function deployEmptyProxies(address proxyAdmin) internal returns (DeploymentData memory proxies) {
+    function deployEmptyProxies(
+        address proxyAdmin
+    ) internal returns (MiddlewareDeployData memory proxies) {
         proxies.instantSlasher = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         proxies.slashingRegistryCoordinator = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         proxies.socketRegistry = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
@@ -138,11 +112,11 @@ library MiddlewareDeployLib {
         return proxies;
     }
 
-    function deployAndConfigureRegistries(
-        DeploymentData memory deployments,
+    function upgradeRegistries(
+        MiddlewareDeployData memory deployments,
         address allocationManager,
         address pauserRegistry,
-        DeploymentConfigData memory config
+        MiddlewareDeployConfig memory config
     ) internal {
         address blsApkRegistryImpl = address(
             new BLSApkRegistry(
@@ -152,9 +126,7 @@ library MiddlewareDeployLib {
         UpgradeableProxyLib.upgrade(deployments.blsApkRegistry, blsApkRegistryImpl);
 
         address indexRegistryImpl = address(
-            new IndexRegistry(
-                ISlashingRegistryCoordinator(deployments.slashingRegistryCoordinator)
-            )
+            new IndexRegistry(ISlashingRegistryCoordinator(deployments.slashingRegistryCoordinator))
         );
         UpgradeableProxyLib.upgrade(deployments.indexRegistry, indexRegistryImpl);
 
@@ -165,6 +137,7 @@ library MiddlewareDeployLib {
         );
         UpgradeableProxyLib.upgrade(deployments.socketRegistry, socketRegistryImpl);
 
+        // StakeRegistry upgrade
         address stakeRegistryImpl = address(
             new StakeRegistry(
                 ISlashingRegistryCoordinator(deployments.slashingRegistryCoordinator),
@@ -174,30 +147,56 @@ library MiddlewareDeployLib {
             )
         );
         UpgradeableProxyLib.upgrade(deployments.stakeRegistry, stakeRegistryImpl);
-
     }
 
-    function deployAndConfigureSlasher(
-        DeploymentData memory deployments,
+    function upgradeCoordinator(
+        MiddlewareDeployData memory deployments,
         address allocationManager,
-        DeploymentConfigData memory config
+        address pauserRegistry,
+        SlashingRegistryCoordinatorConfig memory coordinatorConfig
+    ) internal {
+        address coordinatorImpl = address(
+            new SlashingRegistryCoordinator(
+                IStakeRegistry(deployments.stakeRegistry),
+                IBLSApkRegistry(deployments.blsApkRegistry),
+                IIndexRegistry(deployments.indexRegistry),
+                ISocketRegistry(deployments.socketRegistry),
+                IAllocationManager(allocationManager),
+                IPauserRegistry(pauserRegistry)
+            )
+        );
+        bytes memory upgradeCall = abi.encodeCall(
+            SlashingRegistryCoordinator.initialize,
+            (
+                coordinatorConfig.initialOwner,
+                coordinatorConfig.churnApprover,
+                coordinatorConfig.ejector,
+                coordinatorConfig.initPausedStatus,
+                coordinatorConfig.serviceManager
+            )
+        );
+        UpgradeableProxyLib.upgradeAndCall(
+            deployments.slashingRegistryCoordinator, coordinatorImpl, upgradeCall
+        );
+    }
+
+    // Upgrade and initialize InstantSlasher with its config data
+    function upgradeInstantSlasher(
+        MiddlewareDeployData memory deployments,
+        address allocationManager,
+        InstantSlasherConfig memory slasherConfig
     ) internal {
         address instantSlasherImpl = address(
             new InstantSlasher(
                 IAllocationManager(allocationManager),
                 ISlashingRegistryCoordinator(deployments.slashingRegistryCoordinator),
-                config.instantSlasher.slasher
+                slasherConfig.slasher
             )
         );
-
-        bytes memory upgradeCall = abi.encodeCall(
-            InstantSlasher.initialize,
-            (config.instantSlasher.slasher)
-        );
+        bytes memory upgradeCall =
+            abi.encodeCall(InstantSlasher.initialize, (slasherConfig.slasher));
         UpgradeableProxyLib.upgradeAndCall(
-            deployments.instantSlasher,
-            instantSlasherImpl,
-            upgradeCall
+            deployments.instantSlasher, instantSlasherImpl, upgradeCall
         );
     }
 }

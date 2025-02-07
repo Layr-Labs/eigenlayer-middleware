@@ -156,7 +156,7 @@ contract VetoableSlasherTest is Test {
             )
         );
 
-        MiddlewareDeployLib.DeploymentConfigData memory middlewareConfig;
+        MiddlewareDeployLib.MiddlewareDeployConfig memory middlewareConfig;
         middlewareConfig.instantSlasher.initialOwner = proxyAdminOwner;
         middlewareConfig.instantSlasher.slasher = slasher;
         middlewareConfig.slashingRegistryCoordinator.initialOwner = proxyAdminOwner;
@@ -172,15 +172,18 @@ contract VetoableSlasherTest is Test {
         middlewareConfig.stakeRegistry.delegationManager = coreDeployment.delegationManager;
         middlewareConfig.stakeRegistry.avsDirectory = coreDeployment.avsDirectory;
         {
-            IStakeRegistryTypes.StrategyParams[] memory stratParams = new IStakeRegistryTypes.StrategyParams[](1);
-            stratParams[0] = IStakeRegistryTypes.StrategyParams({ strategy: mockStrategy, multiplier: 1 ether });
+            IStakeRegistryTypes.StrategyParams[] memory stratParams =
+                new IStakeRegistryTypes.StrategyParams[](1);
+            stratParams[0] =
+                IStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 1 ether});
             middlewareConfig.stakeRegistry.strategyParamsArray = stratParams;
         }
         middlewareConfig.stakeRegistry.lookAheadPeriod = 0;
         middlewareConfig.stakeRegistry.stakeType = IStakeRegistryTypes.StakeType(1);
         middlewareConfig.blsApkRegistry.initialOwner = proxyAdminOwner;
 
-        MiddlewareDeployLib.DeploymentData memory middlewareDeployments = MiddlewareDeployLib.deployContracts(
+        MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployments = MiddlewareDeployLib
+            .deployMiddleware(
             address(proxyAdmin),
             coreDeployment.allocationManager,
             address(pauserRegistry),
@@ -189,7 +192,8 @@ contract VetoableSlasherTest is Test {
         vm.stopPrank();
 
         vetoableSlasher = VetoableSlasher(middlewareDeployments.instantSlasher);
-        slashingRegistryCoordinator = SlashingRegistryCoordinator(middlewareDeployments.slashingRegistryCoordinator);
+        slashingRegistryCoordinator =
+            SlashingRegistryCoordinator(middlewareDeployments.slashingRegistryCoordinator);
         stakeRegistry = StakeRegistry(middlewareDeployments.stakeRegistry);
         blsApkRegistry = BLSApkRegistry(middlewareDeployments.blsApkRegistry);
         indexRegistry = IndexRegistry(middlewareDeployments.indexRegistry);

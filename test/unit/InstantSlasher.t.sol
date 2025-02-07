@@ -150,7 +150,7 @@ contract InstantSlasherTest is Test {
         );
         vm.stopPrank();
 
-        MiddlewareDeployLib.DeploymentConfigData memory middlewareConfig;
+        MiddlewareDeployLib.MiddlewareDeployConfig memory middlewareConfig;
         middlewareConfig.instantSlasher.initialOwner = proxyAdminOwner;
         middlewareConfig.instantSlasher.slasher = slasher;
         middlewareConfig.slashingRegistryCoordinator.initialOwner = proxyAdminOwner;
@@ -166,8 +166,10 @@ contract InstantSlasherTest is Test {
         middlewareConfig.stakeRegistry.delegationManager = coreDeployment.delegationManager;
         middlewareConfig.stakeRegistry.avsDirectory = coreDeployment.avsDirectory;
         {
-            IStakeRegistryTypes.StrategyParams[] memory stratParams = new IStakeRegistryTypes.StrategyParams[](1);
-            stratParams[0] = IStakeRegistryTypes.StrategyParams({ strategy: mockStrategy, multiplier: 1 ether });
+            IStakeRegistryTypes.StrategyParams[] memory stratParams =
+                new IStakeRegistryTypes.StrategyParams[](1);
+            stratParams[0] =
+                IStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 1 ether});
             middlewareConfig.stakeRegistry.strategyParamsArray = stratParams;
         }
         middlewareConfig.stakeRegistry.lookAheadPeriod = 0;
@@ -175,7 +177,8 @@ contract InstantSlasherTest is Test {
         middlewareConfig.blsApkRegistry.initialOwner = proxyAdminOwner;
 
         vm.startPrank(proxyAdminOwner);
-        MiddlewareDeployLib.DeploymentData memory middlewareDeployments = MiddlewareDeployLib.deployContracts(
+        MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployments = MiddlewareDeployLib
+            .deployMiddleware(
             address(proxyAdmin),
             coreDeployment.allocationManager,
             address(pauserRegistry),
@@ -184,7 +187,8 @@ contract InstantSlasherTest is Test {
         vm.stopPrank();
 
         instantSlasher = InstantSlasher(middlewareDeployments.instantSlasher);
-        slashingRegistryCoordinator = SlashingRegistryCoordinator(middlewareDeployments.slashingRegistryCoordinator);
+        slashingRegistryCoordinator =
+            SlashingRegistryCoordinator(middlewareDeployments.slashingRegistryCoordinator);
         stakeRegistry = StakeRegistry(middlewareDeployments.stakeRegistry);
         blsApkRegistry = BLSApkRegistry(middlewareDeployments.blsApkRegistry);
         indexRegistry = IndexRegistry(middlewareDeployments.indexRegistry);
@@ -214,10 +218,13 @@ contract InstantSlasherTest is Test {
         uint96[] memory minimumStakes = new uint96[](1);
         minimumStakes[0] = 1 ether;
 
-        IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistryTypes.StrategyParams({ strategy: mockStrategy, multiplier: 1 ether });
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 1 ether});
 
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: 10,
             kickBIPsOfOperatorStake: 0,
             kickBIPsOfTotalStake: 0
@@ -305,8 +312,10 @@ contract InstantSlasherTest is Test {
         OperatorSet memory operatorSet = OperatorSet({avs: address(serviceManager), id: 0});
 
         vm.startPrank(serviceManager);
-        IAllocationManagerTypes.CreateSetParams[] memory createParams = new IAllocationManagerTypes.CreateSetParams[](1);
-        createParams[0] = IAllocationManagerTypes.CreateSetParams({operatorSetId: 0, strategies: allocStrategies});
+        IAllocationManagerTypes.CreateSetParams[] memory createParams =
+            new IAllocationManagerTypes.CreateSetParams[](1);
+        createParams[0] =
+            IAllocationManagerTypes.CreateSetParams({operatorSetId: 0, strategies: allocStrategies});
         IAllocationManager(coreDeployment.allocationManager).setAVSRegistrar(
             address(serviceManager), IAVSRegistrar(address(slashingRegistryCoordinator))
         );
@@ -314,7 +323,8 @@ contract InstantSlasherTest is Test {
 
         vm.startPrank(operatorWallet.key.addr);
 
-        IAllocationManagerTypes.AllocateParams[] memory allocParams = new IAllocationManagerTypes.AllocateParams[](1);
+        IAllocationManagerTypes.AllocateParams[] memory allocParams =
+            new IAllocationManagerTypes.AllocateParams[](1);
         allocParams[0] = IAllocationManagerTypes.AllocateParams({
             operatorSet: operatorSet,
             strategies: allocStrategies,
