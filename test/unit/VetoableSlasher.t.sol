@@ -52,6 +52,7 @@ import {IVetoableSlasherTypes} from "../../src/interfaces/IVetoableSlasher.sol";
 import {SocketRegistry} from "../../src/SocketRegistry.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IVetoableSlasherErrors} from "../../src/interfaces/IVetoableSlasher.sol";
+import {MiddlewareDeployLib} from "../utils/MiddlewareDeployLib.sol";
 
 contract VetoableSlasherTest is Test {
     VetoableSlasher public vetoableSlasher;
@@ -155,86 +156,48 @@ contract VetoableSlasherTest is Test {
             )
         );
 
-        // Deploy empty proxies for all registries
-        stakeRegistry = StakeRegistry(
-            address(
-                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
-            )
-        );
+        MiddlewareDeployLib.MiddlewareDeployConfig memory middlewareConfig;
+        middlewareConfig.instantSlasher.initialOwner = proxyAdminOwner;
+        middlewareConfig.instantSlasher.slasher = slasher;
+        middlewareConfig.slashingRegistryCoordinator.initialOwner = proxyAdminOwner;
+        middlewareConfig.slashingRegistryCoordinator.churnApprover = churnApprover;
+        middlewareConfig.slashingRegistryCoordinator.ejector = ejector;
+        middlewareConfig.slashingRegistryCoordinator.initPausedStatus = 0;
+        middlewareConfig.slashingRegistryCoordinator.serviceManager = serviceManager;
+        middlewareConfig.socketRegistry.initialOwner = proxyAdminOwner;
+        middlewareConfig.indexRegistry.initialOwner = proxyAdminOwner;
+        middlewareConfig.stakeRegistry.initialOwner = proxyAdminOwner;
+        middlewareConfig.stakeRegistry.minimumStake = 1 ether;
+        middlewareConfig.stakeRegistry.strategyParams = 0;
+        middlewareConfig.stakeRegistry.delegationManager = coreDeployment.delegationManager;
+        middlewareConfig.stakeRegistry.avsDirectory = coreDeployment.avsDirectory;
+        {
+            IStakeRegistryTypes.StrategyParams[] memory stratParams =
+                new IStakeRegistryTypes.StrategyParams[](1);
+            stratParams[0] =
+                IStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 1 ether});
+            middlewareConfig.stakeRegistry.strategyParamsArray = stratParams;
+        }
+        middlewareConfig.stakeRegistry.lookAheadPeriod = 0;
+        middlewareConfig.stakeRegistry.stakeType = IStakeRegistryTypes.StakeType(1);
+        middlewareConfig.blsApkRegistry.initialOwner = proxyAdminOwner;
 
-        blsApkRegistry = BLSApkRegistry(
-            address(
-                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
-            )
+        MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployments = MiddlewareDeployLib
+            .deployMiddleware(
+            address(proxyAdmin),
+            coreDeployment.allocationManager,
+            address(pauserRegistry),
+            middlewareConfig
         );
-
-        indexRegistry = IndexRegistry(
-            address(
-                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
-            )
-        );
-
-        socketRegistry = SocketRegistry(
-            address(
-                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
-            )
-        );
-
-        slashingRegistryCoordinatorImplementation = new SlashingRegistryCoordinator(
-            IStakeRegistry(address(stakeRegistry)),
-            IBLSApkRegistry(address(blsApkRegistry)),
-            IIndexRegistry(address(indexRegistry)),
-            ISocketRegistry(address(socketRegistry)),
-            IAllocationManager(coreDeployment.allocationManager),
-            IPauserRegistry(address(pauserRegistry))
-        );
-
-        slashingRegistryCoordinator = SlashingRegistryCoordinator(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(slashingRegistryCoordinatorImplementation), address(proxyAdmin), ""
-                )
-            )
-        );
-
-        // Deploy registry implementations pointing to the coordinator
-        StakeRegistry stakeRegistryImplementation = new StakeRegistry(
-            ISlashingRegistryCoordinator(address(slashingRegistryCoordinator)),
-            IDelegationManager(coreDeployment.delegationManager),
-            IAVSDirectory(coreDeployment.avsDirectory),
-            IAllocationManager(coreDeployment.allocationManager)
-        );
-        BLSApkRegistry blsApkRegistryImplementation =
-            new BLSApkRegistry(ISlashingRegistryCoordinator(address(slashingRegistryCoordinator)));
-        IndexRegistry indexRegistryImplementation =
-            new IndexRegistry(ISlashingRegistryCoordinator(address(slashingRegistryCoordinator)));
-        SocketRegistry socketRegistryImplementation =
-            new SocketRegistry(IRegistryCoordinator(address(slashingRegistryCoordinator)));
-
-        // Upgrade all registry proxies
-        proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(stakeRegistry))),
-            address(stakeRegistryImplementation)
-        );
-        proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(blsApkRegistry))),
-            address(blsApkRegistryImplementation)
-        );
-        proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(indexRegistry))),
-            address(indexRegistryImplementation)
-        );
-        proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(socketRegistry))),
-            address(socketRegistryImplementation)
-        );
-
-        // Initialize the SlashingRegistryCoordinator first
-        slashingRegistryCoordinator.initialize(
-            proxyAdminOwner, churnApprover, ejector, 0, serviceManager
-        );
-
         vm.stopPrank();
+
+        vetoableSlasher = VetoableSlasher(middlewareDeployments.instantSlasher);
+        slashingRegistryCoordinator =
+            SlashingRegistryCoordinator(middlewareDeployments.slashingRegistryCoordinator);
+        stakeRegistry = StakeRegistry(middlewareDeployments.stakeRegistry);
+        blsApkRegistry = BLSApkRegistry(middlewareDeployments.blsApkRegistry);
+        indexRegistry = IndexRegistry(middlewareDeployments.indexRegistry);
+        socketRegistry = SocketRegistry(middlewareDeployments.socketRegistry);
 
         vetoableSlasherImplementation = new VetoableSlasher(
             IAllocationManager(coreDeployment.allocationManager),
@@ -413,7 +376,6 @@ contract VetoableSlasherTest is Test {
     }
 
     function test_fulfillSlashingRequest() public {
-        vm.skip(false);
         vm.startPrank(operatorWallet.key.addr);
         IDelegationManager(coreDeployment.delegationManager).registerAsOperator(
             address(0), 1, "metadata"
