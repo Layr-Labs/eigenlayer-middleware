@@ -372,7 +372,6 @@ contract VetoableSlasherTest is Test {
     }
 
     function test_fulfillSlashingRequest() public {
-        vm.skip(false);
         vm.startPrank(operatorWallet.key.addr);
         IDelegationManager(coreDeployment.delegationManager).registerAsOperator(
             address(0), 1, "metadata"
