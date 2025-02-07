@@ -4,7 +4,6 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - master
       - mainnet
       - testnet-holesky
       - dev
@@ -30,13 +29,13 @@ jobs:
           submodules: recursive
 
       # Install the Foundry toolchain.
-      - name: "Install Foundry"
+      - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
 
       # Build the project and display contract sizes.
-      - name: "Forge Build"
+      - name: Forge Build
         run: |
           forge --version
           forge build --sizes
