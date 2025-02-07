@@ -11,12 +11,6 @@ interface IOwnable {
     function owner() external view returns (address);
 }
 
-contract MockSocketRegistry is SocketRegistry {
-    constructor(
-        ISlashingRegistryCoordinator _slashingRegistryCoordinator
-    ) SocketRegistry(_slashingRegistryCoordinator) {}
-}
-
 contract SocketRegistryUnitTests is MockAVSDeployer {
     function setUp() public virtual {
         _deployMockEigenLayerAndAVS();
