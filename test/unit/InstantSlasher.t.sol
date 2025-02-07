@@ -50,14 +50,13 @@ import {StakeRegistry} from "../../src/StakeRegistry.sol";
 import {BLSApkRegistry} from "../../src/BLSApkRegistry.sol";
 import {IndexRegistry} from "../../src/IndexRegistry.sol";
 import {SocketRegistry} from "../../src/SocketRegistry.sol";
+import {MiddlewareDeployLib} from "../utils/MiddlewareDeployLib.sol";
 
 contract InstantSlasherTest is Test {
     InstantSlasher public instantSlasher;
-    InstantSlasher public instantSlasherImplementation;
     ProxyAdmin public proxyAdmin;
     EmptyContract public emptyContract;
     SlashingRegistryCoordinator public slashingRegistryCoordinator;
-    SlashingRegistryCoordinator public slashingRegistryCoordinatorImplementation;
     CoreDeploymentLib.DeploymentData public coreDeployment;
     PauserRegistry public pauserRegistry;
     ERC20Mock public mockToken;
@@ -149,108 +148,47 @@ contract InstantSlasherTest is Test {
                 IERC20(address(mockToken))
             )
         );
-
-        // Deploy empty proxies for all registries
-        stakeRegistry = StakeRegistry(
-            address(
-                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
-            )
-        );
-
-        blsApkRegistry = BLSApkRegistry(
-            address(
-                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
-            )
-        );
-
-        indexRegistry = IndexRegistry(
-            address(
-                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
-            )
-        );
-
-        socketRegistry = SocketRegistry(
-            address(
-                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
-            )
-        );
-
-        slashingRegistryCoordinatorImplementation = new SlashingRegistryCoordinator(
-            IStakeRegistry(address(stakeRegistry)),
-            IBLSApkRegistry(address(blsApkRegistry)),
-            IIndexRegistry(address(indexRegistry)),
-            ISocketRegistry(address(socketRegistry)),
-            IAllocationManager(coreDeployment.allocationManager),
-            IPauserRegistry(address(pauserRegistry))
-        );
-
-        slashingRegistryCoordinator = SlashingRegistryCoordinator(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(slashingRegistryCoordinatorImplementation), address(proxyAdmin), ""
-                )
-            )
-        );
-
-        // Deploy registry implementations pointing to the coordinator
-        StakeRegistry stakeRegistryImplementation = new StakeRegistry(
-            ISlashingRegistryCoordinator(address(slashingRegistryCoordinator)),
-            IDelegationManager(coreDeployment.delegationManager),
-            IAVSDirectory(coreDeployment.avsDirectory),
-            IAllocationManager(coreDeployment.allocationManager)
-        );
-        BLSApkRegistry blsApkRegistryImplementation =
-            new BLSApkRegistry(ISlashingRegistryCoordinator(address(slashingRegistryCoordinator)));
-        IndexRegistry indexRegistryImplementation =
-            new IndexRegistry(ISlashingRegistryCoordinator(address(slashingRegistryCoordinator)));
-        SocketRegistry socketRegistryImplementation =
-            new SocketRegistry(IRegistryCoordinator(address(slashingRegistryCoordinator)));
-
-        // Upgrade all registry proxies
-        proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(stakeRegistry))),
-            address(stakeRegistryImplementation)
-        );
-        proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(blsApkRegistry))),
-            address(blsApkRegistryImplementation)
-        );
-        proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(indexRegistry))),
-            address(indexRegistryImplementation)
-        );
-        proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(socketRegistry))),
-            address(socketRegistryImplementation)
-        );
-
-        // Initialize the SlashingRegistryCoordinator first
-        slashingRegistryCoordinator.initialize(
-            proxyAdminOwner, churnApprover, ejector, 0, serviceManager
-        );
-
         vm.stopPrank();
 
-        instantSlasherImplementation = new InstantSlasher(
-            IAllocationManager(coreDeployment.allocationManager),
-            ISlashingRegistryCoordinator(slashingRegistryCoordinator),
-            slasher
-        );
+        MiddlewareDeployLib.DeploymentConfigData memory middlewareConfig;
+        middlewareConfig.instantSlasher.initialOwner = proxyAdminOwner;
+        middlewareConfig.instantSlasher.slasher = slasher;
+        middlewareConfig.slashingRegistryCoordinator.initialOwner = proxyAdminOwner;
+        middlewareConfig.slashingRegistryCoordinator.churnApprover = churnApprover;
+        middlewareConfig.slashingRegistryCoordinator.ejector = ejector;
+        middlewareConfig.slashingRegistryCoordinator.initPausedStatus = 0;
+        middlewareConfig.slashingRegistryCoordinator.serviceManager = serviceManager;
+        middlewareConfig.socketRegistry.initialOwner = proxyAdminOwner;
+        middlewareConfig.indexRegistry.initialOwner = proxyAdminOwner;
+        middlewareConfig.stakeRegistry.initialOwner = proxyAdminOwner;
+        middlewareConfig.stakeRegistry.minimumStake = 1 ether;
+        middlewareConfig.stakeRegistry.strategyParams = 0;
+        middlewareConfig.stakeRegistry.delegationManager = coreDeployment.delegationManager;
+        middlewareConfig.stakeRegistry.avsDirectory = coreDeployment.avsDirectory;
+        {
+            IStakeRegistryTypes.StrategyParams[] memory stratParams = new IStakeRegistryTypes.StrategyParams[](1);
+            stratParams[0] = IStakeRegistryTypes.StrategyParams({ strategy: mockStrategy, multiplier: 1 ether });
+            middlewareConfig.stakeRegistry.strategyParamsArray = stratParams;
+        }
+        middlewareConfig.stakeRegistry.lookAheadPeriod = 0;
+        middlewareConfig.stakeRegistry.stakeType = IStakeRegistryTypes.StakeType(1);
+        middlewareConfig.blsApkRegistry.initialOwner = proxyAdminOwner;
 
         vm.startPrank(proxyAdminOwner);
-        instantSlasher = InstantSlasher(
-            address(
-                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
-            )
-        );
-
-        proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(instantSlasher))),
-            address(instantSlasherImplementation)
+        MiddlewareDeployLib.DeploymentData memory middlewareDeployments = MiddlewareDeployLib.deployContracts(
+            address(proxyAdmin),
+            coreDeployment.allocationManager,
+            address(pauserRegistry),
+            middlewareConfig
         );
         vm.stopPrank();
 
-        instantSlasher.initialize(slasher);
+        instantSlasher = InstantSlasher(middlewareDeployments.instantSlasher);
+        slashingRegistryCoordinator = SlashingRegistryCoordinator(middlewareDeployments.slashingRegistryCoordinator);
+        stakeRegistry = StakeRegistry(middlewareDeployments.stakeRegistry);
+        blsApkRegistry = BLSApkRegistry(middlewareDeployments.blsApkRegistry);
+        indexRegistry = IndexRegistry(middlewareDeployments.indexRegistry);
+        socketRegistry = SocketRegistry(middlewareDeployments.socketRegistry);
 
         vm.startPrank(serviceManager);
         PermissionController(coreDeployment.permissionController).setAppointee(
@@ -276,13 +214,10 @@ contract InstantSlasherTest is Test {
         uint96[] memory minimumStakes = new uint96[](1);
         minimumStakes[0] = 1 ether;
 
-        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
-            new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] =
-            IStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 1 ether});
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams({ strategy: mockStrategy, multiplier: 1 ether });
 
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: 10,
             kickBIPsOfOperatorStake: 0,
             kickBIPsOfTotalStake: 0
@@ -295,12 +230,7 @@ contract InstantSlasherTest is Test {
         vm.stopPrank();
 
         vm.label(address(instantSlasher), "InstantSlasher Proxy");
-        vm.label(address(instantSlasherImplementation), "InstantSlasher Implementation");
         vm.label(address(slashingRegistryCoordinator), "SlashingRegistryCoordinator Proxy");
-        vm.label(
-            address(slashingRegistryCoordinatorImplementation),
-            "SlashingRegistryCoordinator Implementation"
-        );
         vm.label(address(proxyAdmin), "ProxyAdmin");
         vm.label(coreDeployment.allocationManager, "AllocationManager Proxy");
     }
@@ -375,10 +305,8 @@ contract InstantSlasherTest is Test {
         OperatorSet memory operatorSet = OperatorSet({avs: address(serviceManager), id: 0});
 
         vm.startPrank(serviceManager);
-        IAllocationManagerTypes.CreateSetParams[] memory createParams =
-            new IAllocationManagerTypes.CreateSetParams[](1);
-        createParams[0] =
-            IAllocationManagerTypes.CreateSetParams({operatorSetId: 0, strategies: allocStrategies});
+        IAllocationManagerTypes.CreateSetParams[] memory createParams = new IAllocationManagerTypes.CreateSetParams[](1);
+        createParams[0] = IAllocationManagerTypes.CreateSetParams({operatorSetId: 0, strategies: allocStrategies});
         IAllocationManager(coreDeployment.allocationManager).setAVSRegistrar(
             address(serviceManager), IAVSRegistrar(address(slashingRegistryCoordinator))
         );
@@ -386,8 +314,7 @@ contract InstantSlasherTest is Test {
 
         vm.startPrank(operatorWallet.key.addr);
 
-        IAllocationManagerTypes.AllocateParams[] memory allocParams =
-            new IAllocationManagerTypes.AllocateParams[](1);
+        IAllocationManagerTypes.AllocateParams[] memory allocParams = new IAllocationManagerTypes.AllocateParams[](1);
         allocParams[0] = IAllocationManagerTypes.AllocateParams({
             operatorSet: operatorSet,
             strategies: allocStrategies,
