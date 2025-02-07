@@ -41,7 +41,7 @@ abstract contract SlashingRegistryCoordinatorStorage is ISlashingRegistryCoordin
     /// @notice The maximum number of quorums this contract supports
     uint8 internal constant MAX_QUORUM_COUNT = 192;
 
-    /// @notice
+    /// @notice the Socket Registry contract that will keep track of operators' sockets (arbitrary strings)
     ISocketRegistry public immutable socketRegistry;
     /// @notice the BLS Aggregate Pubkey Registry contract that will keep track of operators' aggregate BLS public keys per quorum
     IBLSApkRegistry public immutable blsApkRegistry;

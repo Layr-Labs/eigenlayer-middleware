@@ -18,10 +18,11 @@ import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/Ownabl
 import {RegistryCoordinatorStorage} from "./RegistryCoordinatorStorage.sol";
 
 /**
- * @title A `RegistryCoordinator` that has three registries:
+ * @title A `RegistryCoordinator` that has four registries:
  *      1) a `StakeRegistry` that keeps track of operators' stakes
  *      2) a `BLSApkRegistry` that keeps track of operators' BLS public keys and aggregate BLS public keys for each quorum
  *      3) an `IndexRegistry` that keeps track of an ordered list of operators for each quorum
+ *      4) a `SocketRegistry` that keeps track of operators' sockets (arbitrary strings)
  *
  * @author Layr Labs, Inc.
  */

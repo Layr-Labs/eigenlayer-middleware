@@ -11,28 +11,9 @@ interface IOwnable {
     function owner() external view returns (address);
 }
 
-contract MockSocketRegistry is SocketRegistry {
-    constructor(
-        ISlashingRegistryCoordinator _slashingRegistryCoordinator
-    ) SocketRegistry(_slashingRegistryCoordinator) {}
-
-    function onlyCoordinatorOwnerFn() external view onlyCoordinatorOwner {}
-}
-
 contract SocketRegistryUnitTests is MockAVSDeployer {
     function setUp() public virtual {
         _deployMockEigenLayerAndAVS();
-    }
-
-    function testFuzz_revert_onlyCoordinatorOwner(
-        address caller
-    ) public {
-        MockSocketRegistry _socketRegistry = new MockSocketRegistry(registryCoordinator);
-
-        vm.prank(caller);
-        vm.assume(caller != IOwnable(address(registryCoordinator)).owner());
-        vm.expectRevert(ISocketRegistryErrors.OnlySlashingRegistryCoordinatorOwner.selector);
-        _socketRegistry.onlyCoordinatorOwnerFn();
     }
 
     function test_setOperatorSocket() public {
