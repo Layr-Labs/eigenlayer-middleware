@@ -20,7 +20,8 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
                 numQuorums: ONE | TWO | MANY,
                 numStrategies: ONE | TWO | MANY,
                 minimumStake: HAS_MINIMUM,
-                fillTypes: EMPTY | SOME_FILL
+                fillTypes: EMPTY | SOME_FILL,
+                quorumType: DELEGATED_STAKE
             })
         });
 
@@ -64,7 +65,8 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
                 numQuorums: ONE | TWO | MANY,
                 numStrategies: ONE | TWO | MANY,
                 minimumStake: HAS_MINIMUM,
-                fillTypes: EMPTY | SOME_FILL
+                fillTypes: EMPTY | SOME_FILL,
+                quorumType: DELEGATED_STAKE
             })
         });
 
@@ -103,7 +105,8 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
                 numQuorums: ONE | TWO | MANY,
                 numStrategies: ONE | TWO | MANY,
                 minimumStake: HAS_MINIMUM,
-                fillTypes: EMPTY | SOME_FILL
+                fillTypes: EMPTY | SOME_FILL,
+                quorumType: DELEGATED_STAKE
             })
         });
 
@@ -138,7 +141,8 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
                 numQuorums: ONE | TWO | MANY,
                 numStrategies: ONE | TWO | MANY,
                 minimumStake: HAS_MINIMUM,
-                fillTypes: EMPTY | SOME_FILL
+                fillTypes: EMPTY | SOME_FILL,
+                quorumType: DELEGATED_STAKE
             })
         });
 
@@ -174,7 +178,8 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
                 numQuorums: ONE | TWO | MANY,
                 numStrategies: ONE | TWO | MANY,
                 minimumStake: HAS_MINIMUM,
-                fillTypes: EMPTY | SOME_FILL
+                fillTypes: EMPTY | SOME_FILL,
+                quorumType: DELEGATED_STAKE
             })
         });
 

@@ -132,7 +132,11 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
             OnlyM2QuorumsAllowed()
         );
 
-        _deregisterOperator({operator: msg.sender, quorumNumbers: quorumNumbers});
+        _deregisterOperator({
+            operator: msg.sender,
+            quorumNumbers: quorumNumbers,
+            shouldForceDeregister: false
+        });
     }
 
     /// @inheritdoc IRegistryCoordinator

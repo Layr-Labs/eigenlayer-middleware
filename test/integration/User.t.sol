@@ -14,6 +14,7 @@ import "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
 import "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
+import "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 
 // Middleware
 import "src/interfaces/IRegistryCoordinator.sol";
@@ -28,10 +29,14 @@ import "src/libraries/BitmapUtils.sol";
 import "test/integration/TimeMachine.t.sol";
 import "test/integration/utils/Sort.t.sol";
 import "test/integration/utils/BitmapStrings.t.sol";
+import "test/mocks/ServiceManagerMock.sol";
 
 interface IUserDeployer {
+    function slashingRegistryCoordinator() external view returns (SlashingRegistryCoordinator);
     function registryCoordinator() external view returns (RegistryCoordinator);
     function avsDirectory() external view returns (AVSDirectory);
+    function allocationManager() external view returns (AllocationManager);
+    function serviceManager() external view returns (ServiceManagerMock);
     function timeMachine() external view returns (TimeMachine);
     function churnApproverPrivateKey() external view returns (uint256);
     function churnApprover() external view returns (address);
@@ -82,7 +87,7 @@ contract User is Test {
 
         registryCoordinator = deployer.registryCoordinator();
         avsDirectory = deployer.avsDirectory();
-        serviceManager = ServiceManagerBase(address(registryCoordinator.serviceManager()));
+        serviceManager = ServiceManagerBase(address(deployer.serviceManager()));
 
         blsApkRegistry = BLSApkRegistry(address(registryCoordinator.blsApkRegistry()));
         stakeRegistry = StakeRegistry(address(registryCoordinator.stakeRegistry()));
@@ -124,6 +129,7 @@ contract User is Test {
         _log("registerOperator", quorums);
 
         vm.warp(block.timestamp + 1);
+
         registryCoordinator.registerOperator({
             quorumNumbers: quorums,
             socket: NAME,
@@ -161,61 +167,10 @@ contract User is Test {
 
         bytes memory allQuorums = churnBitmap.plus(standardBitmap).bitmapToBytesArray();
 
-        ISlashingRegistryCoordinator.OperatorKickParam[] memory kickParams =
-            new ISlashingRegistryCoordinator.OperatorKickParam[](allQuorums.length);
-
-        // this constructs OperatorKickParam[] in ascending quorum order
-        // (yikes)
-        uint256 churnIdx;
-        uint256 stdIdx;
-        while (churnIdx + stdIdx < allQuorums.length) {
-            if (churnIdx == churnQuorums.length) {
-                kickParams[churnIdx + stdIdx] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
-                    quorumNumber: 0,
-                    operator: address(0)
-                });
-                stdIdx++;
-            } else if (
-                stdIdx == standardQuorums.length || churnQuorums[churnIdx] < standardQuorums[stdIdx]
-            ) {
-                kickParams[churnIdx + stdIdx] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
-                    quorumNumber: uint8(churnQuorums[churnIdx]),
-                    operator: address(churnTargets[churnIdx])
-                });
-                churnIdx++;
-            } else if (standardQuorums[stdIdx] < churnQuorums[churnIdx]) {
-                kickParams[churnIdx + stdIdx] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
-                    quorumNumber: 0,
-                    operator: address(0)
-                });
-                stdIdx++;
-            } else {
-                revert("User.registerOperatorWithChurn: malformed input");
-            }
-        }
-
-        // Generate churn approver signature
-        bytes32 _salt = keccak256(abi.encodePacked(++salt, address(this)));
-        uint256 expiry = type(uint256).max;
-        bytes32 digest = registryCoordinator.calculateOperatorChurnApprovalDigestHash({
-            registeringOperator: address(this),
-            registeringOperatorId: operatorId,
-            operatorKickParams: kickParams,
-            salt: _salt,
-            expiry: expiry
-        });
-
-        // Sign digest
-        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(churnApproverPrivateKey, digest);
-        bytes memory signature = new bytes(65);
-        assembly {
-            mstore(add(signature, 0x20), r)
-            mstore(add(signature, 0x40), s)
-        }
-        signature[signature.length - 1] = bytes1(v);
-
-        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature = ISignatureUtils
-            .SignatureWithSaltAndExpiry({signature: signature, salt: _salt, expiry: expiry});
+        (
+            ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory kickParams,
+            ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature
+        ) = _generateOperatorKickParams(allQuorums, churnQuorums, churnTargets, standardQuorums);
 
         vm.warp(block.timestamp + 1);
         registryCoordinator.registerOperatorWithChurn({
@@ -388,6 +343,77 @@ contract User is Test {
         targetString = string.concat(targetString, "]");
 
         emit log_named_string("- churnTargets", targetString);
+    }
+
+    function _generateOperatorKickParams(
+        bytes memory allQuorums,
+        bytes calldata churnQuorums,
+        User[] calldata churnTargets,
+        bytes calldata standardQuorums
+    )
+        internal
+        virtual
+        returns (
+            ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory,
+            ISignatureUtils.SignatureWithSaltAndExpiry memory
+        )
+    {
+        ISlashingRegistryCoordinator.OperatorKickParam[] memory kickParams =
+            new ISlashingRegistryCoordinator.OperatorKickParam[](allQuorums.length);
+
+        // this constructs OperatorKickParam[] in ascending quorum order
+        // (yikes)
+        uint256 churnIdx;
+        uint256 stdIdx;
+        while (churnIdx + stdIdx < allQuorums.length) {
+            if (churnIdx == churnQuorums.length) {
+                kickParams[churnIdx + stdIdx] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
+                    quorumNumber: 0,
+                    operator: address(0)
+                });
+                stdIdx++;
+            } else if (
+                stdIdx == standardQuorums.length || churnQuorums[churnIdx] < standardQuorums[stdIdx]
+            ) {
+                kickParams[churnIdx + stdIdx] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
+                    quorumNumber: uint8(churnQuorums[churnIdx]),
+                    operator: address(churnTargets[churnIdx])
+                });
+                churnIdx++;
+            } else if (standardQuorums[stdIdx] < churnQuorums[churnIdx]) {
+                kickParams[churnIdx + stdIdx] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
+                    quorumNumber: 0,
+                    operator: address(0)
+                });
+                stdIdx++;
+            } else {
+                revert("User.registerOperatorWithChurn: malformed input");
+            }
+        }
+
+        // Generate churn approver signature
+        bytes32 _salt = keccak256(abi.encodePacked(++salt, address(this)));
+        uint256 expiry = type(uint256).max;
+        bytes32 digest = registryCoordinator.calculateOperatorChurnApprovalDigestHash({
+            registeringOperator: address(this),
+            registeringOperatorId: operatorId,
+            operatorKickParams: kickParams,
+            salt: _salt,
+            expiry: expiry
+        });
+
+        // Sign digest
+        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(churnApproverPrivateKey, digest);
+        bytes memory signature = new bytes(65);
+        assembly {
+            mstore(add(signature, 0x20), r)
+            mstore(add(signature, 0x40), s)
+        }
+        signature[signature.length - 1] = bytes1(v);
+        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature = ISignatureUtils
+            .SignatureWithSaltAndExpiry({signature: signature, salt: _salt, expiry: expiry});
+
+        return (kickParams, churnApproverSignature);
     }
 }
 

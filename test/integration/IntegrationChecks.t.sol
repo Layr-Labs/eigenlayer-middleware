@@ -39,6 +39,11 @@ contract IntegrationChecks is IntegrationBase {
     function check_Register_State(User operator, bytes memory quorums) internal {
         _log("check_Register_State", operator);
 
+        // AllocationManager
+        assert_RegisteredForOperatorSets(
+            operator, quorums, "operator did not register for all operator sets"
+        );
+
         // RegistryCoordinator
         assert_HasOperatorInfoWithId(operator, "operatorInfo should have operatorId");
         assert_HasRegisteredStatus(operator, "operatorInfo status should be REGISTERED");
@@ -74,7 +79,7 @@ contract IntegrationChecks is IntegrationBase {
         );
 
         // AVSDirectory
-        assert_IsRegisteredToAVS(operator, "operator should be registered to AVS");
+        // assert_IsRegisteredToAVS(operator, "operator should be registered to AVS");
     }
 
     /// @dev Combines many checks of check_Register_State and check_Deregister_State
@@ -153,7 +158,7 @@ contract IntegrationChecks is IntegrationBase {
         );
 
         // AVSDirectory
-        assert_IsRegisteredToAVS(incomingOperator, "operator should be registered to AVS");
+        // assert_IsRegisteredToAVS(incomingOperator, "operator should be registered to AVS");
 
         // Check that churnedOperators are deregistered from churnedQuorums
         for (uint256 i = 0; i < churnedOperators.length; i++) {
@@ -175,6 +180,13 @@ contract IntegrationChecks is IntegrationBase {
                 churnedOperator,
                 churnedQuorum,
                 "churned operator did not deregister from churned quorum"
+            );
+
+            // AllocationManager
+            assert_Snap_Deregistered_FromOperatorSets(
+                churnedOperator,
+                churnedQuorum,
+                "churned operator did not deregister from operatorSets"
             );
 
             // BLSApkRegistry
@@ -276,7 +288,7 @@ contract IntegrationChecks is IntegrationBase {
         );
 
         // AVSDirectory
-        assert_IsRegisteredToAVS(operator, "operator should be registered to AVS");
+        // assert_IsRegisteredToAVS(operator, "operator should be registered to AVS");
     }
 
     /// @dev Validate state directly after the operator exits from Eigenlayer core (by queuing withdrawals)
@@ -319,6 +331,11 @@ contract IntegrationChecks is IntegrationBase {
     /// NOTE: This is a combination of check_Deregister_State and check_CompleteDeregister_State
     function check_WithdrawUpdate_State(User operator, bytes memory quorums) internal {
         _log("check_WithdrawUpdate_State", operator);
+
+        // AllocationManager
+        assert_Snap_Deregistered_FromOperatorSets(
+            operator, quorums, "operator did not deregister from all operator sets"
+        );
 
         // RegistryCoordinator
         assert_HasOperatorInfoWithId(operator, "operatorInfo should still have operatorId");
@@ -392,6 +409,11 @@ contract IntegrationChecks is IntegrationBase {
     /// @dev Check that the operator correctly deregistered from some quorums
     function check_Deregister_State(User operator, bytes memory quorums) internal {
         _log("check_Deregister_State", operator);
+
+        // AllocationManager
+        assert_Snap_Deregistered_FromOperatorSets(
+            operator, quorums, "operator did not deregister from all operator sets"
+        );
 
         // RegistryCoordinator
         assert_HasOperatorInfoWithId(operator, "operatorInfo should still have operatorId");

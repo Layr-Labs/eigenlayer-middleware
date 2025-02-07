@@ -225,7 +225,11 @@ contract SlashingRegistryCoordinator is
         uint32[] memory operatorSetIds
     ) external override onlyAllocationManager onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
         bytes memory quorumNumbers = _getQuorumNumbers(operatorSetIds);
-        _deregisterOperator(operator, quorumNumbers);
+        _deregisterOperator({
+            operator: operator,
+            quorumNumbers: quorumNumbers,
+            shouldForceDeregister: false
+        });
     }
 
     /// @inheritdoc ISlashingRegistryCoordinator
@@ -251,7 +255,11 @@ contract SlashingRegistryCoordinator is
                 if (shouldBeDeregistered[0]) {
                     bytes memory singleQuorumNumber = new bytes(1);
                     singleQuorumNumber[0] = quorumNumbers[j];
-                    _deregisterOperator(operators[i], singleQuorumNumber);
+                    _deregisterOperator({
+                        operator: operators[i],
+                        quorumNumbers: singleQuorumNumber,
+                        shouldForceDeregister: true
+                    });
                 }
             }
         }
@@ -307,7 +315,11 @@ contract SlashingRegistryCoordinator is
                 stakeRegistry.updateOperatorsStake(currQuorumOperators, operatorIds, quorumNumber);
             for (uint256 j = 0; j < currQuorumOperators.length; ++j) {
                 if (shouldBeDeregistered[j]) {
-                    _deregisterOperator(currQuorumOperators[j], quorumNumbers[i:i + 1]);
+                    _deregisterOperator({
+                        operator: currQuorumOperators[j],
+                        quorumNumbers: quorumNumbers[i:i + 1],
+                        shouldForceDeregister: true
+                    });
                 }
             }
 
@@ -344,7 +356,11 @@ contract SlashingRegistryCoordinator is
             operatorInfo.status == OperatorStatus.REGISTERED && !quorumsToRemove.isEmpty()
                 && quorumsToRemove.isSubsetOf(currentBitmap)
         ) {
-            _deregisterOperator({operator: operator, quorumNumbers: quorumNumbers});
+            _deregisterOperator({
+                operator: operator,
+                quorumNumbers: quorumNumbers,
+                shouldForceDeregister: true
+            });
         }
     }
 
@@ -522,7 +538,11 @@ contract SlashingRegistryCoordinator is
 
                 bytes memory singleQuorumNumber = new bytes(1);
                 singleQuorumNumber[0] = quorumNumbers[i];
-                _deregisterOperator(operatorKickParams[i].operator, singleQuorumNumber);
+                _deregisterOperator({
+                    operator: operatorKickParams[i].operator,
+                    quorumNumbers: singleQuorumNumber,
+                    shouldForceDeregister: true
+                });
             }
         }
     }
@@ -531,8 +551,16 @@ contract SlashingRegistryCoordinator is
      * @dev Deregister the operator from one or more quorums
      * This method updates the operator's quorum bitmap and status, then deregisters
      * the operator with the BLSApkRegistry, IndexRegistry, and StakeRegistry
+     * @param operator the operator to deregister
+     * @param quorumNumbers the quorum numbers to deregister from
+     * @param shouldForceDeregister whether the operator needs to be deregistered from the OperatorSets of
+     * the core EigenLayer contract AllocationManager
      */
-    function _deregisterOperator(address operator, bytes memory quorumNumbers) internal virtual {
+    function _deregisterOperator(
+        address operator,
+        bytes memory quorumNumbers,
+        bool shouldForceDeregister
+    ) internal virtual {
         // Fetch the operator's info and ensure they are registered
         OperatorInfo storage operatorInfo = _operatorInfo[operator];
         bytes32 operatorId = operatorInfo.operatorId;
@@ -571,8 +599,9 @@ contract SlashingRegistryCoordinator is
         stakeRegistry.deregisterOperator(operatorId, quorumNumbers);
         indexRegistry.deregisterOperator(operatorId, quorumNumbers);
 
-        // If the caller is not the allocationManager, then this is a force deregistration not consented by the operator
-        if (msg.sender != address(allocationManager)) {
+        // If the operator is not deregistered from the EigenLayer core protocol, then we need to force deregister them
+        // from their respective OperatorSets in the AllocationManager
+        if (shouldForceDeregister) {
             _forceDeregisterOperator(operator, quorumNumbers);
         }
 
