@@ -29,10 +29,11 @@ import {Pausable} from "eigenlayer-contracts/src/contracts/permissions/Pausable.
 import {SlashingRegistryCoordinatorStorage} from "./SlashingRegistryCoordinatorStorage.sol";
 
 /**
- * @title A `RegistryCoordinator` that has three registries:
+ * @title A `RegistryCoordinator` that has four registries:
  *      1) a `StakeRegistry` that keeps track of operators' stakes
  *      2) a `BLSApkRegistry` that keeps track of operators' BLS public keys and aggregate BLS public keys for each quorum
  *      3) an `IndexRegistry` that keeps track of an ordered list of operators for each quorum
+ *      4) a `SocketRegistry` that keeps track of operators' sockets (arbitrary strings)
  *
  * @author Layr Labs, Inc.
  */
@@ -104,10 +105,12 @@ contract SlashingRegistryCoordinator is
         _setPausedStatus(_initialPausedStatus);
         _setEjector(_ejector);
         _setAccountIdentifier(_accountIdentifier);
+
         // Add registry contracts to the registries array
         registries.push(address(stakeRegistry));
         registries.push(address(blsApkRegistry));
         registries.push(address(indexRegistry));
+        registries.push(address(socketRegistry));
     }
 
     /// @inheritdoc ISlashingRegistryCoordinator

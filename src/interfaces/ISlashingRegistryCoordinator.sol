@@ -10,6 +10,7 @@ import {IAllocationManager} from
 import {IBLSApkRegistry} from "./IBLSApkRegistry.sol";
 import {IStakeRegistry, IStakeRegistryTypes} from "./IStakeRegistry.sol";
 import {IIndexRegistry} from "./IIndexRegistry.sol";
+import {ISocketRegistry} from "./ISocketRegistry.sol";
 import {BN254} from "../libraries/BN254.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 
@@ -231,6 +232,12 @@ interface ISlashingRegistryCoordinator is
      * @dev This is only relevant for Slashing AVSs
      */
     function allocationManager() external view returns (IAllocationManager);
+    
+    /**
+     * @notice Reference to the SocketRegistry contract.
+     * @return The SocketRegistry contract interface.
+     */
+    function socketRegistry() external view returns (ISocketRegistry);
 
     /// STORAGE
 
