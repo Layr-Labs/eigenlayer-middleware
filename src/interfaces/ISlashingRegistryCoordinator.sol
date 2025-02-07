@@ -232,7 +232,7 @@ interface ISlashingRegistryCoordinator is
      * @dev This is only relevant for Slashing AVSs
      */
     function allocationManager() external view returns (IAllocationManager);
-    
+
     /**
      * @notice Reference to the SocketRegistry contract.
      * @return The SocketRegistry contract interface.

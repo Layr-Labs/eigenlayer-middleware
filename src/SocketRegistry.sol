@@ -21,7 +21,7 @@ contract SocketRegistry is SocketRegistryStorage {
         ISlashingRegistryCoordinator _slashingRegistryCoordinator
     ) SocketRegistryStorage(address(_slashingRegistryCoordinator)) {}
 
-    /// @notice sets the socket for an operator only callable by the SlashingRegistryCoordinator
+    /// @inheritdoc ISocketRegistry
     function setOperatorSocket(
         bytes32 _operatorId,
         string memory _socket
@@ -29,7 +29,7 @@ contract SocketRegistry is SocketRegistryStorage {
         operatorIdToSocket[_operatorId] = _socket;
     }
 
-    /// @notice gets the stored socket for an operator
+    /// @inheritdoc ISocketRegistry
     function getOperatorSocket(
         bytes32 _operatorId
     ) external view returns (string memory) {
