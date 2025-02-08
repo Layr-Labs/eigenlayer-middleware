@@ -252,13 +252,24 @@ contract SlashingRegistryCoordinator is
                     singleOperator, singleOperatorId, quorumNumber
                 );
 
-                if (shouldBeDeregistered[0]) {
+                // whether the operator is registered in the core EigenLayer contract AllocationManager
+                bool registeredInCore = allocationManager.isMemberOfOperatorSet(
+                    operators[i], OperatorSet({avs: accountIdentifier, id: uint32(quorumNumber)})
+                );
+
+                // If the operator does not have the minimum stake, they need to be force deregistered.
+                // Additionally, it is possible for an operator to have deregistered from an OperatorSet
+                // in the core EigenLayer contract AllocationManager but not have the deregistration
+                // callback succeed here in `deregisterOperator` due to out of gas errors. If that is the case,
+                // we need to deregister the operator from the OperatorSet in this contract
+                if (shouldBeDeregistered[0] || !registeredInCore) {
+                    // The operator should be deregistered from this quorum
                     bytes memory singleQuorumNumber = new bytes(1);
                     singleQuorumNumber[0] = quorumNumbers[j];
                     _deregisterOperator({
                         operator: operators[i],
                         quorumNumbers: singleQuorumNumber,
-                        shouldForceDeregister: true
+                        shouldForceDeregister: registeredInCore
                     });
                 }
             }
@@ -612,6 +623,9 @@ contract SlashingRegistryCoordinator is
     /**
      * @notice Helper function to handle operator set deregistration for OperatorSets quorums. This is used
      * when an operator is force-deregistered from a set of quorums.
+     * Due to deregistration being possible in the AllocationManager but not in the AVS as a result of the
+     * try/catch in `AllocationManager.deregisterFromOperatorSets`, we need to first check that the operator
+     * is not already deregistered from the OperatorSet in the AllocationManager.
      * @param operator The operator to deregister
      * @param quorumNumbers The quorum numbers the operator is force-deregistered from
      */
@@ -619,6 +633,25 @@ contract SlashingRegistryCoordinator is
         address operator,
         bytes memory quorumNumbers
     ) internal virtual {
+        uint32[] memory operatorSetIds = new uint32[](quorumNumbers.length);
+        uint256 numDeregister = 0;
+        for (uint256 i = 0; i < quorumNumbers.length; ++i) {
+            uint32 operatorSetId = uint32(uint8(quorumNumbers[i]));
+            if (
+                allocationManager.isMemberOfOperatorSet(
+                    operator, OperatorSet({avs: accountIdentifier, id: operatorSetId})
+                )
+            ) {
+                operatorSetIds[numDeregister] = operatorSetId;
+                numDeregister++;
+            }
+        }
+
+        // resize operatorSetIds array length to numDeregister
+        assembly {
+            mstore(operatorSetIds, numDeregister)
+        }
+
         allocationManager.deregisterFromOperatorSets(
             IAllocationManagerTypes.DeregisterParams({
                 operator: operator,
