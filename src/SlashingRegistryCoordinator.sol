@@ -659,7 +659,7 @@ contract SlashingRegistryCoordinator is
                 _deregisterOperator({
                     operator: operators[j],
                     quorumNumbers: singleQuorumNumber,
-                    shouldForceDeregister: true
+                    shouldForceDeregister: registeredInCore
                 });
             }
         }
