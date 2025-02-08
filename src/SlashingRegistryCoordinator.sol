@@ -247,31 +247,11 @@ contract SlashingRegistryCoordinator is
             bytes memory quorumNumbers = currentBitmap.bitmapToBytesArray();
             for (uint256 j = 0; j < quorumNumbers.length; j++) {
                 // update the operator's stake for each quorum
-                uint8 quorumNumber = uint8(quorumNumbers[j]);
-                bool[] memory shouldBeDeregistered = stakeRegistry.updateOperatorsStake(
-                    singleOperator, singleOperatorId, quorumNumber
+                _updateStakesAndDeregisterLoiterers(
+                    singleOperator,
+                    singleOperatorId,
+                    uint8(quorumNumbers[j])
                 );
-
-                // whether the operator is registered in the core EigenLayer contract AllocationManager
-                bool registeredInCore = allocationManager.isMemberOfOperatorSet(
-                    operators[i], OperatorSet({avs: accountIdentifier, id: uint32(quorumNumber)})
-                );
-
-                // If the operator does not have the minimum stake, they need to be force deregistered.
-                // Additionally, it is possible for an operator to have deregistered from an OperatorSet
-                // in the core EigenLayer contract AllocationManager but not have the deregistration
-                // callback succeed here in `deregisterOperator` due to out of gas errors. If that is the case,
-                // we need to deregister the operator from the OperatorSet in this contract
-                if (shouldBeDeregistered[0] || !registeredInCore) {
-                    // The operator should be deregistered from this quorum
-                    bytes memory singleQuorumNumber = new bytes(1);
-                    singleQuorumNumber[0] = quorumNumbers[j];
-                    _deregisterOperator({
-                        operator: operators[i],
-                        quorumNumbers: singleQuorumNumber,
-                        shouldForceDeregister: registeredInCore
-                    });
-                }
             }
         }
     }
@@ -322,17 +302,11 @@ contract SlashingRegistryCoordinator is
                 prevOperatorAddress = operator;
             }
 
-            bool[] memory shouldBeDeregistered =
-                stakeRegistry.updateOperatorsStake(currQuorumOperators, operatorIds, quorumNumber);
-            for (uint256 j = 0; j < currQuorumOperators.length; ++j) {
-                if (shouldBeDeregistered[j]) {
-                    _deregisterOperator({
-                        operator: currQuorumOperators[j],
-                        quorumNumbers: quorumNumbers[i:i + 1],
-                        shouldForceDeregister: true
-                    });
-                }
-            }
+            _updateStakesAndDeregisterLoiterers(
+                currQuorumOperators,
+                operatorIds,
+                quorumNumber
+            );
 
             // Update timestamp that all operators in quorum have been updated all at once
             quorumUpdateBlockNumber[quorumNumber] = block.number;
@@ -659,6 +633,36 @@ contract SlashingRegistryCoordinator is
                 operatorSetIds: _getOperatorSetIds(quorumNumbers)
             })
         );
+    }
+
+    function _updateStakesAndDeregisterLoiterers(
+        address[] memory operators,
+        bytes32[] memory operatorIds,
+        uint8 quorumNumber
+    ) internal {
+        bytes memory singleQuorumNumber = new bytes(1);
+        singleQuorumNumber[0] = bytes1(quorumNumber);
+        bool[] memory doesNotMeetStakeThreshold =
+            stakeRegistry.updateOperatorsStake(operators, operatorIds, quorumNumber);
+        for (uint256 j = 0; j < operators.length; ++j) {
+            // whether the operator is registered in the core EigenLayer contract AllocationManager
+            bool registeredInCore = allocationManager.isMemberOfOperatorSet(
+                operators[j], OperatorSet({avs: accountIdentifier, id: uint32(quorumNumber)})
+            );
+
+            // If the operator does not have the minimum stake, they need to be force deregistered.
+            // Additionally, it is possible for an operator to have deregistered from an OperatorSet
+            // in the core EigenLayer contract AllocationManager but not have the deregistration
+            // callback succeed here in `deregisterOperator` due to out of gas errors. If that is the case,
+            // we need to deregister the operator from the OperatorSet in this contract
+            if (doesNotMeetStakeThreshold[j] || !registeredInCore) {
+                _deregisterOperator({
+                    operator: operators[j],
+                    quorumNumbers: singleQuorumNumber,
+                    shouldForceDeregister: true
+                });
+            }
+        }
     }
 
     /**
