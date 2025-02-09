@@ -245,9 +245,7 @@ contract SlashingRegistryCoordinator is
             for (uint256 j = 0; j < quorumNumbers.length; j++) {
                 // update the operator's stake for each quorum
                 _updateStakesAndDeregisterLoiterers(
-                    singleOperator,
-                    singleOperatorId,
-                    uint8(quorumNumbers[j])
+                    singleOperator, singleOperatorId, uint8(quorumNumbers[j])
                 );
             }
         }
@@ -299,11 +297,7 @@ contract SlashingRegistryCoordinator is
                 prevOperatorAddress = operator;
             }
 
-            _updateStakesAndDeregisterLoiterers(
-                currQuorumOperators,
-                operatorIds,
-                quorumNumber
-            );
+            _updateStakesAndDeregisterLoiterers(currQuorumOperators, operatorIds, quorumNumber);
 
             // Update timestamp that all operators in quorum have been updated all at once
             quorumUpdateBlockNumber[quorumNumber] = block.number;
