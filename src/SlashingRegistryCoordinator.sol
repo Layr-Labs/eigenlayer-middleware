@@ -626,11 +626,19 @@ contract SlashingRegistryCoordinator is
         );
     }
 
+    /**
+     * @dev Helper function to update operator stakes and deregister loiterers
+     * Loiterers are AVS registered operators who have force deregistered from the OperatorSet/quorum
+     * in the core EigenLayer contract AllocationManager but not deregistered from the OperatorSet/quorum
+     * in this contract. Potentially due to out of gas errors in the deregistration callback. This function
+     * will handle that edge case by deregistering the operator from the AVS if they are no longer registered
+     * in the AllocationManager.
+     */
     function _updateStakesAndDeregisterLoiterers(
         address[] memory operators,
         bytes32[] memory operatorIds,
         uint8 quorumNumber
-    ) internal {
+    ) internal virtual {
         bytes memory singleQuorumNumber = new bytes(1);
         singleQuorumNumber[0] = bytes1(quorumNumber);
         bool[] memory doesNotMeetStakeThreshold =
