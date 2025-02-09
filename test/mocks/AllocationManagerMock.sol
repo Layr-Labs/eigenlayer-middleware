@@ -151,25 +151,4 @@ contract AllocationManagerIntermediate is IAllocationManager {
     ) external view virtual returns (bool) {}
 }
 
-contract AllocationManagerMock is AllocationManagerIntermediate {
-    bool defaultIsMemberOfOperatorSet;
-
-    constructor() {
-        // Return true by default to so that the SlashingRegistryCoordinator won't force deregister
-        // an operator for every quorum when a `updateOperators`,`updateOperatorsForQuorum` call is made
-        defaultIsMemberOfOperatorSet = true;
-    }
-
-    function isMemberOfOperatorSet(
-        address operator,
-        OperatorSet memory operatorSet
-    ) external view virtual override returns (bool) {
-        return defaultIsMemberOfOperatorSet;
-    }
-
-    function setDefaultIsMemberOfOperatorSet(
-        bool isMemberOfOperatorSet
-    ) external {
-        defaultIsMemberOfOperatorSet = isMemberOfOperatorSet;
-    }
-}
+contract AllocationManagerMock is AllocationManagerIntermediate {}

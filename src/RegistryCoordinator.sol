@@ -2,8 +2,10 @@
 pragma solidity ^0.8.27;
 
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IAllocationManager,
+    OperatorSet
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IBLSApkRegistry, IBLSApkRegistryTypes} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
@@ -198,6 +200,44 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         // them from the AVS via the EigenLayer core contracts
         if (operatorM2QuorumBitmap.isEmpty()) {
             serviceManager.deregisterOperatorFromAVS(operator);
+        }
+    }
+
+    /**
+     * @dev Helper function to update operator stakes and deregister loiterers
+     * Loiterers are AVS registered operators who have force deregistered from the OperatorSet/quorum
+     * in the core EigenLayer contract AllocationManager but not deregistered from the OperatorSet/quorum
+     * in this contract. Potentially due to out of gas errors in the deregistration callback. This function
+     * will handle that edge case by deregistering the operator from the AVS if they are no longer registered
+     * in the AllocationManager.
+     */
+    function _updateStakesAndDeregisterLoiterers(
+        address[] memory operators,
+        bytes32[] memory operatorIds,
+        uint8 quorumNumber
+    ) internal virtual override {
+        bytes memory singleQuorumNumber = new bytes(1);
+        singleQuorumNumber[0] = bytes1(quorumNumber);
+        bool[] memory doesNotMeetStakeThreshold =
+            stakeRegistry.updateOperatorsStake(operators, operatorIds, quorumNumber);
+        for (uint256 j = 0; j < operators.length; ++j) {
+            // whether the operator is registered in the core EigenLayer contract AllocationManager
+            bool registeredInCore = allocationManager.isMemberOfOperatorSet(
+                operators[j], OperatorSet({avs: accountIdentifier, id: uint32(quorumNumber)})
+            );
+
+            // If the operator does not have the minimum stake, they need to be force deregistered.
+            // Additionally, it is possible for an operator to have deregistered from an OperatorSet
+            // in the core EigenLayer contract AllocationManager but not have the deregistration
+            // callback succeed here in `deregisterOperator` due to out of gas errors. If that is the case,
+            // we need to deregister the operator from the OperatorSet in this contract
+            if (doesNotMeetStakeThreshold[j] || (!registeredInCore && !_isM2Quorum(quorumNumber))) {
+                _deregisterOperator({
+                    operator: operators[j],
+                    quorumNumbers: singleQuorumNumber,
+                    shouldForceDeregister: registeredInCore && !_isM2Quorum(quorumNumber)
+                });
+            }
         }
     }
 
