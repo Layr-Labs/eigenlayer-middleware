@@ -227,13 +227,6 @@ contract DelegationIntermediate is IDelegationManager {
 
     function minWithdrawalDelayBlocks() external view virtual override returns (uint32) {}
 
-    function slashOperatorShares(
-        address operator,
-        IStrategy strategy,
-        uint64 prevMaxMagnitude,
-        uint64 newMaxMagnitude
-    ) external override {}
-
     function getQueuedWithdrawal(
         bytes32 withdrawalRoot
     ) external view override returns (Withdrawal memory) {}
