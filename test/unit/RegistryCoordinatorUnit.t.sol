@@ -2448,7 +2448,6 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
 
         string memory socket = "socket";
 
-        // register for quorum 0
         vm.prank(operatorToRegister.key.addr);
         registryCoordinator.registerOperator(
             new bytes(1), // Convert 0 to bytes1 first
@@ -2457,16 +2456,13 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
             operatorSignature
         );
 
-        /// Deregistration for m2 should for the first two operator sets
         vm.prank(operatorToRegister.key.addr);
         registryCoordinator.deregisterOperator(new bytes(1));
 
-        // Verify operator was deregistered by checking their bitmap is empty
         bytes32 operatorId = registryCoordinator.getOperatorId(operatorToRegister.key.addr);
         uint192 bitmap = registryCoordinator.getCurrentQuorumBitmap(operatorId);
         assertEq(bitmap, 0, "Operator bitmap should be empty after deregistration");
 
-        // Verify operator status is NEVER_REGISTERED
         ISlashingRegistryCoordinatorTypes.OperatorStatus status =
             registryCoordinator.getOperatorStatus(operatorToRegister.key.addr);
         assertEq(
@@ -2489,10 +2485,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
     }
 
     function test_createSlashableStakeQuorum() public {
-        // Deploy with 0 quorums
         _deployMockEigenLayerAndAVS(0);
 
-        // Create quorum params
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
         ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: 10,
@@ -2506,7 +2500,6 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
             IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 1});
         uint32 lookAheadPeriod = 100;
 
-        // Create slashable stake quorum
         cheats.prank(registryCoordinatorOwner);
         registryCoordinator.createSlashableStakeQuorum(
             operatorSetParams, minimumStake, strategyParams, lookAheadPeriod
@@ -2514,10 +2507,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
     }
 
     function test_createTotalDelegatedStakeQuorum() public {
-        // Deploy with 0 quorums
         _deployMockEigenLayerAndAVS(0);
 
-        // Create quorum params
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
         ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: 10,
@@ -2530,7 +2521,6 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         strategyParams[0] =
             IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
 
-        // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);
         registryCoordinator.createTotalDelegatedStakeQuorum(
             operatorSetParams, minimumStake, strategyParams
@@ -2538,11 +2528,8 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
     }
 
     function test_registerHook() public {
-        vm.skip(true);
-
         _deployMockEigenLayerAndAVS(0);
 
-        // Create quorum params
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
         ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: 10,
@@ -2563,28 +2550,28 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         uint32[] memory operatorSetIds = new uint32[](1);
         operatorSetIds[0] = 0;
 
-        string memory socket = "socket";
-        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params;
-        // TODO:
-        // params = IBLSApkRegistryTypes.PubkeyRegistrationParams({
-        //     pubkeyG1: defaultPubKey,
-        //     pubkeyG2: defaultPubKeyG2,
-        //     pubkeySignature: defaultPubKeySignature
-        // });
+        Operator memory operatorToRegister = OperatorWalletLib.createOperator("test_operator");
+        defaultOperator = operatorToRegister.key.addr;
 
-        // Encode with RegistrationType.NORMAL
+        string memory socket = "socket";
+        bytes32 messageHash = registryCoordinator.calculatePubkeyRegistrationMessageHash(operatorToRegister.key.addr);
+
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params = IBLSApkRegistryTypes.PubkeyRegistrationParams({
+            pubkeyRegistrationSignature: SigningKeyOperationsLib.sign(operatorToRegister.signingKey, messageHash),
+            pubkeyG1: operatorToRegister.signingKey.publicKeyG1,
+            pubkeyG2: operatorToRegister.signingKey.publicKeyG2
+        });
+
         bytes memory data =
             abi.encode(ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, params);
 
         cheats.prank(address(registryCoordinator.allocationManager()));
-        registryCoordinator.registerOperator(defaultOperator, operatorSetIds, data);
+        registryCoordinator.registerOperator(operatorToRegister.key.addr, operatorSetIds, data);
     }
 
     function test_registerHook_WithChurn() public {
-        vm.skip(true);
         _deployMockEigenLayerAndAVS(0);
 
-        // Create quorum params
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
         ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: 10,
@@ -2598,30 +2585,44 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         strategyParams[0] =
             IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
 
-        // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);
         registryCoordinator.createTotalDelegatedStakeQuorum(operatorSetParams, 0, strategyParams);
 
         uint32[] memory operatorSetIds = new uint32[](1);
         operatorSetIds[0] = 0;
 
-        string memory socket = "socket";
-        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params;
-        // TODO:
-        // params = IBLSApkRegistryTypes.PubkeyRegistrationParams({
-        //     pubkeyG1: defaultPubKey,
-        //     pubkeyG2: defaultPubKeyG2,
-        //     pubkeySignature: defaultPubKeySignature
-        // });
+        Operator memory operatorToRegister = OperatorWalletLib.createOperator("test_operator");
+        defaultOperator = operatorToRegister.key.addr;
 
+        string memory socket = "socket";
+
+        bytes32 messageHash = registryCoordinator.calculatePubkeyRegistrationMessageHash(operatorToRegister.key.addr);
+
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params = IBLSApkRegistryTypes.PubkeyRegistrationParams({
+            pubkeyRegistrationSignature: SigningKeyOperationsLib.sign(operatorToRegister.signingKey, messageHash),
+            pubkeyG1: operatorToRegister.signingKey.publicKeyG1,
+            pubkeyG2: operatorToRegister.signingKey.publicKeyG2
+        });
+
+        Operator memory operatorToKick = OperatorWalletLib.createOperator("operator_to_kick");
+
+        /// TODO:  revisit why this doesn't throw
         ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams =
             new ISlashingRegistryCoordinatorTypes.OperatorKickParam[](1);
         operatorKickParams[0] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
-            operator: address(0x1),
+            operator: operatorToKick.key.addr,
             quorumNumber: 0
         });
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature;
+        bytes32 operatorId = BN254.hashG1Point(operatorToRegister.signingKey.publicKeyG1);
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature = _signOperatorChurnApproval(
+            operatorToRegister.key.addr,
+            operatorId,
+            operatorKickParams,
+            defaultSalt,
+            block.timestamp + 1 days
+        );
 
         // Encode with RegistrationType.CHURN
         bytes memory data = abi.encode(
@@ -2632,13 +2633,11 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
             churnApproverSignature
         );
 
-        // Prank as allocation manager and call register hook
         cheats.prank(address(registryCoordinator.allocationManager()));
-        registryCoordinator.registerOperator(defaultOperator, operatorSetIds, data);
+        registryCoordinator.registerOperator(operatorToRegister.key.addr, operatorSetIds, data);
     }
 
     function test_updateStakesForQuorum() public {
-        vm.skip(true);
         _deployMockEigenLayerAndAVS(0);
 
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
@@ -2659,15 +2658,52 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
             operatorSetParams, minimumStake, strategyParams
         );
 
-        uint256 quorumBitmap = 0;
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = 0;
 
-        // TODO: register actually and update stakes
+        Operator memory operatorToRegister = OperatorWalletLib.createOperator("test_operator");
+        defaultOperator = operatorToRegister.key.addr;
+
+        string memory socket = "socket";
+
+        bytes32 messageHash = registryCoordinator.calculatePubkeyRegistrationMessageHash(operatorToRegister.key.addr);
+
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params = IBLSApkRegistryTypes.PubkeyRegistrationParams({
+            pubkeyRegistrationSignature: SigningKeyOperationsLib.sign(operatorToRegister.signingKey, messageHash),
+            pubkeyG1: operatorToRegister.signingKey.publicKeyG1,
+            pubkeyG2: operatorToRegister.signingKey.publicKeyG2
+        });
+
+        bytes memory data =
+            abi.encode(ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, params);
+        (IStrategy strategy,) = stakeRegistry.strategyParams(0, 0);
+        delegationMock.setOperatorShares(operatorToRegister.key.addr, strategy, 1 ether);
+
+        cheats.prank(address(registryCoordinator.allocationManager()));
+        registryCoordinator.registerOperator(operatorToRegister.key.addr, operatorSetIds, data);
+
+        bytes32 operatorId = registryCoordinator.getOperatorId(operatorToRegister.key.addr);
+
+        uint96 newStake = 200 ether;
+        delegationMock.setOperatorShares(operatorToRegister.key.addr, strategy, newStake);
+
+        address[][] memory operatorsToUpdate = new address[][](1);
+        address[] memory operatorArray = new address[](1);
+        operatorArray[0] = operatorToRegister.key.addr;
+        operatorsToUpdate[0] = operatorArray;
+
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(uint8(0));
+
+        registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
+
+        uint96 updatedStake = stakeRegistry.getCurrentStake(operatorId, 0);
+        assertEq(updatedStake, 2000000, "Stake not updated correctly");
     }
 
     function test_deregisterHook() public {
         _deployMockEigenLayerAndAVS(0);
 
-        // Create quorum params
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
         ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: 10,
@@ -2681,121 +2717,173 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         strategyParams[0] =
             IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
 
-        // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);
         registryCoordinator.createTotalDelegatedStakeQuorum(operatorSetParams, 0, strategyParams);
 
-        // Prank as allocation manager and call register hook
         uint32[] memory operatorSetIds = new uint32[](1);
         operatorSetIds[0] = 0;
 
+        Operator memory operatorToRegister = OperatorWalletLib.createOperator("test_operator");
+        defaultOperator = operatorToRegister.key.addr;
+
         string memory socket = "socket";
-        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params;
-        // TODO:
-        // params = IBLSApkRegistryTypes.PubkeyRegistrationParams({
-        //     pubkeyG1: defaultPubKey,
-        //     pubkeyG2: defaultPubKeyG2,
-        //     pubkeySignature: defaultPubKeySignature
-        // });
 
-        // Encode with RegistrationType.NORMAL
-        bytes memory data =
-            abi.encode(ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, params);
+        bytes32 messageHash = registryCoordinator.calculatePubkeyRegistrationMessageHash(operatorToRegister.key.addr);
 
-        cheats.startPrank(address(registryCoordinator.allocationManager()));
-        registryCoordinator.registerOperator(defaultOperator, operatorSetIds, data);
-
-        // registryCoordinator.deregisterOperator(defaultOperator, operatorSetIds);
-
-        cheats.stopPrank();
-    }
-
-    function test_registerHook_Reverts_WhenNotALM() public {
-        _deployMockEigenLayerAndAVS(0);
-
-        // Create quorum params
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 10,
-            kickBIPsOfOperatorStake: 1000,
-            kickBIPsOfTotalStake: 100
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params = IBLSApkRegistryTypes.PubkeyRegistrationParams({
+            pubkeyRegistrationSignature: SigningKeyOperationsLib.sign(operatorToRegister.signingKey, messageHash),
+            pubkeyG1: operatorToRegister.signingKey.publicKeyG1,
+            pubkeyG2: operatorToRegister.signingKey.publicKeyG2
         });
 
-        uint96 minimumStake = 100;
-        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
-            new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] =
-            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
-
-        // Create total delegated stake quorum
-        cheats.prank(registryCoordinatorOwner);
-        registryCoordinator.createTotalDelegatedStakeQuorum(operatorSetParams, 0, strategyParams);
-
-        uint32[] memory operatorSetIds = new uint32[](1);
-        operatorSetIds[0] = 0;
-
-        string memory socket = "socket";
-        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params;
-        // TODO:
-        // params = IBLSApkRegistryTypes.PubkeyRegistrationParams({
-        //     pubkeyG1: defaultPubKey,
-        //     pubkeyG2: defaultPubKeyG2,
-        //     pubkeySignature: defaultPubKeySignature
-        // });
-
-        // Encode with RegistrationType.NORMAL
-        bytes memory data =
-            abi.encode(ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, params);
-
-        vm.expectRevert();
-        registryCoordinator.registerOperator(defaultOperator, operatorSetIds, data);
-    }
-
-    function test_deregisterHook_Reverts_WhenNotALM() public {
-        _deployMockEigenLayerAndAVS(0);
-
-        // Create quorum params
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 10,
-            kickBIPsOfOperatorStake: 1000,
-            kickBIPsOfTotalStake: 100
-        });
-
-        uint96 minimumStake = 100;
-        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
-            new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] =
-            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
-
-        // Create total delegated stake quorum
-        cheats.prank(registryCoordinatorOwner);
-        registryCoordinator.createTotalDelegatedStakeQuorum(operatorSetParams, 0, strategyParams);
-
-        // operator sets should be enabled after creating a new quorum
-        assertTrue(registryCoordinator.operatorSetsEnabled(), "operatorSetsEnabled should be true");
-
-        // Prank as allocation manager and call register hook
-        uint32[] memory operatorSetIds = new uint32[](1);
-        operatorSetIds[0] = 0;
-
-        string memory socket = "socket";
-        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params;
-        // TODO:
-        // params = IBLSApkRegistryTypes.PubkeyRegistrationParams({
-        //     pubkeyG1: defaultPubKey,
-        //     pubkeyG2: defaultPubKeyG2,
-        //     pubkeySignature: defaultPubKeySignature
-        // });
+        (IStrategy strategy,) = stakeRegistry.strategyParams(0, 0);
+        delegationMock.setOperatorShares(operatorToRegister.key.addr, strategy, 1 ether);
 
         bytes memory data =
             abi.encode(ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, params);
 
         cheats.prank(address(registryCoordinator.allocationManager()));
-        registryCoordinator.registerOperator(defaultOperator, operatorSetIds, data);
+        registryCoordinator.registerOperator(operatorToRegister.key.addr, operatorSetIds, data);
 
-        cheats.expectRevert();
-        registryCoordinator.deregisterOperator(defaultOperator, operatorSetIds);
+        bytes32 operatorId = registryCoordinator.getOperatorId(operatorToRegister.key.addr);
+        assertEq(
+            uint8(registryCoordinator.getOperatorStatus(operatorToRegister.key.addr)),
+            uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED),
+            "Operator should be registered"
+        );
+
+        cheats.prank(address(registryCoordinator.allocationManager()));
+        registryCoordinator.deregisterOperator(operatorToRegister.key.addr, operatorSetIds);
+
+        assertEq(
+            uint8(registryCoordinator.getOperatorStatus(operatorToRegister.key.addr)),
+            uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED),
+            "Operator should be deregistered"
+        );
+
+        uint96 finalStake = stakeRegistry.getCurrentStake(operatorId, 0);
+        assertEq(finalStake, 0, "Operator stake should be 0 after deregistration");
+
+        uint192 bitmap = registryCoordinator.getCurrentQuorumBitmap(operatorId);
+        assertEq(bitmap, 0, "Operator bitmap should be empty after deregistration");
+    }
+
+    function test_registerHook_Reverts_WhenNotALM() public {
+        _deployMockEigenLayerAndAVS(0);
+
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+            maxOperatorCount: 10,
+            kickBIPsOfOperatorStake: 1000,
+            kickBIPsOfTotalStake: 100
+        });
+
+        uint96 minimumStake = 100;
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
+
+        // Create total delegated stake quorum
+        cheats.prank(registryCoordinatorOwner);
+        registryCoordinator.createTotalDelegatedStakeQuorum(operatorSetParams, 0, strategyParams);
+
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = 0;
+
+        // Create operator with BLS keys
+        Operator memory operatorToRegister = OperatorWalletLib.createOperator("test_operator");
+        defaultOperator = operatorToRegister.key.addr;
+
+        string memory socket = "socket";
+
+        // Calculate message hash and sign with BLS key
+        bytes32 messageHash = registryCoordinator.calculatePubkeyRegistrationMessageHash(operatorToRegister.key.addr);
+
+        // Create registration params with operator's keys and signature
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params = IBLSApkRegistryTypes.PubkeyRegistrationParams({
+            pubkeyRegistrationSignature: SigningKeyOperationsLib.sign(operatorToRegister.signingKey, messageHash),
+            pubkeyG1: operatorToRegister.signingKey.publicKeyG1,
+            pubkeyG2: operatorToRegister.signingKey.publicKeyG2
+        });
+
+        // Set initial stake for the operator
+        (IStrategy strategy,) = stakeRegistry.strategyParams(0, 0);
+        delegationMock.setOperatorShares(operatorToRegister.key.addr, strategy, 1 ether);
+
+        // Encode with RegistrationType.NORMAL
+        bytes memory data =
+            abi.encode(ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, params);
+
+        // Try to register from a non-ALM address (using the operator's address)
+        cheats.prank(operatorToRegister.key.addr);
+        cheats.expectRevert(bytes4(keccak256("OnlyAllocationManager()")));
+        registryCoordinator.registerOperator(operatorToRegister.key.addr, operatorSetIds, data);
+    }
+
+    function test_deregisterHook_Reverts_WhenNotALM() public {
+        _deployMockEigenLayerAndAVS(0);
+
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+            maxOperatorCount: 10,
+            kickBIPsOfOperatorStake: 1000,
+            kickBIPsOfTotalStake: 100
+        });
+
+        uint96 minimumStake = 100;
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
+
+        cheats.prank(registryCoordinatorOwner);
+        registryCoordinator.createTotalDelegatedStakeQuorum(operatorSetParams, 0, strategyParams);
+
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = 0;
+
+        Operator memory operatorToRegister = OperatorWalletLib.createOperator("test_operator");
+        defaultOperator = operatorToRegister.key.addr;
+
+        string memory socket = "socket";
+
+        bytes32 messageHash = registryCoordinator.calculatePubkeyRegistrationMessageHash(operatorToRegister.key.addr);
+
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params = IBLSApkRegistryTypes.PubkeyRegistrationParams({
+            pubkeyRegistrationSignature: SigningKeyOperationsLib.sign(operatorToRegister.signingKey, messageHash),
+            pubkeyG1: operatorToRegister.signingKey.publicKeyG1,
+            pubkeyG2: operatorToRegister.signingKey.publicKeyG2
+        });
+
+        (IStrategy strategy,) = stakeRegistry.strategyParams(0, 0);
+        delegationMock.setOperatorShares(operatorToRegister.key.addr, strategy, 1 ether);
+
+        bytes memory data =
+            abi.encode(ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, params);
+
+        cheats.prank(address(registryCoordinator.allocationManager()));
+        registryCoordinator.registerOperator(operatorToRegister.key.addr, operatorSetIds, data);
+
+        bytes32 operatorId = registryCoordinator.getOperatorId(operatorToRegister.key.addr);
+        assertEq(
+            uint8(registryCoordinator.getOperatorStatus(operatorToRegister.key.addr)),
+            uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED),
+            "Operator should be registered"
+        );
+
+        cheats.prank(operatorToRegister.key.addr);
+        cheats.expectRevert(bytes4(keccak256("OnlyAllocationManager()")));
+        registryCoordinator.deregisterOperator(operatorToRegister.key.addr, operatorSetIds);
+
+        assertEq(
+            uint8(registryCoordinator.getOperatorStatus(operatorToRegister.key.addr)),
+            uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED),
+            "Operator should be deregistered"
+        );
+
+        uint192 bitmap = registryCoordinator.getCurrentQuorumBitmap(operatorId);
+        assertNotEq(bitmap, 0, "Operator bitmap should be empty after deregistration");
     }
 
     function test_DeregisterHook_Reverts_WhenM2Quorum() public {
