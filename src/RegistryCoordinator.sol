@@ -237,8 +237,9 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
             // in the core EigenLayer contract AllocationManager but not have the deregistration
             // callback succeed here in `deregisterOperator` due to out of gas errors. If that is the case,
             // we need to deregister the operator from the OperatorSet in this contract
-            bool shouldDeregister = doesNotMeetStakeThreshold[j] || (!registeredInCore && !isM2Quorum);
-            
+            bool shouldDeregister =
+                doesNotMeetStakeThreshold[j] || (!registeredInCore && !isM2Quorum);
+
             if (shouldDeregister) {
                 _deregisterOperator({
                     operator: operators[j],
