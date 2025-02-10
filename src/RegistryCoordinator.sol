@@ -220,22 +220,31 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         singleQuorumNumber[0] = bytes1(quorumNumber);
         bool[] memory doesNotMeetStakeThreshold =
             stakeRegistry.updateOperatorsStake(operators, operatorIds, quorumNumber);
-        for (uint256 j = 0; j < operators.length; ++j) {
-            // whether the operator is registered in the core EigenLayer contract AllocationManager
-            bool registeredInCore = allocationManager.isMemberOfOperatorSet(
-                operators[j], OperatorSet({avs: accountIdentifier, id: uint32(quorumNumber)})
-            );
 
+        for (uint256 j = 0; j < operators.length; ++j) {
+            bool isM2Quorum = _isM2Quorum(quorumNumber);
+            bool registeredInCore;
+            // If its an operatorSet quorum, its possible for registeredInCore to be true/false
+            // so check for operatorSet inclusion in the AllocationManager
+            if (!isM2Quorum) {
+                registeredInCore = allocationManager.isMemberOfOperatorSet(
+                    operators[j], OperatorSet({avs: accountIdentifier, id: uint32(quorumNumber)})
+                );
+            }
+
+            // Determine if the operator should be deregistered
             // If the operator does not have the minimum stake, they need to be force deregistered.
             // Additionally, it is possible for an operator to have deregistered from an OperatorSet
             // in the core EigenLayer contract AllocationManager but not have the deregistration
             // callback succeed here in `deregisterOperator` due to out of gas errors. If that is the case,
             // we need to deregister the operator from the OperatorSet in this contract
-            if (doesNotMeetStakeThreshold[j] || (!registeredInCore && !_isM2Quorum(quorumNumber))) {
+            bool shouldDeregister = doesNotMeetStakeThreshold[j] || (!registeredInCore && !isM2Quorum);
+            
+            if (shouldDeregister) {
                 _deregisterOperator({
                     operator: operators[j],
                     quorumNumbers: singleQuorumNumber,
-                    shouldForceDeregister: registeredInCore && !_isM2Quorum(quorumNumber)
+                    shouldForceDeregister: registeredInCore
                 });
             }
         }
