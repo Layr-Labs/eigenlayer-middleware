@@ -95,7 +95,7 @@ contract VetoableSlasher is IVetoableSlasher, SlasherBase {
             slashingRequests[requestId].status == IVetoableSlasherTypes.SlashingStatus.Requested,
             SlashingRequestNotRequested()
         );
-        
+
         slashingRequests[requestId].status = IVetoableSlasherTypes.SlashingStatus.Cancelled;
         emit SlashingRequestCancelled(requestId);
     }
