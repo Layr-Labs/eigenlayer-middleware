@@ -250,8 +250,6 @@ contract InstantSlasherTest is Test {
         );
         vm.stopPrank();
 
-        instantSlasher.initialize(slasher);
-
         vm.startPrank(serviceManager);
         PermissionController(coreDeployment.permissionController).setAppointee(
             address(serviceManager),

@@ -16,7 +16,7 @@ contract VetoableSlasher is IVetoableSlasher, SlasherBase {
     uint32 public immutable override vetoWindowBlocks;
 
     /// @inheritdoc IVetoableSlasher
-    address public override vetoCommittee;
+    address public immutable override vetoCommittee;
 
     /// @notice Mapping of request IDs to their corresponding slashing request details
     mapping(uint256 => IVetoableSlasherTypes.VetoableSlashingRequest) public slashingRequests;
@@ -30,17 +30,11 @@ contract VetoableSlasher is IVetoableSlasher, SlasherBase {
     constructor(
         IAllocationManager _allocationManager,
         ISlashingRegistryCoordinator _slashingRegistryCoordinator,
-        uint32 _vetoWindowBlocks
-    ) SlasherBase(_allocationManager, _slashingRegistryCoordinator) {
-        vetoWindowBlocks = _vetoWindowBlocks;
-    }
-
-    /// @inheritdoc IVetoableSlasher
-    function initialize(
+        address _slasher,
         address _vetoCommittee,
-        address _slasher
-    ) external virtual override initializer {
-        __SlasherBase_init(_slasher);
+        uint32 _vetoWindowBlocks
+    ) SlasherBase(_allocationManager, _slashingRegistryCoordinator, _slasher) {
+        vetoWindowBlocks = _vetoWindowBlocks;
         vetoCommittee = _vetoCommittee;
     }
 

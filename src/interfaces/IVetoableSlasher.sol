@@ -63,11 +63,6 @@ interface IVetoableSlasher is
     /// @notice Address of the committee that has veto power over slashing requests
     function vetoCommittee() external view returns (address);
 
-    /// @notice Initializes the contract with a veto committee and slasher address
-    /// @param _vetoCommittee Address of the committee that can veto slashing requests
-    /// @param _slasher Address authorized to create and fulfill slashing requests
-    function initialize(address _vetoCommittee, address _slasher) external;
-
     /// @notice Queues a new slashing request
     /// @param params Parameters defining the slashing request including operator and amount
     /// @dev Can only be called by the authorized slasher

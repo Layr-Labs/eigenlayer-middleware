@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {SlasherStorage, ISlashingRegistryCoordinator} from "./SlasherStorage.sol";
 import {
     IAllocationManagerTypes,
@@ -12,7 +11,7 @@ import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy
 /// @title SlasherBase
 /// @notice Base contract for implementing slashing functionality in EigenLayer middleware
 /// @dev Provides core slashing functionality and interfaces with EigenLayer's AllocationManager
-abstract contract SlasherBase is Initializable, SlasherStorage {
+abstract contract SlasherBase is SlasherStorage {
     /// @notice Ensures only the authorized slasher can call certain functions
     modifier onlySlasher() {
         _checkSlasher(msg.sender);
@@ -22,20 +21,12 @@ abstract contract SlasherBase is Initializable, SlasherStorage {
     /// @notice Constructs the base slasher contract
     /// @param _allocationManager The EigenLayer allocation manager contract
     /// @param _registryCoordinator The registry coordinator for this middleware
+    /// @param _slasher The address of the slasher
     constructor(
         IAllocationManager _allocationManager,
-        ISlashingRegistryCoordinator _registryCoordinator
-    ) SlasherStorage(_allocationManager, _registryCoordinator) {
-        _disableInitializers();
-    }
-
-    /// @notice Initializes the slasher contract with authorized slasher address
-    /// @param _slasher Address authorized to create and fulfill slashing requests
-    function __SlasherBase_init(
+        ISlashingRegistryCoordinator _registryCoordinator,
         address _slasher
-    ) internal onlyInitializing {
-        slasher = _slasher;
-    }
+    ) SlasherStorage(_allocationManager, _registryCoordinator, _slasher) {}
 
     /// @notice Internal function to execute a slashing request
     /// @param _requestId The ID of the slashing request to fulfill
