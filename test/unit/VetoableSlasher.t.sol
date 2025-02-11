@@ -202,6 +202,8 @@ contract VetoableSlasherTest is Test {
         vetoableSlasherImplementation = new VetoableSlasher(
             IAllocationManager(coreDeployment.allocationManager),
             ISlashingRegistryCoordinator(slashingRegistryCoordinator),
+            slasher,
+            vetoCommittee,
             vetoWindowBlocks
         );
 
@@ -217,8 +219,6 @@ contract VetoableSlasherTest is Test {
             address(vetoableSlasherImplementation)
         );
         vm.stopPrank();
-
-        vetoableSlasher.initialize(vetoCommittee, slasher);
 
         vm.startPrank(serviceManager);
         PermissionController(coreDeployment.permissionController).setAppointee(

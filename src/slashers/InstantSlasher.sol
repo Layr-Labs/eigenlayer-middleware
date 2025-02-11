@@ -16,14 +16,7 @@ contract InstantSlasher is IInstantSlasher, SlasherBase {
         IAllocationManager _allocationManager,
         ISlashingRegistryCoordinator _slashingRegistryCoordinator,
         address _slasher
-    ) SlasherBase(_allocationManager, _slashingRegistryCoordinator) {}
-
-    /// @inheritdoc IInstantSlasher
-    function initialize(
-        address _slasher
-    ) external override initializer {
-        __SlasherBase_init(_slasher);
-    }
+    ) SlasherBase(_allocationManager, _slashingRegistryCoordinator, _slasher) {}
 
     /// @inheritdoc IInstantSlasher
     function fulfillSlashingRequest(

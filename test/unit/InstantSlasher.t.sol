@@ -186,14 +186,6 @@ contract InstantSlasherTest is Test {
         );
         vm.stopPrank();
 
-        instantSlasher = InstantSlasher(middlewareDeployments.instantSlasher);
-        slashingRegistryCoordinator =
-            SlashingRegistryCoordinator(middlewareDeployments.slashingRegistryCoordinator);
-        stakeRegistry = StakeRegistry(middlewareDeployments.stakeRegistry);
-        blsApkRegistry = BLSApkRegistry(middlewareDeployments.blsApkRegistry);
-        indexRegistry = IndexRegistry(middlewareDeployments.indexRegistry);
-        socketRegistry = SocketRegistry(middlewareDeployments.socketRegistry);
-
         vm.startPrank(serviceManager);
         PermissionController(coreDeployment.permissionController).setAppointee(
             address(serviceManager),

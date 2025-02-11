@@ -20,17 +20,19 @@ abstract contract SlasherStorage is ISlasher {
     IAllocationManager public immutable allocationManager;
     /// @notice the SlashingRegistryCoordinator for this AVS
     ISlashingRegistryCoordinator public immutable slashingRegistryCoordinator;
-
-    address public slasher;
+    /// @notice the address of the slasher
+    address public immutable slasher;
 
     uint256 public nextRequestId;
 
     constructor(
         IAllocationManager _allocationManager,
-        ISlashingRegistryCoordinator _slashingRegistryCoordinator
+        ISlashingRegistryCoordinator _slashingRegistryCoordinator,
+        address _slasher
     ) {
         allocationManager = _allocationManager;
         slashingRegistryCoordinator = _slashingRegistryCoordinator;
+        slasher = _slasher;
     }
 
     uint256[48] private __gap;
