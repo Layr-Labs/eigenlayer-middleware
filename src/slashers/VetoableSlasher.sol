@@ -68,7 +68,7 @@ contract VetoableSlasher is IVetoableSlasher, SlasherBase {
     /// @notice Internal function to create and store a new slashing request
     /// @param params Parameters defining the slashing request
     function _queueSlashingRequest(
-        IAllocationManager.SlashingParams calldata params
+        IAllocationManager.SlashingParams memory params
     ) internal virtual {
         uint256 requestId = nextRequestId++;
         slashingRequests[requestId] = IVetoableSlasherTypes.VetoableSlashingRequest({
