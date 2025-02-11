@@ -378,7 +378,7 @@ contract VetoableSlasherTest is Test {
         vm.prank(slasher);
         vetoableSlasher.queueSlashingRequest(params);
 
-        vm.warp(block.timestamp + vetoWindowBlocks + 1);
+        vm.roll(block.number + vetoWindowBlocks + 1);
 
         vm.prank(vetoCommittee);
         vm.expectRevert(IVetoableSlasherErrors.VetoPeriodPassed.selector);
@@ -518,7 +518,7 @@ contract VetoableSlasherTest is Test {
         vetoableSlasher.queueSlashingRequest(params);
 
         // Wait for veto period to pass
-        vm.warp(block.timestamp + vetoWindowBlocks + 1);
+        vm.roll(block.number + vetoWindowBlocks + 1);
 
         vm.prank(slasher);
         vetoableSlasher.fulfillSlashingRequest(0);

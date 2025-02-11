@@ -55,15 +55,6 @@ contract VetoableSlasher is IVetoableSlasher, SlasherBase {
     function cancelSlashingRequest(
         uint256 requestId
     ) external virtual override onlyVetoCommittee {
-        require(
-            block.number < slashingRequests[requestId].requestBlock + vetoWindowBlocks,
-            VetoPeriodPassed()
-        );
-        require(
-            slashingRequests[requestId].status == IVetoableSlasherTypes.SlashingStatus.Requested,
-            SlashingRequestNotRequested()
-        );
-
         _cancelSlashingRequest(requestId);
     }
 
@@ -71,16 +62,7 @@ contract VetoableSlasher is IVetoableSlasher, SlasherBase {
     function fulfillSlashingRequest(
         uint256 requestId
     ) external virtual override onlySlasher {
-        IVetoableSlasherTypes.VetoableSlashingRequest storage request = slashingRequests[requestId];
-        require(block.number >= request.requestBlock + vetoWindowBlocks, VetoPeriodNotPassed());
-        require(
-            request.status == IVetoableSlasherTypes.SlashingStatus.Requested,
-            SlashingRequestIsCancelled()
-        );
-
-        request.status = IVetoableSlasherTypes.SlashingStatus.Completed;
-
-        _fulfillSlashingRequest(requestId, request.params);
+        _fulfillSlashingRequestAndMarkAsCompleted(requestId);
     }
 
     /// @notice Internal function to create and store a new slashing request
@@ -105,8 +87,34 @@ contract VetoableSlasher is IVetoableSlasher, SlasherBase {
     function _cancelSlashingRequest(
         uint256 requestId
     ) internal virtual {
+        require(
+            block.number < slashingRequests[requestId].requestBlock + vetoWindowBlocks,
+            VetoPeriodPassed()
+        );
+        require(
+            slashingRequests[requestId].status == IVetoableSlasherTypes.SlashingStatus.Requested,
+            SlashingRequestNotRequested()
+        );
+        
         slashingRequests[requestId].status = IVetoableSlasherTypes.SlashingStatus.Cancelled;
         emit SlashingRequestCancelled(requestId);
+    }
+
+    /// @notice Internal function to fullfill a slashing request and mark it as completed
+    /// @param requestId The ID of the slashing request to fulfill
+    function _fulfillSlashingRequestAndMarkAsCompleted(
+        uint256 requestId
+    ) internal virtual {
+        IVetoableSlasherTypes.VetoableSlashingRequest storage request = slashingRequests[requestId];
+        require(block.number >= request.requestBlock + vetoWindowBlocks, VetoPeriodNotPassed());
+        require(
+            request.status == IVetoableSlasherTypes.SlashingStatus.Requested,
+            SlashingRequestIsCancelled()
+        );
+
+        request.status = IVetoableSlasherTypes.SlashingStatus.Completed;
+
+        _fulfillSlashingRequest(requestId, request.params);
     }
 
     /// @notice Internal function to verify if an account is the veto committee
