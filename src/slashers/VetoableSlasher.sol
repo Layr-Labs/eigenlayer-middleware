@@ -13,7 +13,7 @@ import {IVetoableSlasher, IVetoableSlasherTypes} from "../interfaces/IVetoableSl
 /// @dev Extends SlasherBase and adds a veto period during which slashing requests can be cancelled
 contract VetoableSlasher is IVetoableSlasher, SlasherBase {
     /// @inheritdoc IVetoableSlasher
-    uint256 public constant override VETO_PERIOD = 3 days;
+    uint32 public immutable override vetoWindowBlocks;
 
     /// @inheritdoc IVetoableSlasher
     address public override vetoCommittee;
@@ -29,8 +29,11 @@ contract VetoableSlasher is IVetoableSlasher, SlasherBase {
 
     constructor(
         IAllocationManager _allocationManager,
-        ISlashingRegistryCoordinator _slashingRegistryCoordinator
-    ) SlasherBase(_allocationManager, _slashingRegistryCoordinator) {}
+        ISlashingRegistryCoordinator _slashingRegistryCoordinator,
+        uint32 _vetoWindowBlocks
+    ) SlasherBase(_allocationManager, _slashingRegistryCoordinator) {
+        vetoWindowBlocks = _vetoWindowBlocks;
+    }
 
     /// @inheritdoc IVetoableSlasher
     function initialize(
@@ -53,7 +56,7 @@ contract VetoableSlasher is IVetoableSlasher, SlasherBase {
         uint256 requestId
     ) external virtual override onlyVetoCommittee {
         require(
-            block.timestamp < slashingRequests[requestId].requestTimestamp + VETO_PERIOD,
+            block.number < slashingRequests[requestId].requestBlock + vetoWindowBlocks,
             VetoPeriodPassed()
         );
         require(
@@ -69,7 +72,7 @@ contract VetoableSlasher is IVetoableSlasher, SlasherBase {
         uint256 requestId
     ) external virtual override onlySlasher {
         IVetoableSlasherTypes.VetoableSlashingRequest storage request = slashingRequests[requestId];
-        require(block.timestamp >= request.requestTimestamp + VETO_PERIOD, VetoPeriodNotPassed());
+        require(block.number >= request.requestBlock + vetoWindowBlocks, VetoPeriodNotPassed());
         require(
             request.status == IVetoableSlasherTypes.SlashingStatus.Requested,
             SlashingRequestIsCancelled()
@@ -88,7 +91,7 @@ contract VetoableSlasher is IVetoableSlasher, SlasherBase {
         uint256 requestId = nextRequestId++;
         slashingRequests[requestId] = IVetoableSlasherTypes.VetoableSlashingRequest({
             params: params,
-            requestTimestamp: block.timestamp,
+            requestBlock: block.number,
             status: IVetoableSlasherTypes.SlashingStatus.Requested
         });
 
