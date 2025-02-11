@@ -81,7 +81,7 @@ contract VetoableSlasherTest is Test {
     address public churnApprover = address(uint160(uint256(keccak256("churnApprover"))));
     address public ejector = address(uint160(uint256(keccak256("ejector"))));
 
-    uint256 constant VETO_PERIOD = 3 days;
+    uint32 constant vetoWindowBlocks = 3 days / 12 seconds;
     uint32 constant DEALLOCATION_DELAY = 7 days;
     uint32 constant ALLOCATION_CONFIGURATION_DELAY = 1 days;
 
@@ -201,7 +201,8 @@ contract VetoableSlasherTest is Test {
 
         vetoableSlasherImplementation = new VetoableSlasher(
             IAllocationManager(coreDeployment.allocationManager),
-            ISlashingRegistryCoordinator(slashingRegistryCoordinator)
+            ISlashingRegistryCoordinator(slashingRegistryCoordinator),
+            vetoWindowBlocks
         );
 
         vm.startPrank(proxyAdminOwner);
@@ -274,7 +275,7 @@ contract VetoableSlasherTest is Test {
 
     function test_initialization() public {
         assertEq(vetoableSlasher.vetoCommittee(), vetoCommittee);
-        assertEq(vetoableSlasher.VETO_PERIOD(), VETO_PERIOD);
+        assertEq(vetoableSlasher.vetoWindowBlocks(), vetoWindowBlocks);
     }
 
     function _createMockSlashingParams()
@@ -340,7 +341,7 @@ contract VetoableSlasherTest is Test {
         vm.prank(slasher);
         vetoableSlasher.queueSlashingRequest(params);
 
-        vm.warp(block.timestamp + VETO_PERIOD + 1);
+        vm.roll(block.number + vetoWindowBlocks + 1);
 
         vm.prank(vetoCommittee);
         vm.expectRevert(IVetoableSlasherErrors.VetoPeriodPassed.selector);
@@ -479,7 +480,7 @@ contract VetoableSlasherTest is Test {
         vetoableSlasher.queueSlashingRequest(params);
 
         // Wait for veto period to pass
-        vm.warp(block.timestamp + VETO_PERIOD + 1);
+        vm.roll(block.number + vetoWindowBlocks + 1);
 
         vm.prank(slasher);
         vetoableSlasher.fulfillSlashingRequest(0);
