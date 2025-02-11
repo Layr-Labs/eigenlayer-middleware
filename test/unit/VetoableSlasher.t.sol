@@ -201,7 +201,8 @@ contract VetoableSlasherTest is Test {
 
         vetoableSlasherImplementation = new VetoableSlasher(
             IAllocationManager(coreDeployment.allocationManager),
-            ISlashingRegistryCoordinator(slashingRegistryCoordinator)
+            ISlashingRegistryCoordinator(slashingRegistryCoordinator),
+            VETO_PERIOD
         );
 
         vm.startPrank(proxyAdminOwner);

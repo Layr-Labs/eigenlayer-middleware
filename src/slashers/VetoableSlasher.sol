@@ -13,7 +13,7 @@ import {IVetoableSlasher, IVetoableSlasherTypes} from "../interfaces/IVetoableSl
 /// @dev Extends SlasherBase and adds a veto period during which slashing requests can be cancelled
 contract VetoableSlasher is IVetoableSlasher, SlasherBase {
     /// @inheritdoc IVetoableSlasher
-    uint256 public constant override VETO_PERIOD = 3 days;
+    uint256 public immutable override VETO_PERIOD;
 
     /// @inheritdoc IVetoableSlasher
     address public override vetoCommittee;
@@ -29,8 +29,11 @@ contract VetoableSlasher is IVetoableSlasher, SlasherBase {
 
     constructor(
         IAllocationManager _allocationManager,
-        ISlashingRegistryCoordinator _slashingRegistryCoordinator
-    ) SlasherBase(_allocationManager, _slashingRegistryCoordinator) {}
+        ISlashingRegistryCoordinator _slashingRegistryCoordinator,
+        uint256 _vetoPeriod
+    ) SlasherBase(_allocationManager, _slashingRegistryCoordinator) {
+        VETO_PERIOD = _vetoPeriod;
+    }
 
     /// @inheritdoc IVetoableSlasher
     function initialize(
