@@ -35,5 +35,5 @@ abstract contract SlasherStorage is ISlasher {
         slasher = _slasher;
     }
 
-    uint256[48] private __gap;
+    uint256[49] private __gap;
 }

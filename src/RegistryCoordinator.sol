@@ -221,14 +221,14 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         bool[] memory doesNotMeetStakeThreshold =
             stakeRegistry.updateOperatorsStake(operators, operatorIds, quorumNumber);
 
-        for (uint256 j = 0; j < operators.length; ++j) {
+        for (uint256 i = 0; i < operators.length; ++i) {
             bool isM2Quorum = _isM2Quorum(quorumNumber);
             bool registeredInCore;
             // If its an operatorSet quorum, its possible for registeredInCore to be true/false
             // so check for operatorSet inclusion in the AllocationManager
             if (!isM2Quorum) {
                 registeredInCore = allocationManager.isMemberOfOperatorSet(
-                    operators[j], OperatorSet({avs: accountIdentifier, id: uint32(quorumNumber)})
+                    operators[i], OperatorSet({avs: accountIdentifier, id: uint32(quorumNumber)})
                 );
             }
 
@@ -239,11 +239,11 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
             // callback succeed here in `deregisterOperator` due to out of gas errors. If that is the case,
             // we need to deregister the operator from the OperatorSet in this contract
             bool shouldDeregister =
-                doesNotMeetStakeThreshold[j] || (!registeredInCore && !isM2Quorum);
+                doesNotMeetStakeThreshold[i] || (!registeredInCore && !isM2Quorum);
 
             if (shouldDeregister) {
                 _deregisterOperator({
-                    operator: operators[j],
+                    operator: operators[i],
                     quorumNumbers: singleQuorumNumber,
                     shouldForceDeregister: registeredInCore
                 });
