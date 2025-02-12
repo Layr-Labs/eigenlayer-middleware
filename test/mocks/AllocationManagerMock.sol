@@ -149,14 +149,17 @@ contract AllocationManagerIntermediate is IAllocationManager {
         OperatorSet memory operatorSet,
         address[] memory operators,
         IStrategy[] memory strategies
-    ) public view returns (uint256[][] memory) {
-    }
+    ) public view returns (uint256[][] memory) {}
 
-    function getEncumberedMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
-    }
+    function getEncumberedMagnitude(
+        address operator,
+        IStrategy strategy
+    ) external view returns (uint64) {}
 
-    function isOperatorSlashable(address operator, OperatorSet memory operatorSet) public view returns (bool) {
-    }
+    function isOperatorSlashable(
+        address operator,
+        OperatorSet memory operatorSet
+    ) public view returns (bool) {}
 
     function isMemberOfOperatorSet(
         address operator,

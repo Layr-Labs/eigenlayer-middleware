@@ -9,13 +9,11 @@ contract AVSRegistrarMock is IAVSRegistrar {
         address avs,
         uint32[] calldata operatorSetIds,
         bytes calldata data
-    ) external override {
-    }
+    ) external override {}
 
     function deregisterOperator(
         address operator,
         address avs,
         uint32[] calldata operatorSetIds
-    ) external override {
-    }
+    ) external override {}
 }

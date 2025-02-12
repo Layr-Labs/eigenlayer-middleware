@@ -2336,7 +2336,10 @@ contract RegistryCoordinatorUnitTests_BeforeMigration is RegistryCoordinatorUnit
         cheats.prank(address(registryCoordinator.allocationManager()));
         cheats.expectRevert();
         registryCoordinator.registerOperator(
-            defaultOperator, address(serviceManager), new uint32[](0), abi.encode(defaultSocket, pubkeyRegistrationParams)
+            defaultOperator,
+            address(serviceManager),
+            new uint32[](0),
+            abi.encode(defaultSocket, pubkeyRegistrationParams)
         );
     }
 
@@ -2345,7 +2348,9 @@ contract RegistryCoordinatorUnitTests_BeforeMigration is RegistryCoordinatorUnit
         operatorSetIds[0] = 0;
         cheats.prank(address(registryCoordinator.allocationManager()));
         cheats.expectRevert();
-        registryCoordinator.deregisterOperator(defaultOperator, address(serviceManager), operatorSetIds);
+        registryCoordinator.deregisterOperator(
+            defaultOperator, address(serviceManager), operatorSetIds
+        );
     }
 
     function test_CreateTotalDelegatedStakeQuorum() public {
@@ -2577,7 +2582,9 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
             abi.encode(ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, params);
 
         cheats.prank(address(registryCoordinator.allocationManager()));
-        registryCoordinator.registerOperator(defaultOperator, address(serviceManager), operatorSetIds, data);
+        registryCoordinator.registerOperator(
+            defaultOperator, address(serviceManager), operatorSetIds, data
+        );
     }
 
     function test_registerHook_WithChurn() public {
@@ -2634,7 +2641,9 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
 
         // Prank as allocation manager and call register hook
         cheats.prank(address(registryCoordinator.allocationManager()));
-        registryCoordinator.registerOperator(defaultOperator, address(serviceManager), operatorSetIds, data);
+        registryCoordinator.registerOperator(
+            defaultOperator, address(serviceManager), operatorSetIds, data
+        );
     }
 
     function test_updateStakesForQuorum() public {
@@ -2703,7 +2712,9 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
             abi.encode(ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, params);
 
         cheats.startPrank(address(registryCoordinator.allocationManager()));
-        registryCoordinator.registerOperator(defaultOperator, address(serviceManager), operatorSetIds, data);
+        registryCoordinator.registerOperator(
+            defaultOperator, address(serviceManager), operatorSetIds, data
+        );
 
         // registryCoordinator.deregisterOperator(defaultOperator, operatorSetIds);
 
@@ -2748,7 +2759,9 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
             abi.encode(ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, params);
 
         vm.expectRevert();
-        registryCoordinator.registerOperator(defaultOperator, address(serviceManager), operatorSetIds, data);
+        registryCoordinator.registerOperator(
+            defaultOperator, address(serviceManager), operatorSetIds, data
+        );
     }
 
     function test_deregisterHook_Reverts_WhenNotALM() public {
@@ -2792,10 +2805,14 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
             abi.encode(ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, params);
 
         cheats.prank(address(registryCoordinator.allocationManager()));
-        registryCoordinator.registerOperator(defaultOperator, address(serviceManager), operatorSetIds, data);
+        registryCoordinator.registerOperator(
+            defaultOperator, address(serviceManager), operatorSetIds, data
+        );
 
         cheats.expectRevert();
-        registryCoordinator.deregisterOperator(defaultOperator, address(serviceManager), operatorSetIds);
+        registryCoordinator.deregisterOperator(
+            defaultOperator, address(serviceManager), operatorSetIds
+        );
     }
 
     function test_deregisterHook_Reverts_WhenInvalidAVS() public {
@@ -2845,7 +2862,9 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         registryCoordinator.registerOperator(defaultOperator, invalidAVS, operatorSetIds, data);
 
         cheats.prank(address(registryCoordinator.allocationManager()));
-        registryCoordinator.registerOperator(defaultOperator, address(serviceManager), operatorSetIds, data);
+        registryCoordinator.registerOperator(
+            defaultOperator, address(serviceManager), operatorSetIds, data
+        );
 
         // Check revert case when deregistering for wrong AVS
         cheats.prank(address(registryCoordinator.allocationManager()));
@@ -2853,7 +2872,9 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         registryCoordinator.deregisterOperator(defaultOperator, invalidAVS, operatorSetIds);
 
         cheats.prank(address(registryCoordinator.allocationManager()));
-        registryCoordinator.deregisterOperator(defaultOperator, address(serviceManager), operatorSetIds);
+        registryCoordinator.deregisterOperator(
+            defaultOperator, address(serviceManager), operatorSetIds
+        );
     }
 
     function test_DeregisterHook_Reverts_WhenM2Quorum() public {
