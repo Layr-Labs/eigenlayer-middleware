@@ -195,7 +195,8 @@ contract InstantSlasherTest is Test {
             AllocationManager.slashOperator.selector
         );
 
-        slashingRegistryCoordinator = SlashingRegistryCoordinator(middlewareDeployments.slashingRegistryCoordinator);
+        slashingRegistryCoordinator =
+            SlashingRegistryCoordinator(middlewareDeployments.slashingRegistryCoordinator);
         instantSlasher = InstantSlasher(middlewareDeployments.instantSlasher);
 
         PermissionController(coreDeployment.permissionController).setAppointee(

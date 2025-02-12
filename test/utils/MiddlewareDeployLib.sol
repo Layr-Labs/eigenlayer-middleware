@@ -193,8 +193,6 @@ library MiddlewareDeployLib {
                 slasherConfig.slasher
             )
         );
-        UpgradeableProxyLib.upgrade(
-            deployments.instantSlasher, instantSlasherImpl
-        );
+        UpgradeableProxyLib.upgrade(deployments.instantSlasher, instantSlasherImpl);
     }
 }
