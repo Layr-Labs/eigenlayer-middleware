@@ -240,7 +240,7 @@ contract StakeRegistry is StakeRegistryStorage {
 
         uint256 numStratsToAdd = _strategyParams.length;
 
-        address avs = registryCoordinator.accountIdentifier();
+        address avs = registryCoordinator.avs();
         if (allocationManager.isOperatorSet(OperatorSet(avs, quorumNumber))) {
             IStrategy[] memory strategiesToAdd = new IStrategy[](numStratsToAdd);
             for (uint256 i = 0; i < numStratsToAdd; i++) {
@@ -283,7 +283,7 @@ contract StakeRegistry is StakeRegistryStorage {
             _strategiesPerQuorum.pop();
         }
 
-        address avs = registryCoordinator.accountIdentifier();
+        address avs = registryCoordinator.avs();
         if (allocationManager.isOperatorSet(OperatorSet(avs, quorumNumber))) {
             allocationManager.removeStrategiesFromOperatorSet({
                 avs: avs,
@@ -515,7 +515,7 @@ contract StakeRegistry is StakeRegistryStorage {
         uint32 beforeBlock = uint32(block.number + slashableStakeLookAheadPerQuorum[quorumNumber]);
 
         uint256[][] memory slashableShares = allocationManager.getMinimumSlashableStake(
-            OperatorSet(registryCoordinator.accountIdentifier(), quorumNumber),
+            OperatorSet(registryCoordinator.avs(), quorumNumber),
             operators,
             strategiesPerQuorum[quorumNumber],
             beforeBlock

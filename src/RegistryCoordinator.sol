@@ -228,7 +228,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
             // so check for operatorSet inclusion in the AllocationManager
             if (!isM2Quorum) {
                 registeredInCore = allocationManager.isMemberOfOperatorSet(
-                    operators[i], OperatorSet({avs: accountIdentifier, id: uint32(quorumNumber)})
+                    operators[i], OperatorSet({avs: avs, id: uint32(quorumNumber)})
                 );
             }
 

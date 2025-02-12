@@ -85,10 +85,10 @@ abstract contract SlashingRegistryCoordinatorStorage is ISlashingRegistryCoordin
     /// @notice the delay in seconds before an operator can reregister after being ejected
     uint256 public ejectionCooldown;
 
-    /// @notice The account identifier for this AVS (used for UAM integration in EigenLayer)
+    /// @notice The avs address for this AVS (used for UAM integration in EigenLayer)
     /// @dev NOTE: Updating this value will break existing OperatorSets and UAM integration.
     /// This value should only be set once.
-    address public accountIdentifier;
+    address public avs;
 
     constructor(
         IStakeRegistry _stakeRegistry,
