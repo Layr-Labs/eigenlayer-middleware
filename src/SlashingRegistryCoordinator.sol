@@ -147,9 +147,11 @@ contract SlashingRegistryCoordinator is
     /// @inheritdoc ISlashingRegistryCoordinator
     function registerOperator(
         address operator,
+        address avs,
         uint32[] memory operatorSetIds,
         bytes calldata data
     ) external override onlyAllocationManager onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
+        require(avs == accountIdentifier, InvalidAVS());
         bytes memory quorumNumbers = _getQuorumNumbers(operatorSetIds);
 
         (
@@ -222,8 +224,10 @@ contract SlashingRegistryCoordinator is
     /// @inheritdoc ISlashingRegistryCoordinator
     function deregisterOperator(
         address operator,
+        address avs,
         uint32[] memory operatorSetIds
     ) external override onlyAllocationManager onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
+        require(avs == accountIdentifier, InvalidAVS());
         bytes memory quorumNumbers = _getQuorumNumbers(operatorSetIds);
         _deregisterOperator(operator, quorumNumbers);
     }

@@ -6,12 +6,16 @@ import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSR
 contract AVSRegistrarMock is IAVSRegistrar {
     function registerOperator(
         address operator,
+        address avs,
         uint32[] calldata operatorSetIds,
         bytes calldata data
-    ) external override {}
+    ) external override {
+    }
 
     function deregisterOperator(
         address operator,
+        address avs,
         uint32[] calldata operatorSetIds
-    ) external override {}
+    ) external override {
+    }
 }

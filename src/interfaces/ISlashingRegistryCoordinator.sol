@@ -51,6 +51,8 @@ interface ISlashingRegistryCoordinatorErrors {
     error NotSorted();
     /// @notice Thrown when maximum quorum count is reached.
     error MaxQuorumsReached();
+    /// @notice Thrown when registering/deregistering for the wrong AVS
+    error InvalidAVS();
 }
 
 interface ISlashingRegistryCoordinatorTypes {
@@ -306,6 +308,7 @@ interface ISlashingRegistryCoordinator is
     /**
      * @notice Registers an operator through the allocation manager for operator set quorums.
      * @param operator The operator address to register.
+     * @param avs The address of the AVS to register for.
      * @param operatorSetIds The operator set IDs to register for (corresponds to quorum numbers).
      * @param data Additional registration data containing the operator's socket and BLS public key parameters.
      * @dev Can only be called by the allocation manager.
@@ -314,6 +317,7 @@ interface ISlashingRegistryCoordinator is
      */
     function registerOperator(
         address operator,
+        address avs,
         uint32[] memory operatorSetIds,
         bytes memory data
     ) external;
@@ -321,12 +325,13 @@ interface ISlashingRegistryCoordinator is
     /**
      * @notice Deregisters an operator through the allocation manager from operator set quorums.
      * @param operator The operator address to deregister.
+     * @param avs The address of the AVS to deregister from.
      * @param operatorSetIds The operator set IDs to deregister from (corresponds to quorum numbers).
      * @dev Can only be called by the allocation manager.
      * @dev Will revert if operator sets are not enabled or if deregistering from M2 quorums.
      * @dev This function implements the Slashing deregistration pathway specified by the IAVSRegistrar interface.
      */
-    function deregisterOperator(address operator, uint32[] memory operatorSetIds) external;
+    function deregisterOperator(address operator, address avs, uint32[] memory operatorSetIds) external;
 
     /**
      * @notice Updates stake weights for specified operators. If any operator is found to be below

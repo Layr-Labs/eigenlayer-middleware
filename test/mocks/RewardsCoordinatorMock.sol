@@ -29,22 +29,6 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
         RewardsSubmission[] calldata rewardsSubmissions
     ) external override {}
 
-    function createOperatorDirectedOperatorSetRewardsSubmission(
-        OperatorSet calldata operatorSet,
-        OperatorDirectedRewardsSubmission[] calldata operatorDirectedRewardsSubmissions
-    ) external override {}
-
-    function getOperatorSetSplit(
-        address operator,
-        OperatorSet calldata operatorSet
-    ) external view override returns (uint16) {}
-
-    function setOperatorSetSplit(
-        address operator,
-        OperatorSet calldata operatorSet,
-        uint16 split
-    ) external override {}
-
     function createOperatorDirectedAVSRewardsSubmission(
         address avs,
         OperatorDirectedRewardsSubmission[] calldata operatorDirectedRewardsSubmissions

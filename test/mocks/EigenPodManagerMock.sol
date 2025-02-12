@@ -92,7 +92,6 @@ contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
     function addShares(
         address staker,
         IStrategy strategy,
-        IERC20 token,
         uint256 shares
     ) external returns (uint256, uint256) {}
 
