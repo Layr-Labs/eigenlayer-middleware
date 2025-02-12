@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {Test} from "forge-std/Test.sol";
+import {Test, console2 as console} from "forge-std/Test.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {InstantSlasher} from "../../src/slashers/InstantSlasher.sol";
 import {
@@ -165,6 +165,7 @@ contract InstantSlasherTest is Test {
         middlewareConfig.stakeRegistry.strategyParams = 0;
         middlewareConfig.stakeRegistry.delegationManager = coreDeployment.delegationManager;
         middlewareConfig.stakeRegistry.avsDirectory = coreDeployment.avsDirectory;
+        middlewareConfig.instantSlasher.slasher = slasher;
         {
             IStakeRegistryTypes.StrategyParams[] memory stratParams =
                 new IStakeRegistryTypes.StrategyParams[](1);
@@ -186,14 +187,6 @@ contract InstantSlasherTest is Test {
         );
         vm.stopPrank();
 
-        instantSlasher = InstantSlasher(middlewareDeployments.instantSlasher);
-        slashingRegistryCoordinator =
-            SlashingRegistryCoordinator(middlewareDeployments.slashingRegistryCoordinator);
-        stakeRegistry = StakeRegistry(middlewareDeployments.stakeRegistry);
-        blsApkRegistry = BLSApkRegistry(middlewareDeployments.blsApkRegistry);
-        indexRegistry = IndexRegistry(middlewareDeployments.indexRegistry);
-        socketRegistry = SocketRegistry(middlewareDeployments.socketRegistry);
-
         vm.startPrank(serviceManager);
         PermissionController(coreDeployment.permissionController).setAppointee(
             address(serviceManager),
@@ -202,11 +195,22 @@ contract InstantSlasherTest is Test {
             AllocationManager.slashOperator.selector
         );
 
+        slashingRegistryCoordinator =
+            SlashingRegistryCoordinator(middlewareDeployments.slashingRegistryCoordinator);
+        instantSlasher = InstantSlasher(middlewareDeployments.instantSlasher);
+
         PermissionController(coreDeployment.permissionController).setAppointee(
             address(serviceManager),
             address(slashingRegistryCoordinator),
             coreDeployment.allocationManager,
             AllocationManager.createOperatorSets.selector
+        );
+
+        PermissionController(coreDeployment.permissionController).setAppointee(
+            address(serviceManager),
+            address(instantSlasher),
+            coreDeployment.allocationManager,
+            AllocationManager.slashOperator.selector
         );
 
         vm.stopPrank();

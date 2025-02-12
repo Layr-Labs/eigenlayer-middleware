@@ -40,6 +40,7 @@ import "src/libraries/BitmapUtils.sol";
 import "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 // import "src/test/integration/mocks/ServiceManagerMock.t.sol";
 import "test/integration/User.t.sol";
+import "test/integration/OperatorSetUser.t.sol";
 
 abstract contract IntegrationDeployer is Test, IUserDeployer {
     using Strings for *;
@@ -56,15 +57,16 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     IBeacon eigenPodBeacon;
     EigenPod pod;
     ETHPOSDepositMock ethPOSDeposit;
-    AllocationManager allocationManager;
+    AllocationManager public allocationManager;
     PermissionController permissionController;
 
     // Base strategy implementation in case we want to create more strategies later
     StrategyBase baseStrategyImplementation;
 
     // Middleware contracts to deploy
+    SlashingRegistryCoordinator public slashingRegistryCoordinator;
     RegistryCoordinator public registryCoordinator;
-    ServiceManagerMock serviceManager;
+    ServiceManagerMock public serviceManager;
     BLSApkRegistry blsApkRegistry;
     StakeRegistry stakeRegistry;
     IndexRegistry indexRegistry;
@@ -89,6 +91,12 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     address public churnApprover = cheats.addr(churnApproverPrivateKey);
     address ejector = address(uint160(uint256(keccak256("ejector"))));
     address rewardsUpdater = address(uint160(uint256(keccak256("rewardsUpdater"))));
+
+    /// @dev Account identifier for the AVS. This is the unique identifier address for the AVS in the AllocationManager.
+    /// This address is by default a UAM PermissionController admin and can transfer admin permissions to other addresses.
+    /// For existing AVSs using ServiceManagers, this should be the same address as the ServiceManager and there exist
+    /// interfaces on the ServiceManager to interact with UAM.
+    address avsAccountIdentifier = address(uint160(uint256(keccak256("avsAccountIdentifier"))));
 
     // Constants/Defaults
     uint64 constant GENESIS_TIME_LOCAL = 1 hours * 12;
@@ -314,6 +322,11 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
+        slashingRegistryCoordinator = SlashingRegistryCoordinator(
+            address(
+                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
+            )
+        );
 
         stakeRegistry = StakeRegistry(
             address(
@@ -347,25 +360,25 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         cheats.stopPrank();
 
         StakeRegistry stakeRegistryImplementation = new StakeRegistry(
-            ISlashingRegistryCoordinator(registryCoordinator),
+            ISlashingRegistryCoordinator(slashingRegistryCoordinator),
             IDelegationManager(delegationManager),
             IAVSDirectory(avsDirectory),
             allocationManager
         );
         BLSApkRegistry blsApkRegistryImplementation =
-            new BLSApkRegistry(ISlashingRegistryCoordinator(registryCoordinator));
+            new BLSApkRegistry(ISlashingRegistryCoordinator(slashingRegistryCoordinator));
         IndexRegistry indexRegistryImplementation =
-            new IndexRegistry(ISlashingRegistryCoordinator(registryCoordinator));
+            new IndexRegistry(ISlashingRegistryCoordinator(slashingRegistryCoordinator));
         ServiceManagerMock serviceManagerImplementation = new ServiceManagerMock(
             IAVSDirectory(avsDirectory),
             rewardsCoordinator,
-            ISlashingRegistryCoordinator(registryCoordinator),
+            ISlashingRegistryCoordinator(slashingRegistryCoordinator),
             stakeRegistry,
             permissionController,
             allocationManager
         );
         SocketRegistry socketRegistryImplementation =
-            new SocketRegistry(IRegistryCoordinator(registryCoordinator));
+            new SocketRegistry(ISlashingRegistryCoordinator(slashingRegistryCoordinator));
 
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(stakeRegistry))),
@@ -423,6 +436,27 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             )
         );
 
+        SlashingRegistryCoordinator slashingRegistryCoordinatorImplementation = new SlashingRegistryCoordinator(
+            stakeRegistry,
+            blsApkRegistry,
+            indexRegistry,
+            socketRegistry,
+            allocationManager,
+            pauserRegistry
+        );
+        proxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(slashingRegistryCoordinator))),
+            address(slashingRegistryCoordinatorImplementation),
+            abi.encodeWithSelector(
+                SlashingRegistryCoordinator.initialize.selector,
+                registryCoordinatorOwner,
+                churnApprover,
+                ejector,
+                0, /*initialPausedStatus*/
+                avsAccountIdentifier /* accountIdentifier */
+            )
+        );
+
         operatorStateRetriever = new OperatorStateRetriever();
 
         // Setup UAM Permissions
@@ -458,10 +492,48 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             selector: IAllocationManager.removeStrategiesFromOperatorSet.selector
         });
         cheats.stopPrank();
-
         _setOperatorSetsEnabled(false);
         _setM2QuorumsDisabled(false);
         _setM2QuorumBitmap(0);
+
+        /// Setup UAM Permissions for SlashingRegistryCoordinator
+        cheats.startPrank(avsAccountIdentifier);
+        permissionController.setAppointee({
+            account: avsAccountIdentifier,
+            appointee: address(avsAccountIdentifier),
+            target: address(allocationManager),
+            selector: IAllocationManager.setAVSRegistrar.selector
+        });
+        permissionController.setAppointee({
+            account: avsAccountIdentifier,
+            appointee: address(slashingRegistryCoordinator),
+            target: address(allocationManager),
+            selector: IAllocationManager.createOperatorSets.selector
+        });
+        permissionController.setAppointee({
+            account: avsAccountIdentifier,
+            appointee: address(slashingRegistryCoordinator),
+            target: address(allocationManager),
+            selector: IAllocationManager.deregisterFromOperatorSets.selector
+        });
+        permissionController.setAppointee({
+            account: avsAccountIdentifier,
+            appointee: address(stakeRegistry),
+            target: address(allocationManager),
+            selector: IAllocationManager.addStrategiesToOperatorSet.selector
+        });
+        permissionController.setAppointee({
+            account: avsAccountIdentifier,
+            appointee: address(stakeRegistry),
+            target: address(allocationManager),
+            selector: IAllocationManager.removeStrategiesFromOperatorSet.selector
+        });
+        // set AVS Registrar to slashingRegistryCoordinator
+        allocationManager.setAVSRegistrar(
+            avsAccountIdentifier, IAVSRegistrar(address(slashingRegistryCoordinator))
+        );
+
+        cheats.stopPrank();
     }
 
     /// @notice Overwrite RegistryCoordinator.operatorSetsEnabled to the specified value.

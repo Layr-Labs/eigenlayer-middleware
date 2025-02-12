@@ -193,10 +193,6 @@ library MiddlewareDeployLib {
                 slasherConfig.slasher
             )
         );
-        bytes memory upgradeCall =
-            abi.encodeCall(InstantSlasher.initialize, (slasherConfig.slasher));
-        UpgradeableProxyLib.upgradeAndCall(
-            deployments.instantSlasher, instantSlasherImpl, upgradeCall
-        );
+        UpgradeableProxyLib.upgrade(deployments.instantSlasher, instantSlasherImpl);
     }
 }

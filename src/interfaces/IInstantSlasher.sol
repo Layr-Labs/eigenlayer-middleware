@@ -9,12 +9,6 @@ import {ISlasher} from "./ISlasher.sol";
 /// @notice A slashing contract that immediately executes slashing requests without any delay or veto period
 /// @dev Extends base interfaces to provide access controlled slashing functionality
 interface IInstantSlasher is ISlasher {
-    /// @notice Initializes the contract with a slasher address
-    /// @param _slasher Address authorized to create and fulfill slashing requests
-    function initialize(
-        address _slasher
-    ) external;
-
     /// @notice Immediately executes a slashing request
     /// @param _slashingParams Parameters defining the slashing request including operator and amount
     /// @dev Can only be called by the authorized slasher

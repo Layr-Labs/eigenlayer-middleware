@@ -1077,7 +1077,8 @@ contract Integration_AVS_Sync_GasCosts_FFI is IntegrationChecks {
                 numQuorums: ONE,
                 numStrategies: TWENTYFIVE,
                 minimumStake: NO_MINIMUM,
-                fillTypes: FULL
+                fillTypes: FULL,
+                quorumType: DELEGATED_STAKE
             })
         });
         _updateOperators_SingleQuorum();
@@ -1093,7 +1094,8 @@ contract Integration_AVS_Sync_GasCosts_FFI is IntegrationChecks {
                 numQuorums: ONE,
                 numStrategies: TWENTY,
                 minimumStake: NO_MINIMUM,
-                fillTypes: FULL
+                fillTypes: FULL,
+                quorumType: DELEGATED_STAKE
             })
         });
 
@@ -1109,7 +1111,8 @@ contract Integration_AVS_Sync_GasCosts_FFI is IntegrationChecks {
                 numQuorums: ONE,
                 numStrategies: FIFTEEN,
                 minimumStake: NO_MINIMUM,
-                fillTypes: FULL
+                fillTypes: FULL,
+                quorumType: DELEGATED_STAKE
             })
         });
         _updateOperators_SingleQuorum();

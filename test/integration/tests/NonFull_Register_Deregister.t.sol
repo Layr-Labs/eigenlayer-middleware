@@ -20,7 +20,8 @@ contract Integration_NonFull_Register_Deregister is IntegrationChecks {
                 numQuorums: ONE | TWO | MANY,
                 numStrategies: ONE | TWO | MANY,
                 minimumStake: NO_MINIMUM | HAS_MINIMUM,
-                fillTypes: EMPTY | SOME_FILL
+                fillTypes: EMPTY | SOME_FILL,
+                quorumType: DELEGATED_STAKE
             })
         });
 
@@ -52,7 +53,8 @@ contract Integration_NonFull_Register_Deregister is IntegrationChecks {
                 numQuorums: ONE | TWO | MANY,
                 numStrategies: ONE | TWO | MANY,
                 minimumStake: NO_MINIMUM | HAS_MINIMUM,
-                fillTypes: EMPTY | SOME_FILL
+                fillTypes: EMPTY | SOME_FILL,
+                quorumType: DELEGATED_STAKE
             })
         });
 
@@ -93,7 +95,8 @@ contract Integration_NonFull_Register_Deregister is IntegrationChecks {
                 numQuorums: ONE | TWO | MANY,
                 numStrategies: ONE | TWO | MANY,
                 minimumStake: NO_MINIMUM | HAS_MINIMUM,
-                fillTypes: EMPTY | SOME_FILL
+                fillTypes: EMPTY | SOME_FILL,
+                quorumType: DELEGATED_STAKE
             })
         });
 
