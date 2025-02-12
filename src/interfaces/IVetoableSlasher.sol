@@ -29,7 +29,7 @@ interface IVetoableSlasherTypes {
     /// @notice Structure containing details about a vetoable slashing request
     struct VetoableSlashingRequest {
         IAllocationManager.SlashingParams params;
-        uint256 requestTimestamp;
+        uint256 requestBlock;
         SlashingStatus status;
     }
 }
@@ -58,16 +58,10 @@ interface IVetoableSlasher is
     IVetoableSlasherEvents
 {
     /// @notice Duration of the veto period during which the veto committee can cancel slashing requests
-    /// @dev Set to 3 days (259,200 seconds)
-    function VETO_PERIOD() external view returns (uint256);
+    function vetoWindowBlocks() external view returns (uint32);
 
     /// @notice Address of the committee that has veto power over slashing requests
     function vetoCommittee() external view returns (address);
-
-    /// @notice Initializes the contract with a veto committee and slasher address
-    /// @param _vetoCommittee Address of the committee that can veto slashing requests
-    /// @param _slasher Address authorized to create and fulfill slashing requests
-    function initialize(address _vetoCommittee, address _slasher) external;
 
     /// @notice Queues a new slashing request
     /// @param params Parameters defining the slashing request including operator and amount
