@@ -1059,6 +1059,57 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
             assertEq(multiplier, newMultipliers[i], "invalid multiplier");
         }
     }
+
+    /**
+     *
+     *                         setSlashableStakeLookahead
+     *
+     */
+    function testFuzz_setSlashableStakeLookahead_Revert_WhenNotRegistryCoordinatorOwner(
+        uint8 quorumNumber,
+        uint32 lookAheadBlocks
+    ) public {
+        cheats.expectRevert(IStakeRegistryErrors.OnlySlashingRegistryCoordinatorOwner.selector);
+        stakeRegistry.setSlashableStakeLookahead(quorumNumber, lookAheadBlocks);
+    }
+
+    function testFuzz_setSlashableStakeLookahead_Revert_WhenQuorumDoesNotExist(
+        uint8 quorumNumber,
+        uint32 lookAheadBlocks
+    ) public {
+        // quorums [0,nextQuorum) are initialized, so use an invalid quorumNumber
+        cheats.assume(quorumNumber >= nextQuorum);
+        cheats.expectRevert(IStakeRegistryErrors.QuorumDoesNotExist.selector);
+        cheats.prank(registryCoordinatorOwner);
+        stakeRegistry.setSlashableStakeLookahead(quorumNumber, lookAheadBlocks);
+    }
+
+    function testFuzz_setSlashableStakeLookahead_Revert_WhenQourumNotSlashable(
+        uint8 quorumNumber,
+        uint32 lookAheadBlocks
+    ) public {
+        cheats.expectRevert(IStakeRegistryErrors.QuorumNotSlashable.selector);
+        cheats.prank(registryCoordinatorOwner);
+        stakeRegistry.setSlashableStakeLookahead(quorumNumber, lookAheadBlocks);
+    }
+
+    /// @dev Fuzzes initialized quorum numbers and stake look aheads
+    function testFuzz_setSlashableStakeLookahead(
+        uint8 quorumNumber,
+        uint32 lookAheadBlocks
+    ) public {
+        cheats.prank(registryCoordinatorOwner);
+        // quorums [0,nextQuorum) are initialized, so use an invalid quorumNumber
+        // cheats.assume(quorumNumber >= nextQuorum);
+        // assume all quorums are slashable
+        cheats.assume(stakeRegistry.stakeTypePerQuorum(quorumNumber) == IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE);
+        stakeRegistry.setSlashableStakeLookahead(quorumNumber, lookAheadBlocks);
+        assertEq(
+            stakeRegistry.slashableStakeLookAheadPerQuorum(quorumNumber),
+            lookAheadBlocks,
+            "invalid slashable stake lookahead"
+        );
+    }
 }
 
 /// @notice Tests for StakeRegistry.registerOperator
