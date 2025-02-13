@@ -1,11 +1,11 @@
-Motivation:
+**Motivation:**
 
-Explain here the context, and why you're making that change. What is the problem you're trying to solve.
+*Explain here the context, and why you're making that change. What is the problem you're trying to solve.*
 
-Modifications:
+**Modifications:**
 
-Describe the modifications you've done.
+*Describe the modifications you've done.*
 
-Result:
+**Result:**
 
-After your change, what will change.
+*After your change, what will change.*
