@@ -1223,6 +1223,8 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
             _getLatestTotalStakeUpdates(setup.quorumNumbers);
         uint256[] memory operatorStakeHistoryLengths =
             _getStakeHistoryLengths(setup.operatorId, setup.quorumNumbers);
+        IStakeRegistry.StakeUpdate[][] memory newOperatorStakesHistory =
+            _getOperatorStakeHistories(setup.operatorId, setup.quorumNumbers);
 
         /// Check results
         assertTrue(
@@ -1237,6 +1239,7 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
         for (uint256 i = 0; i < setup.quorumNumbers.length; i++) {
             IStakeRegistry.StakeUpdate memory newOperatorStake = newOperatorStakes[i];
             IStakeRegistry.StakeUpdate memory newTotalStake = newTotalStakes[i];
+            IStakeRegistry.StakeUpdate[] memory newOperatorStakeHistory = newOperatorStakesHistory[i];
 
             // Check return value against weights, latest state read, and minimum stake
             assertEq(
@@ -1273,6 +1276,13 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
 
             // Check this is the first entry in the operator stake history
             assertEq(operatorStakeHistoryLengths[i], 1, "invalid total stake history length");
+            assertEq(newOperatorStakeHistory.length, 1, "invalid operator stake history length");
+
+            // Index is known for newOperatorStakeHistory, as this is the first entry
+            assertEq(newOperatorStakeHistory[0].updateBlockNumber, uint32(block.number), "");
+            assertEq(newOperatorStakeHistory[0].nextUpdateBlockNumber, 0, "");
+            assertEq(newOperatorStakeHistory[0].updateBlockNumber, uint32(block.number), "");
+            assertEq(newOperatorStakeHistory[0].nextUpdateBlockNumber, 0, "");
         }
     }
 
