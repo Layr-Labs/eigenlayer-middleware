@@ -529,6 +529,24 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
         return operatorStakeHistories;
     }
 
+    /// @dev Return the stake history at a given index for each quorum
+    function _getOperatorStakeUpdatesAtIndex(
+        bytes32 operatorId,
+        bytes memory quorumNumbers,
+        uint256 index
+    ) internal view returns (IStakeRegistry.StakeUpdate[] memory) {
+        IStakeRegistry.StakeUpdate[] memory operatorStakeUpdates =
+            new IStakeRegistry.StakeUpdate[](quorumNumbers.length);
+
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+
+            operatorStakeUpdates[i] = stakeRegistry.getStakeUpdateAtIndex(quorumNumber, operatorId, index);
+        }
+
+        return operatorStakeUpdates;
+    }
+
     /// @dev Return the lengths of the total stake update history
     function _getTotalStakeHistoryLengths(
         bytes memory quorumNumbers
@@ -1225,6 +1243,7 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
             _getStakeHistoryLengths(setup.operatorId, setup.quorumNumbers);
         IStakeRegistry.StakeUpdate[][] memory newOperatorStakesHistory =
             _getOperatorStakeHistories(setup.operatorId, setup.quorumNumbers);
+        IStakeRegistry.StakeUpdate[] memory stakeUpdatesAtIndex = _getOperatorStakeUpdatesAtIndex(setup.operatorId, setup.quorumNumbers, 0);
 
         /// Check results
         assertTrue(
@@ -1234,6 +1253,14 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
         assertTrue(
             totalStakes.length == setup.quorumNumbers.length,
             "invalid return length for total stakes"
+        );
+        assertTrue(
+            newOperatorStakesHistory.length == setup.quorumNumbers.length,
+            "invalid operator stake history length"
+        );
+        assertTrue(
+            stakeUpdatesAtIndex.length == setup.quorumNumbers.length,
+            "invalid return length for operator stakes at indices"
         );
 
         for (uint256 i = 0; i < setup.quorumNumbers.length; i++) {
