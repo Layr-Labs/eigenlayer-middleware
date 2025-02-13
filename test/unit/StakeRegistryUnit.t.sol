@@ -512,6 +512,23 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
         return operatorStakeHistoryLengths;
     }
 
+    /// @dev Return the stake histories for an operator for each quorum
+    function _getOperatorStakeHistories(
+        bytes32 operatorId,
+        bytes memory quorumNumbers
+    ) internal view returns (IStakeRegistry.StakeUpdate[][] memory) {
+        IStakeRegistry.StakeUpdate[][] memory operatorStakeHistories =
+            new IStakeRegistry.StakeUpdate[][](quorumNumbers.length);
+
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+
+            operatorStakeHistories[i] = stakeRegistry.getStakeHistory(operatorId, quorumNumber);
+        }
+
+        return operatorStakeHistories;
+    }
+
     /// @dev Return the lengths of the total stake update history
     function _getTotalStakeHistoryLengths(
         bytes memory quorumNumbers
@@ -1088,6 +1105,7 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         uint8 quorumNumber,
         uint32 lookAheadBlocks
     ) public {
+        // Only consider existing quorums and quorums which have delegated stake
         cheats.assume(quorumNumber < nextQuorum);
         cheats.assume(
             stakeRegistry.stakeTypePerQuorum(quorumNumber)
