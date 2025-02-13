@@ -1239,7 +1239,8 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
         for (uint256 i = 0; i < setup.quorumNumbers.length; i++) {
             IStakeRegistry.StakeUpdate memory newOperatorStake = newOperatorStakes[i];
             IStakeRegistry.StakeUpdate memory newTotalStake = newTotalStakes[i];
-            IStakeRegistry.StakeUpdate[] memory newOperatorStakeHistory = newOperatorStakesHistory[i];
+            IStakeRegistry.StakeUpdate[] memory newOperatorStakeHistory =
+                newOperatorStakesHistory[i];
 
             // Check return value against weights, latest state read, and minimum stake
             assertEq(
@@ -1318,6 +1319,8 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
                 _getLatestStakeUpdates(setup.operatorId, setup.quorumNumbers);
             uint256[] memory operatorStakeHistoryLengths =
                 _getStakeHistoryLengths(setup.operatorId, setup.quorumNumbers);
+            IStakeRegistry.StakeUpdate[][] memory newOperatorStakesHistory =
+                _getOperatorStakeHistories(setup.operatorId, setup.quorumNumbers);
 
             // Sum stakes in `_totalStakeAdded` to be checked later
             _tallyTotalStakeAdded(setup.quorumNumbers, resultingStakes);
@@ -1330,7 +1333,12 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
                 totalStakes.length == setup.quorumNumbers.length,
                 "invalid return length for total stakes"
             );
+            assertTrue(
+                newOperatorStakesHistory.length == setup.quorumNumbers.length,
+                "invalid operator stake history length"
+            );
             for (uint256 j = 0; j < setup.quorumNumbers.length; j++) {
+                IStakeRegistry.StakeUpdate[] memory newOperatorStakeHistory = newOperatorStakesHistory[j];
                 // Check result against weights and latest state read
                 assertEq(
                     resultingStakes[j],
@@ -1358,6 +1366,7 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
                 );
                 // Check this is the first entry in the operator stake history
                 assertEq(operatorStakeHistoryLengths[j], 1, "invalid total stake history length");
+                assertEq(newOperatorStakeHistory.length, 1, "invalid operator stake history length");
             }
         }
 
@@ -1556,6 +1565,8 @@ contract StakeRegistryUnitTests_Deregister is StakeRegistryUnitTests {
             _getLatestStakeUpdates(setup.operatorId, setup.registeredQuorumNumbers);
         IStakeRegistry.StakeUpdate[] memory newTotalStakes =
             _getLatestTotalStakeUpdates(setup.registeredQuorumNumbers);
+        IStakeRegistry.StakeUpdate[][] memory newOperatorStakesHistory =
+            _getOperatorStakeHistories(setup.operatorId, setup.registeredQuorumNumbers);
 
         for (uint256 i = 0; i < setup.registeredQuorumNumbers.length; i++) {
             uint8 registeredQuorum = uint8(setup.registeredQuorumNumbers[i]);
@@ -1565,6 +1576,8 @@ contract StakeRegistryUnitTests_Deregister is StakeRegistryUnitTests {
 
             IStakeRegistry.StakeUpdate memory newOperatorStake = newOperatorStakes[i];
             IStakeRegistry.StakeUpdate memory newTotalStake = newTotalStakes[i];
+
+            IStakeRegistry.StakeUpdate[] memory newOperatorStakeHistory = newOperatorStakesHistory[i];
 
             // Whether the operator was deregistered from this quorum
             bool deregistered = setup.quorumsToRemoveBitmap.isSet(registeredQuorum);
@@ -1598,6 +1611,12 @@ contract StakeRegistryUnitTests_Deregister is StakeRegistryUnitTests {
                     newTotalStake.nextUpdateBlockNumber,
                     0,
                     "total stake has incorrect next update block"
+                );
+                // Registration and deregistration were done in the same block
+                assertEq(
+                    newOperatorStakeHistory.length,
+                    1,
+                    "invalid operator stake history length"
                 );
             } else {
                 // Ensure no change to operator or total stakes
