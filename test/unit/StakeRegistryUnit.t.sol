@@ -1088,21 +1088,29 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         uint8 quorumNumber,
         uint32 lookAheadBlocks
     ) public {
+        cheats.assume(quorumNumber < nextQuorum);
+        cheats.assume(
+            stakeRegistry.stakeTypePerQuorum(quorumNumber)
+                == IStakeRegistryTypes.StakeType.TOTAL_DELEGATED
+        );
         cheats.expectRevert(IStakeRegistryErrors.QuorumNotSlashable.selector);
         cheats.prank(registryCoordinatorOwner);
         stakeRegistry.setSlashableStakeLookahead(quorumNumber, lookAheadBlocks);
     }
 
-    /// @dev Fuzzes initialized quorum numbers and stake look aheads
+    /// @dev Fuzzes initialized quorum numbers and sets stake look ahead
     function testFuzz_setSlashableStakeLookahead(
         uint8 quorumNumber,
         uint32 lookAheadBlocks
     ) public {
+        cheats.assume(quorumNumber < nextQuorum);
+        // Only consider quorums that are slashable
+        // TODO: this test is failing as not enough quorums are total slashable
+        cheats.assume(
+            stakeRegistry.stakeTypePerQuorum(quorumNumber)
+                == IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE
+        );
         cheats.prank(registryCoordinatorOwner);
-        // quorums [0,nextQuorum) are initialized, so use an invalid quorumNumber
-        // cheats.assume(quorumNumber >= nextQuorum);
-        // assume all quorums are slashable
-        cheats.assume(stakeRegistry.stakeTypePerQuorum(quorumNumber) == IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE);
         stakeRegistry.setSlashableStakeLookahead(quorumNumber, lookAheadBlocks);
         assertEq(
             stakeRegistry.slashableStakeLookAheadPerQuorum(quorumNumber),
