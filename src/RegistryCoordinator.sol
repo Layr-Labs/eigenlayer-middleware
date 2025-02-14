@@ -160,8 +160,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         override(ISlashingRegistryCoordinator, SlashingRegistryCoordinator)
         onlyEjector
     {
-        // Call parent to update lastEjectionTimestamp
-        super.ejectOperator(operator, quorumNumbers);
+        lastEjectionTimestamp[operator] = block.timestamp;
 
         OperatorInfo storage operatorInfo = _operatorInfo[operator];
         bytes32 operatorId = operatorInfo.operatorId;
