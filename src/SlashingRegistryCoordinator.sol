@@ -323,7 +323,10 @@ contract SlashingRegistryCoordinator is
      */
 
     /// @inheritdoc ISlashingRegistryCoordinator
-    function ejectOperator(address operator, bytes memory quorumNumbers) external onlyEjector {
+    function ejectOperator(
+        address operator,
+        bytes memory quorumNumbers
+    ) public virtual onlyEjector {
         lastEjectionTimestamp[operator] = block.timestamp;
 
         OperatorInfo storage operatorInfo = _operatorInfo[operator];
@@ -335,11 +338,7 @@ contract SlashingRegistryCoordinator is
             operatorInfo.status == OperatorStatus.REGISTERED && !quorumsToRemove.isEmpty()
                 && quorumsToRemove.isSubsetOf(currentBitmap)
         ) {
-            _deregisterOperator({
-                operator: operator,
-                quorumNumbers: quorumNumbers,
-                shouldForceDeregister: true
-            });
+            _forceDeregisterOperator(operator, quorumNumbers);
         }
     }
 

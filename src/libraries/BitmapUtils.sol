@@ -215,4 +215,12 @@ library BitmapUtils {
     function minus(uint256 a, uint256 b) internal pure returns (uint256) {
         return a & ~b;
     }
+
+    /**
+     * @notice Returns a new bitmap that contains only bits set in both `a` and `b`
+     * @dev Result is the intersection of `a` and `b`
+     */
+    function and(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a & b;
+    }
 }

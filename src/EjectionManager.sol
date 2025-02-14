@@ -9,8 +9,6 @@ import {
     IStakeRegistry
 } from "./EjectionManagerStorage.sol";
 
-// TODO: double check order of inheritance since we separated storage from logic...
-
 /**
  * @title Used for automated ejection of operators from the SlashingRegistryCoordinator under a ratelimit
  * @author Layr Labs, Inc.

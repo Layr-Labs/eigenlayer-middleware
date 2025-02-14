@@ -150,6 +150,50 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         emit M2QuorumRegistrationDisabled();
     }
 
+    /// @inheritdoc ISlashingRegistryCoordinator
+    function ejectOperator(
+        address operator,
+        bytes memory quorumNumbers
+    )
+        public
+        virtual
+        override(ISlashingRegistryCoordinator, SlashingRegistryCoordinator)
+        onlyEjector
+    {
+        // Call parent to update lastEjectionTimestamp
+        super.ejectOperator(operator, quorumNumbers);
+
+        OperatorInfo storage operatorInfo = _operatorInfo[operator];
+        bytes32 operatorId = operatorInfo.operatorId;
+        uint192 quorumsToRemove =
+            uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
+        uint192 currentBitmap = _currentOperatorBitmap(operatorId);
+
+        if (
+            operatorInfo.status == OperatorStatus.REGISTERED && !quorumsToRemove.isEmpty()
+                && quorumsToRemove.isSubsetOf(currentBitmap)
+        ) {
+            // Split quorums into M2 and non-M2
+            uint256 m2Bitmap = m2QuorumBitmap();
+            uint256 m2QuorumsToRemove = BitmapUtils.and(quorumsToRemove, m2Bitmap);
+            uint256 nonM2QuorumsToRemove = BitmapUtils.minus(quorumsToRemove, m2Bitmap);
+
+            // Handle M2 quorums with _deregisterOperator
+            if (!m2QuorumsToRemove.isEmpty()) {
+                _deregisterOperator({
+                    operator: operator,
+                    quorumNumbers: m2QuorumsToRemove.bitmapToBytesArray(),
+                    shouldForceDeregister: true
+                });
+            }
+
+            // Handle non-M2 quorums with _forceDeregisterOperator
+            if (!nonM2QuorumsToRemove.isEmpty()) {
+                _forceDeregisterOperator(operator, nonM2QuorumsToRemove.bitmapToBytesArray());
+            }
+        }
+    }
+
     /**
      *
      *                            INTERNAL FUNCTIONS
