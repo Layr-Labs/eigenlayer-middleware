@@ -36,7 +36,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
     }
 
     // this test checks that a valid signature from maxOperatorsToRegister with a random number of nonsigners is checked
-    // correctly on the BLSSignatureChecker contract when all operators are only regsitered for a single quorum and
+    // correctly on the BLSSignatureChecker contract when all operators are only registered for a single quorum and
     // the signature is only checked for stakes on that quorum
     function testFuzz_checkSignatures_SingleQuorum(uint256 pseudoRandomNumber) public { 
         uint256 numNonSigners = pseudoRandomNumber % (maxOperatorsToRegister - 1);
