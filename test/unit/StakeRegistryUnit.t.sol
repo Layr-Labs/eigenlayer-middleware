@@ -1150,16 +1150,14 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
             IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(quorumNumber)))))),
             uint96(WEIGHTING_DIVISOR)
         );
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.initializeSlashableStakeQuorum(quorumNumber, 1, 7 days, strategyParams);
         IStakeRegistryTypes.StakeType stakeType = stakeRegistry.stakeTypePerQuorum(quorumNumber);
         assertEq(
             uint8(stakeType),
             uint8(IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE),
             "invalid stake type"
         );
-
-        // Create the quorum
-        cheats.prank(address(registryCoordinator));
-        stakeRegistry.initializeSlashableStakeQuorum(quorumNumber, 1, 7 days, strategyParams);
 
         cheats.prank(registryCoordinatorOwner);
         stakeRegistry.setSlashableStakeLookahead(quorumNumber, lookAheadBlocks);
