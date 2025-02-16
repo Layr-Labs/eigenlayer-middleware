@@ -120,7 +120,7 @@ contract RegistryCoordinatorUnitTests_Initialization_Setters is RegistryCoordina
             );
         }
 
-        // make sure the contract intializers are disabled
+        // make sure the contract initializers are disabled
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         registryCoordinator.initialize(
             registryCoordinatorOwner,
