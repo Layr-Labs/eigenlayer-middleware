@@ -119,7 +119,7 @@ contract BitmapUtilsUnitTests_bitwiseOperations is BitmapUtilsUnitTests {
 }
 
 contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
-    // ensure that the bitmap encoding of an empty bytes array is an empty bitmap (function doesn't revert and approriately returns uint256(0))
+    // ensure that the bitmap encoding of an empty bytes array is an empty bitmap (function doesn't revert and appropriately returns uint256(0))
     function test_EmptyArrayEncoding() public {
         bytes memory emptyBytesArray;
         uint256 returnedBitMap = bitmapUtilsWrapper.orderedBytesArrayToBitmap(emptyBytesArray);
