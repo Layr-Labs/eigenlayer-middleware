@@ -83,18 +83,6 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
         _initializeQuorum({minimumStake: uint96(type(uint24).max) + 1});
         _initializeQuorum({minimumStake: uint96(type(uint32).max) + 1});
         _initializeQuorum({minimumStake: uint96(type(uint64).max) + 1});
-
-        // TODO: fix this, this will make setSlashableStake pass, but everything else fail
-        // // Initialize several slashable quorums with varying minimum stakes
-        // _initializeQuorumSlashable({minimumStake: uint96(type(uint16).max)});
-        // _initializeQuorumSlashable({minimumStake: uint96(type(uint24).max)});
-        // _initializeQuorumSlashable({minimumStake: uint96(type(uint32).max)});
-        // _initializeQuorumSlashable({minimumStake: uint96(type(uint64).max)});
-
-        // _initializeQuorumSlashable({minimumStake: uint96(type(uint16).max) + 1});
-        // _initializeQuorumSlashable({minimumStake: uint96(type(uint24).max) + 1});
-        // _initializeQuorumSlashable({minimumStake: uint96(type(uint32).max) + 1});
-        // _initializeQuorumSlashable({minimumStake: uint96(type(uint64).max) + 1});
     }
 
     /**
@@ -128,38 +116,6 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
         assertEq(
             uint8(stakeType),
             uint8(IStakeRegistryTypes.StakeType.TOTAL_DELEGATED),
-            "invalid stake type"
-        );
-
-        // Mark quorum initialized for other tests
-        initializedQuorumBitmap = uint192(initializedQuorumBitmap.setBit(quorumNumber));
-        initializedQuorumBytes = initializedQuorumBitmap.bitmapToBytesArray();
-    }
-
-    /**
-     * // TODO (James): dev docs
-     */
-    function _initializeQuorumSlashable(
-        uint96 minimumStake
-    ) internal {
-        uint8 quorumNumber = nextQuorum;
-
-        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
-            new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistryTypes.StrategyParams(
-            IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(quorumNumber)))))),
-            uint96(WEIGHTING_DIVISOR)
-        );
-
-        nextQuorum++;
-
-        cheats.prank(address(registryCoordinator));
-        stakeRegistry.initializeSlashableStakeQuorum(quorumNumber, minimumStake, 1, strategyParams);
-
-        IStakeRegistryTypes.StakeType stakeType = stakeRegistry.stakeTypePerQuorum(quorumNumber);
-        assertEq(
-            uint8(stakeType),
-            uint8(IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE),
             "invalid stake type"
         );
 
@@ -1184,12 +1140,27 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         uint8 quorumNumber,
         uint32 lookAheadBlocks
     ) public {
-        cheats.assume(quorumNumber < nextQuorum);
+        // Only consider non-existing quorums
+        cheats.assume(quorumNumber >= nextQuorum);
 
-        cheats.assume(
-            stakeRegistry.stakeTypePerQuorum(quorumNumber)
-                == IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE
+        // Create a new slashable quorum
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams(
+            IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(quorumNumber)))))),
+            uint96(WEIGHTING_DIVISOR)
         );
+        IStakeRegistryTypes.StakeType stakeType = stakeRegistry.stakeTypePerQuorum(quorumNumber);
+        assertEq(
+            uint8(stakeType),
+            uint8(IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE),
+            "invalid stake type"
+        );
+
+        // Create the quorum
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.initializeSlashableStakeQuorum(quorumNumber, 1, 7 days, strategyParams);
+
         cheats.prank(registryCoordinatorOwner);
         stakeRegistry.setSlashableStakeLookahead(quorumNumber, lookAheadBlocks);
         assertEq(
@@ -1269,7 +1240,10 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
      *                        getStakeUpdateAtIndex
      *
      */
-    function testFuzz_getStakeUpdateAtIndex(uint192 quorumsToRemove, uint16 additionalStake) public {
+    function testFuzz_getStakeUpdateAtIndex(
+        uint192 quorumsToRemove,
+        uint16 additionalStake
+    ) public {
         DeregisterSetup memory setup = _fuzz_setupDeregisterOperator({
             registeredFor: initializedQuorumBitmap,
             fuzzy_toRemove: quorumsToRemove,
@@ -1311,7 +1285,9 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
             _getOperatorStakeUpdatesAtIndex(setup.operatorId, setup.quorumsToRemove, 1);
         for (uint256 i = 0; i < setup.quorumsToRemove.length; i++) {
             assertEq(
-                operatorStakeUpdatesPost[i].stake, deregOperatorStakes[i].stake, "invalid operator stake"
+                operatorStakeUpdatesPost[i].stake,
+                deregOperatorStakes[i].stake,
+                "invalid operator stake"
             );
             assertEq(
                 operatorStakeUpdatesPost[i].updateBlockNumber,
@@ -1326,7 +1302,10 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         }
     }
 
-    function testFuzz_getStakeUpdateAtIndex_SingleBlock(uint192 quorumsToRemove, uint16 additionalStake) public {
+    function testFuzz_getStakeUpdateAtIndex_SingleBlock(
+        uint192 quorumsToRemove,
+        uint16 additionalStake
+    ) public {
         DeregisterSetup memory setup = _fuzz_setupDeregisterOperator({
             registeredFor: initializedQuorumBitmap,
             fuzzy_toRemove: quorumsToRemove,
@@ -1365,7 +1344,9 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
             _getOperatorStakeUpdatesAtIndex(setup.operatorId, setup.quorumsToRemove, 0);
         for (uint256 i = 0; i < setup.quorumsToRemove.length; i++) {
             assertEq(
-                operatorStakeUpdatesPost[i].stake, deregOperatorStakes[i].stake, "invalid operator stake"
+                operatorStakeUpdatesPost[i].stake,
+                deregOperatorStakes[i].stake,
+                "invalid operator stake"
             );
             assertEq(
                 operatorStakeUpdatesPost[i].updateBlockNumber,
