@@ -111,7 +111,7 @@ contract BLSApkRegistryUnitTests is BLSMockAVSDeployer, IBLSApkRegistryEvents {
     }
 
     /// @dev initializeQuorum based on passed in bitmap of quorum numbers
-    /// assumes that bitmap does not contain already initailized quorums and doesn't increment nextQuorum
+    /// assumes that bitmap does not contain already initialized quorums and doesn't increment nextQuorum
     function _initializeFuzzedQuorums(uint192 bitmap) internal {
         bytes memory quorumNumbers = bitmapUtilsWrapper.bitmapToBytesArray(
             bitmap
