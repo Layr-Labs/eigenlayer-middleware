@@ -1604,7 +1604,11 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
             // Check this first historical update at index 0
             assertEq(newStakeUpdatesAtIndex[i].stake, newOperatorStake.stake, "");
             assertEq(newStakeUpdatesAtIndex[i].updateBlockNumber, uint32(block.number), "");
-            assertEq(newStakeUpdatesAtIndex[i].nextUpdateBlockNumber, newOperatorStake.nextUpdateBlockNumber, "");
+            assertEq(
+                newStakeUpdatesAtIndex[i].nextUpdateBlockNumber,
+                newOperatorStake.nextUpdateBlockNumber,
+                ""
+            );
         }
     }
 
@@ -1715,9 +1719,7 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
 
                 // Check the update at the first index
                 assertEq(
-                    stakeUpdateAtIndex.stake,
-                    newOperatorStakes[j].stake,
-                    "invalid operator stake"
+                    stakeUpdateAtIndex.stake, newOperatorStakes[j].stake, "invalid operator stake"
                 );
                 assertEq(
                     stakeUpdateAtIndex.updateBlockNumber,
@@ -1977,10 +1979,12 @@ contract StakeRegistryUnitTests_Deregister is StakeRegistryUnitTests {
                     0,
                     "total stake has incorrect next update block"
                 );
-                
+
                 // Registration and deregistration is done in the same block
                 assertEq(newOperatorStakeHistory.length, 1, "invalid operator stake history length");
-                assertEq(newOperatorStakeHistory[0].stake, 0, "invalid operator stake history stake");
+                assertEq(
+                    newOperatorStakeHistory[0].stake, 0, "invalid operator stake history stake"
+                );
                 assertEq(
                     newOperatorStakeHistory[0].updateBlockNumber,
                     uint32(block.number),
