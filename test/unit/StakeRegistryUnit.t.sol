@@ -1220,6 +1220,42 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
                 );
             }
         }
+
+        cheats.roll(2);
+
+        // Deregister the Operator
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.deregisterOperator(setup.operatorId, setup.quorumNumbers);
+
+        // Check state history after deregistration
+        {
+            IStakeRegistry.StakeUpdate[] memory stakeUpdates =
+                _getLatestStakeUpdates(setup.operatorId, setup.quorumNumbers);
+            IStakeRegistry.StakeUpdate[][] memory stakeHistories =
+                _getOperatorStakeHistories(setup.operatorId, setup.quorumNumbers);
+            assertEq(
+                stakeHistories.length, setup.quorumNumbers.length, "invalid stake histories length"
+            );
+            for (uint256 i = 0; i < setup.quorumNumbers.length; i++) {
+                IStakeRegistry.StakeUpdate[] memory stakeHistory = stakeHistories[i];
+                assertTrue(stakeHistory.length == 2, "invalid operator stake history length");
+                assertEq(
+                    stakeHistory[1].stake,
+                    stakeUpdates[i].stake,
+                    "invalid operator stake history stake"
+                );
+                assertEq(
+                    stakeHistory[1].updateBlockNumber,
+                    stakeUpdates[i].updateBlockNumber,
+                    "invalid operator stake history update block number"
+                );
+                assertEq(
+                    stakeHistory[1].nextUpdateBlockNumber,
+                    stakeUpdates[i].nextUpdateBlockNumber,
+                    "invalid operator stake history next update block number"
+                );
+            }
+        }
     }
 
     function testFuzz_getStakeHistory_SingleBlock(
