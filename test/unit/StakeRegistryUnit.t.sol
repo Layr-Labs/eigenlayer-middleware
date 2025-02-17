@@ -1135,7 +1135,6 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         stakeRegistry.setSlashableStakeLookahead(quorumNumber, lookAheadBlocks);
     }
 
-    /// @dev Fuzzes slashable quorum numbers and sets stake look ahead
     function testFuzz_setSlashableStakeLookahead(
         uint8 quorumNumber,
         uint32 lookAheadBlocks
