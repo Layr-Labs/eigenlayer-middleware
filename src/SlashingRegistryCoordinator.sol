@@ -249,9 +249,7 @@ contract SlashingRegistryCoordinator is
             bytes memory quorumNumbers = currentBitmap.bitmapToBytesArray();
             for (uint256 j = 0; j < quorumNumbers.length; j++) {
                 // update the operator's stake for each quorum
-                _updateStakesAndDeregisterLoiterers(
-                    singleOperator, singleOperatorId, uint8(quorumNumbers[j])
-                );
+                _updateOperatorsStakes(singleOperator, singleOperatorId, uint8(quorumNumbers[j]));
             }
         }
     }
@@ -302,7 +300,7 @@ contract SlashingRegistryCoordinator is
                 prevOperatorAddress = operator;
             }
 
-            _updateStakesAndDeregisterLoiterers(currQuorumOperators, operatorIds, quorumNumber);
+            _updateOperatorsStakes(currQuorumOperators, operatorIds, quorumNumber);
 
             // Update timestamp that all operators in quorum have been updated all at once
             quorumUpdateBlockNumber[quorumNumber] = block.number;
@@ -325,24 +323,11 @@ contract SlashingRegistryCoordinator is
      */
 
     /// @inheritdoc ISlashingRegistryCoordinator
-    function ejectOperator(address operator, bytes memory quorumNumbers) external onlyEjector {
-        lastEjectionTimestamp[operator] = block.timestamp;
-
-        OperatorInfo storage operatorInfo = _operatorInfo[operator];
-        bytes32 operatorId = operatorInfo.operatorId;
-        uint192 quorumsToRemove =
-            uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
-        uint192 currentBitmap = _currentOperatorBitmap(operatorId);
-        if (
-            operatorInfo.status == OperatorStatus.REGISTERED && !quorumsToRemove.isEmpty()
-                && quorumsToRemove.isSubsetOf(currentBitmap)
-        ) {
-            _deregisterOperator({
-                operator: operator,
-                quorumNumbers: quorumNumbers,
-                shouldForceDeregister: true
-            });
-        }
+    function ejectOperator(
+        address operator,
+        bytes memory quorumNumbers
+    ) public virtual onlyEjector {
+        _kickOperators({operator: operator, quorumNumbers: quorumNumbers, isEjection: true});
     }
 
     /**
@@ -397,6 +382,33 @@ contract SlashingRegistryCoordinator is
      *                         INTERNAL FUNCTIONS
      *
      */
+
+    /**
+     * @notice Internal function to handle operator ejection logic
+     * @param operator The operator to eject
+     * @param quorumNumbers The quorum numbers to eject the operator from
+     */
+    function _kickOperators(
+        address operator,
+        bytes memory quorumNumbers,
+        bool isEjection
+    ) internal virtual {
+        if (isEjection) {
+            lastEjectionTimestamp[operator] = block.timestamp;
+        }
+
+        OperatorInfo storage operatorInfo = _operatorInfo[operator];
+        bytes32 operatorId = operatorInfo.operatorId;
+        uint192 quorumsToRemove =
+            uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
+        uint192 currentBitmap = _currentOperatorBitmap(operatorId);
+        if (
+            operatorInfo.status == OperatorStatus.REGISTERED && !quorumsToRemove.isEmpty()
+                && quorumsToRemove.isSubsetOf(currentBitmap)
+        ) {
+            _forceDeregisterOperator(operator, quorumNumbers);
+        }
+    }
 
     /**
      * @notice Register the operator for one or more quorums. This method updates the
@@ -519,10 +531,10 @@ contract SlashingRegistryCoordinator is
 
                 bytes memory singleQuorumNumber = new bytes(1);
                 singleQuorumNumber[0] = quorumNumbers[i];
-                _deregisterOperator({
+                _kickOperators({
                     operator: operatorKickParams[i].operator,
                     quorumNumbers: singleQuorumNumber,
-                    shouldForceDeregister: true
+                    isEjection: false
                 });
             }
         }
@@ -632,14 +644,16 @@ contract SlashingRegistryCoordinator is
     }
 
     /**
-     * @dev Helper function to update operator stakes and deregister loiterers
-     * Loiterers are AVS registered operators who have force deregistered from the OperatorSet/quorum
-     * in the core EigenLayer contract AllocationManager but not deregistered from the OperatorSet/quorum
-     * in this contract. Potentially due to out of gas errors in the deregistration callback. This function
-     * will handle that edge case by deregistering the operator from the AVS if they are no longer registered
-     * in the AllocationManager.
+     * @dev Helper function to update operator stakes and deregister operators with insufficient stake
+     * This function handles two cases:
+     * 1. Operators who no longer meet the minimum stake requirement for a quorum
+     * 2. Operators who have been force-deregistered from the AllocationManager but not from this contract
+     * (e.g. due to out of gas errors in the deregistration callback)
+     * @param operators The list of operators to check and update
+     * @param operatorIds The corresponding operator IDs
+     * @param quorumNumber The quorum number to check stakes for
      */
-    function _updateStakesAndDeregisterLoiterers(
+    function _updateOperatorsStakes(
         address[] memory operators,
         bytes32[] memory operatorIds,
         uint8 quorumNumber
@@ -649,21 +663,12 @@ contract SlashingRegistryCoordinator is
         bool[] memory doesNotMeetStakeThreshold =
             stakeRegistry.updateOperatorsStake(operators, operatorIds, quorumNumber);
         for (uint256 j = 0; j < operators.length; ++j) {
-            // whether the operator is registered in the core EigenLayer contract AllocationManager
-            bool registeredInCore = allocationManager.isMemberOfOperatorSet(
-                operators[j], OperatorSet({avs: avs, id: uint32(quorumNumber)})
-            );
-
             // If the operator does not have the minimum stake, they need to be force deregistered.
-            // Additionally, it is possible for an operator to have deregistered from an OperatorSet
-            // in the core EigenLayer contract AllocationManager but not have the deregistration
-            // callback succeed here in `deregisterOperator` due to out of gas errors. If that is the case,
-            // we need to deregister the operator from the OperatorSet in this contract
-            if (doesNotMeetStakeThreshold[j] || !registeredInCore) {
-                _deregisterOperator({
+            if (doesNotMeetStakeThreshold[j]) {
+                _kickOperators({
                     operator: operators[j],
                     quorumNumbers: singleQuorumNumber,
-                    shouldForceDeregister: registeredInCore
+                    isEjection: false
                 });
             }
         }

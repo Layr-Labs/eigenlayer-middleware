@@ -150,11 +150,119 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         emit M2QuorumRegistrationDisabled();
     }
 
+    /// @inheritdoc ISlashingRegistryCoordinator
+    function ejectOperator(
+        address operator,
+        bytes memory quorumNumbers
+    )
+        public
+        virtual
+        override(ISlashingRegistryCoordinator, SlashingRegistryCoordinator)
+        onlyEjector
+    {
+        _kickOperators({operator: operator, quorumNumbers: quorumNumbers, isEjection: true});
+    }
+
     /**
      *
      *                            INTERNAL FUNCTIONS
      *
      */
+
+    /**
+     * @notice Internal function to handle operator registration with churn
+     * @param operator The operator to register
+     * @param operatorId The operator's ID
+     * @param quorumNumbers The quorum numbers to register for
+     * @param socket The operator's socket
+     * @param operatorKickParams The parameters needed to kick operators from quorums that have reached their caps
+     * @param churnApproverSignature The churnApprover's signature approving the registration
+     */
+    function _registerOperatorWithChurn(
+        address operator,
+        bytes32 operatorId,
+        bytes memory quorumNumbers,
+        string memory socket,
+        OperatorKickParam[] memory operatorKickParams,
+        SignatureWithSaltAndExpiry memory churnApproverSignature
+    ) internal virtual override {
+        // verify churnApprover's signature
+        _verifyChurnApproverSignature(
+            operator, operatorId, operatorKickParams, churnApproverSignature
+        );
+
+        // quorum bitmap and registration status
+        RegisterResults memory results = _registerOperator({
+            operator: operator,
+            operatorId: operatorId,
+            quorumNumbers: quorumNumbers,
+            socket: socket,
+            checkMaxOperatorCount: false
+        });
+
+        // Check that each quorum's operator count is below the configured maximum. If the max
+        // is exceeded, use `operatorKickParams` to deregister an existing operator to make space
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            OperatorSetParam memory operatorSetParams = _quorumParams[uint8(quorumNumbers[i])];
+
+            /**
+             * If the new operator count for any quorum exceeds the maximum, validate
+             * that churn can be performed, then deregister the specified operator
+             */
+            if (results.numOperatorsPerQuorum[i] > operatorSetParams.maxOperatorCount) {
+                _validateChurn({
+                    quorumNumber: uint8(quorumNumbers[i]),
+                    totalQuorumStake: results.totalStakes[i],
+                    newOperator: operator,
+                    newOperatorStake: results.operatorStakes[i],
+                    kickParams: operatorKickParams[i],
+                    setParams: operatorSetParams
+                });
+
+                bytes memory singleQuorumNumber = new bytes(1);
+                singleQuorumNumber[0] = quorumNumbers[i];
+                _kickOperators({
+                    operator: operatorKickParams[i].operator,
+                    quorumNumbers: singleQuorumNumber,
+                    isEjection: false
+                });
+            }
+        }
+    }
+
+    /// @dev override the _kickOperators function to handle M2 quorum ejection
+    function _kickOperators(
+        address operator,
+        bytes memory quorumNumbers,
+        bool isEjection
+    ) internal virtual override {
+        if (isEjection) {
+            lastEjectionTimestamp[operator] = block.timestamp;
+        }
+
+        OperatorInfo storage operatorInfo = _operatorInfo[operator];
+        uint192 quorumsToRemove =
+            uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
+        if (operatorInfo.status == OperatorStatus.REGISTERED && !quorumsToRemove.isEmpty()) {
+            // For each quorum number, check if it's an M2 quorum
+            for (uint256 i = 0; i < quorumNumbers.length; i++) {
+                bytes memory singleQuorumNumber = new bytes(1);
+                singleQuorumNumber[0] = quorumNumbers[i];
+
+                if (_isM2Quorum(uint8(quorumNumbers[i]))) {
+                    // For M2 quorums, use _deregisterOperator
+                    _deregisterOperator({
+                        operator: operator,
+                        quorumNumbers: singleQuorumNumber,
+                        shouldForceDeregister: true
+                    });
+                } else {
+                    // For non-M2 quorums, use _forceDeregisterOperator
+                    _forceDeregisterOperator(operator, singleQuorumNumber);
+                }
+            }
+        }
+    }
 
     /// @dev override the _forceDeregisterOperator function to handle M2 quorum deregistration
     function _forceDeregisterOperator(
@@ -204,14 +312,16 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
     }
 
     /**
-     * @dev Helper function to update operator stakes and deregister loiterers
-     * Loiterers are AVS registered operators who have force deregistered from the OperatorSet/quorum
-     * in the core EigenLayer contract AllocationManager but not deregistered from the OperatorSet/quorum
-     * in this contract. Potentially due to out of gas errors in the deregistration callback. This function
-     * will handle that edge case by deregistering the operator from the AVS if they are no longer registered
-     * in the AllocationManager.
+     * @dev Helper function to update operator stakes and deregister operators with insufficient stake
+     * This function handles two cases:
+     * 1. Operators who no longer meet the minimum stake requirement for a quorum
+     * 2. Operators who have been force-deregistered from the AllocationManager but not from this contract
+     * (e.g. due to out of gas errors in the deregistration callback)
+     * @param operators The list of operators to check and update
+     * @param operatorIds The corresponding operator IDs
+     * @param quorumNumber The quorum number to check stakes for
      */
-    function _updateStakesAndDeregisterLoiterers(
+    function _updateOperatorsStakes(
         address[] memory operators,
         bytes32[] memory operatorIds,
         uint8 quorumNumber
@@ -222,30 +332,11 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
             stakeRegistry.updateOperatorsStake(operators, operatorIds, quorumNumber);
 
         for (uint256 i = 0; i < operators.length; ++i) {
-            bool isM2Quorum = _isM2Quorum(quorumNumber);
-            bool registeredInCore;
-            // If its an operatorSet quorum, its possible for registeredInCore to be true/false
-            // so check for operatorSet inclusion in the AllocationManager
-            if (!isM2Quorum) {
-                registeredInCore = allocationManager.isMemberOfOperatorSet(
-                    operators[i], OperatorSet({avs: avs, id: uint32(quorumNumber)})
-                );
-            }
-
-            // Determine if the operator should be deregistered
-            // If the operator does not have the minimum stake, they need to be force deregistered.
-            // Additionally, it is possible for an operator to have deregistered from an OperatorSet
-            // in the core EigenLayer contract AllocationManager but not have the deregistration
-            // callback succeed here in `deregisterOperator` due to out of gas errors. If that is the case,
-            // we need to deregister the operator from the OperatorSet in this contract
-            bool shouldDeregister =
-                doesNotMeetStakeThreshold[i] || (!registeredInCore && !isM2Quorum);
-
-            if (shouldDeregister) {
-                _deregisterOperator({
+            if (doesNotMeetStakeThreshold[i]) {
+                _kickOperators({
                     operator: operators[i],
                     quorumNumbers: singleQuorumNumber,
-                    shouldForceDeregister: registeredInCore
+                    isEjection: false
                 });
             }
         }
