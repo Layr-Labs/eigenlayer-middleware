@@ -306,14 +306,25 @@ interface ISlashingRegistryCoordinator is
     /**
      * @notice Registers an operator through the allocation manager for operator set quorums.
      * @param operator The operator address to register.
+     * @param avs The AVS contract address that the operator is registering for.
      * @param operatorSetIds The operator set IDs to register for (corresponds to quorum numbers).
-     * @param data Additional registration data containing the operator's socket and BLS public key parameters.
+     * @param data Additional registration data containing:
+     *        - RegistrationType: NORMAL or CHURN
+     *        - socket: The operator's socket string (typically an IP address)
+     *        - PubkeyRegistrationParams: The operator's BLS public key parameters
+     *        - OperatorKickParams[]: (Only for CHURN) Array of operators to kick from each quorum
+     *        - SignatureWithSaltAndExpiry: (Only for CHURN) Signature from churn approver
      * @dev Can only be called by the allocation manager.
-     * @dev Will revert if operator sets are not enabled or if registering for M2 quorums.
-     * @dev This function implements the Slashing registration pathway specified by the IAVSRegistrar interface.
+     * @dev Will revert if:
+     *      - Operator sets are not enabled
+     *      - Registering for M2 quorums
+     *      - Invalid registration type
+     *      - Max operator count exceeded (for NORMAL registration)
+     *      - Invalid churn parameters (for CHURN registration)
      */
     function registerOperator(
         address operator,
+        address avs,
         uint32[] memory operatorSetIds,
         bytes memory data
     ) external;
@@ -321,12 +332,16 @@ interface ISlashingRegistryCoordinator is
     /**
      * @notice Deregisters an operator through the allocation manager from operator set quorums.
      * @param operator The operator address to deregister.
+     * @param avs The AVS contract address that the operator is deregistering from.
      * @param operatorSetIds The operator set IDs to deregister from (corresponds to quorum numbers).
      * @dev Can only be called by the allocation manager.
-     * @dev Will revert if operator sets are not enabled or if deregistering from M2 quorums.
+     * @dev Will revert if:
+     *      - Operator sets are not enabled
+     *      - Deregistering from M2 quorums
+     *      - Operator is not registered in the specified quorums
      * @dev This function implements the Slashing deregistration pathway specified by the IAVSRegistrar interface.
      */
-    function deregisterOperator(address operator, uint32[] memory operatorSetIds) external;
+    function deregisterOperator(address operator, address avs, uint32[] memory operatorSetIds) external;
 
     /**
      * @notice Updates stake weights for specified operators. If any operator is found to be below
