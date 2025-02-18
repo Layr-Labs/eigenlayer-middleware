@@ -160,37 +160,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         override(ISlashingRegistryCoordinator, SlashingRegistryCoordinator)
         onlyEjector
     {
-        lastEjectionTimestamp[operator] = block.timestamp;
-
-        OperatorInfo storage operatorInfo = _operatorInfo[operator];
-        bytes32 operatorId = operatorInfo.operatorId;
-        uint192 quorumsToRemove =
-            uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
-        uint192 currentBitmap = _currentOperatorBitmap(operatorId);
-
-        if (
-            operatorInfo.status == OperatorStatus.REGISTERED && !quorumsToRemove.isEmpty()
-                && quorumsToRemove.isSubsetOf(currentBitmap)
-        ) {
-            // Split quorums into M2 and non-M2
-            uint256 m2Bitmap = m2QuorumBitmap();
-            uint256 m2QuorumsToRemove = BitmapUtils.and(quorumsToRemove, m2Bitmap);
-            uint256 nonM2QuorumsToRemove = BitmapUtils.minus(quorumsToRemove, m2Bitmap);
-
-            // Handle M2 quorums with _deregisterOperator
-            if (!m2QuorumsToRemove.isEmpty()) {
-                _deregisterOperator({
-                    operator: operator,
-                    quorumNumbers: m2QuorumsToRemove.bitmapToBytesArray(),
-                    shouldForceDeregister: true
-                });
-            }
-
-            // Handle non-M2 quorums with _forceDeregisterOperator
-            if (!nonM2QuorumsToRemove.isEmpty()) {
-                _forceDeregisterOperator(operator, nonM2QuorumsToRemove.bitmapToBytesArray());
-            }
-        }
+        _ejectOperators(operator, quorumNumbers, true);
     }
 
     /**
@@ -251,7 +221,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
 
                 bytes memory singleQuorumNumber = new bytes(1);
                 singleQuorumNumber[0] = quorumNumbers[i];
-                _ejectOperators(operatorKickParams[i].operator, singleQuorumNumber);
+                _ejectOperators(operatorKickParams[i].operator, singleQuorumNumber, false);
             }
         }
     }
@@ -259,9 +229,12 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
     /// @dev override the _ejectOperators function to handle M2 quorum ejection
     function _ejectOperators(
         address operator,
-        bytes memory quorumNumbers
+        bytes memory quorumNumbers,
+        bool shouldRecordEjectionTimestamp
     ) internal virtual override {
-        lastEjectionTimestamp[operator] = block.timestamp;
+        if (shouldRecordEjectionTimestamp) {
+            lastEjectionTimestamp[operator] = block.timestamp;
+        }
 
         OperatorInfo storage operatorInfo = _operatorInfo[operator];
         bytes32 operatorId = operatorInfo.operatorId;
@@ -356,7 +329,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
 
         for (uint256 i = 0; i < operators.length; ++i) {
             if (doesNotMeetStakeThreshold[i]) {
-                _ejectOperators(operators[i], singleQuorumNumber);
+                _ejectOperators(operators[i], singleQuorumNumber, false);
             }
         }
     }
