@@ -312,14 +312,16 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
     }
 
     /**
-     * @dev Helper function to update operator stakes and deregister loiterers
-     * Loiterers are AVS registered operators who have force deregistered from the OperatorSet/quorum
-     * in the core EigenLayer contract AllocationManager but not deregistered from the OperatorSet/quorum
-     * in this contract. Potentially due to out of gas errors in the deregistration callback. This function
-     * will handle that edge case by deregistering the operator from the AVS if they are no longer registered
-     * in the AllocationManager.
+     * @dev Helper function to update operator stakes and deregister operators with insufficient stake
+     * This function handles two cases:
+     * 1. Operators who no longer meet the minimum stake requirement for a quorum
+     * 2. Operators who have been force-deregistered from the AllocationManager but not from this contract
+     * (e.g. due to out of gas errors in the deregistration callback)
+     * @param operators The list of operators to check and update
+     * @param operatorIds The corresponding operator IDs
+     * @param quorumNumber The quorum number to check stakes for
      */
-    function _updateStakesAndDeregisterLoiterers(
+    function _updateOperatorsStakes(
         address[] memory operators,
         bytes32[] memory operatorIds,
         uint8 quorumNumber

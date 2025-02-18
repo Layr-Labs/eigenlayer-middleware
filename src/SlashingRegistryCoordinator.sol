@@ -247,9 +247,7 @@ contract SlashingRegistryCoordinator is
             bytes memory quorumNumbers = currentBitmap.bitmapToBytesArray();
             for (uint256 j = 0; j < quorumNumbers.length; j++) {
                 // update the operator's stake for each quorum
-                _updateStakesAndDeregisterLoiterers(
-                    singleOperator, singleOperatorId, uint8(quorumNumbers[j])
-                );
+                _updateOperatorsStakes(singleOperator, singleOperatorId, uint8(quorumNumbers[j]));
             }
         }
     }
@@ -300,7 +298,7 @@ contract SlashingRegistryCoordinator is
                 prevOperatorAddress = operator;
             }
 
-            _updateStakesAndDeregisterLoiterers(currQuorumOperators, operatorIds, quorumNumber);
+            _updateOperatorsStakes(currQuorumOperators, operatorIds, quorumNumber);
 
             // Update timestamp that all operators in quorum have been updated all at once
             quorumUpdateBlockNumber[quorumNumber] = block.number;
@@ -644,14 +642,16 @@ contract SlashingRegistryCoordinator is
     }
 
     /**
-     * @dev Helper function to update operator stakes and deregister loiterers
-     * Loiterers are AVS registered operators who have force deregistered from the OperatorSet/quorum
-     * in the core EigenLayer contract AllocationManager but not deregistered from the OperatorSet/quorum
-     * in this contract. Potentially due to out of gas errors in the deregistration callback. This function
-     * will handle that edge case by deregistering the operator from the AVS if they are no longer registered
-     * in the AllocationManager.
+     * @dev Helper function to update operator stakes and deregister operators with insufficient stake
+     * This function handles two cases:
+     * 1. Operators who no longer meet the minimum stake requirement for a quorum
+     * 2. Operators who have been force-deregistered from the AllocationManager but not from this contract
+     * (e.g. due to out of gas errors in the deregistration callback)
+     * @param operators The list of operators to check and update
+     * @param operatorIds The corresponding operator IDs
+     * @param quorumNumber The quorum number to check stakes for
      */
-    function _updateStakesAndDeregisterLoiterers(
+    function _updateOperatorsStakes(
         address[] memory operators,
         bytes32[] memory operatorIds,
         uint8 quorumNumber
