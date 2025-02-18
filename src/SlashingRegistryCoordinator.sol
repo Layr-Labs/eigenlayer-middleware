@@ -327,19 +327,7 @@ contract SlashingRegistryCoordinator is
         address operator,
         bytes memory quorumNumbers
     ) public virtual onlyEjector {
-        lastEjectionTimestamp[operator] = block.timestamp;
-
-        OperatorInfo storage operatorInfo = _operatorInfo[operator];
-        bytes32 operatorId = operatorInfo.operatorId;
-        uint192 quorumsToRemove =
-            uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
-        uint192 currentBitmap = _currentOperatorBitmap(operatorId);
-        if (
-            operatorInfo.status == OperatorStatus.REGISTERED && !quorumsToRemove.isEmpty()
-                && quorumsToRemove.isSubsetOf(currentBitmap)
-        ) {
-            _forceDeregisterOperator(operator, quorumNumbers);
-        }
+        _ejectOperators(operator, quorumNumbers);
     }
 
     /**
@@ -394,6 +382,30 @@ contract SlashingRegistryCoordinator is
      *                         INTERNAL FUNCTIONS
      *
      */
+
+    /**
+     * @notice Internal function to handle operator ejection logic
+     * @param operator The operator to eject
+     * @param quorumNumbers The quorum numbers to eject the operator from
+     */
+    function _ejectOperators(
+        address operator,
+        bytes memory quorumNumbers
+    ) internal virtual {
+        lastEjectionTimestamp[operator] = block.timestamp;
+
+        OperatorInfo storage operatorInfo = _operatorInfo[operator];
+        bytes32 operatorId = operatorInfo.operatorId;
+        uint192 quorumsToRemove =
+            uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
+        uint192 currentBitmap = _currentOperatorBitmap(operatorId);
+        if (
+            operatorInfo.status == OperatorStatus.REGISTERED && !quorumsToRemove.isEmpty()
+                && quorumsToRemove.isSubsetOf(currentBitmap)
+        ) {
+            _forceDeregisterOperator(operator, quorumNumbers);
+        }
+    }
 
     /**
      * @notice Register the operator for one or more quorums. This method updates the
@@ -516,11 +528,7 @@ contract SlashingRegistryCoordinator is
 
                 bytes memory singleQuorumNumber = new bytes(1);
                 singleQuorumNumber[0] = quorumNumbers[i];
-                _deregisterOperator({
-                    operator: operatorKickParams[i].operator,
-                    quorumNumbers: singleQuorumNumber,
-                    shouldForceDeregister: true
-                });
+                _ejectOperators(operatorKickParams[i].operator, singleQuorumNumber);
             }
         }
     }

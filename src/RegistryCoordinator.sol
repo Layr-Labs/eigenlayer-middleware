@@ -199,6 +199,74 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
      *
      */
 
+    /**
+     * @notice Internal function to handle operator registration with churn
+     * @param operator The operator to register
+     * @param operatorId The operator's ID
+     * @param quorumNumbers The quorum numbers to register for
+     * @param socket The operator's socket
+     * @param operatorKickParams The parameters needed to kick operators from quorums that have reached their caps
+     * @param churnApproverSignature The churnApprover's signature approving the registration
+     */
+    function _registerOperatorWithChurn(
+        address operator,
+        bytes32 operatorId,
+        bytes memory quorumNumbers,
+        string memory socket,
+        OperatorKickParam[] memory operatorKickParams,
+        SignatureWithSaltAndExpiry memory churnApproverSignature
+    ) internal virtual override {
+        // verify churnApprover's signature
+        _verifyChurnApproverSignature(
+            operator,
+            operatorId,
+            operatorKickParams,
+            churnApproverSignature
+        );
+
+        // quorum bitmap and registration status
+        RegisterResults memory results = _registerOperator({
+            operator: operator,
+            operatorId: operatorId,
+            quorumNumbers: quorumNumbers,
+            socket: socket,
+            checkMaxOperatorCount: false
+        });
+
+        // Check that each quorum's operator count is below the configured maximum. If the max
+        // is exceeded, use `operatorKickParams` to deregister an existing operator to make space
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            OperatorSetParam memory operatorSetParams = _quorumParams[uint8(quorumNumbers[i])];
+
+            /**
+             * If the new operator count for any quorum exceeds the maximum, validate
+             * that churn can be performed, then deregister the specified operator
+             */
+            if (results.numOperatorsPerQuorum[i] > operatorSetParams.maxOperatorCount) {
+                _validateChurn({
+                    quorumNumber: uint8(quorumNumbers[i]),
+                    totalQuorumStake: results.totalStakes[i],
+                    newOperator: operator,
+                    newOperatorStake: results.operatorStakes[i],
+                    kickParams: operatorKickParams[i],
+                    setParams: operatorSetParams
+                });
+
+                bytes memory singleQuorumNumber = new bytes(1);
+                singleQuorumNumber[0] = quorumNumbers[i];
+                if (_isM2Quorum(uint8(quorumNumbers[i]))) {
+                    _deregisterOperator({
+                        operator: operatorKickParams[i].operator,
+                        quorumNumbers: singleQuorumNumber,
+                        shouldForceDeregister: true
+                    });
+                } else {
+                    _ejectOperators(operatorKickParams[i].operator, singleQuorumNumber);
+                }
+            }
+        }
+    }
+
     /// @dev override the _forceDeregisterOperator function to handle M2 quorum deregistration
     function _forceDeregisterOperator(
         address operator,
