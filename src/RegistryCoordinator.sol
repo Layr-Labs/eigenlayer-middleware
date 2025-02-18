@@ -218,10 +218,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
     ) internal virtual override {
         // verify churnApprover's signature
         _verifyChurnApproverSignature(
-            operator,
-            operatorId,
-            operatorKickParams,
-            churnApproverSignature
+            operator, operatorId, operatorKickParams, churnApproverSignature
         );
 
         // quorum bitmap and registration status
