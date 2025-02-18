@@ -251,14 +251,39 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
 
                 bytes memory singleQuorumNumber = new bytes(1);
                 singleQuorumNumber[0] = quorumNumbers[i];
+                _ejectOperators(operatorKickParams[i].operator, singleQuorumNumber);
+            }
+        }
+    }
+
+    /// @dev override the _ejectOperators function to handle M2 quorum ejection
+    function _ejectOperators(
+        address operator,
+        bytes memory quorumNumbers
+    ) internal virtual override {
+        lastEjectionTimestamp[operator] = block.timestamp;
+
+        OperatorInfo storage operatorInfo = _operatorInfo[operator];
+        bytes32 operatorId = operatorInfo.operatorId;
+        uint192 quorumsToRemove =
+            uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
+        uint192 currentBitmap = _currentOperatorBitmap(operatorId);
+        if (operatorInfo.status == OperatorStatus.REGISTERED && !quorumsToRemove.isEmpty()) {
+            // For each quorum number, check if it's an M2 quorum
+            for (uint256 i = 0; i < quorumNumbers.length; i++) {
+                bytes memory singleQuorumNumber = new bytes(1);
+                singleQuorumNumber[0] = quorumNumbers[i];
+
                 if (_isM2Quorum(uint8(quorumNumbers[i]))) {
+                    // For M2 quorums, use _deregisterOperator
                     _deregisterOperator({
-                        operator: operatorKickParams[i].operator,
+                        operator: operator,
                         quorumNumbers: singleQuorumNumber,
                         shouldForceDeregister: true
                     });
                 } else {
-                    _ejectOperators(operatorKickParams[i].operator, singleQuorumNumber);
+                    // For non-M2 quorums, use _forceDeregisterOperator
+                    _forceDeregisterOperator(operator, singleQuorumNumber);
                 }
             }
         }
@@ -330,31 +355,8 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
             stakeRegistry.updateOperatorsStake(operators, operatorIds, quorumNumber);
 
         for (uint256 i = 0; i < operators.length; ++i) {
-            bool isM2Quorum = _isM2Quorum(quorumNumber);
-            bool registeredInCore;
-            // If its an operatorSet quorum, its possible for registeredInCore to be true/false
-            // so check for operatorSet inclusion in the AllocationManager
-            if (!isM2Quorum) {
-                registeredInCore = allocationManager.isMemberOfOperatorSet(
-                    operators[i], OperatorSet({avs: accountIdentifier, id: uint32(quorumNumber)})
-                );
-            }
-
-            // Determine if the operator should be deregistered
-            // If the operator does not have the minimum stake, they need to be force deregistered.
-            // Additionally, it is possible for an operator to have deregistered from an OperatorSet
-            // in the core EigenLayer contract AllocationManager but not have the deregistration
-            // callback succeed here in `deregisterOperator` due to out of gas errors. If that is the case,
-            // we need to deregister the operator from the OperatorSet in this contract
-            bool shouldDeregister =
-                doesNotMeetStakeThreshold[i] || (!registeredInCore && !isM2Quorum);
-
-            if (shouldDeregister) {
-                _deregisterOperator({
-                    operator: operators[i],
-                    quorumNumbers: singleQuorumNumber,
-                    shouldForceDeregister: registeredInCore
-                });
+            if (doesNotMeetStakeThreshold[i]) {
+                _ejectOperators(operators[i], singleQuorumNumber);
             }
         }
     }
