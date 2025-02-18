@@ -160,7 +160,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         override(ISlashingRegistryCoordinator, SlashingRegistryCoordinator)
         onlyEjector
     {
-        _kickOperators(operator, quorumNumbers, true);
+        _kickOperators({operator: operator, quorumNumbers: quorumNumbers, isEjection: true});
     }
 
     /**
@@ -221,7 +221,11 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
 
                 bytes memory singleQuorumNumber = new bytes(1);
                 singleQuorumNumber[0] = quorumNumbers[i];
-                _kickOperators(operatorKickParams[i].operator, singleQuorumNumber, false);
+                _kickOperators({
+                    operator: operatorKickParams[i].operator,
+                    quorumNumbers: singleQuorumNumber,
+                    isEjection: false
+                });
             }
         }
     }
@@ -237,10 +241,8 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         }
 
         OperatorInfo storage operatorInfo = _operatorInfo[operator];
-        bytes32 operatorId = operatorInfo.operatorId;
         uint192 quorumsToRemove =
             uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
-        uint192 currentBitmap = _currentOperatorBitmap(operatorId);
         if (operatorInfo.status == OperatorStatus.REGISTERED && !quorumsToRemove.isEmpty()) {
             // For each quorum number, check if it's an M2 quorum
             for (uint256 i = 0; i < quorumNumbers.length; i++) {
@@ -329,7 +331,11 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
 
         for (uint256 i = 0; i < operators.length; ++i) {
             if (doesNotMeetStakeThreshold[i]) {
-                _kickOperators(operators[i], singleQuorumNumber, false);
+                _kickOperators({
+                    operator: operators[i],
+                    quorumNumbers: singleQuorumNumber,
+                    isEjection: false
+                });
             }
         }
     }

@@ -327,7 +327,7 @@ contract SlashingRegistryCoordinator is
         address operator,
         bytes memory quorumNumbers
     ) public virtual onlyEjector {
-        _kickOperators(operator, quorumNumbers, true);
+        _kickOperators({operator: operator, quorumNumbers: quorumNumbers, isEjection: true});
     }
 
     /**
@@ -531,7 +531,11 @@ contract SlashingRegistryCoordinator is
 
                 bytes memory singleQuorumNumber = new bytes(1);
                 singleQuorumNumber[0] = quorumNumbers[i];
-                _kickOperators(operatorKickParams[i].operator, singleQuorumNumber, false);
+                _kickOperators({
+                    operator: operatorKickParams[i].operator,
+                    quorumNumbers: singleQuorumNumber,
+                    isEjection: false
+                });
             }
         }
     }
@@ -659,7 +663,11 @@ contract SlashingRegistryCoordinator is
         for (uint256 j = 0; j < operators.length; ++j) {
             // If the operator does not have the minimum stake, they need to be force deregistered.
             if (doesNotMeetStakeThreshold[j]) {
-                _kickOperators(operators[j], singleQuorumNumber, false);
+                _kickOperators({
+                    operator: operators[j],
+                    quorumNumbers: singleQuorumNumber,
+                    isEjection: false
+                });
             }
         }
     }
