@@ -2,8 +2,9 @@
 pragma solidity ^0.8.27;
 
 import "../../src/RegistryCoordinator.sol";
-
 import {ISocketRegistry} from "../../src/interfaces/ISocketRegistry.sol";
+import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
+
 
 import "forge-std/Test.sol";
 
@@ -84,5 +85,9 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         uint256 bitmap
     ) external {
         _m2QuorumBitmap = bitmap;
+    }
+
+    function supportsAVS(address avs) external view override (IAVSRegistrar, SlashingRegistryCoordinator) returns (bool) {
+        return avs == address(serviceManager);
     }
 }

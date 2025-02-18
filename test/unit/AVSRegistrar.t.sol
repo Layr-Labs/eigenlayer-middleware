@@ -21,6 +21,8 @@ contract AVSRegistrarTest is MockAVSDeployer {
 
     function setUp() public virtual {
         _deployMockEigenLayerAndAVS();
+        vm.prank(address(serviceManager));
+        allocationManager.updateAVSMetadataURI(address(serviceManager), "test-avs-metadata");
         avsRegistrarMock = new AVSRegistrarMock();
     }
 
