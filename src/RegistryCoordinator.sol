@@ -160,7 +160,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         override(ISlashingRegistryCoordinator, SlashingRegistryCoordinator)
         onlyEjector
     {
-        _ejectOperators(operator, quorumNumbers, true);
+        _kickOperators(operator, quorumNumbers, true);
     }
 
     /**
@@ -221,18 +221,18 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
 
                 bytes memory singleQuorumNumber = new bytes(1);
                 singleQuorumNumber[0] = quorumNumbers[i];
-                _ejectOperators(operatorKickParams[i].operator, singleQuorumNumber, false);
+                _kickOperators(operatorKickParams[i].operator, singleQuorumNumber, false);
             }
         }
     }
 
-    /// @dev override the _ejectOperators function to handle M2 quorum ejection
-    function _ejectOperators(
+    /// @dev override the _kickOperators function to handle M2 quorum ejection
+    function _kickOperators(
         address operator,
         bytes memory quorumNumbers,
-        bool shouldRecordEjectionTimestamp
+        bool isEjection
     ) internal virtual override {
-        if (shouldRecordEjectionTimestamp) {
+        if (isEjection) {
             lastEjectionTimestamp[operator] = block.timestamp;
         }
 
@@ -329,7 +329,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
 
         for (uint256 i = 0; i < operators.length; ++i) {
             if (doesNotMeetStakeThreshold[i]) {
-                _ejectOperators(operators[i], singleQuorumNumber, false);
+                _kickOperators(operators[i], singleQuorumNumber, false);
             }
         }
     }
