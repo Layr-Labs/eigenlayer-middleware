@@ -98,13 +98,13 @@ contract SlashingRegistryCoordinator is
         address _churnApprover,
         address _ejector,
         uint256 _initialPausedStatus,
-        address _accountIdentifier
+        address _avs
     ) external initializer {
         _transferOwnership(_initialOwner);
         _setChurnApprover(_churnApprover);
         _setPausedStatus(_initialPausedStatus);
         _setEjector(_ejector);
-        _setAccountIdentifier(_accountIdentifier);
+        _setAvs(_avs);
 
         // Add registry contracts to the registries array
         registries.push(address(stakeRegistry));
@@ -362,10 +362,10 @@ contract SlashingRegistryCoordinator is
     }
 
     /// @inheritdoc ISlashingRegistryCoordinator
-    function setAccountIdentifier(
-        address _accountIdentifier
+    function setAvs(
+        address _avs
     ) external onlyOwner {
-        _setAccountIdentifier(_accountIdentifier);
+        _setAvs(_avs);
     }
 
     /// @inheritdoc ISlashingRegistryCoordinator
@@ -619,7 +619,7 @@ contract SlashingRegistryCoordinator is
             uint32 operatorSetId = uint32(uint8(quorumNumbers[i]));
             if (
                 allocationManager.isMemberOfOperatorSet(
-                    operator, OperatorSet({avs: accountIdentifier, id: operatorSetId})
+                    operator, OperatorSet({avs: avs, id: operatorSetId})
                 )
             ) {
                 operatorSetIds[numDeregister] = operatorSetId;
@@ -635,7 +635,7 @@ contract SlashingRegistryCoordinator is
         allocationManager.deregisterFromOperatorSets(
             IAllocationManagerTypes.DeregisterParams({
                 operator: operator,
-                avs: accountIdentifier,
+                avs: avs,
                 operatorSetIds: _getOperatorSetIds(quorumNumbers)
             })
         );
@@ -864,7 +864,7 @@ contract SlashingRegistryCoordinator is
             operatorSetId: quorumNumber,
             strategies: strategies
         });
-        allocationManager.createOperatorSets({avs: accountIdentifier, params: createSetParams});
+        allocationManager.createOperatorSets({avs: avs, params: createSetParams});
 
         // Initialize stake registry based on stake type
         if (stakeType == IStakeRegistryTypes.StakeType.TOTAL_DELEGATED) {
@@ -956,10 +956,10 @@ contract SlashingRegistryCoordinator is
         ejector = newEjector;
     }
 
-    function _setAccountIdentifier(
-        address _accountIdentifier
+    function _setAvs(
+        address _avs
     ) internal {
-        accountIdentifier = _accountIdentifier;
+        avs = _avs;
     }
 
     /// @dev Hook to allow for any pre-create quorum logic

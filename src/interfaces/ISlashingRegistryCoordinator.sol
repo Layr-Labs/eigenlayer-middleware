@@ -448,13 +448,13 @@ interface ISlashingRegistryCoordinator is
     ) external;
 
     /**
-     * @notice Updates the account identifier for this AVS (used for UAM integration in EigenLayer)
-     * @param _accountIdentifier The new account identifier address
+     * @notice Updates the avs address for this AVS (used for UAM integration in EigenLayer)
+     * @param _avs The new avs address
      * @dev Can only be called by the contract owner
      * @dev NOTE: Updating this value will break existing OperatorSets and UAM integration. This value should only be set once.
      */
-    function setAccountIdentifier(
-        address _accountIdentifier
+    function setAvs(
+        address _avs
     ) external;
 
     /// VIEW
@@ -603,9 +603,9 @@ interface ISlashingRegistryCoordinator is
     ) external view returns (BN254.G1Point memory);
 
     /**
-     * @notice Returns the account identifier for this AVS (used for UAM integration in EigenLayer)
+     * @notice Returns the avs address for this AVS (used for UAM integration in EigenLayer)
      * @dev NOTE: Updating this value will break existing OperatorSets and UAM integration. This value should only be set once.
-     * @return The account identifier address
+     * @return The avs address
      */
-    function accountIdentifier() external view returns (address);
+    function avs() external view returns (address);
 }
