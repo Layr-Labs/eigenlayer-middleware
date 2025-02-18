@@ -341,7 +341,11 @@ interface ISlashingRegistryCoordinator is
      *      - Operator is not registered in the specified quorums
      * @dev This function implements the Slashing deregistration pathway specified by the IAVSRegistrar interface.
      */
-    function deregisterOperator(address operator, address avs, uint32[] memory operatorSetIds) external;
+    function deregisterOperator(
+        address operator,
+        address avs,
+        uint32[] memory operatorSetIds
+    ) external;
 
     /**
      * @notice Updates stake weights for specified operators. If any operator is found to be below

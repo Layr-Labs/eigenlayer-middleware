@@ -445,7 +445,9 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             pauserRegistry
         );
         cheats.prank(avsAccountIdentifier);
-        allocationManager.updateAVSMetadataURI(address(avsAccountIdentifier), "ipfs://mock-metadata-uri");
+        allocationManager.updateAVSMetadataURI(
+            address(avsAccountIdentifier), "ipfs://mock-metadata-uri"
+        );
 
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(slashingRegistryCoordinator))),

@@ -242,7 +242,9 @@ contract InstantSlasherTest is Test {
         });
 
         vm.startPrank(proxyAdminOwner);
-        IAllocationManager(coreDeployment.allocationManager).updateAVSMetadataURI(serviceManager, "fake-avs-metadata");
+        IAllocationManager(coreDeployment.allocationManager).updateAVSMetadataURI(
+            serviceManager, "fake-avs-metadata"
+        );
         slashingRegistryCoordinator.createSlashableStakeQuorum(
             operatorSetParams, 1 ether, strategyParams, 0
         );

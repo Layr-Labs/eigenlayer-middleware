@@ -5,7 +5,6 @@ import "../../src/RegistryCoordinator.sol";
 import {ISocketRegistry} from "../../src/interfaces/ISocketRegistry.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 
-
 import "forge-std/Test.sol";
 
 // wrapper around the RegistryCoordinator contract that exposes the internal functions for unit testing.
@@ -87,7 +86,9 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         _m2QuorumBitmap = bitmap;
     }
 
-    function supportsAVS(address avs) external view override (IAVSRegistrar, SlashingRegistryCoordinator) returns (bool) {
+    function supportsAVS(
+        address avs
+    ) external view override(IAVSRegistrar, SlashingRegistryCoordinator) returns (bool) {
         return avs == address(serviceManager);
     }
 }

@@ -1155,7 +1155,9 @@ contract SlashingRegistryCoordinator is
         return _hashTypedDataV4(keccak256(abi.encode(PUBKEY_REGISTRATION_TYPEHASH, operator)));
     }
 
-    function supportsAVS(address _avs) external view virtual returns (bool) {
+    function supportsAVS(
+        address _avs
+    ) external view virtual returns (bool) {
         return _avs == address(avs);
     }
 }

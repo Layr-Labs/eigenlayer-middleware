@@ -2337,7 +2337,10 @@ contract RegistryCoordinatorUnitTests_BeforeMigration is RegistryCoordinatorUnit
         cheats.expectRevert();
         /// TODO:
         registryCoordinator.registerOperator(
-            defaultOperator, address(0), new uint32[](0), abi.encode(defaultSocket, pubkeyRegistrationParams)
+            defaultOperator,
+            address(0),
+            new uint32[](0),
+            abi.encode(defaultSocket, pubkeyRegistrationParams)
         );
     }
 
@@ -2580,7 +2583,9 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
 
         cheats.prank(address(registryCoordinator.allocationManager()));
         /// TODO:
-        registryCoordinator.registerOperator(defaultOperator, address(serviceManager), operatorSetIds, data);
+        registryCoordinator.registerOperator(
+            defaultOperator, address(serviceManager), operatorSetIds, data
+        );
     }
 
     function test_registerHook_WithChurn() public {
@@ -2637,7 +2642,9 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
 
         // Prank as allocation manager and call register hook
         cheats.prank(address(registryCoordinator.allocationManager()));
-        registryCoordinator.registerOperator(defaultOperator, address(serviceManager), operatorSetIds, data);
+        registryCoordinator.registerOperator(
+            defaultOperator, address(serviceManager), operatorSetIds, data
+        );
     }
 
     function test_updateStakesForQuorum() public {
@@ -2706,7 +2713,9 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
             abi.encode(ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, params);
 
         cheats.startPrank(address(registryCoordinator.allocationManager()));
-        registryCoordinator.registerOperator(defaultOperator, address(serviceManager), operatorSetIds, data);
+        registryCoordinator.registerOperator(
+            defaultOperator, address(serviceManager), operatorSetIds, data
+        );
 
         cheats.stopPrank();
     }
@@ -2749,7 +2758,9 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
             abi.encode(ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, params);
 
         vm.expectRevert();
-        registryCoordinator.registerOperator(defaultOperator, address(serviceManager), operatorSetIds, data);
+        registryCoordinator.registerOperator(
+            defaultOperator, address(serviceManager), operatorSetIds, data
+        );
     }
 
     function test_deregisterHook_Reverts_WhenNotALM() public {
@@ -2793,10 +2804,14 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
             abi.encode(ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, params);
 
         cheats.prank(address(registryCoordinator.allocationManager()));
-        registryCoordinator.registerOperator(defaultOperator, address(serviceManager), operatorSetIds, data);
+        registryCoordinator.registerOperator(
+            defaultOperator, address(serviceManager), operatorSetIds, data
+        );
 
         cheats.expectRevert();
-        registryCoordinator.deregisterOperator(defaultOperator, address(serviceManager), operatorSetIds);
+        registryCoordinator.deregisterOperator(
+            defaultOperator, address(serviceManager), operatorSetIds
+        );
     }
 
     function test_DeregisterHook_Reverts_WhenM2Quorum() public {
