@@ -928,4 +928,27 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         cheats.expectRevert(IServiceManagerErrors.OnlyRegistryCoordinator.selector);
         serviceManager.deregisterOperatorFromOperatorSets(operator, operatorSetIds);
     }
+
+    function testFuzz_setClaimerFor_revert_notOwner(
+        address claimer,
+        address caller
+    ) public filterFuzzedAddressInputs(claimer) filterFuzzedAddressInputs(caller) {
+        cheats.assume(caller != serviceManagerOwner);
+
+        cheats.expectRevert("Ownable: caller is not the owner");
+        cheats.prank(caller);
+        serviceManager.setClaimerFor(claimer);
+    }
+
+    function testFuzz_setClaimerFor(
+        address claimer
+    ) public filterFuzzedAddressInputs(claimer) {
+        cheats.expectCall(
+            address(rewardsCoordinator),
+            abi.encodeWithSignature("setClaimerFor(address)", (claimer))
+        );
+
+        cheats.prank(serviceManagerOwner);
+        serviceManager.setClaimerFor(claimer);
+    }
 }
