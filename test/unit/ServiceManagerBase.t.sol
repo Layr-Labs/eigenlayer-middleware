@@ -957,7 +957,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         // Retrieve previous claimer.
         address prevClaimer = rewardsCoordinator.claimerFor(address(serviceManager));
 
-        // Expect an event on the rewards coordinator.
+        // Expect an event on the RewardCoordinator.
         cheats.expectEmit(true, true, true, true);
         emit IRewardsCoordinatorEvents.ClaimerForSet(address(serviceManager), prevClaimer, claimer);
 
