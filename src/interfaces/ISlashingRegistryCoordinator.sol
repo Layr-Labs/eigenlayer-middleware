@@ -51,6 +51,8 @@ interface ISlashingRegistryCoordinatorErrors {
     error NotSorted();
     /// @notice Thrown when maximum quorum count is reached.
     error MaxQuorumsReached();
+    /// @notice Thrown when the provided AVS address does not match the expected one.
+    error InvalidAVS();
 }
 
 interface ISlashingRegistryCoordinatorTypes {

@@ -151,6 +151,7 @@ contract SlashingRegistryCoordinator is
         uint32[] memory operatorSetIds,
         bytes calldata data
     ) external override onlyAllocationManager onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
+        if (!supportsAVS(avs)) revert InvalidAVS();
         bytes memory quorumNumbers = _getQuorumNumbers(operatorSetIds);
 
         (
@@ -226,6 +227,7 @@ contract SlashingRegistryCoordinator is
         address avs,
         uint32[] memory operatorSetIds
     ) external override onlyAllocationManager onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
+        if (!supportsAVS(avs)) revert InvalidAVS();
         bytes memory quorumNumbers = _getQuorumNumbers(operatorSetIds);
         _deregisterOperator({
             operator: operator,
@@ -1157,7 +1159,7 @@ contract SlashingRegistryCoordinator is
 
     function supportsAVS(
         address _avs
-    ) external view virtual returns (bool) {
+    ) public view virtual returns (bool) {
         return _avs == address(avs);
     }
 }

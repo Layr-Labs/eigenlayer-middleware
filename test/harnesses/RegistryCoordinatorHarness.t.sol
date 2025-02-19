@@ -88,7 +88,7 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
 
     function supportsAVS(
         address avs
-    ) external view override(IAVSRegistrar, SlashingRegistryCoordinator) returns (bool) {
+    ) public view override(IAVSRegistrar, SlashingRegistryCoordinator) returns (bool) {
         return avs == address(serviceManager);
     }
 }
