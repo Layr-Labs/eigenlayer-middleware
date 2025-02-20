@@ -165,9 +165,10 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         uint192 quorumsToRemove =
             uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         if (operatorInfo.status == OperatorStatus.REGISTERED && !quorumsToRemove.isEmpty()) {
+            // Allocate memory once outside the loop
+            bytes memory singleQuorumNumber = new bytes(1);
             // For each quorum number, check if it's an M2 quorum
             for (uint256 i = 0; i < quorumNumbers.length; i++) {
-                bytes memory singleQuorumNumber = new bytes(1);
                 singleQuorumNumber[0] = quorumNumbers[i];
 
                 if (_isM2Quorum(uint8(quorumNumbers[i]))) {
