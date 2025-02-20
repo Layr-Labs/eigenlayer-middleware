@@ -159,13 +159,8 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
     /// @dev override the _kickOperator function to handle M2 quorum ejection
     function _kickOperator(
         address operator,
-        bytes memory quorumNumbers,
-        bool isEjection
+        bytes memory quorumNumbers
     ) internal virtual override {
-        if (isEjection) {
-            lastEjectionTimestamp[operator] = block.timestamp;
-        }
-
         OperatorInfo storage operatorInfo = _operatorInfo[operator];
         uint192 quorumsToRemove =
             uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
@@ -259,11 +254,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
 
         for (uint256 i = 0; i < operators.length; ++i) {
             if (doesNotMeetStakeThreshold[i]) {
-                _kickOperator({
-                    operator: operators[i],
-                    quorumNumbers: singleQuorumNumber,
-                    isEjection: false
-                });
+                _kickOperator(operators[i], singleQuorumNumber);
             }
         }
     }
