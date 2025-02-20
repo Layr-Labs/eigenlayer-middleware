@@ -592,25 +592,6 @@ contract SlashingRegistryCoordinator is
         address operator,
         bytes memory quorumNumbers
     ) internal virtual {
-        uint32[] memory operatorSetIds = new uint32[](quorumNumbers.length);
-        uint256 numDeregister = 0;
-        for (uint256 i = 0; i < quorumNumbers.length; ++i) {
-            uint32 operatorSetId = uint32(uint8(quorumNumbers[i]));
-            if (
-                allocationManager.isMemberOfOperatorSet(
-                    operator, OperatorSet({avs: avs, id: operatorSetId})
-                )
-            ) {
-                operatorSetIds[numDeregister] = operatorSetId;
-                numDeregister++;
-            }
-        }
-
-        // resize operatorSetIds array length to numDeregister
-        assembly {
-            mstore(operatorSetIds, numDeregister)
-        }
-
         allocationManager.deregisterFromOperatorSets(
             IAllocationManagerTypes.DeregisterParams({
                 operator: operator,
