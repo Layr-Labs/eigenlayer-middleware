@@ -1167,6 +1167,34 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
         );
     }
 
+    function test_SetSlashableLookAhead_EmitsEvent() public {
+        uint8 quorumNumber = nextQuorum;
+        uint32 lookAheadBlocks = 10;
+
+        // Create a new slashable quorum
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams(
+            IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(quorumNumber)))))),
+            uint96(WEIGHTING_DIVISOR)
+        );
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.initializeSlashableStakeQuorum(quorumNumber, 1, 7 days, strategyParams);
+        IStakeRegistryTypes.StakeType stakeType = stakeRegistry.stakeTypePerQuorum(quorumNumber);
+        assertEq(
+            uint8(stakeType),
+            uint8(IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE),
+            "invalid stake type"
+        );
+
+        uint32 oldLookahead = stakeRegistry.slashableStakeLookAheadPerQuorum(quorumNumber);
+
+        cheats.prank(registryCoordinatorOwner);
+        cheats.expectEmit(true, true, true, true);
+        emit IStakeRegistryEvents.LookAheadPeriodChanged(oldLookahead, lookAheadBlocks);
+        stakeRegistry.setSlashableStakeLookahead(quorumNumber, lookAheadBlocks);
+    }
+
     /**
      *
      *                        getStakeHistory
