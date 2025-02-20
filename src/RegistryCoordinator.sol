@@ -156,7 +156,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
      *
      */
 
-    /// @dev override the _kickOperator function to handle M2 quorum ejection
+    /// @dev override the _kickOperator function to handle M2 quorum forced deregistration
     function _kickOperator(
         address operator,
         bytes memory quorumNumbers

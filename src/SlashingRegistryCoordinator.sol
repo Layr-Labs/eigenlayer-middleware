@@ -388,7 +388,7 @@ contract SlashingRegistryCoordinator is
 
     /**
      * @notice Internal function to handle operator ejection logic
-     * @param operator The operator to eject
+     * @param operator The operator to force deregister from the avs
      * @param quorumNumbers The quorum numbers to eject the operator from
      */
     function _kickOperator(address operator, bytes memory quorumNumbers) internal virtual {
