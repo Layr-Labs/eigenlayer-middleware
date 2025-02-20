@@ -7,6 +7,9 @@ import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {CheckpointsUpgradeable} from
     "@openzeppelin-upgrades/contracts/utils/CheckpointsUpgradeable.sol";
+import {IAllocationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 /// @title ECDSA Stake Registry with Equal Weight
 /// @dev THIS CONTRACT IS NOT AUDITED
@@ -18,8 +21,18 @@ contract ECDSAStakeRegistryEqualWeight is ECDSAStakeRegistryPermissioned {
     /// @dev Passes the delegation manager to the parent constructor.
     /// @param _delegationManager The address of the delegation manager contract.
     constructor(
-        IDelegationManager _delegationManager
-    ) ECDSAStakeRegistryPermissioned(_delegationManager) {
+        IDelegationManager _delegationManager,
+        IAllocationManager _allocationManager,
+        address _avsRegistrar,
+        IAVSDirectory _avsDirectory
+    )
+        ECDSAStakeRegistryPermissioned(
+            _delegationManager,
+            _allocationManager,
+            _avsRegistrar,
+            _avsDirectory
+        )
+    {
         // _disableInitializers();
     }
 
@@ -33,7 +46,7 @@ contract ECDSAStakeRegistryEqualWeight is ECDSAStakeRegistryPermissioned {
         uint256 oldWeight;
         uint256 newWeight;
         int256 delta;
-        if (_operatorRegistered[_operator]) {
+        if (operatorRegistered(_operator)) {
             (oldWeight,) = _operatorWeightHistory[_operator].push(1);
             delta = int256(1) - int256(oldWeight); // handles if they were already registered
         } else {

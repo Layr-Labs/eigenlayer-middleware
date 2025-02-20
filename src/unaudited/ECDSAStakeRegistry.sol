@@ -19,6 +19,13 @@ import {SignatureCheckerUpgradeable} from
     "@openzeppelin-upgrades/contracts/utils/cryptography/SignatureCheckerUpgradeable.sol";
 import {IERC1271Upgradeable} from
     "@openzeppelin-upgrades/contracts/interfaces/IERC1271Upgradeable.sol";
+import {
+    IAVSDirectory,
+    IAVSDirectoryTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IAllocationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
 /// @title ECDSA Stake Registry
 /// @dev THIS CONTRACT IS NOT AUDITED
@@ -34,9 +41,22 @@ contract ECDSAStakeRegistry is
     /// @dev Constructor to create ECDSAStakeRegistry.
     /// @param _delegationManager Address of the DelegationManager contract that this registry interacts with.
     constructor(
-        IDelegationManager _delegationManager
-    ) ECDSAStakeRegistryStorage(_delegationManager) {
+        IDelegationManager _delegationManager,
+        IAllocationManager _allocationManager,
+        address _avsRegistrar,
+        IAVSDirectory _avsDirectory
+    )
+        ECDSAStakeRegistryStorage(_delegationManager, _allocationManager, _avsRegistrar, _avsDirectory)
+    {
         // _disableInitializers();
+    }
+
+    /// @notice Modifier to ensure the caller is the AVS Registrar.
+    modifier onlyAVSRegistrar() {
+        if (msg.sender != address(avsRegistrar)) {
+            revert InvalidSender();
+        }
+        _;
     }
 
     /// @notice Initializes the contract with the given parameters.
@@ -64,24 +84,70 @@ contract ECDSAStakeRegistry is
         __Ownable_init();
     }
 
-    /// @inheritdoc IECDSAStakeRegistry
-    function registerOperatorWithSignature(
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature,
-        address signingKey
-    ) external {
-        _registerOperatorWithSig(msg.sender, operatorSignature, signingKey);
+    function disableM2QuorumRegistration() external onlyOwner {
+        if (isM2QuorumRegistrationDisabled) {
+            revert M2QuorumRegistrationIsDisabled();
+        }
+
+        isM2QuorumRegistrationDisabled = true;
+        emit M2QuorumRegistrationDisabled();
     }
 
     /// @inheritdoc IECDSAStakeRegistry
-    function deregisterOperator() external {
-        _deregisterOperator(msg.sender);
+    function registerOperatorM2Quorum(
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature,
+        address signingKey
+    ) external {
+        if (isM2QuorumRegistrationDisabled) {
+            revert M2QuorumRegistrationIsDisabled();
+        }
+        if (operatorRegisteredOnAVSDirectory(msg.sender)) {
+            revert OperatorAlreadyRegistered();
+        }
+        _registerOperatorM2Quorum(msg.sender, operatorSignature, signingKey);
+    }
+
+    /// @inheritdoc IECDSAStakeRegistry
+    function deregisterOperatorM2Quorum() external {
+        if (!operatorRegisteredOnAVSDirectory(msg.sender)) {
+            revert OperatorNotRegistered();
+        }
+
+        _deregisterOperatorM2Quorum(msg.sender);
+    }
+
+    function onOperatorSetRegistered(
+        address operator,
+        address signingKey
+    ) external onlyAVSRegistrar {
+        // Update operator weight
+        _updateOperatorWeight(operator);
+
+        // Update signing key and p2p key
+        _updateOperatorSigningKey(operator, signingKey);
+
+        if (!operatorRegisteredOnAVSDirectory(operator)) {
+            emit OperatorRegistered(operator, _serviceManager);
+        }
+    }
+
+    function onOperatorSetDeregistered(
+        address operator
+    ) external onlyAVSRegistrar {
+        // Update weights
+        _updateOperatorWeight(operator);
+
+        // Emit event
+        if (!operatorRegisteredOnAVSDirectory(operator)) {
+            emit OperatorDeregistered(operator, _serviceManager);
+        }
     }
 
     /// @inheritdoc IECDSAStakeRegistry
     function updateOperatorSigningKey(
         address newSigningKey
     ) external {
-        if (!_operatorRegistered[msg.sender]) {
+        if (!operatorRegistered(msg.sender)) {
             revert OperatorNotRegistered();
         }
         _updateOperatorSigningKey(msg.sender, newSigningKey);
@@ -119,6 +185,33 @@ contract ECDSAStakeRegistry is
         _updateStakeThreshold(thresholdWeight);
     }
 
+    /// @notice Sets the current operator set ids
+    /// @param _ids The ids of the operator sets to set
+    function setCurrentOperatorSetIds(
+        uint32[] calldata _ids
+    ) external onlyOwner {
+        if (_ids.length == 0 || _ids.length > 10) {
+            revert InvalidOperatorSetIdsLength();
+        }
+        currentOperatorSetIds = _ids;
+    }
+
+    /// @notice Sets the allocation manager
+    /// @param _allocationManager The allocation manager to set
+    function setAllocationManager(
+        IAllocationManager _allocationManager
+    ) external onlyOwner {
+        allocationManager = _allocationManager;
+    }
+
+    /// @notice Sets the AVS Registrar
+    /// @param _avsRegistrar The AVS Registrar to set
+    function setAVSRegistrar(
+        address _avsRegistrar
+    ) external onlyOwner {
+        avsRegistrar = _avsRegistrar;
+    }
+
     function isValidSignature(
         bytes32 digest,
         bytes memory _signatureData
@@ -132,6 +225,12 @@ contract ECDSAStakeRegistry is
     /// @inheritdoc IECDSAStakeRegistry
     function quorum() external view returns (IECDSAStakeRegistryTypes.Quorum memory) {
         return _quorum;
+    }
+
+    /// @notice Gets the current operator set ids
+    /// @return The current operator set ids
+    function getCurrentOperatorSetIds() external view returns (uint32[] memory) {
+        return currentOperatorSetIds;
     }
 
     /// @inheritdoc IECDSAStakeRegistry
@@ -189,35 +288,119 @@ contract ECDSAStakeRegistry is
     }
 
     /// @inheritdoc IECDSAStakeRegistry
-    function operatorRegistered(
-        address operator
-    ) external view returns (bool) {
-        return _operatorRegistered[operator];
-    }
-
-    /// @inheritdoc IECDSAStakeRegistry
     function minimumWeight() external view returns (uint256) {
         return _minimumWeight;
     }
 
-    /// @inheritdoc IECDSAStakeRegistry
+    /// @notice Calculates an operator's current weight based on their delegated stake
+    /// @param _operator Address of the operator to calculate weight for
+    /// @return Current weight of the operator (0 if below minimum threshold)
+    /// @dev Queries mainnet delegation manager for current shares
     function getOperatorWeight(
+        address _operator
+    ) public view returns (uint256) {
+        uint256 quorumWeight = getQuorumWeight(_operator);
+        uint256 operatorSetWeight = getOperatorSetWeight(_operator);
+
+        return quorumWeight + operatorSetWeight;
+    }
+
+    /// @notice Calculates operator's weight in the quorum
+    /// @param operator The operator address to calculate weight for
+    /// @return The operator's weight in quorum, or 0 if below minimum
+    function getQuorumWeight(
         address operator
     ) public view returns (uint256) {
+        // Get strategy params from quorum
         StrategyParams[] memory strategyParams = _quorum.strategies;
         uint256 weight;
+
+        // Create strategy array for batch shares query
         IStrategy[] memory strategies = new IStrategy[](strategyParams.length);
         for (uint256 i; i < strategyParams.length; i++) {
             strategies[i] = strategyParams[i].strategy;
         }
+
+        // Get operator's shares for all strategies
         uint256[] memory shares = DELEGATION_MANAGER.getOperatorShares(operator, strategies);
+
+        // Calculate weighted sum of shares
         for (uint256 i; i < strategyParams.length; i++) {
             weight += shares[i] * strategyParams[i].multiplier;
         }
+        // Divide by BPS to get final weight
         weight = weight / BPS;
 
+        // Return 0 if below minimum weight
         if (weight >= _minimumWeight) {
             return weight;
+        } else {
+            return 0;
+        }
+    }
+
+    /// @notice Calculates operator's available weight in current operator set
+    /// @dev Weight calculation:
+    ///      1. Check operator set membership
+    ///      2. Get shares and allocation for each strategy
+    ///      3. Calculate available proportion (currentMagnitude/maxMagnitude)
+    ///      4. Sum up available shares weighted by proportion
+    /// @param operator The operator address to calculate weight for
+    /// @return The operator's available weight in set, or 0 if below minimum
+    function getOperatorSetWeight(
+        address operator
+    ) public view returns (uint256) {
+        // Return 0 if allocation manager not set
+        if (address(allocationManager) == address(0)) {
+            return 0;
+        }
+
+        uint256 totalWeight;
+
+        // Loop through all operator sets
+        for (uint256 setIndex = 0; setIndex < currentOperatorSetIds.length; setIndex++) {
+            // Create operator set struct for current id
+            OperatorSet memory operatorSet =
+                OperatorSet({avs: address(_serviceManager), id: currentOperatorSetIds[setIndex]});
+
+            // Check operator set membership
+            if (!allocationManager.isMemberOfOperatorSet(operator, operatorSet)) {
+                continue;
+            }
+
+            // Get strategies from operator set
+            IStrategy[] memory strategies =
+                allocationManager.getStrategiesInOperatorSet(operatorSet);
+            if (strategies.length == 0) {
+                continue;
+            }
+
+            // Get operator's shares for all strategies
+            uint256[] memory shares = DELEGATION_MANAGER.getOperatorShares(operator, strategies);
+
+            // Calculate available weight for each strategy
+            for (uint256 i = 0; i < strategies.length; i++) {
+                // Get allocation and max magnitude
+                IAllocationManager.Allocation memory allocation =
+                    allocationManager.getAllocation(operator, operatorSet, strategies[i]);
+                uint64 maxMagnitude = allocationManager.getMaxMagnitude(operator, strategies[i]);
+
+                if (maxMagnitude == 0) {
+                    continue;
+                }
+
+                // Calculate available proportion
+                uint256 slashableProportion =
+                    uint256(allocation.currentMagnitude) * WAD / maxMagnitude;
+
+                // Add weighted shares to total
+                totalWeight += shares[i] * slashableProportion / WAD;
+            }
+        }
+
+        // Return 0 if below minimum weight
+        if (totalWeight >= _minimumWeight) {
+            return totalWeight;
         } else {
             return 0;
         }
@@ -229,6 +412,47 @@ contract ECDSAStakeRegistry is
         bytes memory
     ) external {
         _updateAllOperators(operatorsPerQuorum[0]);
+    }
+
+    /// @notice Checks if an operator is registered on the AVS Directory(M2).
+    /// @param operator The address of the operator to check.
+    /// @return bool True if the operator is registered on the AVS Directory, false otherwise.
+    function operatorRegisteredOnAVSDirectory(
+        address operator
+    ) public view returns (bool) {
+        return AVS_DIRECTORY.avsOperatorStatus(_serviceManager, operator)
+            == IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED;
+    }
+
+    /// @notice Checks if an operator is registered on the current operator set.
+    /// @param operator The address of the operator to check.
+    /// @return bool True if the operator is registered on the current operator set, false otherwise.
+    function operatorRegisteredOnCurrentOperatorSets(
+        address operator
+    ) public view returns (bool) {
+        if (address(allocationManager) == address(0)) {
+            return false;
+        }
+
+        // Check if operator is registered in any current set
+        for (uint256 i = 0; i < currentOperatorSetIds.length; i++) {
+            OperatorSet memory operatorSet =
+                OperatorSet({avs: address(_serviceManager), id: currentOperatorSetIds[i]});
+            if (allocationManager.isMemberOfOperatorSet(operator, operatorSet)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// @notice Checks if an operator is registered on the AVS Directory or the current operator set.
+    /// @param operator The address of the operator to check.
+    /// @return bool True if the operator is registered on the AVS Directory or the current operator set, false otherwise.
+    function operatorRegistered(
+        address operator
+    ) public view returns (bool) {
+        return operatorRegisteredOnAVSDirectory(operator)
+            || operatorRegisteredOnCurrentOperatorSets(operator);
     }
 
     /// @dev Updates the list of operators if the provided list has the correct number of operators.
@@ -296,38 +520,53 @@ contract ECDSAStakeRegistry is
 
     /// @dev Internal function to deregister an operator
     /// @param operator The operator's address to deregister
-    function _deregisterOperator(
+    function _deregisterOperatorM2Quorum(
         address operator
     ) internal {
-        if (!_operatorRegistered[operator]) {
+        if (!operatorRegisteredOnAVSDirectory(operator)) {
             revert OperatorNotRegistered();
         }
-        _totalOperators--;
-        delete _operatorRegistered[operator];
+
         int256 delta = _updateOperatorWeight(operator);
         _updateTotalWeight(delta);
         IServiceManager(_serviceManager).deregisterOperatorFromAVS(operator);
-        emit OperatorDeregistered(operator, address(_serviceManager));
+        if (!operatorRegisteredOnCurrentOperatorSets(operator)) {
+            _totalOperators--;
+            emit OperatorDeregistered(operator, address(_serviceManager));
+        }
     }
 
     /// @dev registers an operator through a provided signature
     /// @param operatorSignature Contains the operator's signature, salt, and expiry
     /// @param signingKey The signing key to add to the operator's history
-    function _registerOperatorWithSig(
+    function _registerOperatorM2Quorum(
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature,
         address signingKey
     ) internal virtual {
-        if (_operatorRegistered[operator]) {
+        if (operatorRegisteredOnAVSDirectory(operator)) {
             revert OperatorAlreadyRegistered();
         }
-        _totalOperators++;
-        _operatorRegistered[operator] = true;
+
         int256 delta = _updateOperatorWeight(operator);
         _updateTotalWeight(delta);
         _updateOperatorSigningKey(operator, signingKey);
         IServiceManager(_serviceManager).registerOperatorToAVS(operator, operatorSignature);
-        emit OperatorRegistered(operator, _serviceManager);
+        if (!operatorRegisteredOnCurrentOperatorSets(operator)) {
+            _totalOperators++;
+            emit OperatorRegistered(operator, _serviceManager);
+        }
+    }
+
+    /// @notice Deregisters an operator from a set of operator sets.
+    /// @dev This function is used to deregister an operator from a set of operator sets.
+    /// @param operator The address of the operator to deregister.
+    function _deregisterOperatorFromOperatorSets(
+        address operator
+    ) internal virtual {
+        IServiceManager(_serviceManager).deregisterOperatorFromOperatorSets(
+            operator, currentOperatorSetIds
+        );
     }
 
     /// @dev Internal function to update an operator's signing key
@@ -350,7 +589,7 @@ contract ECDSAStakeRegistry is
         int256 delta;
         uint256 newWeight;
         uint256 oldWeight = _operatorWeightHistory[operator].latest();
-        if (!_operatorRegistered[operator]) {
+        if (!operatorRegistered(operator)) {
             delta -= int256(oldWeight);
             if (delta == 0) {
                 return delta;
