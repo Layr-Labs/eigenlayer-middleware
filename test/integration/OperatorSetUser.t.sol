@@ -24,7 +24,7 @@ contract OperatorSetUser is User {
         slashingRegistryCoordinator = deployer.slashingRegistryCoordinator();
         allocationManager = AllocationManager(deployer.allocationManager());
 
-        avs = slashingRegistryCoordinator.accountIdentifier();
+        avs = slashingRegistryCoordinator.avs();
 
         // Generate BN254 keypair and registration signature
         privKey = _privKey;

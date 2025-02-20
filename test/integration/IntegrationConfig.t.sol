@@ -227,6 +227,9 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
                 }
             }
 
+            cheats.prank(address(serviceManager));
+            allocationManager.updateAVSMetadataURI(address(serviceManager), "test-avs-metadata");
+
             cheats.prank(registryCoordinatorOwner);
             slashingRegistryCoordinator.createTotalDelegatedStakeQuorum({
                 operatorSetParams: operatorSet,

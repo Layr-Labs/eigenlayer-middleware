@@ -36,10 +36,7 @@ abstract contract SlasherBase is SlasherStorage {
         uint256 _requestId,
         IAllocationManager.SlashingParams memory _params
     ) internal virtual {
-        allocationManager.slashOperator({
-            avs: slashingRegistryCoordinator.accountIdentifier(),
-            params: _params
-        });
+        allocationManager.slashOperator({avs: slashingRegistryCoordinator.avs(), params: _params});
         emit OperatorSlashed(
             _requestId,
             _params.operator,

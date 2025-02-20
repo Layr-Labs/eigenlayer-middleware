@@ -444,6 +444,11 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             allocationManager,
             pauserRegistry
         );
+        cheats.prank(avsAccountIdentifier);
+        allocationManager.updateAVSMetadataURI(
+            address(avsAccountIdentifier), "ipfs://mock-metadata-uri"
+        );
+
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(slashingRegistryCoordinator))),
             address(slashingRegistryCoordinatorImplementation),
@@ -467,25 +472,32 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             target: address(allocationManager),
             selector: IAllocationManager.setAVSRegistrar.selector
         });
-        // 2. create operator sets
+
+        // 2. set AVS metadata
+        serviceManager.setAppointee({
+            appointee: serviceManager.owner(),
+            target: address(allocationManager),
+            selector: IAllocationManager.updateAVSMetadataURI.selector
+        });
+        // 3. create operator sets
         serviceManager.setAppointee({
             appointee: address(registryCoordinator),
             target: address(allocationManager),
             selector: IAllocationManager.createOperatorSets.selector
         });
-        // 3. deregister operator from operator sets
+        // 4. deregister operator from operator sets
         serviceManager.setAppointee({
             appointee: address(registryCoordinator),
             target: address(allocationManager),
             selector: IAllocationManager.deregisterFromOperatorSets.selector
         });
-        // 4. add strategies to operator sets
+        // 5. add strategies to operator sets
         serviceManager.setAppointee({
             appointee: address(registryCoordinator),
             target: address(stakeRegistry),
             selector: IAllocationManager.addStrategiesToOperatorSet.selector
         });
-        // 5. remove strategies from operator sets
+        // 6. remove strategies from operator sets
         serviceManager.setAppointee({
             appointee: address(registryCoordinator),
             target: address(stakeRegistry),

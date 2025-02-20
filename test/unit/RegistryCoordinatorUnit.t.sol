@@ -2335,8 +2335,12 @@ contract RegistryCoordinatorUnitTests_BeforeMigration is RegistryCoordinatorUnit
     function test_registerALMHook_Reverts() public {
         cheats.prank(address(registryCoordinator.allocationManager()));
         cheats.expectRevert();
+        /// TODO:
         registryCoordinator.registerOperator(
-            defaultOperator, new uint32[](0), abi.encode(defaultSocket, pubkeyRegistrationParams)
+            defaultOperator,
+            address(0),
+            new uint32[](0),
+            abi.encode(defaultSocket, pubkeyRegistrationParams)
         );
     }
 
@@ -2345,7 +2349,8 @@ contract RegistryCoordinatorUnitTests_BeforeMigration is RegistryCoordinatorUnit
         operatorSetIds[0] = 0;
         cheats.prank(address(registryCoordinator.allocationManager()));
         cheats.expectRevert();
-        registryCoordinator.deregisterOperator(defaultOperator, operatorSetIds);
+        /// TODO:
+        registryCoordinator.deregisterOperator(defaultOperator, address(0), operatorSetIds);
     }
 
     function test_CreateTotalDelegatedStakeQuorum() public {
@@ -2577,7 +2582,10 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
             abi.encode(ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, params);
 
         cheats.prank(address(registryCoordinator.allocationManager()));
-        registryCoordinator.registerOperator(defaultOperator, operatorSetIds, data);
+        /// TODO:
+        registryCoordinator.registerOperator(
+            defaultOperator, address(serviceManager), operatorSetIds, data
+        );
     }
 
     function test_registerHook_WithChurn() public {
@@ -2634,7 +2642,9 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
 
         // Prank as allocation manager and call register hook
         cheats.prank(address(registryCoordinator.allocationManager()));
-        registryCoordinator.registerOperator(defaultOperator, operatorSetIds, data);
+        registryCoordinator.registerOperator(
+            defaultOperator, address(serviceManager), operatorSetIds, data
+        );
     }
 
     function test_updateStakesForQuorum() public {
@@ -2703,9 +2713,9 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
             abi.encode(ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, params);
 
         cheats.startPrank(address(registryCoordinator.allocationManager()));
-        registryCoordinator.registerOperator(defaultOperator, operatorSetIds, data);
-
-        // registryCoordinator.deregisterOperator(defaultOperator, operatorSetIds);
+        registryCoordinator.registerOperator(
+            defaultOperator, address(serviceManager), operatorSetIds, data
+        );
 
         cheats.stopPrank();
     }
@@ -2748,7 +2758,9 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
             abi.encode(ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, params);
 
         vm.expectRevert();
-        registryCoordinator.registerOperator(defaultOperator, operatorSetIds, data);
+        registryCoordinator.registerOperator(
+            defaultOperator, address(serviceManager), operatorSetIds, data
+        );
     }
 
     function test_deregisterHook_Reverts_WhenNotALM() public {
@@ -2792,10 +2804,14 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
             abi.encode(ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, params);
 
         cheats.prank(address(registryCoordinator.allocationManager()));
-        registryCoordinator.registerOperator(defaultOperator, operatorSetIds, data);
+        registryCoordinator.registerOperator(
+            defaultOperator, address(serviceManager), operatorSetIds, data
+        );
 
         cheats.expectRevert();
-        registryCoordinator.deregisterOperator(defaultOperator, operatorSetIds);
+        registryCoordinator.deregisterOperator(
+            defaultOperator, address(serviceManager), operatorSetIds
+        );
     }
 
     function test_DeregisterHook_Reverts_WhenM2Quorum() public {

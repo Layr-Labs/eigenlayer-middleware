@@ -134,11 +134,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
             OnlyM2QuorumsAllowed()
         );
 
-        _deregisterOperator({
-            operator: msg.sender,
-            quorumNumbers: quorumNumbers,
-            shouldForceDeregister: false
-        });
+        _deregisterOperator({operator: msg.sender, quorumNumbers: quorumNumbers});
     }
 
     /// @inheritdoc IRegistryCoordinator
@@ -155,6 +151,32 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
      *                            INTERNAL FUNCTIONS
      *
      */
+
+    /// @dev override the _kickOperator function to handle M2 quorum forced deregistration
+    function _kickOperator(
+        address operator,
+        bytes memory quorumNumbers
+    ) internal virtual override {
+        OperatorInfo storage operatorInfo = _operatorInfo[operator];
+        uint192 quorumsToRemove =
+            uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
+        if (operatorInfo.status == OperatorStatus.REGISTERED && !quorumsToRemove.isEmpty()) {
+            // Allocate memory once outside the loop
+            bytes memory singleQuorumNumber = new bytes(1);
+            // For each quorum number, check if it's an M2 quorum
+            for (uint256 i = 0; i < quorumNumbers.length; i++) {
+                singleQuorumNumber[0] = quorumNumbers[i];
+
+                if (_isM2Quorum(uint8(quorumNumbers[i]))) {
+                    // For M2 quorums, use _deregisterOperator
+                    _deregisterOperator({operator: operator, quorumNumbers: singleQuorumNumber});
+                } else {
+                    // For non-M2 quorums, use _forceDeregisterOperator
+                    _forceDeregisterOperator(operator, singleQuorumNumber);
+                }
+            }
+        }
+    }
 
     /// @dev override the _forceDeregisterOperator function to handle M2 quorum deregistration
     function _forceDeregisterOperator(
@@ -204,14 +226,16 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
     }
 
     /**
-     * @dev Helper function to update operator stakes and deregister loiterers
-     * Loiterers are AVS registered operators who have force deregistered from the OperatorSet/quorum
-     * in the core EigenLayer contract AllocationManager but not deregistered from the OperatorSet/quorum
-     * in this contract. Potentially due to out of gas errors in the deregistration callback. This function
-     * will handle that edge case by deregistering the operator from the AVS if they are no longer registered
-     * in the AllocationManager.
+     * @dev Helper function to update operator stakes and deregister operators with insufficient stake
+     * This function handles two cases:
+     * 1. Operators who no longer meet the minimum stake requirement for a quorum
+     * 2. Operators who have been force-deregistered from the AllocationManager but not from this contract
+     * (e.g. due to out of gas errors in the deregistration callback)
+     * @param operators The list of operators to check and update
+     * @param operatorIds The corresponding operator IDs
+     * @param quorumNumber The quorum number to check stakes for
      */
-    function _updateStakesAndDeregisterLoiterers(
+    function _updateOperatorsStakes(
         address[] memory operators,
         bytes32[] memory operatorIds,
         uint8 quorumNumber
@@ -222,31 +246,8 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
             stakeRegistry.updateOperatorsStake(operators, operatorIds, quorumNumber);
 
         for (uint256 i = 0; i < operators.length; ++i) {
-            bool isM2Quorum = _isM2Quorum(quorumNumber);
-            bool registeredInCore;
-            // If its an operatorSet quorum, its possible for registeredInCore to be true/false
-            // so check for operatorSet inclusion in the AllocationManager
-            if (!isM2Quorum) {
-                registeredInCore = allocationManager.isMemberOfOperatorSet(
-                    operators[i], OperatorSet({avs: accountIdentifier, id: uint32(quorumNumber)})
-                );
-            }
-
-            // Determine if the operator should be deregistered
-            // If the operator does not have the minimum stake, they need to be force deregistered.
-            // Additionally, it is possible for an operator to have deregistered from an OperatorSet
-            // in the core EigenLayer contract AllocationManager but not have the deregistration
-            // callback succeed here in `deregisterOperator` due to out of gas errors. If that is the case,
-            // we need to deregister the operator from the OperatorSet in this contract
-            bool shouldDeregister =
-                doesNotMeetStakeThreshold[i] || (!registeredInCore && !isM2Quorum);
-
-            if (shouldDeregister) {
-                _deregisterOperator({
-                    operator: operators[i],
-                    quorumNumbers: singleQuorumNumber,
-                    shouldForceDeregister: registeredInCore
-                });
+            if (doesNotMeetStakeThreshold[i]) {
+                _kickOperator(operators[i], singleQuorumNumber);
             }
         }
     }

@@ -51,6 +51,8 @@ interface ISlashingRegistryCoordinatorErrors {
     error NotSorted();
     /// @notice Thrown when maximum quorum count is reached.
     error MaxQuorumsReached();
+    /// @notice Thrown when the provided AVS address does not match the expected one.
+    error InvalidAVS();
 }
 
 interface ISlashingRegistryCoordinatorTypes {
@@ -304,31 +306,6 @@ interface ISlashingRegistryCoordinator is
     /// ACTIONS
 
     /**
-     * @notice Registers an operator through the allocation manager for operator set quorums.
-     * @param operator The operator address to register.
-     * @param operatorSetIds The operator set IDs to register for (corresponds to quorum numbers).
-     * @param data Additional registration data containing the operator's socket and BLS public key parameters.
-     * @dev Can only be called by the allocation manager.
-     * @dev Will revert if operator sets are not enabled or if registering for M2 quorums.
-     * @dev This function implements the Slashing registration pathway specified by the IAVSRegistrar interface.
-     */
-    function registerOperator(
-        address operator,
-        uint32[] memory operatorSetIds,
-        bytes memory data
-    ) external;
-
-    /**
-     * @notice Deregisters an operator through the allocation manager from operator set quorums.
-     * @param operator The operator address to deregister.
-     * @param operatorSetIds The operator set IDs to deregister from (corresponds to quorum numbers).
-     * @dev Can only be called by the allocation manager.
-     * @dev Will revert if operator sets are not enabled or if deregistering from M2 quorums.
-     * @dev This function implements the Slashing deregistration pathway specified by the IAVSRegistrar interface.
-     */
-    function deregisterOperator(address operator, uint32[] memory operatorSetIds) external;
-
-    /**
      * @notice Updates stake weights for specified operators. If any operator is found to be below
      * the minimum stake for their registered quorums, they are deregistered from those quorums.
      * @param operators The operators whose stakes should be updated.
@@ -448,13 +425,13 @@ interface ISlashingRegistryCoordinator is
     ) external;
 
     /**
-     * @notice Updates the account identifier for this AVS (used for UAM integration in EigenLayer)
-     * @param _accountIdentifier The new account identifier address
+     * @notice Updates the avs address for this AVS (used for UAM integration in EigenLayer)
+     * @param _avs The new avs address
      * @dev Can only be called by the contract owner
      * @dev NOTE: Updating this value will break existing OperatorSets and UAM integration. This value should only be set once.
      */
-    function setAccountIdentifier(
-        address _accountIdentifier
+    function setAVS(
+        address _avs
     ) external;
 
     /// VIEW
@@ -603,9 +580,9 @@ interface ISlashingRegistryCoordinator is
     ) external view returns (BN254.G1Point memory);
 
     /**
-     * @notice Returns the account identifier for this AVS (used for UAM integration in EigenLayer)
+     * @notice Returns the avs address for this AVS (used for UAM integration in EigenLayer)
      * @dev NOTE: Updating this value will break existing OperatorSets and UAM integration. This value should only be set once.
-     * @return The account identifier address
+     * @return The avs address
      */
-    function accountIdentifier() external view returns (address);
+    function avs() external view returns (address);
 }

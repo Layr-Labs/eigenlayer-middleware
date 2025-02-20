@@ -2,8 +2,8 @@
 pragma solidity ^0.8.27;
 
 import "../../src/RegistryCoordinator.sol";
-
 import {ISocketRegistry} from "../../src/interfaces/ISocketRegistry.sol";
+import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 
 import "forge-std/Test.sol";
 
@@ -60,7 +60,7 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
 
     // @notice exposes the internal `_deregisterOperator` function, overriding all access controls
     function _deregisterOperatorExternal(address operator, bytes calldata quorumNumbers) external {
-        _deregisterOperator(operator, quorumNumbers, false);
+        _deregisterOperator(operator, quorumNumbers);
     }
 
     // @notice exposes the internal `_updateOperatorBitmap` function, overriding all access controls
@@ -84,5 +84,11 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         uint256 bitmap
     ) external {
         _m2QuorumBitmap = bitmap;
+    }
+
+    function supportsAVS(
+        address avs
+    ) public view override(IAVSRegistrar, SlashingRegistryCoordinator) returns (bool) {
+        return avs == address(serviceManager);
     }
 }

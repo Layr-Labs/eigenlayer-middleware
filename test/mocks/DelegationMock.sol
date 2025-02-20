@@ -232,7 +232,7 @@ contract DelegationIntermediate is IDelegationManager {
         IStrategy strategy,
         uint64 prevMaxMagnitude,
         uint64 newMaxMagnitude
-    ) external override {}
+    ) external {}
 
     function getQueuedWithdrawal(
         bytes32 withdrawalRoot

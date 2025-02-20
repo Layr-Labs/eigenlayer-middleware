@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {
     IAllocationManager,
     OperatorSet,
@@ -98,13 +99,13 @@ contract SlashingRegistryCoordinator is
         address _churnApprover,
         address _ejector,
         uint256 _initialPausedStatus,
-        address _accountIdentifier
+        address _avs
     ) external initializer {
         _transferOwnership(_initialOwner);
         _setChurnApprover(_churnApprover);
         _setPausedStatus(_initialPausedStatus);
         _setEjector(_ejector);
-        _setAccountIdentifier(_accountIdentifier);
+        _setAVS(_avs);
 
         // Add registry contracts to the registries array
         registries.push(address(stakeRegistry));
@@ -144,12 +145,14 @@ contract SlashingRegistryCoordinator is
         );
     }
 
-    /// @inheritdoc ISlashingRegistryCoordinator
+    /// @inheritdoc IAVSRegistrar
     function registerOperator(
         address operator,
+        address avs,
         uint32[] memory operatorSetIds,
         bytes calldata data
     ) external override onlyAllocationManager onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
+        require(supportsAVS(avs), InvalidAVS());
         bytes memory quorumNumbers = _getQuorumNumbers(operatorSetIds);
 
         (
@@ -219,17 +222,15 @@ contract SlashingRegistryCoordinator is
         }
     }
 
-    /// @inheritdoc ISlashingRegistryCoordinator
+    /// @inheritdoc IAVSRegistrar
     function deregisterOperator(
         address operator,
+        address avs,
         uint32[] memory operatorSetIds
     ) external override onlyAllocationManager onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
+        require(supportsAVS(avs), InvalidAVS());
         bytes memory quorumNumbers = _getQuorumNumbers(operatorSetIds);
-        _deregisterOperator({
-            operator: operator,
-            quorumNumbers: quorumNumbers,
-            shouldForceDeregister: false
-        });
+        _deregisterOperator({operator: operator, quorumNumbers: quorumNumbers});
     }
 
     /// @inheritdoc ISlashingRegistryCoordinator
@@ -247,9 +248,7 @@ contract SlashingRegistryCoordinator is
             bytes memory quorumNumbers = currentBitmap.bitmapToBytesArray();
             for (uint256 j = 0; j < quorumNumbers.length; j++) {
                 // update the operator's stake for each quorum
-                _updateStakesAndDeregisterLoiterers(
-                    singleOperator, singleOperatorId, uint8(quorumNumbers[j])
-                );
+                _updateOperatorsStakes(singleOperator, singleOperatorId, uint8(quorumNumbers[j]));
             }
         }
     }
@@ -300,7 +299,7 @@ contract SlashingRegistryCoordinator is
                 prevOperatorAddress = operator;
             }
 
-            _updateStakesAndDeregisterLoiterers(currQuorumOperators, operatorIds, quorumNumber);
+            _updateOperatorsStakes(currQuorumOperators, operatorIds, quorumNumber);
 
             // Update timestamp that all operators in quorum have been updated all at once
             quorumUpdateBlockNumber[quorumNumber] = block.number;
@@ -323,24 +322,12 @@ contract SlashingRegistryCoordinator is
      */
 
     /// @inheritdoc ISlashingRegistryCoordinator
-    function ejectOperator(address operator, bytes memory quorumNumbers) external onlyEjector {
+    function ejectOperator(
+        address operator,
+        bytes memory quorumNumbers
+    ) public virtual onlyEjector {
         lastEjectionTimestamp[operator] = block.timestamp;
-
-        OperatorInfo storage operatorInfo = _operatorInfo[operator];
-        bytes32 operatorId = operatorInfo.operatorId;
-        uint192 quorumsToRemove =
-            uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
-        uint192 currentBitmap = _currentOperatorBitmap(operatorId);
-        if (
-            operatorInfo.status == OperatorStatus.REGISTERED && !quorumsToRemove.isEmpty()
-                && quorumsToRemove.isSubsetOf(currentBitmap)
-        ) {
-            _deregisterOperator({
-                operator: operator,
-                quorumNumbers: quorumNumbers,
-                shouldForceDeregister: true
-            });
-        }
+        _kickOperator(operator, quorumNumbers);
     }
 
     /**
@@ -377,10 +364,10 @@ contract SlashingRegistryCoordinator is
     }
 
     /// @inheritdoc ISlashingRegistryCoordinator
-    function setAccountIdentifier(
-        address _accountIdentifier
+    function setAVS(
+        address _avs
     ) external onlyOwner {
-        _setAccountIdentifier(_accountIdentifier);
+        _setAVS(_avs);
     }
 
     /// @inheritdoc ISlashingRegistryCoordinator
@@ -395,6 +382,25 @@ contract SlashingRegistryCoordinator is
      *                         INTERNAL FUNCTIONS
      *
      */
+
+    /**
+     * @notice Internal function to handle operator ejection logic
+     * @param operator The operator to force deregister from the avs
+     * @param quorumNumbers The quorum numbers to eject the operator from
+     */
+    function _kickOperator(address operator, bytes memory quorumNumbers) internal virtual {
+        OperatorInfo storage operatorInfo = _operatorInfo[operator];
+        bytes32 operatorId = operatorInfo.operatorId;
+        uint192 quorumsToRemove =
+            uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
+        uint192 currentBitmap = _currentOperatorBitmap(operatorId);
+        if (
+            operatorInfo.status == OperatorStatus.REGISTERED && !quorumsToRemove.isEmpty()
+                && quorumsToRemove.isSubsetOf(currentBitmap)
+        ) {
+            _forceDeregisterOperator(operator, quorumNumbers);
+        }
+    }
 
     /**
      * @notice Register the operator for one or more quorums. This method updates the
@@ -517,11 +523,7 @@ contract SlashingRegistryCoordinator is
 
                 bytes memory singleQuorumNumber = new bytes(1);
                 singleQuorumNumber[0] = quorumNumbers[i];
-                _deregisterOperator({
-                    operator: operatorKickParams[i].operator,
-                    quorumNumbers: singleQuorumNumber,
-                    shouldForceDeregister: true
-                });
+                _kickOperator(operatorKickParams[i].operator, singleQuorumNumber);
             }
         }
     }
@@ -532,14 +534,9 @@ contract SlashingRegistryCoordinator is
      * the operator with the BLSApkRegistry, IndexRegistry, and StakeRegistry
      * @param operator the operator to deregister
      * @param quorumNumbers the quorum numbers to deregister from
-     * @param shouldForceDeregister whether the operator needs to be deregistered from the OperatorSets of
      * the core EigenLayer contract AllocationManager
      */
-    function _deregisterOperator(
-        address operator,
-        bytes memory quorumNumbers,
-        bool shouldForceDeregister
-    ) internal virtual {
+    function _deregisterOperator(address operator, bytes memory quorumNumbers) internal virtual {
         // Fetch the operator's info and ensure they are registered
         OperatorInfo storage operatorInfo = _operatorInfo[operator];
         bytes32 operatorId = operatorInfo.operatorId;
@@ -578,12 +575,6 @@ contract SlashingRegistryCoordinator is
         stakeRegistry.deregisterOperator(operatorId, quorumNumbers);
         indexRegistry.deregisterOperator(operatorId, quorumNumbers);
 
-        // If the operator is not deregistered from the EigenLayer core protocol, then we need to force deregister them
-        // from their respective OperatorSets in the AllocationManager
-        if (shouldForceDeregister) {
-            _forceDeregisterOperator(operator, quorumNumbers);
-        }
-
         // call hook to allow for any post-deregister logic
         _afterDeregisterOperator(operator, operatorId, quorumNumbers, newBitmap);
     }
@@ -601,43 +592,26 @@ contract SlashingRegistryCoordinator is
         address operator,
         bytes memory quorumNumbers
     ) internal virtual {
-        uint32[] memory operatorSetIds = new uint32[](quorumNumbers.length);
-        uint256 numDeregister = 0;
-        for (uint256 i = 0; i < quorumNumbers.length; ++i) {
-            uint32 operatorSetId = uint32(uint8(quorumNumbers[i]));
-            if (
-                allocationManager.isMemberOfOperatorSet(
-                    operator, OperatorSet({avs: accountIdentifier, id: operatorSetId})
-                )
-            ) {
-                operatorSetIds[numDeregister] = operatorSetId;
-                numDeregister++;
-            }
-        }
-
-        // resize operatorSetIds array length to numDeregister
-        assembly {
-            mstore(operatorSetIds, numDeregister)
-        }
-
         allocationManager.deregisterFromOperatorSets(
             IAllocationManagerTypes.DeregisterParams({
                 operator: operator,
-                avs: accountIdentifier,
+                avs: avs,
                 operatorSetIds: _getOperatorSetIds(quorumNumbers)
             })
         );
     }
 
     /**
-     * @dev Helper function to update operator stakes and deregister loiterers
-     * Loiterers are AVS registered operators who have force deregistered from the OperatorSet/quorum
-     * in the core EigenLayer contract AllocationManager but not deregistered from the OperatorSet/quorum
-     * in this contract. Potentially due to out of gas errors in the deregistration callback. This function
-     * will handle that edge case by deregistering the operator from the AVS if they are no longer registered
-     * in the AllocationManager.
+     * @dev Helper function to update operator stakes and deregister operators with insufficient stake
+     * This function handles two cases:
+     * 1. Operators who no longer meet the minimum stake requirement for a quorum
+     * 2. Operators who have been force-deregistered from the AllocationManager but not from this contract
+     * (e.g. due to out of gas errors in the deregistration callback)
+     * @param operators The list of operators to check and update
+     * @param operatorIds The corresponding operator IDs
+     * @param quorumNumber The quorum number to check stakes for
      */
-    function _updateStakesAndDeregisterLoiterers(
+    function _updateOperatorsStakes(
         address[] memory operators,
         bytes32[] memory operatorIds,
         uint8 quorumNumber
@@ -647,22 +621,9 @@ contract SlashingRegistryCoordinator is
         bool[] memory doesNotMeetStakeThreshold =
             stakeRegistry.updateOperatorsStake(operators, operatorIds, quorumNumber);
         for (uint256 j = 0; j < operators.length; ++j) {
-            // whether the operator is registered in the core EigenLayer contract AllocationManager
-            bool registeredInCore = allocationManager.isMemberOfOperatorSet(
-                operators[j], OperatorSet({avs: accountIdentifier, id: uint32(quorumNumber)})
-            );
-
             // If the operator does not have the minimum stake, they need to be force deregistered.
-            // Additionally, it is possible for an operator to have deregistered from an OperatorSet
-            // in the core EigenLayer contract AllocationManager but not have the deregistration
-            // callback succeed here in `deregisterOperator` due to out of gas errors. If that is the case,
-            // we need to deregister the operator from the OperatorSet in this contract
-            if (doesNotMeetStakeThreshold[j] || !registeredInCore) {
-                _deregisterOperator({
-                    operator: operators[j],
-                    quorumNumbers: singleQuorumNumber,
-                    shouldForceDeregister: registeredInCore
-                });
+            if (doesNotMeetStakeThreshold[j]) {
+                _kickOperator(operators[j], singleQuorumNumber);
             }
         }
     }
@@ -859,7 +820,7 @@ contract SlashingRegistryCoordinator is
             operatorSetId: quorumNumber,
             strategies: strategies
         });
-        allocationManager.createOperatorSets({avs: accountIdentifier, params: createSetParams});
+        allocationManager.createOperatorSets({avs: avs, params: createSetParams});
 
         // Initialize stake registry based on stake type
         if (stakeType == IStakeRegistryTypes.StakeType.TOTAL_DELEGATED) {
@@ -951,10 +912,10 @@ contract SlashingRegistryCoordinator is
         ejector = newEjector;
     }
 
-    function _setAccountIdentifier(
-        address _accountIdentifier
+    function _setAVS(
+        address _avs
     ) internal {
-        accountIdentifier = _accountIdentifier;
+        avs = _avs;
     }
 
     /// @dev Hook to allow for any pre-create quorum logic
@@ -1146,5 +1107,11 @@ contract SlashingRegistryCoordinator is
         address operator
     ) public view returns (bytes32) {
         return _hashTypedDataV4(keccak256(abi.encode(PUBKEY_REGISTRATION_TYPEHASH, operator)));
+    }
+
+    function supportsAVS(
+        address _avs
+    ) public view virtual returns (bool) {
+        return _avs == address(avs);
     }
 }
