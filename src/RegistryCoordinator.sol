@@ -150,19 +150,6 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         emit M2QuorumRegistrationDisabled();
     }
 
-    /// @inheritdoc ISlashingRegistryCoordinator
-    function ejectOperator(
-        address operator,
-        bytes memory quorumNumbers
-    )
-        public
-        virtual
-        override(ISlashingRegistryCoordinator, SlashingRegistryCoordinator)
-        onlyEjector
-    {
-        _kickOperator({operator: operator, quorumNumbers: quorumNumbers, isEjection: true});
-    }
-
     /**
      *
      *                            INTERNAL FUNCTIONS
