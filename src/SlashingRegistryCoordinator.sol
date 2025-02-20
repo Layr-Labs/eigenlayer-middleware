@@ -230,11 +230,7 @@ contract SlashingRegistryCoordinator is
     ) external override onlyAllocationManager onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
         require(supportsAVS(avs), InvalidAVS());
         bytes memory quorumNumbers = _getQuorumNumbers(operatorSetIds);
-        _deregisterOperator({
-            operator: operator,
-            quorumNumbers: quorumNumbers,
-            shouldForceDeregister: false
-        });
+        _deregisterOperator({operator: operator, quorumNumbers: quorumNumbers});
     }
 
     /// @inheritdoc ISlashingRegistryCoordinator
@@ -538,14 +534,9 @@ contract SlashingRegistryCoordinator is
      * the operator with the BLSApkRegistry, IndexRegistry, and StakeRegistry
      * @param operator the operator to deregister
      * @param quorumNumbers the quorum numbers to deregister from
-     * @param shouldForceDeregister whether the operator needs to be deregistered from the OperatorSets of
      * the core EigenLayer contract AllocationManager
      */
-    function _deregisterOperator(
-        address operator,
-        bytes memory quorumNumbers,
-        bool shouldForceDeregister
-    ) internal virtual {
+    function _deregisterOperator(address operator, bytes memory quorumNumbers) internal virtual {
         // Fetch the operator's info and ensure they are registered
         OperatorInfo storage operatorInfo = _operatorInfo[operator];
         bytes32 operatorId = operatorInfo.operatorId;
@@ -583,12 +574,6 @@ contract SlashingRegistryCoordinator is
         blsApkRegistry.deregisterOperator(operator, quorumNumbers);
         stakeRegistry.deregisterOperator(operatorId, quorumNumbers);
         indexRegistry.deregisterOperator(operatorId, quorumNumbers);
-
-        // If the operator is not deregistered from the EigenLayer core protocol, then we need to force deregister them
-        // from their respective OperatorSets in the AllocationManager
-        if (shouldForceDeregister) {
-            _forceDeregisterOperator(operator, quorumNumbers);
-        }
 
         // call hook to allow for any post-deregister logic
         _afterDeregisterOperator(operator, operatorId, quorumNumbers, newBitmap);

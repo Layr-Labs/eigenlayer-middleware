@@ -60,7 +60,7 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
 
     // @notice exposes the internal `_deregisterOperator` function, overriding all access controls
     function _deregisterOperatorExternal(address operator, bytes calldata quorumNumbers) external {
-        _deregisterOperator(operator, quorumNumbers, false);
+        _deregisterOperator(operator, quorumNumbers);
     }
 
     // @notice exposes the internal `_updateOperatorBitmap` function, overriding all access controls

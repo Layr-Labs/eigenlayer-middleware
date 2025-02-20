@@ -134,11 +134,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
             OnlyM2QuorumsAllowed()
         );
 
-        _deregisterOperator({
-            operator: msg.sender,
-            quorumNumbers: quorumNumbers,
-            shouldForceDeregister: false
-        });
+        _deregisterOperator({operator: msg.sender, quorumNumbers: quorumNumbers});
     }
 
     /// @inheritdoc IRegistryCoordinator
@@ -173,11 +169,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
 
                 if (_isM2Quorum(uint8(quorumNumbers[i]))) {
                     // For M2 quorums, use _deregisterOperator
-                    _deregisterOperator({
-                        operator: operator,
-                        quorumNumbers: singleQuorumNumber,
-                        shouldForceDeregister: true
-                    });
+                    _deregisterOperator({operator: operator, quorumNumbers: singleQuorumNumber});
                 } else {
                     // For non-M2 quorums, use _forceDeregisterOperator
                     _forceDeregisterOperator(operator, singleQuorumNumber);
