@@ -388,6 +388,42 @@ contract IndexRegistryUnitTests_configAndGetters is IndexRegistryUnitTests {
         cheats.expectRevert();
         indexRegistry.getOperatorListAtBlockNumber(quorumNumber, 0);
     }
+
+    function test_getQuorumUpdateAtIndex() public {
+        uint8 quorumNumber = nextQuorum;
+        _initializeQuorum();
+
+        uint32 blockNum = uint32(block.number);
+
+        // Roll forward to force update
+        vm.roll(block.number + 1);
+
+        // Check quorum update at index 0
+        IIndexRegistry.QuorumUpdate memory quorumUpdate =
+            indexRegistry.getQuorumUpdateAtIndex(quorumNumber, 0);
+        assertEq(quorumUpdate.numOperators, 0, "numOperators not 0");
+        assertEq(quorumUpdate.fromBlockNumber, blockNum, "fromBlockNumber not correct");
+
+        // Register operator
+        (, bytes32 operatorId) = _selectNewOperator();
+        _registerOperatorSingleQuorum(operatorId, quorumNumber);
+
+        // Check quorum update at index 1
+        quorumUpdate = indexRegistry.getQuorumUpdateAtIndex(quorumNumber, 1);
+        assertEq(quorumUpdate.numOperators, 1, "numOperators not 1");
+        assertEq(quorumUpdate.fromBlockNumber, block.number, "fromBlockNumber not correct");
+
+        // Roll forward to force update
+        vm.roll(block.number + 1);
+
+        // Deregister
+        _deregisterOperatorSingleQuorum(operatorId, quorumNumber);
+
+        // Check quorum update at index 2
+        quorumUpdate = indexRegistry.getQuorumUpdateAtIndex(quorumNumber, 2);
+        assertEq(quorumUpdate.numOperators, 0, "numOperators not 0");
+        assertEq(quorumUpdate.fromBlockNumber, block.number, "fromBlockNumber not correct");
+    }
 }
 
 contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
