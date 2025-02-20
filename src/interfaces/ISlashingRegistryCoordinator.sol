@@ -474,7 +474,7 @@ interface ISlashingRegistryCoordinator is
      * @dev Can only be called by the contract owner
      * @dev NOTE: Updating this value will break existing OperatorSets and UAM integration. This value should only be set once.
      */
-    function setAvs(
+    function setAVS(
         address _avs
     ) external;
 

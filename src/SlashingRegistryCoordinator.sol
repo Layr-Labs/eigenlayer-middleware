@@ -104,7 +104,7 @@ contract SlashingRegistryCoordinator is
         _setChurnApprover(_churnApprover);
         _setPausedStatus(_initialPausedStatus);
         _setEjector(_ejector);
-        _setAvs(_avs);
+        _setAVS(_avs);
 
         // Add registry contracts to the registries array
         registries.push(address(stakeRegistry));
@@ -367,10 +367,10 @@ contract SlashingRegistryCoordinator is
     }
 
     /// @inheritdoc ISlashingRegistryCoordinator
-    function setAvs(
+    function setAVS(
         address _avs
     ) external onlyOwner {
-        _setAvs(_avs);
+        _setAVS(_avs);
     }
 
     /// @inheritdoc ISlashingRegistryCoordinator
@@ -945,7 +945,7 @@ contract SlashingRegistryCoordinator is
         ejector = newEjector;
     }
 
-    function _setAvs(
+    function _setAVS(
         address _avs
     ) internal {
         avs = _avs;
