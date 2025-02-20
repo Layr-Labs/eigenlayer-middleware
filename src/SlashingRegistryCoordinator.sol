@@ -391,10 +391,7 @@ contract SlashingRegistryCoordinator is
      * @param operator The operator to eject
      * @param quorumNumbers The quorum numbers to eject the operator from
      */
-    function _kickOperator(
-        address operator,
-        bytes memory quorumNumbers
-    ) internal virtual {
+    function _kickOperator(address operator, bytes memory quorumNumbers) internal virtual {
         OperatorInfo storage operatorInfo = _operatorInfo[operator];
         bytes32 operatorId = operatorInfo.operatorId;
         uint192 quorumsToRemove =
