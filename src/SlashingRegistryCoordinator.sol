@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {
     IAllocationManager,
     OperatorSet,
@@ -144,7 +145,7 @@ contract SlashingRegistryCoordinator is
         );
     }
 
-    /// @inheritdoc ISlashingRegistryCoordinator
+    /// @inheritdoc IAVSRegistrar
     function registerOperator(
         address operator,
         address avs,
@@ -221,7 +222,7 @@ contract SlashingRegistryCoordinator is
         }
     }
 
-    /// @inheritdoc ISlashingRegistryCoordinator
+    /// @inheritdoc IAVSRegistrar
     function deregisterOperator(
         address operator,
         address avs,
