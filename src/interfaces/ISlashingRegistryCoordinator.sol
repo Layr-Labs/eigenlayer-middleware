@@ -10,6 +10,7 @@ import {IAllocationManager} from
 import {IBLSApkRegistry} from "./IBLSApkRegistry.sol";
 import {IStakeRegistry, IStakeRegistryTypes} from "./IStakeRegistry.sol";
 import {IIndexRegistry} from "./IIndexRegistry.sol";
+import {ISocketRegistry} from "./ISocketRegistry.sol";
 import {BN254} from "../libraries/BN254.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 
@@ -50,8 +51,8 @@ interface ISlashingRegistryCoordinatorErrors {
     error NotSorted();
     /// @notice Thrown when maximum quorum count is reached.
     error MaxQuorumsReached();
-    /// @notice Thrown when operator set operations are attempted while not enabled.
-    error OperatorSetsNotEnabled();
+    /// @notice Thrown when the provided AVS address does not match the expected one.
+    error InvalidAVS();
 }
 
 interface ISlashingRegistryCoordinatorTypes {
@@ -234,6 +235,12 @@ interface ISlashingRegistryCoordinator is
      */
     function allocationManager() external view returns (IAllocationManager);
 
+    /**
+     * @notice Reference to the SocketRegistry contract.
+     * @return The SocketRegistry contract interface.
+     */
+    function socketRegistry() external view returns (ISocketRegistry);
+
     /// STORAGE
 
     /**
@@ -296,53 +303,14 @@ interface ISlashingRegistryCoordinator is
      */
     function ejectionCooldown() external view returns (uint256);
 
-    /**
-     * @notice Checks if a quorum is an M2 quorum.
-     * @param quorumNumber The quorum identifier.
-     * @return True if the quorum is M2, false otherwise.
-     */
-    function isM2Quorum(
-        uint8 quorumNumber
-    ) external view returns (bool);
-
-    /**
-     * @notice Whether operator sets mode is enabled.
-     * @return True if operator sets mode is enabled, false otherwise.
-     */
-    function operatorSetsEnabled() external view returns (bool);
-
     /// ACTIONS
-
-    /**
-     * @notice Registers an operator through the allocation manager for operator set quorums.
-     * @param operator The operator address to register.
-     * @param operatorSetIds The operator set IDs to register for (corresponds to quorum numbers).
-     * @param data Additional registration data containing the operator's socket and BLS public key parameters.
-     * @dev Can only be called by the allocation manager.
-     * @dev Will revert if operator sets are not enabled or if registering for M2 quorums.
-     * @dev This function implements the Slashing registration pathway specified by the IAVSRegistrar interface.
-     */
-    function registerOperator(
-        address operator,
-        uint32[] memory operatorSetIds,
-        bytes memory data
-    ) external;
-
-    /**
-     * @notice Deregisters an operator through the allocation manager from operator set quorums.
-     * @param operator The operator address to deregister.
-     * @param operatorSetIds The operator set IDs to deregister from (corresponds to quorum numbers).
-     * @dev Can only be called by the allocation manager.
-     * @dev Will revert if operator sets are not enabled or if deregistering from M2 quorums.
-     * @dev This function implements the Slashing deregistration pathway specified by the IAVSRegistrar interface.
-     */
-    function deregisterOperator(address operator, uint32[] memory operatorSetIds) external;
 
     /**
      * @notice Updates stake weights for specified operators. If any operator is found to be below
      * the minimum stake for their registered quorums, they are deregistered from those quorums.
      * @param operators The operators whose stakes should be updated.
      * @dev Stakes are queried from the Eigenlayer core DelegationManager contract.
+     * @dev WILL BE DEPRECATED IN FAVOR OF updateOperatorsForQuorum
      */
     function updateOperators(
         address[] memory operators
@@ -352,12 +320,15 @@ interface ISlashingRegistryCoordinator is
      * @notice For each quorum in `quorumNumbers`, updates the StakeRegistry's view of ALL its registered operators' stakes.
      * Each quorum's `quorumUpdateBlockNumber` is also updated, which tracks the most recent block number when ALL registered
      * operators were updated.
+     * @dev stakes are queried from the Eigenlayer core DelegationManager contract
      * @param operatorsPerQuorum for each quorum in `quorumNumbers`, this has a corresponding list of operators to update.
-     * @param quorumNumbers is an ordered byte array containing the quorum numbers being updated.
-     * @dev Each list of operator addresses MUST be sorted in ascending order.
-     * @dev Each list of operator addresses MUST represent the entire list of registered operators for the corresponding quorum.
-     * @dev Stakes are queried from the Eigenlayer core DelegationManager contract.
-     * @dev Will revert if an operator registers/deregisters for any quorum in `quorumNumbers` after transaction broadcast but before execution.
+     * @dev Each list of operator addresses MUST be sorted in ascending order
+     * @dev Each list of operator addresses MUST represent the entire list of registered operators for the corresponding quorum
+     * @param quorumNumbers is an ordered byte array containing the quorum numbers being updated
+     * @dev invariant: Each list of `operatorsPerQuorum` MUST be a sorted version of `IndexRegistry.getOperatorListAtBlockNumber`
+     * for the corresponding quorum.
+     * @dev note on race condition: if an operator registers/deregisters for any quorum in `quorumNumbers` after a txn to
+     * this method is broadcast (but before it is executed), the method will fail
      */
     function updateOperatorsForQuorum(
         address[][] memory operatorsPerQuorum,
@@ -453,7 +424,25 @@ interface ISlashingRegistryCoordinator is
         uint256 _ejectionCooldown
     ) external;
 
+    /**
+     * @notice Updates the avs address for this AVS (used for UAM integration in EigenLayer)
+     * @param _avs The new avs address
+     * @dev Can only be called by the contract owner
+     * @dev NOTE: Updating this value will break existing OperatorSets and UAM integration. This value should only be set once.
+     */
+    function setAVS(
+        address _avs
+    ) external;
+
     /// VIEW
+
+    /**
+     * @notice Returns the hash of the message that operators must sign with their BLS key to register
+     * @param operator The operator's Ethereum address
+     */
+    function calculatePubkeyRegistrationMessageHash(
+        address operator
+    ) external view returns (bytes32);
 
     /**
      * @notice Returns the operator set parameters for a given quorum.
@@ -591,16 +580,9 @@ interface ISlashingRegistryCoordinator is
     ) external view returns (BN254.G1Point memory);
 
     /**
-     * @notice Returns the address of the contract owner.
-     * @return The owner's address.
-     * @dev The owner can update contract configuration and create new quorums.
-     */
-    function owner() external view returns (address);
-
-    /**
-     * @notice Returns the account identifier for this AVS (used for UAM integration in EigenLayer)
+     * @notice Returns the avs address for this AVS (used for UAM integration in EigenLayer)
      * @dev NOTE: Updating this value will break existing OperatorSets and UAM integration. This value should only be set once.
-     * @return The account identifier address
+     * @return The avs address
      */
-    function accountIdentifier() external view returns (address);
+    function avs() external view returns (address);
 }

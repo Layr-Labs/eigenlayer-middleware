@@ -53,6 +53,7 @@ import {BLSApkRegistryHarness} from "../harnesses/BLSApkRegistryHarness.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 
 import {StakeRegistryHarness} from "../harnesses/StakeRegistryHarness.sol";
+import {OperatorWalletLib, Operator} from "../utils/OperatorWalletLib.sol";
 
 import "forge-std/Test.sol";
 
@@ -356,8 +357,10 @@ contract MockAVSDeployer is Test {
 
         operatorStateRetriever = new OperatorStateRetriever();
 
+        // Set RegistryCoordinator as M2 state with existing quorums
+        registryCoordinator.setM2QuorumBitmap(0);
         registryCoordinator.setOperatorSetsEnabled(false);
-        registryCoordinator.setM2QuorumsDisabled(false);
+        registryCoordinator.setM2QuorumRegistrationDisabled(false);
     }
 
     function _labelContracts() internal {
@@ -546,5 +549,18 @@ contract MockAVSDeployer is Test {
             expiry: expiry,
             salt: salt
         });
+    }
+
+    function _createOperators(
+        uint256 numOperators,
+        uint256 startIndex
+    ) internal returns (Operator[] memory) {
+        Operator[] memory operators = new Operator[](numOperators);
+        for (uint256 i = 0; i < numOperators; i++) {
+            operators[i] = OperatorWalletLib.createOperator(
+                string(abi.encodePacked("operator-", i + startIndex))
+            );
+        }
+        return operators;
     }
 }

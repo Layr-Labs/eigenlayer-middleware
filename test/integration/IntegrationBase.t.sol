@@ -22,7 +22,7 @@ abstract contract IntegrationBase is IntegrationConfig {
 
     function assert_HasOperatorInfoWithId(User user, string memory err) internal {
         bytes32 expectedId = user.operatorId();
-        bytes32 actualId = registryCoordinator.getOperatorId(address(user));
+        bytes32 actualId = slashingRegistryCoordinator.getOperatorId(address(user));
 
         assertEq(expectedId, actualId, err);
     }
@@ -39,20 +39,20 @@ abstract contract IntegrationBase is IntegrationConfig {
 
     function assert_HasRegisteredStatus(User user, string memory err) internal {
         ISlashingRegistryCoordinatorTypes.OperatorStatus status =
-            registryCoordinator.getOperatorStatus(address(user));
+            slashingRegistryCoordinator.getOperatorStatus(address(user));
 
         assertTrue(status == ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED, err);
     }
 
     function assert_HasDeregisteredStatus(User user, string memory err) internal {
         ISlashingRegistryCoordinatorTypes.OperatorStatus status =
-            registryCoordinator.getOperatorStatus(address(user));
+            slashingRegistryCoordinator.getOperatorStatus(address(user));
 
         assertTrue(status == ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED, err);
     }
 
     function assert_EmptyQuorumBitmap(User user, string memory err) internal {
-        uint192 bitmap = registryCoordinator.getCurrentQuorumBitmap(user.operatorId());
+        uint192 bitmap = slashingRegistryCoordinator.getCurrentQuorumBitmap(user.operatorId());
 
         assertTrue(bitmap == 0, err);
     }
@@ -62,7 +62,7 @@ abstract contract IntegrationBase is IntegrationConfig {
         bytes memory quorums,
         string memory err
     ) internal {
-        uint192 bitmap = registryCoordinator.getCurrentQuorumBitmap(user.operatorId());
+        uint192 bitmap = slashingRegistryCoordinator.getCurrentQuorumBitmap(user.operatorId());
 
         for (uint256 i = 0; i < quorums.length; i++) {
             uint8 quorum = uint8(quorums[i]);
@@ -77,15 +77,30 @@ abstract contract IntegrationBase is IntegrationConfig {
         bytes memory quorums,
         string memory err
     ) internal {
-        uint192 currentBitmap = registryCoordinator.getCurrentQuorumBitmap(user.operatorId());
+        uint192 currentBitmap =
+            slashingRegistryCoordinator.getCurrentQuorumBitmap(user.operatorId());
         uint192 subsetBitmap = uint192(quorums.orderedBytesArrayToBitmap());
 
         assertTrue(subsetBitmap.isSubsetOf(currentBitmap), err);
     }
 
+    /// @dev Checks that the user is registered for each of the operator sets in the AllocationManager
+    function assert_RegisteredForOperatorSets(
+        User user,
+        bytes memory operatorSetIds,
+        string memory err
+    ) internal {
+        for (uint256 i = 0; i < operatorSetIds.length; i++) {
+            uint32 operatorSetId = uint32(uint8(operatorSetIds[i]));
+            OperatorSet memory operatorSet =
+                OperatorSet({avs: avsAccountIdentifier, id: operatorSetId});
+            assertTrue(allocationManager.isMemberOfOperatorSet(address(user), operatorSet), err);
+        }
+    }
+
     /// @dev Checks whether each of the quorums has been initialized in the RegistryCoordinator
     function assert_QuorumsExist(bytes memory quorums, string memory err) internal {
-        uint8 count = registryCoordinator.quorumCount();
+        uint8 count = slashingRegistryCoordinator.quorumCount();
         for (uint256 i = 0; i < quorums.length; i++) {
             uint8 quorum = uint8(quorums[i]);
 
@@ -176,7 +191,7 @@ abstract contract IntegrationBase is IntegrationConfig {
             uint8 quorum = uint8(quorums[i]);
 
             uint32 maxOperatorCount =
-                registryCoordinator.getOperatorSetParams(quorum).maxOperatorCount;
+                slashingRegistryCoordinator.getOperatorSetParams(quorum).maxOperatorCount;
             uint32 curOperatorCount = indexRegistry.totalOperatorsForQuorum(quorum);
 
             assertTrue(curOperatorCount < maxOperatorCount, err);
@@ -242,6 +257,20 @@ abstract contract IntegrationBase is IntegrationConfig {
         // were set in the previous bitmap, and are NOT set in the current bitmap
         assertTrue(quorumsRemoved.isSubsetOf(prevBitmap), err);
         assertTrue(quorumsRemoved.noBitsInCommon(curBitmap), err);
+    }
+
+    /// @dev Checks that user has deregistered from all operator sets in the AllocationManager
+    function assert_Snap_Deregistered_FromOperatorSets(
+        User user,
+        bytes memory quorums,
+        string memory err
+    ) internal {
+        for (uint256 i = 0; i < quorums.length; i++) {
+            uint32 operatorSetId = uint32(uint8(quorums[i]));
+            OperatorSet memory operatorSet =
+                OperatorSet({avs: avsAccountIdentifier, id: operatorSetId});
+            assertFalse(allocationManager.isMemberOfOperatorSet(address(user), operatorSet), err);
+        }
     }
 
     function assert_Snap_Unchanged_OperatorInfo(User user, string memory err) internal {
@@ -869,7 +898,7 @@ abstract contract IntegrationBase is IntegrationConfig {
     function _getOperatorInfo(
         User user
     ) internal view returns (ISlashingRegistryCoordinatorTypes.OperatorInfo memory) {
-        return registryCoordinator.getOperator(address(user));
+        return slashingRegistryCoordinator.getOperator(address(user));
     }
 
     function _getPrevOperatorInfo(
@@ -881,7 +910,7 @@ abstract contract IntegrationBase is IntegrationConfig {
     function _getQuorumBitmap(
         bytes32 operatorId
     ) internal view returns (uint192) {
-        return registryCoordinator.getCurrentQuorumBitmap(operatorId);
+        return slashingRegistryCoordinator.getCurrentQuorumBitmap(operatorId);
     }
 
     function _getPrevQuorumBitmap(

@@ -3,10 +3,13 @@ pragma solidity ^0.8.27;
 
 import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {ISlasher} from "../../interfaces/ISlasher.sol";
 import {ISlashingRegistryCoordinator} from "../../interfaces/ISlashingRegistryCoordinator.sol";
+import {ISlasher} from "../../interfaces/ISlasher.sol";
 
-contract SlasherStorage is ISlasher {
+/// @title SlasherStorage
+/// @notice Base storage contract for slashing functionality
+/// @dev Provides storage variables and events for slashing operations
+abstract contract SlasherStorage is ISlasher {
     /**
      *
      *                            CONSTANTS AND IMMUTABLES
@@ -17,22 +20,20 @@ contract SlasherStorage is ISlasher {
     IAllocationManager public immutable allocationManager;
     /// @notice the SlashingRegistryCoordinator for this AVS
     ISlashingRegistryCoordinator public immutable slashingRegistryCoordinator;
-    /**
-     *
-     *                                    STATE
-     *
-     */
-    address public slasher;
+    /// @notice the address of the slasher
+    address public immutable slasher;
 
     uint256 public nextRequestId;
 
     constructor(
         IAllocationManager _allocationManager,
-        ISlashingRegistryCoordinator _slashingRegistryCoordinator
+        ISlashingRegistryCoordinator _slashingRegistryCoordinator,
+        address _slasher
     ) {
         allocationManager = _allocationManager;
         slashingRegistryCoordinator = _slashingRegistryCoordinator;
+        slasher = _slasher;
     }
 
-    uint256[48] private __gap;
+    uint256[49] private __gap;
 }

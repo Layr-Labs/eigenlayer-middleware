@@ -47,12 +47,16 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
     bytes numStrategyFlags;
     bytes minStakeFlags;
     bytes fillTypeFlags;
-
+    bytes quorumTypeFlags;
     uint256 constant FLAG = 1;
 
     /// @dev Flags for userTypes
     uint256 constant DEFAULT = (FLAG << 0);
     uint256 constant ALT_METHODS = (FLAG << 1);
+
+    /// @dev Flags for using SlashingRegistryCoordinator or RegistryCoordinator (M2)
+    uint256 constant SLASHING = (FLAG << 0);
+    uint256 constant M2 = (FLAG << 1);
 
     /// @dev Flags for numQuorums and numStrategies
     uint256 constant ONE = (FLAG << 0);
@@ -70,6 +74,11 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
     uint256 constant EMPTY = (FLAG << 0);
     uint256 constant SOME_FILL = (FLAG << 1);
     uint256 constant FULL = (FLAG << 2);
+
+    /// @dev Flags for quorumType
+    uint256 constant DELEGATED_STAKE = (FLAG << 0);
+    uint256 constant SLASHABLE_STAKE = (FLAG << 1);
+    uint256 constant BOTH = (FLAG << 2);
 
     /// @dev Tracking variables for pregenerated BLS keypairs:
     /// (See _fetchKeypair)
@@ -121,6 +130,8 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
         /// @dev Whether each quorum created is pre-populated with operators
         /// NOTE: Default
         uint256 fillTypes; // EMPTY | SOME_FILL | FULL
+        /// @dev Whether quorums created are delegated stake quorum, slashable stake quorums, or both
+        uint256 quorumType; // DELEGATED_STAKE | SLASHABLE_STAKE | BOTH
     }
 
     /**
@@ -143,7 +154,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
         numStrategyFlags = _bitmapToBytes(_quorumConfig.numStrategies);
         minStakeFlags = _bitmapToBytes(_quorumConfig.minimumStake);
         fillTypeFlags = _bitmapToBytes(_quorumConfig.fillTypes);
-
+        quorumTypeFlags = _bitmapToBytes(_quorumConfig.quorumType);
         // Sanity check config
         assertTrue(userFlags.length != 0, "_configRand: invalid _userTypes, no flags passed");
         assertTrue(numQuorumFlags.length != 0, "_configRand: invalid numQuorums, no flags passed");
@@ -152,7 +163,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
         );
         assertTrue(minStakeFlags.length != 0, "_configRand: invalid minimumStake, no flags passed");
         assertTrue(fillTypeFlags.length != 0, "_configRand: invalid fillTypes, no flags passed");
-
+        assertTrue(quorumTypeFlags.length != 0, "_configRand: invalid quorumType, no flags passed");
         // Decide how many quorums to initialize
         quorumCount = _randQuorumCount();
         quorumBitmap = uint192((1 << quorumCount) - 1);
@@ -172,18 +183,67 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
             IStakeRegistryTypes.StrategyParams[] memory strategyParams = _randStrategyParams();
             uint96 minimumStake = _randMinStake();
 
+            uint256 quorumType = _randValue(quorumTypeFlags);
+
             emit log_named_uint("_configRand: creating quorum", i);
             emit log_named_uint("- Max operator count", operatorSet.maxOperatorCount);
             emit log_named_uint("- Num strategies considered", strategyParams.length);
             emit log_named_uint("- Minimum stake", minimumStake);
+            emit log_named_uint("- Quorum type", quorumType);
+
+            if (quorumType == DELEGATED_STAKE) {
+                cheats.prank(registryCoordinatorOwner);
+                slashingRegistryCoordinator.createTotalDelegatedStakeQuorum({
+                    operatorSetParams: operatorSet,
+                    minimumStake: minimumStake,
+                    strategyParams: strategyParams
+                });
+            } else if (quorumType == SLASHABLE_STAKE) {
+                cheats.prank(registryCoordinatorOwner);
+                slashingRegistryCoordinator.createSlashableStakeQuorum({
+                    operatorSetParams: operatorSet,
+                    minimumStake: minimumStake,
+                    strategyParams: strategyParams,
+                    lookAheadPeriod: 0
+                });
+            } else if (quorumType == BOTH) {
+                // randomly choose one of the two
+                uint256 randomChoice = _randValue(quorumTypeFlags);
+                if (randomChoice == DELEGATED_STAKE) {
+                    cheats.prank(registryCoordinatorOwner);
+                    slashingRegistryCoordinator.createTotalDelegatedStakeQuorum({
+                        operatorSetParams: operatorSet,
+                        minimumStake: minimumStake,
+                        strategyParams: strategyParams
+                    });
+                } else if (randomChoice == SLASHABLE_STAKE) {
+                    cheats.prank(registryCoordinatorOwner);
+                    slashingRegistryCoordinator.createSlashableStakeQuorum({
+                        operatorSetParams: operatorSet,
+                        minimumStake: minimumStake,
+                        strategyParams: strategyParams,
+                        lookAheadPeriod: 0
+                    });
+                }
+            }
+
+            cheats.prank(address(serviceManager));
+            allocationManager.updateAVSMetadataURI(address(serviceManager), "test-avs-metadata");
 
             cheats.prank(registryCoordinatorOwner);
-            registryCoordinator.createTotalDelegatedStakeQuorum({
+            slashingRegistryCoordinator.createTotalDelegatedStakeQuorum({
                 operatorSetParams: operatorSet,
                 minimumStake: minimumStake,
                 strategyParams: strategyParams
             });
         }
+
+        /// Setup the RegistryCoordinator as M2 RegistryCoordinator with M2 quorums
+        /// TODO: refactor Integration framework to test both M2 upgrade path and new
+        /// registration/deregistration flow of operatorSets
+        _setOperatorSetsEnabled(false);
+        _setM2QuorumsDisabled(false);
+        _setM2QuorumBitmap(0);
 
         // Decide how many operators to register for each quorum initially
         uint256 initialOperators = _randInitialOperators(operatorSet);
@@ -243,10 +303,10 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
         uint256 userType = _randValue(userFlags);
 
         if (userType == DEFAULT) {
-            user = new User(name, privKey, pubkey);
+            user = new OperatorSetUser(name, privKey, pubkey);
         } else if (userType == ALT_METHODS) {
             name = string.concat(name, "_Alt");
-            user = new User_AltMethods(name, privKey, pubkey);
+            user = new OperatorSetUser_AltMethods(name, privKey, pubkey);
         }
 
         emit log_named_string("_randUser: Created user", user.NAME());
@@ -322,7 +382,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
             uint8 quorum = uint8(churnQuorums[i]);
 
             ISlashingRegistryCoordinatorTypes.OperatorSetParam memory params =
-                registryCoordinator.getOperatorSetParams(quorum);
+                slashingRegistryCoordinator.getOperatorSetParams(quorum);
 
             // Sanity check - make sure we're at the operator cap
             uint32 curNumOperators = indexRegistry.totalOperatorsForQuorum(quorum);
@@ -395,7 +455,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
         for (uint256 i = 0; i < quorums.length; i++) {
             uint8 quorum = uint8(quorums[i]);
             uint32 maxOperatorCount =
-                registryCoordinator.getOperatorSetParams(quorum).maxOperatorCount;
+                slashingRegistryCoordinator.getOperatorSetParams(quorum).maxOperatorCount;
 
             // Continue deregistering until we're under the cap
             // This uses while in case we tested a config change that lowered the max count

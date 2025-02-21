@@ -232,7 +232,7 @@ contract DelegationIntermediate is IDelegationManager {
         IStrategy strategy,
         uint64 prevMaxMagnitude,
         uint64 newMaxMagnitude
-    ) external override {}
+    ) external {}
 
     function getQueuedWithdrawal(
         bytes32 withdrawalRoot
@@ -280,6 +280,20 @@ contract DelegationMock is DelegationIntermediate {
             shares[i] = _weightOf[operator][strategies[i]];
         }
         return shares;
+    }
+
+    function getOperatorsShares(
+        address[] memory operators,
+        IStrategy[] memory strategies
+    ) external view override returns (uint256[][] memory) {
+        uint256[][] memory operatorSharesArray = new uint256[][](operators.length);
+        for (uint256 i = 0; i < operators.length; i++) {
+            operatorSharesArray[i] = new uint256[](strategies.length);
+            for (uint256 j = 0; j < strategies.length; j++) {
+                operatorSharesArray[i][j] = _weightOf[operators[i]][strategies[j]];
+            }
+        }
+        return operatorSharesArray;
     }
 
     function minWithdrawalDelayBlocks() external view override returns (uint32) {

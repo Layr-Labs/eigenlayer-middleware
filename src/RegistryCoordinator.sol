@@ -2,8 +2,10 @@
 pragma solidity ^0.8.27;
 
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IAllocationManager,
+    OperatorSet
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IBLSApkRegistry, IBLSApkRegistryTypes} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
@@ -15,20 +17,19 @@ import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {SlashingRegistryCoordinator} from "./SlashingRegistryCoordinator.sol";
 import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import {RegistryCoordinatorStorage} from "./RegistryCoordinatorStorage.sol";
 
 /**
- * @title A `RegistryCoordinator` that has three registries:
+ * @title A `RegistryCoordinator` that has four registries:
  *      1) a `StakeRegistry` that keeps track of operators' stakes
  *      2) a `BLSApkRegistry` that keeps track of operators' BLS public keys and aggregate BLS public keys for each quorum
  *      3) an `IndexRegistry` that keeps track of an ordered list of operators for each quorum
+ *      4) a `SocketRegistry` that keeps track of operators' sockets (arbitrary strings)
  *
  * @author Layr Labs, Inc.
  */
-contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinator {
+contract RegistryCoordinator is RegistryCoordinatorStorage {
     using BitmapUtils for *;
-
-    /// @notice the ServiceManager for this AVS, which forwards calls onto EigenLayer's core contracts
-    IServiceManager public immutable serviceManager;
 
     constructor(
         IServiceManager _serviceManager,
@@ -39,7 +40,8 @@ contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinato
         IAllocationManager _allocationManager,
         IPauserRegistry _pauserRegistry
     )
-        SlashingRegistryCoordinator(
+        RegistryCoordinatorStorage(
+            _serviceManager,
             _stakeRegistry,
             _blsApkRegistry,
             _indexRegistry,
@@ -47,9 +49,7 @@ contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinato
             _allocationManager,
             _pauserRegistry
         )
-    {
-        serviceManager = _serviceManager;
-    }
+    {}
 
     /**
      *
@@ -64,44 +64,28 @@ contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinato
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory params,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        require(!m2QuorumsDisabled, M2QuorumsAlreadyDisabled());
-        /**
-         * If the operator has NEVER registered a pubkey before, use `params` to register
-         * their pubkey in blsApkRegistry
-         *
-         * If the operator HAS registered a pubkey, `params` is ignored and the pubkey hash
-         * (operatorId) is fetched instead
-         */
-        bytes32 operatorId = _getOrCreateOperatorId(msg.sender, params);
+        require(!isM2QuorumRegistrationDisabled, M2QuorumRegistrationIsDisabled());
+        require(
+            quorumNumbers.orderedBytesArrayToBitmap().isSubsetOf(m2QuorumBitmap()),
+            OnlyM2QuorumsAllowed()
+        );
 
-        // Register the operator in each of the registry contracts and update the operator's
-        // quorum bitmap and registration status
-        uint32[] memory numOperatorsPerQuorum = _registerOperator({
+        // Check if the operator has registered before
+        bool operatorRegisteredBefore =
+            _operatorInfo[msg.sender].status == OperatorStatus.REGISTERED;
+
+        // register the operator with the registry coordinator
+        _registerOperator({
             operator: msg.sender,
-            operatorId: operatorId,
+            operatorId: _getOrCreateOperatorId(msg.sender, params),
             quorumNumbers: quorumNumbers,
-            socket: socket
-        }).numOperatorsPerQuorum;
+            socket: socket,
+            checkMaxOperatorCount: true
+        });
 
-        // For each quorum, validate that the new operator count does not exceed the maximum
-        // (If it does, an operator needs to be replaced -- see `registerOperatorWithChurn`)
-        for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            uint8 quorumNumber = uint8(quorumNumbers[i]);
-
-            require(
-                numOperatorsPerQuorum[i] <= _quorumParams[quorumNumber].maxOperatorCount,
-                MaxQuorumsReached()
-            );
-        }
-
-        // If the operator wasn't registered for any quorums, update their status
-        // and register them with this AVS in EigenLayer core (DelegationManager)
-        if (_operatorInfo[msg.sender].status != OperatorStatus.REGISTERED) {
-            _operatorInfo[msg.sender] =
-                OperatorInfo({operatorId: operatorId, status: OperatorStatus.REGISTERED});
-
+        // If the operator has never registered before, register them with the AVSDirectory
+        if (!operatorRegisteredBefore) {
             serviceManager.registerOperatorToAVS(msg.sender, operatorSignature);
-            emit OperatorRegistered(msg.sender, operatorId);
         }
     }
 
@@ -114,34 +98,29 @@ contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinato
         SignatureWithSaltAndExpiry memory churnApproverSignature,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
-        require(!m2QuorumsDisabled, M2QuorumsAlreadyDisabled());
+        require(!isM2QuorumRegistrationDisabled, M2QuorumRegistrationIsDisabled());
+        require(
+            quorumNumbers.orderedBytesArrayToBitmap().isSubsetOf(m2QuorumBitmap()),
+            OnlyM2QuorumsAllowed()
+        );
 
-        /**
-         * If the operator has NEVER registered a pubkey before, use `params` to register
-         * their pubkey in blsApkRegistry
-         *
-         * If the operator HAS registered a pubkey, `params` is ignored and the pubkey hash
-         * (operatorId) is fetched instead
-         */
-        bytes32 operatorId = _getOrCreateOperatorId(msg.sender, params);
+        // Check if the operator has registered before
+        bool operatorRegisteredBefore =
+            _operatorInfo[msg.sender].status == OperatorStatus.REGISTERED;
 
+        // register the operator with the registry coordinator with churn
         _registerOperatorWithChurn({
             operator: msg.sender,
-            operatorId: operatorId,
+            operatorId: _getOrCreateOperatorId(msg.sender, params),
             quorumNumbers: quorumNumbers,
             socket: socket,
             operatorKickParams: operatorKickParams,
             churnApproverSignature: churnApproverSignature
         });
 
-        // If the operator wasn't registered for any quorums, update their status
-        // and register them with this AVS in EigenLayer core (DelegationManager)
-        if (_operatorInfo[msg.sender].status != OperatorStatus.REGISTERED) {
-            _operatorInfo[msg.sender] =
-                OperatorInfo({operatorId: operatorId, status: OperatorStatus.REGISTERED});
-
+        // If the operator has never registered before, register them with the AVSDirectory
+        if (!operatorRegisteredBefore) {
             serviceManager.registerOperatorToAVS(msg.sender, operatorSignature);
-            emit OperatorRegistered(msg.sender, operatorId);
         }
     }
 
@@ -150,44 +129,95 @@ contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinato
         bytes memory quorumNumbers
     ) external override onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
         // Check that the quorum numbers are M2 quorums
-        for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            require(
-                !operatorSetsEnabled || _isM2Quorum(uint8(quorumNumbers[i])), OperatorSetQuorum()
-            );
-        }
+        require(
+            quorumNumbers.orderedBytesArrayToBitmap().isSubsetOf(m2QuorumBitmap()),
+            OnlyM2QuorumsAllowed()
+        );
+
         _deregisterOperator({operator: msg.sender, quorumNumbers: quorumNumbers});
     }
 
     /// @inheritdoc IRegistryCoordinator
-    function enableOperatorSets() external onlyOwner {
-        require(!operatorSetsEnabled, OperatorSetsAlreadyEnabled());
+    function disableM2QuorumRegistration() external onlyOwner {
+        require(!isM2QuorumRegistrationDisabled, M2QuorumRegistrationIsDisabled());
 
-        // Set the bitmap for M2 quorums
-        M2quorumBitmap = _getQuorumBitmap(quorumCount);
+        isM2QuorumRegistrationDisabled = true;
 
-        // Enable operator sets mode
-        operatorSetsEnabled = true;
-
-        emit OperatorSetsEnabled();
+        emit M2QuorumRegistrationDisabled();
     }
 
-    /// @inheritdoc IRegistryCoordinator
-    function disableM2QuorumRegistration() external onlyOwner {
-        require(operatorSetsEnabled, OperatorSetsNotEnabled());
+    /**
+     *
+     *                            INTERNAL FUNCTIONS
+     *
+     */
 
-        m2QuorumsDisabled = true;
+    /// @dev override the _kickOperator function to handle M2 quorum forced deregistration
+    function _kickOperator(
+        address operator,
+        bytes memory quorumNumbers
+    ) internal virtual override {
+        OperatorInfo storage operatorInfo = _operatorInfo[operator];
+        uint192 quorumsToRemove =
+            uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
+        if (operatorInfo.status == OperatorStatus.REGISTERED && !quorumsToRemove.isEmpty()) {
+            // Allocate memory once outside the loop
+            bytes memory singleQuorumNumber = new bytes(1);
+            // For each quorum number, check if it's an M2 quorum
+            for (uint256 i = 0; i < quorumNumbers.length; i++) {
+                singleQuorumNumber[0] = quorumNumbers[i];
 
-        emit M2QuorumsDisabled();
+                if (_isM2Quorum(uint8(quorumNumbers[i]))) {
+                    // For M2 quorums, use _deregisterOperator
+                    _deregisterOperator({operator: operator, quorumNumbers: singleQuorumNumber});
+                } else {
+                    // For non-M2 quorums, use _forceDeregisterOperator
+                    _forceDeregisterOperator(operator, singleQuorumNumber);
+                }
+            }
+        }
+    }
+
+    /// @dev override the _forceDeregisterOperator function to handle M2 quorum deregistration
+    function _forceDeregisterOperator(
+        address operator,
+        bytes memory quorumNumbers
+    ) internal virtual override {
+        // filter out M2 quorums from the quorum numbers
+        uint256 operatorSetBitmap =
+            quorumNumbers.orderedBytesArrayToBitmap().minus(m2QuorumBitmap());
+        if (!operatorSetBitmap.isEmpty()) {
+            // call the parent _forceDeregisterOperator function for operator sets quorums
+            super._forceDeregisterOperator(operator, operatorSetBitmap.bitmapToBytesArray());
+        }
+    }
+
+    /// @dev Hook to prevent any new quorums from being created if operator sets are not enabled
+    function _beforeCreateQuorum(
+        uint8
+    ) internal virtual override {
+        // If operator sets are not enabled, set the m2 quorum bitmap to the current m2 quorum bitmap
+        // and enable operator sets
+        if (!operatorSetsEnabled) {
+            _m2QuorumBitmap = m2QuorumBitmap();
+            operatorSetsEnabled = true;
+        }
     }
 
     /// @dev Hook to allow for any post-deregister logic
     function _afterDeregisterOperator(
         address operator,
-        bytes32 operatorId,
-        bytes memory quorumNumbers,
+        bytes32,
+        bytes memory,
         uint192 newBitmap
     ) internal virtual override {
-        uint256 operatorM2QuorumBitmap = newBitmap.minus(M2quorumBitmap);
+        // Bitmap representing all quorums including M2 and OperatorSet quorums
+        uint256 totalQuorumBitmap = _getTotalQuorumBitmap();
+        // Bitmap representing only OperatorSet quorums. Equal to 0 if operatorSets not enabled
+        uint256 operatorSetQuorumBitmap = totalQuorumBitmap.minus(m2QuorumBitmap());
+        // Operators updated M2 quorum bitmap, clear all the bits of operatorSetQuorumBitmap which gives the
+        // operator's M2 quorum bitmap.
+        uint256 operatorM2QuorumBitmap = newBitmap.minus(operatorSetQuorumBitmap);
         // If the operator is no longer registered for any M2 quorums, update their status and deregister
         // them from the AVS via the EigenLayer core contracts
         if (operatorM2QuorumBitmap.isEmpty()) {
@@ -195,11 +225,35 @@ contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinato
         }
     }
 
-    /// @dev Returns a bitmap with all bits set up to `quorumCount`. Used for bit-masking quorum numbers
-    /// and differentiating between operator sets and M2 quorums
-    function _getQuorumBitmap(
-        uint256 quorumCount
-    ) internal pure returns (uint256) {
+    /**
+     * @dev Helper function to update operator stakes and deregister operators with insufficient stake
+     * This function handles two cases:
+     * 1. Operators who no longer meet the minimum stake requirement for a quorum
+     * 2. Operators who have been force-deregistered from the AllocationManager but not from this contract
+     * (e.g. due to out of gas errors in the deregistration callback)
+     * @param operators The list of operators to check and update
+     * @param operatorIds The corresponding operator IDs
+     * @param quorumNumber The quorum number to check stakes for
+     */
+    function _updateOperatorsStakes(
+        address[] memory operators,
+        bytes32[] memory operatorIds,
+        uint8 quorumNumber
+    ) internal virtual override {
+        bytes memory singleQuorumNumber = new bytes(1);
+        singleQuorumNumber[0] = bytes1(quorumNumber);
+        bool[] memory doesNotMeetStakeThreshold =
+            stakeRegistry.updateOperatorsStake(operators, operatorIds, quorumNumber);
+
+        for (uint256 i = 0; i < operators.length; ++i) {
+            if (doesNotMeetStakeThreshold[i]) {
+                _kickOperator(operators[i], singleQuorumNumber);
+            }
+        }
+    }
+
+    /// @notice Return bitmap representing all quorums(Legacy M2 and OperatorSet) quorums
+    function _getTotalQuorumBitmap() internal view returns (uint256) {
         // This creates a number where all bits up to quorumCount are set to 1
         // For example:
         // quorumCount = 3 -> 0111 (7 in decimal)
@@ -208,13 +262,35 @@ contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinato
         return (1 << quorumCount) - 1;
     }
 
-    /// @dev need to override function here since its defined in both these contracts
-    function owner()
-        public
-        view
-        override(SlashingRegistryCoordinator, ISlashingRegistryCoordinator)
-        returns (address)
-    {
-        return OwnableUpgradeable.owner();
+    /// @notice Returns true if the quorum number is an M2 quorum
+    /// @dev We use bitwise and to check if the quorum number is an M2 quorum
+    function _isM2Quorum(
+        uint8 quorumNumber
+    ) internal view returns (bool) {
+        return m2QuorumBitmap().isSet(quorumNumber);
+    }
+
+    /**
+     *
+     *                            VIEW FUNCTIONS
+     *
+     */
+
+    /// @dev Returns a bitmap with all bits set up to `quorumCount`. Used for bit-masking quorum numbers
+    /// and differentiating between operator sets and M2 quorums
+    function m2QuorumBitmap() public view returns (uint256) {
+        // If operator sets are enabled, return the current m2 quorum bitmap
+        if (operatorSetsEnabled) {
+            return _m2QuorumBitmap;
+        }
+
+        return _getTotalQuorumBitmap();
+    }
+
+    /// @notice Returns true if the quorum number is an M2 quorum
+    function isM2Quorum(
+        uint8 quorumNumber
+    ) external view returns (bool) {
+        return _isM2Quorum(quorumNumber);
     }
 }

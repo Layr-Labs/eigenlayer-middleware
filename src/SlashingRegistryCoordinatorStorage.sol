@@ -41,7 +41,7 @@ abstract contract SlashingRegistryCoordinatorStorage is ISlashingRegistryCoordin
     /// @notice The maximum number of quorums this contract supports
     uint8 internal constant MAX_QUORUM_COUNT = 192;
 
-    /// @notice
+    /// @notice the Socket Registry contract that will keep track of operators' sockets (arbitrary strings)
     ISocketRegistry public immutable socketRegistry;
     /// @notice the BLS Aggregate Pubkey Registry contract that will keep track of operators' aggregate BLS public keys per quorum
     IBLSApkRegistry public immutable blsApkRegistry;
@@ -85,22 +85,10 @@ abstract contract SlashingRegistryCoordinatorStorage is ISlashingRegistryCoordin
     /// @notice the delay in seconds before an operator can reregister after being ejected
     uint256 public ejectionCooldown;
 
-    /// @notice Whether this AVS allows operator sets for registration
-    /// @dev If true, operators may register to operator sets via the AllocationManager
-    bool public operatorSetsEnabled;
-
-    /// @notice Whether this AVS allows M2 quorums for registration
-    /// @dev If true, operators may **not** register to M2 quorums. Deregistration is still allowed.
-    bool public m2QuorumsDisabled;
-
-    /// @notice The account identifier for this AVS (used for UAM integration in EigenLayer)
+    /// @notice The avs address for this AVS (used for UAM integration in EigenLayer)
     /// @dev NOTE: Updating this value will break existing OperatorSets and UAM integration.
     /// This value should only be set once.
-    address public accountIdentifier;
-
-    /// @notice The bitmap containing all M2 quorums. This is only used for existing AVS middlewares that have M2 quorums
-    /// and need to call `enableOperatorSets()` to enable operator sets mode.
-    uint256 internal M2quorumBitmap;
+    address public avs;
 
     constructor(
         IStakeRegistry _stakeRegistry,
@@ -118,5 +106,5 @@ abstract contract SlashingRegistryCoordinatorStorage is ISlashingRegistryCoordin
 
     // storage gap for upgradeability
     // slither-disable-next-line shadowing-state
-    uint256[37] private __GAP;
+    uint256[38] private __GAP;
 }

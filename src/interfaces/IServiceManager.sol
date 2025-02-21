@@ -19,8 +19,6 @@ interface IServiceManagerErrors {
     error OnlyRewardsInitiator();
     /// @notice Thrown when a function is called by an address that is not the StakeRegistry.
     error OnlyStakeRegistry();
-    /// @notice Thrown when a function is called by an address that is not the Slasher.
-    error OnlySlasher();
     /// @notice Thrown when a slashing proposal delay has not been met yet.
     error DelayPeriodNotPassed();
 }
