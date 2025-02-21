@@ -20,12 +20,15 @@ import {SignatureCheckerUpgradeable} from
 import {IERC1271Upgradeable} from
     "@openzeppelin-upgrades/contracts/interfaces/IERC1271Upgradeable.sol";
 import {
-    IAVSDirectory,
     IAVSDirectoryTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
+
+interface IAVSDirectory {
+    function avsOperatorStatus(address avs, address operator) external view returns (IAVSDirectoryTypes.OperatorAVSRegistrationStatus);
+}
 
 /// @title ECDSA Stake Registry
 /// @dev THIS CONTRACT IS NOT AUDITED

@@ -7,7 +7,7 @@ import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IAVSDirectory} from "../ECDSAStakeRegistry.sol";
 
 /// @title ECDSA Stake Registry with an Operator Allowlist
 /// @dev THIS CONTRACT IS NOT AUDITED

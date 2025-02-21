@@ -9,7 +9,7 @@ import {CheckpointsUpgradeable} from
     "@openzeppelin-upgrades/contracts/utils/CheckpointsUpgradeable.sol";
 import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IAVSDirectory} from "../ECDSAStakeRegistry.sol";
 
 /// @title ECDSA Stake Registry with Equal Weight
 /// @dev THIS CONTRACT IS NOT AUDITED
