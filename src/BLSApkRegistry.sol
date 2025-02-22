@@ -109,6 +109,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         );
 
         operatorToPubkey[operator] = params.pubkeyG1;
+        operatorToPubkeyG2[operator] = params.pubkeyG2;
         operatorToPubkeyHash[operator] = pubkeyHash;
         pubkeyHashToOperator[pubkeyHash] = operator;
 

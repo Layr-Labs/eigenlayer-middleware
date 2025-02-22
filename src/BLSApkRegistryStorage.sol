@@ -24,6 +24,7 @@ abstract contract BLSApkRegistryStorage is Initializable, IBLSApkRegistry {
     mapping(bytes32 pubkeyHash => address operator) public pubkeyHashToOperator;
     /// @inheritdoc IBLSApkRegistry
     mapping(address operator => BN254.G1Point pubkeyG1) public operatorToPubkey;
+    mapping(address operator => BN254.G2Point) internal operatorToPubkeyG2;
 
     /// AGGREGATE PUBLIC KEY STORAGE
 
@@ -38,6 +39,13 @@ abstract contract BLSApkRegistryStorage is Initializable, IBLSApkRegistry {
         registryCoordinator = address(_slashingRegistryCoordinator);
         // disable initializers so that the implementation contract cannot be initialized
         _disableInitializers();
+    }
+
+    /// @inheritdoc IBLSApkRegistry
+    function getOperatorPubkeyG2(
+        address operator
+    ) external view override returns (BN254.G2Point memory) {
+        return operatorToPubkeyG2[operator];
     }
 
     uint256[45] private __GAP;

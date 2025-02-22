@@ -119,6 +119,15 @@ interface IBLSApkRegistry is IBLSApkRegistryErrors, IBLSApkRegistryEvents {
     ) external view returns (uint256, uint256);
 
     /*
+     * @notice Maps `operator` to their BLS public key in G2.
+     * @param operator The address of the operator.
+     * @return The operator's BLS public key in G2.
+     */
+    function getOperatorPubkeyG2(
+        address operator
+    ) external view returns (BN254.G2Point memory);
+
+    /*
      * @notice Stores the history of aggregate public key updates for `quorumNumber` at `index`.
      * @dev Returns a non-encoded IBLSApkRegistryTypes.ApkUpdate.
      * @param quorumNumber The identifier of the quorum.
