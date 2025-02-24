@@ -28,26 +28,6 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         ISlashingRegistryCoordinator _slashingRegistryCoordinator
     ) BLSApkRegistryStorage(_slashingRegistryCoordinator) {}
 
-
-    /// @inheritdoc IBLSApkRegistry
-    function getOperatorPubkeyG2(
-        address operator
-    ) public view override returns (BN254.G2Point memory) {
-        return operatorToPubkeyG2[operator];
-    }
-
-    /// @notice Checks if a G2 pubkey is already set for an operator
-    function _checkG2PubkeyNotSet(address operator) internal view {
-        BN254.G2Point memory existingG2Pubkey = getOperatorPubkeyG2(operator);
-        require(
-            existingG2Pubkey.X[0] == 0 &&
-            existingG2Pubkey.X[1] == 0 &&
-            existingG2Pubkey.Y[0] == 0 &&
-            existingG2Pubkey.Y[1] == 0,
-            G2PubkeyAlreadySet()
-        );
-    }
-
     /**
      *
      *                   EXTERNAL FUNCTIONS - REGISTRY COORDINATOR
@@ -248,7 +228,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
                 revert BlockNumberBeforeFirstUpdate();
             }
 
-            // Loop backward through apkHistory until we find an entry that preceeds `blockNumber`
+            // Loop backward through apkHistory until we find an entry that precedes `blockNumber`
             for (uint256 j = quorumApkUpdatesLength; j > 0; j--) {
                 if (apkHistory[quorumNumber][j - 1].updateBlockNumber <= blockNumber) {
                     indices[i] = uint32(j - 1);
@@ -318,6 +298,13 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         return operatorToPubkeyHash[operator];
     }
 
+    /// @inheritdoc IBLSApkRegistry
+    function getOperatorPubkeyG2(
+        address operator
+    ) public view override returns (BN254.G2Point memory) {
+        return operatorToPubkeyG2[operator];
+    }
+
     function _checkRegistryCoordinator() internal view {
         require(msg.sender == address(registryCoordinator), OnlyRegistryCoordinatorOwner());
     }
@@ -326,6 +313,18 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         require(
             msg.sender == Ownable(address(registryCoordinator)).owner(),
             OnlyRegistryCoordinatorOwner()
+        );
+    }
+
+    /// @notice Checks if a G2 pubkey is already set for an operator
+    function _checkG2PubkeyNotSet(address operator) internal view {
+        BN254.G2Point memory existingG2Pubkey = getOperatorPubkeyG2(operator);
+        require(
+            existingG2Pubkey.X[0] == 0 &&
+            existingG2Pubkey.X[1] == 0 &&
+            existingG2Pubkey.Y[0] == 0 &&
+            existingG2Pubkey.Y[1] == 0,
+            G2PubkeyAlreadySet()
         );
     }
 }
