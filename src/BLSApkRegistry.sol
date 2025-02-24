@@ -138,12 +138,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         _checkG2PubkeyNotSet(operator);
 
         require(
-            BN254.pairing(
-                pubkeyG1,
-                BN254.negGeneratorG2(),
-                BN254.generatorG1(),
-                pubkeyG2
-            ),
+            BN254.pairing(pubkeyG1, BN254.negGeneratorG2(), BN254.generatorG1(), pubkeyG2),
             InvalidBLSSignatureOrPrivateKey()
         );
 
@@ -317,13 +312,13 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     }
 
     /// @notice Checks if a G2 pubkey is already set for an operator
-    function _checkG2PubkeyNotSet(address operator) internal view {
+    function _checkG2PubkeyNotSet(
+        address operator
+    ) internal view {
         BN254.G2Point memory existingG2Pubkey = getOperatorPubkeyG2(operator);
         require(
-            existingG2Pubkey.X[0] == 0 &&
-            existingG2Pubkey.X[1] == 0 &&
-            existingG2Pubkey.Y[0] == 0 &&
-            existingG2Pubkey.Y[1] == 0,
+            existingG2Pubkey.X[0] == 0 && existingG2Pubkey.X[1] == 0 && existingG2Pubkey.Y[0] == 0
+                && existingG2Pubkey.Y[1] == 0,
             G2PubkeyAlreadySet()
         );
     }

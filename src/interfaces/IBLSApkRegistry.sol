@@ -52,7 +52,6 @@ interface IBLSApkRegistryTypes {
         BN254.G1Point pubkeyG1;
         BN254.G2Point pubkeyG2;
     }
-
 }
 
 interface IBLSApkRegistryEvents is IBLSApkRegistryTypes {
