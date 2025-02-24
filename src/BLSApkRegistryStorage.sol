@@ -24,14 +24,13 @@ abstract contract BLSApkRegistryStorage is Initializable, IBLSApkRegistry {
     mapping(bytes32 pubkeyHash => address operator) public pubkeyHashToOperator;
     /// @inheritdoc IBLSApkRegistry
     mapping(address operator => BN254.G1Point pubkeyG1) public operatorToPubkey;
-    mapping(address operator => BN254.G2Point) internal operatorToPubkeyG2;
-
-    /// AGGREGATE PUBLIC KEY STORAGE
 
     /// @inheritdoc IBLSApkRegistry
     mapping(uint8 quorumNumber => IBLSApkRegistryTypes.ApkUpdate[]) public apkHistory;
     /// @inheritdoc IBLSApkRegistry
     mapping(uint8 quorumNumber => BN254.G1Point) public currentApk;
+
+    mapping(address operator => BN254.G2Point) internal operatorToPubkeyG2;
 
     constructor(
         ISlashingRegistryCoordinator _slashingRegistryCoordinator
@@ -41,12 +40,5 @@ abstract contract BLSApkRegistryStorage is Initializable, IBLSApkRegistry {
         _disableInitializers();
     }
 
-    /// @inheritdoc IBLSApkRegistry
-    function getOperatorPubkeyG2(
-        address operator
-    ) external view override returns (BN254.G2Point memory) {
-        return operatorToPubkeyG2[operator];
-    }
-
-    uint256[45] private __GAP;
+    uint256[44] private __GAP;
 }
