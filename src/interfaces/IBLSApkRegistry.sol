@@ -26,6 +26,8 @@ interface IBLSApkRegistryErrors {
     error BlockNumberNotLatest();
     /// @notice Thrown when the block number is before the first update.
     error BlockNumberBeforeFirstUpdate();
+    /// @notice Thrown when a G2 pubkey has already been set for an operator
+    error G2PubkeyAlreadySet();
 }
 
 interface IBLSApkRegistryTypes {
@@ -50,6 +52,7 @@ interface IBLSApkRegistryTypes {
         BN254.G1Point pubkeyG1;
         BN254.G2Point pubkeyG2;
     }
+
 }
 
 interface IBLSApkRegistryEvents is IBLSApkRegistryTypes {
@@ -78,6 +81,9 @@ interface IBLSApkRegistryEvents is IBLSApkRegistryTypes {
      * @param quorumNumbers The quorum numbers the operator is being deregistered from.
      */
     event OperatorRemovedFromQuorums(address operator, bytes32 operatorId, bytes quorumNumbers);
+
+    /// @notice Emitted when a G2 public key is registered for an operator
+    event NewG2PubkeyRegistration(address indexed operator, BN254.G2Point pubkeyG2);
 }
 
 interface IBLSApkRegistry is IBLSApkRegistryErrors, IBLSApkRegistryEvents {
