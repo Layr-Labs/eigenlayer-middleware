@@ -17,8 +17,13 @@ import {IRewardsCoordinator} from
 import {IECDSAStakeRegistryTypes} from "../interfaces/IECDSAStakeRegistry.sol";
 import {ECDSAStakeRegistry} from "../unaudited/ECDSAStakeRegistry.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IPermissionController} from
+    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {
+    IAllocationManager,
+    IAllocationManagerTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
 abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable {
     using SafeERC20 for IERC20;
@@ -37,6 +42,9 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
 
     /// @notice Address of the delegation manager contract, which manages staker delegations to operators.
     address internal immutable delegationManager;
+
+    /// @notice Address of the permission controller contract, which manages permissions for the service manager.
+    address internal immutable permissionController;
 
     /// @notice Address of the rewards initiator, which is allowed to create AVS rewards submissions.
     address public rewardsInitiator;
@@ -74,13 +82,15 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
         address _stakeRegistry,
         address _rewardsCoordinator,
         address _delegationManager,
-        address _allocationManager
+        address _allocationManager,
+        address _permissionController
     ) {
         avsDirectory = _avsDirectory;
         stakeRegistry = _stakeRegistry;
         rewardsCoordinator = _rewardsCoordinator;
         delegationManager = _delegationManager;
         allocationManager = _allocationManager;
+        permissionController = _permissionController;
         _disableInitializers();
     }
 
@@ -139,6 +149,81 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
         _deregisterOperatorFromAVS(operator);
     }
 
+    /// @notice Deregisters an operator from a set of operator sets.
+    /// @dev This function is used to deregister an operator from a set of operator sets.
+    /// @param operator The address of the operator to deregister.
+    /// @param operatorSetIds The set of operator set ids to deregister from.
+    function deregisterOperatorFromOperatorSets(
+        address operator,
+        uint32[] memory operatorSetIds
+    ) external virtual onlyStakeRegistry {
+        IAllocationManager.DeregisterParams memory params = IAllocationManagerTypes.DeregisterParams({
+            operator: operator,
+            avs: address(this),
+            operatorSetIds: operatorSetIds
+        });
+        IAllocationManager(allocationManager).deregisterFromOperatorSets(params);
+    }
+
+    /// @inheritdoc IServiceManager
+
+    function addPendingAdmin(
+        address admin
+    ) external virtual onlyOwner {
+        IPermissionController(permissionController).addPendingAdmin({
+            account: address(this),
+            admin: admin
+        });
+    }
+
+    /// @inheritdoc IServiceManager
+    function removePendingAdmin(
+        address pendingAdmin
+    ) external virtual onlyOwner {
+        IPermissionController(permissionController).removePendingAdmin({
+            account: address(this),
+            admin: pendingAdmin
+        });
+    }
+
+    /// @inheritdoc IServiceManager
+    function removeAdmin(
+        address admin
+    ) external virtual onlyOwner {
+        IPermissionController(permissionController).removeAdmin({
+            account: address(this),
+            admin: admin
+        });
+    }
+
+    /// @inheritdoc IServiceManager
+    function setAppointee(
+        address appointee,
+        address target,
+        bytes4 selector
+    ) external virtual onlyOwner {
+        IPermissionController(permissionController).setAppointee({
+            account: address(this),
+            appointee: appointee,
+            target: target,
+            selector: selector
+        });
+    }
+
+    /// @inheritdoc IServiceManager
+    function removeAppointee(
+        address appointee,
+        address target,
+        bytes4 selector
+    ) external virtual onlyOwner {
+        IPermissionController(permissionController).removeAppointee({
+            account: address(this),
+            appointee: appointee,
+            target: target,
+            selector: selector
+        });
+    }
+
     /// @inheritdoc IServiceManagerUI
     function getRestakeableStrategies() external view virtual returns (address[] memory) {
         return _getRestakeableStrategies();
@@ -149,6 +234,16 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
         address _operator
     ) external view virtual returns (address[] memory) {
         return _getOperatorRestakedStrategies(_operator);
+    }
+
+    /**
+     * @notice Returns the strategies from a specific operator set for this AVS
+     * @dev Uses AllocationManager to fetch strategies from a single operator set
+     * @param operatorSetId The ID of the operator set to query
+     * @return Array of strategy addresses from the specified operator set
+     */
+    function getOperatorSetStrategies(uint32 operatorSetId) external view virtual returns (address[] memory) {
+        return _getOperatorSetStrategies(operatorSetId);
     }
 
     /**
@@ -261,6 +356,32 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
             strategies[i] = address(quorum.strategies[i].strategy);
         }
         return strategies;
+    }
+
+    /**
+     * @notice Retrieves the addresses of strategies from a specific operator set
+     * @dev Returns an empty array if the operator set is invalid
+     * @param operatorSetId The ID of the operator set to get strategies from
+     * @return Array of strategy addresses from the specified operator set
+     */
+    function _getOperatorSetStrategies(uint32 operatorSetId) internal view virtual returns (address[] memory) {
+        OperatorSet memory operatorSet = OperatorSet(address(this), operatorSetId);
+        
+        // Return empty array if this is not a valid operator set
+        if (!IAllocationManager(allocationManager).isOperatorSet(operatorSet)) {
+            return new address[](0);
+        }
+        
+        // Get strategies for this operator set
+        IStrategy[] memory strategies = IAllocationManager(allocationManager).getStrategiesInOperatorSet(operatorSet);
+        
+        // Convert IStrategy array to address array
+        address[] memory strategyAddresses = new address[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; i++) {
+            strategyAddresses[i] = address(strategies[i]);
+        }
+        
+        return strategyAddresses;
     }
 
     /**

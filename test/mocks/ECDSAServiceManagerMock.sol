@@ -11,42 +11,30 @@ contract ECDSAServiceManagerMock is ECDSAServiceManagerBase {
         address _stakeRegistry,
         address _rewardsCoordinator,
         address _delegationManager,
-        address _allocationManager
+        address _allocationManager,
+        address _permissionController,
+        address _initialOwner,
+        address _rewardsInitiator
     )
         ECDSAServiceManagerBase(
             _avsDirectory,
             _stakeRegistry,
             _rewardsCoordinator,
             _delegationManager,
-            _allocationManager
+            _allocationManager,
+            _permissionController
         )
-    {}
-
-    function initialize(
-        address initialOwner,
-        address rewardsInitiator
-    ) public virtual initializer {
-        __ServiceManagerBase_init(initialOwner, rewardsInitiator);
+    {
+        // disable initializer and directly set owner and rewardsInitiator for testing
+        _transferOwnership(_initialOwner);
+        _setRewardsInitiator(_rewardsInitiator);
     }
 
-    function addPendingAdmin(
-        address admin
-    ) external {}
+    // function initialize(
+    //     address initialOwner,
+    //     address rewardsInitiator
+    // ) public virtual initializer {
+    //     __ServiceManagerBase_init(initialOwner, rewardsInitiator);
+    // }
 
-    function removePendingAdmin(
-        address pendingAdmin
-    ) external {}
-
-    function deregisterOperatorFromOperatorSets(
-        address operator,
-        uint32[] memory operatorSetIds
-    ) external {}
-
-    function removeAdmin(
-        address admin
-    ) external {}
-
-    function setAppointee(address appointee, address target, bytes4 selector) external {}
-
-    function removeAppointee(address appointee, address target, bytes4 selector) external {}
 }

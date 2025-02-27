@@ -1,3 +1,4 @@
+
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
@@ -5,6 +6,12 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISi
 import {ECDSAStakeRegistry} from "../ECDSAStakeRegistry.sol";
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IAllocationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IAVSDirectory} from
+    "../ECDSAStakeRegistry.sol";
+import {IAVSDirectoryTypes} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 /// @title ECDSA Stake Registry with an Operator Allowlist
 /// @dev THIS CONTRACT IS NOT AUDITED
@@ -29,8 +36,11 @@ contract ECDSAStakeRegistryPermissioned is ECDSAStakeRegistry {
     error OperatorAlreadyAllowlisted();
 
     constructor(
-        IDelegationManager _delegationManager
-    ) ECDSAStakeRegistry(_delegationManager) {
+        IDelegationManager _delegationManager,
+        IAllocationManager _allocationManager,
+        address _avsRegistrar,
+        IAVSDirectory _avsDirectory
+    ) ECDSAStakeRegistry(_delegationManager, _allocationManager, _avsRegistrar, _avsDirectory) {
         // _disableInitializers();
     }
 
@@ -66,7 +76,12 @@ contract ECDSAStakeRegistryPermissioned is ECDSAStakeRegistry {
     function _ejectOperator(
         address _operator
     ) internal {
-        _deregisterOperator(_operator);
+        if (operatorRegisteredOnAVSDirectory(_operator)) {
+            _deregisterOperatorM2Quorum(_operator);
+        }
+        if (operatorRegisteredOnCurrentOperatorSets(_operator)) {
+            _deregisterOperatorFromOperatorSets(_operator);
+        }
         emit OperatorEjected(_operator);
     }
 
@@ -94,13 +109,11 @@ contract ECDSAStakeRegistryPermissioned is ECDSAStakeRegistry {
         }
         delete allowlistedOperators[_operator];
         emit OperatorRevoked(_operator);
-        if (_operatorRegistered[_operator]) {
-            _ejectOperator(_operator);
-        }
+        _ejectOperator(_operator);
     }
 
     /// @inheritdoc ECDSAStakeRegistry
-    function _registerOperatorWithSig(
+    function _registerOperatorM2Quorum(
         address _operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature,
         address _operatorSigningKey
@@ -108,6 +121,6 @@ contract ECDSAStakeRegistryPermissioned is ECDSAStakeRegistry {
         if (allowlistedOperators[_operator] != true) {
             revert OperatorNotAllowlisted();
         }
-        super._registerOperatorWithSig(_operator, _operatorSignature, _operatorSigningKey);
+        super._registerOperatorM2Quorum(_operator, _operatorSignature, _operatorSigningKey);
     }
 }
