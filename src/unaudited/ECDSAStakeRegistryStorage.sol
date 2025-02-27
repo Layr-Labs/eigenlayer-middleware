@@ -13,6 +13,7 @@ import {IAllocationManager} from
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IAVSDirectoryTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IAVSDirectory} from "./ECDSAStakeRegistry.sol";
+
 abstract contract ECDSAStakeRegistryStorage is IECDSAStakeRegistry {
     /// @notice Manages staking delegations through the DelegationManager interface
     IDelegationManager internal immutable DELEGATION_MANAGER;

@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
@@ -8,10 +7,8 @@ import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {IAVSDirectory} from
-    "../ECDSAStakeRegistry.sol";
-import {IAVSDirectoryTypes} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IAVSDirectory} from "../ECDSAStakeRegistry.sol";
+import {IAVSDirectoryTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 /// @title ECDSA Stake Registry with an Operator Allowlist
 /// @dev THIS CONTRACT IS NOT AUDITED
@@ -76,7 +73,7 @@ contract ECDSAStakeRegistryPermissioned is ECDSAStakeRegistry {
     function _ejectOperator(
         address _operator
     ) internal {
-        if(!operatorRegistered(_operator)){
+        if (!operatorRegistered(_operator)) {
             revert OperatorNotRegistered();
         }
 
@@ -113,7 +110,7 @@ contract ECDSAStakeRegistryPermissioned is ECDSAStakeRegistry {
         }
         delete allowlistedOperators[_operator];
         emit OperatorRevoked(_operator);
-        if(operatorRegistered(_operator)){
+        if (operatorRegistered(_operator)) {
             _ejectOperator(_operator);
         }
     }

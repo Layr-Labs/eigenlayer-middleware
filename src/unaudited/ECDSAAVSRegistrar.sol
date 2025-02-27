@@ -58,7 +58,7 @@ contract AVSRegistrar is IAVSRegistrar, Ownable {
 
     function supportsAVS(
         address avsAddr
-    ) external view returns (bool){
+    ) external view returns (bool) {
         return avs == avsAddr;
     }
 }

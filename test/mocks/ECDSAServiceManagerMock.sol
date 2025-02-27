@@ -36,5 +36,4 @@ contract ECDSAServiceManagerMock is ECDSAServiceManagerBase {
     // ) public virtual initializer {
     //     __ServiceManagerBase_init(initialOwner, rewardsInitiator);
     // }
-
 }
