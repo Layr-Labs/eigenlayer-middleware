@@ -78,6 +78,46 @@ contract MockRewardsCoordinator {
     ) external pure {}
 }
 
+contract MockAVSDirectory {
+    // 使用 mapping 存储每个 operator 的状态
+    mapping(address => mapping(address => IAVSDirectoryTypes.OperatorAVSRegistrationStatus)) 
+        private operatorStatus;
+
+    function registerOperatorToAVS(
+        address operator,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory
+    ) external {
+        // 设置特定 operator 的状态为 REGISTERED
+        operatorStatus[msg.sender][operator] = IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED;
+    }
+
+    function deregisterOperatorFromAVS(
+        address operator
+    ) external {
+        // 设置特定 operator 的状态为 UNREGISTERED
+        operatorStatus[msg.sender][operator] = IAVSDirectoryTypes.OperatorAVSRegistrationStatus.UNREGISTERED;
+    }
+
+    function updateAVSMetadataURI(
+        string memory
+    ) external pure {}
+
+    function setAvsOperatorStatus(
+        address avs, 
+        address operator, 
+        IAVSDirectoryTypes.OperatorAVSRegistrationStatus status
+    ) external {
+        operatorStatus[avs][operator] = status;
+    }
+    
+    function avsOperatorStatus(
+        address avs,
+        address operator
+    ) external view returns (IAVSDirectoryTypes.OperatorAVSRegistrationStatus) {
+        return operatorStatus[avs][operator];
+    }
+}
+
 contract ECDSAServiceManagerSetup is Test {
     MockDelegationManager public mockDelegationManager;
     AVSDirectoryMock public mockAVSDirectory;
