@@ -76,6 +76,10 @@ contract ECDSAStakeRegistryPermissioned is ECDSAStakeRegistry {
     function _ejectOperator(
         address _operator
     ) internal {
+        if(!operatorRegistered(_operator)){
+            revert OperatorNotRegistered();
+        }
+
         if (operatorRegisteredOnAVSDirectory(_operator)) {
             _deregisterOperatorM2Quorum(_operator);
         }
@@ -109,7 +113,9 @@ contract ECDSAStakeRegistryPermissioned is ECDSAStakeRegistry {
         }
         delete allowlistedOperators[_operator];
         emit OperatorRevoked(_operator);
-        _ejectOperator(_operator);
+        if(operatorRegistered(_operator)){
+            _ejectOperator(_operator);
+        }
     }
 
     /// @inheritdoc ECDSAStakeRegistry

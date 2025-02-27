@@ -17,18 +17,26 @@ import {
 } from "../../src/interfaces/IECDSAStakeRegistry.sol";
 import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IAVSDirectory, IAVSDirectoryTypes} from "../../src/unaudited/ECDSAStakeRegistry.sol";
+import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
 
 contract MockServiceManager {
-    // solhint-disable-next-line
+    MockAVSDirectory public immutable avsDirectory;
+    constructor(address _avsDirectory) {
+        avsDirectory = MockAVSDirectory(_avsDirectory);
+    }
     function deregisterOperatorFromAVS(
-        address
-    ) external {}
+        address operator
+    ) external {
+        avsDirectory.deregisterOperatorFromAVS(operator);
+    }
 
     function registerOperatorToAVS(
-        address,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory // solhint-disable-next-line
-    ) external {}
+        address operator,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) external {
+        avsDirectory.registerOperatorToAVS(operator, operatorSignature);
+    }
 }
 
 contract MockDelegationManager {
@@ -49,42 +57,127 @@ contract MockDelegationManager {
 }
 
 contract MockAVSDirectory {
-    mapping(address => mapping(address => IAVSDirectoryTypes.OperatorAVSRegistrationStatus)) 
-        private operatorStatus;
+    error OperatorAlreadyRegistered();
+    error OperatorNotRegistered();
+    
+    // 简化为只记录operator的状态
+    mapping(address => IAVSDirectoryTypes.OperatorAVSRegistrationStatus) private operatorStatus;
 
     function registerOperatorToAVS(
-        address,
+        address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory
-    ) external pure {}
+    ) external {
+        if(operatorStatus[operator] == IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED) {
+            revert OperatorAlreadyRegistered();
+        }
+        operatorStatus[operator] = IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED;
+    }
 
     function deregisterOperatorFromAVS(
-        address
-    ) external pure {}
+        address operator
+    ) external {
+        if(operatorStatus[operator] == IAVSDirectoryTypes.OperatorAVSRegistrationStatus.UNREGISTERED) {
+            revert OperatorNotRegistered();
+        }
+        operatorStatus[operator] = IAVSDirectoryTypes.OperatorAVSRegistrationStatus.UNREGISTERED;
+    }
 
     function updateAVSMetadataURI(
         string memory
     ) external pure {}
+
     function setAvsOperatorStatus(
         address avs, 
         address operator, 
         IAVSDirectoryTypes.OperatorAVSRegistrationStatus status
     ) external {
-        operatorStatus[avs][operator] = status;
+        operatorStatus[operator] = status;
     }
     
-    function avsOperatorStatus(address avs, address operator) external view returns (IAVSDirectoryTypes.OperatorAVSRegistrationStatus) {
-        return operatorStatus[avs][operator];
+    function avsOperatorStatus(
+        address avs,
+        address operator
+    ) external view returns (IAVSDirectoryTypes.OperatorAVSRegistrationStatus) {
+        return operatorStatus[operator];
     }
 }
 
 contract MockAllocationManager {
+    // 定义 Allocation 结构体
+    struct Allocation {
+        uint64 currentMagnitude;
+        uint32 lastUpdatedBlock;
+    }
+
+    // 存储 allocation 信息
+    mapping(address => mapping(bytes32 => Allocation)) public allocations;
+    mapping(address => mapping(address => uint64)) public maxMagnitudes;
+    mapping(address => mapping(address => mapping(uint32 => bool))) public operatorSetMembers;
+
+    // 设置 operator set membership
+    function setOperatorSetMembership(
+        address operator,
+        address avs,
+        uint32 setId,
+        bool isMember
+    ) external {
+        operatorSetMembers[operator][avs][setId] = isMember;
+    }
+    
+    // 检查 operator set membership
+    function isMemberOfOperatorSet(
+        address operator,
+        OperatorSet memory operatorSet
+    ) external view returns (bool) {
+        return operatorSetMembers[operator][operatorSet.avs][operatorSet.id];
+    }
+
+    // 设置 allocation
+    function setAllocation(
+        address operator,
+        OperatorSet memory operatorSet,
+        address strategy,
+        Allocation memory allocation
+    ) external {
+        bytes32 key = keccak256(abi.encode(operator, operatorSet, strategy));
+        allocations[operator][key] = allocation;
+    }
+
+    // 获取 allocation
+    function getAllocation(
+        address operator,
+        OperatorSet memory operatorSet,
+        IStrategy strategy
+    ) external view returns (Allocation memory) {
+        bytes32 key = keccak256(abi.encode(operator, operatorSet, address(strategy)));
+        return allocations[operator][key];
+    }
+
+    // 设置 maxMagnitude
+    function setMaxMagnitude(
+        address operator,
+        address strategy,
+        uint64 magnitude
+    ) external {
+        maxMagnitudes[operator][strategy] = magnitude;
+    }
+
+    // 获取 maxMagnitude
+    function getMaxMagnitude(
+        address operator,
+        IStrategy strategy
+    ) external view returns (uint64) {
+        return maxMagnitudes[operator][address(strategy)];
+    }
+
+    // 其他必要的函数
     function setAVSRegistrar(address avs, address registrar) external {}
     
-    function isOperatorSet(bytes memory operatorSet) external pure returns (bool) {
+    function isOperatorSet(OperatorSet memory operatorSet) external pure returns (bool) {
         return true;
     }
     
-    function getStrategiesInOperatorSet(bytes memory operatorSet) external pure returns (IStrategy[] memory) {
+    function getStrategiesInOperatorSet(OperatorSet memory operatorSet) external pure returns (IStrategy[] memory) {
         IStrategy[] memory strategies = new IStrategy[](2);
         strategies[0] = IStrategy(address(900));
         strategies[1] = IStrategy(address(901));
@@ -98,12 +191,19 @@ contract ECDSAStakeRegistrySetup is Test, IECDSAStakeRegistryEvents {
     MockAllocationManager public mockAllocationManager;
     MockServiceManager public mockServiceManager;
     ECDSAStakeRegistry public registry;
+    address public owner = makeAddr("owner");
     address internal operator1;
     address internal operator2;
+    address internal operator3;
+    address internal operator4;
     uint256 internal operator1Pk;
     uint256 internal operator2Pk;
+    uint256 internal operator3Pk;
+    uint256 internal operator4Pk;
     bytes internal signature1;
     bytes internal signature2;
+    bytes internal signature3;
+    bytes internal signature4;
     address[] internal signers;
     bytes[] internal signatures;
     bytes32 internal msgHash;
@@ -112,11 +212,19 @@ contract ECDSAStakeRegistrySetup is Test, IECDSAStakeRegistryEvents {
     function setUp() public virtual {
         (operator1, operator1Pk) = makeAddrAndKey("Signer 1");
         (operator2, operator2Pk) = makeAddrAndKey("Signer 2");
-        mockDelegationManager = new MockDelegationManager();
-        mockServiceManager = new MockServiceManager();
-        mockAllocationManager = new MockAllocationManager();
+        (operator3, operator3Pk) = makeAddrAndKey("Signer 3"); 
+        (operator4, operator4Pk) = makeAddrAndKey("Signer 4");
+        
+        // 1. 先创建 mockAVSDirectory
         mockAVSDirectory = new MockAVSDirectory();
-        mockAVSRegistrarAddr = makeAddr("mockAVSRegistrar"); 
+        
+        // 2. 再创建 mockServiceManager,并传入 mockAVSDirectory 的地址
+        mockServiceManager = new MockServiceManager(address(mockAVSDirectory));
+        
+        // 3. 创建其他 mock 合约
+        mockDelegationManager = new MockDelegationManager();
+        mockAllocationManager = new MockAllocationManager();
+        mockAVSRegistrarAddr = makeAddr("mockAVSRegistrar");
         
         IStrategy mockStrategy = IStrategy(address(0x1234));
         IECDSAStakeRegistryTypes.Quorum memory quorum = IECDSAStakeRegistryTypes.Quorum({
@@ -134,15 +242,86 @@ contract ECDSAStakeRegistrySetup is Test, IECDSAStakeRegistryEvents {
             IAVSDirectory(address(mockAVSDirectory))
         );
         
+        vm.prank(owner);
         registry.initialize(address(mockServiceManager), 100, quorum);
+
+        // Set up 3 operator sets
+        uint32[] memory operatorSetIds = new uint32[](3);
+        operatorSetIds[0] = 1;
+        operatorSetIds[1] = 2; 
+        operatorSetIds[2] = 3;
+        vm.prank(owner);
+        registry.setCurrentOperatorSetIds(operatorSetIds);
+
+        // Set up operator set membership
+        for(uint32 setId = 1; setId <= 3; setId++) {
+            MockAllocationManager(address(mockAllocationManager)).setOperatorSetMembership(
+                operator3,
+                address(mockServiceManager),
+                setId,
+                true
+            );
+            MockAllocationManager(address(mockAllocationManager)).setOperatorSetMembership(
+                operator4,
+                address(mockServiceManager), 
+                setId,
+                true
+            );
+
+            // 设置 allocation 和 maxMagnitude
+            OperatorSet memory operatorSet = OperatorSet({
+                avs: address(mockServiceManager),
+                id: setId
+            });
+            
+            // 为每个 strategy 设置 allocation
+            IStrategy[] memory strategies = mockAllocationManager.getStrategiesInOperatorSet(operatorSet);
+            for(uint i = 0; i < strategies.length; i++) {
+                // 设置 allocation
+                MockAllocationManager.Allocation memory allocation = MockAllocationManager.Allocation({
+                    currentMagnitude: 1000,
+                    lastUpdatedBlock: uint32(block.number)
+                });
+                
+                MockAllocationManager(address(mockAllocationManager)).setAllocation(
+                    operator3,
+                    operatorSet,
+                    address(strategies[i]),
+                    allocation
+                );
+                MockAllocationManager(address(mockAllocationManager)).setAllocation(
+                    operator4,
+                    operatorSet,
+                    address(strategies[i]),
+                    allocation
+                );
+                
+                // 设置 maxMagnitude
+                MockAllocationManager(address(mockAllocationManager)).setMaxMagnitude(
+                    operator3,
+                    address(strategies[i]),
+                    1000
+                );
+                MockAllocationManager(address(mockAllocationManager)).setMaxMagnitude(
+                    operator4,
+                    address(strategies[i]),
+                    1000
+                );
+            }
+        }
+
+
         
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
         
+
         vm.prank(operator1);
         registry.registerOperatorM2Quorum(operatorSignature, operator1);
         
+
         vm.prank(operator2);
         registry.registerOperatorM2Quorum(operatorSignature, operator2);
+
         
         vm.roll(block.number + 1);
     }
@@ -165,6 +344,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         vm.expectEmit(true, true, false, true);
         emit QuorumUpdated(oldQuorum, newQuorum);
 
+        vm.prank(owner);
         registry.updateQuorumConfig(newQuorum, operators);
     }
 
@@ -182,6 +362,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         operators[1] = operator2;
 
         vm.expectRevert(IECDSAStakeRegistryErrors.InvalidQuorum.selector);
+        vm.prank(owner);
         registry.updateQuorumConfig(invalidQuorum, operators);
     }
 
@@ -212,6 +393,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         operators[1] = operator2;
 
         /// Showing this doesnt revert
+        vm.prank(owner);
         registry.updateQuorumConfig(quorum, operators);
     }
 
@@ -227,6 +409,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         invalidQuorum.strategies[1] =
             StrategyParams({strategy: IStrategy(address(420)), multiplier: 5000});
         vm.expectRevert(IECDSAStakeRegistryErrors.NotSorted.selector);
+        vm.prank(owner);
         registry.updateQuorumConfig(invalidQuorum, operators);
     }
 
@@ -242,6 +425,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         invalidQuorum.strategies[1] =
             StrategyParams({strategy: IStrategy(address(419)), multiplier: 5000});
         vm.expectRevert(IECDSAStakeRegistryErrors.NotSorted.selector);
+        vm.prank(owner);
         registry.updateQuorumConfig(invalidQuorum, operators);
     }
 
@@ -255,16 +439,17 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         operators[1] = operator2;
 
         vm.expectRevert(IECDSAStakeRegistryErrors.InvalidQuorum.selector);
+        vm.prank(owner);
         registry.updateQuorumConfig(invalidQuorum, operators);
     }
 
     function test_RegisterOperatorM2Quorum() public {
-        address operator3 = address(0x125);
+        address operator5 = address(0x125);
         ISignatureUtils.SignatureWithSaltAndExpiry memory signature;
-        vm.prank(operator3);
-        registry.registerOperatorM2Quorum(signature, operator3);
-        assertTrue(registry.operatorRegistered(operator3));
-        assertEq(registry.getLastCheckpointOperatorWeight(operator3), 1000);
+        vm.prank(operator5);
+        registry.registerOperatorM2Quorum(signature, operator5);
+        assertTrue(registry.operatorRegistered(operator5));
+        assertEq(registry.getLastCheckpointOperatorWeight(operator5), 1000);
     }
 
     function test_RevertsWhen_AlreadyRegistered_RegisterOperatorM2Quorum() public {
@@ -272,7 +457,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         assertEq(registry.getLastCheckpointTotalWeight(), 2000);
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory signature;
-        vm.expectRevert(IECDSAStakeRegistryErrors.OperatorAlreadyRegistered.selector);
+        vm.expectRevert();
         vm.prank(operator1);
         registry.registerOperatorM2Quorum(signature, operator1);
     }
@@ -319,12 +504,12 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
     function test_When_OperatorNotRegistered_UpdateOperators() public {
         address[] memory operators = new address[](3);
-        address operator3 = address(0xBEEF);
+        address operator5 = address(0xBEEF);
         operators[0] = operator1;
         operators[1] = operator2;
-        operators[2] = operator3;
+        operators[2] = operator5;
         registry.updateOperators(operators);
-        assertEq(registry.getLastCheckpointOperatorWeight(operator3), 0);
+        assertEq(registry.getLastCheckpointOperatorWeight(operator5), 0);
     }
 
     function test_When_SingleOperator_UpdateOperators() public {
@@ -394,6 +579,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         operators[0] = operator1;
         operators[1] = operator2;
 
+        vm.prank(owner);
         registry.updateQuorumConfig(quorum, operators);
 
         address[] memory strategies = new address[](2);
@@ -428,6 +614,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         address[] memory operators = new address[](2);
         operators[0] = operator1;
         operators[1] = operator2;
+        vm.prank(owner);
         registry.updateMinimumWeight(newMinimumWeight, operators);
 
         uint256 updatedMinimumWeight = registry.minimumWeight();
@@ -449,6 +636,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         address[] memory operators = new address[](2);
         operators[0] = operator1;
         operators[1] = operator2;
+        vm.prank(owner);
         registry.updateMinimumWeight(initialMinimumWeight, operators);
 
         uint256 updatedMinimumWeight = registry.minimumWeight();
@@ -460,10 +648,12 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         address[] memory operators = new address[](2);
         operators[0] = operator1;
         operators[1] = operator2;
+        vm.prank(owner);
         registry.updateMinimumWeight(initialMinimumWeight, operators);
 
         uint256 newMinimumWeight = 0;
 
+        vm.prank(owner);
         registry.updateMinimumWeight(newMinimumWeight, operators);
 
         uint256 updatedMinimumWeight = registry.minimumWeight();
@@ -496,6 +686,8 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         console.log("operator1 weight", registry.getOperatorWeight(operator1));
         console.log("operator2 weight", registry.getOperatorWeight(operator2));
         console.log("threshold weight", registry.getLastCheckpointThresholdWeight());
+        console.log("operator1 status", registry.operatorRegisteredOnAVSDirectory(operator1));
+        console.log("operator2 status", registry.operatorRegisteredOnAVSDirectory(operator2));
         registry.isValidSignature(msgHash, abi.encode(signers, signatures, block.number - 1));
     }
 
@@ -714,13 +906,14 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     }
 
     // Define private and public keys for operator3 and signer
-    uint256 private operator3Pk = 3;
-    address private operator3 = address(vm.addr(operator3Pk));
+    // Define private and public keys for operator5 and signer
+    uint256 private operator5Pk = 3;
+    address private operator5 = address(vm.addr(operator5Pk));
     uint256 private signerPk = 4;
     address private signer = address(vm.addr(signerPk));
 
     function test_WhenUsingSigningKey_RegierOperatorWithSignature() public {
-        address operator = operator3;
+        address operator = operator5;
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
 
@@ -738,7 +931,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     }
 
     function test_Twice_RegierOperatorWithSignature() public {
-        address operator = operator3;
+        address operator = operator5;
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
 
@@ -764,7 +957,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     }
 
     function test_WhenUsingSigningKey_CheckSignatures() public {
-        address operator = operator3;
+        address operator = operator5;
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
 
@@ -788,7 +981,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     }
 
     function test_WhenUsingSigningKey_CheckSignaturesAtBlock() public {
-        address operator = operator3;
+        address operator = operator5;
         address initialSigningKey = address(vm.addr(signerPk));
         address updatedSigningKey = address(vm.addr(signerPk + 1));
 
@@ -829,7 +1022,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     }
 
     function test_WhenUsingPriorSigningKey_CheckSignaturesAtBlock() public {
-        address operator = operator3;
+        address operator = operator5;
         address initialSigningKey = address(vm.addr(signerPk));
         address updatedSigningKey = address(vm.addr(signerPk + 1));
 

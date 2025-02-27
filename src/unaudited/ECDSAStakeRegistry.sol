@@ -104,18 +104,11 @@ contract ECDSAStakeRegistry is
         if (isM2QuorumRegistrationDisabled) {
             revert M2QuorumRegistrationIsDisabled();
         }
-        if (operatorRegisteredOnAVSDirectory(msg.sender)) {
-            revert OperatorAlreadyRegistered();
-        }
         _registerOperatorM2Quorum(msg.sender, operatorSignature, signingKey);
     }
 
     /// @inheritdoc IECDSAStakeRegistry
     function deregisterOperatorM2Quorum() external {
-        if (!operatorRegisteredOnAVSDirectory(msg.sender)) {
-            revert OperatorNotRegistered();
-        }
-
         _deregisterOperatorM2Quorum(msg.sender);
     }
 
@@ -303,10 +296,9 @@ contract ECDSAStakeRegistry is
         address _operator
     ) public view returns (uint256) {
         uint256 quorumWeight = getQuorumWeight(_operator);
-        // uint256 operatorSetWeight = getOperatorSetWeight(_operator);
+        uint256 operatorSetWeight = getOperatorSetWeight(_operator);
 
-        // return quorumWeight + operatorSetWeight;
-        return quorumWeight;
+        return quorumWeight + operatorSetWeight;
     }
 
     /// @notice Calculates operator's weight in the quorum
@@ -518,13 +510,11 @@ contract ECDSAStakeRegistry is
     function _deregisterOperatorM2Quorum(
         address operator
     ) internal {
-        if (!operatorRegisteredOnAVSDirectory(operator)) {
-            revert OperatorNotRegistered();
-        }
-
+        // need to first remove the operator from the AVS Directory to correctly update the operator weight
+        IServiceManager(_serviceManager).deregisterOperatorFromAVS(operator);
         int256 delta = _updateOperatorWeight(operator);
         _updateTotalWeight(delta);
-        IServiceManager(_serviceManager).deregisterOperatorFromAVS(operator);
+        
         if (!operatorRegisteredOnCurrentOperatorSets(operator)) {
             _totalOperators--;
             emit OperatorDeregistered(operator, address(_serviceManager));
@@ -539,14 +529,11 @@ contract ECDSAStakeRegistry is
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature,
         address signingKey
     ) internal virtual {
-        if (operatorRegisteredOnAVSDirectory(operator)) {
-            revert OperatorAlreadyRegistered();
-        }
-
+        // need to first register the operator to the AVS Directory to correctly update the operator weight
+        IServiceManager(_serviceManager).registerOperatorToAVS(operator, operatorSignature);
         int256 delta = _updateOperatorWeight(operator);
         _updateTotalWeight(delta);
         _updateOperatorSigningKey(operator, signingKey);
-        IServiceManager(_serviceManager).registerOperatorToAVS(operator, operatorSignature);
         if (!operatorRegisteredOnCurrentOperatorSets(operator)) {
             _totalOperators++;
             emit OperatorRegistered(operator, _serviceManager);
