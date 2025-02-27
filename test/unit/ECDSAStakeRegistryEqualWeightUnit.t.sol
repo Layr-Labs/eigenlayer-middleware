@@ -5,7 +5,8 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISi
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IAllocationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
 import {
     IECDSAStakeRegistry,
@@ -21,31 +22,33 @@ contract EqualWeightECDSARegistry is ECDSAStakeRegistrySetup {
     ECDSAStakeRegistryEqualWeight internal fixedWeightRegistry;
     address internal operator6 = makeAddr("operator6");
     address internal operator7 = makeAddr("operator7");
+
     function setUp() public virtual override {
         super.setUp();
-        fixedWeightRegistry =
-            new ECDSAStakeRegistryEqualWeight(
-                IDelegationManager(address(mockDelegationManager)),
-                IAllocationManager(address(mockAllocationManager)),
-                mockAVSRegistrarAddr,
-                IAVSDirectory(address(mockAVSDirectory))
-            );
-        
+        fixedWeightRegistry = new ECDSAStakeRegistryEqualWeight(
+            IDelegationManager(address(mockDelegationManager)),
+            IAllocationManager(address(mockAllocationManager)),
+            mockAVSRegistrarAddr,
+            IAVSDirectory(address(mockAVSDirectory))
+        );
+
         IStrategy mockStrategy = IStrategy(address(0x1234));
-        IECDSAStakeRegistryTypes.Quorum memory quorum =
-            IECDSAStakeRegistryTypes.Quorum({strategies: new IECDSAStakeRegistryTypes.StrategyParams[](1)});
-        quorum.strategies[0] = IECDSAStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 10000});
-        
+        IECDSAStakeRegistryTypes.Quorum memory quorum = IECDSAStakeRegistryTypes.Quorum({
+            strategies: new IECDSAStakeRegistryTypes.StrategyParams[](1)
+        });
+        quorum.strategies[0] =
+            IECDSAStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 10000});
+
         fixedWeightRegistry.initialize(address(mockServiceManager), 100, quorum);
 
         fixedWeightRegistry.permitOperator(operator6);
         fixedWeightRegistry.permitOperator(operator7);
-        
+
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
-        
+
         vm.prank(operator6);
         fixedWeightRegistry.registerOperatorM2Quorum(operatorSignature, operator6);
-        
+
         vm.prank(operator7);
         fixedWeightRegistry.registerOperatorM2Quorum(operatorSignature, operator7);
     }

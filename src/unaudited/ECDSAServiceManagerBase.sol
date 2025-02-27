@@ -242,7 +242,9 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
      * @param operatorSetId The ID of the operator set to query
      * @return Array of strategy addresses from the specified operator set
      */
-    function getOperatorSetStrategies(uint32 operatorSetId) external view virtual returns (address[] memory) {
+    function getOperatorSetStrategies(
+        uint32 operatorSetId
+    ) external view virtual returns (address[] memory) {
         return _getOperatorSetStrategies(operatorSetId);
     }
 
@@ -364,23 +366,26 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
      * @param operatorSetId The ID of the operator set to get strategies from
      * @return Array of strategy addresses from the specified operator set
      */
-    function _getOperatorSetStrategies(uint32 operatorSetId) internal view virtual returns (address[] memory) {
+    function _getOperatorSetStrategies(
+        uint32 operatorSetId
+    ) internal view virtual returns (address[] memory) {
         OperatorSet memory operatorSet = OperatorSet(address(this), operatorSetId);
-        
+
         // Return empty array if this is not a valid operator set
         if (!IAllocationManager(allocationManager).isOperatorSet(operatorSet)) {
             return new address[](0);
         }
-        
+
         // Get strategies for this operator set
-        IStrategy[] memory strategies = IAllocationManager(allocationManager).getStrategiesInOperatorSet(operatorSet);
-        
+        IStrategy[] memory strategies =
+            IAllocationManager(allocationManager).getStrategiesInOperatorSet(operatorSet);
+
         // Convert IStrategy array to address array
         address[] memory strategyAddresses = new address[](strategies.length);
         for (uint256 i = 0; i < strategies.length; i++) {
             strategyAddresses[i] = address(strategies[i]);
         }
-        
+
         return strategyAddresses;
     }
 

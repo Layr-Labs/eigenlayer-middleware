@@ -23,11 +23,21 @@ import {IAVSDirectory, IAVSDirectoryTypes} from "../../src/unaudited/ECDSAStakeR
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
 contract MockPermissionController {
-    function addPendingAdmin(address account, address admin) external  {}
-    function removePendingAdmin(address account, address admin) external  {}
-    function removeAdmin(address account, address admin) external  {}
-    function setAppointee(address account, address appointee, address target, bytes4 selector) external  {}
-    function removeAppointee(address account, address appointee, address target, bytes4 selector) external  {}
+    function addPendingAdmin(address account, address admin) external {}
+    function removePendingAdmin(address account, address admin) external {}
+    function removeAdmin(address account, address admin) external {}
+    function setAppointee(
+        address account,
+        address appointee,
+        address target,
+        bytes4 selector
+    ) external {}
+    function removeAppointee(
+        address account,
+        address appointee,
+        address target,
+        bytes4 selector
+    ) external {}
 }
 
 contract MockDelegationManager {
@@ -49,12 +59,16 @@ contract MockDelegationManager {
 
 contract MockAllocationManager {
     function setAVSRegistrar(address avs, address registrar) external {}
-    
-    function isOperatorSet(OperatorSet memory operatorSet) external pure returns (bool) {
+
+    function isOperatorSet(
+        OperatorSet memory operatorSet
+    ) external pure returns (bool) {
         return true;
     }
-    
-    function getStrategiesInOperatorSet(OperatorSet memory operatorSet) external pure returns (IStrategy[] memory) {
+
+    function getStrategiesInOperatorSet(
+        OperatorSet memory operatorSet
+    ) external pure returns (IStrategy[] memory) {
         IStrategy[] memory strategies = new IStrategy[](2);
         strategies[0] = IStrategy(address(900));
         strategies[1] = IStrategy(address(901));
@@ -80,22 +94,24 @@ contract MockRewardsCoordinator {
 
 contract MockAVSDirectory {
     // 使用 mapping 存储每个 operator 的状态
-    mapping(address => mapping(address => IAVSDirectoryTypes.OperatorAVSRegistrationStatus)) 
-        private operatorStatus;
+    mapping(address => mapping(address => IAVSDirectoryTypes.OperatorAVSRegistrationStatus)) private
+        operatorStatus;
 
     function registerOperatorToAVS(
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory
     ) external {
         // 设置特定 operator 的状态为 REGISTERED
-        operatorStatus[msg.sender][operator] = IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED;
+        operatorStatus[msg.sender][operator] =
+            IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED;
     }
 
     function deregisterOperatorFromAVS(
         address operator
     ) external {
         // 设置特定 operator 的状态为 UNREGISTERED
-        operatorStatus[msg.sender][operator] = IAVSDirectoryTypes.OperatorAVSRegistrationStatus.UNREGISTERED;
+        operatorStatus[msg.sender][operator] =
+            IAVSDirectoryTypes.OperatorAVSRegistrationStatus.UNREGISTERED;
     }
 
     function updateAVSMetadataURI(
@@ -103,13 +119,13 @@ contract MockAVSDirectory {
     ) external pure {}
 
     function setAvsOperatorStatus(
-        address avs, 
-        address operator, 
+        address avs,
+        address operator,
         IAVSDirectoryTypes.OperatorAVSRegistrationStatus status
     ) external {
         operatorStatus[avs][operator] = status;
     }
-    
+
     function avsOperatorStatus(
         address avs,
         address operator
@@ -139,13 +155,12 @@ contract ECDSAServiceManagerSetup is Test {
         mockAVSDirectory = new AVSDirectoryMock();
         mockAllocationManager = new MockAllocationManager();
         mockAVSRegistrarAddr = makeAddr("mockAVSRegistrar");
-        mockStakeRegistry =
-            new ECDSAStakeRegistryMock(
-                IDelegationManager(address(mockDelegationManager)),
-                IAllocationManager(address(mockAllocationManager)),
-                mockAVSRegistrarAddr,
-                IAVSDirectory(address(mockAVSDirectory))
-            );
+        mockStakeRegistry = new ECDSAStakeRegistryMock(
+            IDelegationManager(address(mockDelegationManager)),
+            IAllocationManager(address(mockAllocationManager)),
+            mockAVSRegistrarAddr,
+            IAVSDirectory(address(mockAVSDirectory))
+        );
         mockRewardsCoordinator = new MockRewardsCoordinator();
 
         mockPermissionController = new MockPermissionController();
@@ -283,49 +298,49 @@ contract ECDSAServiceManagerSetup is Test {
 
     function testGetOperatorSetStrategies() public {
         uint32 operatorSetId = 1;
-        
+
         address[] memory strategies = serviceManager.getOperatorSetStrategies(operatorSetId);
-        
+
         assertEq(strategies.length, 2, "Should return 2 strategies");
         assertEq(strategies[0], address(900), "First strategy should match");
         assertEq(strategies[1], address(901), "Second strategy should match");
     }
-    
+
     function testAddPendingAdmin() public {
         address admin = makeAddr("admin");
-        
+
         vm.prank(owner);
         serviceManager.addPendingAdmin(admin);
     }
-    
+
     function testRemovePendingAdmin() public {
         address pendingAdmin = makeAddr("pendingAdmin");
-        
+
         vm.prank(owner);
         serviceManager.removePendingAdmin(pendingAdmin);
     }
-    
+
     function testRemoveAdmin() public {
         address admin = makeAddr("admin");
-        
+
         vm.prank(owner);
         serviceManager.removeAdmin(admin);
     }
-    
+
     function testSetAppointee() public {
         address appointee = makeAddr("appointee");
         address target = makeAddr("target");
         bytes4 selector = bytes4(keccak256("someFunction()"));
-        
+
         vm.prank(owner);
         serviceManager.setAppointee(appointee, target, selector);
     }
-    
+
     function testRemoveAppointee() public {
         address appointee = makeAddr("appointee");
         address target = makeAddr("target");
         bytes4 selector = bytes4(keccak256("someFunction()"));
-        
+
         vm.prank(owner);
         serviceManager.removeAppointee(appointee, target, selector);
     }

@@ -15,5 +15,4 @@ contract ECDSAStakeRegistryMock is ECDSAStakeRegistry {
         address _avsRegistrar,
         IAVSDirectory _avsDirectory
     ) ECDSAStakeRegistry(_delegationManager, _allocationManager, _avsRegistrar, _avsDirectory) {}
-    
 }

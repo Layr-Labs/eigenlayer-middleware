@@ -15,16 +15,20 @@ import {
     IECDSAStakeRegistryTypes,
     IECDSAStakeRegistryEvents
 } from "../../src/interfaces/IECDSAStakeRegistry.sol";
-import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IAllocationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IAVSDirectory, IAVSDirectoryTypes} from "../../src/unaudited/ECDSAStakeRegistry.sol";
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
-
 contract MockServiceManager {
     MockAVSDirectory public immutable avsDirectory;
-    constructor(address _avsDirectory) {
+
+    constructor(
+        address _avsDirectory
+    ) {
         avsDirectory = MockAVSDirectory(_avsDirectory);
     }
+
     function deregisterOperatorFromAVS(
         address operator
     ) external {
@@ -59,15 +63,15 @@ contract MockDelegationManager {
 contract MockAVSDirectory {
     error OperatorAlreadyRegistered();
     error OperatorNotRegistered();
-    
-    // 简化为只记录operator的状态
+
     mapping(address => IAVSDirectoryTypes.OperatorAVSRegistrationStatus) private operatorStatus;
 
     function registerOperatorToAVS(
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory
     ) external {
-        if(operatorStatus[operator] == IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED) {
+        if (operatorStatus[operator] == IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED)
+        {
             revert OperatorAlreadyRegistered();
         }
         operatorStatus[operator] = IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED;
@@ -76,7 +80,10 @@ contract MockAVSDirectory {
     function deregisterOperatorFromAVS(
         address operator
     ) external {
-        if(operatorStatus[operator] == IAVSDirectoryTypes.OperatorAVSRegistrationStatus.UNREGISTERED) {
+        if (
+            operatorStatus[operator]
+                == IAVSDirectoryTypes.OperatorAVSRegistrationStatus.UNREGISTERED
+        ) {
             revert OperatorNotRegistered();
         }
         operatorStatus[operator] = IAVSDirectoryTypes.OperatorAVSRegistrationStatus.UNREGISTERED;
@@ -87,13 +94,13 @@ contract MockAVSDirectory {
     ) external pure {}
 
     function setAvsOperatorStatus(
-        address avs, 
-        address operator, 
+        address avs,
+        address operator,
         IAVSDirectoryTypes.OperatorAVSRegistrationStatus status
     ) external {
         operatorStatus[operator] = status;
     }
-    
+
     function avsOperatorStatus(
         address avs,
         address operator
@@ -103,18 +110,15 @@ contract MockAVSDirectory {
 }
 
 contract MockAllocationManager {
-    // 定义 Allocation 结构体
     struct Allocation {
         uint64 currentMagnitude;
         uint32 lastUpdatedBlock;
     }
 
-    // 存储 allocation 信息
     mapping(address => mapping(bytes32 => Allocation)) public allocations;
     mapping(address => mapping(address => uint64)) public maxMagnitudes;
     mapping(address => mapping(address => mapping(uint32 => bool))) public operatorSetMembers;
 
-    // 设置 operator set membership
     function setOperatorSetMembership(
         address operator,
         address avs,
@@ -123,8 +127,7 @@ contract MockAllocationManager {
     ) external {
         operatorSetMembers[operator][avs][setId] = isMember;
     }
-    
-    // 检查 operator set membership
+
     function isMemberOfOperatorSet(
         address operator,
         OperatorSet memory operatorSet
@@ -132,7 +135,6 @@ contract MockAllocationManager {
         return operatorSetMembers[operator][operatorSet.avs][operatorSet.id];
     }
 
-    // 设置 allocation
     function setAllocation(
         address operator,
         OperatorSet memory operatorSet,
@@ -143,7 +145,6 @@ contract MockAllocationManager {
         allocations[operator][key] = allocation;
     }
 
-    // 获取 allocation
     function getAllocation(
         address operator,
         OperatorSet memory operatorSet,
@@ -153,31 +154,25 @@ contract MockAllocationManager {
         return allocations[operator][key];
     }
 
-    // 设置 maxMagnitude
-    function setMaxMagnitude(
-        address operator,
-        address strategy,
-        uint64 magnitude
-    ) external {
+    function setMaxMagnitude(address operator, address strategy, uint64 magnitude) external {
         maxMagnitudes[operator][strategy] = magnitude;
     }
 
-    // 获取 maxMagnitude
-    function getMaxMagnitude(
-        address operator,
-        IStrategy strategy
-    ) external view returns (uint64) {
+    function getMaxMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
         return maxMagnitudes[operator][address(strategy)];
     }
 
-    // 其他必要的函数
     function setAVSRegistrar(address avs, address registrar) external {}
-    
-    function isOperatorSet(OperatorSet memory operatorSet) external pure returns (bool) {
+
+    function isOperatorSet(
+        OperatorSet memory operatorSet
+    ) external pure returns (bool) {
         return true;
     }
-    
-    function getStrategiesInOperatorSet(OperatorSet memory operatorSet) external pure returns (IStrategy[] memory) {
+
+    function getStrategiesInOperatorSet(
+        OperatorSet memory operatorSet
+    ) external pure returns (IStrategy[] memory) {
         IStrategy[] memory strategies = new IStrategy[](2);
         strategies[0] = IStrategy(address(900));
         strategies[1] = IStrategy(address(901));
@@ -212,117 +207,83 @@ contract ECDSAStakeRegistrySetup is Test, IECDSAStakeRegistryEvents {
     function setUp() public virtual {
         (operator1, operator1Pk) = makeAddrAndKey("Signer 1");
         (operator2, operator2Pk) = makeAddrAndKey("Signer 2");
-        (operator3, operator3Pk) = makeAddrAndKey("Signer 3"); 
+        (operator3, operator3Pk) = makeAddrAndKey("Signer 3");
         (operator4, operator4Pk) = makeAddrAndKey("Signer 4");
-        
-        // 1. 先创建 mockAVSDirectory
+
         mockAVSDirectory = new MockAVSDirectory();
-        
-        // 2. 再创建 mockServiceManager,并传入 mockAVSDirectory 的地址
         mockServiceManager = new MockServiceManager(address(mockAVSDirectory));
-        
-        // 3. 创建其他 mock 合约
+
         mockDelegationManager = new MockDelegationManager();
         mockAllocationManager = new MockAllocationManager();
         mockAVSRegistrarAddr = makeAddr("mockAVSRegistrar");
-        
+
         IStrategy mockStrategy = IStrategy(address(0x1234));
         IECDSAStakeRegistryTypes.Quorum memory quorum = IECDSAStakeRegistryTypes.Quorum({
             strategies: new IECDSAStakeRegistryTypes.StrategyParams[](1)
         });
-        quorum.strategies[0] = IECDSAStakeRegistryTypes.StrategyParams({
-            strategy: mockStrategy, 
-            multiplier: 10000
-        });
-        
+        quorum.strategies[0] =
+            IECDSAStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 10000});
+
         registry = new ECDSAStakeRegistry(
             IDelegationManager(address(mockDelegationManager)),
             IAllocationManager(address(mockAllocationManager)),
             mockAVSRegistrarAddr,
             IAVSDirectory(address(mockAVSDirectory))
         );
-        
+
         vm.prank(owner);
         registry.initialize(address(mockServiceManager), 100, quorum);
 
         // Set up 3 operator sets
         uint32[] memory operatorSetIds = new uint32[](3);
         operatorSetIds[0] = 1;
-        operatorSetIds[1] = 2; 
+        operatorSetIds[1] = 2;
         operatorSetIds[2] = 3;
         vm.prank(owner);
         registry.setCurrentOperatorSetIds(operatorSetIds);
 
         // Set up operator set membership
-        for(uint32 setId = 1; setId <= 3; setId++) {
+        for (uint32 setId = 1; setId <= 3; setId++) {
             MockAllocationManager(address(mockAllocationManager)).setOperatorSetMembership(
-                operator3,
-                address(mockServiceManager),
-                setId,
-                true
+                operator3, address(mockServiceManager), setId, true
             );
             MockAllocationManager(address(mockAllocationManager)).setOperatorSetMembership(
-                operator4,
-                address(mockServiceManager), 
-                setId,
-                true
+                operator4, address(mockServiceManager), setId, true
             );
 
-            // 设置 allocation 和 maxMagnitude
-            OperatorSet memory operatorSet = OperatorSet({
-                avs: address(mockServiceManager),
-                id: setId
-            });
-            
-            // 为每个 strategy 设置 allocation
-            IStrategy[] memory strategies = mockAllocationManager.getStrategiesInOperatorSet(operatorSet);
-            for(uint i = 0; i < strategies.length; i++) {
-                // 设置 allocation
-                MockAllocationManager.Allocation memory allocation = MockAllocationManager.Allocation({
-                    currentMagnitude: 1000,
-                    lastUpdatedBlock: uint32(block.number)
-                });
-                
+            OperatorSet memory operatorSet =
+                OperatorSet({avs: address(mockServiceManager), id: setId});
+
+            IStrategy[] memory strategies =
+                mockAllocationManager.getStrategiesInOperatorSet(operatorSet);
+            for (uint256 i = 0; i < strategies.length; i++) {
+                MockAllocationManager.Allocation memory allocation = MockAllocationManager
+                    .Allocation({currentMagnitude: 1000, lastUpdatedBlock: uint32(block.number)});
+
                 MockAllocationManager(address(mockAllocationManager)).setAllocation(
-                    operator3,
-                    operatorSet,
-                    address(strategies[i]),
-                    allocation
+                    operator3, operatorSet, address(strategies[i]), allocation
                 );
                 MockAllocationManager(address(mockAllocationManager)).setAllocation(
-                    operator4,
-                    operatorSet,
-                    address(strategies[i]),
-                    allocation
+                    operator4, operatorSet, address(strategies[i]), allocation
                 );
-                
-                // 设置 maxMagnitude
+
                 MockAllocationManager(address(mockAllocationManager)).setMaxMagnitude(
-                    operator3,
-                    address(strategies[i]),
-                    1000
+                    operator3, address(strategies[i]), 1000
                 );
                 MockAllocationManager(address(mockAllocationManager)).setMaxMagnitude(
-                    operator4,
-                    address(strategies[i]),
-                    1000
+                    operator4, address(strategies[i]), 1000
                 );
             }
         }
 
-
-        
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
-        
 
         vm.prank(operator1);
         registry.registerOperatorM2Quorum(operatorSignature, operator1);
-        
 
         vm.prank(operator2);
         registry.registerOperatorM2Quorum(operatorSignature, operator2);
 
-        
         vm.roll(block.number + 1);
     }
 }
