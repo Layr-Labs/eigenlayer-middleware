@@ -151,4 +151,9 @@ contract AVSDirectoryMock is IAVSDirectory {
     function isOperatorSetBatch(
         OperatorSet[] calldata operatorSets
     ) external view returns (bool) {}
+
+    function avsOperatorStatus(
+        address avs,
+        address operator
+    ) external view returns (OperatorAVSRegistrationStatus) {}
 }

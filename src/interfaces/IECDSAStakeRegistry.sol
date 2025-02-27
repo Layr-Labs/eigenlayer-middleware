@@ -37,6 +37,12 @@ interface IECDSAStakeRegistryErrors {
     error OperatorAlreadyRegistered();
     /// @notice Thrown when de-registering or updating the stake for an unregisted operator.
     error OperatorNotRegistered();
+    /// @notice Thrown when the sender is not the AVS Registrar.
+    error InvalidSender();
+    /// @notice Thrown when the M2 quorum registration is disabled.
+    error M2QuorumRegistrationIsDisabled();
+    /// @notice Thrown when the operator set ids are invalid.
+    error InvalidOperatorSetIdsLength();
 }
 
 interface IECDSAStakeRegistryTypes {
@@ -124,6 +130,11 @@ interface IECDSAStakeRegistryEvents is IECDSAStakeRegistryTypes {
         address indexed newSigningKey,
         address oldSigningKey
     );
+
+    /*
+     * @notice Emitted when the M2 quorum registration is disabled.
+     */
+    event M2QuorumRegistrationDisabled();
 }
 
 interface IECDSAStakeRegistry is
@@ -138,7 +149,7 @@ interface IECDSAStakeRegistry is
      * @param operatorSignature Contains the operator's signature, salt, and expiry.
      * @param signingKey The signing key to add to the operator's history.
      */
-    function registerOperatorWithSignature(
+    function registerOperatorM2Quorum(
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature,
         address signingKey
     ) external;
@@ -146,7 +157,22 @@ interface IECDSAStakeRegistry is
     /*
      * @notice Deregisters an existing operator.
      */
-    function deregisterOperator() external;
+    function deregisterOperatorM2Quorum() external;
+
+    /*
+     * @notice called by the AVS Registrar when an operator is registered on the allocation manager.
+     * @param operator The address of the operator.
+     * @param signingKey The signing key of the operator.
+     */
+    function onOperatorSetRegistered(address operator, address signingKey) external;
+
+    /*
+     * @notice called by the AVS Registrar when an operator is deregistered on the allocation manager.
+     * @param operator The address of the operator.
+     */
+    function onOperatorSetDeregistered(
+        address operator
+    ) external;
 
     /*
      * @notice Updates the signing key for an operator.
@@ -198,6 +224,12 @@ interface IECDSAStakeRegistry is
      * @return The current quorum of strategies and weights.
      */
     function quorum() external view returns (IECDSAStakeRegistryTypes.Quorum memory);
+
+    /*
+     * @notice Retrieves the current operator set id
+     * @return The current operator set id
+     */
+    function getCurrentOperatorSetIds() external view returns (uint32[] memory);
 
     /*
      * @notice Retrieves the latest signing key for a given operator.
@@ -274,6 +306,42 @@ interface IECDSAStakeRegistry is
     function getOperatorWeight(
         address operator
     ) external view returns (uint256);
+
+    /*
+     * @notice Retrieves the operator's weight in the m2 quorum.
+     * @param operator The address of the operator.
+     * @return The operator's weight in the m2 quorum.
+     */
+    function getQuorumWeight(
+        address operator
+    ) external view returns (uint256);
+
+    /*
+     * @notice Retrieves the operator's weight in the current operator set.
+     * @param operator The address of the operator.
+     * @return The operator's weight in the current operator set.
+     */
+    function getOperatorSetWeight(
+        address operator
+    ) external view returns (uint256);
+
+    /*
+     * @notice Checks if an operator is registered on the AVS Directory(M2).
+     * @param operator The address of the operator to check.
+     * @return bool True if the operator is registered on the AVS Directory, false otherwise.
+     */
+    function operatorRegisteredOnAVSDirectory(
+        address operator
+    ) external view returns (bool);
+
+    /*
+     * @notice Checks if an operator is registered on the current operator set.
+     * @param operator The address of the operator to check.
+     * @return bool True if the operator is registered on the current operator set, false otherwise.
+     */
+    function operatorRegisteredOnCurrentOperatorSets(
+        address operator
+    ) external view returns (bool);
 
     /*
      * @notice Updates operators for a specific quorum.

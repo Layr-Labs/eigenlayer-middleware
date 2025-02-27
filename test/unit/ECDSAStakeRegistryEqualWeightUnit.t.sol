@@ -5,14 +5,17 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISi
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
 import {
     IECDSAStakeRegistry,
-    IECDSAStakeRegistryTypes
+    IECDSAStakeRegistryTypes,
+    IECDSAStakeRegistryErrors
 } from "../../src/interfaces/IECDSAStakeRegistry.sol";
 import {ECDSAStakeRegistrySetup} from "./ECDSAStakeRegistryUnit.t.sol";
 import {ECDSAStakeRegistryEqualWeight} from
     "../../src/unaudited/examples/ECDSAStakeRegistryEqualWeight.sol";
+import {IAVSDirectory} from "../../src/unaudited/ECDSAStakeRegistry.sol";
 
 contract EqualWeightECDSARegistry is ECDSAStakeRegistrySetup {
     ECDSAStakeRegistryEqualWeight internal fixedWeightRegistry;
@@ -20,20 +23,30 @@ contract EqualWeightECDSARegistry is ECDSAStakeRegistrySetup {
     function setUp() public virtual override {
         super.setUp();
         fixedWeightRegistry =
-            new ECDSAStakeRegistryEqualWeight(IDelegationManager(address(mockDelegationManager)));
+            new ECDSAStakeRegistryEqualWeight(
+                IDelegationManager(address(mockDelegationManager)),
+                IAllocationManager(address(mockAllocationManager)),
+                mockAVSRegistrarAddr,
+                IAVSDirectory(address(mockAVSDirectory))
+            );
+        
         IStrategy mockStrategy = IStrategy(address(0x1234));
         IECDSAStakeRegistryTypes.Quorum memory quorum =
-            IECDSAStakeRegistryTypes.Quorum({strategies: new StrategyParams[](1)});
-        quorum.strategies[0] = StrategyParams({strategy: mockStrategy, multiplier: 10000});
+            IECDSAStakeRegistryTypes.Quorum({strategies: new IECDSAStakeRegistryTypes.StrategyParams[](1)});
+        quorum.strategies[0] = IECDSAStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 10000});
+        
         fixedWeightRegistry.initialize(address(mockServiceManager), 100, quorum);
 
         fixedWeightRegistry.permitOperator(operator1);
         fixedWeightRegistry.permitOperator(operator2);
+        
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        
         vm.prank(operator1);
-        fixedWeightRegistry.registerOperatorWithSignature(operatorSignature, operator1);
+        fixedWeightRegistry.registerOperatorM2Quorum(operatorSignature, operator1);
+        
         vm.prank(operator2);
-        fixedWeightRegistry.registerOperatorWithSignature(operatorSignature, operator2);
+        fixedWeightRegistry.registerOperatorM2Quorum(operatorSignature, operator2);
     }
 
     function test_FixedStakeUpdates() public {
@@ -43,7 +56,7 @@ contract EqualWeightECDSARegistry is ECDSAStakeRegistrySetup {
 
         vm.roll(block.number + 1);
         vm.prank(operator1);
-        fixedWeightRegistry.deregisterOperator();
+        fixedWeightRegistry.deregisterOperatorM2Quorum();
 
         assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator1), 0);
         assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator2), 1);
@@ -52,7 +65,7 @@ contract EqualWeightECDSARegistry is ECDSAStakeRegistrySetup {
         vm.roll(block.number + 1);
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
         vm.prank(operator1);
-        fixedWeightRegistry.registerOperatorWithSignature(operatorSignature, operator1);
+        fixedWeightRegistry.registerOperatorM2Quorum(operatorSignature, operator1);
 
         assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator1), 1);
         assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator2), 1);

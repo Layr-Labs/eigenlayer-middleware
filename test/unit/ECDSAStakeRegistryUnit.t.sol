@@ -15,6 +15,9 @@ import {
     IECDSAStakeRegistryTypes,
     IECDSAStakeRegistryEvents
 } from "../../src/interfaces/IECDSAStakeRegistry.sol";
+import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IAVSDirectory, IAVSDirectoryTypes} from "../../src/unaudited/ECDSAStakeRegistry.sol";
+
 
 contract MockServiceManager {
     // solhint-disable-next-line
@@ -45,8 +48,54 @@ contract MockDelegationManager {
     }
 }
 
+contract MockAVSDirectory {
+    mapping(address => mapping(address => IAVSDirectoryTypes.OperatorAVSRegistrationStatus)) 
+        private operatorStatus;
+
+    function registerOperatorToAVS(
+        address,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory
+    ) external pure {}
+
+    function deregisterOperatorFromAVS(
+        address
+    ) external pure {}
+
+    function updateAVSMetadataURI(
+        string memory
+    ) external pure {}
+    function setAvsOperatorStatus(
+        address avs, 
+        address operator, 
+        IAVSDirectoryTypes.OperatorAVSRegistrationStatus status
+    ) external {
+        operatorStatus[avs][operator] = status;
+    }
+    
+    function avsOperatorStatus(address avs, address operator) external view returns (IAVSDirectoryTypes.OperatorAVSRegistrationStatus) {
+        return operatorStatus[avs][operator];
+    }
+}
+
+contract MockAllocationManager {
+    function setAVSRegistrar(address avs, address registrar) external {}
+    
+    function isOperatorSet(bytes memory operatorSet) external pure returns (bool) {
+        return true;
+    }
+    
+    function getStrategiesInOperatorSet(bytes memory operatorSet) external pure returns (IStrategy[] memory) {
+        IStrategy[] memory strategies = new IStrategy[](2);
+        strategies[0] = IStrategy(address(900));
+        strategies[1] = IStrategy(address(901));
+        return strategies;
+    }
+}
+
 contract ECDSAStakeRegistrySetup is Test, IECDSAStakeRegistryEvents {
     MockDelegationManager public mockDelegationManager;
+    MockAVSDirectory public mockAVSDirectory;
+    MockAllocationManager public mockAllocationManager;
     MockServiceManager public mockServiceManager;
     ECDSAStakeRegistry public registry;
     address internal operator1;
@@ -58,25 +107,43 @@ contract ECDSAStakeRegistrySetup is Test, IECDSAStakeRegistryEvents {
     address[] internal signers;
     bytes[] internal signatures;
     bytes32 internal msgHash;
+    address public mockAVSRegistrarAddr;
 
     function setUp() public virtual {
         (operator1, operator1Pk) = makeAddrAndKey("Signer 1");
         (operator2, operator2Pk) = makeAddrAndKey("Signer 2");
         mockDelegationManager = new MockDelegationManager();
         mockServiceManager = new MockServiceManager();
+        mockAllocationManager = new MockAllocationManager();
+        mockAVSDirectory = new MockAVSDirectory();
+        mockAVSRegistrarAddr = makeAddr("mockAVSRegistrar"); 
+        
         IStrategy mockStrategy = IStrategy(address(0x1234));
         IECDSAStakeRegistryTypes.Quorum memory quorum = IECDSAStakeRegistryTypes.Quorum({
             strategies: new IECDSAStakeRegistryTypes.StrategyParams[](1)
         });
-        quorum.strategies[0] =
-            IECDSAStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 10000});
-        registry = new ECDSAStakeRegistry(IDelegationManager(address(mockDelegationManager)));
+        quorum.strategies[0] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: mockStrategy, 
+            multiplier: 10000
+        });
+        
+        registry = new ECDSAStakeRegistry(
+            IDelegationManager(address(mockDelegationManager)),
+            IAllocationManager(address(mockAllocationManager)),
+            mockAVSRegistrarAddr,
+            IAVSDirectory(address(mockAVSDirectory))
+        );
+        
         registry.initialize(address(mockServiceManager), 100, quorum);
+        
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        
         vm.prank(operator1);
-        registry.registerOperatorWithSignature(operatorSignature, operator1);
+        registry.registerOperatorM2Quorum(operatorSignature, operator1);
+        
         vm.prank(operator2);
-        registry.registerOperatorWithSignature(operatorSignature, operator2);
+        registry.registerOperatorM2Quorum(operatorSignature, operator2);
+        
         vm.roll(block.number + 1);
     }
 }
@@ -191,26 +258,26 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         registry.updateQuorumConfig(invalidQuorum, operators);
     }
 
-    function test_RegisterOperatorWithSignature() public {
+    function test_RegisterOperatorM2Quorum() public {
         address operator3 = address(0x125);
         ISignatureUtils.SignatureWithSaltAndExpiry memory signature;
         vm.prank(operator3);
-        registry.registerOperatorWithSignature(signature, operator3);
+        registry.registerOperatorM2Quorum(signature, operator3);
         assertTrue(registry.operatorRegistered(operator3));
         assertEq(registry.getLastCheckpointOperatorWeight(operator3), 1000);
     }
 
-    function test_RevertsWhen_AlreadyRegistered_RegisterOperatorWithSignature() public {
+    function test_RevertsWhen_AlreadyRegistered_RegisterOperatorM2Quorum() public {
         assertEq(registry.getLastCheckpointOperatorWeight(operator1), 1000);
         assertEq(registry.getLastCheckpointTotalWeight(), 2000);
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory signature;
         vm.expectRevert(IECDSAStakeRegistryErrors.OperatorAlreadyRegistered.selector);
         vm.prank(operator1);
-        registry.registerOperatorWithSignature(signature, operator1);
+        registry.registerOperatorM2Quorum(signature, operator1);
     }
 
-    function test_RevertsWhen_SignatureIsInvalid_RegisterOperatorWithSignature() public {
+    function test_RevertsWhen_SignatureIsInvalid_RegisterOperatorM2Quorum() public {
         bytes memory signatureData;
         vm.mockCall(
             address(mockServiceManager),
@@ -227,22 +294,22 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         );
     }
 
-    function test_DeregisterOperator() public {
+    function test_DeregisterOperatorM2Quorum() public {
         assertEq(registry.getLastCheckpointOperatorWeight(operator1), 1000);
         assertEq(registry.getLastCheckpointTotalWeight(), 2000);
 
         vm.prank(operator1);
-        registry.deregisterOperator();
+        registry.deregisterOperatorM2Quorum();
 
         assertEq(registry.getLastCheckpointOperatorWeight(operator1), 0);
         assertEq(registry.getLastCheckpointTotalWeight(), 1000);
     }
 
-    function test_RevertsWhen_NotOperator_DeregisterOperator() public {
+    function test_RevertsWhen_NotOperator_DeregisterOperatorM2Quorum() public {
         address notOperator = address(0x2);
         vm.prank(notOperator);
         vm.expectRevert(IECDSAStakeRegistryErrors.OperatorNotRegistered.selector);
-        registry.deregisterOperator();
+        registry.deregisterOperatorM2Quorum();
     }
 
     function test_When_Empty_UpdateOperators() public {
@@ -426,7 +493,9 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         signatures[0] = abi.encodePacked(r, s, v);
         (v, r, s) = vm.sign(operator2Pk, msgHash);
         signatures[1] = abi.encodePacked(r, s, v);
-
+        console.log("operator1 weight", registry.getOperatorWeight(operator1));
+        console.log("operator2 weight", registry.getOperatorWeight(operator2));
+        console.log("threshold weight", registry.getLastCheckpointThresholdWeight());
         registry.isValidSignature(msgHash, abi.encode(signers, signatures, block.number - 1));
     }
 
@@ -595,16 +664,16 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         uint256 before = gasleft();
         vm.pauseGasMetering();
         vm.prank(operator1);
-        registry.deregisterOperator();
+        registry.deregisterOperatorM2Quorum();
         vm.prank(operator2);
-        registry.deregisterOperator();
+        registry.deregisterOperatorM2Quorum();
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
         address[] memory operators = new address[](30);
         for (uint256 i; i < operators.length; i++) {
             operators[i] = address(uint160(i));
             vm.prank(operators[i]);
-            registry.registerOperatorWithSignature(operatorSignature, operators[i]);
+            registry.registerOperatorM2Quorum(operatorSignature, operators[i]);
         }
         vm.resumeGasMetering();
         registry.updateOperators(operators);
@@ -616,9 +685,9 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         uint256 before = gasleft();
         vm.pauseGasMetering();
         vm.prank(operator1);
-        registry.deregisterOperator();
+        registry.deregisterOperatorM2Quorum();
         vm.prank(operator2);
-        registry.deregisterOperator();
+        registry.deregisterOperatorM2Quorum();
         msgHash = keccak256("data");
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
@@ -630,7 +699,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         for (uint256 i = 1; i < operators.length + 1; i++) {
             operators[i - 1] = address(vm.addr(i));
             vm.prank(operators[i - 1]);
-            registry.registerOperatorWithSignature(operatorSignature, operators[i - 1]);
+            registry.registerOperatorM2Quorum(operatorSignature, operators[i - 1]);
             (v, r, s) = vm.sign(i, msgHash);
             signatures[i - 1] = abi.encodePacked(r, s, v);
         }
@@ -657,7 +726,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
         // Register operator with a different signing key
         vm.prank(operator);
-        registry.registerOperatorWithSignature(operatorSignature, signer);
+        registry.registerOperatorM2Quorum(operatorSignature, signer);
 
         // Verify that the signing key has been successfully registered for the operator
         address registeredSigningKey = registry.getLatestOperatorSigningKey(operator);
@@ -675,7 +744,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
         // Register operator with a different signing key
         vm.prank(operator);
-        registry.registerOperatorWithSignature(operatorSignature, signer);
+        registry.registerOperatorM2Quorum(operatorSignature, signer);
 
         /// Register a second time
         vm.prank(operator);
@@ -701,7 +770,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
         // Register operator with a different signing key
         vm.prank(operator);
-        registry.registerOperatorWithSignature(operatorSignature, signer);
+        registry.registerOperatorM2Quorum(operatorSignature, signer);
         vm.roll(block.number + 1);
 
         // Prepare data for signature
@@ -727,7 +796,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
         // Register operator with the initial signing key
         vm.prank(operator);
-        registry.registerOperatorWithSignature(operatorSignature, initialSigningKey);
+        registry.registerOperatorM2Quorum(operatorSignature, initialSigningKey);
         vm.roll(block.number + 1);
 
         // Prepare data for signature with initial signing key
@@ -768,7 +837,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
         // Register operator with the initial signing key
         vm.prank(operator);
-        registry.registerOperatorWithSignature(operatorSignature, initialSigningKey);
+        registry.registerOperatorM2Quorum(operatorSignature, initialSigningKey);
         vm.roll(block.number + 1);
 
         // Prepare data for signature with initial signing key
