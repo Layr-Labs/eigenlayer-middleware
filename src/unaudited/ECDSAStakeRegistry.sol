@@ -70,9 +70,13 @@ contract ECDSAStakeRegistry is
     function initialize(
         address _serviceManager,
         uint256 thresholdWeight,
-        IECDSAStakeRegistryTypes.Quorum memory quorum
+        IECDSAStakeRegistryTypes.Quorum memory quorum,
+        uint32[] calldata operatorSetIds,
+        StrategyParams[][] calldata strategyParamsArray
     ) external initializer {
-        __ECDSAStakeRegistry_init(_serviceManager, thresholdWeight, quorum);
+        __ECDSAStakeRegistry_init(
+            _serviceManager, thresholdWeight, quorum, operatorSetIds, strategyParamsArray
+        );
     }
 
     /// @notice Initializes state for the StakeRegistry
@@ -80,11 +84,15 @@ contract ECDSAStakeRegistry is
     function __ECDSAStakeRegistry_init(
         address _serviceManagerAddr,
         uint256 thresholdWeight,
-        IECDSAStakeRegistryTypes.Quorum memory quorum
+        IECDSAStakeRegistryTypes.Quorum memory quorum,
+        uint32[] calldata operatorSetIds,
+        StrategyParams[][] calldata strategyParamsArray
     ) internal onlyInitializing {
         _serviceManager = _serviceManagerAddr;
         _updateStakeThreshold(thresholdWeight);
         _updateQuorumConfig(quorum);
+        _setCurrentOperatorSetIds(operatorSetIds);
+        _updateOperatorSetsConfig(operatorSetIds, strategyParamsArray);
         __Ownable_init();
     }
 
@@ -117,13 +125,11 @@ contract ECDSAStakeRegistry is
         address operator,
         address signingKey
     ) external onlyAVSRegistrar {
-        // Update operator weight
-        _updateOperatorWeight(operator);
-
-        // Update signing key and p2p key
+        int256 delta = _updateOperatorWeight(operator);
+        _updateTotalWeight(delta);
         _updateOperatorSigningKey(operator, signingKey);
-
         if (!operatorRegisteredOnAVSDirectory(operator)) {
+            _totalOperators++;
             emit OperatorRegistered(operator, _serviceManager);
         }
     }
@@ -131,11 +137,10 @@ contract ECDSAStakeRegistry is
     function onOperatorSetDeregistered(
         address operator
     ) external onlyAVSRegistrar {
-        // Update weights
-        _updateOperatorWeight(operator);
-
-        // Emit event
+        int256 delta = _updateOperatorWeight(operator);
+        _updateTotalWeight(delta);
         if (!operatorRegisteredOnAVSDirectory(operator)) {
+            _totalOperators--;
             emit OperatorDeregistered(operator, _serviceManager);
         }
     }
@@ -166,6 +171,21 @@ contract ECDSAStakeRegistry is
         _updateOperators(operators);
     }
 
+    /**
+     * @notice Updates strategy parameters for multiple operator sets (from stake registry view)
+     * @notice Strategy params must align with operator set ids on the allocation manager
+     * @param operatorSetIds Array of operator set IDs to update
+     * @param strategyParamsArray Array of strategy parameters arrays for each operator set
+     */
+    function updateOperatorSetsConfig(
+        uint32[] calldata operatorSetIds,
+        StrategyParams[][] calldata strategyParamsArray,
+        address[] calldata operators
+    ) external onlyOwner {
+        _updateOperatorSetsConfig(operatorSetIds, strategyParamsArray);
+        _updateOperators(operators);
+    }
+
     /// @inheritdoc IECDSAStakeRegistry
     function updateMinimumWeight(
         uint256 newMinimumWeight,
@@ -187,17 +207,20 @@ contract ECDSAStakeRegistry is
     function setCurrentOperatorSetIds(
         uint32[] calldata _ids
     ) external onlyOwner {
-        if (_ids.length == 0 || _ids.length > 10) {
-            revert InvalidOperatorSetIdsLength();
-        }
-        currentOperatorSetIds = _ids;
+        _setCurrentOperatorSetIds(_ids);
     }
 
     /// @notice Sets the allocation manager
     /// @param _allocationManager The allocation manager to set
-    function setAllocationManager(
+    function initAllocationManager(
         IAllocationManager _allocationManager
     ) external onlyOwner {
+        if (address(allocationManager) != address(0)) {
+            revert AllocationManagerAlreadyInitialized();
+        }
+        if (address(_allocationManager) == address(0)) {
+            revert InvalidAllocationManager();
+        }
         allocationManager = _allocationManager;
     }
 
@@ -228,6 +251,15 @@ contract ECDSAStakeRegistry is
     /// @return The current operator set ids
     function getCurrentOperatorSetIds() external view returns (uint32[] memory) {
         return currentOperatorSetIds;
+    }
+
+    /// @notice Gets the strategy parameters for a specific operator set
+    /// @param operatorSetId The ID of the operator set to query
+    /// @return The array of strategy parameters for the operator set
+    function getOperatorSetConfig(
+        uint32 operatorSetId
+    ) external view returns (StrategyParams[] memory) {
+        return operatorSetStrategyParams[operatorSetId];
     }
 
     /// @inheritdoc IECDSAStakeRegistry
@@ -295,10 +327,9 @@ contract ECDSAStakeRegistry is
     /// @dev Queries mainnet delegation manager for current shares
     function getOperatorWeight(
         address _operator
-    ) public view returns (uint256) {
+    ) public view virtual returns (uint256) {
         uint256 quorumWeight = getQuorumWeight(_operator);
         uint256 operatorSetWeight = getOperatorSetWeight(_operator);
-
         return quorumWeight + operatorSetWeight;
     }
 
@@ -308,6 +339,9 @@ contract ECDSAStakeRegistry is
     function getQuorumWeight(
         address operator
     ) public view returns (uint256) {
+        if (!operatorRegisteredOnAVSDirectory(operator)) {
+            return 0;
+        }
         StrategyParams[] memory strategyParams = _quorum.strategies;
         uint256 weight;
         IStrategy[] memory strategies = new IStrategy[](strategyParams.length);
@@ -337,38 +371,30 @@ contract ECDSAStakeRegistry is
     /// @return The operator's available weight in set, or 0 if below minimum
     function getOperatorSetWeight(
         address operator
-    ) public view returns (uint256) {
-        // Return 0 if allocation manager not set
+    ) public view virtual returns (uint256) {
         if (address(allocationManager) == address(0)) {
             return 0;
         }
-
         uint256 totalWeight;
 
-        // Loop through all operator sets
         for (uint256 setIndex = 0; setIndex < currentOperatorSetIds.length; setIndex++) {
-            // Create operator set struct for current id
+            uint32 operatorSetId = currentOperatorSetIds[setIndex];
             OperatorSet memory operatorSet =
-                OperatorSet({avs: address(_serviceManager), id: currentOperatorSetIds[setIndex]});
-
-            // Check operator set membership
+                OperatorSet({avs: address(_serviceManager), id: operatorSetId});
             if (!allocationManager.isMemberOfOperatorSet(operator, operatorSet)) {
                 continue;
             }
 
-            // Get strategies from operator set
             IStrategy[] memory strategies =
                 allocationManager.getStrategiesInOperatorSet(operatorSet);
             if (strategies.length == 0) {
                 continue;
             }
 
-            // Get operator's shares for all strategies
+            StrategyParams[] memory strategyParams = operatorSetStrategyParams[operatorSetId];
             uint256[] memory shares = DELEGATION_MANAGER.getOperatorShares(operator, strategies);
 
-            // Calculate available weight for each strategy
             for (uint256 i = 0; i < strategies.length; i++) {
-                // Get allocation and max magnitude
                 IAllocationManager.Allocation memory allocation =
                     allocationManager.getAllocation(operator, operatorSet, strategies[i]);
                 uint64 maxMagnitude = allocationManager.getMaxMagnitude(operator, strategies[i]);
@@ -377,16 +403,12 @@ contract ECDSAStakeRegistry is
                     continue;
                 }
 
-                // Calculate available proportion
                 uint256 slashableProportion =
                     uint256(allocation.currentMagnitude) * WAD / maxMagnitude;
-
-                // Add weighted shares to total
-                totalWeight += shares[i] * slashableProportion / WAD;
+                totalWeight +=
+                    shares[i] * slashableProportion * strategyParams[i].multiplier / WAD / BPS;
             }
         }
-
-        // Return 0 if below minimum weight
         if (totalWeight >= _minimumWeight) {
             return totalWeight;
         } else {
@@ -421,7 +443,6 @@ contract ECDSAStakeRegistry is
         if (address(allocationManager) == address(0)) {
             return false;
         }
-
         // Check if operator is registered in any current set
         for (uint256 i = 0; i < currentOperatorSetIds.length; i++) {
             OperatorSet memory operatorSet =
@@ -631,6 +652,17 @@ contract ECDSAStakeRegistry is
         }
     }
 
+    /// @notice Internal function to set the current operator set ids
+    /// @param _ids The ids of the operator sets to set
+    function _setCurrentOperatorSetIds(
+        uint32[] calldata _ids
+    ) internal {
+        if (_ids.length == 0 || _ids.length > 10) {
+            revert InvalidOperatorSetIdsLength();
+        }
+        currentOperatorSetIds = _ids;
+    }
+
     /**
      * @notice Common logic to verify a batch of ECDSA signatures against a hash, using either last stake weight or at a specific block.
      * @param digest The hash of the data the signers endorsed.
@@ -770,5 +802,43 @@ contract ECDSAStakeRegistry is
         if (thresholdStake > signedWeight) {
             revert InsufficientSignedStake();
         }
+    }
+
+    /// @notice Internal function to update strategy parameters for multiple operator sets
+    /// @param operatorSetIds Array of operator set IDs to update
+    /// @param strategyParamsArray Array of strategy parameters arrays for each operator set
+    function _updateOperatorSetsConfig(
+        uint32[] calldata operatorSetIds,
+        StrategyParams[][] calldata strategyParamsArray
+    ) internal {
+        if (operatorSetIds.length != strategyParamsArray.length) {
+            revert InvalidOperatorSetIdsLength();
+        }
+
+        for (uint256 i = 0; i < operatorSetIds.length; i++) {
+            _updateOperatorSetConfig(operatorSetIds[i], strategyParamsArray[i]);
+        }
+    }
+
+    /// @notice Internal function to set strategy parameters for an operator set
+    ///@param operatorSetId The ID of the operator set
+    ///@param params The strategy parameters to set
+
+    function _updateOperatorSetConfig(
+        uint32 operatorSetId,
+        StrategyParams[] memory params
+    ) internal {
+        address lastStrategy;
+        for (uint256 i = 0; i < params.length; i++) {
+            address currentStrategy = address(params[i].strategy);
+            if (lastStrategy >= currentStrategy) revert NotSorted();
+            lastStrategy = currentStrategy;
+        }
+
+        delete operatorSetStrategyParams[operatorSetId];
+        for (uint256 i = 0; i < params.length; i++) {
+            operatorSetStrategyParams[operatorSetId].push(params[i]);
+        }
+        emit OperatorSetStrategyParamsUpdated(operatorSetId, params);
     }
 }

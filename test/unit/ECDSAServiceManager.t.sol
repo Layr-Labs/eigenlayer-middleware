@@ -10,11 +10,12 @@ import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
+import {IECDSAStakeRegistryTypes} from "../../src/interfaces/IECDSAStakeRegistry.sol";
+import {IECDSAStakeRegistry} from "../../src/interfaces/IECDSAStakeRegistry.sol";
 
 import {ECDSAServiceManagerMock} from "../mocks/ECDSAServiceManagerMock.sol";
 import {ECDSAStakeRegistryMock} from "../mocks/ECDSAStakeRegistryMock.sol";
 import {AVSDirectoryMock} from "../mocks/AVSDirectoryMock.sol";
-import {IECDSAStakeRegistryTypes} from "../../src/interfaces/IECDSAStakeRegistry.sol";
 import {IPermissionController} from
     "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 import {IAllocationManager} from
@@ -193,14 +194,42 @@ contract ECDSAServiceManagerSetup is Test {
             strategy: IStrategy(address(421)),
             multiplier: 5000
         });
-        address[] memory operators = new address[](0);
+        uint32[] memory operatorSetIds = new uint32[](2);
+        operatorSetIds[0] = 1;
+        operatorSetIds[1] = 2;
+
+        IECDSAStakeRegistryTypes.StrategyParams[][] memory strategyParamsArray =
+            new IECDSAStakeRegistryTypes.StrategyParams[][](2);
+
+        strategyParamsArray[0] = new IECDSAStakeRegistryTypes.StrategyParams[](2);
+        strategyParamsArray[0][0] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(900)),
+            multiplier: 3000
+        });
+        strategyParamsArray[0][1] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(901)),
+            multiplier: 3000
+        });
+        // Strategy params for second operator set
+        strategyParamsArray[1] = new IECDSAStakeRegistryTypes.StrategyParams[](2);
+        strategyParamsArray[1][0] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(902)),
+            multiplier: 3000
+        });
+        strategyParamsArray[1][1] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(903)),
+            multiplier: 3000
+        });
 
         vm.prank(owner);
         mockStakeRegistry.initialize(
             address(serviceManager),
             10000, // Assuming a threshold weight of 10000 basis points
-            quorum
+            quorum,
+            operatorSetIds,
+            strategyParamsArray
         );
+
         ISignatureUtils.SignatureWithSaltAndExpiry memory dummySignature;
 
         vm.prank(operator1);

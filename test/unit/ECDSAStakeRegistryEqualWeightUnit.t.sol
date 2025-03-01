@@ -39,7 +39,35 @@ contract EqualWeightECDSARegistry is ECDSAStakeRegistrySetup {
         quorum.strategies[0] =
             IECDSAStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 10000});
 
-        fixedWeightRegistry.initialize(address(mockServiceManager), 100, quorum);
+        uint32[] memory operatorSetIds = new uint32[](2);
+        operatorSetIds[0] = 1;
+        operatorSetIds[1] = 2;
+        IECDSAStakeRegistryTypes.StrategyParams[][] memory strategyParamsArray =
+            new IECDSAStakeRegistryTypes.StrategyParams[][](2);
+
+        strategyParamsArray[0] = new IECDSAStakeRegistryTypes.StrategyParams[](2);
+        strategyParamsArray[0][0] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(900)),
+            multiplier: 3000
+        });
+        strategyParamsArray[0][1] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(901)),
+            multiplier: 3000
+        });
+
+        strategyParamsArray[1] = new IECDSAStakeRegistryTypes.StrategyParams[](2);
+        strategyParamsArray[1][0] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(902)),
+            multiplier: 3000
+        });
+        strategyParamsArray[1][1] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(903)),
+            multiplier: 3000
+        });
+
+        fixedWeightRegistry.initialize(
+            address(mockServiceManager), 100, quorum, operatorSetIds, strategyParamsArray
+        );
 
         fixedWeightRegistry.permitOperator(operator6);
         fixedWeightRegistry.permitOperator(operator7);
