@@ -12,8 +12,6 @@ import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IECDSAStakeRegistryTypes} from "../../src/interfaces/IECDSAStakeRegistry.sol";
 import {IECDSAStakeRegistry} from "../../src/interfaces/IECDSAStakeRegistry.sol";
-import {IECDSAStakeRegistryTypes} from "../../src/interfaces/IECDSAStakeRegistry.sol";
-import {IECDSAStakeRegistry} from "../../src/interfaces/IECDSAStakeRegistry.sol";
 
 import {ECDSAServiceManagerMock} from "../mocks/ECDSAServiceManagerMock.sol";
 import {ECDSAStakeRegistryMock} from "../mocks/ECDSAStakeRegistryMock.sol";
@@ -191,15 +189,10 @@ contract MockAVSDirectory {
 contract ECDSAServiceManagerSetup is Test {
     MockDelegationManager public mockDelegationManager;
     AVSDirectoryMock public mockAVSDirectory;
-    AVSDirectoryMock public mockAVSDirectory;
     MockAllocationManager public mockAllocationManager;
     ECDSAStakeRegistryMock public mockStakeRegistry;
     MockRewardsCoordinator public mockRewardsCoordinator;
     ECDSAServiceManagerMock public serviceManager;
-    MockPermissionController public mockPermissionController;
-    address public mockAVSRegistrarAddr;
-    address public owner = makeAddr("owner");
-    address public rewardsInitiator = makeAddr("rewardsInitiator");
     MockPermissionController public mockPermissionController;
     address public mockAVSRegistrarAddr;
     address public owner = makeAddr("owner");
@@ -212,15 +205,7 @@ contract ECDSAServiceManagerSetup is Test {
     function setUp() public {
         mockDelegationManager = new MockDelegationManager();
         mockAVSDirectory = new AVSDirectoryMock();
-        mockAVSDirectory = new AVSDirectoryMock();
         mockAllocationManager = new MockAllocationManager();
-        mockAVSRegistrarAddr = makeAddr("mockAVSRegistrar");
-        mockStakeRegistry = new ECDSAStakeRegistryMock(
-            IDelegationManager(address(mockDelegationManager)),
-            IAllocationManager(address(mockAllocationManager)),
-            mockAVSRegistrarAddr,
-            IAVSDirectory(address(mockAVSDirectory))
-        );
         mockAVSRegistrarAddr = makeAddr("mockAVSRegistrar");
         mockStakeRegistry = new ECDSAStakeRegistryMock(
             IDelegationManager(address(mockDelegationManager)),
@@ -232,17 +217,11 @@ contract ECDSAServiceManagerSetup is Test {
 
         mockPermissionController = new MockPermissionController();
 
-        mockPermissionController = new MockPermissionController();
-
         serviceManager = new ECDSAServiceManagerMock(
             address(mockAVSDirectory),
             address(mockStakeRegistry),
             address(mockRewardsCoordinator),
             address(mockDelegationManager),
-            address(mockAllocationManager),
-            address(mockPermissionController),
-            owner,
-            rewardsInitiator
             address(mockAllocationManager),
             address(mockPermissionController),
             owner,
@@ -294,54 +273,20 @@ contract ECDSAServiceManagerSetup is Test {
         });
 
         vm.prank(owner);
-        uint32[] memory operatorSetIds = new uint32[](2);
-        operatorSetIds[0] = 1;
-        operatorSetIds[1] = 2;
-
-        IECDSAStakeRegistryTypes.StrategyParams[][] memory strategyParamsArray =
-            new IECDSAStakeRegistryTypes.StrategyParams[][](2);
-
-        strategyParamsArray[0] = new IECDSAStakeRegistryTypes.StrategyParams[](2);
-        strategyParamsArray[0][0] = IECDSAStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(900)),
-            multiplier: 3000
-        });
-        strategyParamsArray[0][1] = IECDSAStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(901)),
-            multiplier: 3000
-        });
-        // Strategy params for second operator set
-        strategyParamsArray[1] = new IECDSAStakeRegistryTypes.StrategyParams[](2);
-        strategyParamsArray[1][0] = IECDSAStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(902)),
-            multiplier: 3000
-        });
-        strategyParamsArray[1][1] = IECDSAStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(903)),
-            multiplier: 3000
-        });
-
-        vm.prank(owner);
         mockStakeRegistry.initialize(
             address(serviceManager),
             10000, // Assuming a threshold weight of 10000 basis points
             quorum,
             operatorSetIds,
             strategyParamsArray
-            quorum,
-            operatorSetIds,
-            strategyParamsArray
         );
-
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory dummySignature;
 
         vm.prank(operator1);
         mockStakeRegistry.registerOperatorM2Quorum(dummySignature, operator1);
-        mockStakeRegistry.registerOperatorM2Quorum(dummySignature, operator1);
 
         vm.prank(operator2);
-        mockStakeRegistry.registerOperatorM2Quorum(dummySignature, operator2);
         mockStakeRegistry.registerOperatorM2Quorum(dummySignature, operator2);
     }
 
@@ -421,7 +366,6 @@ contract ECDSAServiceManagerSetup is Test {
         address claimer = address(0x123);
 
         vm.prank(owner);
-        vm.prank(owner);
         serviceManager.setClaimerFor(claimer);
     }
 
@@ -430,55 +374,6 @@ contract ECDSAServiceManagerSetup is Test {
 
         vm.prank(mockStakeRegistry.owner());
         serviceManager.setAVSRegistrar(IAVSRegistrar(registrar));
-    }
-
-    function testGetOperatorSetStrategies() public {
-        uint32 operatorSetId = 1;
-
-        address[] memory strategies = serviceManager.getOperatorSetStrategies(operatorSetId);
-
-        assertEq(strategies.length, 2, "Should return 2 strategies");
-        assertEq(strategies[0], address(900), "First strategy should match");
-        assertEq(strategies[1], address(901), "Second strategy should match");
-    }
-
-    function testAddPendingAdmin() public {
-        address admin = makeAddr("admin");
-
-        vm.prank(owner);
-        serviceManager.addPendingAdmin(admin);
-    }
-
-    function testRemovePendingAdmin() public {
-        address pendingAdmin = makeAddr("pendingAdmin");
-
-        vm.prank(owner);
-        serviceManager.removePendingAdmin(pendingAdmin);
-    }
-
-    function testRemoveAdmin() public {
-        address admin = makeAddr("admin");
-
-        vm.prank(owner);
-        serviceManager.removeAdmin(admin);
-    }
-
-    function testSetAppointee() public {
-        address appointee = makeAddr("appointee");
-        address target = makeAddr("target");
-        bytes4 selector = bytes4(keccak256("someFunction()"));
-
-        vm.prank(owner);
-        serviceManager.setAppointee(appointee, target, selector);
-    }
-
-    function testRemoveAppointee() public {
-        address appointee = makeAddr("appointee");
-        address target = makeAddr("target");
-        bytes4 selector = bytes4(keccak256("someFunction()"));
-
-        vm.prank(owner);
-        serviceManager.removeAppointee(appointee, target, selector);
     }
 
     function testGetOperatorSetStrategies() public {
