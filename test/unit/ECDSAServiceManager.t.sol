@@ -18,7 +18,7 @@ import {ECDSAStakeRegistryMock} from "../mocks/ECDSAStakeRegistryMock.sol";
 import {AVSDirectoryMock} from "../mocks/AVSDirectoryMock.sol";
 import {IPermissionController} from
     "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
-import {IAllocationManager} from
+import {IAllocationManager, IAllocationManagerTypes} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IAVSDirectory, IAVSDirectoryTypes} from "../../src/unaudited/ECDSAStakeRegistry.sol";
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
@@ -59,21 +59,75 @@ contract MockDelegationManager {
 }
 
 contract MockAllocationManager {
-    function setAVSRegistrar(address avs, address registrar) external {}
+    mapping(address => mapping(bytes32 => IAllocationManagerTypes.Allocation)) public allocations;
+    mapping(address => mapping(IStrategy => uint64)) public maxMagnitudes;
+    mapping(address => mapping(bytes32 => bool)) public operatorSetMembership;
+
+    function getAllocation(
+        address operator,
+        OperatorSet memory operatorSet,
+        IStrategy strategy
+    ) external view returns (IAllocationManagerTypes.Allocation memory) {
+        bytes32 key = keccak256(abi.encode(operator, operatorSet, address(strategy)));
+        return allocations[operator][key];
+    }
+
+    function setOperatorWeight(
+        address operator,
+        OperatorSet memory operatorSet,
+        address strategy,
+        uint256 weight
+    ) external {
+        bytes32 key = keccak256(abi.encode(operator, operatorSet, address(strategy)));
+        allocations[operator][key] = IAllocationManagerTypes.Allocation({
+            currentMagnitude: uint64(weight),
+            pendingDiff: 0,
+            effectBlock: 0
+        });
+        bytes32 membershipKey = keccak256(abi.encode(operator, operatorSet));
+        operatorSetMembership[operator][membershipKey] = true;
+    }
+
+    function isMemberOfOperatorSet(
+        address operator,
+        OperatorSet memory operatorSet
+    ) external view returns (bool) {
+        bytes32 key = keccak256(abi.encode(operator, operatorSet));
+        return operatorSetMembership[operator][key];
+    }
+
+    function setOperatorSetMembership(
+        address operator,
+        OperatorSet memory operatorSet,
+        bool isMember
+    ) external {
+        bytes32 key = keccak256(abi.encode(operator, operatorSet));
+        operatorSetMembership[operator][key] = isMember;
+    }
 
     function isOperatorSet(
-        OperatorSet memory operatorSet
+        OperatorSet memory
     ) external pure returns (bool) {
         return true;
     }
 
     function getStrategiesInOperatorSet(
-        OperatorSet memory operatorSet
+        OperatorSet memory
     ) external pure returns (IStrategy[] memory) {
         IStrategy[] memory strategies = new IStrategy[](2);
         strategies[0] = IStrategy(address(900));
         strategies[1] = IStrategy(address(901));
         return strategies;
+    }
+
+    function setAVSRegistrar(address, address) external {}
+
+    function getMaxMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
+        return maxMagnitudes[operator][strategy];
+    }
+
+    function setMaxMagnitude(address operator, IStrategy strategy, uint64 magnitude) external {
+        maxMagnitudes[operator][strategy] = magnitude;
     }
 }
 
@@ -94,7 +148,6 @@ contract MockRewardsCoordinator {
 }
 
 contract MockAVSDirectory {
-    // 使用 mapping 存储每个 operator 的状态
     mapping(address => mapping(address => IAVSDirectoryTypes.OperatorAVSRegistrationStatus)) private
         operatorStatus;
 
@@ -102,7 +155,6 @@ contract MockAVSDirectory {
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory
     ) external {
-        // 设置特定 operator 的状态为 REGISTERED
         operatorStatus[msg.sender][operator] =
             IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED;
     }
@@ -110,7 +162,6 @@ contract MockAVSDirectory {
     function deregisterOperatorFromAVS(
         address operator
     ) external {
-        // 设置特定 operator 的状态为 UNREGISTERED
         operatorStatus[msg.sender][operator] =
             IAVSDirectoryTypes.OperatorAVSRegistrationStatus.UNREGISTERED;
     }
