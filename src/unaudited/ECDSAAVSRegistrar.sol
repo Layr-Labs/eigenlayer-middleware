@@ -9,7 +9,7 @@ import {IECDSAStakeRegistry} from "../interfaces/IECDSAStakeRegistry.sol";
 import {IServiceManager} from "../interfaces/IServiceManager.sol";
 
 contract AVSRegistrar is IAVSRegistrar, Ownable {
-    IAllocationManager public allocationManager;
+    IAllocationManager public immutable allocationManager;
     IECDSAStakeRegistry public immutable stakeRegistry;
     address public immutable avs;
 
@@ -48,12 +48,6 @@ contract AVSRegistrar is IAVSRegistrar, Ownable {
         uint32[] calldata operatorSetIds
     ) external onlyAllocationManager {
         stakeRegistry.onOperatorSetDeregistered(operator);
-    }
-
-    function updateAllocationManager(
-        address _allocationManager
-    ) external onlyOwner {
-        allocationManager = IAllocationManager(_allocationManager);
     }
 
     function supportsAVS(
