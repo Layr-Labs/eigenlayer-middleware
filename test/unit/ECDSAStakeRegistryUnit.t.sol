@@ -15,8 +15,10 @@ import {
     IECDSAStakeRegistryTypes,
     IECDSAStakeRegistryEvents
 } from "../../src/interfaces/IECDSAStakeRegistry.sol";
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IAllocationManager,
+    IAllocationManagerTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IAVSDirectory, IAVSDirectoryTypes} from "../../src/unaudited/ECDSAStakeRegistry.sol";
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
@@ -110,73 +112,75 @@ contract MockAVSDirectory {
 }
 
 contract MockAllocationManager {
-    struct Allocation {
-        uint64 currentMagnitude;
-        uint32 lastUpdatedBlock;
+    mapping(address => mapping(bytes32 => IAllocationManagerTypes.Allocation)) public allocations;
+    mapping(address => mapping(IStrategy => uint64)) public maxMagnitudes;
+    mapping(address => mapping(bytes32 => bool)) public operatorSetMembership;
+
+    function getAllocation(
+        address operator,
+        OperatorSet memory operatorSet,
+        IStrategy strategy
+    ) external view returns (IAllocationManagerTypes.Allocation memory) {
+        bytes32 key = keccak256(abi.encode(operator, operatorSet, address(strategy)));
+        return allocations[operator][key];
     }
 
-    mapping(address => mapping(bytes32 => Allocation)) public allocations;
-    mapping(address => mapping(address => uint64)) public maxMagnitudes;
-    mapping(address => mapping(address => mapping(uint32 => bool))) public operatorSetMembers;
-
-    function setOperatorSetMembership(
+    function setOperatorWeight(
         address operator,
-        address avs,
-        uint32 setId,
-        bool isMember
+        OperatorSet memory operatorSet,
+        address strategy,
+        uint256 weight
     ) external {
-        operatorSetMembers[operator][avs][setId] = isMember;
+        bytes32 key = keccak256(abi.encode(operator, operatorSet, address(strategy)));
+        allocations[operator][key] = IAllocationManagerTypes.Allocation({
+            currentMagnitude: uint64(weight),
+            pendingDiff: 0,
+            effectBlock: 0
+        });
+        bytes32 membershipKey = keccak256(abi.encode(operator, operatorSet));
+        operatorSetMembership[operator][membershipKey] = true;
     }
 
     function isMemberOfOperatorSet(
         address operator,
         OperatorSet memory operatorSet
     ) external view returns (bool) {
-        return operatorSetMembers[operator][operatorSet.avs][operatorSet.id];
+        bytes32 key = keccak256(abi.encode(operator, operatorSet));
+        return operatorSetMembership[operator][key];
     }
 
-    function setAllocation(
+    function setOperatorSetMembership(
         address operator,
         OperatorSet memory operatorSet,
-        address strategy,
-        Allocation memory allocation
+        bool isMember
     ) external {
-        bytes32 key = keccak256(abi.encode(operator, operatorSet, strategy));
-        allocations[operator][key] = allocation;
+        bytes32 key = keccak256(abi.encode(operator, operatorSet));
+        operatorSetMembership[operator][key] = isMember;
     }
-
-    function getAllocation(
-        address operator,
-        OperatorSet memory operatorSet,
-        IStrategy strategy
-    ) external view returns (Allocation memory) {
-        bytes32 key = keccak256(abi.encode(operator, operatorSet, address(strategy)));
-        return allocations[operator][key];
-    }
-
-    function setMaxMagnitude(address operator, address strategy, uint64 magnitude) external {
-        maxMagnitudes[operator][strategy] = magnitude;
-    }
-
-    function getMaxMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
-        return maxMagnitudes[operator][address(strategy)];
-    }
-
-    function setAVSRegistrar(address avs, address registrar) external {}
 
     function isOperatorSet(
-        OperatorSet memory operatorSet
+        OperatorSet memory
     ) external pure returns (bool) {
         return true;
     }
 
     function getStrategiesInOperatorSet(
-        OperatorSet memory operatorSet
+        OperatorSet memory
     ) external pure returns (IStrategy[] memory) {
         IStrategy[] memory strategies = new IStrategy[](2);
         strategies[0] = IStrategy(address(900));
         strategies[1] = IStrategy(address(901));
         return strategies;
+    }
+
+    function setAVSRegistrar(address, address) external {}
+
+    function getMaxMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
+        return maxMagnitudes[operator][strategy];
+    }
+
+    function setMaxMagnitude(address operator, IStrategy strategy, uint64 magnitude) external {
+        maxMagnitudes[operator][strategy] = magnitude;
     }
 }
 
@@ -205,8 +209,10 @@ contract ECDSAStakeRegistrySetup is Test, IECDSAStakeRegistryEvents {
     address public mockAVSRegistrarAddr;
 
     function setUp() public virtual {
+        // operator 1 and 2 are registered on M2 quorum
         (operator1, operator1Pk) = makeAddrAndKey("Signer 1");
         (operator2, operator2Pk) = makeAddrAndKey("Signer 2");
+        // operator 3 and 4 are registered on operator sets
         (operator3, operator3Pk) = makeAddrAndKey("Signer 3");
         (operator4, operator4Pk) = makeAddrAndKey("Signer 4");
 
@@ -232,49 +238,73 @@ contract ECDSAStakeRegistrySetup is Test, IECDSAStakeRegistryEvents {
         );
 
         vm.prank(owner);
-        registry.initialize(address(mockServiceManager), 100, quorum);
-
-        // Set up 3 operator sets
-        uint32[] memory operatorSetIds = new uint32[](3);
+        uint32[] memory operatorSetIds = new uint32[](2);
         operatorSetIds[0] = 1;
         operatorSetIds[1] = 2;
-        operatorSetIds[2] = 3;
+        IECDSAStakeRegistryTypes.StrategyParams[][] memory strategyParamsArray =
+            new IECDSAStakeRegistryTypes.StrategyParams[][](2);
+
+        // Strategy params for first operator set
+        strategyParamsArray[0] = new IECDSAStakeRegistryTypes.StrategyParams[](2);
+        strategyParamsArray[0][0] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(900)),
+            multiplier: 3000
+        });
+        strategyParamsArray[0][1] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(901)),
+            multiplier: 3000
+        });
+
+        // Strategy params for second operator set
+        strategyParamsArray[1] = new IECDSAStakeRegistryTypes.StrategyParams[](2);
+        strategyParamsArray[1][0] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(902)),
+            multiplier: 3000
+        });
+        strategyParamsArray[1][1] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(903)),
+            multiplier: 3000
+        });
+
+        registry.initialize(
+            address(mockServiceManager), 100, quorum, operatorSetIds, strategyParamsArray
+        );
+
         vm.prank(owner);
         registry.setCurrentOperatorSetIds(operatorSetIds);
 
-        // Set up operator set membership
-        for (uint32 setId = 1; setId <= 3; setId++) {
-            MockAllocationManager(address(mockAllocationManager)).setOperatorSetMembership(
-                operator3, address(mockServiceManager), setId, true
-            );
-            MockAllocationManager(address(mockAllocationManager)).setOperatorSetMembership(
-                operator4, address(mockServiceManager), setId, true
-            );
+        // Set up operator weights for operator3 and operator4
+        address[] memory operators = new address[](2);
+        operators[0] = operator3;
+        operators[1] = operator4;
 
+        // Set weights for each operator in each set
+        for (uint32 setId = 1; setId <= 2; setId++) {
             OperatorSet memory operatorSet =
                 OperatorSet({avs: address(mockServiceManager), id: setId});
 
+            // Get strategies for this set
             IStrategy[] memory strategies =
                 mockAllocationManager.getStrategiesInOperatorSet(operatorSet);
-            for (uint256 i = 0; i < strategies.length; i++) {
-                MockAllocationManager.Allocation memory allocation = MockAllocationManager
-                    .Allocation({currentMagnitude: 1000, lastUpdatedBlock: uint32(block.number)});
 
-                MockAllocationManager(address(mockAllocationManager)).setAllocation(
-                    operator3, operatorSet, address(strategies[i]), allocation
-                );
-                MockAllocationManager(address(mockAllocationManager)).setAllocation(
-                    operator4, operatorSet, address(strategies[i]), allocation
-                );
-
-                MockAllocationManager(address(mockAllocationManager)).setMaxMagnitude(
-                    operator3, address(strategies[i]), 1000
-                );
-                MockAllocationManager(address(mockAllocationManager)).setMaxMagnitude(
-                    operator4, address(strategies[i]), 1000
-                );
+            // Set weights and maxMagnitudes for each operator and strategy
+            for (uint256 i = 0; i < operators.length; i++) {
+                for (uint256 j = 0; j < strategies.length; j++) {
+                    // Set operator weight/allocation
+                    mockAllocationManager.setOperatorWeight(
+                        operators[i],
+                        operatorSet,
+                        address(strategies[j]),
+                        3e17 // 30% in WAD
+                    );
+                    mockAllocationManager.setMaxMagnitude(operators[i], strategies[j], 1e18);
+                }
             }
         }
+        vm.startPrank(mockAVSRegistrarAddr);
+        registry.onOperatorSetRegistered(operator3, operator3);
+        registry.onOperatorSetRegistered(operator4, operator3);
+        vm.stopPrank();
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
 
@@ -405,17 +435,17 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     }
 
     function test_RegisterOperatorM2Quorum() public {
-        address operator5 = address(0x125);
+        address operator6 = address(0x125);
         ISignatureUtils.SignatureWithSaltAndExpiry memory signature;
-        vm.prank(operator5);
-        registry.registerOperatorM2Quorum(signature, operator5);
-        assertTrue(registry.operatorRegistered(operator5));
-        assertEq(registry.getLastCheckpointOperatorWeight(operator5), 1000);
+        vm.prank(operator6);
+        registry.registerOperatorM2Quorum(signature, operator6);
+        assertTrue(registry.operatorRegistered(operator6));
+        assertEq(registry.getLastCheckpointOperatorWeight(operator6), 1000);
     }
 
     function test_RevertsWhen_AlreadyRegistered_RegisterOperatorM2Quorum() public {
         assertEq(registry.getLastCheckpointOperatorWeight(operator1), 1000);
-        assertEq(registry.getLastCheckpointTotalWeight(), 2000);
+        assertEq(registry.getLastCheckpointTotalWeight(), 2720);
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory signature;
         vm.expectRevert();
@@ -442,13 +472,14 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
     function test_DeregisterOperatorM2Quorum() public {
         assertEq(registry.getLastCheckpointOperatorWeight(operator1), 1000);
-        assertEq(registry.getLastCheckpointTotalWeight(), 2000);
+        assertEq(registry.getLastCheckpointTotalWeight(), 2720);
 
         vm.prank(operator1);
         registry.deregisterOperatorM2Quorum();
+        console.log("operator1 weight", registry.getLastCheckpointOperatorWeight(operator1));
 
         assertEq(registry.getLastCheckpointOperatorWeight(operator1), 0);
-        assertEq(registry.getLastCheckpointTotalWeight(), 1000);
+        assertEq(registry.getLastCheckpointTotalWeight(), 1720);
     }
 
     function test_RevertsWhen_NotOperator_DeregisterOperatorM2Quorum() public {
@@ -465,12 +496,12 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
     function test_When_OperatorNotRegistered_UpdateOperators() public {
         address[] memory operators = new address[](3);
-        address operator5 = address(0xBEEF);
+        address operator6 = address(0xBEEF);
         operators[0] = operator1;
         operators[1] = operator2;
-        operators[2] = operator5;
+        operators[2] = operator6;
         registry.updateOperators(operators);
-        assertEq(registry.getLastCheckpointOperatorWeight(operator5), 0);
+        assertEq(registry.getLastCheckpointOperatorWeight(operator6), 0);
     }
 
     function test_When_SingleOperator_UpdateOperators() public {
@@ -488,17 +519,17 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         operators[1] = operator2;
 
         assertEq(registry.getLastCheckpointOperatorWeight(operator1), 1000);
-        assertEq(registry.getLastCheckpointTotalWeight(), 2000);
+        assertEq(registry.getLastCheckpointTotalWeight(), 2720);
 
         registry.updateOperators(operators);
 
         assertEq(registry.getLastCheckpointOperatorWeight(operator1), 1000);
-        assertEq(registry.getLastCheckpointTotalWeight(), 2000);
+        assertEq(registry.getLastCheckpointTotalWeight(), 2720);
 
         registry.updateOperators(operators);
 
         assertEq(registry.getLastCheckpointOperatorWeight(operator1), 1000);
-        assertEq(registry.getLastCheckpointTotalWeight(), 2000);
+        assertEq(registry.getLastCheckpointTotalWeight(), 2720);
         /// TODO: Need to confirm we always pull the last if the block numbers are the same for checkpoints
         /// in the getAtBlock function or if we need to prevent this behavior
     }
@@ -644,11 +675,6 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         signatures[0] = abi.encodePacked(r, s, v);
         (v, r, s) = vm.sign(operator2Pk, msgHash);
         signatures[1] = abi.encodePacked(r, s, v);
-        console.log("operator1 weight", registry.getOperatorWeight(operator1));
-        console.log("operator2 weight", registry.getOperatorWeight(operator2));
-        console.log("threshold weight", registry.getLastCheckpointThresholdWeight());
-        console.log("operator1 status", registry.operatorRegisteredOnAVSDirectory(operator1));
-        console.log("operator2 status", registry.operatorRegisteredOnAVSDirectory(operator2));
         registry.isValidSignature(msgHash, abi.encode(signers, signatures, block.number - 1));
     }
 
@@ -1082,5 +1108,319 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
             }
         }
         return (operators, signatures);
+    }
+
+    function test_OnOperatorSetDeregistered() public {
+        address operator = operator3;
+        uint256 initialTotalWeight = registry.getLastCheckpointTotalWeight();
+
+        for (uint32 setId = 1; setId <= 2; setId++) {
+            OperatorSet memory operatorSet =
+                OperatorSet({avs: address(mockServiceManager), id: setId});
+            IStrategy[] memory strategies =
+                mockAllocationManager.getStrategiesInOperatorSet(operatorSet);
+            for (uint256 j = 0; j < strategies.length; j++) {
+                mockAllocationManager.setOperatorWeight(
+                    operator,
+                    operatorSet,
+                    address(strategies[j]),
+                    0 // Set currentMagnitude to 0
+                );
+            }
+        }
+
+        vm.expectEmit();
+        emit OperatorDeregistered(operator, address(mockServiceManager));
+
+        vm.prank(mockAVSRegistrarAddr);
+        registry.onOperatorSetDeregistered(operator);
+
+        assertEq(registry.getLastCheckpointOperatorWeight(operator), 0);
+        assertEq(registry.getLastCheckpointTotalWeight(), initialTotalWeight - 360);
+        console.log(registry.operatorRegisteredOnAVSDirectory(operator));
+    }
+
+    function test_MultipleOperatorRegistration() public {
+        address operator6 = makeAddr("operator6");
+
+        address[] memory operators = new address[](1);
+        operators[0] = operator6;
+
+        for (uint32 setId = 1; setId <= 2; setId++) {
+            OperatorSet memory operatorSet =
+                OperatorSet({avs: address(mockServiceManager), id: setId});
+
+            IStrategy[] memory strategies =
+                mockAllocationManager.getStrategiesInOperatorSet(operatorSet);
+            for (uint256 i = 0; i < operators.length; i++) {
+                for (uint256 j = 0; j < strategies.length; j++) {
+                    // Set operator weight/allocation
+                    mockAllocationManager.setOperatorWeight(
+                        operators[i],
+                        operatorSet,
+                        address(strategies[j]),
+                        3e17 // 30% in WAD
+                    );
+                    mockAllocationManager.setMaxMagnitude(operators[i], strategies[j], 1e18);
+                }
+            }
+        }
+
+        uint256 initialTotalWeight = registry.getLastCheckpointTotalWeight();
+        for (uint256 i = 0; i < operators.length; i++) {
+            vm.prank(mockAVSRegistrarAddr);
+            registry.onOperatorSetRegistered(operators[i], operators[i]);
+            assertEq(registry.getLastCheckpointOperatorWeight(operators[i]), 360);
+        }
+
+        assertEq(registry.getLastCheckpointTotalWeight(), initialTotalWeight + 360);
+    }
+
+    function test_SetAndGetCurrentOperatorSetIds() public {
+        uint32[] memory newIds = new uint32[](2);
+        newIds[0] = 3;
+        newIds[1] = 4;
+
+        vm.prank(owner);
+        registry.setCurrentOperatorSetIds(newIds);
+
+        uint32[] memory retrievedIds = registry.getCurrentOperatorSetIds();
+        assertEq(retrievedIds.length, 2);
+        assertEq(retrievedIds[0], 3);
+        assertEq(retrievedIds[1], 4);
+    }
+
+    function test_RevertsWhen_NotOwner_SetCurrentOperatorSetIds() public {
+        uint32[] memory newIds = new uint32[](2);
+        newIds[0] = 3;
+        newIds[1] = 4;
+
+        address notOwner = makeAddr("notOwner");
+        vm.prank(notOwner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        registry.setCurrentOperatorSetIds(newIds);
+    }
+
+    function test_UpdateOperatorSetsConfig() public {
+        uint32[] memory operatorSetIds = new uint32[](2);
+        operatorSetIds[0] = 1;
+        operatorSetIds[1] = 2;
+
+        StrategyParams[][] memory strategyParamsArray = new StrategyParams[][](2);
+
+        strategyParamsArray[0] = new StrategyParams[](2);
+        strategyParamsArray[0][0] =
+            StrategyParams({strategy: IStrategy(address(800)), multiplier: 4000});
+        strategyParamsArray[0][1] =
+            StrategyParams({strategy: IStrategy(address(801)), multiplier: 4000});
+        strategyParamsArray[1] = new StrategyParams[](2);
+        strategyParamsArray[1][0] =
+            StrategyParams({strategy: IStrategy(address(802)), multiplier: 4000});
+        strategyParamsArray[1][1] =
+            StrategyParams({strategy: IStrategy(address(803)), multiplier: 4000});
+
+        address[] memory operators = new address[](2);
+        operators[0] = operator3;
+        operators[1] = operator4;
+
+        vm.prank(owner);
+        registry.updateOperatorSetsConfig(operatorSetIds, strategyParamsArray, operators);
+        StrategyParams[] memory params = registry.getOperatorSetConfig(1);
+        assertEq(params.length, 2);
+        assertEq(address(params[0].strategy), address(800));
+        assertEq(params[0].multiplier, 4000);
+        assertEq(address(params[1].strategy), address(801));
+        assertEq(params[1].multiplier, 4000);
+
+        params = registry.getOperatorSetConfig(2);
+        assertEq(params.length, 2);
+        assertEq(address(params[0].strategy), address(802));
+        assertEq(params[0].multiplier, 4000);
+        assertEq(address(params[1].strategy), address(803));
+        assertEq(params[1].multiplier, 4000);
+    }
+
+    function test_RevertsWhen_NotOwner_UpdateOperatorSetsConfig() public {
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = 1;
+
+        StrategyParams[][] memory strategyParamsArray = new StrategyParams[][](1);
+        strategyParamsArray[0] = new StrategyParams[](1);
+        strategyParamsArray[0][0] =
+            StrategyParams({strategy: IStrategy(address(800)), multiplier: 4000});
+
+        address[] memory operators = new address[](1);
+        operators[0] = operator3;
+
+        address notOwner = makeAddr("notOwner");
+        vm.prank(notOwner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        registry.updateOperatorSetsConfig(operatorSetIds, strategyParamsArray, operators);
+    }
+
+    function test_RevertsWhen_LengthMismatch_UpdateOperatorSetsConfig() public {
+        uint32[] memory operatorSetIds = new uint32[](2);
+        operatorSetIds[0] = 1;
+        operatorSetIds[1] = 2;
+
+        StrategyParams[][] memory strategyParamsArray = new StrategyParams[][](1);
+        strategyParamsArray[0] = new StrategyParams[](1);
+        strategyParamsArray[0][0] =
+            StrategyParams({strategy: IStrategy(address(800)), multiplier: 4000});
+
+        address[] memory operators = new address[](1);
+        operators[0] = operator3;
+
+        vm.prank(owner);
+        vm.expectRevert(IECDSAStakeRegistryErrors.InvalidOperatorSetIdsLength.selector);
+        registry.updateOperatorSetsConfig(operatorSetIds, strategyParamsArray, operators);
+    }
+
+    function test_RevertsWhen_UnsortedStrategies_UpdateOperatorSetsConfig() public {
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = 1;
+
+        StrategyParams[][] memory strategyParamsArray = new StrategyParams[][](1);
+        strategyParamsArray[0] = new StrategyParams[](2);
+        strategyParamsArray[0][0] = StrategyParams({
+            strategy: IStrategy(address(801)), // Higher address first
+            multiplier: 4000
+        });
+        strategyParamsArray[0][1] = StrategyParams({
+            strategy: IStrategy(address(800)), // Lower address second
+            multiplier: 4000
+        });
+
+        address[] memory operators = new address[](1);
+        operators[0] = operator3;
+
+        vm.prank(owner);
+        vm.expectRevert(IECDSAStakeRegistryErrors.NotSorted.selector);
+        registry.updateOperatorSetsConfig(operatorSetIds, strategyParamsArray, operators);
+    }
+
+    function test_RegisterOperatorSetAfterM2Quorum() public {
+        // operator1 is already registered in M2 quorum from setUp()
+        assertEq(registry.getLastCheckpointOperatorWeight(operator1), 1000);
+        assertTrue(registry.operatorRegistered(operator1));
+
+        for (uint32 setId = 1; setId <= 2; setId++) {
+            OperatorSet memory operatorSet =
+                OperatorSet({avs: address(mockServiceManager), id: setId});
+
+            IStrategy[] memory strategies =
+                mockAllocationManager.getStrategiesInOperatorSet(operatorSet);
+            for (uint256 j = 0; j < strategies.length; j++) {
+                mockAllocationManager.setOperatorWeight(
+                    operator1,
+                    operatorSet,
+                    address(strategies[j]),
+                    3e17 // 30% in WAD
+                );
+                mockAllocationManager.setMaxMagnitude(operator1, strategies[j], 1e18);
+            }
+        }
+
+        vm.prank(mockAVSRegistrarAddr);
+        registry.onOperatorSetRegistered(operator1, operator1);
+
+        assertEq(registry.getLastCheckpointOperatorWeight(operator1), 1360); // 1000 from M2 + 360 from operator sets
+        assertTrue(registry.operatorRegistered(operator1));
+        assertTrue(registry.operatorRegisteredOnAVSDirectory(operator1));
+    }
+
+    function test_RegisterM2QuorumAfterOperatorSet() public {
+        // operator3 is already registered in operator sets from setUp()
+        assertEq(registry.getLastCheckpointOperatorWeight(operator3), 360);
+        assertTrue(registry.operatorRegistered(operator3));
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        vm.prank(operator3);
+        registry.registerOperatorM2Quorum(operatorSignature, operator3);
+
+        assertEq(registry.getLastCheckpointOperatorWeight(operator3), 1360); // 360 from operator sets + 1000 from M2
+        assertTrue(registry.operatorRegistered(operator3));
+        assertTrue(registry.operatorRegisteredOnAVSDirectory(operator3));
+    }
+
+    function test_OperatorRegistrationStatus() public {
+        // Test operator1: Only M2 quorum registration
+        assertTrue(registry.operatorRegisteredOnAVSDirectory(operator1));
+        assertFalse(registry.operatorRegisteredOnCurrentOperatorSets(operator1));
+        assertTrue(registry.operatorRegistered(operator1));
+
+        // Test operator3: Only Operator Sets registration
+        assertFalse(registry.operatorRegisteredOnAVSDirectory(operator3));
+        assertTrue(registry.operatorRegisteredOnCurrentOperatorSets(operator3));
+        assertTrue(registry.operatorRegistered(operator3));
+
+        // Test unregistered operator
+        address unregisteredOperator = makeAddr("unregistered");
+        assertFalse(registry.operatorRegisteredOnAVSDirectory(unregisteredOperator));
+        assertFalse(registry.operatorRegisteredOnCurrentOperatorSets(unregisteredOperator));
+        assertFalse(registry.operatorRegistered(unregisteredOperator));
+    }
+
+    function test_GetOperatorSetWeight_WithMagnitudeChanges() public {
+        assertEq(registry.getOperatorSetWeight(operator3), 360);
+        OperatorSet memory operatorSet = OperatorSet({avs: address(mockServiceManager), id: 1});
+        IStrategy[] memory strategies =
+            mockAllocationManager.getStrategiesInOperatorSet(operatorSet);
+
+        for (uint256 j = 0; j < strategies.length; j++) {
+            mockAllocationManager.setOperatorWeight(
+                operator3,
+                operatorSet,
+                address(strategies[j]),
+                1.5e17 // 15% in WAD (half of original 30%)
+            );
+        }
+
+        address[] memory operators = new address[](1);
+        operators[0] = operator3;
+        registry.updateOperators(operators);
+
+        // Weight should be halved for first set (180->90) plus full weight from second set (180) = 270
+        assertEq(registry.getOperatorSetWeight(operator3), 270);
+        mockAllocationManager.setOperatorSetMembership(operator3, operatorSet, false);
+        registry.updateOperators(operators);
+
+        assertEq(registry.getOperatorSetWeight(operator3), 180);
+    }
+
+    function test_DisableM2QuorumRegistration() public {
+        // Verify initial state - can register
+        address newOperator = makeAddr("newOperator");
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        vm.prank(newOperator);
+        registry.registerOperatorM2Quorum(operatorSignature, newOperator);
+        assertTrue(registry.operatorRegisteredOnAVSDirectory(newOperator));
+
+        vm.expectEmit(true, true, true, true);
+        emit M2QuorumRegistrationDisabled();
+        vm.prank(owner);
+        registry.disableM2QuorumRegistration();
+
+        // Try to register new operator after disable - should fail
+        address anotherOperator = makeAddr("anotherOperator");
+        vm.prank(anotherOperator);
+        vm.expectRevert(IECDSAStakeRegistryErrors.M2QuorumRegistrationIsDisabled.selector);
+        registry.registerOperatorM2Quorum(operatorSignature, anotherOperator);
+
+        assertTrue(registry.operatorRegisteredOnAVSDirectory(newOperator));
+        assertTrue(registry.operatorRegisteredOnAVSDirectory(operator1));
+        assertTrue(registry.operatorRegisteredOnAVSDirectory(operator2));
+
+        // Try to disable again - should fail
+        vm.prank(owner);
+        vm.expectRevert(IECDSAStakeRegistryErrors.M2QuorumRegistrationIsDisabled.selector);
+        registry.disableM2QuorumRegistration();
+    }
+
+    function test_RevertsWhen_NotOwner_DisableM2QuorumRegistration() public {
+        address notOwner = makeAddr("notOwner");
+        vm.prank(notOwner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        registry.disableM2QuorumRegistration();
     }
 }

@@ -39,7 +39,38 @@ contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         quorum.strategies[0] =
             IECDSAStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 10000});
 
-        permissionedRegistry.initialize(address(mockServiceManager), 100, quorum);
+        // Create operator set IDs and strategy params
+        uint32[] memory operatorSetIds = new uint32[](2);
+        operatorSetIds[0] = 1;
+        operatorSetIds[1] = 2;
+        IECDSAStakeRegistryTypes.StrategyParams[][] memory strategyParamsArray =
+            new IECDSAStakeRegistryTypes.StrategyParams[][](2);
+
+        // Strategy params for first operator set
+        strategyParamsArray[0] = new IECDSAStakeRegistryTypes.StrategyParams[](2);
+        strategyParamsArray[0][0] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(900)), // Lower address
+            multiplier: 3000
+        });
+        strategyParamsArray[0][1] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(901)), // Higher address
+            multiplier: 3000
+        });
+
+        // Strategy params for second operator set
+        strategyParamsArray[1] = new IECDSAStakeRegistryTypes.StrategyParams[](2);
+        strategyParamsArray[1][0] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(902)), // Lower address
+            multiplier: 3000
+        });
+        strategyParamsArray[1][1] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(903)), // Higher address
+            multiplier: 3000
+        });
+
+        permissionedRegistry.initialize(
+            address(mockServiceManager), 100, quorum, operatorSetIds, strategyParamsArray
+        );
 
         permissionedRegistry.permitOperator(operator6);
         permissionedRegistry.permitOperator(operator7);

@@ -33,6 +33,9 @@ abstract contract ECDSAStakeRegistryStorage is IECDSAStakeRegistry {
     /// @notice The current operator set ids
     uint32[] public currentOperatorSetIds;
 
+    /// @notice Maps operator set IDs to their strategy parameters
+    mapping(uint32 => StrategyParams[]) public operatorSetStrategyParams;
+
     /// @notice The total amount of multipliers to weigh stakes
     uint256 public constant WAD = 1e18;
 

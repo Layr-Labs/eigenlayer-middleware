@@ -43,6 +43,10 @@ interface IECDSAStakeRegistryErrors {
     error M2QuorumRegistrationIsDisabled();
     /// @notice Thrown when the operator set ids are invalid.
     error InvalidOperatorSetIdsLength();
+    /// @notice Thrown when the AllocationManager is not correctly configured.
+    error InvalidAllocationManager();
+    /// @notice Thrown when the AllocationManager is already initialized.
+    error AllocationManagerAlreadyInitialized();
 }
 
 interface IECDSAStakeRegistryTypes {
@@ -135,6 +139,13 @@ interface IECDSAStakeRegistryEvents is IECDSAStakeRegistryTypes {
      * @notice Emitted when the M2 quorum registration is disabled.
      */
     event M2QuorumRegistrationDisabled();
+
+    /*
+     * @notice Emitted when operator set strategy parameters are updated
+     * @param operatorSetId The ID of the operator set that was updated
+     * @param params The new strategy parameters for the operator set
+     */
+    event OperatorSetStrategyParamsUpdated(uint32 indexed operatorSetId, StrategyParams[] params);
 }
 
 interface IECDSAStakeRegistry is
