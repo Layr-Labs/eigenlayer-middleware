@@ -580,6 +580,42 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
         }
         return arr;
     }
+
+    /// @dev Return the stake histories for an operator for each quorum
+    function _getOperatorStakeHistories(
+        bytes32 operatorId,
+        bytes memory quorumNumbers
+    ) internal view returns (IStakeRegistry.StakeUpdate[][] memory) {
+        IStakeRegistry.StakeUpdate[][] memory operatorStakeHistories =
+            new IStakeRegistry.StakeUpdate[][](quorumNumbers.length);
+
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+
+            operatorStakeHistories[i] = stakeRegistry.getStakeHistory(operatorId, quorumNumber);
+        }
+
+        return operatorStakeHistories;
+    }
+
+    /// @dev Return the stake history at a given index for each quorum
+    function _getOperatorStakeUpdatesAtIndex(
+        bytes32 operatorId,
+        bytes memory quorumNumbers,
+        uint256 index
+    ) internal view returns (IStakeRegistry.StakeUpdate[] memory) {
+        IStakeRegistry.StakeUpdate[] memory operatorStakeUpdates =
+            new IStakeRegistry.StakeUpdate[](quorumNumbers.length);
+
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+
+            operatorStakeUpdates[i] =
+                stakeRegistry.getStakeUpdateAtIndex(quorumNumber, operatorId, index);
+        }
+
+        return operatorStakeUpdates;
+    }
 }
 
 /// @notice Tests for any nonstandard/permissioned methods
@@ -1058,6 +1094,105 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
             (, uint96 multiplier) = stakeRegistry.strategyParams(quorumNumber, strategyIndices[i]);
             assertEq(multiplier, newMultipliers[i], "invalid multiplier");
         }
+    }
+
+    /**
+     *
+     *                         setSlashableStakeLookahead
+     *
+     */
+    function testFuzz_setSlashableStakeLookahead_Revert_WhenNotRegistryCoordinatorOwner(
+        uint8 quorumNumber,
+        uint32 lookAheadBlocks
+    ) public {
+        cheats.expectRevert(IStakeRegistryErrors.OnlySlashingRegistryCoordinatorOwner.selector);
+        stakeRegistry.setSlashableStakeLookahead(quorumNumber, lookAheadBlocks);
+    }
+
+    function testFuzz_setSlashableStakeLookahead_Revert_WhenQuorumDoesNotExist(
+        uint8 quorumNumber,
+        uint32 lookAheadBlocks
+    ) public {
+        // quorums [0,nextQuorum) are initialized, so use an invalid quorumNumber
+        cheats.assume(quorumNumber >= nextQuorum);
+        cheats.expectRevert(IStakeRegistryErrors.QuorumDoesNotExist.selector);
+        cheats.prank(registryCoordinatorOwner);
+        stakeRegistry.setSlashableStakeLookahead(quorumNumber, lookAheadBlocks);
+    }
+
+    function testFuzz_setSlashableStakeLookahead_Revert_WhenQourumNotSlashable(
+        uint8 quorumNumber,
+        uint32 lookAheadBlocks
+    ) public {
+        // Only consider existing quorums and quorums which use delegated stake
+        cheats.assume(quorumNumber < nextQuorum);
+        cheats.assume(
+            stakeRegistry.stakeTypePerQuorum(quorumNumber)
+                == IStakeRegistryTypes.StakeType.TOTAL_DELEGATED
+        );
+        cheats.expectRevert(IStakeRegistryErrors.QuorumNotSlashable.selector);
+        cheats.prank(registryCoordinatorOwner);
+        stakeRegistry.setSlashableStakeLookahead(quorumNumber, lookAheadBlocks);
+    }
+
+    function testFuzz_setSlashableStakeLookahead(
+        uint8 quorumNumber,
+        uint32 lookAheadBlocks
+    ) public {
+        // Only consider non-existing quorums
+        cheats.assume(quorumNumber >= nextQuorum);
+
+        // Create a new slashable quorum
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams(
+            IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(quorumNumber)))))),
+            uint96(WEIGHTING_DIVISOR)
+        );
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.initializeSlashableStakeQuorum(quorumNumber, 1, 7 days, strategyParams);
+        IStakeRegistryTypes.StakeType stakeType = stakeRegistry.stakeTypePerQuorum(quorumNumber);
+        assertEq(
+            uint8(stakeType),
+            uint8(IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE),
+            "invalid stake type"
+        );
+
+        cheats.prank(registryCoordinatorOwner);
+        stakeRegistry.setSlashableStakeLookahead(quorumNumber, lookAheadBlocks);
+        assertEq(
+            stakeRegistry.slashableStakeLookAheadPerQuorum(quorumNumber),
+            lookAheadBlocks,
+            "invalid slashable stake lookahead"
+        );
+    }
+
+    function test_SetSlashableLookAhead_EmitsEvent() public {
+        uint8 quorumNumber = nextQuorum;
+        uint32 lookAheadBlocks = 10;
+
+        // Create a new slashable quorum
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams(
+            IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(quorumNumber)))))),
+            uint96(WEIGHTING_DIVISOR)
+        );
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.initializeSlashableStakeQuorum(quorumNumber, 1, 7 days, strategyParams);
+        IStakeRegistryTypes.StakeType stakeType = stakeRegistry.stakeTypePerQuorum(quorumNumber);
+        assertEq(
+            uint8(stakeType),
+            uint8(IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE),
+            "invalid stake type"
+        );
+
+        uint32 oldLookahead = stakeRegistry.slashableStakeLookAheadPerQuorum(quorumNumber);
+
+        cheats.prank(registryCoordinatorOwner);
+        cheats.expectEmit(true, true, true, true);
+        emit IStakeRegistryEvents.LookAheadPeriodChanged(oldLookahead, lookAheadBlocks);
+        stakeRegistry.setSlashableStakeLookahead(quorumNumber, lookAheadBlocks);
     }
 }
 
@@ -2186,6 +2321,318 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
                         "history lengths should remain unchanged"
                     );
                 }
+            }
+        }
+    }
+
+    /**
+     *
+     *                        getStakeHistory
+     *
+     */
+    function testFuzz_getStakeHistory(uint192 quorumBitmap, uint16 additionalStake) public {
+        // Setup - select a new operator and set their weight to each quorum's minimum plus some additional
+        RegisterSetup memory setup = _fuzz_setupRegisterOperator(quorumBitmap, additionalStake);
+
+        // State history should be empty
+        {
+            IStakeRegistry.StakeUpdate[][] memory stakeHistories =
+                _getOperatorStakeHistories(setup.operatorId, setup.quorumNumbers);
+            for (uint256 i = 0; i < setup.quorumNumbers.length; i++) {
+                assertTrue(stakeHistories[i].length == 0, "invalid operator stake history length");
+            }
+        }
+
+        // Register the Operator
+        cheats.prank(address(registryCoordinator));
+        (uint96[] memory resultingStakes, uint96[] memory totalStakes) =
+            stakeRegistry.registerOperator(setup.operator, setup.operatorId, setup.quorumNumbers);
+
+        // Check state history after registration
+        {
+            IStakeRegistry.StakeUpdate[] memory stakeUpdates =
+                _getLatestStakeUpdates(setup.operatorId, setup.quorumNumbers);
+            IStakeRegistry.StakeUpdate[][] memory stakeHistories =
+                _getOperatorStakeHistories(setup.operatorId, setup.quorumNumbers);
+            assertEq(
+                stakeHistories.length, setup.quorumNumbers.length, "invalid stake histories length"
+            );
+            for (uint256 i = 0; i < setup.quorumNumbers.length; i++) {
+                IStakeRegistry.StakeUpdate[] memory stakeHistory = stakeHistories[i];
+                assertTrue(stakeHistory.length == 1, "invalid operator stake history length");
+                assertEq(
+                    stakeHistory[0].stake,
+                    stakeUpdates[i].stake,
+                    "invalid operator stake history stake"
+                );
+                assertEq(
+                    stakeHistory[0].updateBlockNumber,
+                    stakeUpdates[i].updateBlockNumber,
+                    "invalid operator stake history update block number"
+                );
+                assertEq(
+                    stakeHistory[0].nextUpdateBlockNumber,
+                    stakeUpdates[i].nextUpdateBlockNumber,
+                    "invalid operator stake history next update block number"
+                );
+            }
+        }
+
+        cheats.roll(2);
+
+        // Deregister the Operator
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.deregisterOperator(setup.operatorId, setup.quorumNumbers);
+
+        // Check state history after deregistration
+        {
+            IStakeRegistry.StakeUpdate[] memory stakeUpdates =
+                _getLatestStakeUpdates(setup.operatorId, setup.quorumNumbers);
+            IStakeRegistry.StakeUpdate[][] memory stakeHistories =
+                _getOperatorStakeHistories(setup.operatorId, setup.quorumNumbers);
+            assertEq(
+                stakeHistories.length, setup.quorumNumbers.length, "invalid stake histories length"
+            );
+            for (uint256 i = 0; i < setup.quorumNumbers.length; i++) {
+                IStakeRegistry.StakeUpdate[] memory stakeHistory = stakeHistories[i];
+                assertTrue(stakeHistory.length == 2, "invalid operator stake history length");
+                assertEq(
+                    stakeHistory[1].stake,
+                    stakeUpdates[i].stake,
+                    "invalid operator stake history stake"
+                );
+                assertEq(
+                    stakeHistory[1].updateBlockNumber,
+                    stakeUpdates[i].updateBlockNumber,
+                    "invalid operator stake history update block number"
+                );
+                assertEq(
+                    stakeHistory[1].nextUpdateBlockNumber,
+                    stakeUpdates[i].nextUpdateBlockNumber,
+                    "invalid operator stake history next update block number"
+                );
+            }
+        }
+    }
+
+    function testFuzz_getStakeHistory_SingleBlock(
+        uint192 quorumsToRemove,
+        uint16 additionalStake
+    ) public {
+        DeregisterSetup memory setup = _fuzz_setupDeregisterOperator({
+            registeredFor: initializedQuorumBitmap,
+            fuzzy_toRemove: quorumsToRemove,
+            fuzzy_addtlStake: additionalStake
+        });
+        uint32 blockNum = uint32(block.number);
+
+        {
+            IStakeRegistry.StakeUpdate[] memory stakeUpdates =
+                _getLatestStakeUpdates(setup.operatorId, setup.registeredQuorumNumbers);
+            IStakeRegistry.StakeUpdate[][] memory stakeHistories =
+                _getOperatorStakeHistories(setup.operatorId, setup.registeredQuorumNumbers);
+            assertEq(
+                stakeHistories.length,
+                setup.registeredQuorumNumbers.length,
+                "invalid stake histories length"
+            );
+            for (uint256 i = 0; i < setup.registeredQuorumNumbers.length; i++) {
+                assertTrue(stakeHistories[i].length == 1, "invalid operator stake history length");
+                IStakeRegistry.StakeUpdate memory stakeHistory = stakeHistories[i][0];
+                assertEq(
+                    stakeHistory.stake,
+                    stakeUpdates[i].stake,
+                    "invalid operator stake history stake2"
+                );
+                assertEq(
+                    stakeHistory.updateBlockNumber,
+                    blockNum,
+                    "invalid operator stake history update block number"
+                );
+                assertEq(
+                    stakeHistory.nextUpdateBlockNumber,
+                    stakeUpdates[i].nextUpdateBlockNumber,
+                    "invalid operator stake history next update block number"
+                );
+            }
+        }
+
+        // deregisterOperator
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.deregisterOperator(setup.operatorId, setup.quorumsToRemove);
+
+        // Check stake history after deregistration in the same block
+        {
+            IStakeRegistry.StakeUpdate[] memory stakeUpdates =
+                _getLatestStakeUpdates(setup.operatorId, setup.registeredQuorumNumbers);
+            IStakeRegistry.StakeUpdate[][] memory stakeHistories =
+                _getOperatorStakeHistories(setup.operatorId, setup.registeredQuorumNumbers);
+            assertEq(
+                stakeHistories.length,
+                setup.registeredQuorumNumbers.length,
+                "invalid stake histories length"
+            );
+            for (uint256 i = 0; i < setup.registeredQuorumNumbers.length; i++) {
+                assertTrue(stakeHistories[i].length == 1, "invalid operator stake history length");
+                IStakeRegistry.StakeUpdate memory stakeHistory = stakeHistories[i][0];
+                assertEq(
+                    stakeHistory.stake,
+                    stakeUpdates[i].stake,
+                    "invalid operator stake history stake2"
+                );
+                assertEq(
+                    stakeHistory.updateBlockNumber,
+                    blockNum,
+                    "invalid operator stake history update block number"
+                );
+                assertEq(
+                    stakeHistory.nextUpdateBlockNumber,
+                    stakeUpdates[i].nextUpdateBlockNumber,
+                    "invalid operator stake history next update block number"
+                );
+            }
+        }
+    }
+
+    /**
+     *
+     *                        getStakeUpdateAtIndex
+     *
+     */
+    function testFuzz_getStakeUpdateAtIndex(
+        uint192 quorumsToRemove,
+        uint16 additionalStake
+    ) public {
+        DeregisterSetup memory setup = _fuzz_setupDeregisterOperator({
+            registeredFor: initializedQuorumBitmap,
+            fuzzy_toRemove: quorumsToRemove,
+            fuzzy_addtlStake: additionalStake
+        });
+
+        {
+            IStakeRegistry.StakeUpdate[] memory stakeUpdates =
+                _getLatestStakeUpdates(setup.operatorId, setup.registeredQuorumNumbers);
+            IStakeRegistry.StakeUpdate[] memory indexStakeUpdate =
+                _getOperatorStakeUpdatesAtIndex(setup.operatorId, setup.registeredQuorumNumbers, 0);
+            assertEq(
+                indexStakeUpdate.length,
+                setup.registeredQuorumNumbers.length,
+                "invalid operator stake history length"
+            );
+            for (uint256 i = 0; i < setup.registeredQuorumNumbers.length; i++) {
+                assertEq(indexStakeUpdate[i].stake, stakeUpdates[i].stake, "invalid operator stake");
+                assertEq(
+                    indexStakeUpdate[i].updateBlockNumber,
+                    uint32(block.number),
+                    "invalid operator stake update block number"
+                );
+                assertEq(
+                    indexStakeUpdate[i].nextUpdateBlockNumber,
+                    stakeUpdates[i].nextUpdateBlockNumber,
+                    "invalid operator stake next update block number"
+                );
+            }
+        }
+
+        // Force block to be mined to ensure new stake update is registered
+        cheats.roll(2);
+
+        // deregisterOperator
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.deregisterOperator(setup.operatorId, setup.quorumsToRemove);
+
+        {
+            IStakeRegistry.StakeUpdate[] memory stakeUpdates =
+                _getLatestStakeUpdates(setup.operatorId, setup.quorumsToRemove);
+            IStakeRegistry.StakeUpdate[] memory indexStakeUpdate =
+                _getOperatorStakeUpdatesAtIndex(setup.operatorId, setup.quorumsToRemove, 1);
+            assertEq(
+                indexStakeUpdate.length,
+                setup.quorumsToRemove.length,
+                "invalid operator stake history length"
+            );
+            for (uint256 i = 0; i < setup.quorumsToRemove.length; i++) {
+                assertEq(indexStakeUpdate[i].stake, stakeUpdates[i].stake, "invalid operator stake");
+                assertEq(
+                    indexStakeUpdate[i].updateBlockNumber,
+                    uint32(block.number),
+                    "invalid operator stake update block number"
+                );
+                assertEq(
+                    indexStakeUpdate[i].nextUpdateBlockNumber,
+                    stakeUpdates[i].nextUpdateBlockNumber,
+                    "invalid operator stake next update block number"
+                );
+            }
+        }
+    }
+
+    function testFuzz_getStakeUpdateAtIndex_SingleBlock(
+        uint192 quorumsToRemove,
+        uint16 additionalStake
+    ) public {
+        DeregisterSetup memory setup = _fuzz_setupDeregisterOperator({
+            registeredFor: initializedQuorumBitmap,
+            fuzzy_toRemove: quorumsToRemove,
+            fuzzy_addtlStake: additionalStake
+        });
+        uint32 blockNum = uint32(block.number);
+
+        {
+            IStakeRegistry.StakeUpdate[] memory stakeUpdates =
+                _getLatestStakeUpdates(setup.operatorId, setup.registeredQuorumNumbers);
+            IStakeRegistry.StakeUpdate[] memory indexStakeUpdate =
+                _getOperatorStakeUpdatesAtIndex(setup.operatorId, setup.registeredQuorumNumbers, 0);
+            assertEq(
+                indexStakeUpdate.length,
+                setup.registeredQuorumNumbers.length,
+                "invalid operator stake history length"
+            );
+            for (uint256 i = 0; i < setup.registeredQuorumNumbers.length; i++) {
+                assertEq(indexStakeUpdate[i].stake, stakeUpdates[i].stake, "invalid operator stake");
+                assertEq(
+                    indexStakeUpdate[i].updateBlockNumber,
+                    blockNum,
+                    "invalid operator stake update block number"
+                );
+                assertEq(
+                    indexStakeUpdate[i].nextUpdateBlockNumber,
+                    stakeUpdates[i].nextUpdateBlockNumber,
+                    "invalid operator stake next update block number"
+                );
+            }
+        }
+
+        // deregisterOperator
+        cheats.prank(address(registryCoordinator));
+        stakeRegistry.deregisterOperator(setup.operatorId, setup.quorumsToRemove);
+
+        {
+            IStakeRegistry.StakeUpdate[] memory stakeUpdates =
+                _getLatestStakeUpdates(setup.operatorId, setup.quorumsToRemove);
+            IStakeRegistry.StakeUpdate[] memory operatorStakeUpdatesPost =
+                _getOperatorStakeUpdatesAtIndex(setup.operatorId, setup.quorumsToRemove, 0);
+            assertEq(
+                operatorStakeUpdatesPost.length,
+                setup.quorumsToRemove.length,
+                "invalid operator stake history length"
+            );
+            for (uint256 i = 0; i < setup.quorumsToRemove.length; i++) {
+                assertEq(
+                    operatorStakeUpdatesPost[i].stake,
+                    stakeUpdates[i].stake,
+                    "invalid operator stake"
+                );
+                assertEq(
+                    operatorStakeUpdatesPost[i].updateBlockNumber,
+                    blockNum,
+                    "invalid operator stake update block number"
+                );
+                assertEq(
+                    operatorStakeUpdatesPost[i].nextUpdateBlockNumber,
+                    stakeUpdates[i].nextUpdateBlockNumber,
+                    "invalid operator stake next update block number"
+                );
             }
         }
     }
