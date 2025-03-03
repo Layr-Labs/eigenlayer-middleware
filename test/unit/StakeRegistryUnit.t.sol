@@ -1281,6 +1281,10 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
             _getLatestTotalStakeUpdates(setup.quorumNumbers);
         uint256[] memory operatorStakeHistoryLengths =
             _getStakeHistoryLengths(setup.operatorId, setup.quorumNumbers);
+        IStakeRegistry.StakeUpdate[][] memory newOperatorStakesHistory =
+            _getOperatorStakeHistories(setup.operatorId, setup.quorumNumbers);
+        IStakeRegistry.StakeUpdate[] memory newStakeUpdatesAtIndex =
+            _getOperatorStakeUpdatesAtIndex(setup.operatorId, setup.quorumNumbers, 0);
 
         /// Check results
         assertTrue(
@@ -1291,11 +1295,20 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
             totalStakes.length == setup.quorumNumbers.length,
             "invalid return length for total stakes"
         );
+        assertTrue(
+            newOperatorStakesHistory.length == setup.quorumNumbers.length,
+            "invalid operator stake history length"
+        );
+        assertTrue(
+            newStakeUpdatesAtIndex.length == setup.quorumNumbers.length,
+            "invalid return length for operator stakes at indices"
+        );
 
         for (uint256 i = 0; i < setup.quorumNumbers.length; i++) {
             IStakeRegistry.StakeUpdate memory newOperatorStake = newOperatorStakes[i];
             IStakeRegistry.StakeUpdate memory newTotalStake = newTotalStakes[i];
-
+            IStakeRegistry.StakeUpdate[] memory newOperatorStakeHistory =
+                newOperatorStakesHistory[i];
             // Check return value against weights, latest state read, and minimum stake
             assertEq(
                 resultingStakes[i],
@@ -1331,6 +1344,21 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
 
             // Check this is the first entry in the operator stake history
             assertEq(operatorStakeHistoryLengths[i], 1, "invalid total stake history length");
+            assertEq(newOperatorStakeHistory.length, 1, "invalid operator stake history length");
+
+            // Index is known for newOperatorStakeHistory, as this is the first entry
+            assertEq(newOperatorStakeHistory[0].stake, newOperatorStake.stake, "");
+            assertEq(newOperatorStakeHistory[0].updateBlockNumber, uint32(block.number), "");
+            assertEq(newOperatorStakeHistory[0].nextUpdateBlockNumber, 0, "");
+
+            // Check this first historical update at index 0
+            assertEq(newStakeUpdatesAtIndex[i].stake, newOperatorStake.stake, "");
+            assertEq(newStakeUpdatesAtIndex[i].updateBlockNumber, uint32(block.number), "");
+            assertEq(
+                newStakeUpdatesAtIndex[i].nextUpdateBlockNumber,
+                newOperatorStake.nextUpdateBlockNumber,
+                ""
+            );
         }
     }
 
@@ -1366,6 +1394,10 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
                 _getLatestStakeUpdates(setup.operatorId, setup.quorumNumbers);
             uint256[] memory operatorStakeHistoryLengths =
                 _getStakeHistoryLengths(setup.operatorId, setup.quorumNumbers);
+            IStakeRegistry.StakeUpdate[][] memory operatorStakesHistory =
+                _getOperatorStakeHistories(setup.operatorId, setup.quorumNumbers);
+            IStakeRegistry.StakeUpdate[] memory stakeUpdatesAtIndex =
+                _getOperatorStakeUpdatesAtIndex(setup.operatorId, setup.quorumNumbers, 0);
 
             // Sum stakes in `_totalStakeAdded` to be checked later
             _tallyTotalStakeAdded(setup.quorumNumbers, resultingStakes);
@@ -1378,7 +1410,17 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
                 totalStakes.length == setup.quorumNumbers.length,
                 "invalid return length for total stakes"
             );
+            assertTrue(
+                operatorStakesHistory.length == setup.quorumNumbers.length,
+                "invalid operator stake history length"
+            );
+            assertTrue(
+                stakeUpdatesAtIndex.length == setup.quorumNumbers.length,
+                "invalid return length for operator stakes at indices"
+            );
             for (uint256 j = 0; j < setup.quorumNumbers.length; j++) {
+                IStakeRegistry.StakeUpdate[] memory operatorStakeHistory = operatorStakesHistory[j];
+                IStakeRegistry.StakeUpdate memory stakeUpdateAtIndex = stakeUpdatesAtIndex[j];
                 // Check result against weights and latest state read
                 assertEq(
                     resultingStakes[j],
@@ -1406,6 +1448,39 @@ contract StakeRegistryUnitTests_Register is StakeRegistryUnitTests {
                 );
                 // Check this is the first entry in the operator stake history
                 assertEq(operatorStakeHistoryLengths[j], 1, "invalid total stake history length");
+                assertEq(operatorStakeHistory.length, 1, "invalid operator stake history length");
+
+                // Check the first history entry
+                assertEq(
+                    operatorStakeHistory[0].stake,
+                    newOperatorStakes[j].stake,
+                    "invalid operator stake"
+                );
+                assertEq(
+                    operatorStakeHistory[0].updateBlockNumber,
+                    uint32(block.number),
+                    "invalid operator stake update block number"
+                );
+                assertEq(
+                    operatorStakeHistory[0].nextUpdateBlockNumber,
+                    0,
+                    "invalid operator stake next update block number"
+                );
+
+                // Check the update at the first index
+                assertEq(
+                    stakeUpdateAtIndex.stake, newOperatorStakes[j].stake, "invalid operator stake"
+                );
+                assertEq(
+                    stakeUpdateAtIndex.updateBlockNumber,
+                    uint32(block.number),
+                    "invalid operator stake update block number"
+                );
+                assertEq(
+                    stakeUpdateAtIndex.nextUpdateBlockNumber,
+                    0,
+                    "invalid operator stake next update block number"
+                );
             }
         }
 
@@ -1604,6 +1679,10 @@ contract StakeRegistryUnitTests_Deregister is StakeRegistryUnitTests {
             _getLatestStakeUpdates(setup.operatorId, setup.registeredQuorumNumbers);
         IStakeRegistry.StakeUpdate[] memory newTotalStakes =
             _getLatestTotalStakeUpdates(setup.registeredQuorumNumbers);
+        IStakeRegistry.StakeUpdate[][] memory newOperatorStakesHistory =
+            _getOperatorStakeHistories(setup.operatorId, setup.registeredQuorumNumbers);
+        IStakeRegistry.StakeUpdate[] memory newStakesAtIndex =
+            _getOperatorStakeUpdatesAtIndex(setup.operatorId, setup.registeredQuorumNumbers, 0);
 
         for (uint256 i = 0; i < setup.registeredQuorumNumbers.length; i++) {
             uint8 registeredQuorum = uint8(setup.registeredQuorumNumbers[i]);
@@ -1613,6 +1692,10 @@ contract StakeRegistryUnitTests_Deregister is StakeRegistryUnitTests {
 
             IStakeRegistry.StakeUpdate memory newOperatorStake = newOperatorStakes[i];
             IStakeRegistry.StakeUpdate memory newTotalStake = newTotalStakes[i];
+
+            IStakeRegistry.StakeUpdate[] memory newOperatorStakeHistory =
+                newOperatorStakesHistory[i];
+            IStakeRegistry.StakeUpdate memory newStakeAtIndex = newStakesAtIndex[i];
 
             // Whether the operator was deregistered from this quorum
             bool deregistered = setup.quorumsToRemoveBitmap.isSet(registeredQuorum);
@@ -1646,6 +1729,32 @@ contract StakeRegistryUnitTests_Deregister is StakeRegistryUnitTests {
                     newTotalStake.nextUpdateBlockNumber,
                     0,
                     "total stake has incorrect next update block"
+                );
+                // Registration and deregistration is done in the same block
+                assertEq(newOperatorStakeHistory.length, 1, "invalid operator stake history length");
+                assertEq(
+                    newOperatorStakeHistory[0].stake, 0, "invalid operator stake history stake"
+                );
+                assertEq(
+                    newOperatorStakeHistory[0].updateBlockNumber,
+                    uint32(block.number),
+                    "invalid operator stake history update block number"
+                );
+                assertEq(
+                    newOperatorStakeHistory[0].nextUpdateBlockNumber,
+                    0,
+                    "invalid operator stake history next update block number"
+                );
+
+                // Check the update at the first index
+                assertEq(newStakeAtIndex.stake, 0, "invalid stake at index");
+                assertEq(
+                    newStakeAtIndex.updateBlockNumber,
+                    uint32(block.number),
+                    "invalid update block at index"
+                );
+                assertEq(
+                    newStakeAtIndex.nextUpdateBlockNumber, 0, "invalid next update block at index"
                 );
             } else {
                 // Ensure no change to operator or total stakes
