@@ -90,13 +90,6 @@ library BN256G2 {
         return _fromJacobian(pt2[PTXX], pt2[PTXY], pt2[PTYX], pt2[PTYY], pt2[PTZX], pt2[PTZY]);
     }
 
-    /**
-     * @notice Get the field modulus
-     * @return The field modulus
-     */
-    function GetFieldModulus() public pure returns (uint256) {
-        return FIELD_MODULUS;
-    }
 
     function submod(uint256 a, uint256 b, uint256 n) internal pure returns (uint256) {
         return addmod(a, n - b, n);
@@ -118,14 +111,6 @@ library BN256G2 {
         return (mulmod(xx, c, FIELD_MODULUS), mulmod(xy, c, FIELD_MODULUS));
     }
 
-    function _FQ2Add(
-        uint256 xx,
-        uint256 xy,
-        uint256 yx,
-        uint256 yy
-    ) internal pure returns (uint256, uint256) {
-        return (addmod(xx, yx, FIELD_MODULUS), addmod(xy, yy, FIELD_MODULUS));
-    }
 
     function _FQ2Sub(
         uint256 xx,
@@ -136,15 +121,6 @@ library BN256G2 {
         return (submod(xx, yx, FIELD_MODULUS), submod(xy, yy, FIELD_MODULUS));
     }
 
-    function _FQ2Div(
-        uint256 xx,
-        uint256 xy,
-        uint256 yx,
-        uint256 yy
-    ) internal view returns (uint256, uint256) {
-        (yx, yy) = _FQ2Inv(yx, yy);
-        return _FQ2Mul(xx, xy, yx, yy);
-    }
 
     function _FQ2Inv(uint256 x, uint256 y) internal view returns (uint256, uint256) {
         uint256 inv = _modInv(

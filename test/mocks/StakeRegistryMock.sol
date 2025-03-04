@@ -12,9 +12,6 @@ contract StakeRegistryMock is IStakeRegistry {
     // bitmap returned by the mocked `updateOperatorStake` function
     uint192 updateOperatorStakeReturnBitmap;
 
-    function isOperatorSetQuorum(
-        uint8 quorumNumber
-    ) external view returns (bool) {}
 
     function getStakeHistoryLength(
         bytes32 operatorId,
@@ -25,11 +22,6 @@ contract StakeRegistryMock is IStakeRegistry {
 
     function setSlashableStakeLookahead(uint8 quorumNumber, uint32 lookAheadBlocks) external {}
 
-    function set_updateOperatorStakeReturnBitmap(
-        uint192 newValue
-    ) external {
-        updateOperatorStakeReturnBitmap = newValue;
-    }
 
     function registryCoordinator() external view returns (address) {}
 
@@ -272,9 +264,4 @@ contract StakeRegistryMock is IStakeRegistry {
         return new bool[](operators.length);
     }
 
-    function getMockOperatorId(
-        address operator
-    ) external pure returns (bytes32) {
-        return bytes32(uint256(keccak256(abi.encodePacked(operator, "operatorId"))));
-    }
 }

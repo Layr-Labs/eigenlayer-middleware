@@ -363,30 +363,6 @@ contract MockAVSDeployer is Test {
         registryCoordinator.setM2QuorumRegistrationDisabled(false);
     }
 
-    function _labelContracts() internal {
-        vm.label(address(emptyContract), "EmptyContract");
-        vm.label(address(proxyAdmin), "ProxyAdmin");
-        vm.label(address(pauserRegistry), "PauserRegistry");
-        vm.label(address(delegationMock), "DelegationMock");
-        vm.label(address(avsDirectoryMock), "AVSDirectoryMock");
-        vm.label(address(eigenPodManagerMock), "EigenPodManagerMock");
-        vm.label(address(strategyManagerMock), "StrategyManagerMock");
-        vm.label(address(allocationManagerMock), "AllocationManagerMock");
-        vm.label(address(avsDirectoryImplementation), "AVSDirectoryImplementation");
-        vm.label(address(avsDirectory), "AVSDirectory");
-        vm.label(address(rewardsCoordinatorMock), "RewardsCoordinatorMock");
-        vm.label(address(registryCoordinator), "RegistryCoordinator");
-        vm.label(address(stakeRegistry), "StakeRegistry");
-        vm.label(address(indexRegistry), "IndexRegistry");
-        vm.label(address(blsApkRegistry), "BLSApkRegistry");
-        vm.label(address(serviceManager), "ServiceManager");
-        vm.label(address(allocationManager), "AllocationManager");
-        vm.label(address(stakeRegistryImplementation), "StakeRegistryImplementation");
-        vm.label(address(blsApkRegistryImplementation), "BLSApkRegistryImplementation");
-        vm.label(address(indexRegistryImplementation), "IndexRegistryImplementation");
-        vm.label(address(serviceManagerImplementation), "ServiceManagerImplementation");
-        vm.label(address(allocationManagerImplementation), "AllocationManagerImplementation");
-    }
 
     /**
      * @notice registers operator with coordinator
@@ -551,16 +527,4 @@ contract MockAVSDeployer is Test {
         });
     }
 
-    function _createOperators(
-        uint256 numOperators,
-        uint256 startIndex
-    ) internal returns (Operator[] memory) {
-        Operator[] memory operators = new Operator[](numOperators);
-        for (uint256 i = 0; i < numOperators; i++) {
-            operators[i] = OperatorWalletLib.createOperator(
-                string(abi.encodePacked("operator-", i + startIndex))
-            );
-        }
-        return operators;
-    }
 }

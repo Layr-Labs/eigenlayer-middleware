@@ -77,9 +77,6 @@ library BN254 {
     ///      this is because of the (unknown to us) convention used in the bn254 pairing precompile contract
     ///      "Elements a * i + b of F_p^2 are encoded as two elements of F_p, (a, b)."
     ///      https://github.com/ethereum/EIPs/blob/master/EIPS/eip-197.md#encoding
-    function generatorG2() internal pure returns (G2Point memory) {
-        return G2Point([G2x1, G2x0], [G2y1, G2y0]);
-    }
 
     // negation of the generator of group G2
     /// @dev Generator point in F_q2 is of the form: (x0 + ix1, y0 + iy1).
@@ -300,11 +297,6 @@ library BN254 {
 
     /// @return the keccak256 hash of the G2 Point
     /// @dev used for BLS signatures
-    function hashG2Point(
-        BN254.G2Point memory pk
-    ) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(pk.X[0], pk.X[1], pk.Y[0], pk.Y[1]));
-    }
 
     /**
      * @notice adapted from https://github.com/HarryR/solcrypto/blob/master/contracts/altbn128.sol

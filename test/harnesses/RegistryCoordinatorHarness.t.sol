@@ -31,15 +31,7 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         _transferOwnership(msg.sender);
     }
 
-    function setQuorumCount(
-        uint8 count
-    ) external {
-        quorumCount = count;
-    }
 
-    function setOperatorId(address operator, bytes32 operatorId) external {
-        _operatorInfo[operator].operatorId = operatorId;
-    }
 
     // @notice exposes the internal `_registerOperator` function, overriding all access controls
     function _registerOperatorExternal(

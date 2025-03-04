@@ -128,24 +128,6 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     /// @dev This is meant to be used as a one-time way to add G2 public keys for operators that have G1 keys but no G2 key on chain
     /// @param operator The address of the operator to register the G2 key for
     /// @param pubkeyG2 The G2 public key to register
-    function verifyAndRegisterG2PubkeyForOperator(
-        address operator,
-        BN254.G2Point calldata pubkeyG2
-    ) external onlyRegistryCoordinatorOwner {
-        // Get the operator's G1 pubkey. Reverts if they have not registered a key
-        (BN254.G1Point memory pubkeyG1,) = getRegisteredPubkey(operator);
-
-        _checkG2PubkeyNotSet(operator);
-
-        require(
-            BN254.pairing(pubkeyG1, BN254.negGeneratorG2(), BN254.generatorG1(), pubkeyG2),
-            InvalidBLSSignatureOrPrivateKey()
-        );
-
-        operatorToPubkeyG2[operator] = pubkeyG2;
-
-        emit NewG2PubkeyRegistration(operator, pubkeyG2);
-    }
 
     /**
      *

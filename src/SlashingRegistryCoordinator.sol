@@ -854,19 +854,6 @@ contract SlashingRegistryCoordinator is
         return QuorumBitmapHistoryLib.currentOperatorBitmap(_operatorBitmapHistory, operatorId);
     }
 
-    /**
-     * @notice Returns the index of the quorumBitmap for the provided `operatorId` at the given `blockNumber`
-     * @dev Reverts if the operator had not yet (ever) registered at `blockNumber`
-     * @dev This function is designed to find proper inputs to the `getQuorumBitmapAtBlockNumberByIndex` function
-     */
-    function _getQuorumBitmapIndexAtBlockNumber(
-        uint32 blockNumber,
-        bytes32 operatorId
-    ) internal view returns (uint32 index) {
-        return QuorumBitmapHistoryLib.getQuorumBitmapIndexAtBlockNumber(
-            _operatorBitmapHistory, blockNumber, operatorId
-        );
-    }
 
     /// @notice Returns the quorum numbers for the provided `OperatorSetIds`
     /// OperatorSetIds are used in the AllocationManager to identify operator sets for a given AVS

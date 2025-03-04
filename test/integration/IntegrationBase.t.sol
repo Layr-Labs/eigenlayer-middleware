@@ -99,14 +99,6 @@ abstract contract IntegrationBase is IntegrationConfig {
     }
 
     /// @dev Checks whether each of the quorums has been initialized in the RegistryCoordinator
-    function assert_QuorumsExist(bytes memory quorums, string memory err) internal {
-        uint8 count = slashingRegistryCoordinator.quorumCount();
-        for (uint256 i = 0; i < quorums.length; i++) {
-            uint8 quorum = uint8(quorums[i]);
-
-            assertTrue(quorum < count, err);
-        }
-    }
 
     /// BLSApkRegistry:
 
@@ -149,20 +141,6 @@ abstract contract IntegrationBase is IntegrationConfig {
     }
 
     /// @dev Checks that the user meets the minimum weight required for each quorum
-    function assert_MeetsMinimumWeight(
-        User user,
-        bytes memory quorums,
-        string memory err
-    ) internal {
-        for (uint256 i = 0; i < quorums.length; i++) {
-            uint8 quorum = uint8(quorums[i]);
-
-            uint96 minimum = stakeRegistry.minimumStakeForQuorum(quorum);
-            uint96 weight = stakeRegistry.weightOfOperatorForQuorum(quorum, address(user));
-
-            assertTrue(weight >= minimum, err);
-        }
-    }
 
     /// @dev Checks that the user meets the minimum stake required for each quorum
     function assert_HasAtLeastMinimumStake(
@@ -186,17 +164,6 @@ abstract contract IntegrationBase is IntegrationConfig {
 
     /// @dev Checks that we're specifically UNDER the max operator count, i.e. we are allowing
     /// at least one more operator to register
-    function assert_BelowMaxOperators(bytes memory quorums, string memory err) internal {
-        for (uint256 i = 0; i < quorums.length; i++) {
-            uint8 quorum = uint8(quorums[i]);
-
-            uint32 maxOperatorCount =
-                slashingRegistryCoordinator.getOperatorSetParams(quorum).maxOperatorCount;
-            uint32 curOperatorCount = indexRegistry.totalOperatorsForQuorum(quorum);
-
-            assertTrue(curOperatorCount < maxOperatorCount, err);
-        }
-    }
 
     /// AVSDirectory:
 
@@ -494,18 +461,6 @@ abstract contract IntegrationBase is IntegrationConfig {
 
     /// @dev After registering for quorums, check that the operator's stake
     /// was added to the total stake for the quorum
-    function assert_Snap_Added_TotalStake(
-        bytes memory quorums,
-        uint96[] memory addedWeights,
-        string memory err
-    ) internal {
-        uint96[] memory curTotalStakes = _getTotalStakes(quorums);
-        uint96[] memory prevTotalStakes = _getPrevTotalStakes(quorums);
-
-        for (uint256 i = 0; i < quorums.length; i++) {
-            assertEq(curTotalStakes[i], prevTotalStakes[i] + addedWeights[i], err);
-        }
-    }
 
     function assert_Snap_Removed_TotalStake(
         User user,
@@ -692,51 +647,10 @@ abstract contract IntegrationBase is IntegrationConfig {
 
     /// @dev Check that the staker has `addedShares` additional delegatable shares
     /// for each strategy since the last snapshot
-    function assert_Snap_Added_StakerShares(
-        User staker,
-        IStrategy[] memory strategies,
-        uint256[] memory addedShares,
-        string memory err
-    ) internal {
-        uint256[] memory curShares = _getStakerShares(staker, strategies);
-        // Use timewarp to get previous staker shares
-        uint256[] memory prevShares = _getPrevStakerShares(staker, strategies);
-
-        // For each strategy, check (prev + added == cur)
-        for (uint256 i = 0; i < strategies.length; i++) {
-            assertEq(prevShares[i] + addedShares[i], curShares[i], err);
-        }
-    }
 
     /// @dev Check that the staker has `removedShares` fewer delegatable shares
     /// for each strategy since the last snapshot
-    function assert_Snap_Removed_StakerShares(
-        User staker,
-        IStrategy[] memory strategies,
-        uint256[] memory removedShares,
-        string memory err
-    ) internal {
-        uint256[] memory curShares = _getStakerShares(staker, strategies);
-        // Use timewarp to get previous staker shares
-        uint256[] memory prevShares = _getPrevStakerShares(staker, strategies);
 
-        // For each strategy, check (prev - removed == cur)
-        for (uint256 i = 0; i < strategies.length; i++) {
-            assertEq(prevShares[i] - removedShares[i], curShares[i], err);
-        }
-    }
-
-    function assert_Snap_Added_QueuedWithdrawals(
-        User staker,
-        IDelegationManager.Withdrawal[] memory withdrawals,
-        string memory err
-    ) internal {
-        uint256 curQueuedWithdrawals = _getCumulativeWithdrawals(staker);
-        // Use timewarp to get previous cumulative withdrawals
-        uint256 prevQueuedWithdrawals = _getPrevCumulativeWithdrawals(staker);
-
-        assertEq(prevQueuedWithdrawals + withdrawals.length, curQueuedWithdrawals, err);
-    }
 
     function assert_Snap_Added_QueuedWithdrawal(User staker, string memory err) internal {
         uint256 curQueuedWithdrawal = _getCumulativeWithdrawals(staker);
@@ -763,52 +677,11 @@ abstract contract IntegrationBase is IntegrationConfig {
 
     /// @dev For some strategies/underlying token balances, calculate the expected shares received
     /// from depositing all tokens
-    function _calculateExpectedShares(
-        IStrategy[] memory strategies,
-        uint256[] memory tokenBalances
-    ) internal returns (uint256[] memory) {
-        uint256[] memory expectedShares = new uint256[](strategies.length);
-
-        for (uint256 i = 0; i < strategies.length; i++) {
-            IStrategy strat = strategies[i];
-
-            expectedShares[i] = strat.underlyingToShares(tokenBalances[i]);
-        }
-
-        return expectedShares;
-    }
 
     /// @dev For some strategies/underlying token balances, calculate the expected shares received
     /// from depositing all tokens
-    function _calculateExpectedTokens(
-        IStrategy[] memory strategies,
-        uint256[] memory shares
-    ) internal returns (uint256[] memory) {
-        uint256[] memory expectedTokens = new uint256[](strategies.length);
-
-        for (uint256 i = 0; i < strategies.length; i++) {
-            IStrategy strat = strategies[i];
-
-            expectedTokens[i] = strat.sharesToUnderlying(shares[i]);
-        }
-
-        return expectedTokens;
-    }
 
     /// @dev Converts a list of strategies to underlying tokens
-    function _getUnderlyingTokens(
-        IStrategy[] memory strategies
-    ) internal view returns (IERC20[] memory) {
-        IERC20[] memory tokens = new IERC20[](strategies.length);
-
-        for (uint256 i = 0; i < tokens.length; i++) {
-            IStrategy strat = strategies[i];
-
-            tokens[i] = strat.underlyingToken();
-        }
-
-        return tokens;
-    }
 
     function _contains(bytes32[] memory operatorIds, User operator) internal view returns (bool) {
         bytes32 checkId = operator.operatorId();

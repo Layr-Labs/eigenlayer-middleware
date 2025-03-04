@@ -19,11 +19,6 @@ contract AllocationManagerIntermediate is IAllocationManager {
         AllocateParams[] calldata params
     ) external virtual {}
 
-    function clearDeallocationQueue(
-        address operator,
-        IStrategy[] calldata strategies,
-        uint16[] calldata numToClear
-    ) external virtual {}
 
     function registerForOperatorSets(
         address operator,
@@ -54,18 +49,8 @@ contract AllocationManagerIntermediate is IAllocationManager {
         IStrategy[] calldata strategies
     ) external virtual {}
 
-    function getOperatorSetCount(
-        address avs
-    ) external view virtual returns (uint256) {}
 
-    function getAllocatedSets(
-        address operator
-    ) external view virtual returns (OperatorSet[] memory) {}
 
-    function getAllocatedStrategies(
-        address operator,
-        OperatorSet memory operatorSet
-    ) external view virtual returns (IStrategy[] memory) {}
 
     function getAllocation(
         address operator,
@@ -73,21 +58,8 @@ contract AllocationManagerIntermediate is IAllocationManager {
         IStrategy strategy
     ) external view virtual returns (Allocation memory) {}
 
-    function getAllocations(
-        address[] memory operators,
-        OperatorSet memory operatorSet,
-        IStrategy strategy
-    ) external view virtual returns (Allocation[] memory) {}
 
-    function getStrategyAllocations(
-        address operator,
-        IStrategy strategy
-    ) external view virtual returns (OperatorSet[] memory, Allocation[] memory) {}
 
-    function getAllocatableMagnitude(
-        address operator,
-        IStrategy strategy
-    ) external view virtual returns (uint64) {}
 
     function getMaxMagnitude(
         address operator,
@@ -104,31 +76,17 @@ contract AllocationManagerIntermediate is IAllocationManager {
         IStrategy strategy
     ) external view virtual returns (uint64[] memory) {}
 
-    function getMaxMagnitudesAtBlock(
-        address operator,
-        IStrategy[] calldata strategies,
-        uint32 blockNumber
-    ) external view virtual returns (uint64[] memory) {}
 
     function getAllocationDelay(
         address operator
     ) external view virtual returns (bool isSet, uint32 delay) {}
 
-    function getRegisteredSets(
-        address operator
-    ) external view virtual returns (OperatorSet[] memory operatorSets) {}
 
     function isOperatorSet(
         OperatorSet memory operatorSet
     ) external view virtual returns (bool) {}
 
-    function getMembers(
-        OperatorSet memory operatorSet
-    ) external view virtual returns (address[] memory operators) {}
 
-    function getMemberCount(
-        OperatorSet memory operatorSet
-    ) external view virtual returns (uint256) {}
 
     function getAVSRegistrar(
         address avs

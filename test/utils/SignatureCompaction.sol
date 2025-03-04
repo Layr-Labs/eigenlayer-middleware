@@ -14,21 +14,6 @@ library SignatureCompaction {
         return recovered;
     }
 
-    function packSignature(
-        bytes32 r,
-        bytes32 s,
-        uint8 v
-    ) internal pure returns (bytes32, bytes32) {
-        require(s <= HALF_CURVE_ORDER, "malleable signature, s too high");
-        //v parity is a single bit, encoded as either v = 27 or v = 28 -- in order to recover the bit we subtract 27
-        bytes32 vs = bytes32(uint256(bytes32(uint256(v) - 27) << 255) | uint256(s));
-        return (r, vs);
-    }
 
     //same as above, except doesn't take 'r' as argument since it is unneeded
-    function packVS(bytes32 s, uint8 v) internal pure returns (bytes32) {
-        require(s <= HALF_CURVE_ORDER, "malleable signature, s too high");
-        //v parity is a single bit, encoded as either v = 27 or v = 28 -- in order to recover the bit we subtract 27
-        return bytes32(uint256(bytes32(uint256(v) - 27) << 255) | uint256(s));
-    }
 }

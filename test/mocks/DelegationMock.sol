@@ -30,15 +30,7 @@ contract DelegationIntermediate is IDelegationManager {
         string calldata metadataURI
     ) external virtual {}
 
-    function delegateTo(
-        address operator,
-        SignatureWithExpiry memory approverSignatureAndExpiry,
-        bytes32 approverSalt
-    ) external virtual {}
 
-    function undelegate(
-        address staker
-    ) external virtual returns (bytes32[] memory withdrawalRoots) {}
 
     function queueWithdrawals(
         QueuedWithdrawalParams[] calldata params
@@ -62,25 +54,8 @@ contract DelegationIntermediate is IDelegationManager {
         bool[] calldata receiveAsTokens
     ) external virtual {}
 
-    function increaseDelegatedShares(
-        address staker,
-        IStrategy strategy,
-        uint256 existingDepositShares,
-        uint256 addedShares
-    ) external virtual {}
 
-    function decreaseBeaconChainScalingFactor(
-        address staker,
-        uint256 existingShares,
-        uint64 proportionOfOldBalance
-    ) external virtual {}
 
-    function burnOperatorShares(
-        address operator,
-        IStrategy strategy,
-        uint64 prevMaxMagnitude,
-        uint64 newMaxMagnitude
-    ) external virtual {}
 
     function completeQueuedWithdrawal(
         Withdrawal calldata withdrawal,
@@ -96,30 +71,17 @@ contract DelegationIntermediate is IDelegationManager {
         bool[] calldata receiveAsTokens
     ) external virtual {}
 
-    function delegatedTo(
-        address staker
-    ) external view virtual returns (address) {}
 
-    function delegationApproverSaltIsSpent(
-        address _delegationApprover,
-        bytes32 salt
-    ) external view virtual returns (bool) {}
 
     function cumulativeWithdrawalsQueued(
         address staker
     ) external view virtual returns (uint256) {}
 
-    function isDelegated(
-        address staker
-    ) external view virtual returns (bool) {}
 
     function isOperator(
         address operator
     ) external view virtual returns (bool) {}
 
-    function operatorDetails(
-        address operator
-    ) external view virtual returns (OperatorDetails memory) {}
 
     function delegationApprover(
         address operator
@@ -135,60 +97,19 @@ contract DelegationIntermediate is IDelegationManager {
         IStrategy[] memory strategies
     ) external view virtual returns (uint256[][] memory) {}
 
-    function getSlashableSharesInQueue(
-        address operator,
-        IStrategy strategy
-    ) external view virtual returns (uint256) {}
 
-    function getWithdrawableShares(
-        address staker,
-        IStrategy[] memory strategies
-    )
-        external
-        view
-        virtual
-        override
-        returns (uint256[] memory withdrawableShares, uint256[] memory depositShares)
-    {}
 
     function getDepositedShares(
         address staker
     ) external view virtual returns (IStrategy[] memory, uint256[] memory) {}
 
-    function depositScalingFactor(
-        address staker,
-        IStrategy strategy
-    ) external view virtual returns (uint256) {}
 
-    function getBeaconChainSlashingFactor(
-        address staker
-    ) external view virtual returns (uint64) {}
 
-    function getQueuedWithdrawals(
-        address staker
-    )
-        external
-        view
-        virtual
-        override
-        returns (Withdrawal[] memory withdrawals, uint256[][] memory shares)
-    {}
 
-    function calculateWithdrawalRoot(
-        Withdrawal memory withdrawal
-    ) external pure virtual returns (bytes32) {}
 
-    function calculateDelegationApprovalDigestHash(
-        address staker,
-        address operator,
-        address _delegationApprover,
-        bytes32 approverSalt,
-        uint256 expiry
-    ) external view virtual returns (bytes32) {}
 
     function beaconChainETHStrategy() external view virtual override returns (IStrategy) {}
 
-    function DELEGATION_APPROVAL_TYPEHASH() external view virtual override returns (bytes32) {}
 
     function registerAsOperator(
         address initDelegationApprover,
@@ -206,11 +127,6 @@ contract DelegationIntermediate is IDelegationManager {
         string calldata metadataURI
     ) external virtual {}
 
-    function redelegate(
-        address newOperator,
-        SignatureWithExpiry memory newOperatorApproverSig,
-        bytes32 approverSalt
-    ) external virtual returns (bytes32[] memory withdrawalRoots) {}
 
     function decreaseDelegatedShares(
         address staker,
@@ -227,26 +143,12 @@ contract DelegationIntermediate is IDelegationManager {
 
     function minWithdrawalDelayBlocks() external view virtual override returns (uint32) {}
 
-    function slashOperatorShares(
-        address operator,
-        IStrategy strategy,
-        uint64 prevMaxMagnitude,
-        uint64 newMaxMagnitude
-    ) external {}
 
     function getQueuedWithdrawal(
         bytes32 withdrawalRoot
     ) external view override returns (Withdrawal memory) {}
 
-    function getQueuedWithdrawalRoots(
-        address staker
-    ) external view override returns (bytes32[] memory) {}
 
-    function convertToDepositShares(
-        address staker,
-        IStrategy[] memory strategies,
-        uint256[] memory withdrawableShares
-    ) external view override returns (uint256[] memory) {}
 }
 
 contract DelegationMock is DelegationIntermediate {

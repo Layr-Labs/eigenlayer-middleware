@@ -22,39 +22,9 @@ contract Operators is Test {
         return stdJson.readUint(operatorConfigJson, ".numOperators");
     }
 
-    function getOperatorAddress(
-        uint256 index
-    ) public view returns (address) {
-        return
-            stdJson.readAddress(operatorConfigJson, string.concat(operatorPrefix(index), "Address"));
-    }
 
-    function getOperatorSchnorrSignature(
-        uint256 index
-    ) public view returns (uint256, BN254.G1Point memory) {
-        uint256 s = readUint(operatorConfigJson, index, "SField");
-        BN254.G1Point memory pubkey = BN254.G1Point({
-            X: readUint(operatorConfigJson, index, "RPoint.X"),
-            Y: readUint(operatorConfigJson, index, "RPoint.Y")
-        });
-        return (s, pubkey);
-    }
 
-    function getOperatorSecretKey(
-        uint256 index
-    ) public view returns (uint256) {
-        return readUint(operatorConfigJson, index, "SecretKey");
-    }
 
-    function getOperatorPubkeyG1(
-        uint256 index
-    ) public view returns (BN254.G1Point memory) {
-        BN254.G1Point memory pubkey = BN254.G1Point({
-            X: readUint(operatorConfigJson, index, "PubkeyG1.X"),
-            Y: readUint(operatorConfigJson, index, "PubkeyG1.Y")
-        });
-        return pubkey;
-    }
 
     function getOperatorPubkeyG2(
         uint256 index
@@ -93,9 +63,4 @@ contract Operators is Test {
         return result;
     }
 
-    function setOperatorJsonFilePath(
-        string memory filepath
-    ) public {
-        operatorConfigJson = vm.readFile(filepath);
-    }
 }
