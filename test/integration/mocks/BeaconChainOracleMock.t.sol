@@ -10,6 +10,4 @@ contract BeaconChainOracleMock {
     // contract BeaconChainOracleMock is IBeaconChainOracle {
 
     mapping(uint64 => bytes32) blockRoots;
-
-
 }

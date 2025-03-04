@@ -22,10 +22,6 @@ contract Operators is Test {
         return stdJson.readUint(operatorConfigJson, ".numOperators");
     }
 
-
-
-
-
     function getOperatorPubkeyG2(
         uint256 index
     ) public view returns (BN254.G2Point memory) {
@@ -62,5 +58,4 @@ contract Operators is Test {
         }
         return result;
     }
-
 }

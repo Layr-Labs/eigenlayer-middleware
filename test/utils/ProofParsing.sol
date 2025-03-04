@@ -21,34 +21,13 @@ contract ProofParsing is Test {
     bytes32 slotRoot;
     bytes32 executionPayloadRoot;
 
-
     function getSlot() public view returns (uint256) {
         return stdJson.readUint(proofConfigJson, ".slot");
     }
 
-
-
-
-
-
-
     function getBlockRoot() public view returns (bytes32) {
         return stdJson.readBytes32(proofConfigJson, ".blockHeaderRoot");
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     function getValidatorFields() public returns (bytes32[] memory) {
         bytes32[] memory validatorFields = new bytes32[](8);
@@ -58,8 +37,4 @@ contract ProofParsing is Test {
         }
         return validatorFields;
     }
-
-
-
-
 }

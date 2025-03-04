@@ -854,7 +854,6 @@ contract SlashingRegistryCoordinator is
         return QuorumBitmapHistoryLib.currentOperatorBitmap(_operatorBitmapHistory, operatorId);
     }
 
-
     /// @notice Returns the quorum numbers for the provided `OperatorSetIds`
     /// OperatorSetIds are used in the AllocationManager to identify operator sets for a given AVS
     function _getQuorumNumbers(

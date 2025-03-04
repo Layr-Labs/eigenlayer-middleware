@@ -14,6 +14,5 @@ library SignatureCompaction {
         return recovered;
     }
 
-
     //same as above, except doesn't take 'r' as argument since it is unneeded
 }

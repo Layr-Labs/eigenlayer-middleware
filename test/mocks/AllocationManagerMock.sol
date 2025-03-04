@@ -19,7 +19,6 @@ contract AllocationManagerIntermediate is IAllocationManager {
         AllocateParams[] calldata params
     ) external virtual {}
 
-
     function registerForOperatorSets(
         address operator,
         RegisterParams calldata params
@@ -49,17 +48,11 @@ contract AllocationManagerIntermediate is IAllocationManager {
         IStrategy[] calldata strategies
     ) external virtual {}
 
-
-
-
     function getAllocation(
         address operator,
         OperatorSet memory operatorSet,
         IStrategy strategy
     ) external view virtual returns (Allocation memory) {}
-
-
-
 
     function getMaxMagnitude(
         address operator,
@@ -76,17 +69,13 @@ contract AllocationManagerIntermediate is IAllocationManager {
         IStrategy strategy
     ) external view virtual returns (uint64[] memory) {}
 
-
     function getAllocationDelay(
         address operator
     ) external view virtual returns (bool isSet, uint32 delay) {}
 
-
     function isOperatorSet(
         OperatorSet memory operatorSet
     ) external view virtual returns (bool) {}
-
-
 
     function getAVSRegistrar(
         address avs

@@ -14,10 +14,6 @@ contract AVSDirectoryMock is IAVSDirectory {
         uint32[] calldata operatorSetIds
     ) external {}
 
-
-
-
-
     function deregisterOperatorFromOperatorSets(
         address operator,
         uint32[] calldata operatorSetIds
@@ -37,7 +33,6 @@ contract AVSDirectoryMock is IAVSDirectory {
         string calldata metadataURI
     ) external {}
 
-
     function registerOperatorToAVS(
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
@@ -47,14 +42,11 @@ contract AVSDirectoryMock is IAVSDirectory {
         address operator
     ) external {}
 
-
     function operatorSetsEnabled(
         address avs
     ) external view returns (bool) {}
 
     function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool) {}
-
-
 
     function calculateOperatorAVSRegistrationDigestHash(
         address operator,
@@ -63,28 +55,18 @@ contract AVSDirectoryMock is IAVSDirectory {
         uint256 expiry
     ) external view returns (bytes32) {}
 
-
-
-
-
-
     function initialize(
         address initialOwner,
         IPauserRegistry _pauserRegistry,
         uint256 initialPausedStatus
     ) external {}
 
-
-
     function getStrategiesInOperatorSet(
         OperatorSet memory operatorSet
     ) external view returns (IStrategy[] memory strategies) {}
-
 
     function isMember(
         address operator,
         OperatorSet memory operatorSet
     ) external view returns (bool) {}
-
-
 }

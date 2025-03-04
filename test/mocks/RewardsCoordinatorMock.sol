@@ -21,11 +21,6 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
         RewardsSubmission[] calldata rewardsSubmissions
     ) external override {}
 
-
-
-
-
-
     function createOperatorDirectedAVSRewardsSubmission(
         address avs,
         OperatorDirectedRewardsSubmission[] calldata operatorDirectedRewardsSubmissions
@@ -33,40 +28,19 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
 
     function processClaim(RewardsMerkleClaim calldata claim, address recipient) external override {}
 
-
-
-
     function setClaimerFor(
         address claimer
     ) external override {}
 
     function setClaimerFor(address earner, address claimer) external override {}
 
-
-
-
-
-
-
     function activationDelay() external view override returns (uint32) {}
-
 
     function claimerFor(
         address earner
     ) external view override returns (address) {}
 
-
     function defaultOperatorSplitBips() external view override returns (uint16) {}
-
-
-
-
-
-
-
-
-
-
 
     function rewardsUpdater() external view override returns (address) {}
 

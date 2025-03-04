@@ -12,7 +12,6 @@ contract StakeRegistryMock is IStakeRegistry {
     // bitmap returned by the mocked `updateOperatorStake` function
     uint192 updateOperatorStakeReturnBitmap;
 
-
     function getStakeHistoryLength(
         bytes32 operatorId,
         uint8 quorumNumber
@@ -21,7 +20,6 @@ contract StakeRegistryMock is IStakeRegistry {
     function setMinimumStakeForQuorum(uint8 quorumNumber, uint96 minimumStake) external {}
 
     function setSlashableStakeLookahead(uint8 quorumNumber, uint32 lookAheadBlocks) external {}
-
 
     function registryCoordinator() external view returns (address) {}
 
@@ -263,5 +261,4 @@ contract StakeRegistryMock is IStakeRegistry {
     ) external pure returns (bool[] memory) {
         return new bool[](operators.length);
     }
-
 }

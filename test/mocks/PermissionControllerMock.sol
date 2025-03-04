@@ -9,7 +9,6 @@ contract PermissionControllerIntermediate is IPermissionController {
 
     function removePendingAdmin(address account, address admin) external virtual {}
 
-
     function removeAdmin(address account, address admin) external virtual {}
 
     function setAppointee(
@@ -26,24 +25,17 @@ contract PermissionControllerIntermediate is IPermissionController {
         bytes4 selector
     ) external virtual {}
 
-
-
-
-
     function canCall(
         address account,
         address caller,
         address target,
         bytes4 selector
     ) external virtual returns (bool) {}
-
-
 }
 
 contract PermissionControllerMock is PermissionControllerIntermediate {
     mapping(address => mapping(address => mapping(address => mapping(bytes4 => bool)))) internal
         _canCall;
-
 
     function canCall(
         address account,

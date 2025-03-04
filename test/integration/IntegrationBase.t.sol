@@ -651,7 +651,6 @@ abstract contract IntegrationBase is IntegrationConfig {
     /// @dev Check that the staker has `removedShares` fewer delegatable shares
     /// for each strategy since the last snapshot
 
-
     function assert_Snap_Added_QueuedWithdrawal(User staker, string memory err) internal {
         uint256 curQueuedWithdrawal = _getCumulativeWithdrawals(staker);
         // Use timewarp to get previous cumulative withdrawals

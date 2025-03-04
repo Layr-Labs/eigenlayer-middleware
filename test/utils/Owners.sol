@@ -29,8 +29,6 @@ contract Owners is Test {
         return stdJson.readAddress(ownersConfigJson, string.concat(ownerPrefix(index), "Address"));
     }
 
-
-
     function resetOwnersConfigJson(
         string memory newConfig
     ) public {

@@ -30,8 +30,6 @@ contract DelegationIntermediate is IDelegationManager {
         string calldata metadataURI
     ) external virtual {}
 
-
-
     function queueWithdrawals(
         QueuedWithdrawalParams[] calldata params
     ) external virtual returns (bytes32[] memory) {}
@@ -54,9 +52,6 @@ contract DelegationIntermediate is IDelegationManager {
         bool[] calldata receiveAsTokens
     ) external virtual {}
 
-
-
-
     function completeQueuedWithdrawal(
         Withdrawal calldata withdrawal,
         IERC20[] calldata tokens,
@@ -71,17 +66,13 @@ contract DelegationIntermediate is IDelegationManager {
         bool[] calldata receiveAsTokens
     ) external virtual {}
 
-
-
     function cumulativeWithdrawalsQueued(
         address staker
     ) external view virtual returns (uint256) {}
 
-
     function isOperator(
         address operator
     ) external view virtual returns (bool) {}
-
 
     function delegationApprover(
         address operator
@@ -97,19 +88,11 @@ contract DelegationIntermediate is IDelegationManager {
         IStrategy[] memory strategies
     ) external view virtual returns (uint256[][] memory) {}
 
-
-
     function getDepositedShares(
         address staker
     ) external view virtual returns (IStrategy[] memory, uint256[] memory) {}
 
-
-
-
-
-
     function beaconChainETHStrategy() external view virtual override returns (IStrategy) {}
-
 
     function registerAsOperator(
         address initDelegationApprover,
@@ -127,7 +110,6 @@ contract DelegationIntermediate is IDelegationManager {
         string calldata metadataURI
     ) external virtual {}
 
-
     function decreaseDelegatedShares(
         address staker,
         uint256 curDepositShares,
@@ -143,12 +125,9 @@ contract DelegationIntermediate is IDelegationManager {
 
     function minWithdrawalDelayBlocks() external view virtual override returns (uint32) {}
 
-
     function getQueuedWithdrawal(
         bytes32 withdrawalRoot
     ) external view override returns (Withdrawal memory) {}
-
-
 }
 
 contract DelegationMock is DelegationIntermediate {

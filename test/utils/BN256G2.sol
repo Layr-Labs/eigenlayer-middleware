@@ -90,7 +90,6 @@ library BN256G2 {
         return _fromJacobian(pt2[PTXX], pt2[PTXY], pt2[PTYX], pt2[PTYY], pt2[PTZX], pt2[PTZY]);
     }
 
-
     function submod(uint256 a, uint256 b, uint256 n) internal pure returns (uint256) {
         return addmod(a, n - b, n);
     }
@@ -111,7 +110,6 @@ library BN256G2 {
         return (mulmod(xx, c, FIELD_MODULUS), mulmod(xy, c, FIELD_MODULUS));
     }
 
-
     function _FQ2Sub(
         uint256 xx,
         uint256 xy,
@@ -120,7 +118,6 @@ library BN256G2 {
     ) internal pure returns (uint256 rx, uint256 ry) {
         return (submod(xx, yx, FIELD_MODULUS), submod(xy, yy, FIELD_MODULUS));
     }
-
 
     function _FQ2Inv(uint256 x, uint256 y) internal view returns (uint256, uint256) {
         uint256 inv = _modInv(

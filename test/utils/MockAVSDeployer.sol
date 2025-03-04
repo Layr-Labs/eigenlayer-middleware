@@ -363,7 +363,6 @@ contract MockAVSDeployer is Test {
         registryCoordinator.setM2QuorumRegistrationDisabled(false);
     }
 
-
     /**
      * @notice registers operator with coordinator
      */
@@ -526,5 +525,4 @@ contract MockAVSDeployer is Test {
             salt: salt
         });
     }
-
 }

@@ -17,10 +17,6 @@ contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
         _setPausedStatus(0);
     }
 
-
-
-
-
     function stake(
         bytes calldata pubkey,
         bytes calldata signature,
@@ -33,26 +29,18 @@ contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
         uint64 proportionPodBalanceDecrease
     ) external {}
 
-
-
     function ethPOS() external view returns (IETHPOSDeposit) {}
 
     function eigenPodBeacon() external view returns (IBeacon) {}
 
     function strategyManager() external view returns (IStrategyManager) {}
 
-
-
-
     function beaconChainETHStrategy() external view returns (IStrategy) {}
-
 
     function stakerDepositShares(
         address user,
         IStrategy strategy
     ) external view returns (uint256 depositShares) {}
-
-
 
     function beaconChainSlashingFactor(
         address staker
@@ -63,6 +51,4 @@ contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
         uint256 prevRestakedBalanceWei,
         int256 balanceDeltaWei
     ) external {}
-
-
 }

@@ -31,8 +31,6 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         _transferOwnership(msg.sender);
     }
 
-
-
     // @notice exposes the internal `_registerOperator` function, overriding all access controls
     function _registerOperatorExternal(
         address operator,
