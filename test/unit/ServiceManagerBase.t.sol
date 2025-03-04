@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import {
     RewardsCoordinator,
     IRewardsCoordinator,
+    IRewardsCoordinatorEvents,
     IRewardsCoordinatorTypes,
     IERC20
 } from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
@@ -927,5 +928,40 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         cheats.prank(caller);
         cheats.expectRevert(IServiceManagerErrors.OnlyRegistryCoordinator.selector);
         serviceManager.deregisterOperatorFromOperatorSets(operator, operatorSetIds);
+    }
+
+    function testFuzz_setClaimerFor_revert_notOwner(
+        address claimer,
+        address caller
+    ) public filterFuzzedAddressInputs(claimer) filterFuzzedAddressInputs(caller) {
+        cheats.assume(caller != serviceManagerOwner);
+
+        cheats.expectRevert("Ownable: caller is not the owner");
+        cheats.prank(caller);
+        serviceManager.setClaimerFor(claimer);
+    }
+
+    function testFuzz_setClaimerFor_upateClaimer(
+        address claimer
+    ) public filterFuzzedAddressInputs(claimer) {
+        cheats.prank(serviceManagerOwner);
+        serviceManager.setClaimerFor(claimer);
+        assertEq(
+            claimer, rewardsCoordinator.claimerFor(address(serviceManager)), "claimer not updated"
+        );
+    }
+
+    function testFuzz_setClaimerFor_emitEvent(
+        address claimer
+    ) public filterFuzzedAddressInputs(claimer) {
+        // Retrieve previous claimer.
+        address prevClaimer = rewardsCoordinator.claimerFor(address(serviceManager));
+
+        // Expect an event on the RewardCoordinator.
+        cheats.expectEmit(true, true, true, true);
+        emit IRewardsCoordinatorEvents.ClaimerForSet(address(serviceManager), prevClaimer, claimer);
+
+        cheats.prank(serviceManagerOwner);
+        serviceManager.setClaimerFor(claimer);
     }
 }
