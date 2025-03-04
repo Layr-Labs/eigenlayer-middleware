@@ -1,16 +1,13 @@
 [eigenlayer-repo-link]: https://github.com/Layr-Labs/eigenlayer-contracts
 [middleware-guide-link]: #quick-start-guide-to-build-avs-contracts
 # Purpose
-This document aims to describe and summarize how actively validated services (AVSs) building on EigenLayer interact with the core EigenLayer protocol. Currently, this doc explains how AVS developers can use the APIs for: 
+This document aims to describe and summarize how autonomous verifiable services (AVSs) building on EigenLayer interact with the core EigenLayer protocol. Currently, this doc explains how AVS developers can use the APIs for:
 - enabling operators to opt-in to the AVS,
 - enabling operators to opt-out (withdraw stake) from the AVS,
-- enabling operators to continuously update their commitments to middlewares, and
-- enabling AVS to freeze operators for the purpose of slashing (the corresponding unfreeze actions are determined by the veto committee).
-
-We are currently in the process of implementing the API for rewards flow from AVSs to operators in EigenLayer. Details of this API will be added to this document in the near future.
-
-The following figure summarizes scope of this document: 
-![Doc Outline](../images/middleware_outline_doc.png)
+- enabling operators to continuously update their commitments to middlewares,
+- enabling AVSs to create operator sets,
+- enabling AVSs to submit rewards for operators and stakers, and
+- enabling AVSs to slash operators for malicious behaviour.
 
 # Introduction
 In designing EigenLayer, the EigenLabs team aspired to make minimal assumptions about the structure of AVSs built on top of it. If you are getting started looking at [EigenLayer][eigenlayer-repo-link]'s codebase, the `Slasher.sol` contains most of the logic that actually mediates the interactions between EigenLayer and AVSs. This repo contains code that can be extended, used directly, or consulted as a reference in building an AVS on top of EigenLayer. Note that there will be a single, EigenLayer-owned, `Slasher.sol` contract, but all the `middleware` contracts are AVS-specific and need to be deployed separately by AVS teams.
