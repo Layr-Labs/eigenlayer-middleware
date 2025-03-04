@@ -2487,7 +2487,7 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
             }
         }
 
-        cheats.roll(2);
+        cheats.roll(block.number + 2);
 
         // Deregister the Operator
         cheats.prank(address(registryCoordinator));
@@ -2644,7 +2644,7 @@ contract StakeRegistryUnitTests_StakeUpdates is StakeRegistryUnitTests {
         }
 
         // Force block to be mined to ensure new stake update is registered
-        cheats.roll(2);
+        cheats.roll(block.number + 2);
 
         // deregisterOperator
         cheats.prank(address(registryCoordinator));
