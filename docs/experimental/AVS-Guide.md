@@ -1,5 +1,6 @@
 [middleware-guide-link]: #quick-start-guide-to-build-avs-contracts
 [operator-set-guide-link]: #https://www.blog.eigenlayer.xyz/introducing-the-eigenlayer-security-model
+[uam-link]: #https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-003.md
 # Purpose
 This document aims to describe and summarize how autonomous verifiable services (AVSs) building on EigenLayer interact with the core EigenLayer protocol. Currently, this doc explains how AVS developers can use the APIs for:
 - enabling operators to opt-in to the AVS,
@@ -24,7 +25,7 @@ In designing EigenLayer, the EigenLabs team aspired to make minimal assumptions 
     - Posting a state root of another blockchain for a bridge service
 
 2. *Stake is "At Stake" on Tasks for a Finite Duration*: <br/>
-    It is assumed that every task (eventually) resolves. Each operator places their stake in EigenLayer “at stake” on the tasks that they perform. In order to “release” the stake (e.g. so the operator can withdraw their funds), these tasks need to eventually resolve. It is RECOMMENDED, but not required that a predefined duration is specified in the AVS contract for each task. As a guideline, the EigenLabs team believes that the duration of a task should be aligned with the longest reasonable duration that would be acceptable for an operator to keep funds “at stake”. An AVS builder should recognize that extending the duration of a task may impose significant negative externalities on the stakers of EigenLayer, and may disincentivize operators from opting-in to serving their application (so that they can attract more delegated stake).
+    It is assumed that every task (eventually) resolves. Each operator places their stake in EigenLayer “at stake” on the tasks that they perform. In order to “release” the stake (e.g. so the operator can withdraw their funds), these tasks need to eventually resolve. It is RECOMMENDED, but not required that a predefined duration is specified in the AVS contract for each task. As a guideline, the EigenLabs team believes that the duration of a task should be aligned with the longest reasonable duration that would be acceptable for an operator to keep funds “at stake”. An AVS builder should recognize that extending the duration of a task may impose significant negative externalities on the stakers of EigenLayer, and may disincentivize operators from opting-in to serving their application (so that they can attract more delegated stake). At the time of writing, the `DEALLOCATION_DELAY` which is the time it takes for stake to be deallocated from an AVS is 14 days.
 
 3. *Services Slash Only Objectively Attributable Behavior*: <br/>
     EigenLayer is built to support slashing as a result of an on-chain-checkable, objectively attributable action. An AVS SHOULD slash in EigenLayer only for such provable and attributable behavior. It is expected that operators will be very hesitant to opt-in to services that slash for other types of behavior, and other services may even choose to exclude operators who have opted-in to serving one or more AVSs with such “subjective slashing conditions”, as these slashing conditions present a significant challenge for risk modeling, and may be perceived as more dangerous in general. Some examples of on-chain-checkable, objectively attributable behavior: 
@@ -32,8 +33,10 @@ In designing EigenLayer, the EigenLabs team aspired to make minimal assumptions 
     - proofs-of-custody in EigenDA, but NOT a node ceasing to serve data; 
     - a node in a light-node-bridge AVS signing an invalid block from another chain.
 
-4. *Single Point-of-Interaction for Services and EigenLayer*: <br/>
-    It is assumed that services have a single contract that coordinates the service’s communications sent to EigenLayer. This contract – referred to as the ServiceManager – informs EigenLayer of operator registration, updates, and deregistration, as well as signaling to EigenLayer when an operator should be slashed (frozen). An AVS has full control over how it splits the actual logic involved, but is expected to route all calls to EigenLayer through a single contract. While technically possible, an AVS SHOULD NOT use multiple contracts to interact with EigenLayer. An AVS architecture using multiple contracts to interact with EigenLayer will impose additional burden on stakers in EigenLayer when withdrawing stake.
+    Intersubjective slashing will be supported in the future through the Eigen token.
+
+4. *Contract Interactions for Services and EigenLayer*: <br/>
+    It is assumed that services have a two contracts that coordinate the service’s communications sent to EigenLayer. The first contract – referred to as the `ServiceManager` – informs EigenLayer when an operator should be slashed, evicted or jailed, when rewards are submitted, setting AVS metadata and, managing UAM (refer to [here][uam-link] for further information on UAM). The second contract is the `SlashingRegistryCoordinator` which calls into EigenLayer to create operator sets and, force ejection of operators. AVSs can choose deviate from this pattern, but this will result in a worse developer and operator experience and is not reccomended.
 
 ## Integration with EigenLayer Contracts:
 In this section, we will explain various API interfaces that EigenLayer provides which are essential for AVSs to integrate with EigenLayer. 
