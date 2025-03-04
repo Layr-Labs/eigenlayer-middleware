@@ -10,7 +10,7 @@ This document aims to describe and summarize how autonomous verifiable services 
 - enabling AVSs to slash operators for malicious behaviour.
 
 # Introduction
-In designing EigenLayer, the EigenLabs team aspired to make minimal assumptions about the structure of AVSs built on top of it. If you are getting started looking at [EigenLayer][eigenlayer-repo-link]'s codebase, the `Slasher.sol` contains most of the logic that actually mediates the interactions between EigenLayer and AVSs. This repo contains code that can be extended, used directly, or consulted as a reference in building an AVS on top of EigenLayer. Note that there will be a single, EigenLayer-owned, `Slasher.sol` contract, but all the `middleware` contracts are AVS-specific and need to be deployed separately by AVS teams.
+In designing EigenLayer, the EigenLabs team aspired to make minimal assumptions about the structure of AVSs built on top of it. This repo contains code that can be extended, used directly, or consulted as a reference in building an AVS on top of EigenLayer. All the `middleware` contracts are AVS-specific and need to be deployed separately by AVS teams which interface with the EigenLayer core contracts, deployed by EigenLabs.
 
 ## Important Terminology
 - **Tasks** - A task in EigenLayer is the smallest unit of work that operators commit to perform when serving an AVS. These tasks may be associated with one or more slashing conditions applicable to the AVS. 
