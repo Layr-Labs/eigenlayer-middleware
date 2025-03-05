@@ -374,7 +374,9 @@ contract SlashingRegistryCoordinator is
     function setEjectionCooldown(
         uint256 _ejectionCooldown
     ) external onlyOwner {
+        uint256 prevEjectionCooldown = ejectionCooldown;
         ejectionCooldown = _ejectionCooldown;
+        emit EjectionCooldownUpdated(prevEjectionCooldown, _ejectionCooldown);
     }
 
     /**
@@ -390,14 +392,15 @@ contract SlashingRegistryCoordinator is
      */
     function _kickOperator(address operator, bytes memory quorumNumbers) internal virtual {
         OperatorInfo storage operatorInfo = _operatorInfo[operator];
+        // Only proceed if operator is currently registered
+        require(operatorInfo.status == OperatorStatus.REGISTERED, OperatorNotRegistered());
+
         bytes32 operatorId = operatorInfo.operatorId;
-        uint192 quorumsToRemove =
-            uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
+        uint192 quorumsToRemove = uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         uint192 currentBitmap = _currentOperatorBitmap(operatorId);
-        if (
-            operatorInfo.status == OperatorStatus.REGISTERED && !quorumsToRemove.isEmpty()
-                && quorumsToRemove.isSubsetOf(currentBitmap)
-        ) {
+
+        // Check if operator is registered for all quorums we're trying to remove them from
+        if (quorumsToRemove.isSubsetOf(currentBitmap)) {
             _forceDeregisterOperator(operator, quorumNumbers);
         }
     }

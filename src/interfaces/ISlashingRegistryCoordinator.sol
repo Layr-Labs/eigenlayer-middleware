@@ -53,6 +53,8 @@ interface ISlashingRegistryCoordinatorErrors {
     error MaxQuorumsReached();
     /// @notice Thrown when the provided AVS address does not match the expected one.
     error InvalidAVS();
+    /// @notice Thrown when attempting to kick an operator that is not registered.
+    error OperatorNotRegistered();
 }
 
 interface ISlashingRegistryCoordinatorTypes {
@@ -207,6 +209,14 @@ interface ISlashingRegistryCoordinatorEvents is ISlashingRegistryCoordinatorType
      * @param socket The new socket address for the operator (typically an IP address).
      */
     event OperatorSocketUpdate(bytes32 indexed operatorId, string socket);
+
+    /**
+     * @notice Emitted when the ejection cooldown period is updated.
+     * @dev Emitted in setEjectionCooldown().
+     * @param prevEjectionCooldown The previous cooldown duration in seconds.
+     * @param newEjectionCooldown The new cooldown duration in seconds.
+     */
+    event EjectionCooldownUpdated(uint256 prevEjectionCooldown, uint256 newEjectionCooldown);
 }
 
 interface ISlashingRegistryCoordinator is
