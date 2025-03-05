@@ -88,6 +88,8 @@ library OperatorWalletLib {
         Wallet memory vmWallet = createWallet(salt);
         BLSWallet memory blsWallet = createBLSWallet(salt);
 
+        vm.label(vmWallet.addr, name);
+
         return Operator({key: vmWallet, signingKey: blsWallet});
     }
 

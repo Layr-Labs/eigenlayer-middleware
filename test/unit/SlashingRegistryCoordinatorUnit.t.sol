@@ -51,38 +51,61 @@ import {BLSApkRegistry} from "../../src/BLSApkRegistry.sol";
 import {IndexRegistry} from "../../src/IndexRegistry.sol";
 import {SocketRegistry} from "../../src/SocketRegistry.sol";
 import {MiddlewareDeployLib} from "../utils/MiddlewareDeployLib.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {BN254} from "../../src/libraries/BN254.sol";
+import {
+    ISlashingRegistryCoordinatorEvents,
+    ISlashingRegistryCoordinatorErrors
+} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 
-contract SlashingRegistryCoordinatorUnitTest is Test {
-    InstantSlasher public instantSlasher;
-    ProxyAdmin public proxyAdmin;
-    EmptyContract public emptyContract;
-    SlashingRegistryCoordinator public slashingRegistryCoordinator;
-    CoreDeploymentLib.DeploymentData public coreDeployment;
-    PauserRegistry public pauserRegistry;
-    ERC20Mock public mockToken;
-    StrategyFactory public strategyFactory;
-    StakeRegistry public stakeRegistry;
-    BLSApkRegistry public blsApkRegistry;
-    IndexRegistry public indexRegistry;
-    SocketRegistry public socketRegistry;
+contract SlashingRegistryCoordinatorUnitTestSetup is Test, ISlashingRegistryCoordinatorEvents, ISlashingRegistryCoordinatorErrors {
+    using EnumerableSet for EnumerableSet.Bytes32Set;
+    EnumerableSet.Bytes32Set internal operatorIds;
+    mapping(bytes32 => Operator) internal operatorsByID;
 
-    address public slasher;
-    address public serviceManager;
-    Operator public operatorWallet;
-    IStrategy public mockStrategy;
-    address public proxyAdminOwner = address(uint160(uint256(keccak256("proxyAdminOwner"))));
-    address public pauser = address(uint160(uint256(keccak256("pauser"))));
-    address public unpauser = address(uint160(uint256(keccak256("unpauser"))));
-    address public churnApprover = address(uint160(uint256(keccak256("churnApprover"))));
-    address public ejector = address(uint160(uint256(keccak256("ejector"))));
+    InstantSlasher internal instantSlasher;
+    ProxyAdmin internal proxyAdmin;
+    EmptyContract internal emptyContract;
+    SlashingRegistryCoordinator internal slashingRegistryCoordinator;
+    CoreDeploymentLib.DeploymentData internal coreDeployment;
+    PauserRegistry internal pauserRegistry;
+    ERC20Mock internal mockToken;
+    StrategyFactory internal strategyFactory;
+    StakeRegistry internal stakeRegistry;
+    BLSApkRegistry internal blsApkRegistry;
+    IndexRegistry internal indexRegistry;
+    SocketRegistry internal socketRegistry;
 
-    uint32 constant DEALLOCATION_DELAY = 7 days;
-    uint32 constant ALLOCATION_CONFIGURATION_DELAY = 1 days;
+    address internal slasher;
+    address internal serviceManager;
+    Operator internal operatorWallet;
+    IStrategy internal mockStrategy;
+    address internal proxyAdminOwner = address(uint160(uint256(keccak256("proxyAdminOwner"))));
+    address internal pauser = address(uint160(uint256(keccak256("pauser"))));
+    address internal unpauser = address(uint160(uint256(keccak256("unpauser"))));
+    address internal churnApprover = address(uint160(uint256(keccak256("churnApprover"))));
+    address internal ejector = address(uint160(uint256(keccak256("ejector"))));
 
-    function setUp() public {
+    uint32 internal constant DEALLOCATION_DELAY = 7 days;
+    uint32 internal constant ALLOCATION_CONFIGURATION_DELAY = 1 days;
+    uint256 internal NUMBER_OF_OPERATORS = 10;
+
+    function setUp() public virtual {
         serviceManager = address(0x2);
         slasher = address(0x3);
-        operatorWallet = OperatorWalletLib.createOperator("operator");
+
+        for (uint256 i = 0; i < NUMBER_OF_OPERATORS; i++) {
+            string memory operatorName = string(abi.encodePacked("operator_", vm.toString(i)));
+            Operator memory operator = OperatorWalletLib.createOperator(operatorName);
+
+            bytes32 operatorId = BN254.hashG1Point(operator.signingKey.publicKeyG1);
+            operatorsByID[operatorId] = operator;
+            operatorIds.add(operatorId);
+
+            if (i == 0) {
+                operatorWallet = operator;
+            }
+        }
 
         mockToken = new ERC20Mock("Mock Token", "MOCK", address(this), 0);
 
@@ -256,9 +279,313 @@ contract SlashingRegistryCoordinatorUnitTest is Test {
         vm.label(coreDeployment.allocationManager, "AllocationManager Proxy");
     }
 
+
+}
+
+
+contract SlashingRegistryCoordinator_Initialize is SlashingRegistryCoordinatorUnitTestSetup {
     function test_initialization() public {
         assertEq(slashingRegistryCoordinator.churnApprover(), churnApprover);
         assertEq(slashingRegistryCoordinator.avs(), serviceManager);
         assertEq(slashingRegistryCoordinator.ejector(), ejector);
+        assertEq(slashingRegistryCoordinator.owner(), proxyAdminOwner);
+        assertEq(slashingRegistryCoordinator.paused(), 0);
+    }
+
+    function test_RevertsWhen_AlreadyInitialized() public {
+        vm.expectRevert("Initializable: contract is already initialized");
+        slashingRegistryCoordinator.initialize(
+            proxyAdminOwner,
+            churnApprover,
+            ejector,
+            0,
+            serviceManager
+        );
     }
 }
+
+contract SlashingRegistryCoordinator_SetChurnApprover is SlashingRegistryCoordinatorUnitTestSetup {
+    address newChurnApprover = address(0x123);
+
+    function test_setChurnApprover() public {
+        vm.prank(proxyAdminOwner);
+        slashingRegistryCoordinator.setChurnApprover(newChurnApprover);
+
+        assertEq(slashingRegistryCoordinator.churnApprover(), newChurnApprover);
+    }
+
+    function test_RevertsWhen_CallerNotOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+
+        vm.prank(address(0xdead));
+        slashingRegistryCoordinator.setChurnApprover(newChurnApprover);
+    }
+
+    function test_emitsChurnApproverUpdatedEvent() public {
+        vm.expectEmit(true, true, true, true);
+        emit ChurnApproverUpdated(churnApprover, newChurnApprover);
+
+        vm.prank(proxyAdminOwner);
+        slashingRegistryCoordinator.setChurnApprover(newChurnApprover);
+    }
+}
+
+contract SlashingRegistryCoordinator_SetEjector is SlashingRegistryCoordinatorUnitTestSetup {
+    address newEjector = address(0x456);
+
+    function test_setEjector() public {
+        vm.prank(proxyAdminOwner);
+        slashingRegistryCoordinator.setEjector(newEjector);
+
+        assertEq(slashingRegistryCoordinator.ejector(), newEjector);
+    }
+
+    function test_RevertsWhen_CallerNotOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+
+        vm.prank(address(0xdead));
+        slashingRegistryCoordinator.setEjector(newEjector);
+    }
+
+    function test_emitsEjectorUpdatedEvent() public {
+        vm.expectEmit(true, true, true, true);
+        emit EjectorUpdated(ejector, newEjector);
+
+        vm.prank(proxyAdminOwner);
+        slashingRegistryCoordinator.setEjector(newEjector);
+    }
+}
+
+contract SlashingRegistryCoordinator_SetAVS is SlashingRegistryCoordinatorUnitTestSetup {
+    address newAVS = address(0x789);
+
+    function test_setAVS() public {
+        vm.prank(proxyAdminOwner);
+        slashingRegistryCoordinator.setAVS(newAVS);
+
+        assertEq(slashingRegistryCoordinator.avs(), newAVS);
+    }
+
+    function test_RevertsWhen_CallerNotOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+
+        vm.prank(address(0xdead));
+        slashingRegistryCoordinator.setAVS(newAVS);
+    }
+}
+
+contract SlashingRegistryCoordinator_CreateSlashableStakeQuorum is SlashingRegistryCoordinatorUnitTestSetup {
+    OperatorSetParam operatorSetParams;
+    uint96 minimumStake = 100 ether;
+    uint32 lookAheadPeriod = 100;
+
+    function setUp() public override {
+        super.setUp();
+
+        // Setup operator set params
+        operatorSetParams = ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+            maxOperatorCount: 10,
+            kickBIPsOfOperatorStake: 5000,
+            kickBIPsOfTotalStake: 100
+        });
+    }
+
+    function getStrategyParams() internal pure returns (IStakeRegistryTypes.StrategyParams[] memory) {
+        IStakeRegistryTypes.StrategyParams[] memory params = new IStakeRegistryTypes.StrategyParams[](1);
+        params[0] = IStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(0x123)),
+            multiplier: 1 ether
+        });
+        return params;
+    }
+
+    function test_createSlashableStakeQuorum() public {
+        uint8 initialQuorumCount = slashingRegistryCoordinator.quorumCount();
+
+        vm.prank(proxyAdminOwner);
+        slashingRegistryCoordinator.createSlashableStakeQuorum(
+            operatorSetParams,
+            minimumStake,
+            getStrategyParams(),
+            lookAheadPeriod
+        );
+
+        assertEq(slashingRegistryCoordinator.quorumCount(), initialQuorumCount + 1);
+    }
+
+    function test_emitsQuorumCreatedEvent() public {
+        uint8 quorumNumber = slashingRegistryCoordinator.quorumCount();
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams = getStrategyParams();
+
+        // Expect the QuorumCreated event with exact parameters
+        vm.expectEmit(true, true, true, true);
+        emit QuorumCreated({
+            quorumNumber: quorumNumber,
+            operatorSetParams: operatorSetParams,
+            minimumStake: minimumStake,
+            strategyParams: strategyParams,
+            stakeType: IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE,
+            lookAheadPeriod: lookAheadPeriod
+        });
+
+        vm.prank(proxyAdminOwner);
+        slashingRegistryCoordinator.createSlashableStakeQuorum(
+            operatorSetParams,
+            minimumStake,
+            strategyParams,
+            lookAheadPeriod
+        );
+
+        // Verify quorum was created with correct parameters
+        assertEq(slashingRegistryCoordinator.quorumCount(), quorumNumber + 1);
+        OperatorSetParam memory params = slashingRegistryCoordinator.getOperatorSetParams(quorumNumber);
+        assertEq(params.maxOperatorCount, operatorSetParams.maxOperatorCount);
+        assertEq(params.kickBIPsOfOperatorStake, operatorSetParams.kickBIPsOfOperatorStake);
+        assertEq(params.kickBIPsOfTotalStake, operatorSetParams.kickBIPsOfTotalStake);
+    }
+
+    function test_RevertsWhen_CallerNotOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+
+        vm.prank(address(0xdead));
+        slashingRegistryCoordinator.createSlashableStakeQuorum(
+            operatorSetParams,
+            minimumStake,
+            getStrategyParams(),
+            lookAheadPeriod
+        );
+    }
+
+    function test_RevertsWhen_MaxQuorumsReached() public {
+        // Create quorums until we reach the maximum
+        vm.startPrank(proxyAdminOwner);
+
+        // MAX_QUORUM_COUNT is 192, but we already have one quorum from setup
+        // So we need to create 191 more
+        for (uint8 i = 0; i < 191; i++) {
+            slashingRegistryCoordinator.createSlashableStakeQuorum(
+                operatorSetParams,
+                minimumStake,
+                getStrategyParams(),
+                lookAheadPeriod
+            );
+        }
+
+        vm.expectRevert(MaxQuorumsReached.selector);
+        slashingRegistryCoordinator.createSlashableStakeQuorum(
+            operatorSetParams,
+            minimumStake,
+            getStrategyParams(),
+            lookAheadPeriod
+        );
+
+        vm.stopPrank();
+    }
+}
+
+contract SlashingRegistryCoordinator_CreateTotalDelegatedStakeQuorum is SlashingRegistryCoordinatorUnitTestSetup {
+    ISlashingRegistryCoordinatorTypes.OperatorSetParam operatorSetParams;
+    uint96 minimumStake = 100 ether;
+
+    function setUp() public override {
+        super.setUp();
+
+        operatorSetParams = ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+            maxOperatorCount: 10,
+            kickBIPsOfOperatorStake: 0,
+            kickBIPsOfTotalStake: 0
+        });
+    }
+
+    function getStrategyParams() internal view returns (IStakeRegistryTypes.StrategyParams[] memory) {
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
+            strategy: mockStrategy,
+            multiplier: 1 ether
+        });
+        return strategyParams;
+    }
+
+    function test_createTotalDelegatedStakeQuorum() public {
+        uint8 initialQuorumCount = slashingRegistryCoordinator.quorumCount();
+
+        vm.prank(proxyAdminOwner);
+        slashingRegistryCoordinator.createTotalDelegatedStakeQuorum(
+            operatorSetParams,
+            minimumStake,
+            getStrategyParams()
+        );
+
+        assertEq(slashingRegistryCoordinator.quorumCount(), initialQuorumCount + 1);
+    }
+
+    function test_emitsQuorumCreatedEvent() public {
+        uint8 quorumNumber = slashingRegistryCoordinator.quorumCount();
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams = getStrategyParams();
+
+        // Expect the QuorumCreated event with exact parameters
+        vm.expectEmit(true, true, true, true);
+        emit QuorumCreated({
+            quorumNumber: quorumNumber,
+            operatorSetParams: operatorSetParams,
+            minimumStake: minimumStake,
+            strategyParams: strategyParams,
+            stakeType: IStakeRegistryTypes.StakeType.TOTAL_DELEGATED,
+            lookAheadPeriod: 0
+        });
+
+        vm.prank(proxyAdminOwner);
+        slashingRegistryCoordinator.createTotalDelegatedStakeQuorum(
+            operatorSetParams,
+            minimumStake,
+            strategyParams
+        );
+
+        // Verify quorum was created with correct parameters
+        assertEq(slashingRegistryCoordinator.quorumCount(), quorumNumber + 1);
+        OperatorSetParam memory params = slashingRegistryCoordinator.getOperatorSetParams(quorumNumber);
+        assertEq(params.maxOperatorCount, operatorSetParams.maxOperatorCount);
+        assertEq(params.kickBIPsOfOperatorStake, operatorSetParams.kickBIPsOfOperatorStake);
+        assertEq(params.kickBIPsOfTotalStake, operatorSetParams.kickBIPsOfTotalStake);
+    }
+
+    function test_RevertsWhen_CallerNotOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+
+        vm.prank(address(0xdead));
+        slashingRegistryCoordinator.createTotalDelegatedStakeQuorum(
+            operatorSetParams,
+            minimumStake,
+            getStrategyParams()
+        );
+    }
+
+    function test_RevertsWhen_MaxQuorumsReached() public {
+        // Create quorums until we reach the maximum
+        vm.startPrank(proxyAdminOwner);
+
+        // MAX_QUORUM_COUNT is 192, but we already have one quorum from setup
+        // So we need to create 191 more
+        for (uint8 i = 0; i < 191; i++) {
+            slashingRegistryCoordinator.createTotalDelegatedStakeQuorum(
+                operatorSetParams,
+                minimumStake,
+                getStrategyParams()
+            );
+        }
+
+        vm.expectRevert(MaxQuorumsReached.selector);
+        slashingRegistryCoordinator.createTotalDelegatedStakeQuorum(
+            operatorSetParams,
+            minimumStake,
+            getStrategyParams()
+        );
+
+        vm.stopPrank();
+    }
+}
+
+
+
+
+
