@@ -145,7 +145,7 @@ function verifyAndRegisterG2PubkeyForOperator(
 This method is only callable by the `RegistryCoordinatorOwner`, which is the account that has the `owner` role inside the `RegistryCoordinator`.
 
 *Effects*
-* Stores the corresponding G2 public key of an operator's BLS keypair, based on their G1 public key.
+* Stores the corresponding G2 public key of an operator's BLS keypair, based on their G1 public key, updating `operatorToPubkeyG2[operator]`.
 
 *Requirements*
 * Caller MUST be the `RegistryCoordinatorOwner`

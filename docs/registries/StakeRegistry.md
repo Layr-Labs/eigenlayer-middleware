@@ -172,19 +172,22 @@ These properties are enforced by the `RegistryCoordinator`.
 
 ### System Configuration
 
-This method is used by the `RegistryCoordinator` to initialize new quorums in the `StakeRegistry`:
-* [`initializeQuorum`](#initializequorum)
+Two methods are used by the `RegistryCoordinator` to initialize new quorums in the `StakeRegistry`:
+* [`initializeDelegatedStakeQuorum`](#initializedelegatedstakequorum)
+* [`initializeSlashableStakeQuorum`](#initializeslashablestakequorum)
+
 
 These methods are used by the `RegistryCoordinator's` Owner to configure initialized quorums in the `StakeRegistry`. They are not expected to be called very often, and will require updating Operator stakes via `RegistryCoordinator.updateOperatorsForQuorum` to maintain up-to-date views on Operator stake weights. Methods follow:
 * [`setMinimumStakeForQuorum`](#setminimumstakeforquorum)
 * [`addStrategies`](#addstrategies)
+* [`setSlashableLookAhead`](#setslashablelookahead)
 * [`removeStrategies`](#removestrategies)
 * [`modifyStrategyParams`](#modifystrategyparams)
 
-#### `initializeQuorum`
+#### `initializeDelegatedStakeQuorum`
 
 ```solidity
-function initializeQuorum(
+function initializeDelegatedStakeQuorum(
     uint8 quorumNumber,
     uint96 minimumStake,
     StrategyParams[] memory _strategyParams
@@ -199,19 +202,60 @@ struct StrategyParams {
 }
 ```
 
-This method is ONLY callable by the `RegistryCoordinator`, and is called when the `RegistryCoordinator` Owner creates a new quorum.
+This method is ONLY callable by the `RegistryCoordinator`, and is called when the `RegistryCoordinator` Owner creates a new delegated stake quorum.
 
-`initializeQuorum` initializes a new quorum by pushing an initial `StakeUpdate` to `_totalStakeHistory[quorumNumber]`, with an initial stake of 0. Other methods can validate that a quorum exists by checking whether `_totalStakeHistory[quorumNumber]` has a nonzero length.
+`initializeDelegatedStakeQuorum` initializes a new delegated stake quorum by pushing an initial `StakeUpdate` to `_totalStakeHistory[quorumNumber]`, with an initial stake of 0. Other methods can validate that a quorum exists by checking whether `_totalStakeHistory[quorumNumber]` has a nonzero length.
 
 Additionally, this method configures a `minimumStake` for the quorum, as well as the `StrategyParams` it considers when calculating stake weight.
 
 *Entry Points*:
-* `RegistryCoordinator.createQuorum`
+* `RegistryCoordinator.createDelegatedStakeQuorum`
 
 *Effects*:
 * See `addStrategies` below
 * See `setMinimumStakeForQuorum` below
 * Pushes a `StakeUpdate` to `_totalStakeHistory[quorumNumber]`. The update's `updateBlockNumber` is set to the current block, and `stake` is set to 0.
+
+*Requirements*:
+* Caller MUST be the `RegistryCoordinator`
+* `quorumNumber` MUST NOT belong to an existing, initialized quorum
+* See `addStrategies` below
+* See `setMinimumStakeForQuorum` below
+
+#### `initializeSlashableStakeQuorum`
+
+```solidity
+function initializeSlashableStakeQuorum(
+    uint8 quorumNumber,
+    uint96 minimumStake,
+    uint32 lookAheadPeriod,
+    StrategyParams[] memory _strategyParams
+)
+    public
+    virtual
+    onlyRegistryCoordinator
+
+struct StrategyParams {
+    IStrategy strategy;
+    uint96 multiplier;
+}
+```
+
+This method is ONLY callable by the `RegistryCoordinator`, and is called when the `RegistryCoordinator` Owner creates a new slashable stake quorum.
+
+`initializeSlashableStakeQuorum` initializes a new quorum by pushing an initial `StakeUpdate` to `_totalStakeHistory[quorumNumber]`, with an initial stake of 0. Other methods can validate that a quorum exists by checking whether `_totalStakeHistory[quorumNumber]` has a nonzero length.
+
+This method configures a `minimumStake` for the quorum, defines the `StrategyParams` used when calculating stake weight and sets the `lookAheadPeriod` which defines how many blocks ahead to when considering the minimum amount of slahable stake. Note that `lookAheadPeriod` should be less than the `DEALLOCATION_DELAY` (14 days within the `AllocationManager`) blocks in the future, or the values returned from this method may inaccurate due to deallocations.
+
+*Entry Points*:
+* `RegistryCoordinator.createSlashableStakeQuorum`
+
+*Effects*:
+* See `addStrategies` below
+* See `setMinimumStakeForQuorum` below
+* See `setSlashableLookAhead` below
+* Pushes a `StakeUpdate` to `_totalStakeHistory[quorumNumber]`. The update's `updateBlockNumber` is set to the current block, and `stake` is set to 0.
+
 
 *Requirements*:
 * Caller MUST be the `RegistryCoordinator`
@@ -335,5 +379,28 @@ Allows the `RegistryCoordinator` Owner to modify the multipliers specified in a 
 * `quorumNumber` MUST belong to an existing, initialized quorum
 * `strategyIndices` MUST NOT be empty
 * `strategyIndices` and `newMultipliers` MUST have equal lengths
+
+
+#### `setSlashableLookAhead`
+
+```solidity
+function setSlashableStakeLookahead(
+    uint8 quorumNumber,
+    uint32 _lookAheadBlocks
+)
+    external
+    onlyCoordinatorOwner
+    quorumExists(quorumNumber)
+```
+
+Allows the `RegistryCoordinator` Owner to modify the slashable lookahead for a slashable stake quorum.
+
+*Effects*
+* The quorum's `SlashablableStakeLookAhead` is updated to `_lookAheadBlocks`
+
+*Requirements*
+* Caller MUST be `RegistryCoordinator.owner()`
+* `quorumNumber` MUST belong to an existing initialized quorum
+* `quorumNumber` MUST map to a slashable stake quorum
 
 ---
