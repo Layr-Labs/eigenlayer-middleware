@@ -834,6 +834,15 @@ contract SlashingRegistryCoordinator is
         indexRegistry.initializeQuorum(quorumNumber);
         blsApkRegistry.initializeQuorum(quorumNumber);
 
+        emit QuorumCreated({
+            quorumNumber: quorumNumber,
+            operatorSetParams: operatorSetParams,
+            minimumStake: minimumStake,
+            strategyParams: strategyParams,
+            stakeType: stakeType,
+            lookAheadPeriod: lookAheadPeriod
+        });
+
         // Hook to allow for any post-create quorum logic
         _afterCreateQuorum(quorumNumber);
     }

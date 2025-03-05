@@ -151,6 +151,24 @@ interface ISlashingRegistryCoordinatorEvents is ISlashingRegistryCoordinatorType
     event OperatorDeregistered(address indexed operator, bytes32 indexed operatorId);
 
     /**
+     * @notice Emitted when a new quorum is created.
+     * @param quorumNumber The identifier of the quorum being created.
+     * @param operatorSetParams The operator set parameters for the quorum.
+     * @param minimumStake The minimum stake required for operators in this quorum.
+     * @param strategyParams The strategy parameters for stake calculation.
+     * @param stakeType The type of stake being tracked (TOTAL_DELEGATED or TOTAL_SLASHABLE).
+     * @param lookAheadPeriod The number of blocks to look ahead when calculating slashable stake (only used for TOTAL_SLASHABLE).
+     */
+    event QuorumCreated(
+        uint8 indexed quorumNumber,
+        OperatorSetParam operatorSetParams,
+        uint96 minimumStake,
+        IStakeRegistryTypes.StrategyParams[] strategyParams,
+        IStakeRegistryTypes.StakeType stakeType,
+        uint32 lookAheadPeriod
+    );
+
+    /**
      * @notice Emitted when a quorum's operator set parameters are updated.
      * @dev Emitted in _setOperatorSetParams().
      * @param quorumNumber The identifier of the quorum being updated.
