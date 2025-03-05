@@ -43,7 +43,10 @@ In designing EigenLayer, the EigenLabs team aspired to make minimal assumptions 
 ## Integration with EigenLayer Contracts:
 In this section, we will explain various API interfaces that EigenLayer provides which are essential for AVSs to integrate with EigenLayer. 
 
-### *Operator Registration*
+### *Operator Registration into EigenLayer Protocol*
+Prior to operators registering into an AVS they must register into the EigenLayer protocol and likely accumulate some stake (AVSs may chose to not set a minimum stake). To do this operators must interact with the `DelegationManager` calling `registerAsOperator(..)` supplying the address which acts as the delegation approver (the address which can approve stakers to delegate to an operator. If set to the zero address, any staker can delegate to an operator), an allocation delay (the time it takes for their stake to become active), and a metadata URI. Once registered, stakers can then delegate their stake to the operator by calling `delegateTo(..)` on the `DelegationManager`.
+
+### *Operator Registration into AVS*
 An operator opts into an AVS by allocating stake to an AVS then register for the operator set. The flow is as follows:
 1. The operator calls `modifyAllocations(..)`, supplying the operator set of the AVS, the strategies and the magnitudes to allocate. After the transaction is successful, the allocation delay is triggered, which is the time it takes for the stake to become active or slashable. Operators configure this value and can be set to 0.
 2. After the allocation delay has elapsed, the operator can then register for the operator set they allocated to, by calling `registerForOperatorSets(..)`, supplying the address of the `SlashingRegistryCoordinator` which implements the `IAVSRegistrar` interface, operator set IDs and, any extra data needed for registration.
@@ -51,14 +54,14 @@ An operator opts into an AVS by allocating stake to an AVS then register for the
 The following figure illustrates the above flow:
 
 <p align="center">
-  <img src="../images/operator_registration.png" alt="operator registration" width="500">
+  <img src="./images/operator_registration.png" alt="operator registration" width="500">
 </p>
 
-### *Operator Deregistration*
+### *Operator Deregistration from AVS*
 Operators deregister through the `AllocationManager` by calling `deregisterFromOperatorSets(..)` supplying the operator set IDs to deregister from and the AVS' `SlashingRegistryCoordinatorAddress`. Note that the stake will be slashable until the `DEALLOCATION_DELAY` passes, which is set within the protocol to be 14 days. After 14 days, the operator's status will be updated to `DEREGISTERED`
 
 <p align="center">
-  <img src="../images/operator_deregistration.png" alt="operator deregistration" width="400" height="800">
+  <img src="./images/operator_deregistration.png" alt="operator deregistration" width="400" height="800">
 </p>
 
 ### *Stake Updates*
