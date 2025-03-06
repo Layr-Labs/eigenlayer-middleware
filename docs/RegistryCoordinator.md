@@ -23,7 +23,7 @@ Existing AVSs upgrading to this version `RegistryCoordinator` will be in a state
 1. Upgrade `RegistryCoordinator`
 2. Create delegated or slashable stake quorums via `createDelegatedStakeQuorum` or `createSlashableStakeQuorum`
 3. Allow time for operators to register for the new quorums using the `AllocationManager`
-4. After adequate time, disable M2 registration by calling `disableM2QuorumRegistration`, note that operators can still deregister from the legacy quorums.
+4. After adequate stake has been migrated (e.g. for the sake of securing new tasks of operator sets), disable M2 registration by calling `disableM2QuorumRegistration`, note that operators can still deregister from the legacy quorums
 
 #### High-level Concepts
 
