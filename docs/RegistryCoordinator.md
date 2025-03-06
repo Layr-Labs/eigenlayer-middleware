@@ -18,6 +18,13 @@ The `RegistryCoordinator` has four primary functions:
 
 Refer to the [`SlashingRegistryCoordinator`](./SlashingRegistryCoordinator) for operator set functionality.
 
+#### Migration
+Existing AVSs upgrading to this version `RegistryCoordinator` will be in a state where both M2 quorum registration and operator set registration will be enabled. AVSs must be aware of this. Operator sets will be enabled on upon the first call to either `createDelegatedStakeQuorum` or `createSlashableStakeQuorum` which are inherited from the `SlashingRegistryCoordinator`. The suggested flow for this migration is as follows:
+1. Upgrade `RegistryCoordinator`
+2. Create delegated or slashable stake quorums via `createDelegatedStakeQuorum` or `createSlashableStakeQuorum`
+3. Allow time for operators to register for the new quorums using the `AllocationManager`
+4. After adequate time, disable M2 registration by calling `disableM2QuorumRegistration`, note that operators can still deregister from the legacy quorums.
+
 #### High-level Concepts
 
 This document organizes methods according to the following themes (click each to be taken to the relevant section):
