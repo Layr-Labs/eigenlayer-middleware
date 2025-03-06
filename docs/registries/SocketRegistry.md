@@ -8,7 +8,7 @@ The `SocketRegistry` is a simple registry contract that keeps track of operator 
 
 #### High-level Concepts
 
-This registry maintains a mapping between operator IDs (represented as bytes32 values) and their corresponding socket information. The contract is designed to work in conjunction with the `SlashingRegistryCoordinator`, which is the only entity authorized to update socket information for operators.
+This registry maintains a mapping between operator IDs (represented as bytes32 values) and their corresponding socket information. The contract is designed to work in conjunction with the `SlashingRegistryCoordinator`, which is the only contract authorized to update socket information for operators.
 
 This document organizes methods according to the following themes:
 * [Socket Management](#socket-management)
@@ -19,7 +19,6 @@ This document organizes methods according to the following themes:
 
 These methods allow for managing operator socket information:
 * [`setOperatorSocket`](#setoperatorsocket)
-* [`getOperatorSocket`](#getoperatorsocket)
 
 #### `setOperatorSocket`
 
