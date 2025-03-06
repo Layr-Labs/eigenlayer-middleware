@@ -8,13 +8,15 @@
 | -------- | -------- | -------- |
 | [`RegistryCoordinator.sol`](../src/RegistryCoordinator.sol) | Singleton | Transparent proxy |
 
-The `RegistryCoordinator` is a pre-slashing release contract, that targets M2 quorum functionality and does not support operator sets. Existing AVSs who wish to upgrade to operator sets and must first call `disableM2QuorumRegistration` and then deploy the `SlashingRegistryCoordinator`. Note, that this is optional, but is suggested to gain the benefits of operator sets.
+The `RegistryCoordinator` is a contract that exisiting AVSs using M2 quorums who wish to enable operator sets should upgrade to. New AVSs should deploy the `SlashingRegistryCoordinator` to use operator sets. The `RegistryCoordinator` inherits the `SlashingRegistryCoordinator` to expose the operator set functionality.
 
 The `RegistryCoordinator` has four primary functions:
 1. It is the primary entry and exit point for operators as they register for and deregister from quorums, and manages registration and deregistration in the `BLSApkRegistry`, `StakeRegistry`, and `IndexRegistry`. It also hooks into the EigenLayer core contracts, updating the core `DelegationManager` when an Operator registers/deregisters.
 2. It allows anyone to update the current stake of any registered operator
 3. It allows the Owner to initialize and configure new quorums
 4. Disabling M2 quorum registration to upgrade to operator sets
+
+Refer to the [`SlashingRegistryCoordinator`](./SlashingRegistryCoordinator) for operator set functionality.
 
 #### High-level Concepts
 
