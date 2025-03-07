@@ -6,11 +6,11 @@
 | -------- | -------- | -------- |
 | [`EjectionManager.sol`](../src/EjectionManager.sol) | Singleton | Transparent proxy |
 
-The `EjectionManager` facilitates automated ejection of operators from the `SlashingRegistryCoordinator` under a configurable rate limit. It allows authorized ejectors to remove operators from quorums, while preventing too many operators from being ejected in a short time period, which could disrupt the system's stability.
+The `EjectionManager` facilitates automated ejection of operators from the `SlashingRegistryCoordinator` under a configurable rate limit. It allows authorized ejectors to remove operators from quorums.
 
 #### High-level Concepts
 
-This document organizes methods according to the following themes (click each to be taken to the relevant section):
+This document or:
 * [Ejection Rate Limiting](#ejection-rate-limiting)
 * [Ejector Management](#ejector-management)
 * [Operator Ejection](#operator-ejection)
@@ -144,13 +144,3 @@ function initialize(
 * Can only be called once due to the `initializer` modifier
 
 ---
-
-### View Functions
-
-The contract implements several view functions defined in the interface:
-
-* `slashingRegistryCoordinator`: Returns the address of the slashing registry coordinator
-* `stakeRegistry`: Returns the address of the stake registry
-* `isEjector`: Returns whether an address is authorized to eject operators
-* `stakeEjectedForQuorum`: Returns stake ejection data at a specific index for a quorum
-* `quorumEjectionParams`: Returns the rate limit parameters for a specific quorum
