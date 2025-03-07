@@ -4,7 +4,7 @@
 | -------- | -------- | -------- |
 | [`OperatorStateRetriever.sol`](../src/OperatorStateRetriever.sol) | Singleton | None |
 
-The `OperatorStateRetriever` contract provides view methods that compose view calls from the registry contracts to surface rich state information. These methods are intended to be called by offchain infrastructure to prepare calldata for BLS signature validation through the `BLSSignatureChecker.checkSignatures` method.
+The `OperatorStateRetriever` contract provides view methods that compose view calls from the registry contracts to surface enriched state information. These methods are intended to be called offchain to prepare calldata for BLS signature validation through the `BLSSignatureChecker.checkSignatures` method.
 
 The contract traverses historical state records in the registry contracts ([`IndexRegistry`](./registries/IndexRegistry.md), [`StakeRegistry`](./registries/StakeRegistry.md), and [`BLSApkRegistry`](./registries/BLSApkRegistry.md)) to retrieve information about operators and quorums at specific block numbers. This historical data is essential for validating signatures against a fixed point in time, as operators may register for or deregister from quorums after signing data.
 
@@ -91,7 +91,7 @@ struct CheckSignaturesIndices {
 }
 ```
 
-This method is critical for BLS signature validation, as it retrieves indices into historical state that can be used for efficient lookups in `BLSSignatureChecker.checkSignatures`.
+This method is critical for BLS signature validation, as it retrieves indices into historical state that can be used for efficient lookups in `BLSSignatureChecker.checkSignatures`. The non-signer operator IDs are required here as signature verification is done against negation of the BLS aggregate public key. That is, negate the aggregate key then add the weight of each signer. 
 
 The method generates the following indices:
 1. Indices of quorum bitmap updates for each non-signing operator
