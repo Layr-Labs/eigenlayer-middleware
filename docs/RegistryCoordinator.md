@@ -168,7 +168,7 @@ These methods are used by the Owner to configure the `RegistryCoordinator`:
 function disableM2QuorumRegistration() external onlyOwner
 ```
 
-Allows the Owner to disable M2 quorum registration. This disables the M2 legacy quorum registration. Once disabled it is expected for AVSs to upgrade to the `SlashingRegistryCoordinator` using operator sets. Operators can still deregister once M2 registration is disabled. Note that this is a one way function, meaning once M2 is disabled it cannot be re-enabled.
+Allows the Owner to disable M2 quorum registration. This disables the M2 legacy quorum registration. Operators can still deregister once M2 registration is disabled. Note that this is a one way function, meaning once M2 is disabled it cannot be re-enabled.
 
 *Effects*
 * Disables M2 quourum registration
