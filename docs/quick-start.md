@@ -1,8 +1,8 @@
 [middleware-guide-link]: #quick-start-guide-to-build-avs-contracts
-[operator-set-guide-link]: #https://www.blog.eigenlayer.xyz/introducing-the-eigenlayer-security-model
-[uam-link]: #https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-003.md
-[avs-sync-link]: #https://github.com/Layr-Labs/avs-sync
-[uam-elip-link]: #https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-003.md
+[operator-set-guide-link]: https://www.blog.eigenlayer.xyz/introducing-the-eigenlayer-security-model
+[uam-link]: https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-003.md
+[avs-sync-link]: https://github.com/Layr-Labs/avs-sync
+[uam-elip-link]: https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-003.md
 # Purpose
 This document aims to describe and summarize how autonomous verifiable services (AVSs) building on EigenLayer interact with the core EigenLayer protocol. Currently, this doc explains how AVS developers can use the APIs for:
 - enabling operators to opt-in to the AVS,
