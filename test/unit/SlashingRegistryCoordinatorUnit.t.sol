@@ -411,7 +411,7 @@ contract SlashingRegistryCoordinatorUnitTestSetup is
         );
     }
 
-        function _createOperatorArray(
+    function _createOperatorArray(
         Operator[] memory operators
     ) internal pure returns (address[] memory) {
         address[] memory operatorAddresses = new address[](operators.length);
@@ -1068,7 +1068,7 @@ contract SlashingRegistryCoordinator_UpdateSocket is SlashingRegistryCoordinator
         super.setUp();
         testOperatorId = operatorIds.at(0);
         testOperator = operatorsByID[testOperatorId];
-        operatorSetId =0;
+        operatorSetId = 0;
         registerOperatorInSlashingRegistryCoordinator(testOperator, socket, operatorSetId);
     }
 
@@ -1519,8 +1519,6 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
         return (operatorKickParams, churnApproverSignature);
     }
 
-
-
     function test_registerOperatorWithChurn() public {
         (
             ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams,
@@ -1591,8 +1589,12 @@ contract SlashingRegistryCoordinator_UpdateOperators is SlashingRegistryCoordina
         defaultStake = 10 ether;
         minimumStake = 1 ether; // Minimum stake set in the setup
 
-        registerOperatorInSlashingRegistryCoordinator(testOperator1, "socket1:8545", uint32(QUORUM_0));
-        registerOperatorInSlashingRegistryCoordinator(testOperator2, "socket2:8545", uint32(QUORUM_0));
+        registerOperatorInSlashingRegistryCoordinator(
+            testOperator1, "socket1:8545", uint32(QUORUM_0)
+        );
+        registerOperatorInSlashingRegistryCoordinator(
+            testOperator2, "socket2:8545", uint32(QUORUM_0)
+        );
 
         _setOperatorWeight(testOperator1.key.addr, defaultStake);
         _setOperatorWeight(testOperator2.key.addr, defaultStake);
@@ -1762,7 +1764,9 @@ contract SlashingRegistryCoordinator_UpdateOperators is SlashingRegistryCoordina
     }
 }
 
-contract SlashingRegistryCoordinator_UpdateOperatorsForQuorum is SlashingRegistryCoordinatorUnitTestSetup {
+contract SlashingRegistryCoordinator_UpdateOperatorsForQuorum is
+    SlashingRegistryCoordinatorUnitTestSetup
+{
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
     Operator internal testOperator1;
@@ -1796,8 +1800,12 @@ contract SlashingRegistryCoordinator_UpdateOperatorsForQuorum is SlashingRegistr
         defaultStake = 10 ether;
         minimumStake = 1 ether; // Minimum stake set in the setup
 
-        registerOperatorInSlashingRegistryCoordinator(testOperator1, "socket1:8545", uint32(QUORUM_0));
-        registerOperatorInSlashingRegistryCoordinator(testOperator2, "socket2:8545", uint32(QUORUM_0));
+        registerOperatorInSlashingRegistryCoordinator(
+            testOperator1, "socket1:8545", uint32(QUORUM_0)
+        );
+        registerOperatorInSlashingRegistryCoordinator(
+            testOperator2, "socket2:8545", uint32(QUORUM_0)
+        );
 
         _setOperatorWeight(testOperator1.key.addr, defaultStake);
         _setOperatorWeight(testOperator2.key.addr, defaultStake);
@@ -1980,5 +1988,4 @@ contract SlashingRegistryCoordinator_UpdateOperatorsForQuorum is SlashingRegistr
             "Non-registered operator should remain unregistered"
         );
     }
-
 }
