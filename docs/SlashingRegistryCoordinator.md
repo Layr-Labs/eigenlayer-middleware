@@ -30,6 +30,8 @@ The `SlashingRegistryCoordinator` manages the registry contracts and integrates 
 * [Operator Churn](#operator-churn)
 * [AVS Integration](#avs-integration)
 
+
+
 ## Parameterization
 
 * `MAX_QUORUM_COUNT`: The maximum number of quorums that can be created (hardcoded to `192`).
@@ -44,7 +46,7 @@ The `SlashingRegistryCoordinator` manages the registry contracts and integrates 
 Quorums are logical groupings of operators that share a common purpose within an AVS. Each quorum tracks operator registrations, stakes, and has its own configuration for operator management. The `SlashingRegistryCoordinator` supports two types of quorums:
 
 1. **Total Delegated Stake Quorums**: Track the total delegated stake for operators
-2. **Slashable Stake Quorums**: Track the slashable stake for operators, which is used for slashing enforcement
+2. **Slashable Stake Quorums**: Track the slashable stake for operators, which is used for slashing
 
 Each quorum is identified by a unique `quorumNumber` and has its own set of parameters defined in the `OperatorSetParam` struct:
 
@@ -133,7 +135,7 @@ This function updates the parameters for an existing quorum, allowing the owner 
 
 ## Operator Registration
 
-Operators need to register with the `SlashingRegistryCoordinator` to participate in quorums. Registration involves providing BLS public keys, sockets, and allocating stake to specific quorums. The contract tracks an operator's registration status and history of quorum memberships.
+Operators need to register with the `SlashingRegistryCoordinator` to participate in quorums. Registration involves providing BLS public keys, sockets, and allocating stake to specific quorums. The contract tracks an operator's registration status and history of quorum memberships. The `AllocationManager` calls these functions when an operator registers for a quorum.
 
 **Methods:**
 * [`registerOperator`](#registeroperator)
