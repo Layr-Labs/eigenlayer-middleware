@@ -245,7 +245,7 @@ This method is ONLY callable by the `RegistryCoordinator`, and is called when th
 
 `initializeSlashableStakeQuorum` initializes a new quorum by pushing an initial `StakeUpdate` to `_totalStakeHistory[quorumNumber]`, with an initial stake of 0. Other methods can validate that a quorum exists by checking whether `_totalStakeHistory[quorumNumber]` has a nonzero length.
 
-This method configures a `minimumStake` for the quorum, defines the `StrategyParams` used when calculating stake weight and sets the `lookAheadPeriod` which defines how many blocks ahead to when considering the minimum amount of slahable stake. Note that `lookAheadPeriod` should be less than the `DEALLOCATION_DELAY` (14 days within the `AllocationManager`) blocks in the future, or the values returned from this method may inaccurate due to deallocations.
+This method configures a `minimumStake` for the quorum, defines the `StrategyParams` used when calculating stake weight and sets the `lookAheadPeriod` which defines how many blocks ahead to when considering the minimum amount of slahable stake. Note that `lookAheadPeriod` should be less than the `DEALLOCATION_DELAY` (14 days within the `AllocationManager`) blocks in the future, to avoid calculating stake values that may not reflect the operators true allocated stake.
 
 *Entry Points*:
 * `RegistryCoordinator.createSlashableStakeQuorum`
