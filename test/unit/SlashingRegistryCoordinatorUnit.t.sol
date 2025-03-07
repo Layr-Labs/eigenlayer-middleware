@@ -410,6 +410,44 @@ contract SlashingRegistryCoordinatorUnitTestSetup is
             address(coreDeployment.delegationManager), address(delegationManagerHarness)
         );
     }
+
+        function _createOperatorArray(
+        Operator[] memory operators
+    ) internal pure returns (address[] memory) {
+        address[] memory operatorAddresses = new address[](operators.length);
+        for (uint256 i = 0; i < operators.length; i++) {
+            operatorAddresses[i] = operators[i].key.addr;
+        }
+        return operatorAddresses;
+    }
+
+    function _createOperatorIdArray(
+        bytes32[] memory operatorIds
+    ) internal pure returns (bytes32[] memory) {
+        bytes32[] memory operatorIdArray = new bytes32[](operatorIds.length);
+        for (uint256 i = 0; i < operatorIds.length; i++) {
+            operatorIdArray[i] = operatorIds[i];
+        }
+        return operatorIdArray;
+    }
+
+    function _verifyOperatorStatus(
+        address operator,
+        ISlashingRegistryCoordinatorTypes.OperatorStatus expectedStatus
+    ) internal view {
+        ISlashingRegistryCoordinator.OperatorInfo memory operatorInfo =
+            slashingRegistryCoordinator.getOperator(operator);
+        assertEq(
+            uint256(operatorInfo.status),
+            uint256(expectedStatus),
+            "Operator status does not match expected status"
+        );
+    }
+
+    function _verifyOperatorBitmap(bytes32 operatorId, uint192 expectedBitmap) internal view {
+        uint192 currentBitmap = slashingRegistryCoordinator.getCurrentQuorumBitmap(operatorId);
+        assertEq(currentBitmap, expectedBitmap, "Operator bitmap does not match expected bitmap");
+    }
 }
 
 contract SlashingRegistryCoordinator_Initialize is SlashingRegistryCoordinatorUnitTestSetup {
@@ -1722,52 +1760,225 @@ contract SlashingRegistryCoordinator_UpdateOperators is SlashingRegistryCoordina
             "Non-registered operator should remain unregistered"
         );
     }
-
-    function _createOperatorArray(
-        Operator[] memory operators
-    ) internal pure returns (address[] memory) {
-        address[] memory operatorAddresses = new address[](operators.length);
-        for (uint256 i = 0; i < operators.length; i++) {
-            operatorAddresses[i] = operators[i].key.addr;
-        }
-        return operatorAddresses;
-    }
-
-    function _createOperatorIdArray(
-        bytes32[] memory operatorIds
-    ) internal pure returns (bytes32[] memory) {
-        bytes32[] memory operatorIdArray = new bytes32[](operatorIds.length);
-        for (uint256 i = 0; i < operatorIds.length; i++) {
-            operatorIdArray[i] = operatorIds[i];
-        }
-        return operatorIdArray;
-    }
-
-    function _verifyOperatorStatus(
-        address operator,
-        ISlashingRegistryCoordinatorTypes.OperatorStatus expectedStatus
-    ) internal view {
-        ISlashingRegistryCoordinator.OperatorInfo memory operatorInfo =
-            slashingRegistryCoordinator.getOperator(operator);
-        assertEq(
-            uint256(operatorInfo.status),
-            uint256(expectedStatus),
-            "Operator status does not match expected status"
-        );
-    }
-
-    function _verifyOperatorBitmap(bytes32 operatorId, uint192 expectedBitmap) internal view {
-        uint192 currentBitmap = slashingRegistryCoordinator.getCurrentQuorumBitmap(operatorId);
-        assertEq(currentBitmap, expectedBitmap, "Operator bitmap does not match expected bitmap");
-    }
 }
 
-contract SlashingRegistryCoordinator_UpdateOperatorsForQuorum is
-    SlashingRegistryCoordinatorUnitTestSetup
-{
+contract SlashingRegistryCoordinator_UpdateOperatorsForQuorum is SlashingRegistryCoordinatorUnitTestSetup {
     using EnumerableSet for EnumerableSet.Bytes32Set;
+
+    Operator internal testOperator1;
+    Operator internal testOperator2;
+    Operator internal testOperator3;
+    bytes32 internal testOperator1Id;
+    bytes32 internal testOperator2Id;
+    bytes32 internal testOperator3Id;
+    uint96 internal defaultStake;
+    uint96 internal minimumStake;
+
+    uint8 internal constant QUORUM_0 = 0;
+    uint8 internal constant QUORUM_1 = 1;
+    uint192 internal constant BITMAP_QUORUM_0 = 1; // 2^0 = 1
+    uint192 internal constant BITMAP_QUORUM_1 = 2; // 2^1 = 2
+    uint192 internal constant BITMAP_BOTH_QUORUMS = 3; // 2^0 + 2^1 = 3
+    uint192 internal constant PAUSED_UPDATE_OPERATORS = 4; // 2^2 - Bit flag position 2
 
     function setUp() public override {
         super.setUp();
+
+        // Use DelegationManagerHarness for this test so we can manipulate their shares
+        _useDelegationManagerHarness();
+
+        testOperator1 = operatorsByID[operatorIds.at(0)];
+        testOperator2 = operatorsByID[operatorIds.at(1)];
+
+        testOperator1Id = operatorIds.at(0);
+        testOperator2Id = operatorIds.at(1);
+
+        defaultStake = 10 ether;
+        minimumStake = 1 ether; // Minimum stake set in the setup
+
+        registerOperatorInSlashingRegistryCoordinator(testOperator1, "socket1:8545", uint32(QUORUM_0));
+        registerOperatorInSlashingRegistryCoordinator(testOperator2, "socket2:8545", uint32(QUORUM_0));
+
+        _setOperatorWeight(testOperator1.key.addr, defaultStake);
+        _setOperatorWeight(testOperator2.key.addr, defaultStake);
+
+        vm.prank(serviceManager);
+        IPermissionController(coreDeployment.permissionController).setAppointee(
+            address(serviceManager),
+            address(slashingRegistryCoordinator),
+            address(coreDeployment.allocationManager),
+            IAllocationManager.deregisterFromOperatorSets.selector
+        );
     }
+
+    function test_updateOperators() public {
+        address[][] memory operatorsPerQuorum = new address[][](1);
+        operatorsPerQuorum[0] = new address[](2);
+        operatorsPerQuorum[0][0] = testOperator1.key.addr;
+        operatorsPerQuorum[0][1] = testOperator2.key.addr;
+
+        bytes memory quorumNumbers = abi.encodePacked(uint8(QUORUM_0));
+
+        _setOperatorWeight(operatorsPerQuorum[0][0], defaultStake);
+        _setOperatorWeight(operatorsPerQuorum[0][1], defaultStake);
+
+        vm.prank(serviceManager);
+        slashingRegistryCoordinator.updateOperatorsForQuorum(operatorsPerQuorum, quorumNumbers);
+
+        _verifyOperatorStatus(
+            testOperator1.key.addr, ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED
+        );
+        _verifyOperatorStatus(
+            testOperator2.key.addr, ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED
+        );
+
+        _verifyOperatorBitmap(testOperator1Id, BITMAP_QUORUM_0);
+        _verifyOperatorBitmap(testOperator2Id, BITMAP_QUORUM_0);
+
+        // Verify stake in StakeRegistry
+        uint96 stake1 = stakeRegistry.getCurrentStake(testOperator1Id, QUORUM_0);
+        uint96 stake2 = stakeRegistry.getCurrentStake(testOperator2Id, QUORUM_0);
+        assertEq(stake1, 10 ether, "StakeRegistry stake for operator 1 not updated correctly");
+        assertEq(stake2, 10 ether, "StakeRegistry stake for operator 2 not updated correctly");
+    }
+
+    function test_When_multipleQuorums() public {
+        vm.prank(proxyAdminOwner);
+        slashingRegistryCoordinator.createTotalDelegatedStakeQuorum(
+            getDefaultOperatorSetParams(), minimumStake, getStrategyParams()
+        );
+
+        uint32[] memory quorum1 = new uint32[](1);
+        quorum1[0] = QUORUM_1;
+        registerOperatorInSlashingRegistryCoordinator(testOperator1, "socket1:8545", quorum1);
+        registerOperatorInSlashingRegistryCoordinator(testOperator2, "socket2:8545", quorum1);
+
+        _setOperatorWeight(testOperator1.key.addr, defaultStake);
+        _setOperatorWeight(testOperator2.key.addr, defaultStake);
+
+        address[][] memory operatorsPerQuorum = new address[][](2);
+        operatorsPerQuorum[0] = new address[](2);
+        operatorsPerQuorum[0][0] = testOperator1.key.addr;
+        operatorsPerQuorum[0][1] = testOperator2.key.addr;
+
+        operatorsPerQuorum[1] = new address[](2);
+        operatorsPerQuorum[1][0] = testOperator1.key.addr;
+        operatorsPerQuorum[1][1] = testOperator2.key.addr;
+
+        bytes memory quorumNumbers = abi.encodePacked(uint8(QUORUM_0), uint8(QUORUM_1));
+
+        vm.prank(serviceManager);
+        slashingRegistryCoordinator.updateOperatorsForQuorum(operatorsPerQuorum, quorumNumbers);
+
+        _verifyOperatorStatus(
+            testOperator1.key.addr, ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED
+        );
+        _verifyOperatorStatus(
+            testOperator2.key.addr, ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED
+        );
+
+        _verifyOperatorBitmap(testOperator1Id, BITMAP_BOTH_QUORUMS);
+        _verifyOperatorBitmap(testOperator2Id, BITMAP_BOTH_QUORUMS);
+
+        // Verify stake in StakeRegistry for both quorums
+        uint96 stake1Quorum0 = stakeRegistry.getCurrentStake(testOperator1Id, QUORUM_0);
+        uint96 stake2Quorum0 = stakeRegistry.getCurrentStake(testOperator2Id, QUORUM_0);
+        uint96 stake1Quorum1 = stakeRegistry.getCurrentStake(testOperator1Id, QUORUM_1);
+        uint96 stake2Quorum1 = stakeRegistry.getCurrentStake(testOperator2Id, QUORUM_1);
+
+        assertEq(
+            stake1Quorum0,
+            10 ether,
+            "StakeRegistry stake for operator 1 in quorum 0 not updated correctly"
+        );
+        assertEq(
+            stake2Quorum0,
+            10 ether,
+            "StakeRegistry stake for operator 2 in quorum 0 not updated correctly"
+        );
+        assertEq(
+            stake1Quorum1,
+            10 ether,
+            "StakeRegistry stake for operator 1 in quorum 1 not updated correctly"
+        );
+        assertEq(
+            stake2Quorum1,
+            10 ether,
+            "StakeRegistry stake for operator 2 in quorum 1 not updated correctly"
+        );
+    }
+
+    function test_RevertsWhen_Paused() public {
+        address[][] memory operatorsPerQuorum = new address[][](1);
+        operatorsPerQuorum[0] = new address[](2);
+        operatorsPerQuorum[0][0] = testOperator1.key.addr;
+        operatorsPerQuorum[0][1] = testOperator2.key.addr;
+
+        bytes memory quorumNumbers = abi.encodePacked(uint8(QUORUM_0));
+
+        vm.prank(pauser);
+        slashingRegistryCoordinator.pause(4); // PAUSED_UPDATE_OPERATOR = 2
+
+        vm.prank(serviceManager);
+        vm.expectRevert(bytes4(keccak256("CurrentlyPaused()")));
+        slashingRegistryCoordinator.updateOperatorsForQuorum(operatorsPerQuorum, quorumNumbers);
+    }
+
+    function test_When_DeregistersInsufficientStake() public {
+        address[] memory operators = new address[](2);
+        operators[0] = testOperator1.key.addr;
+        operators[1] = testOperator2.key.addr;
+
+        _setOperatorWeight(testOperator1.key.addr, 0);
+        _setOperatorWeight(testOperator2.key.addr, defaultStake);
+
+        vm.prank(serviceManager);
+        slashingRegistryCoordinator.updateOperators(operators);
+
+        _verifyOperatorStatus(
+            testOperator1.key.addr, ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED
+        );
+        _verifyOperatorStatus(
+            testOperator2.key.addr, ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED
+        );
+
+        _verifyOperatorBitmap(testOperator1Id, 0);
+        _verifyOperatorBitmap(testOperator2Id, BITMAP_QUORUM_0);
+
+        uint96 stake1 = stakeRegistry.getCurrentStake(testOperator1Id, QUORUM_0);
+        uint96 stake2 = stakeRegistry.getCurrentStake(testOperator2Id, QUORUM_0);
+        assertEq(stake1, 0, "StakeRegistry stake for deregistered operator should be 0");
+        assertEq(stake2, 10 ether, "StakeRegistry stake for operator 2 not updated correctly");
+    }
+
+    function test_updateOperators_nonRegisteredOperator() public {
+        address[][] memory operatorsPerQuorum = new address[][](1);
+        operatorsPerQuorum[0] = new address[](2);
+        operatorsPerQuorum[0][0] = testOperator1.key.addr;
+        operatorsPerQuorum[0][1] = testOperator2.key.addr;
+
+        bytes memory quorumNumbers = abi.encodePacked(uint8(QUORUM_0));
+
+        _setOperatorWeight(testOperator1.key.addr, defaultStake);
+        _setOperatorWeight(testOperator2.key.addr, defaultStake);
+
+        vm.prank(serviceManager);
+        slashingRegistryCoordinator.updateOperatorsForQuorum(operatorsPerQuorum, quorumNumbers);
+
+        _verifyOperatorStatus(
+            testOperator1.key.addr, ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED
+        );
+        _verifyOperatorStatus(
+            testOperator2.key.addr, ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED
+        );
+
+        ISlashingRegistryCoordinator.OperatorInfo memory operatorInfo =
+            slashingRegistryCoordinator.getOperator(testOperator3.key.addr);
+        assertEq(
+            uint256(operatorInfo.status),
+            uint256(ISlashingRegistryCoordinatorTypes.OperatorStatus.NEVER_REGISTERED),
+            "Non-registered operator should remain unregistered"
+        );
+    }
+
 }
