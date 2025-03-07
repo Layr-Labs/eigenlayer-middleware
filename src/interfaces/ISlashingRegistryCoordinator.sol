@@ -55,6 +55,8 @@ interface ISlashingRegistryCoordinatorErrors {
     error InvalidAVS();
     /// @notice Thrown when attempting to kick an operator that is not registered.
     error OperatorNotRegistered();
+    /// @notice Thrown when lookAheadPeriod is greater than or equal to DEALLOCATION_DELAY.
+    error LookAheadPeriodTooLong();
 }
 
 interface ISlashingRegistryCoordinatorTypes {

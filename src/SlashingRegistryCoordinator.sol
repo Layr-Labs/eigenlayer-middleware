@@ -10,6 +10,7 @@ import {
     OperatorSet,
     IAllocationManagerTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {AllocationManager } from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 
 import {IBLSApkRegistry, IBLSApkRegistryTypes} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry, IStakeRegistryTypes} from "./interfaces/IStakeRegistry.sol";
@@ -840,6 +841,8 @@ contract SlashingRegistryCoordinator is
         if (stakeType == IStakeRegistryTypes.StakeType.TOTAL_DELEGATED) {
             stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
         } else if (stakeType == IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE) {
+            // For slashable stake quorums, ensure lookAheadPeriod is less than DEALLOCATION_DELAY
+            require(AllocationManager(address(allocationManager)).DEALLOCATION_DELAY() > lookAheadPeriod, LookAheadPeriodTooLong());
             stakeRegistry.initializeSlashableStakeQuorum(
                 quorumNumber, minimumStake, lookAheadPeriod, strategyParams
             );
