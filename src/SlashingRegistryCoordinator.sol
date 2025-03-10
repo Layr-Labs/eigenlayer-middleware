@@ -934,6 +934,8 @@ contract SlashingRegistryCoordinator is
     function _setAVS(
         address _avs
     ) internal {
+        address prevAVS = avs;
+        emit AVSUpdated(prevAVS, _avs);
         avs = _avs;
     }
 

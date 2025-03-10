@@ -567,6 +567,14 @@ contract SlashingRegistryCoordinator_SetAVS is SlashingRegistryCoordinatorUnitTe
         vm.prank(address(0xdead));
         slashingRegistryCoordinator.setAVS(newAVS);
     }
+
+    function test_emitsAVSUpdatedEvent() public {
+        vm.expectEmit(true, true, true, true);
+        emit AVSUpdated(serviceManager, newAVS);
+
+        vm.prank(proxyAdminOwner);
+        slashingRegistryCoordinator.setAVS(newAVS);
+    }
 }
 
 contract SlashingRegistryCoordinator_CreateSlashableStakeQuorum is

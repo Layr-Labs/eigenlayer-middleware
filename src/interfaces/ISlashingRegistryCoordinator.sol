@@ -191,6 +191,13 @@ interface ISlashingRegistryCoordinatorEvents is ISlashingRegistryCoordinatorType
     event ChurnApproverUpdated(address prevChurnApprover, address newChurnApprover);
 
     /**
+     * @notice Emitted when the AVS address is updated.
+     * @param prevAVS The previous AVS address.
+     * @param newAVS The new AVS address.
+     */
+    event AVSUpdated(address prevAVS, address newAVS);
+
+    /**
      * @notice Emitted when the ejector address is updated.
      * @dev Emitted in _setEjector().
      * @param prevEjector The previous ejector address.
