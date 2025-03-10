@@ -103,10 +103,10 @@ By pre-computing these indices offchain, the `BLSSignatureChecker.checkSignature
 
 *Returns*:
 * `CheckSignaturesIndices`: A struct containing all indices needed for signature validation:
-  * `nonSignerQuorumBitmapIndices`: For each non-signer, the index in `RegistryCoordinator._operatorBitmapHistory` where their quorum bitmap can be found
-  * `quorumApkIndices`: For each quorum, the index in `BLSApkRegistry.apkHistory` where the quorum's APK can be found
-  * `totalStakeIndices`: For each quorum, the index in `StakeRegistry._totalStakeHistory` where the quorum's total stake can be found
-  * `nonSignerStakeIndices`: For each quorum, indices in `StakeRegistry.operatorStakeHistory` for each non-signer registered for that quorum
+* `nonSignerQuorumBitmapIndices`: For each non-signer, the index in `RegistryCoordinator._operatorBitmapHistory` where their quorum bitmap can be found
+* `quorumApkIndices`: For each quorum, the index in `BLSApkRegistry.apkHistory` where the quorum's APK can be found
+* `totalStakeIndices`: For each quorum, the index in `StakeRegistry._totalStakeHistory` where the quorum's total stake can be found
+* `nonSignerStakeIndices`: For each quorum, indices in `StakeRegistry.operatorStakeHistory` for each non-signer registered for that quorum
 
 *Requirements*:
 * Non-signer operator IDs must be registered (have non-zero quorum bitmaps)
