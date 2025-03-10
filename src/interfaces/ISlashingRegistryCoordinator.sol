@@ -57,6 +57,8 @@ interface ISlashingRegistryCoordinatorErrors {
     error OperatorNotRegistered();
     /// @notice Thrown when lookAheadPeriod is greater than or equal to DEALLOCATION_DELAY.
     error LookAheadPeriodTooLong();
+    /// @notice Thrown when the number of operators in a quorum would exceed the maximum allowed.
+    error MaxOperatorCountReached();
 }
 
 interface ISlashingRegistryCoordinatorTypes {
