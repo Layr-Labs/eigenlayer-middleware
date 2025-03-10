@@ -179,7 +179,7 @@ contract SlashingRegistryCoordinatorUnitTestSetup is
         configData.strategyManager.initPausedStatus = 0;
 
         configData.delegationManager.initialOwner = proxyAdminOwner;
-        configData.delegationManager.minWithdrawalDelayBlocks = 50400;
+        configData.delegationManager.minWithdrawalDelayBlocks = 100800;
         configData.delegationManager.initPausedStatus = 0;
 
         configData.eigenPodManager.initialOwner = proxyAdminOwner;
