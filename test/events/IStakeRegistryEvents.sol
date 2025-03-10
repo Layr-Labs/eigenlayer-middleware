@@ -18,4 +18,6 @@ interface IStakeRegistryEvents {
     event StrategyMultiplierUpdated(
         uint8 indexed quorumNumber, IStrategy strategy, uint256 multiplier
     );
+    /// @notice Emitted when the look ahead period for checking operator shares is updated.
+    event LookAheadPeriodChanged(uint32 oldLookAheadBlocks, uint32 newLookAheadBlocks);
 }
