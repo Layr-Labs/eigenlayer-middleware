@@ -885,6 +885,61 @@ contract SlashingRegistryCoordinator_RegisterOperator is
             )
         );
     }
+
+    function test_RevertsWhen_MaxOperatorCountReached() public {
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+            maxOperatorCount: 2, // Only allow 2 operators
+            kickBIPsOfOperatorStake: 0,
+            kickBIPsOfTotalStake: 0
+        });
+
+        vm.prank(proxyAdminOwner);
+        slashingRegistryCoordinator.createTotalDelegatedStakeQuorum(
+            operatorSetParams,
+            1 ether, // minimum stake
+            getStrategyParams()
+        );
+
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = 1; // Use the newly created quorum
+
+        Operator memory operator1 = operatorsByID[operatorIds.at(0)];
+        registerOperatorInSlashingRegistryCoordinator(operator1, "socket1:8545", operatorSetIds);
+
+        Operator memory operator2 = operatorsByID[operatorIds.at(1)];
+        registerOperatorInSlashingRegistryCoordinator(operator2, "socket2:8545", operatorSetIds);
+
+        // Try to register third operator (should fail)
+        Operator memory operator3 = operatorsByID[operatorIds.at(2)];
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
+            createPubkeyRegistrationParams(operator3, operator3.key.addr);
+
+        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
+            .RegisterParams({
+            avs: address(serviceManager),
+            operatorSetIds: operatorSetIds,
+            data: abi.encode(
+                ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, "socket3:8545", pubkeyParams
+            )
+        });
+
+        vm.prank(operator3.key.addr);
+        vm.expectRevert(MaxOperatorCountReached.selector);
+        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
+            operator3.key.addr, registerParams
+        );
+
+        _verifyOperatorStatus(
+            operator1.key.addr, ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED
+        );
+        _verifyOperatorStatus(
+            operator2.key.addr, ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED
+        );
+        _verifyOperatorStatus(
+            operator3.key.addr, ISlashingRegistryCoordinatorTypes.OperatorStatus.NEVER_REGISTERED
+        );
+    }
 }
 
 contract SlashingRegistryCoordinator_DeregisterOperator is

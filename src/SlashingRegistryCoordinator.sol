@@ -468,7 +468,7 @@ contract SlashingRegistryCoordinator is
                 OperatorSetParam memory operatorSetParams = _quorumParams[uint8(quorumNumbers[i])];
                 require(
                     results.numOperatorsPerQuorum[i] <= operatorSetParams.maxOperatorCount,
-                    MaxQuorumsReached()
+                    MaxOperatorCountReached()
                 );
             }
         }
