@@ -404,16 +404,6 @@ contract SlashingRegistryCoordinator is
         // Check if operator is registered for all quorums we're trying to remove them from
         if (quorumsToRemove.isSubsetOf(currentBitmap)) {
             _forceDeregisterOperator(operator, quorumNumbers);
-
-            // // Calculate new bitmap after removal
-            // uint192 newBitmap = uint192(currentBitmap.minus(quorumsToRemove));
-            // _updateOperatorBitmap(operatorId, newBitmap);
-
-            // // If operator is removed from all quorums, update their status to DEREGISTERED
-            // if (newBitmap.isEmpty()) {
-            //     operatorInfo.status = OperatorStatus.DEREGISTERED;
-            //     emit OperatorDeregistered(operator, operatorId);
-            // }
         }
     }
 
