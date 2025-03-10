@@ -21,7 +21,7 @@ Libraries and Mixins:
 
 The `ServiceManagerBase` contract is an abstract contract that serves as a minimal implementation for a `ServiceManager` contract that AVSs will deploy. This document will view this contract through the lens of an implementation of the `ServiceManagerBase`. AVSs are encouraged to extend this contract to meet their own functionality, such as implementing allowlisting for operator sets.
 
-The `ServiceManager` is AVS's identity within EigenLayer and is responsible for:
+The `ServiceManager` is the AVS's identity within EigenLayer and is responsible for:
 
 * Manages callbacks from the `SlashingRegsitryCoordinator` for operator registration for the AVS and operator sets. Calls will be forwarded to the `AVSDirectory`
 * Handling rewards submissions to EigenLayer's `RewardsCoordinator`
