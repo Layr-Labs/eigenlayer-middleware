@@ -1,5 +1,3 @@
-[//]: # (Add links to related core contracts here if needed)
-
 ## EjectionManager
 
 | File | Type | Proxy? |
