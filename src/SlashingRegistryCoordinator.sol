@@ -187,9 +187,10 @@ contract SlashingRegistryCoordinator is
             for (uint256 i = 0; i < quorumNumbers.length; i++) {
                 uint8 quorumNumber = uint8(quorumNumbers[i]);
 
-                if (numOperatorsPerQuorum[i] > _quorumParams[quorumNumber].maxOperatorCount) {
-                    revert MaxOperatorCountReached();
-                }
+                require(
+                    numOperatorsPerQuorum[i] <= _quorumParams[quorumNumber].maxOperatorCount,
+                    MaxOperatorCountReached()
+                );
             }
         } else if (registrationType == RegistrationType.CHURN) {
             // Decode registration data from bytes
