@@ -3,10 +3,12 @@ pragma solidity ^0.8.27;
 
 import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
 import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
+import {IBLSSignatureCheckerTypes} from "./interfaces/IBLSSignatureChecker.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
+import {BN254} from "./libraries/BN254.sol";
 
 /**
  * @title OperatorStateRetriever with view functions that allow to retrieve the state of an AVSs registry system.
@@ -111,9 +113,9 @@ contract OperatorStateRetriever {
     function getCheckSignaturesIndices(
         ISlashingRegistryCoordinator registryCoordinator,
         uint32 referenceBlockNumber,
-        bytes calldata quorumNumbers,
-        bytes32[] calldata nonSignerOperatorIds
-    ) external view returns (CheckSignaturesIndices memory) {
+        bytes memory quorumNumbers,
+        bytes32[] memory nonSignerOperatorIds
+    ) public view returns (CheckSignaturesIndices memory) {
         IStakeRegistry stakeRegistry = registryCoordinator.stakeRegistry();
         CheckSignaturesIndices memory checkSignaturesIndices;
 
@@ -230,5 +232,110 @@ contract OperatorStateRetriever {
         for (uint256 i = 0; i < operatorIds.length; ++i) {
             operators[i] = registryCoordinator.getOperatorFromId(operatorIds[i]);
         }
+    }
+
+    // avoid stack too deep
+    struct GetNontSignerStakesAndSignatureMemory {
+        BN254.G1Point[] quorumApks;
+        BN254.G2Point apkG2;
+        IIndexRegistry indexRegistry;
+        IBLSApkRegistry blsApkRegistry;
+        bytes32[] operatorIds;
+    }
+    // TODO: Eigen's BN254 does not contain G2 addition implementation, need to copy from https://github.com/musalbas/solidity-BN256G2/
+    function getNonSignerStakesAndSignature(
+        ISlashingRegistryCoordinator registryCoordinator,
+        bytes calldata quorumNumbers,
+        BN254.G1Point calldata sigma,
+        address[] calldata operators,
+        uint32 blockNumber
+    ) external view returns (IBLSSignatureCheckerTypes.NonSignerStakesAndSignature memory) {
+        GetNontSignerStakesAndSignatureMemory memory m;
+        m.quorumApks = new BN254.G1Point[](quorumNumbers.length);
+        m.indexRegistry = registryCoordinator.indexRegistry();
+        m.blsApkRegistry = registryCoordinator.blsApkRegistry();
+
+        m.operatorIds = new bytes32[](operators.length);
+        for (uint256 i = 0; i < operators.length; i++) {
+            m.operatorIds[i] = registryCoordinator.getOperatorId(operators[i]);
+        }
+
+        // extra scope for stack limit
+        {
+        uint32[] memory operatorQuorumBitmapIndices = registryCoordinator
+            .getQuorumBitmapIndicesAtBlockNumber(blockNumber, m.operatorIds);
+        // check that all operators are registered (this is like the check in getCheckSignaturesIndices, but we check against _signing_ operators)
+        for (uint256 i = 0; i < operators.length; i++) {
+            uint192 operatorQuorumBitmap = registryCoordinator
+                .getQuorumBitmapAtBlockNumberByIndex(
+                m.operatorIds[i],
+                blockNumber,
+                operatorQuorumBitmapIndices[i]
+            );
+            require(operatorQuorumBitmap != 0, OperatorNotRegistered());
+        }
+        }
+
+        // we use this as a dynamic array 
+        uint256 nonSignerOperatorsCount = 0;
+        bytes32[] memory nonSignerOperatorIds = new bytes32[](16);
+        // for every quorum
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            // TODO: This function is not timestamped.
+            // I didn't understand how to use history of quorum apks.
+            m.quorumApks[i] = m.blsApkRegistry.getApk(uint8(quorumNumbers[i]));
+            bytes32[] memory operatorIdsInQuorum = m.indexRegistry.getOperatorListAtBlockNumber(uint8(quorumNumbers[i]), blockNumber);
+            // we check for every operator in the quorum
+            for (uint256 j = 0; j < operatorIdsInQuorum.length; j++) {
+                bool isNewNonSigner = true;
+                // if it is in the signing operators array
+                for (uint256 k = 0; k < m.operatorIds.length; k++) {
+                    if (operatorIdsInQuorum[j] == m.operatorIds[k]) {
+                        isNewNonSigner = false;
+                        break;
+                    }
+                }
+                // or already in the non-signing operators array
+                for (uint256 l = 0; l < nonSignerOperatorsCount; l++) {
+                    if (nonSignerOperatorIds[l] == operatorIdsInQuorum[j]) {
+                        isNewNonSigner = false;
+                        break;
+                    }
+                }
+                // and if not, we add it to the non-signing operators array
+                if (isNewNonSigner) {
+                    // if we are at the end of the array, we need to resize it
+                    if (nonSignerOperatorsCount == nonSignerOperatorIds.length) {
+                        uint256 newCapacity = nonSignerOperatorIds.length * 2;
+                        bytes32[] memory newNonSignerOperatorIds = new bytes32[](newCapacity);
+                        for (uint256 l = 0; l < nonSignerOperatorIds.length; l++) {
+                            newNonSignerOperatorIds[l] = nonSignerOperatorIds[l];
+                        }
+                        nonSignerOperatorIds = newNonSignerOperatorIds;
+                    }
+
+                    nonSignerOperatorIds[nonSignerOperatorsCount] = operatorIdsInQuorum[j];
+                    nonSignerOperatorsCount++;
+                }
+            }
+        }
+
+        BN254.G1Point[] memory nonSignerPubkeys = new BN254.G1Point[](nonSignerOperatorsCount);
+        for (uint256 i = 0; i < nonSignerOperatorsCount; i++) {
+            address nonSignerOperator = registryCoordinator.getOperatorFromId(nonSignerOperatorIds[i]);
+            (nonSignerPubkeys[i], ) = m.blsApkRegistry.getRegisteredPubkey(nonSignerOperator);
+        }
+
+        CheckSignaturesIndices memory checkSignaturesIndices = getCheckSignaturesIndices(registryCoordinator, blockNumber, quorumNumbers, nonSignerOperatorIds);
+        return IBLSSignatureCheckerTypes.NonSignerStakesAndSignature({
+            nonSignerQuorumBitmapIndices: checkSignaturesIndices.nonSignerQuorumBitmapIndices,
+            nonSignerPubkeys: nonSignerPubkeys,
+            quorumApks: m.quorumApks,
+            apkG2: m.apkG2,
+            sigma: sigma,
+            quorumApkIndices: checkSignaturesIndices.quorumApkIndices,
+            totalStakeIndices: checkSignaturesIndices.totalStakeIndices,
+            nonSignerStakeIndices: checkSignaturesIndices.nonSignerStakeIndices
+        });
     }
 }
