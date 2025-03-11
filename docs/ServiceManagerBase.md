@@ -10,7 +10,6 @@ Libraries and Mixins:
 | -------- | -------- |
 | [`BitmapUtils.sol`](../src/libraries/BitmapUtils.sol) | bitmap manipulation |
 | [`LibMergeSort.sol`](../src/libraries/LibMergeSort.sol) | sorting utilities |
-| [`SafeERC20.sol`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/utils/SafeERC20.sol) | safe ERC20 operations |
 
 ## Prior Reading
 
@@ -26,8 +25,6 @@ The `ServiceManager` is the AVS's identity within EigenLayer and is responsible 
 * Manages callbacks from the `SlashingRegsitryCoordinator` for operator registration for the AVS and operator sets. Calls will be forwarded to the `AVSDirectory`
 * Handling rewards submissions to EigenLayer's `RewardsCoordinator`
 * Managing access permissions via the `PermissionController`
-
-This contract is a base implementation that AVSs can extend to build their specific service implementations. The `ServiceManagerBase` connects to several key EigenLayer contracts including the `AllocationManager`, `AVSDirectory`, `RewardsCoordinator`, `StakeRegistry`, and `SlashingRegistryCoordinator`.
 
 ## Concepts
 
@@ -153,7 +150,7 @@ function registerOperatorToAVS(
     onlyRegistryCoordinator
 ```
 
-This function is called by the `SlashingRegistryCoordinator` when an operator registers for the AVS. It forwards the call to the EigenLayer core `AVSDirectory` contract to maintain backward compatibility.
+This function is called by the `SlashingRegistryCoordinator` when an operator registers for the AVS. It forwards the call to the EigenLayer core `AVSDirectory`.
 
 *Effects:*
 * Forwards the call to `AVSDirectory.registerOperatorToAVS` with the operator's address and signature
@@ -192,7 +189,7 @@ function deregisterOperatorFromOperatorSets(
     onlyRegistryCoordinator
 ```
 
-This function is called by the `SlashingRegistryCoordinator` to deregister an operator from specific operator sets within the `AllocationManager`. This allows for more granular deregistration compared to complete AVS deregistration.
+This function is called by the `SlashingRegistryCoordinator` to deregister an operator from specific operator.
 
 *Effects:*
 * Creates a `DeregisterParams` struct with the operator's address, the AVS address, and the operator set IDs
@@ -203,7 +200,7 @@ This function is called by the `SlashingRegistryCoordinator` to deregister an op
 
 ## Rewards Management
 
-The `ServiceManagerBase` allows the AVS to submit rewards to EigenLayer's `RewardsCoordinator` contract, which will distribute them to operators and their delegated stakers.
+The `ServiceManagerBase` allows the AVS to submit rewards to EigenLayer's `RewardsCoordinator` contract.
 
 **Methods:**
 * [`createAVSRewardsSubmission`](#createavsrewardssubmission)
@@ -222,7 +219,7 @@ function createAVSRewardsSubmission(
     onlyRewardsInitiator
 ```
 
-This function allows the rewards initiator to create rewards submissions for the AVS. These rewards will be distributed to operators registered with the AVS and their delegated stakers.
+This function allows the rewards initiator to create rewards submissions for the AVS.
 
 *Effects:*
 * For each `RewardsSubmission`:
@@ -288,7 +285,7 @@ function setRewardsInitiator(
     onlyOwner
 ```
 
-This function allows the owner to update the address that is permitted to submit rewards on behalf of the AVS.
+This function allows the owner to update the address that is permitted to submit rewards submissions on behalf of the AVS.
 
 *Effects:*
 * Updates the `rewardsInitiator` storage variable
