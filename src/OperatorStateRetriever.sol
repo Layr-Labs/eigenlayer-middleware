@@ -9,6 +9,7 @@ import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {BN254} from "./libraries/BN254.sol";
+import {BN256G2} from "./libraries/BN256G2.sol";
 
 /**
  * @title OperatorStateRetriever with view functions that allow to retrieve the state of an AVSs registry system.
@@ -242,7 +243,6 @@ contract OperatorStateRetriever {
         IBLSApkRegistry blsApkRegistry;
         bytes32[] operatorIds;
     }
-    // TODO: Eigen's BN254 does not contain G2 addition implementation, need to copy from https://github.com/musalbas/solidity-BN256G2/
     function getNonSignerStakesAndSignature(
         ISlashingRegistryCoordinator registryCoordinator,
         bytes calldata quorumNumbers,
@@ -258,6 +258,17 @@ contract OperatorStateRetriever {
         m.operatorIds = new bytes32[](operators.length);
         for (uint256 i = 0; i < operators.length; i++) {
             m.operatorIds[i] = registryCoordinator.getOperatorId(operators[i]);
+            BN254.G2Point memory operatorG2Pk = m.blsApkRegistry.getOperatorPubkeyG2(operators[i]);
+            (m.apkG2.X[1], m.apkG2.X[0], m.apkG2.Y[1], m.apkG2.Y[0]) = BN256G2.ECTwistAdd(
+                m.apkG2.X[1], 
+                m.apkG2.X[0], 
+                m.apkG2.Y[1], 
+                m.apkG2.Y[0], 
+                operatorG2Pk.X[1], 
+                operatorG2Pk.X[0], 
+                operatorG2Pk.Y[1], 
+                operatorG2Pk.Y[0]
+            );
         }
 
         // extra scope for stack limit
