@@ -9,27 +9,10 @@ The `SlasherBase` is an abstract contract that provides core slashing functional
 *As of current implementation*:
 * This contract provides the base functionality for slashing operators in EigenLayer based on certain conditions
 * Concrete implementations will determine when and how slashing is performed
-* The contract maintains a connection to the registry coordinator and the allocation manager
 
 ---    
 
 ### Core Functionality
-
-#### `constructor`
-```solidity
-constructor(
-    IAllocationManager _allocationManager,
-    ISlashingRegistryCoordinator _registryCoordinator,
-    address _slasher
-)
-```
-Initializes the base slasher contract with essential components.
-
-*Effects*:
-* Initializes the contract with references to the allocation manager, registry coordinator, and the authorized slasher address
-
-*Requirements*:
-* Valid addresses must be provided for all parameters
 
 #### `_fulfillSlashingRequest`
 ```solidity
@@ -40,7 +23,7 @@ function _fulfillSlashingRequest(
     internal 
     virtual
 ```
-Internal function that executes a slashing request by calling the `AllocationManager.slashOperator` method.
+Internal function that executes a slashing request by calling the `AllocationManager.slashOperator` method. The implementations of this contract will call this internal method.
 
 *Effects*:
 * Calls the allocation manager to slash the specified operator
