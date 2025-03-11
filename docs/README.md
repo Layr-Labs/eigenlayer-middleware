@@ -11,7 +11,7 @@ Reference Links:
 
 ## EigenLayer Middleware Docs
 
-EigenLayer AVSs ("automated verifiable services") are protocols that make use of EigenLayer's restaking primitives. AVSs are validated by EigenLayer Operators, who are backed by restaked assets via the [EigenLayer core contracts][core-contracts-repo]. Each AVS will deploy or modify instances of the contracts in this repo to hook into the EigenLayer core contracts and ensure their service has an up-to-date view of its currently-registered Operators. Refer to the [quick start](./quick-start.md) guide for how to integrate with the core contracts.
+EigenLayer AVSs ("autonomous verifiable services") are protocols that make use of EigenLayer's restaking primitives. AVSs are validated by EigenLayer Operators, who are backed by restaked assets via the [EigenLayer core contracts][core-contracts-repo]. Each AVS will deploy or modify instances of the contracts in this repo to hook into the EigenLayer core contracts and ensure their service has an up-to-date view of its currently-registered Operators. Refer to the [quick start](./quick-start.md) guide for how to integrate with the core contracts.
 
 The middleware contracts at a high level interface with the core contracts to provide:
 * Operator set or quorum creation and management (e.g. updating the supported strategies or the minimum stake requirements)
