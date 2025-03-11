@@ -11,19 +11,15 @@ Reference Links:
 
 ## EigenLayer Middleware Docs
 
-EigenLayer AVSs ("actively validated services") are protocols that make use of EigenLayer's restaking primitives. AVSs are validated by EigenLayer Operators, who are backed by delegated restaked assets via the [EigenLayer core contracts][core-contracts-repo]. Each AVS will deploy or modify instances of the contracts in this repo to hook into the EigenLayer core contracts and ensure their service has an up-to-date view of its currently-registered Operators.
+EigenLayer AVSs ("automated verifiable services") are protocols that make use of EigenLayer's restaking primitives. AVSs are validated by EigenLayer Operators, who are backed by restaked assets via the [EigenLayer core contracts][core-contracts-repo]. Each AVS will deploy or modify instances of the contracts in this repo to hook into the EigenLayer core contracts and ensure their service has an up-to-date view of its currently-registered Operators. Refer to the [quick start](./quick-start.md) guide for how to integrate with the core contracts.
 
-**Currently, each AVS needs to implement one thing on-chain:** registration/deregistration conditions that define how an Operator registers for/deregisters from the AVS. This repo provides building blocks to support these functions.
+The middleware contracts at a high level interface with the core contracts to provide:
+* Operator set or quorum creation and management (e.g. updating the supported strategies or the minimum stake requirements)
+* Operator set or quorum registration and deregistration
+* Reward submissions
+* Punitive actions such as slashing or jailing/eviction
+* AVS identity and metadata management
 
-*Eventually,* the core contracts and this repo will be extended to cover other conditions, including:
-* reward conditions that define how an Operator is rewarded for the services it provides
-* slashing conditions that define "malicious behavior" in the context of the AVS, and the punishments for this behavior
-
-*... however, the design for these conditions is still in progress.*
-
-**Additional Note**: Although the goal of this repo is to eventually provide general-purpose building blocks for all kinds of AVSs, many of the contracts and design considerations were made to support EigenDA. When these docs provide examples, they will often cite EigenDA.
-
-For more information on EigenDA, check out the repo: [Layr-Labs/eigenda][eigenda-repo].
 
 ### Contents
 
@@ -44,13 +40,13 @@ For more information on EigenDA, check out the repo: [Layr-Labs/eigenda][eigenda
 
 ##### Quorums
 
-A quorum is a grouping and configuration of specific kinds of stake that an AVS considers when interacting with Operators. When Operators register for an AVS, they select one or more quorums within the AVS to register for. Depending on its configuration, each quorum evaluates a specific subset of the Operator's restaked tokens and uses this to determine a specific weight for the Operator for that quorum. This weight is ultimately used to determine when an AVS has reached consensus.
+A quorum is a grouping and configuration of specific kinds of stake that an AVS considers (either delegated or slashable) when interacting with Operators. When Operators register for an AVS, they select one or more quorums within the AVS to register for. Depending on its configuration, each quorum evaluates a specific subset of the Operator's restaked tokens and uses this to determine a specific weight for the Operator for that quorum. This weight is ultimately used to determine when an AVS has reached consensus.
 
-The purpose of having a quorum is that an AVS can customize the makeup of its security offering by choosing which kinds of stake/security it would like to utilize.
+The purpose of having a quorum is that an AVS can customize the makeup of its security offering by choosing which kinds of stake/security model it would like to utilize.
 
 As an example, an AVS might want to support primarily native ETH stakers. It would do so by configuring a quorum to only weigh Operators that control shares belonging to the native eth strategy (defined in the core contracts).
 
-The Owner initializes quorums in the `RegistryCoordinator`, and may configure them further in both the `RegistryCoordinator` and `StakeRegistry` contracts. When quorums are initialized, they are assigned a unique, sequential quorum number.
+The Owner initializes quorums in the `RegistryCoordinator` or `SlashingRegistryCoordinator` (for AVSs building post slashing release), and may configure them further in both either of the registry coordinators and `StakeRegistry` contracts. When quorums are initialized, they are assigned a unique, sequential quorum number.
 
 *Note:* For the most part, quorum numbers are passed between contracts as `bytes` arrays containing an ordered list of quorum numbers. However, when storing lists of quorums in state (and for other operations), these `bytes` arrays are converted to bitmaps using the [`BitmapUtils` library][bitmaputils-lib].
 
@@ -70,7 +66,7 @@ For more information on the `DelegationManager`, see the [EigenLayer core docs][
 
 Quorums define a maximum Operator count as well as parameters that determine when a new Operator can replace an existing Operator when this max count is reached. The process of replacing an existing Operator when the max count is reached is called "churn," and requires a signature from the Churn Approver.
 
-These definitions are contained in a quorum's `OperatorSetParam`, which the Owner can configure via the `RegistryCoordinator`. A quorum's `OperatorSetParam` defines both a max Operator count, as well as stake thresholds that the incoming and existing Operators need to meet to qualify for churn.
+These definitions are contained in a quorum's `OperatorSetParam`, which the Owner can configure via the `RegistryCoordinator` or `SlashingRegistryCoordinator`. A quorum's `OperatorSetParam` defines both a max Operator count, as well as stake thresholds that the incoming and existing Operators need to meet to qualify for churn.
 
 *Additional context*:
 
@@ -96,13 +92,7 @@ These histories are used by offchain code to query state at particular blocks, a
 
 ##### Hooking Into EigenLayer Core
 
-The main thing that links an AVS to the EigenLayer core contracts is that when EigenLayer Operators register/deregister with an AVS, the AVS calls these functions in EigenLayer core:
-* [`AVSDirectory.registerOperatorToAVS`][core-registerToAVS]
-* [`AVSDirectory.deregisterOperatorFromAVS`][core-deregisterFromAVS]
-
-These methods ensure that the Operator registering with the AVS is also registered as an Operator in EigenLayer core. In this repo, these methods are called by the `ServiceManagerBase`.
-
-Eventually, Operator slashing and rewards for services will be part of the middleware/core relationship, but these features aren't implemented yet and their design is a work in progress.
+AVSs interface with the EigenLayer protocol through two main contracts, the `AVSDirectory` and the `AllocationManager`. Interactions with the `AVSDirectory` is done through the `ServiceManagerBase` when operators register and deregister from the AVS. Interactions with the `AllocationManager` are done through either the `RegistryCoordinator` or `SlashingRegistryCoordinator` to manage quorum creation and forced ejection of operators as well as slashing contracts (`InstantSlasher` or `VetoableSlasher`) to slash operators.
 
 ### System Components
 
@@ -112,11 +102,7 @@ Eventually, Operator slashing and rewards for services will be part of the middl
 | -------- | -------- | -------- |
 | [`ServiceManagerBase.sol`](../src/ServiceManagerBase.sol) | Singleton | Transparent proxy |
 
-The Service Manager contract serves as the AVS's address relative to EigenLayer core contracts. When Operators register for/deregister from the AVS, the Service Manager forwards this request to the DelegationManager (see [Hooking Into EigenLayer Core](#hooking-into-eigenlayer-core) above).
-
-It also contains a few convenience methods used to query Operator information by the frontend.
-
-See full documentation in [`ServiceManagerBase.md`](./ServiceManagerBase.md).
+The Service Manager contract serves as the AVS's address relative to EigenLayer core contracts. See full documentation in [`ServiceManagerBase.md`](./ServiceManagerBase.md).
 
 #### Registries
 
@@ -127,7 +113,7 @@ See full documentation in [`ServiceManagerBase.md`](./ServiceManagerBase.md).
 | [`StakeRegistry.sol`](../src/StakeRegistry.sol) | Singleton | Transparent proxy |
 | [`IndexRegistry.sol`](../src/IndexRegistry.sol) | Singleton | Transparent proxy |
 
-The `RegistryCoordinator` keeps track of which quorums exist and have been initialized. It is also the primary entry point for Operators as they register for and deregister from an AVS's quorums.
+The `RegistryCoordinator` and `SlashingRegistryCoordiator` keeps track of which quorums exist and have been initialized. It is also the primary entry point for Operators as they register for and deregister from an AVS's quorums.
 
 When Operators register or deregister, the registry coordinator updates that Operator's currently-registered quorums, and pushes the registration/deregistration to each of the three registries it controls:
 * `BLSApkRegistry`: tracks the aggregate BLS pubkey hash for the Operators registered to each quorum. Also maintains a history of these aggregate pubkey hashes.
@@ -136,7 +122,7 @@ When Operators register or deregister, the registry coordinator updates that Ope
 
 Both the registry coordinator and each of the registries maintain historical state for the specific information they track. This historical state tracking can be used to query state at a particular block, which is primarily used in offchain infrastructure.
 
-See full documentation for the registry coordinator in [`RegistryCoordinator.md`](./RegistryCoordinator.md), and for each registry in [`registries/`](./registries/).
+See full documentation for the registry coordinators in [`RegistryCoordinator.md`](./RegistryCoordinator.md)/[`SlashingRegistryCoordinator`](./SlashingRegistryCoordinator.md), and for each registry in [`registries/`](./registries/).
 
 #### BLSSignatureChecker
 
