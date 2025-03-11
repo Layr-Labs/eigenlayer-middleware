@@ -1,9 +1,11 @@
-pragma solidity ^0.4.24;
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity ^0.8.27;
 
 /**
  * @title Elliptic curve operations on twist points for alt_bn128
  * @author Mustafa Al-Bassam (mus@musalbas.com)
  * @dev Homepage: https://github.com/musalbas/solidity-BN256G2
+ * @dev This is a modified version of the original BN256G2 library to work with solidity 0.8.27
  */
 
 library BN256G2 {
@@ -234,7 +236,7 @@ library BN256G2 {
             mstore(add(freemem,0x60), a)
             mstore(add(freemem,0x80), sub(n, 2))
             mstore(add(freemem,0xA0), n)
-            success := staticcall(sub(gas, 2000), 5, freemem, 0xC0, freemem, 0x20)
+            success := staticcall(sub(gas(), 2000), 5, freemem, 0xC0, freemem, 0x20)
             result := mload(freemem)
         }
         require(success);
