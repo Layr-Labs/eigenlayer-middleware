@@ -1627,12 +1627,9 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
             quorumNumber: uint8(1)
         });
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature = _signChurnApproval(
-            testOperator.key.addr,
-            testOperatorId,
-            operatorKickParams,
-            defaultSalt,
-            defaultExpiry
+        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature =
+        _signChurnApproval(
+            testOperator.key.addr, testOperatorId, operatorKickParams, defaultSalt, defaultExpiry
         );
 
         _setOperatorWeight(testOperator.key.addr, registeringStake);
@@ -1676,11 +1673,12 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
             quorumNumber: uint8(quorumNumbers[0])
         });
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature = _signChurnApproval(
+        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature =
+        _signChurnApproval(
             testOperator.key.addr,
             testOperatorId,
             operatorKickParams,
-            bytes32(uint256(1)),  // Salt 1
+            bytes32(uint256(1)), // Salt 1
             defaultExpiry
         );
 
@@ -1719,9 +1717,9 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
 
         churnApproverSignature = _signChurnApproval(
             anotherOperator.key.addr,
-            bytes32(uint256(0)),  // Operator ID doesn't matter for the test
+            bytes32(uint256(0)), // Operator ID doesn't matter for the test
             operatorKickParams,
-            bytes32(uint256(1)),  // Same salt as before
+            bytes32(uint256(1)), // Same salt as before
             defaultExpiry + 1 days
         );
 
@@ -1757,16 +1755,13 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
         ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams =
             new ISlashingRegistryCoordinatorTypes.OperatorKickParam[](quorumNumbers.length);
         operatorKickParams[0] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
-            operator: testOperator.key.addr,  // Trying to kick itself
+            operator: testOperator.key.addr, // Trying to kick itself
             quorumNumber: uint8(quorumNumbers[0])
         });
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature = _signChurnApproval(
-            testOperator.key.addr,
-            testOperatorId,
-            operatorKickParams,
-            defaultSalt,
-            defaultExpiry
+        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature =
+        _signChurnApproval(
+            testOperator.key.addr, testOperatorId, operatorKickParams, defaultSalt, defaultExpiry
         );
 
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
@@ -1804,14 +1799,15 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
             new ISlashingRegistryCoordinatorTypes.OperatorKickParam[](quorumNumbers.length);
         operatorKickParams[0] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
             operator: operatorToKick.key.addr,
-            quorumNumber: 0  // Mismatched quorum number (quorumNumbers[0] is 1)
+            quorumNumber: 0 // Mismatched quorum number (quorumNumbers[0] is 1)
         });
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature = _signChurnApproval(
+        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature =
+        _signChurnApproval(
             testOperator.key.addr,
             testOperatorId,
             operatorKickParams,
-            bytes32(uint256(2)),  // Different salt from previous tests
+            bytes32(uint256(2)), // Different salt from previous tests
             defaultExpiry
         );
 
@@ -1855,11 +1851,12 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
             quorumNumber: uint8(quorumNumbers[0])
         });
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature = _signChurnApproval(
+        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature =
+        _signChurnApproval(
             testOperator.key.addr,
             testOperatorId,
             operatorKickParams,
-            bytes32(uint256(3)),  // Different salt from previous tests
+            bytes32(uint256(3)), // Different salt from previous tests
             defaultExpiry
         );
 
