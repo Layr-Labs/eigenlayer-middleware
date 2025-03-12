@@ -54,6 +54,7 @@ This method validates a BLS signature over the `pubkeyRegistrationMessageHash`, 
 * Registers the Operator's BLS pubkey for the first time, updating the following mappings:
     * `operatorToPubkey[operator]`
     * `operatorToPubkeyHash[operator]`
+    * `operatorToPubKeyG2[operator]`
     * `pubkeyHashToOperator[pubkeyHash]`
 
 *Requirements*:
@@ -129,6 +130,27 @@ This method is ONLY callable by the `RegistryCoordinator`, and is called when an
 * `operator` MUST already have a registered BLS pubkey (see `registerBLSPublicKey` above)
 * Each quorum in `quorumNumbers` MUST be initialized (see `initializeQuorum` below)
 
+#### `verifyAndRegisterG2PubkeyForOperator`
+
+```solidity
+function verifyAndRegisterG2PubkeyForOperator(
+    address operator,
+    BN254.G2Point calldata pubkeyG2
+)
+    external
+    onlyRegistryCoordinatorOwner
+```
+`verifyAndRegisterG2PubkeyForOperator` verifies and registers a G2 public key for an operator that already has a G1 key. This method is used to retrieve all information for the `checkSignatures` entry point from a view function, avoiding the need to index this information offchain. The method ensures that the BLS key pair is derived from the same secret key and stores the G2 key for the operator.
+
+This method is only callable by the `RegistryCoordinatorOwner`, which is the account that has the `owner` role inside the `RegistryCoordinator`.
+
+*Effects*
+* Stores the corresponding G2 public key of an operator's BLS keypair, based on their G1 public key, updating `operatorToPubkeyG2[operator]`.
+
+*Requirements*
+* Caller MUST be the `RegistryCoordinatorOwner`
+* Operator must not have a G2 public key set
+* The G2 pubic key must form a valid BN254 pairing with the stored G1 key, in effect verifying that the keypair is derived from the same secret key
 ---
 
 ### System Configuration
