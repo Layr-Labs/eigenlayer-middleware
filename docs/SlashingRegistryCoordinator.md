@@ -1,4 +1,4 @@
-# SlashingRegistryCoordinator
+## SlashingRegistryCoordinator
 
 | File | Notes |
 | -------- | -------- |
