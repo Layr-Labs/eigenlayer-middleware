@@ -11,6 +11,7 @@ import {
 import {ISlashingRegistryCoordinatorTypes} from "../../src/interfaces/IRegistryCoordinator.sol";
 import "../utils/MockAVSDeployer.sol";
 import {ISlashingRegistryCoordinatorTypes} from "../../src/interfaces/IRegistryCoordinator.sol";
+import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract EjectionManagerUnitTests is MockAVSDeployer {
     event EjectorUpdated(address ejector, bool status);
@@ -55,7 +56,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
 
         cheats.prank(proxyAdminOwner);
         proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(ejectionManager))),
+            ITransparentUpgradeableProxy(payable(address(ejectionManager))),
             address(ejectionManagerImplementation),
             abi.encodeWithSelector(
                 EjectionManager.initialize.selector,
@@ -75,7 +76,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         uint8 operatorsToEject = 1;
         uint8 numOperators = 10;
         uint96 stake = 1 ether;
-        _registerOperaters(numOperators, stake);
+        _registerOperators(numOperators, stake);
 
         bytes32[][] memory operatorIds = new bytes32[][](numQuorums);
         for (uint8 i = 0; i < numQuorums; i++) {
@@ -111,7 +112,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         uint8 operatorsToEject = 10;
         uint8 numOperators = 100;
         uint96 stake = 1 ether;
-        _registerOperaters(numOperators, stake);
+        _registerOperators(numOperators, stake);
 
         bytes32[][] memory operatorIds = new bytes32[][](numQuorums);
         for (uint8 i = 0; i < numQuorums; i++) {
@@ -152,7 +153,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         uint8 operatorsToEject = 10;
         uint8 numOperators = 10;
         uint96 stake = 1 ether;
-        _registerOperaters(numOperators, stake);
+        _registerOperators(numOperators, stake);
 
         bytes32[][] memory operatorIds = new bytes32[][](numQuorums);
         for (uint8 i = 0; i < numQuorums; i++) {
@@ -200,7 +201,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         uint8 operatorsToEject = 10;
         uint8 numOperators = 10;
         uint96 stake = 1 ether;
-        _registerOperaters(numOperators, stake);
+        _registerOperators(numOperators, stake);
 
         bytes32[][] memory operatorIds = new bytes32[][](numQuorums);
         for (uint8 i = 0; i < numQuorums; i++) {
@@ -264,7 +265,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         uint8 operatorsToEject = 4;
         uint8 numOperators = 100;
         uint96 stake = 1 ether;
-        _registerOperaters(numOperators, stake);
+        _registerOperators(numOperators, stake);
 
         bytes32[][] memory operatorIds = new bytes32[][](numQuorums);
         for (uint8 i = 0; i < numQuorums; i++) {
@@ -353,7 +354,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
 
         vm.warp(block.timestamp + 1);
 
-        _registerOperaters(operatorsToEject, stake);
+        _registerOperators(operatorsToEject, stake);
 
         vm.warp(block.timestamp + ratelimitWindow);
 
@@ -395,7 +396,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         uint8 operatorsToEject = 100;
         uint8 numOperators = 100;
         uint96 stake = 1 ether;
-        _registerOperaters(numOperators, stake);
+        _registerOperators(numOperators, stake);
 
         bytes32[][] memory operatorIds = new bytes32[][](numQuorums);
         for (uint8 i = 0; i < numQuorums; i++) {
@@ -435,7 +436,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         uint8 operatorsToEject = 10;
         uint8 numOperators = 100;
         uint96 stake = 1 ether;
-        _registerOperaters(numOperators, stake);
+        _registerOperators(numOperators, stake);
 
         bytes32[][] memory operatorIds = new bytes32[][](numQuorums);
         for (uint8 i = 0; i < numQuorums; i++) {
@@ -534,7 +535,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         ejectionManager.amountEjectableForQuorum(1);
     }
 
-    function _registerOperaters(uint8 numOperators, uint96 stake) internal {
+    function _registerOperators(uint8 numOperators, uint96 stake) internal {
         for (uint256 i = 0; i < numOperators; i++) {
             BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(i)));
             address operator = _incrementAddress(defaultOperator, i);
