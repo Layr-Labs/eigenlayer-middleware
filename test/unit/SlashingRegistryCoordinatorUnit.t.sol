@@ -577,6 +577,76 @@ contract SlashingRegistryCoordinator_SetAVS is SlashingRegistryCoordinatorUnitTe
     }
 }
 
+contract SlashingRegistryCoordinator_AVSSupport is SlashingRegistryCoordinatorUnitTestSetup {
+    address internal oldAVS;
+    Operator internal testOperator;
+
+    function setUp() public virtual override {
+        super.setUp();
+        testOperator = OperatorWalletLib.createOperator("test_operator");
+        _useDelegationManagerHarness();
+        DelegationManagerHarness(address(coreDeployment.delegationManager)).setOperatorShares(
+            testOperator.key.addr, mockStrategy, STAKE_AMOUNT
+        );
+        DelegationManagerHarness(address(coreDeployment.delegationManager)).setIsOperator(
+            testOperator.key.addr, true
+        );
+
+        // Store the original AVS and set new AVS
+        oldAVS = slashingRegistryCoordinator.avs();
+        vm.prank(proxyAdminOwner);
+        slashingRegistryCoordinator.setAVS(address(0x123));
+    }
+
+    function test_RevertsWhen_RegisterOldAVS() public {
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
+            createPubkeyRegistrationParams(testOperator, testOperator.key.addr);
+
+        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
+            .RegisterParams({
+            avs: oldAVS, // Using old AVS that no longer matches
+            operatorSetIds: new uint32[](1),
+            data: abi.encode(
+                ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL,
+                "socket:8545",
+                pubkeyParams
+            )
+        });
+        registerParams.operatorSetIds[0] = 0;
+
+        vm.prank(testOperator.key.addr);
+        vm.expectRevert(bytes4(keccak256("InvalidAVS()")));
+        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
+            testOperator.key.addr, registerParams
+        );
+    }
+
+    function test_RevertsWhen_DeregisterOldAVS() public {
+        vm.prank(proxyAdminOwner);
+        slashingRegistryCoordinator.setAVS(oldAVS);
+
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = 0;
+        registerOperatorInSlashingRegistryCoordinator(testOperator, "socket:8545", operatorSetIds);
+
+        vm.prank(proxyAdminOwner);
+        slashingRegistryCoordinator.setAVS(address(0x123));
+
+        IAllocationManagerTypes.DeregisterParams memory deregisterParams = IAllocationManagerTypes
+            .DeregisterParams({
+            operator: testOperator.key.addr,
+            avs: oldAVS, // Using old AVS that no longer matches
+            operatorSetIds: operatorSetIds
+        });
+
+        vm.prank(testOperator.key.addr);
+        vm.expectRevert(bytes4(keccak256("InvalidAVS()")));
+        IAllocationManager(coreDeployment.allocationManager).deregisterFromOperatorSets(
+            deregisterParams
+        );
+    }
+}
+
 contract SlashingRegistryCoordinator_CreateSlashableStakeQuorum is
     SlashingRegistryCoordinatorUnitTestSetup
 {
