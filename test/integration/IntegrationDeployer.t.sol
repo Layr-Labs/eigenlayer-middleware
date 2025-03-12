@@ -425,9 +425,17 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             allocationManager,
             pauserRegistry
         );
-        proxyAdmin.upgrade(
+        proxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(payable(address(registryCoordinator))),
-            address(registryCoordinatorImplementation)
+            address(registryCoordinatorImplementation),
+            abi.encodeWithSelector(
+                SlashingRegistryCoordinator.initialize.selector,
+                registryCoordinatorOwner,
+                churnApprover,
+                ejector,
+                0, /*initialPausedStatus*/
+                address(serviceManager) /* accountIdentifier */
+            )
         );
 
         SlashingRegistryCoordinator slashingRegistryCoordinatorImplementation = new SlashingRegistryCoordinator(
