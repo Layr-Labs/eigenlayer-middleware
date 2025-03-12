@@ -31,7 +31,6 @@ The `ServiceManager` is the AVS's identity within EigenLayer and is responsible 
 * [User Access Management](#user-access-management)
 * [Operator Registration](#operator-registration)
 * [Rewards Management](#rewards-management)
-* [Operator Sets](#operator-sets)
 
 ## User Access Management
 
@@ -131,7 +130,7 @@ This function allows the contract owner to revoke delegated permissions from an 
 
 ## Operator Registration
 
-The `ServiceManagerBase` propagates state updates to the `AVSDirectory` (for backward compatibility).
+The `ServiceManagerBase` propagates operator AVS registration and operator set deregistration updates to the `AVSDirectory`.
 
 **Methods:**
 * [`registerOperatorToAVS`](#registeroperatortoavs)
@@ -150,7 +149,7 @@ function registerOperatorToAVS(
     onlyRegistryCoordinator
 ```
 
-This function is called by the `SlashingRegistryCoordinator` when an operator registers for the AVS. It forwards the call to the EigenLayer core `AVSDirectory`.
+This function is called by the `SlashingRegistryCoordinator` when an operator registers for the AVS.
 
 *Effects:*
 * Forwards the call to `AVSDirectory.registerOperatorToAVS` with the operator's address and signature
@@ -169,7 +168,7 @@ function deregisterOperatorFromAVS(
     onlyRegistryCoordinator
 ```
 
-This function is called by the `SlashingRegistryCoordinator` when an operator deregisters from the AVS. It forwards the call to the EigenLayer core `AVSDirectory` contract to maintain backward compatibility.
+This function is called by the `SlashingRegistryCoordinator` when an operator deregisters from the AVS.
 
 *Effects:*
 * Forwards the call to `AVSDirectory.deregisterOperatorFromAVS` with the operator's address
@@ -200,7 +199,7 @@ This function is called by the `SlashingRegistryCoordinator` to deregister an op
 
 ## Rewards Management
 
-The `ServiceManagerBase` allows the AVS to submit rewards to EigenLayer's `RewardsCoordinator` contract.
+The `ServiceManagerBase` allows the AVS to submit reward submissions to EigenLayer's `RewardsCoordinator` contract.
 
 **Methods:**
 * [`createAVSRewardsSubmission`](#createavsrewardssubmission)
