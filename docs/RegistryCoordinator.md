@@ -8,10 +8,22 @@
 | -------- | -------- | -------- |
 | [`RegistryCoordinator.sol`](../src/RegistryCoordinator.sol) | Singleton | Transparent proxy |
 
-The `RegistryCoordinator` has three primary functions:
-1. It is the primary entry and exit point for operators as they register for and deregister from quorums, and manages registration and deregistration in the `BLSApkRegistry`, `StakeRegistry`, and `IndexRegistry`. It also hooks into the EigenLayer core contracts, updating the core `DelegationManager` when an Operator registers/deregisters.
+The `RegistryCoordinator` is a contract that exisiting AVSs using M2 quorums who wish to enable operator sets should upgrade to. New AVSs should deploy the `SlashingRegistryCoordinator` to use operator sets. The `RegistryCoordinator` inherits the `SlashingRegistryCoordinator` to expose the operator set functionality.
+
+The `RegistryCoordinator` has four primary functions:
+1. It is the primary entry and exit point for operators as they register for and deregister from quorums, and manages registration and deregistration in the `BLSApkRegistry`, `StakeRegistry`, and `IndexRegistry`. It also hooks into the EigenLayer core contracts, updating the core `AVSDirectory` for M2 quorums and `AllocationManager` in the case of ejection and operator set quorums
 2. It allows anyone to update the current stake of any registered operator
 3. It allows the Owner to initialize and configure new quorums
+4. Disabling M2 quorum registration to upgrade to operator sets
+
+Refer to the [`SlashingRegistryCoordinator`](./SlashingRegistryCoordinator) for operator set functionality.
+
+#### Migration
+Existing AVSs upgrading to this version `RegistryCoordinator` will be in a state where both M2 quorum registration and operator set registration will be enabled. AVSs must be aware of this. Operator sets will be enabled on upon the first call to either `createDelegatedStakeQuorum` or `createSlashableStakeQuorum` which are inherited from the `SlashingRegistryCoordinator`. The suggested flow for this migration is as follows:
+1. Upgrade `RegistryCoordinator`
+2. Create delegated or slashable stake quorums via `createDelegatedStakeQuorum` or `createSlashableStakeQuorum`
+3. Allow time for operators to register for the new quorums using the `AllocationManager`
+4. After adequate stake has been migrated (e.g. for the sake of securing new tasks of operator sets), disable M2 registration by calling `disableM2QuorumRegistration`, note that operators can still deregister from the legacy quorums
 
 #### High-level Concepts
 
@@ -146,189 +158,21 @@ Allows an Operator to deregister themselves from one or more quorums.
 * See [`StakeRegistry.deregisterOperator`](./registries/StakeRegistry.md#deregisteroperator)
 * See [`IndexRegistry.deregisterOperator`](./registries/IndexRegistry.md#deregisteroperator)
 
-#### `ejectOperator`
-
-```solidity
-function ejectOperator(
-    address operator, 
-    bytes calldata quorumNumbers
-) 
-    external 
-    onlyEjector
-```
-
-Allows the Ejector to forcibly deregister an Operator from one or more quorums.
-
-*Effects*:
-* See `deregisterOperator` above
-
-*Requirements*:
-* Caller MUST be the Ejector
-* See `deregisterOperator` above
-
----
-
-### Updating Registered Operators
-
-These methods concern Operators that are currently registered for at least one quorum:
-* [`updateOperators`](#updateoperators)
-* [`updateOperatorsForQuorum`](#updateoperatorsforquorum)
-* [`updateSocket`](#updatesocket)
-
-#### `updateOperators`
-
-```solidity
-function updateOperators(
-    address[] calldata operators
-) 
-    external 
-    onlyWhenNotPaused(PAUSED_UPDATE_OPERATOR)
-```
-
-Allows anyone to update the contracts' view of one or more Operators' stakes. For each currently-registered `operator`, this method calls `StakeRegistry.updateOperatorStake`, triggering an update of that Operator's stake. 
-
-The `StakeRegistry` returns a bitmap of quorums where the Operator no longer meets the minimum stake required for registration. The Operator is then deregistered from those quorums.
-
-*Effects*:
-* See [`StakeRegistry.updateOperatorStake`](./registries/StakeRegistry.md#updateoperatorstake)
-* For any quorums where the Operator no longer meets the minimum stake, they are deregistered (see `deregisterOperator` above).
-
-*Requirements*:
-* Pause status MUST NOT be set: `PAUSED_UPDATE_OPERATOR`
-* See [`StakeRegistry.updateOperatorStake`](./registries/StakeRegistry.md#updateoperatorstake)
-
-#### `updateOperatorsForQuorum`
-
-```solidity
-function updateOperatorsForQuorum(
-    address[][] calldata operatorsPerQuorum,
-    bytes calldata quorumNumbers
-) 
-    external 
-    onlyWhenNotPaused(PAUSED_UPDATE_OPERATOR)
-```
-
-Can be called by anyone to update the stake of ALL Operators in one or more quorums simultaneously. This method works similarly to `updateOperators` above, but with the requirement that, for each quorum being updated, the respective `operatorsPerQuorum` passed in is the complete set of Operators currently registered for that quorum.
-
-This method also updates each quorum's `quorumUpdateBlockNumber`, signifying that the quorum's entire Operator set was updated at the current block number. (This is used by the `BLSSignatureChecker` to ensure that signature and stake validation is performed on up-to-date stake.)
-
-*Effects*:
-* See `updateOperators` above
-* Updates each quorum's `quorumUpdateBlockNumber` to the current block
-* For any quorums where the Operator no longer meets the minimum stake, they are deregistered (see `deregisterOperator` above).
-
-*Requirements*:
-* Pause status MUST NOT be set: `PAUSED_UPDATE_OPERATOR`
-* See `updateOperators` above
-* `quorumNumbers` MUST be an ordered array of quorum numbers, with no entry exceeding the current `quorumCount`
-* All `quorumNumbers` MUST correspond to valid, initialized quorums
-* `operatorsPerQuorum` and `quorumNumbers` MUST have the same lengths
-* Each entry in `operatorsPerQuorum` MUST contain an order list of the currently-registered Operator addresses in the corresponding quorum
-* See [`StakeRegistry.updateOperatorStake`](./registries/StakeRegistry.md#updateoperatorstake)
-
-#### `updateSocket`
-
-```solidity
-function updateSocket(string memory socket) external
-```
-
-Allows a registered Operator to emit an event, updating their socket.
-
-*Effects*:
-* Emits an `OperatorSocketUpdate` event
-
-*Requirements*:
-* Caller MUST be a registered Operator
-
----
-
 ### System Configuration
 
 These methods are used by the Owner to configure the `RegistryCoordinator`:
-* [`createQuorum`](#createquorum)
-* [`setOperatorSetParams`](#setoperatorsetparams)
-* [`setChurnApprover`](#setchurnapprover)
-* [`setEjector`](#setejector)
 
-#### `createQuorum`
+#### `disableM2QuorumRegistration`
 
 ```solidity
-function createQuorum(
-    OperatorSetParam memory operatorSetParams,
-    uint96 minimumStake,
-    IStakeRegistryTypes.StrategyParams[] memory strategyParams
-) 
-    external
-    virtual 
-    onlyOwner
+function disableM2QuorumRegistration() external onlyOwner
 ```
 
-Allows the Owner to initialize a new quorum with the given configuration. The new quorum is assigned a sequential quorum number.
+Allows the Owner to disable M2 quorum registration. This disables the M2 legacy quorum registration. Operators can still deregister once M2 registration is disabled. Note that this is a one way function, meaning once M2 is disabled it cannot be re-enabled.
 
-The new quorum is also initialized in each of the registry contracts.
+*Effects*
+* Disables M2 quourum registration
 
-*Effects*:
-* `quorumCount` is incremented by 1
-* The new quorum's `OperatorSetParams` are initialized (see `setOperatorSetParams` below)
-* See [`BLSApkRegistry.initializeQuorum`](./registries/BLSApkRegistry.md#initializequorum)
-* See [`StakeRegistry.initializeQuorum`](./registries/StakeRegistry.md#initializequorum)
-* See [`IndexRegistry.initializeQuorum`](./registries/IndexRegistry.md#initializequorum)
-
-*Requirements*:
+*Requirements*
 * Caller MUST be the Owner
-* Quorum count before creation MUST be less than `MAX_QUORUM_COUNT`
-* See [`BLSApkRegistry.initializeQuorum`](./registries/BLSApkRegistry.md#initializequorum)
-* See [`StakeRegistry.initializeQuorum`](./registries/StakeRegistry.md#initializequorum)
-* See [`IndexRegistry.initializeQuorum`](./registries/IndexRegistry.md#initializequorum)
-
-#### `setOperatorSetParams`
-
-```solidity
-function setOperatorSetParams(
-    uint8 quorumNumber, 
-    OperatorSetParam memory operatorSetParams
-) 
-    external 
-    onlyOwner 
-    quorumExists(quorumNumber)
-```
-
-Allows the Owner to update an existing quorum's `OperatorSetParams`, which determine:
-* `maxOperatorCount`: The max number of operators that can be in this quorum
-* `kickBIPsOfOperatorStake`: The basis points a new Operator needs over an old Operator's stake to replace them in `registerOperatorWithChurn`
-* `kickBIPsOfTotalStake`: The basis points a replaced Operator needs under the quorum's total stake to be replaced in `registerOperatorWithChurn`
-
-*Effects*:
-* Updates the quorum's `OperatorSetParams`
-
-*Requirements*:
-* Caller MUST be the Owner
-* `quorumNumber` MUST correspond to an existing, initialized quorum
-
-#### `setChurnApprover`
-
-```solidity
-function setChurnApprover(address _churnApprover) external onlyOwner
-```
-
-Allows the Owner to update the Churn Approver address.
-
-*Effects*:
-* Updates the Churn Approver address
-
-*Requirements*:
-* Caller MUST be the Owner
-
-#### `setEjector`
-
-```solidity
-function setEjector(address _ejector) external onlyOwner
-```
-
-Allows the Owner to update the Ejector address.
-
-*Effects*:
-* Updates the Ejector address
-
-*Requirements*:
-* Caller MUST be the Owner
+* M2 registration must be enabled
