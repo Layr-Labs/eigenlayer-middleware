@@ -1614,6 +1614,281 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
         uint192 kickedBitmap = slashingRegistryCoordinator.getCurrentQuorumBitmap(operatorToKickId);
         assertEq(kickedBitmap, uint192(0), "Kicked operator should be removed from all quorums");
     }
+
+    function test_registerOperatorWithChurn_revert_inputLengthMismatch() public {
+        bytes memory twoQuorumNumbers = new bytes(2);
+        twoQuorumNumbers[0] = bytes1(uint8(1));
+        twoQuorumNumbers[1] = bytes1(uint8(0));
+
+        ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams =
+            new ISlashingRegistryCoordinatorTypes.OperatorKickParam[](1);
+        operatorKickParams[0] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
+            operator: operatorToKick.key.addr,
+            quorumNumber: uint8(1)
+        });
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature = _signChurnApproval(
+            testOperator.key.addr,
+            testOperatorId,
+            operatorKickParams,
+            defaultSalt,
+            defaultExpiry
+        );
+
+        _setOperatorWeight(testOperator.key.addr, registeringStake);
+        _setOperatorWeight(operatorToKick.key.addr, operatorToKickStake);
+
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
+            createPubkeyRegistrationParams(testOperator, testOperator.key.addr);
+
+        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
+            .RegisterParams({
+            avs: address(serviceManager),
+            operatorSetIds: new uint32[](twoQuorumNumbers.length),
+            data: abi.encode(
+                ISlashingRegistryCoordinatorTypes.RegistrationType.CHURN,
+                "socket:8545",
+                pubkeyParams,
+                operatorKickParams,
+                churnApproverSignature
+            )
+        });
+
+        for (uint256 i = 0; i < twoQuorumNumbers.length; i++) {
+            registerParams.operatorSetIds[i] = uint8(twoQuorumNumbers[i]);
+        }
+
+        vm.prank(testOperator.key.addr);
+        vm.expectRevert(abi.encodeWithSignature("InputLengthMismatch()"));
+        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
+            testOperator.key.addr, registerParams
+        );
+    }
+
+    function test_registerOperatorWithChurn_revert_churnApproverSaltUsed() public {
+        _setOperatorWeight(testOperator.key.addr, registeringStake);
+        _setOperatorWeight(operatorToKick.key.addr, operatorToKickStake);
+
+        ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams =
+            new ISlashingRegistryCoordinatorTypes.OperatorKickParam[](quorumNumbers.length);
+        operatorKickParams[0] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
+            operator: operatorToKick.key.addr,
+            quorumNumber: uint8(quorumNumbers[0])
+        });
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature = _signChurnApproval(
+            testOperator.key.addr,
+            testOperatorId,
+            operatorKickParams,
+            bytes32(uint256(1)),  // Salt 1
+            defaultExpiry
+        );
+
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
+            createPubkeyRegistrationParams(testOperator, testOperator.key.addr);
+
+        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
+            .RegisterParams({
+            avs: address(serviceManager),
+            operatorSetIds: new uint32[](quorumNumbers.length),
+            data: abi.encode(
+                ISlashingRegistryCoordinatorTypes.RegistrationType.CHURN,
+                "socket:8545",
+                pubkeyParams,
+                operatorKickParams,
+                churnApproverSignature
+            )
+        });
+
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            registerParams.operatorSetIds[i] = uint8(quorumNumbers[i]);
+        }
+
+        vm.prank(testOperator.key.addr);
+        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
+            testOperator.key.addr, registerParams
+        );
+
+        Operator memory anotherOperator = extraOperator1;
+        _setOperatorWeight(anotherOperator.key.addr, registeringStake * 2);
+
+        operatorKickParams[0] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
+            operator: operatorToKick.key.addr,
+            quorumNumber: uint8(quorumNumbers[0])
+        });
+
+        churnApproverSignature = _signChurnApproval(
+            anotherOperator.key.addr,
+            bytes32(uint256(0)),  // Operator ID doesn't matter for the test
+            operatorKickParams,
+            bytes32(uint256(1)),  // Same salt as before
+            defaultExpiry + 1 days
+        );
+
+        pubkeyParams = createPubkeyRegistrationParams(anotherOperator, anotherOperator.key.addr);
+
+        registerParams = IAllocationManagerTypes.RegisterParams({
+            avs: address(serviceManager),
+            operatorSetIds: new uint32[](quorumNumbers.length),
+            data: abi.encode(
+                ISlashingRegistryCoordinatorTypes.RegistrationType.CHURN,
+                "socket:8546",
+                pubkeyParams,
+                operatorKickParams,
+                churnApproverSignature
+            )
+        });
+
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            registerParams.operatorSetIds[i] = uint8(quorumNumbers[i]);
+        }
+
+        vm.prank(anotherOperator.key.addr);
+        vm.expectRevert(abi.encodeWithSignature("AlreadyMemberOfSet()"));
+        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
+            anotherOperator.key.addr, registerParams
+        );
+    }
+
+    function test_registerOperatorWithChurn_revert_cannotChurnSelf() public {
+        _setOperatorWeight(testOperator.key.addr, registeringStake);
+        _setOperatorWeight(operatorToKick.key.addr, operatorToKickStake);
+
+        ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams =
+            new ISlashingRegistryCoordinatorTypes.OperatorKickParam[](quorumNumbers.length);
+        operatorKickParams[0] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
+            operator: testOperator.key.addr,  // Trying to kick itself
+            quorumNumber: uint8(quorumNumbers[0])
+        });
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature = _signChurnApproval(
+            testOperator.key.addr,
+            testOperatorId,
+            operatorKickParams,
+            defaultSalt,
+            defaultExpiry
+        );
+
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
+            createPubkeyRegistrationParams(testOperator, testOperator.key.addr);
+
+        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
+            .RegisterParams({
+            avs: address(serviceManager),
+            operatorSetIds: new uint32[](quorumNumbers.length),
+            data: abi.encode(
+                ISlashingRegistryCoordinatorTypes.RegistrationType.CHURN,
+                "socket:8545",
+                pubkeyParams,
+                operatorKickParams,
+                churnApproverSignature
+            )
+        });
+
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            registerParams.operatorSetIds[i] = uint8(quorumNumbers[i]);
+        }
+
+        vm.prank(testOperator.key.addr);
+        vm.expectRevert(abi.encodeWithSignature("CannotChurnSelf()"));
+        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
+            testOperator.key.addr, registerParams
+        );
+    }
+
+    function test_registerOperatorWithChurn_revert_quorumOperatorCountMismatch() public {
+        _setOperatorWeight(testOperator.key.addr, registeringStake);
+        _setOperatorWeight(operatorToKick.key.addr, operatorToKickStake);
+
+        ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams =
+            new ISlashingRegistryCoordinatorTypes.OperatorKickParam[](quorumNumbers.length);
+        operatorKickParams[0] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
+            operator: operatorToKick.key.addr,
+            quorumNumber: 0  // Mismatched quorum number (quorumNumbers[0] is 1)
+        });
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature = _signChurnApproval(
+            testOperator.key.addr,
+            testOperatorId,
+            operatorKickParams,
+            bytes32(uint256(2)),  // Different salt from previous tests
+            defaultExpiry
+        );
+
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
+            createPubkeyRegistrationParams(testOperator, testOperator.key.addr);
+
+        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
+            .RegisterParams({
+            avs: address(serviceManager),
+            operatorSetIds: new uint32[](quorumNumbers.length),
+            data: abi.encode(
+                ISlashingRegistryCoordinatorTypes.RegistrationType.CHURN,
+                "socket:8545",
+                pubkeyParams,
+                operatorKickParams,
+                churnApproverSignature
+            )
+        });
+
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            registerParams.operatorSetIds[i] = uint8(quorumNumbers[i]);
+        }
+
+        vm.prank(testOperator.key.addr);
+        vm.expectRevert(abi.encodeWithSignature("QuorumOperatorCountMismatch()"));
+        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
+            testOperator.key.addr, registerParams
+        );
+    }
+
+    function test_registerOperatorWithChurn_revert_notRegisteredForQuorum() public {
+        _setOperatorWeight(testOperator.key.addr, registeringStake);
+
+        Operator memory unregisteredOperator = operatorsByID[operatorIds.at(5)];
+        _setOperatorWeight(unregisteredOperator.key.addr, operatorToKickStake);
+
+        ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams =
+            new ISlashingRegistryCoordinatorTypes.OperatorKickParam[](quorumNumbers.length);
+        operatorKickParams[0] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
+            operator: unregisteredOperator.key.addr,
+            quorumNumber: uint8(quorumNumbers[0])
+        });
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature = _signChurnApproval(
+            testOperator.key.addr,
+            testOperatorId,
+            operatorKickParams,
+            bytes32(uint256(3)),  // Different salt from previous tests
+            defaultExpiry
+        );
+
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
+            createPubkeyRegistrationParams(testOperator, testOperator.key.addr);
+
+        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
+            .RegisterParams({
+            avs: address(serviceManager),
+            operatorSetIds: new uint32[](quorumNumbers.length),
+            data: abi.encode(
+                ISlashingRegistryCoordinatorTypes.RegistrationType.CHURN,
+                "socket:8545",
+                pubkeyParams,
+                operatorKickParams,
+                churnApproverSignature
+            )
+        });
+
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            registerParams.operatorSetIds[i] = uint8(quorumNumbers[i]);
+        }
+
+        vm.prank(testOperator.key.addr);
+        vm.expectRevert(abi.encodeWithSignature("OperatorNotRegistered()"));
+        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
+            testOperator.key.addr, registerParams
+        );
+    }
 }
 
 contract SlashingRegistryCoordinator_UpdateOperators is SlashingRegistryCoordinatorUnitTestSetup {
