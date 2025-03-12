@@ -18,7 +18,8 @@ import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {PermissionController} from
     "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
-import {ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ITransparentUpgradeableProxy} from
+    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract Test_CoreRegistration is MockAVSDeployer {
     // Contracts
