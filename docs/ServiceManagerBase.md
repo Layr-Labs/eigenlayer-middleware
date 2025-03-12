@@ -219,7 +219,7 @@ function createAVSRewardsSubmission(
     onlyRewardsInitiator
 ```
 
-This function allows the rewards initiator to create rewards submissions for the AVS.
+This function allows the rewards initiator to create rewards submissions for the AVS. This submission will send rewards to all eligible operators according to stake weight.
 
 *Effects:*
 * For each `RewardsSubmission`:
