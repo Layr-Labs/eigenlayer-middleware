@@ -607,9 +607,7 @@ contract SlashingRegistryCoordinator_AVSSupport is SlashingRegistryCoordinatorUn
             avs: oldAVS, // Using old AVS that no longer matches
             operatorSetIds: new uint32[](1),
             data: abi.encode(
-                ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL,
-                "socket:8545",
-                pubkeyParams
+                ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, "socket:8545", pubkeyParams
             )
         });
         registerParams.operatorSetIds[0] = 0;
