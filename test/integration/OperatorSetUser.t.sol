@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "test/integration/User.t.sol";
+import "./User.t.sol";
 import "forge-std/console.sol";
 
 contract OperatorSetUser is User {

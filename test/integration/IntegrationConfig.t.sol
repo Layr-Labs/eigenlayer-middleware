@@ -3,9 +3,9 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 
-import "test/integration/IntegrationDeployer.t.sol";
-import "test/ffi/util/G2Operations.sol";
-import "test/integration/utils/BitmapStrings.t.sol";
+import "./IntegrationDeployer.t.sol";
+import "../ffi/util/G2Operations.sol";
+import "./utils/BitmapStrings.t.sol";
 import {ISlashingRegistryCoordinatorTypes} from
     "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 

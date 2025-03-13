@@ -17,19 +17,19 @@ import "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 
 // Middleware
-import "src/interfaces/IRegistryCoordinator.sol";
-import "src/RegistryCoordinator.sol";
-import "src/BLSApkRegistry.sol";
-import "src/IndexRegistry.sol";
-import "src/StakeRegistry.sol";
-import "src/ServiceManagerBase.sol";
+import "../../src/interfaces/IRegistryCoordinator.sol";
+import "../../src/RegistryCoordinator.sol";
+import "../../src/BLSApkRegistry.sol";
+import "../../src/IndexRegistry.sol";
+import "../../src/StakeRegistry.sol";
+import "../../src/ServiceManagerBase.sol";
 
-import "src/libraries/BN254.sol";
-import "src/libraries/BitmapUtils.sol";
-import "test/integration/TimeMachine.t.sol";
-import "test/integration/utils/Sort.t.sol";
-import "test/integration/utils/BitmapStrings.t.sol";
-import "test/mocks/ServiceManagerMock.sol";
+import "../../src/libraries/BN254.sol";
+import "../../src/libraries/BitmapUtils.sol";
+import "./TimeMachine.t.sol";
+import "./utils/Sort.t.sol";
+import "./utils/BitmapStrings.t.sol";
+import "../mocks/ServiceManagerMock.sol";
 
 interface IUserDeployer {
     function slashingRegistryCoordinator() external view returns (SlashingRegistryCoordinator);
