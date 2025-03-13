@@ -15,8 +15,10 @@ import {ISlasher, ISlasherTypes, ISlasherErrors} from "../../src/interfaces/ISla
 import {ISlashingRegistryCoordinator} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 import {IStakeRegistry, IStakeRegistryTypes} from "../../src/interfaces/IStakeRegistry.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import {TransparentUpgradeableProxy} from
-    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    TransparentUpgradeableProxy,
+    ITransparentUpgradeableProxy
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 import {PermissionController} from
@@ -91,7 +93,7 @@ contract VetoableSlasherTest is Test {
         slasher = address(0x4);
         operatorWallet = OperatorWalletLib.createOperator("operator");
 
-        mockToken = new ERC20Mock("Mock Token", "MOCK", address(this), 0);
+        mockToken = new ERC20Mock();
 
         vm.startPrank(proxyAdminOwner);
         proxyAdmin = new ProxyAdmin();
@@ -215,7 +217,7 @@ contract VetoableSlasherTest is Test {
         );
 
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(vetoableSlasher))),
+            ITransparentUpgradeableProxy(payable(address(vetoableSlasher))),
             address(vetoableSlasherImplementation)
         );
         vm.stopPrank();

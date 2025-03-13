@@ -84,7 +84,9 @@ contract InstantSlasherTest is Test {
         slasher = address(0x3);
         operatorWallet = OperatorWalletLib.createOperator("operator");
 
-        mockToken = new ERC20Mock("Mock Token", "MOCK", address(this), 0);
+        mockToken = new ERC20Mock();
+        // Set name and symbol if needed
+        // Mint tokens if needed
 
         vm.startPrank(proxyAdminOwner);
         proxyAdmin = new ProxyAdmin();

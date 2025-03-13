@@ -3,6 +3,8 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ITransparentUpgradeableProxy} from
+    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
@@ -232,26 +234,26 @@ contract MockAVSDeployer is Test {
             allocationManagerMock
         );
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(stakeRegistry))),
+            ITransparentUpgradeableProxy(payable(address(stakeRegistry))),
             address(stakeRegistryImplementation)
         );
 
         socketRegistryImplementation = new SocketRegistry(registryCoordinator);
 
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(socketRegistry))),
+            ITransparentUpgradeableProxy(payable(address(socketRegistry))),
             address(socketRegistryImplementation)
         );
 
         blsApkRegistryImplementation = new BLSApkRegistryHarness(registryCoordinator);
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(blsApkRegistry))),
+            ITransparentUpgradeableProxy(payable(address(blsApkRegistry))),
             address(blsApkRegistryImplementation)
         );
 
         indexRegistryImplementation = new IndexRegistry(registryCoordinator);
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(indexRegistry))),
+            ITransparentUpgradeableProxy(payable(address(indexRegistry))),
             address(indexRegistryImplementation)
         );
 
@@ -264,7 +266,7 @@ contract MockAVSDeployer is Test {
             allocationManagerMock
         );
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(serviceManager))),
+            ITransparentUpgradeableProxy(payable(address(serviceManager))),
             address(serviceManagerImplementation)
         );
 
@@ -276,7 +278,7 @@ contract MockAVSDeployer is Test {
             uint32(1 days) // ALLOCATION_CONFIGURATION_DELAY
         );
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(allocationManager))),
+            ITransparentUpgradeableProxy(payable(address(allocationManager))),
             address(allocationManagerImplementation)
         );
 
@@ -316,7 +318,7 @@ contract MockAVSDeployer is Test {
         );
         {
             proxyAdmin.upgradeAndCall(
-                TransparentUpgradeableProxy(payable(address(registryCoordinator))),
+                ITransparentUpgradeableProxy(payable(address(registryCoordinator))),
                 address(registryCoordinatorImplementation),
                 abi.encodeCall(
                     SlashingRegistryCoordinator.initialize,
