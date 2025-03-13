@@ -163,7 +163,7 @@ contract SlashingRegistryCoordinatorUnitTestSetup is
             }
         }
 
-        mockToken = new ERC20Mock("Mock Token", "MOCK", address(this), 0);
+        mockToken = new ERC20Mock();
 
         vm.startPrank(proxyAdminOwner);
         proxyAdmin = new ProxyAdmin();
@@ -726,6 +726,19 @@ contract SlashingRegistryCoordinator_CreateSlashableStakeQuorum is
         );
 
         vm.stopPrank();
+    }
+
+    function test_RevertsWhen_LookAheadPeriodTooLong() public {
+        uint32 deallocationDelay =
+            AllocationManager(address(coreDeployment.allocationManager)).DEALLOCATION_DELAY();
+
+        uint32 tooLongLookAheadPeriod = deallocationDelay;
+
+        vm.prank(proxyAdminOwner);
+        vm.expectRevert(LookAheadPeriodTooLong.selector);
+        slashingRegistryCoordinator.createSlashableStakeQuorum(
+            operatorSetParams, minimumStake, getStrategyParams(), tooLongLookAheadPeriod
+        );
     }
 }
 
