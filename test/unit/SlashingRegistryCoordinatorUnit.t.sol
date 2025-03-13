@@ -1304,6 +1304,21 @@ contract SlashingRegistryCoordinator_SetOperatorSetParams is
         vm.prank(proxyAdminOwner);
         slashingRegistryCoordinator.setOperatorSetParams(quorumNumber, newParams);
     }
+
+    function test_RevertsWhen_QuorumDoesNotExist() public {
+        // Define new operator set params
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory newParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+            maxOperatorCount: 20,
+            kickBIPsOfOperatorStake: 1000,
+            kickBIPsOfTotalStake: 500
+        });
+
+        /// Quorum 1 doesn't exist yet
+        vm.prank(proxyAdminOwner);
+        vm.expectRevert(QuorumDoesNotExist.selector);
+        slashingRegistryCoordinator.setOperatorSetParams(1, newParams);
+    }
 }
 
 contract SlashingRegistryCoordinator_EjectOperator is SlashingRegistryCoordinatorUnitTestSetup {
