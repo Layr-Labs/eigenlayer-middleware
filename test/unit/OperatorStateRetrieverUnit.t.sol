@@ -138,10 +138,6 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         assertEq(operators[1][0].stake, defaultStake - 1);
     }
 
-    ////////////////////////////////
-
-    /*
-
     function test_getOperatorStateWithSocket_revert_neverRegistered() public {
         cheats.expectRevert(
             "RegCoord.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operator at blockNumber"
@@ -175,7 +171,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         cheats.prank(defaultOperator);
         registryCoordinator.deregisterOperator(BitmapUtils.bitmapToBytesArray(quorumBitmap));
 
-        (uint256 fetchedQuorumBitmap, OperatorStateRetriever.OperatorWithSocket[][] memory operators) =
+        (uint256 fetchedQuorumBitmap, OperatorStateRetriever.Operator[][] memory operators,) =
         operatorStateRetriever.getOperatorStateWithSocket(
             registryCoordinator, defaultOperatorId, uint32(block.number)
         );
@@ -188,7 +184,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         cheats.roll(registrationBlockNumber);
         _registerOperatorWithCoordinator(defaultOperator, quorumBitmap, defaultPubKey);
 
-        (uint256 fetchedQuorumBitmap, OperatorStateRetriever.OperatorWithSocket[][] memory operators) =
+        (uint256 fetchedQuorumBitmap, OperatorStateRetriever.Operator[][] memory operators,) =
         operatorStateRetriever.getOperatorStateWithSocket(
             registryCoordinator, defaultOperatorId, uint32(block.number)
         );
@@ -252,7 +248,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
             otherOperator, quorumBitmapThree, otherPubKey, defaultStake - 1
         );
 
-        OperatorStateRetriever.OperatorWithSocket[][] memory operators = operatorStateRetriever
+        (OperatorStateRetriever.Operator[][] memory operators,) = operatorStateRetriever
             .getOperatorStateWithSocket(
             registryCoordinator,
             BitmapUtils.bitmapToBytesArray(quorumBitmapThree),
@@ -271,10 +267,6 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         assertEq(operators[1][0].operatorId, otherOperatorId);
         assertEq(operators[1][0].stake, defaultStake - 1);
     }
-    */
-
-    
-    ////////////////////////////////
 
     function test_getCheckSignaturesIndices_revert_neverRegistered() public {
         bytes32[] memory nonSignerOperatorIds = new bytes32[](1);
@@ -752,7 +744,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         OperatorStateRetriever.Operator[][] memory operators,
         uint256[][] memory expectedOperatorOverallIndices,
         OperatorMetadata[] memory operatorMetadatas
-    ) internal {
+    ) internal pure {
         // for each quorum
         for (uint256 j = 0; j < quorumNumbers.length; j++) {
             // make sure the each operator id and stake is correct
