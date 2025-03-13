@@ -9,6 +9,8 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
+import {ISlashingRegistryCoordinatorTypes} from
+    "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 import {IRegistryCoordinator} from "../../src/RegistryCoordinator.sol";
 import {OperatorStateRetriever} from "../../src/OperatorStateRetriever.sol";
 import {RegistryCoordinator} from "../../src/RegistryCoordinator.sol";
@@ -238,6 +240,7 @@ library OperatorLib {
         });
 
         registrationParamsData = abi.encode(
+            ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL,
             "test-socket", // Random socket string
             blsParams
         );

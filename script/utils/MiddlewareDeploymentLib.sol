@@ -26,7 +26,10 @@ import {StakeRegistry} from "../../src/StakeRegistry.sol";
 import {IStakeRegistry, IStakeRegistryTypes} from "../../src/interfaces/IStakeRegistry.sol";
 import {IRegistryCoordinator} from "../../src/RegistryCoordinator.sol";
 import {SlashingRegistryCoordinator} from "../../src/SlashingRegistryCoordinator.sol";
-import {ISlashingRegistryCoordinator, ISlashingRegistryCoordinatorTypes} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
+import {
+    ISlashingRegistryCoordinator,
+    ISlashingRegistryCoordinatorTypes
+} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 import {OperatorStateRetriever} from "../../src/OperatorStateRetriever.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IStrategyFactory} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyFactory.sol";
@@ -232,7 +235,8 @@ library MiddlewareDeploymentLib {
         uint256 numQuorums = config.numQuorums;
         uint256 numStrategies = deployedStrategyArray.length;
 
-        params.quorumsOperatorSetParams = new ISlashingRegistryCoordinatorTypes.OperatorSetParam[](numQuorums);
+        params.quorumsOperatorSetParams =
+            new ISlashingRegistryCoordinatorTypes.OperatorSetParam[](numQuorums);
         uint256[] memory operator_params = config.operatorParams;
 
         for (uint256 i = 0; i < numQuorums; i++) {

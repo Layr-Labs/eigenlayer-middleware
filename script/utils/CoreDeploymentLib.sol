@@ -19,7 +19,7 @@ import {IDelegationManager} from
 import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
-import "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
+import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 
 import {DelegationManager} from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import {StrategyManager} from "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
@@ -37,6 +37,8 @@ import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IPermissionController} from
     "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {PermissionController} from
+    "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
 import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -137,6 +139,7 @@ library CoreDeploymentLib {
         address eigenPodBeaconImpl;
         address baseStrategyImpl;
         address pauserRegistryImpl;
+        address permissionControllerImpl;
     }
 
     function deployCoreFromScratch(
@@ -155,7 +158,8 @@ library CoreDeploymentLib {
             addrs.avsDirectoryImpl,
             addrs.strategyManagerImpl,
             addrs.strategyFactoryImpl,
-            addrs.AllocationManagerImpl
+            addrs.AllocationManagerImpl,
+            addrs.permissionControllerImpl
         ) = _deployMainImplementations(result, config);
 
         address ethPOSDeposit = _getEthPOSDeposit();
@@ -204,7 +208,8 @@ library CoreDeploymentLib {
             address avsDirectoryImpl,
             address strategyManagerImpl,
             address strategyFactoryImpl,
-            address allocationManagerImpl
+            address allocationManagerImpl,
+            address permissionControllerImpl
         )
     {
         delegationManagerImpl = address(
@@ -246,12 +251,15 @@ library CoreDeploymentLib {
             )
         );
 
+        permissionControllerImpl = address(new PermissionController());
+
         return (
             delegationManagerImpl,
             avsDirectoryImpl,
             strategyManagerImpl,
             strategyFactoryImpl,
-            allocationManagerImpl
+            allocationManagerImpl,
+            permissionControllerImpl
         );
     }
 
@@ -395,6 +403,7 @@ library CoreDeploymentLib {
 
         upgradeCall = abi.encodeCall(EigenPod.initialize, (address(result.eigenPodManager)));
         UpgradeableProxyLib.upgradeAndCall(result.eigenPodBeacon, addrs.eigenPodImpl, upgradeCall);
+        UpgradeableProxyLib.upgrade(result.permissionController, addrs.permissionControllerImpl);
     }
 
     function readCoreDeploymentJson(

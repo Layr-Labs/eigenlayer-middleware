@@ -29,6 +29,7 @@ import {EIP712} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.so
 
 import {Pausable} from "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
 import {SlashingRegistryCoordinatorStorage} from "./SlashingRegistryCoordinatorStorage.sol";
+import {console} from "forge-std/console.sol";
 
 /**
  * @title A `RegistryCoordinator` that has four registries:
@@ -147,9 +148,15 @@ contract SlashingRegistryCoordinator is
         uint32[] memory operatorSetIds,
         bytes calldata data
     ) external override onlyAllocationManager onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
+        console.logString("TEST 1");
+        console.logString("TEST 1");
+        console.logString("TEST 1");
         require(supportsAVS(avs), InvalidAVS());
         bytes memory quorumNumbers = _getQuorumNumbers(operatorSetIds);
 
+        console.logString("TEST 2");
+        console.logString("TEST 2");
+        console.logString("TEST 2");
         (
             RegistrationType registrationType,
             string memory socket,
@@ -157,6 +164,10 @@ contract SlashingRegistryCoordinator is
         ) = abi.decode(
             data, (RegistrationType, string, IBLSApkRegistryTypes.PubkeyRegistrationParams)
         );
+
+        console.logString("TEST 3");
+        console.logString("TEST 3");
+        console.logString("TEST 3");
 
         /**
          * If the operator has NEVER registered a pubkey before, use `params` to register
@@ -166,6 +177,7 @@ contract SlashingRegistryCoordinator is
          * (operatorId) is fetched instead
          */
         bytes32 operatorId = _getOrCreateOperatorId(operator, params);
+
 
         if (registrationType == RegistrationType.NORMAL) {
             uint32[] memory numOperatorsPerQuorum = _registerOperator({
@@ -422,6 +434,11 @@ contract SlashingRegistryCoordinator is
         uint192 quorumsToAdd =
             uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         uint192 currentBitmap = _currentOperatorBitmap(operatorId);
+
+        console.logString("TEST 3");
+        console.logString("TEST 3");
+        console.logString("TEST 3");
+   
 
         // call hook to allow for any pre-register logic
         _beforeRegisterOperator(operator, operatorId, quorumNumbers, currentBitmap);
