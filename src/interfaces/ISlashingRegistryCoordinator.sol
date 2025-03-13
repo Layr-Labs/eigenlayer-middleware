@@ -307,15 +307,6 @@ interface ISlashingRegistryCoordinator is
     ) external view returns (uint256);
 
     /**
-     * @notice Gets the registry contract address at a specific index.
-     * @param index The index in the registries array.
-     * @return The registry contract address.
-     */
-    function registries(
-        uint256 index
-    ) external view returns (address);
-
-    /**
      * @notice The address authorized to approve operator churn operations.
      * @return The churn approver address.
      */
@@ -585,12 +576,6 @@ interface ISlashingRegistryCoordinator is
     function getQuorumBitmapHistoryLength(
         bytes32 operatorId
     ) external view returns (uint256);
-
-    /**
-     * @notice Returns the number of registry contracts managed by this coordinator.
-     * @return The count of registry contracts (typically 3: stake, BLS, and index).
-     */
-    function numRegistries() external view returns (uint256);
 
     /**
      * @notice Calculates the digest hash that must be signed by the churn approver.

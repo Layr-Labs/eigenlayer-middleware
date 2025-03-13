@@ -107,12 +107,6 @@ contract SlashingRegistryCoordinator is
         _setPausedStatus(_initialPausedStatus);
         _setEjector(_ejector);
         _setAVS(_avs);
-
-        // Add registry contracts to the registries array
-        registries.push(address(stakeRegistry));
-        registries.push(address(blsApkRegistry));
-        registries.push(address(indexRegistry));
-        registries.push(address(socketRegistry));
     }
 
     /// @inheritdoc ISlashingRegistryCoordinator
@@ -1072,11 +1066,6 @@ contract SlashingRegistryCoordinator is
         bytes32 operatorId
     ) external view returns (uint256) {
         return _operatorBitmapHistory[operatorId].length;
-    }
-
-    /// @notice Returns the number of registries
-    function numRegistries() external view returns (uint256) {
-        return registries.length;
     }
 
     /**
