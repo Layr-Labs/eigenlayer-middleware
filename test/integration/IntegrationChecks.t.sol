@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "test/integration/IntegrationBase.t.sol";
-import "test/integration/User.t.sol";
+import "./IntegrationBase.t.sol";
+import "./User.t.sol";
 
 /// @notice Contract that provides utility functions to reuse common test blocks & checks
 contract IntegrationChecks is IntegrationBase {
