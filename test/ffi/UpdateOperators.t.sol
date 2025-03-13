@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "test/integration/User.t.sol";
+import "../integration/User.t.sol";
 
-import "test/integration/IntegrationChecks.t.sol";
+import "../integration/IntegrationChecks.t.sol";
 
 contract Integration_AVS_Sync_GasCosts_FFI is IntegrationChecks {
     using BN254 for *;

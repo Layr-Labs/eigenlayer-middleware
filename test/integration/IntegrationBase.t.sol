@@ -6,12 +6,12 @@ import "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-import "src/libraries/BitmapUtils.sol";
-import "src/libraries/BN254.sol";
+import "../../src/libraries/BitmapUtils.sol";
+import "../../src/libraries/BN254.sol";
 
-import "test/integration/IntegrationConfig.t.sol";
-import "test/integration/TimeMachine.t.sol";
-import "test/integration/User.t.sol";
+import "./IntegrationConfig.t.sol";
+import "./TimeMachine.t.sol";
+import "./User.t.sol";
 
 abstract contract IntegrationBase is IntegrationConfig {
     using Strings for *;

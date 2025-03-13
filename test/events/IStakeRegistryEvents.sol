@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {IStakeRegistry, IStrategy} from "src/interfaces/IStakeRegistry.sol";
+import {IStakeRegistry, IStrategy} from "../../src/interfaces/IStakeRegistry.sol";
 
 interface IStakeRegistryEvents {
     /// @notice emitted whenever the stake of `operator` is updated

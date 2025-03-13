@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {Vm} from "forge-std/Vm.sol";
-import {BN254} from "src/libraries/BN254.sol";
+import {BN254} from "../../src/libraries/BN254.sol";
 import {BN256G2} from "./BN256G2.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
