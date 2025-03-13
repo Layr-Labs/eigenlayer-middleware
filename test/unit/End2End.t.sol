@@ -14,11 +14,12 @@ import {IAllocationManagerTypes} from
     "../../lib/eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IStrategy} from "../../lib/eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
-import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
+import {IStakeRegistry, IStakeRegistryTypes} from "../../src/interfaces/IStakeRegistry.sol";
 import {RegistryCoordinator} from "../../src/RegistryCoordinator.sol";
 import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {ServiceManagerMock} from "../mocks/ServiceManagerMock.sol";
+import {ISlashingRegistryCoordinator, ISlashingRegistryCoordinatorTypes} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 
 contract End2EndForkTest is Test {
     using OperatorLib for *;
@@ -202,10 +203,9 @@ contract End2EndForkTest is Test {
         MiddlewareDeploymentLib.DeploymentData memory middlewareDeployment
     ) internal {
         vm.startPrank(middlewareConfig.admin);
-        RegistryCoordinator(middlewareDeployment.registryCoordinator).enableOperatorSets();
 
         // Create first quorum
-        IRegistryCoordinator.OperatorSetParam memory operatorSetParams = IRegistryCoordinator
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinatorTypes 
             .OperatorSetParam({
             maxOperatorCount: 10,
             kickBIPsOfOperatorStake: 100,
@@ -214,7 +214,7 @@ contract End2EndForkTest is Test {
 
         IStakeRegistry.StrategyParams[] memory strategyParams =
             new IStakeRegistry.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistry.StrategyParams({
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
             strategy: IStrategy(middlewareDeployment.strategy),
             multiplier: 1 ether
         });
@@ -262,12 +262,12 @@ contract End2EndForkTest is Test {
         vm.startPrank(middlewareConfig.admin);
         IStakeRegistry.StrategyParams[] memory strategyParams =
             new IStakeRegistry.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistry.StrategyParams({
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
             strategy: IStrategy(middlewareDeployment.strategy),
             multiplier: 1 ether
         });
 
-        IRegistryCoordinator.OperatorSetParam memory operatorSetParams = IRegistryCoordinator
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinatorTypes
             .OperatorSetParam({
             maxOperatorCount: 10,
             kickBIPsOfOperatorStake: 0,
@@ -358,13 +358,6 @@ contract End2EndForkTest is Test {
         MiddlewareDeploymentLib.ConfigData memory middlewareConfig,
         MiddlewareDeploymentLib.DeploymentData memory middlewareDeployment
     ) internal {
-        address newSlasher = makeAddr("newSlasher");
-        vm.startPrank(middlewareConfig.admin);
-        ServiceManagerMock(middlewareDeployment.serviceManager).proposeNewSlasher(newSlasher);
-        vm.warp(block.timestamp + 8 days);
-        ServiceManagerMock(middlewareDeployment.serviceManager).acceptProposedSlasher();
-        vm.stopPrank();
-
         IAllocationManagerTypes.SlashingParams memory slashingParams = IAllocationManagerTypes
             .SlashingParams({
             operator: operators[0].key.addr,
@@ -377,7 +370,6 @@ contract End2EndForkTest is Test {
         slashingParams.strategies[0] = IStrategy(middlewareDeployment.strategy);
         slashingParams.wadsToSlash[0] = 0.5e18;
 
-        vm.prank(newSlasher);
         ServiceManagerMock(middlewareDeployment.serviceManager).slashOperator(slashingParams);
     }
 
@@ -466,11 +458,6 @@ contract End2EndForkTest is Test {
             registeredOperators, quorumNumbers
         );
 
-        // Enable operator sets
-        // Migrate AVS to operator sets
-        vm.startPrank(middlewareConfig.admin);
-        RegistryCoordinator(middlewareDeployment.registryCoordinator).enableOperatorSets();
-        vm.stopPrank();
     }
 
     function _setupSecondQuorumAndOperatorSet_M2(
@@ -482,13 +469,13 @@ contract End2EndForkTest is Test {
         // Create a second operator set for slashable stake
         IStakeRegistry.StrategyParams[] memory strategyParams2 =
             new IStakeRegistry.StrategyParams[](1);
-        strategyParams2[0] = IStakeRegistry.StrategyParams({
+        strategyParams2[0] = IStakeRegistryTypes.StrategyParams({
             strategy: IStrategy(middlewareDeployment.strategy),
             multiplier: 1 ether
         });
 
         // Configure operator set params
-        IRegistryCoordinator.OperatorSetParam memory operatorSetParams2 = IRegistryCoordinator
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams2 = ISlashingRegistryCoordinatorTypes
             .OperatorSetParam({
             maxOperatorCount: 10,
             kickBIPsOfOperatorStake: 0,
