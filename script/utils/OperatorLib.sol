@@ -22,7 +22,7 @@ import {
     IAllocationManager,
     IAllocationManagerTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
+import {IBLSApkRegistry, IBLSApkRegistryTypes} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {IStrategyFactory} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyFactory.sol";
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {UpgradeableProxyLib} from "./UpgradeableProxyLib.sol";
@@ -188,7 +188,7 @@ library OperatorLib {
         BN254.G1Point memory blsSig =
             signMessage(operator.signingKey, pubkeyRegistrationMessageHash);
 
-        IBLSApkRegistry.PubkeyRegistrationParams memory params = IBLSApkRegistry
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params = IBLSApkRegistryTypes
             .PubkeyRegistrationParams({
             pubkeyG1: operator.signingKey.publicKeyG1,
             pubkeyG2: operator.signingKey.publicKeyG2,
@@ -230,7 +230,7 @@ library OperatorLib {
         BN254.G1Point memory signature =
             signMessage(operator.signingKey, pubkeyRegistrationMessageHash);
 
-        IBLSApkRegistry.PubkeyRegistrationParams memory blsParams = IBLSApkRegistry
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory blsParams = IBLSApkRegistryTypes
             .PubkeyRegistrationParams({
             pubkeyG1: operator.signingKey.publicKeyG1,
             pubkeyG2: operator.signingKey.publicKeyG2,
