@@ -14,10 +14,14 @@ import {OperatorStateRetriever} from "../../src/OperatorStateRetriever.sol";
 import {RegistryCoordinator} from "../../src/RegistryCoordinator.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IDelegationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-import {IAllocationManager, IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IAllocationManager,
+    IAllocationManagerTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {IStrategyFactory} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyFactory.sol";
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
@@ -26,7 +30,6 @@ import {CoreDeploymentLib} from "./CoreDeploymentLib.sol";
 import {ERC20Mock} from "./MiddlewareDeploymentLib.sol";
 import {BN254} from "../../src/libraries/BN254.sol";
 import {BN256G2} from "./BN256G2.sol";
-
 
 library OperatorLib {
     using BN254 for *;
@@ -50,41 +53,39 @@ library OperatorLib {
         BLSWallet signingKey;
     }
 
-    function createBLSWallet(uint256 salt) internal returns (BLSWallet memory) {
+    function createBLSWallet(
+        uint256 salt
+    ) internal returns (BLSWallet memory) {
         uint256 privateKey = uint256(keccak256(abi.encodePacked(salt)));
         BN254.G1Point memory publicKeyG1 = BN254.generatorG1().scalar_mul(privateKey);
         BN254.G2Point memory publicKeyG2 = mul(privateKey);
 
-        return BLSWallet({
-            privateKey: privateKey,
-            publicKeyG2: publicKeyG2,
-            publicKeyG1: publicKeyG1
-        });
+        return
+            BLSWallet({privateKey: privateKey, publicKeyG2: publicKeyG2, publicKeyG1: publicKeyG1});
     }
 
-    function createWallet(uint256 salt) internal pure returns (Wallet memory) {
+    function createWallet(
+        uint256 salt
+    ) internal pure returns (Wallet memory) {
         uint256 privateKey = uint256(keccak256(abi.encodePacked(salt)));
         address addr = vm.addr(privateKey);
 
-        return Wallet({
-            privateKey: privateKey,
-            addr: addr
-        });
+        return Wallet({privateKey: privateKey, addr: addr});
     }
 
-    function createOperator(string memory name) internal returns (Operator memory) {
+    function createOperator(
+        string memory name
+    ) internal returns (Operator memory) {
         uint256 salt = uint256(keccak256(abi.encodePacked(name)));
         Wallet memory vmWallet = createWallet(salt);
         BLSWallet memory blsWallet = createBLSWallet(salt);
 
-        return Operator({
-            key: vmWallet,
-            signingKey: blsWallet
-        });
+        return Operator({key: vmWallet, signingKey: blsWallet});
     }
 
-
-    function mul(uint256 x) internal returns (BN254.G2Point memory g2Point) {
+    function mul(
+        uint256 x
+    ) internal returns (BN254.G2Point memory g2Point) {
         string[] memory inputs = new string[](5);
         inputs[0] = "go";
         inputs[1] = "run";
@@ -128,8 +129,9 @@ library OperatorLib {
         BN254.G2Point memory pk1,
         BN254.G2Point memory pk2
     ) internal view returns (BN254.G2Point memory apk) {
-        (apk.X[0], apk.X[1], apk.Y[0], apk.Y[1]) =
-            BN256G2.ECTwistAdd(pk1.X[0], pk1.X[1], pk1.Y[0], pk1.Y[1], pk2.X[0], pk2.X[1], pk2.Y[0], pk2.Y[1]);
+        (apk.X[0], apk.X[1], apk.Y[0], apk.Y[1]) = BN256G2.ECTwistAdd(
+            pk1.X[0], pk1.X[1], pk1.Y[0], pk1.Y[1], pk2.X[0], pk2.X[1], pk2.Y[0], pk2.Y[1]
+        );
     }
 
     function mintMockTokens(Operator memory operator, address token, uint256 amount) internal {
@@ -154,17 +156,10 @@ library OperatorLib {
         return shares;
     }
 
-    function registerAsOperator(
-        Operator memory operator,
-        address delegationManager
-    ) internal {
+    function registerAsOperator(Operator memory operator, address delegationManager) internal {
         IDelegationManager delegationManagerInstance = IDelegationManager(delegationManager);
 
-        delegationManagerInstance.registerAsOperator(
-            operator.key.addr,
-            0,
-            ""
-        );
+        delegationManagerInstance.registerAsOperator(operator.key.addr, 0, "");
     }
 
     function registerOperatorToAVS_M2(
@@ -182,18 +177,19 @@ library OperatorLib {
         uint256 expiry = block.timestamp + 1 hours;
 
         bytes32 operatorRegistrationDigestHash = avsDirectoryInstance
-            .calculateOperatorAVSRegistrationDigestHash(
-            operator.key.addr, serviceManager, salt, expiry
-        );
+            .calculateOperatorAVSRegistrationDigestHash(operator.key.addr, serviceManager, salt, expiry);
 
         bytes memory signature = signWithOperatorKey(operator, operatorRegistrationDigestHash);
         // Get the pubkey registration message hash that needs to be signed
-        bytes32 pubkeyRegistrationMessageHash = registryCoordinatorInstance.calculatePubkeyRegistrationMessageHash(operator.key.addr);
+        bytes32 pubkeyRegistrationMessageHash =
+            registryCoordinatorInstance.calculatePubkeyRegistrationMessageHash(operator.key.addr);
 
         // Sign the pubkey registration message hash
-        BN254.G1Point memory blsSig = signMessage(operator.signingKey, pubkeyRegistrationMessageHash);
+        BN254.G1Point memory blsSig =
+            signMessage(operator.signingKey, pubkeyRegistrationMessageHash);
 
-        IBLSApkRegistry.PubkeyRegistrationParams memory params = IBLSApkRegistry.PubkeyRegistrationParams({
+        IBLSApkRegistry.PubkeyRegistrationParams memory params = IBLSApkRegistry
+            .PubkeyRegistrationParams({
             pubkeyG1: operator.signingKey.publicKeyG1,
             pubkeyG2: operator.signingKey.publicKeyG2,
             pubkeyRegistrationSignature: blsSig
@@ -203,10 +199,15 @@ library OperatorLib {
             .SignatureWithSaltAndExpiry({signature: signature, salt: salt, expiry: expiry});
 
         // Call the registerOperator function on the registry
-        registryCoordinatorInstance.registerOperator(quorumNumbers, socket, params, operatorSignature);
+        registryCoordinatorInstance.registerOperator(
+            quorumNumbers, socket, params, operatorSignature
+        );
     }
 
-    function deregisterOperatorFromAVS_M2(Operator memory operator, address registryCoordinator) internal {
+    function deregisterOperatorFromAVS_M2(
+        Operator memory operator,
+        address registryCoordinator
+    ) internal {
         vm.prank(operator.key.addr);
         RegistryCoordinator(registryCoordinator).deregisterOperator("");
     }
@@ -218,34 +219,31 @@ library OperatorLib {
         address avs,
         uint32[] memory operatorSetIds
     ) internal {
-
         bytes memory registrationParamsData;
         IAllocationManager allocationManagerInstance = IAllocationManager(allocationManager);
 
-
         // Get the pubkey registration message hash that needs to be signed
-        bytes32 pubkeyRegistrationMessageHash = RegistryCoordinator(registryCoordinator).calculatePubkeyRegistrationMessageHash(operator.key.addr);
+        bytes32 pubkeyRegistrationMessageHash = RegistryCoordinator(registryCoordinator)
+            .calculatePubkeyRegistrationMessageHash(operator.key.addr);
 
         // Sign the pubkey registration message hash
-        BN254.G1Point memory signature = signMessage(operator.signingKey, pubkeyRegistrationMessageHash);
+        BN254.G1Point memory signature =
+            signMessage(operator.signingKey, pubkeyRegistrationMessageHash);
 
-        IBLSApkRegistry.PubkeyRegistrationParams memory blsParams = IBLSApkRegistry.PubkeyRegistrationParams({
+        IBLSApkRegistry.PubkeyRegistrationParams memory blsParams = IBLSApkRegistry
+            .PubkeyRegistrationParams({
             pubkeyG1: operator.signingKey.publicKeyG1,
             pubkeyG2: operator.signingKey.publicKeyG2,
             pubkeyRegistrationSignature: signature
         });
-
 
         registrationParamsData = abi.encode(
             "test-socket", // Random socket string
             blsParams
         );
 
-        IAllocationManagerTypes.RegisterParams memory params = IAllocationManagerTypes.RegisterParams({
-            avs: avs,
-            operatorSetIds: operatorSetIds,
-            data: registrationParamsData
-        });
+        IAllocationManagerTypes.RegisterParams memory params = IAllocationManagerTypes
+            .RegisterParams({avs: avs, operatorSetIds: operatorSetIds, data: registrationParamsData});
 
         // Register the operator in the Allocation Manager
         allocationManagerInstance.registerForOperatorSets(operator.key.addr, params);
@@ -259,11 +257,8 @@ library OperatorLib {
     ) internal {
         IAllocationManager allocationManagerInstance = IAllocationManager(allocationManager);
 
-        IAllocationManagerTypes.DeregisterParams memory params = IAllocationManagerTypes.DeregisterParams({
-            operator: operator.key.addr,
-            avs: avs,
-            operatorSetIds: operatorSetIds
-        });
+        IAllocationManagerTypes.DeregisterParams memory params = IAllocationManagerTypes
+            .DeregisterParams({operator: operator.key.addr, avs: avs, operatorSetIds: operatorSetIds});
 
         // Deregister the operator in the Allocation Manager
         allocationManagerInstance.deregisterFromOperatorSets(params);
@@ -290,11 +285,11 @@ library OperatorLib {
         allocationManagerInstance.modifyAllocations(operator.key.addr, params);
     }
 
-    function createAndAddOperator(uint256 salt) internal returns (Operator memory) {
-        Wallet memory operatorKey =
-            createWallet(salt);
-        BLSWallet memory signingKey =
-            createBLSWallet(salt);
+    function createAndAddOperator(
+        uint256 salt
+    ) internal returns (Operator memory) {
+        Wallet memory operatorKey = createWallet(salt);
+        BLSWallet memory signingKey = createBLSWallet(salt);
 
         Operator memory newOperator = Operator({key: operatorKey, signingKey: signingKey});
 

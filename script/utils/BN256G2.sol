@@ -174,7 +174,7 @@ library BN256G2 {
 
     function _modInv(uint256 a, uint256 n) internal view returns (uint256 result) {
         bool success;
-        assembly  ("memory-safe") {
+        assembly ("memory-safe") {
             let freemem := mload(0x40)
             mstore(freemem, 0x20)
             mstore(add(freemem, 0x20), 0x20)

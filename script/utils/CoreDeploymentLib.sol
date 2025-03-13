@@ -13,7 +13,13 @@ import {BLSApkRegistry} from "../../src/BLSApkRegistry.sol";
 import {IndexRegistry} from "../../src/IndexRegistry.sol";
 import {RegistryCoordinator} from "../../src/RegistryCoordinator.sol";
 import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
-import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IDelegationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+
+import {IAllocationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+
+import "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 
 import {DelegationManager} from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import {StrategyManager} from "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
@@ -23,15 +29,20 @@ import {RewardsCoordinator} from "eigenlayer-contracts/src/contracts/core/Reward
 import {StrategyBase} from "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import {EigenPod} from "eigenlayer-contracts/src/contracts/pods/EigenPod.sol";
 import {IETHPOSDeposit} from "eigenlayer-contracts/src/contracts/interfaces/IETHPOSDeposit.sol";
-import {StrategyBaseTVLLimits} from "eigenlayer-contracts/src/contracts/strategies/StrategyBaseTVLLimits.sol";
+import {StrategyBaseTVLLimits} from
+    "eigenlayer-contracts/src/contracts/strategies/StrategyBaseTVLLimits.sol";
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {IPermissionController} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
-import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IAllocationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IPermissionController} from
+    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {IRewardsCoordinator} from
+    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IDelegationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IEigenPodManager} from "eigenlayer-contracts/src/contracts/interfaces/IEigenPodManager.sol";
@@ -116,6 +127,7 @@ library CoreDeploymentLib {
 
     struct DeploymentAddresses {
         address delegationManagerImpl;
+        address AllocationManagerImpl;
         address avsDirectoryImpl;
         address strategyManagerImpl;
         address strategyFactoryImpl;
@@ -142,7 +154,8 @@ library CoreDeploymentLib {
             addrs.delegationManagerImpl,
             addrs.avsDirectoryImpl,
             addrs.strategyManagerImpl,
-            addrs.strategyFactoryImpl
+            addrs.strategyFactoryImpl,
+            addrs.AllocationManagerImpl
         ) = _deployMainImplementations(result, config);
 
         address ethPOSDeposit = _getEthPOSDeposit();
@@ -160,17 +173,15 @@ library CoreDeploymentLib {
         result.strategyBeacon = address(new UpgradeableBeacon(addrs.baseStrategyImpl));
 
         // Upgrade all contracts
-        _upgradeAllContracts(
-            result,
-            config,
-            proxyAdmin,
-            addrs
-        );
+        _upgradeAllContracts(result, config, proxyAdmin, addrs);
 
         return result;
     }
 
-    function _deployEmptyProxies(address proxyAdmin, DeploymentData memory result) private returns (DeploymentData memory) {
+    function _deployEmptyProxies(
+        address proxyAdmin,
+        DeploymentData memory result
+    ) private returns (DeploymentData memory) {
         result.delegationManager = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         result.avsDirectory = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         result.strategyManager = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
@@ -179,15 +190,23 @@ library CoreDeploymentLib {
         result.eigenPodBeacon = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         result.pauserRegistry = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         result.strategyFactory = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
+        result.allocationManager = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         return result;
     }
 
-    function _deployMainImplementations(DeploymentData memory result, DeploymentConfig memory config) private returns (
-        address delegationManagerImpl,
-        address avsDirectoryImpl,
-        address strategyManagerImpl,
-        address strategyFactoryImpl
-    ) {
+    function _deployMainImplementations(
+        DeploymentData memory result,
+        DeploymentConfig memory config
+    )
+        private
+        returns (
+            address delegationManagerImpl,
+            address avsDirectoryImpl,
+            address strategyManagerImpl,
+            address strategyFactoryImpl,
+            address allocationManagerImpl
+        )
+    {
         delegationManagerImpl = address(
             new DelegationManager(
                 IStrategyManager(result.strategyManager),
@@ -201,24 +220,39 @@ library CoreDeploymentLib {
 
         avsDirectoryImpl = address(
             new AVSDirectory(
-                IDelegationManager(result.delegationManager),
-                IPauserRegistry(result.pauserRegistry)
+                IDelegationManager(result.delegationManager), IPauserRegistry(result.pauserRegistry)
             )
         );
 
         strategyManagerImpl = address(
             new StrategyManager(
-                IDelegationManager(result.delegationManager),
-                IPauserRegistry(result.pauserRegistry)
+                IDelegationManager(result.delegationManager), IPauserRegistry(result.pauserRegistry)
             )
         );
 
-        strategyFactoryImpl = address(new StrategyFactory(
-            IStrategyManager(result.strategyManager),
-            IPauserRegistry(result.pauserRegistry)
-        ));
+        strategyFactoryImpl = address(
+            new StrategyFactory(
+                IStrategyManager(result.strategyManager), IPauserRegistry(result.pauserRegistry)
+            )
+        );
 
-        return (delegationManagerImpl, avsDirectoryImpl, strategyManagerImpl, strategyFactoryImpl);
+        allocationManagerImpl = address(
+            new AllocationManager(
+                IDelegationManager(result.delegationManager),
+                IPauserRegistry(result.pauserRegistry),
+                IPermissionController(result.permissionController),
+                uint32(7 days), // DEALLOCATION_DELAY
+                uint32(1 days) // ALLOCATION_CONFIGURATION_DELAY
+            )
+        );
+
+        return (
+            delegationManagerImpl,
+            avsDirectoryImpl,
+            strategyManagerImpl,
+            strategyFactoryImpl,
+            allocationManagerImpl
+        );
     }
 
     function _getEthPOSDeposit() private view returns (address) {
@@ -234,14 +268,17 @@ library CoreDeploymentLib {
         DeploymentData memory result,
         DeploymentConfig memory config,
         address ethPOSDeposit
-    ) private returns (
-        address eigenPodManagerImpl,
-        address rewardsCoordinatorImpl,
-        address eigenPodImpl,
-        address eigenPodBeaconImpl,
-        address baseStrategyImpl,
-        address pauserRegistryImpl
-    ) {
+    )
+        private
+        returns (
+            address eigenPodManagerImpl,
+            address rewardsCoordinatorImpl,
+            address eigenPodImpl,
+            address eigenPodBeaconImpl,
+            address baseStrategyImpl,
+            address pauserRegistryImpl
+        )
+    {
         eigenPodManagerImpl = address(
             new EigenPodManager(
                 IETHPOSDeposit(ethPOSDeposit),
@@ -275,7 +312,11 @@ library CoreDeploymentLib {
         );
 
         eigenPodBeaconImpl = address(new UpgradeableBeacon(eigenPodImpl));
-        baseStrategyImpl = address(new StrategyBase(IStrategyManager(result.strategyManager), IPauserRegistry(result.pauserRegistry)));
+        baseStrategyImpl = address(
+            new StrategyBase(
+                IStrategyManager(result.strategyManager), IPauserRegistry(result.pauserRegistry)
+            )
+        );
 
         /// TODO: PauserRegistry isn't upgradeable
         pauserRegistryImpl = address(
@@ -304,32 +345,37 @@ library CoreDeploymentLib {
         bytes memory upgradeCall;
 
         upgradeCall = abi.encodeCall(
-            DelegationManager.initialize,
-            (proxyAdmin, config.delegationManager.initPausedStatus)
+            DelegationManager.initialize, (proxyAdmin, config.delegationManager.initPausedStatus)
         );
-        UpgradeableProxyLib.upgradeAndCall(result.delegationManager, addrs.delegationManagerImpl, upgradeCall);
+        UpgradeableProxyLib.upgradeAndCall(
+            result.delegationManager, addrs.delegationManagerImpl, upgradeCall
+        );
 
         upgradeCall = abi.encodeCall(
             StrategyManager.initialize,
             (proxyAdmin, result.strategyFactory, config.strategyManager.initPausedStatus)
         );
-        UpgradeableProxyLib.upgradeAndCall(result.strategyManager, addrs.strategyManagerImpl, upgradeCall);
+        UpgradeableProxyLib.upgradeAndCall(
+            result.strategyManager, addrs.strategyManagerImpl, upgradeCall
+        );
 
         upgradeCall = abi.encodeCall(
             StrategyFactory.initialize,
             (proxyAdmin, config.strategyFactory.initPausedStatus, IBeacon(result.strategyBeacon))
         );
-        UpgradeableProxyLib.upgradeAndCall(result.strategyFactory, addrs.strategyFactoryImpl, upgradeCall);
-
-        upgradeCall = abi.encodeCall(
-            EigenPodManager.initialize,
-            (proxyAdmin, config.eigenPodManager.initPausedStatus)
+        UpgradeableProxyLib.upgradeAndCall(
+            result.strategyFactory, addrs.strategyFactoryImpl, upgradeCall
         );
-        UpgradeableProxyLib.upgradeAndCall(result.eigenPodManager, addrs.eigenPodManagerImpl, upgradeCall);
 
         upgradeCall = abi.encodeCall(
-            AVSDirectory.initialize,
-            (proxyAdmin, config.avsDirectory.initialPausedStatus)
+            EigenPodManager.initialize, (proxyAdmin, config.eigenPodManager.initPausedStatus)
+        );
+        UpgradeableProxyLib.upgradeAndCall(
+            result.eigenPodManager, addrs.eigenPodManagerImpl, upgradeCall
+        );
+
+        upgradeCall = abi.encodeCall(
+            AVSDirectory.initialize, (proxyAdmin, config.avsDirectory.initialPausedStatus)
         );
         UpgradeableProxyLib.upgradeAndCall(result.avsDirectory, addrs.avsDirectoryImpl, upgradeCall);
 
@@ -343,33 +389,48 @@ library CoreDeploymentLib {
                 uint16(config.rewardsCoordinator.defaultOperatorSplitBips)
             )
         );
-        UpgradeableProxyLib.upgradeAndCall(result.rewardsCoordinator, addrs.rewardsCoordinatorImpl, upgradeCall);
+        UpgradeableProxyLib.upgradeAndCall(
+            result.rewardsCoordinator, addrs.rewardsCoordinatorImpl, upgradeCall
+        );
 
         upgradeCall = abi.encodeCall(EigenPod.initialize, (address(result.eigenPodManager)));
         UpgradeableProxyLib.upgradeAndCall(result.eigenPodBeacon, addrs.eigenPodImpl, upgradeCall);
     }
 
-    function readCoreDeploymentJson(string memory path, uint256 chainId) internal returns (CoreDeploymentLib.DeploymentData memory) {
+    function readCoreDeploymentJson(
+        string memory path,
+        uint256 chainId
+    ) internal returns (CoreDeploymentLib.DeploymentData memory) {
         string memory filePath = string(abi.encodePacked(path, "/", vm.toString(chainId), ".json"));
         return parseZeusJson(filePath);
     }
 
-    function readCoreDeploymentJson(string memory path, uint256 chainId, string memory environment) internal returns (CoreDeploymentLib.DeploymentData memory) {
-        string memory filePath = string(abi.encodePacked(path, "/", vm.toString(chainId), "-", environment, ".json"));
+    function readCoreDeploymentJson(
+        string memory path,
+        uint256 chainId,
+        string memory environment
+    ) internal returns (CoreDeploymentLib.DeploymentData memory) {
+        string memory filePath =
+            string(abi.encodePacked(path, "/", vm.toString(chainId), "-", environment, ".json"));
         return parseZeusJson(filePath);
     }
 
-    function parseZeusJson(string memory filePath) internal returns (CoreDeploymentLib.DeploymentData memory) {
+    function parseZeusJson(
+        string memory filePath
+    ) internal returns (CoreDeploymentLib.DeploymentData memory) {
         string memory json = vm.readFile(filePath);
         require(vm.exists(filePath), "Deployment file does not exist");
         CoreDeploymentLib.DeploymentData memory deploymentData;
 
-        deploymentData.delegationManager = json.readAddress(".ZEUS_DEPLOYED_DelegationManager_Proxy");
+        deploymentData.delegationManager =
+            json.readAddress(".ZEUS_DEPLOYED_DelegationManager_Proxy");
         deploymentData.avsDirectory = json.readAddress(".ZEUS_DEPLOYED_AVSDirectory_Proxy");
-        deploymentData.allocationManager = json.readAddress(".ZEUS_DEPLOYED_AllocationManager_Proxy");
+        deploymentData.allocationManager =
+            json.readAddress(".ZEUS_DEPLOYED_AllocationManager_Proxy");
         deploymentData.strategyManager = json.readAddress(".ZEUS_DEPLOYED_StrategyManager_Proxy");
         deploymentData.eigenPodManager = json.readAddress(".ZEUS_DEPLOYED_EigenPodManager_Proxy");
-        deploymentData.rewardsCoordinator = json.readAddress(".ZEUS_DEPLOYED_RewardsCoordinator_Proxy");
+        deploymentData.rewardsCoordinator =
+            json.readAddress(".ZEUS_DEPLOYED_RewardsCoordinator_Proxy");
         deploymentData.eigenPodBeacon = json.readAddress(".ZEUS_DEPLOYED_EigenPod_Beacon");
         deploymentData.pauserRegistry = json.readAddress(".ZEUS_DEPLOYED_PauserRegistry_Impl");
         deploymentData.strategyFactory = json.readAddress(".ZEUS_DEPLOYED_StrategyFactory_Proxy");
@@ -377,7 +438,8 @@ library CoreDeploymentLib {
         deploymentData.eigenStrategy = json.readAddress(".ZEUS_DEPLOYED_EigenStrategy_Proxy");
         deploymentData.eigen = json.readAddress(".ZEUS_DEPLOYED_Eigen_Proxy");
         deploymentData.backingEigen = json.readAddress(".ZEUS_DEPLOYED_BackingEigen_Proxy");
-        deploymentData.permissionController = json.readAddress(".ZEUS_DEPLOYED_PermissionController_Proxy");
+        deploymentData.permissionController =
+            json.readAddress(".ZEUS_DEPLOYED_PermissionController_Proxy");
 
         return deploymentData;
     }
