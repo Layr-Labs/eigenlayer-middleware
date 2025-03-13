@@ -135,9 +135,9 @@ contract End2EndForkTest is Test {
             operators, middlewareConfig, coreDeployment, middlewareDeployment
         );
 
-        // _setupSecondQuorumAndOperatorSet(
-        //     operators, middlewareConfig, coreDeployment, middlewareDeployment
-        // );
+        _setupSecondQuorumAndOperatorSet(
+            operators, middlewareConfig, coreDeployment, middlewareDeployment
+        );
 
         // _executeSlashing(operators, middlewareConfig, middlewareDeployment);
     }
@@ -330,7 +330,7 @@ contract End2EndForkTest is Test {
 
         // Register and update operators for second quorum
         uint32[] memory operatorSetIds = new uint32[](1);
-        operatorSetIds[0] = 2;
+        operatorSetIds[0] = 1;
 
         for (uint256 i = 0; i < 5; i++) {
             vm.startPrank(operators[i].key.addr);
@@ -348,7 +348,7 @@ contract End2EndForkTest is Test {
 
         address[][] memory registeredOperators = _getAndSortOperators(operators);
         bytes memory quorumNumbers = new bytes(1);
-        quorumNumbers[0] = bytes1(uint8(2));
+        quorumNumbers[0] = bytes1(uint8(1));
 
         vm.prank(middlewareConfig.admin);
         RegistryCoordinator(middlewareDeployment.registryCoordinator).updateOperatorsForQuorum(
@@ -379,7 +379,7 @@ contract End2EndForkTest is Test {
         magnitudes[0] = uint64(1 ether);
 
         OperatorSet memory operatorSet =
-            OperatorSet({avs: address(middlewareDeployment.serviceManager), id: 2});
+            OperatorSet({avs: address(middlewareDeployment.serviceManager), id: 1});
 
         IAllocationManagerTypes.AllocateParams[] memory allocParams =
             new IAllocationManagerTypes.AllocateParams[](1);
