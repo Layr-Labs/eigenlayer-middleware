@@ -306,9 +306,9 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         );
         // we're querying for 2 operators, so there should be 2 nonSignerQuorumBitmapIndices
         assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices.length, 2);
-        // the first operator (0) registered for quorum 1, (1) deregistered from quorum 1, and (2) registered for quorum 2
+        // the first operator (0) registered for quorum 1, (1) deregistered from quorum 1
         assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices[0], 2);
-        // the second operator (0) registered for quorum 1 and 2 (1) deregistered from quorum 2, and (2) registered for quorum 2
+        // the second operator (0) registered for quorum 1 and 2 (1) deregistered from quorum 2
         assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices[1], 2);
         // the operators, together, serve 2 quorums so there should be 2 quorumApkIndices
         assertEq(checkSignaturesIndices.quorumApkIndices.length, 2);
@@ -919,7 +919,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         assertEq(result.quorumApks[1].X, expectedApk1.X, "Second quorum APK X mismatch");
         assertEq(result.quorumApks[1].Y, expectedApk1.Y, "Second quorum APK Y mismatch");
 
-        // Since only defaultOperator signed, aggregator’s G2 should match op1G2
+        // Since only defaultOperator signed, aggregator's G2 should match op1G2
         assertEq(result.apkG2.X[0], op1G2.X[0], "aggregated X[0] mismatch");
         assertEq(result.apkG2.X[1], op1G2.X[1], "aggregated X[1] mismatch");
         assertEq(result.apkG2.Y[0], op1G2.Y[0], "aggregated Y[0] mismatch");
@@ -942,5 +942,326 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         assertEq(result.nonSignerStakeIndices.length, 2, "Should have 2 arrays of non-signer stake indices");
         assertEq(result.nonSignerStakeIndices[0].length, 1, "First quorum should have 1 non-signer stake index");
         assertEq(result.nonSignerStakeIndices[1].length, 1, "Second quorum should have 1 non-signer stake index");
+    }
+
+    function test_getNonSignerStakesAndSignature_noSigners() public {
+        // Setup: register operators in different quorums
+        uint256 quorumBitmap1 = 1;      // Quorum 0 only
+        uint256 quorumBitmap2 = 2;      // Quorum 1 only
+        
+        cheats.roll(registrationBlockNumber);
+        
+        // Register operators
+        _registerOperatorWithCoordinator(defaultOperator, quorumBitmap1, defaultPubKey);
+        
+        address secondOperator = _incrementAddress(defaultOperator, 1);
+        BN254.G1Point memory secondPubKey = BN254.G1Point(1, 2);
+        _registerOperatorWithCoordinator(secondOperator, quorumBitmap2, secondPubKey, defaultStake - 1);
+        
+        // Create G2 points for the operators
+        BN254.G2Point memory op1G2 = _makeG2Point(2);
+        BN254.G2Point memory op2G2 = _makeG2Point(3);
+        
+        // Mock the G2 point calls
+        vm.mockCall(
+            address(blsApkRegistry),
+            abi.encodeWithSelector(IBLSApkRegistry.getOperatorPubkeyG2.selector, defaultOperator),
+            abi.encode(op1G2)
+        );
+        vm.mockCall(
+            address(blsApkRegistry),
+            abi.encodeWithSelector(IBLSApkRegistry.getOperatorPubkeyG2.selector, secondOperator),
+            abi.encode(op2G2)
+        );
+        
+        // Create a dummy signature
+        BN254.G1Point memory dummySigma = BN254.G1Point(123, 456);
+        
+        // No signing operators - empty array
+        address[] memory signingOperators = new address[](0);
+        
+        // Test both quorums
+        bytes memory quorumNumbers = new bytes(2);
+        quorumNumbers[0] = bytes1(uint8(0));  // Quorum 0
+        quorumNumbers[1] = bytes1(uint8(1));  // Quorum 1
+        
+        // Call the function under test
+        IBLSSignatureCheckerTypes.NonSignerStakesAndSignature memory result = 
+            operatorStateRetriever.getNonSignerStakesAndSignature(
+                registryCoordinator,
+                quorumNumbers,
+                dummySigma,
+                signingOperators,
+                uint32(block.number)
+            );
+        
+        // Both operators should be non-signers
+        assertEq(result.nonSignerQuorumBitmapIndices.length, 2, "Should have 2 non-signers");
+        assertEq(result.nonSignerPubkeys.length, 2, "Should have 2 non-signer pubkeys");
+        
+        // Since no one signed, the apkG2 should contain zero point
+        assertEq(result.apkG2.X[0], 0, "APK G2 X[0] should be 0 with no signers");
+        assertEq(result.apkG2.X[1], 0, "APK G2 X[1] should be 0 with no signers");
+        assertEq(result.apkG2.Y[0], 0, "APK G2 Y[0] should be 0 with no signers");
+        assertEq(result.apkG2.Y[1], 0, "APK G2 Y[1] should be 0 with no signers");
+        
+        // Sigma should match input
+        assertEq(result.sigma.X, dummySigma.X, "Sigma X mismatch");
+        assertEq(result.sigma.Y, dummySigma.Y, "Sigma Y mismatch");
+        
+        // Indices
+        assertEq(result.quorumApkIndices.length, 2, "Should have 2 quorum APK indices");
+        assertEq(result.totalStakeIndices.length, 2, "Should have 2 total stake indices");
+        
+        // Non-signer stake indices
+        assertEq(result.nonSignerStakeIndices.length, 2, "Should have 2 arrays of non-signer stake indices");
+        // Quorum 0 should have 1 non-signer (defaultOperator)
+        assertEq(result.nonSignerStakeIndices[0].length, 1, "Quorum 0 should have 1 non-signer");
+        // Quorum 1 should have 1 non-signer (secondOperator)
+        assertEq(result.nonSignerStakeIndices[1].length, 1, "Quorum 1 should have 1 non-signer");
+    }
+
+    function test_getNonSignerStakesAndSignature_revert_signerNeverRegistered() public {
+        // Setup - register only one operator
+        uint256 quorumBitmap = 1;  // Quorum 0 only
+        
+        cheats.roll(registrationBlockNumber);
+        _registerOperatorWithCoordinator(defaultOperator, quorumBitmap, defaultPubKey);
+        
+        // Create G2 points for the registered operator
+        BN254.G2Point memory op1G2 = _makeG2Point(2);
+        vm.mockCall(
+            address(blsApkRegistry),
+            abi.encodeWithSelector(IBLSApkRegistry.getOperatorPubkeyG2.selector, defaultOperator),
+            abi.encode(op1G2)
+        );
+        
+        // Create a dummy signature
+        BN254.G1Point memory dummySigma = BN254.G1Point(123, 456);
+        
+        // Try to include an unregistered operator as a signer
+        address unregisteredOperator = _incrementAddress(defaultOperator, 1);
+        address[] memory signingOperators = new address[](2);
+        signingOperators[0] = defaultOperator;
+        signingOperators[1] = unregisteredOperator;  // This operator was never registered
+        
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(uint8(0));  // Quorum 0
+        
+        // Should revert because one of the signers was never registered
+        cheats.expectRevert(bytes("RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId"));
+        operatorStateRetriever.getNonSignerStakesAndSignature(
+            registryCoordinator,
+            quorumNumbers,
+            dummySigma,
+            signingOperators,
+            uint32(block.number)
+        );
+    }
+
+    function test_getNonSignerStakesAndSignature_revert_signerRegisteredAfterReferenceBlock() public {
+        // Setup - register one operator
+        uint256 quorumBitmap = 1;  // Quorum 0 only
+        
+        // Save initial block number
+        uint32 initialBlock = registrationBlockNumber;
+        
+        cheats.roll(initialBlock);
+        _registerOperatorWithCoordinator(defaultOperator, quorumBitmap, defaultPubKey);
+        
+        // Register second operator later
+        cheats.roll(initialBlock + 10);
+        address secondOperator = _incrementAddress(defaultOperator, 1);
+        BN254.G1Point memory secondPubKey = BN254.G1Point(1, 2);
+        _registerOperatorWithCoordinator(secondOperator, quorumBitmap, secondPubKey, defaultStake - 1);
+        
+        // Create G2 points for both operators
+        BN254.G2Point memory op1G2 = _makeG2Point(2);
+        BN254.G2Point memory op2G2 = _makeG2Point(3);
+        
+        vm.mockCall(
+            address(blsApkRegistry),
+            abi.encodeWithSelector(IBLSApkRegistry.getOperatorPubkeyG2.selector, defaultOperator),
+            abi.encode(op1G2)
+        );
+        vm.mockCall(
+            address(blsApkRegistry),
+            abi.encodeWithSelector(IBLSApkRegistry.getOperatorPubkeyG2.selector, secondOperator),
+            abi.encode(op2G2)
+        );
+        
+        // Create a dummy signature
+        BN254.G1Point memory dummySigma = BN254.G1Point(123, 456);
+        
+        // Include both operators as signers
+        address[] memory signingOperators = new address[](2);
+        signingOperators[0] = defaultOperator;
+        signingOperators[1] = secondOperator;
+        
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(uint8(0));  // Quorum 0
+        
+        // Should revert when querying at a block before the second operator was registered
+        cheats.expectRevert(bytes("RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId"));
+        operatorStateRetriever.getNonSignerStakesAndSignature(
+            registryCoordinator,
+            quorumNumbers,
+            dummySigma,
+            signingOperators,
+            initialBlock + 5
+        );
+    }
+
+    function test_getNonSignerStakesAndSignature_revert_signerDeregisteredAtReferenceBlock() public {
+        // Setup - register two operators
+        uint256 quorumBitmap = 1;  // Quorum 0 only
+        
+        cheats.roll(registrationBlockNumber);
+        _registerOperatorWithCoordinator(defaultOperator, quorumBitmap, defaultPubKey);
+        
+        address secondOperator = _incrementAddress(defaultOperator, 1);
+        BN254.G1Point memory secondPubKey = BN254.G1Point(1, 2);
+        _registerOperatorWithCoordinator(secondOperator, quorumBitmap, secondPubKey, defaultStake - 1);
+        
+        // Create G2 points for the operators
+        BN254.G2Point memory op1G2 = _makeG2Point(2);
+        BN254.G2Point memory op2G2 = _makeG2Point(3);
+        
+        vm.mockCall(
+            address(blsApkRegistry),
+            abi.encodeWithSelector(IBLSApkRegistry.getOperatorPubkeyG2.selector, defaultOperator),
+            abi.encode(op1G2)
+        );
+        vm.mockCall(
+            address(blsApkRegistry),
+            abi.encodeWithSelector(IBLSApkRegistry.getOperatorPubkeyG2.selector, secondOperator),
+            abi.encode(op2G2)
+        );
+        
+        // Deregister the second operator
+        cheats.roll(registrationBlockNumber + 10);
+        cheats.prank(secondOperator);
+        registryCoordinator.deregisterOperator(BitmapUtils.bitmapToBytesArray(quorumBitmap));
+        
+        // Create a dummy signature
+        BN254.G1Point memory dummySigma = BN254.G1Point(123, 456);
+        
+        // Include both operators as signers
+        address[] memory signingOperators = new address[](2);
+        signingOperators[0] = defaultOperator;
+        signingOperators[1] = secondOperator;  // This operator is deregistered
+        
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(uint8(0));  // Quorum 0
+        
+        // Should revert because secondOperator was deregistered
+        cheats.expectRevert(OperatorStateRetriever.OperatorNotRegistered.selector);
+        operatorStateRetriever.getNonSignerStakesAndSignature(
+            registryCoordinator,
+            quorumNumbers,
+            dummySigma,
+            signingOperators,
+            uint32(block.number)
+        );
+    }
+
+    function test_getNonSignerStakesAndSignature_revert_quorumNotCreatedAtCallTime() public {
+        // Setup - register one operator
+        uint256 quorumBitmap = 1;  // Quorum 0 only
+        
+        cheats.roll(registrationBlockNumber);
+        _registerOperatorWithCoordinator(defaultOperator, quorumBitmap, defaultPubKey);
+        
+        // Create G2 points for the operator
+        BN254.G2Point memory op1G2 = _makeG2Point(2);
+        vm.mockCall(
+            address(blsApkRegistry),
+            abi.encodeWithSelector(IBLSApkRegistry.getOperatorPubkeyG2.selector, defaultOperator),
+            abi.encode(op1G2)
+        );
+        
+        // Create a dummy signature
+        BN254.G1Point memory dummySigma = BN254.G1Point(123, 456);
+        
+        // Include the operator as a signer
+        address[] memory signingOperators = new address[](1);
+        signingOperators[0] = defaultOperator;
+        
+        // Try to query for a non-existent quorum (quorum 9)
+        bytes memory invalidQuorumNumbers = new bytes(1);
+        invalidQuorumNumbers[0] = bytes1(uint8(9));  // Invalid quorum number
+        
+        // Should revert because quorum 9 doesn't exist, but with a different error message
+        cheats.expectRevert(bytes("IndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number"));
+        operatorStateRetriever.getNonSignerStakesAndSignature(
+            registryCoordinator,
+            invalidQuorumNumbers,
+            dummySigma,
+            signingOperators,
+            uint32(block.number)
+        );
+    }
+
+    function test_getNonSignerStakesAndSignature_revert_quorumNotCreatedAtReferenceBlock() public {
+        // Setup - register one operator in quorum 0
+        uint256 quorumBitmap = 1; 
+        
+        cheats.roll(registrationBlockNumber);
+        _registerOperatorWithCoordinator(defaultOperator, quorumBitmap, defaultPubKey);
+        
+        // Save this block number
+        uint32 initialBlock = uint32(block.number);
+        
+        // Create a new quorum later
+        cheats.roll(initialBlock + 10);
+        
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+            maxOperatorCount: defaultMaxOperatorCount,
+            kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
+            kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
+        });
+        uint96 minimumStake = 1;
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(1000)),
+            multiplier: 1e16
+        });
+
+        // Create quorum 8
+        cheats.prank(registryCoordinator.owner());
+        registryCoordinator.createTotalDelegatedStakeQuorum(
+            operatorSetParams, minimumStake, strategyParams
+        );
+        
+        // Create G2 points for the operator
+        BN254.G2Point memory op1G2 = _makeG2Point(2);
+        vm.mockCall(
+            address(blsApkRegistry),
+            abi.encodeWithSelector(IBLSApkRegistry.getOperatorPubkeyG2.selector, defaultOperator),
+            abi.encode(op1G2)
+        );
+        
+        // Create a dummy signature
+        BN254.G1Point memory dummySigma = BN254.G1Point(123, 456);
+        
+        // Include the operator as a signer
+        address[] memory signingOperators = new address[](1);
+        signingOperators[0] = defaultOperator;
+        
+        // Try to query for the newly created quorum but at a historical block
+        bytes memory newQuorumNumbers = new bytes(1);
+        newQuorumNumbers[0] = bytes1(uint8(numQuorums));  
+        
+        // Should revert when querying for the newly created quorum at a block before it was created
+        cheats.expectRevert(bytes("IndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number"));
+        operatorStateRetriever.getNonSignerStakesAndSignature(
+            registryCoordinator,
+            newQuorumNumbers,
+            dummySigma,
+            signingOperators,
+            initialBlock
+        );
     }
 }
