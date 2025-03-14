@@ -27,22 +27,22 @@ import "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol"
 import "eigenlayer-contracts/src/test/mocks/ETHDepositMock.sol";
 
 // Middleware contracts
-import "src/RegistryCoordinator.sol";
-import "src/StakeRegistry.sol";
-import "src/IndexRegistry.sol";
-import "src/BLSApkRegistry.sol";
-import "test/mocks/ServiceManagerMock.sol";
-import "src/OperatorStateRetriever.sol";
-import "src/SocketRegistry.sol";
+import "../../src/RegistryCoordinator.sol";
+import "../../src/StakeRegistry.sol";
+import "../../src/IndexRegistry.sol";
+import "../../src/BLSApkRegistry.sol";
+import "../mocks/ServiceManagerMock.sol";
+import "../../src/OperatorStateRetriever.sol";
+import "../../src/SocketRegistry.sol";
 
 // Mocks and More
-import "src/libraries/BN254.sol";
-import "src/libraries/BitmapUtils.sol";
+import "../../src/libraries/BN254.sol";
+import "../../src/libraries/BitmapUtils.sol";
 
 import "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
-// import "src/test/integration/mocks/ServiceManagerMock.t.sol";
-import "test/integration/User.t.sol";
-import "test/integration/OperatorSetUser.t.sol";
+// import "../integration/mocks/ServiceManagerMock.t.sol";
+import "./User.t.sol";
+import "./OperatorSetUser.t.sol";
 
 abstract contract IntegrationDeployer is Test, IUserDeployer {
     using Strings for *;

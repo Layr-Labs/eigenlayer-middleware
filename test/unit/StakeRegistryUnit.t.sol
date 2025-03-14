@@ -3,12 +3,12 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "test/utils/MockAVSDeployer.sol";
+import "../utils/MockAVSDeployer.sol";
 
-import {StakeRegistry} from "src/StakeRegistry.sol";
-import {IStakeRegistry, IStakeRegistryErrors} from "src/interfaces/IStakeRegistry.sol";
-import {IStakeRegistryEvents} from "test/events/IStakeRegistryEvents.sol";
-import {ISocketRegistry} from "src/interfaces/ISocketRegistry.sol";
+import {StakeRegistry} from "../../src/StakeRegistry.sol";
+import {IStakeRegistry, IStakeRegistryErrors} from "../../src/interfaces/IStakeRegistry.sol";
+import {IStakeRegistryEvents} from "../events/IStakeRegistryEvents.sol";
+import {ISocketRegistry} from "../../src/interfaces/ISocketRegistry.sol";
 
 import "../utils/MockAVSDeployer.sol";
 
