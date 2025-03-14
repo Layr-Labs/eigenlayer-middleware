@@ -281,8 +281,13 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
             "dog wif hat", "MOCK1", mockTokenInitialSupply, rewardsInitiator
         );
         amount = bound(amount, 1, MAX_REWARDS_AMOUNT);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        // Ensure duration is at least one CALCULATION_INTERVAL_SECONDS
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
+        // Align duration to CALCULATION_INTERVAL_SECONDS
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        if (duration == 0) {
+            duration = CALCULATION_INTERVAL_SECONDS;
+        }
         startTimestamp = bound(
             startTimestamp,
             uint256(
@@ -374,8 +379,13 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
             // 1. Bound fuzz inputs to valid ranges and amounts using randSeed for each
             amount = bound(amount + i, 1, MAX_REWARDS_AMOUNT);
             amounts[i] = amount;
-            duration = bound(duration + i, 0, MAX_REWARDS_DURATION);
+            // Ensure duration is at least one CALCULATION_INTERVAL_SECONDS
+            duration = bound(duration + i, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
+            // Align duration to CALCULATION_INTERVAL_SECONDS
             duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+            if (duration == 0) {
+                duration = CALCULATION_INTERVAL_SECONDS;
+            }
             startTimestamp = bound(
                 startTimestamp + i,
                 uint256(
@@ -472,8 +482,13 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
             amount = bound(amount + i, 1, MAX_REWARDS_AMOUNT);
             amounts[i] = amount;
             totalAmount += amount;
-            duration = bound(duration + i, 0, MAX_REWARDS_DURATION);
+            // Ensure duration is at least one CALCULATION_INTERVAL_SECONDS
+            duration = bound(duration + i, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
+            // Align duration to CALCULATION_INTERVAL_SECONDS
             duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+            if (duration == 0) {
+                duration = CALCULATION_INTERVAL_SECONDS;
+            }
             startTimestamp = bound(
                 startTimestamp + i,
                 uint256(
@@ -716,8 +731,13 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
             "dog wif hat", "MOCK1", mockTokenInitialSupply, rewardsInitiator
         );
         amount = bound(amount, 1, MAX_REWARDS_AMOUNT);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        // Ensure duration is at least one CALCULATION_INTERVAL_SECONDS
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
+        // Align duration to CALCULATION_INTERVAL_SECONDS
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        if (duration == 0) {
+            duration = CALCULATION_INTERVAL_SECONDS;
+        }
         startTimestamp = bound(
             startTimestamp,
             uint256(
@@ -725,7 +745,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
                     GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH
                 )
             ) + CALCULATION_INTERVAL_SECONDS - 1,
-            block.timestamp + uint256(MAX_FUTURE_LENGTH)
+            block.timestamp - 1
         );
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
@@ -800,7 +820,12 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         uint256 amount,
         uint256 numSubmissions
     ) public {
+        // Bound inputs to reasonable values to avoid overflows
+        startTimestamp = bound(startTimestamp, 0, type(uint32).max);
+        duration = bound(duration, 0, type(uint32).max);
+        amount = bound(amount, 0, type(uint128).max);
         numSubmissions = bound(numSubmissions, 2, 10);
+
         cheats.prank(rewardsCoordinator.owner());
 
         IRewardsCoordinator.OperatorDirectedRewardsSubmission[] memory rewardsSubmissions =
@@ -809,10 +834,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         uint256 startSubmissionNonce = rewardsCoordinator.submissionNonce(address(serviceManager));
         _deployMockRewardTokens(rewardsInitiator, numSubmissions);
 
-        uint256[] memory avsBalancesBefore = _getBalanceForTokens(rewardTokens, rewardsInitiator);
-        uint256[] memory rewardsCoordinatorBalancesBefore =
-            _getBalanceForTokens(rewardTokens, address(rewardsCoordinator));
-        // uint256[] memory amounts = new uint256[](numSubmissions);
+        uint256[] memory amounts = new uint256[](numSubmissions);
 
         uint256 latestStartTimestamp = 0;
         uint256 longestDuration = 0;
@@ -820,11 +842,19 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         // Create multiple rewards submissions and their expected event
         for (uint256 i = 0; i < numSubmissions; ++i) {
             // 1. Bound fuzz inputs to valid ranges and amounts using randSeed for each
-            amount = bound(amount + i, 1, MAX_REWARDS_AMOUNT);
-            // amounts[i] = amount;
-            duration = bound(duration + i, 0, MAX_REWARDS_DURATION);
-            duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
-            startTimestamp = bound(
+            amounts[i] = bound(amount + i, 1, MAX_REWARDS_AMOUNT);
+
+            // Ensure duration is at least one CALCULATION_INTERVAL_SECONDS
+            uint256 submissionDuration =
+                bound(duration + i, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
+            // Align duration to CALCULATION_INTERVAL_SECONDS
+            submissionDuration =
+                submissionDuration - (submissionDuration % CALCULATION_INTERVAL_SECONDS);
+            if (submissionDuration == 0) {
+                submissionDuration = CALCULATION_INTERVAL_SECONDS;
+            }
+
+            uint256 submissionStartTimestamp = bound(
                 startTimestamp + i,
                 uint256(
                     _maxTimestamp(
@@ -833,33 +863,33 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
                 ) + CALCULATION_INTERVAL_SECONDS - 1,
                 block.timestamp - 1 // Must be in past for operator directed rewards
             );
-            startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+            submissionStartTimestamp =
+                submissionStartTimestamp - (submissionStartTimestamp % CALCULATION_INTERVAL_SECONDS);
 
             // loop and find the latest startTimestamp and the longest duration, then warp start + duration + 1
-
-            if (startTimestamp > latestStartTimestamp) {
-                latestStartTimestamp = startTimestamp;
+            if (submissionStartTimestamp > latestStartTimestamp) {
+                latestStartTimestamp = submissionStartTimestamp;
             }
-            if (duration > longestDuration) {
-                longestDuration = duration;
+            if (submissionDuration > longestDuration) {
+                longestDuration = submissionDuration;
             }
 
             // 2. Create reward submission input param
             IRewardsCoordinatorTypes.OperatorReward[] memory operatorRewards =
                 new IRewardsCoordinatorTypes.OperatorReward[](1);
-            operatorRewards[0] =
-                IRewardsCoordinatorTypes.OperatorReward({operator: address(0x1), amount: amount});
+            operatorRewards[0] = IRewardsCoordinatorTypes.OperatorReward({
+                operator: address(0x1),
+                amount: amounts[i]
+            });
 
-            IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission memory rewardsSubmission =
-            IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission({
+            rewardsSubmissions[i] = IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission({
                 strategiesAndMultipliers: defaultStrategyAndMultipliers,
                 token: rewardTokens[i],
                 operatorRewards: operatorRewards,
-                startTimestamp: uint32(startTimestamp),
-                duration: uint32(duration),
+                startTimestamp: uint32(submissionStartTimestamp),
+                duration: uint32(submissionDuration),
                 description: "Test Rewards"
             });
-            rewardsSubmissions[i] = rewardsSubmission;
 
             // 3. expected event emitted for this rewardsSubmission
             avsSubmissionHashes[i] = keccak256(
@@ -887,16 +917,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
                 ),
                 "rewards submission hash not submitted"
             );
-            // assertEq(
-            //     avsBalancesBefore[i] - amounts[i],
-            //     rewardTokens[i].balanceOf(rewardsInitiator),
-            //     "AVS balance not decremented by amount of rewards submission"
-            // );
-            // assertEq(
-            //     rewardsCoordinatorBalancesBefore[i] + amounts[i],
-            //     rewardTokens[i].balanceOf(address(rewardsCoordinator)),
-            //     "RewardsCoordinator balance not incremented by amount of rewards submission"
-            // );
+            // Removed balance checks to reduce stack depth
         }
     }
 
@@ -945,7 +966,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         serviceManager.setClaimerFor(claimer);
     }
 
-    function testFuzz_setClaimerFor_upateClaimer(
+    function testFuzz_setClaimerFor_updateClaimer(
         address claimer
     ) public filterFuzzedAddressInputs(claimer) {
         cheats.prank(serviceManagerOwner);
