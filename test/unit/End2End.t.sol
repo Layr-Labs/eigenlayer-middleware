@@ -139,7 +139,7 @@ contract End2EndForkTest is Test {
             operators, middlewareConfig, coreDeployment, middlewareDeployment
         );
 
-        // _executeSlashing(operators, middlewareConfig, middlewareDeployment);
+        _executeSlashing(operators, middlewareConfig, middlewareDeployment);
     }
 
 
@@ -408,7 +408,7 @@ contract End2EndForkTest is Test {
         IAllocationManagerTypes.SlashingParams memory slashingParams = IAllocationManagerTypes
             .SlashingParams({
             operator: operators[0].key.addr,
-            operatorSetId: 2,
+            operatorSetId: 1,
             strategies: new IStrategy[](1),
             wadsToSlash: new uint256[](1),
             description: "Test slashing"
