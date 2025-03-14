@@ -67,16 +67,19 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         _deployMockEigenLayerAndAVS();
         // Deploy rewards coordinator
         rewardsCoordinatorImplementation = new RewardsCoordinator(
-            delegationMock,
-            IStrategyManager(address(strategyManagerMock)),
-            allocationManagerMock,
-            pauserRegistry,
-            permissionControllerMock,
-            CALCULATION_INTERVAL_SECONDS,
-            MAX_REWARDS_DURATION,
-            MAX_RETROACTIVE_LENGTH,
-            MAX_FUTURE_LENGTH,
-            GENESIS_REWARDS_TIMESTAMP
+            IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
+                delegationManager: delegationMock,
+                strategyManager: IStrategyManager(address(strategyManagerMock)),
+                allocationManager: allocationManagerMock,
+                pauserRegistry: pauserRegistry,
+                permissionController: permissionControllerMock,
+                CALCULATION_INTERVAL_SECONDS: CALCULATION_INTERVAL_SECONDS,
+                MAX_REWARDS_DURATION: MAX_REWARDS_DURATION,
+                MAX_RETROACTIVE_LENGTH: MAX_RETROACTIVE_LENGTH,
+                MAX_FUTURE_LENGTH: MAX_FUTURE_LENGTH,
+                GENESIS_REWARDS_TIMESTAMP: GENESIS_REWARDS_TIMESTAMP,
+                version: "v0.0.1"
+            })
         );
 
         rewardsCoordinator = RewardsCoordinator(
@@ -165,8 +168,9 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         IERC20 token3 = new ERC20PresetFixedSupply(
             "pepe wif avs", "MOCK3", mockTokenInitialSupply, address(this)
         );
-        strategyImplementation =
-            new StrategyBase(IStrategyManager(address(strategyManagerMock)), pauserRegistry);
+        strategyImplementation = new StrategyBase(
+            IStrategyManager(address(strategyManagerMock)), pauserRegistry, "v0.0.1"
+        );
         strategyMock1 = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(

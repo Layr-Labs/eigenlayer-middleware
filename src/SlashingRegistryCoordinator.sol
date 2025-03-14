@@ -1121,7 +1121,7 @@ contract SlashingRegistryCoordinator is
      * @notice Returns the domain separator used for EIP-712 signatures
      * @return The domain separator
      */
-    function domainSeparator() external view returns (bytes32) {
+    function domainSeparator() external view virtual override returns (bytes32) {
         return _domainSeparatorV4();
     }
 
@@ -1129,7 +1129,7 @@ contract SlashingRegistryCoordinator is
      * @notice Returns the version of the contract
      * @return The version string
      */
-    function version() external pure returns (string memory) {
+    function version() external pure virtual override returns (string memory) {
         return "v0.0.1";
     }
 }

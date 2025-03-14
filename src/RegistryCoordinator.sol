@@ -301,7 +301,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
      * @notice Returns the domain separator used for EIP-712 signatures
      * @return The domain separator
      */
-    function domainSeparator() external view override returns (bytes32) {
+    function domainSeparator() external view virtual override returns (bytes32) {
         return bytes32(0); // Return a dummy value for now
     }
 
@@ -309,7 +309,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
      * @notice Returns the version of the contract
      * @return The version string
      */
-    function version() external pure override returns (string memory) {
+    function version() external pure virtual override returns (string memory) {
         return "v0.0.1";
     }
 }

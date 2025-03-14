@@ -49,7 +49,8 @@ contract Test_CoreRegistration is MockAVSDeployer {
             allocationManagerMock,
             pauserRegistry,
             permissionController,
-            0
+            0,
+            "v0.0.1"
         );
         IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
         uint256[] memory initializeWithdrawalDelayBlocks = new uint256[](0);
@@ -73,7 +74,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
 
         // Deploy New AVS Directory
         AVSDirectory avsDirectoryImplementation =
-            new AVSDirectory(delegationManager, pauserRegistry); // TODO: Fix Config
+            new AVSDirectory(delegationManager, pauserRegistry, "v0.0.1"); // TODO: Fix Config
         avsDirectory = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(

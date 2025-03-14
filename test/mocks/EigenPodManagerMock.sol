@@ -76,8 +76,8 @@ contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
         address staker,
         IStrategy strategy,
         uint256 depositSharesToRemove
-    ) external returns (uint256, uint256) {
-        return (0, 0);
+    ) external returns (uint256) {
+        return 0;
     }
 
     function stakerDepositShares(
@@ -95,9 +95,10 @@ contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
     function addShares(
         address staker,
         IStrategy strategy,
-        IERC20 token,
         uint256 shares
-    ) external returns (uint256, uint256) {}
+    ) external returns (uint256, uint256) {
+        return (0, 0);
+    }
 
     function beaconChainSlashingFactor(
         address staker

@@ -37,6 +37,8 @@ import {IAllocationManager} from
 import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 import {PermissionController} from
     "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
+import {IRewardsCoordinatorTypes} from
+    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 import {UpgradeableProxyLib} from "../unit/UpgradeableProxyLib.sol";
 
@@ -159,12 +161,13 @@ library CoreDeploymentLib {
         DeploymentConfigData memory config
     ) internal {
         // Deploy core implementations
-        address permissionControllerImpl = address(new PermissionController());
+        address permissionControllerImpl = address(new PermissionController("1.0.0"));
 
         address strategyManagerImpl = address(
             new StrategyManager(
                 IDelegationManager(deployments.delegationManager),
-                IPauserRegistry(deployments.pauserRegistry)
+                IPauserRegistry(deployments.pauserRegistry),
+                "1.0.0"
             )
         );
 
@@ -174,7 +177,8 @@ library CoreDeploymentLib {
                 IPauserRegistry(deployments.pauserRegistry),
                 IPermissionController(deployments.permissionController),
                 config.allocationManager.deallocationDelay,
-                config.allocationManager.allocationConfigurationDelay
+                config.allocationManager.allocationConfigurationDelay,
+                "1.0.0"
             )
         );
 
@@ -185,14 +189,16 @@ library CoreDeploymentLib {
                 IAllocationManager(deployments.allocationManager),
                 IPauserRegistry(deployments.pauserRegistry),
                 IPermissionController(deployments.permissionController),
-                config.delegationManager.minWithdrawalDelayBlocks
+                config.delegationManager.minWithdrawalDelayBlocks,
+                "1.0.0"
             )
         );
 
         address avsDirectoryImpl = address(
             new AVSDirectory(
                 IDelegationManager(deployments.delegationManager),
-                IPauserRegistry(deployments.pauserRegistry)
+                IPauserRegistry(deployments.pauserRegistry),
+                "1.0.0"
             )
         );
 
@@ -253,7 +259,8 @@ library CoreDeploymentLib {
                 IEigenPodManager(deployments.eigenPodManager),
                 config.eigenPod.genesisTimestamp == 0
                     ? uint64(block.timestamp)
-                    : config.eigenPod.genesisTimestamp
+                    : config.eigenPod.genesisTimestamp,
+                "1.0.0"
             )
         );
 
@@ -265,7 +272,8 @@ library CoreDeploymentLib {
                 IETHPOSDeposit(ethPOSDeposit),
                 IBeacon(deployments.eigenPodBeacon),
                 IDelegationManager(deployments.delegationManager),
-                IPauserRegistry(deployments.pauserRegistry)
+                IPauserRegistry(deployments.pauserRegistry),
+                "1.0.0"
             )
         );
 
@@ -285,7 +293,8 @@ library CoreDeploymentLib {
         address baseStrategyImpl = address(
             new StrategyBase(
                 IStrategyManager(deployments.strategyManager),
-                IPauserRegistry(deployments.pauserRegistry)
+                IPauserRegistry(deployments.pauserRegistry),
+                "1.0.0"
             )
         );
 
@@ -294,7 +303,8 @@ library CoreDeploymentLib {
         address strategyFactoryImpl = address(
             new StrategyFactory(
                 IStrategyManager(deployments.strategyManager),
-                IPauserRegistry(deployments.pauserRegistry)
+                IPauserRegistry(deployments.pauserRegistry),
+                "1.0.0"
             )
         );
 
@@ -317,16 +327,19 @@ library CoreDeploymentLib {
     ) internal {
         address rewardsCoordinatorImpl = address(
             new RewardsCoordinator(
-                IDelegationManager(deployments.delegationManager),
-                IStrategyManager(deployments.strategyManager),
-                IAllocationManager(deployments.allocationManager),
-                IPauserRegistry(deployments.pauserRegistry),
-                IPermissionController(deployments.permissionController),
-                config.rewardsCoordinator.calculationIntervalSeconds,
-                config.rewardsCoordinator.maxRewardsDuration,
-                config.rewardsCoordinator.maxRetroactiveLength,
-                config.rewardsCoordinator.maxFutureLength,
-                config.rewardsCoordinator.genesisRewardsTimestamp
+                IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
+                    delegationManager: IDelegationManager(deployments.delegationManager),
+                    strategyManager: IStrategyManager(deployments.strategyManager),
+                    allocationManager: IAllocationManager(deployments.allocationManager),
+                    pauserRegistry: IPauserRegistry(deployments.pauserRegistry),
+                    permissionController: IPermissionController(deployments.permissionController),
+                    CALCULATION_INTERVAL_SECONDS: config.rewardsCoordinator.calculationIntervalSeconds,
+                    MAX_REWARDS_DURATION: config.rewardsCoordinator.maxRewardsDuration,
+                    MAX_RETROACTIVE_LENGTH: config.rewardsCoordinator.maxRetroactiveLength,
+                    MAX_FUTURE_LENGTH: config.rewardsCoordinator.maxFutureLength,
+                    GENESIS_REWARDS_TIMESTAMP: config.rewardsCoordinator.genesisRewardsTimestamp,
+                    version: "1.0.0"
+                })
             )
         );
 
