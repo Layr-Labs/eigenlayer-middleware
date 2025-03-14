@@ -188,11 +188,12 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
 
         // Deploy EigenPod Contracts
-        pod = new EigenPod(ethPOSDeposit, eigenPodManager, GENESIS_TIME_LOCAL);
+        pod = new EigenPod(ethPOSDeposit, eigenPodManager, GENESIS_TIME_LOCAL, address(0));
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
-        PermissionController permissionControllerImplementation = new PermissionController();
+        PermissionController permissionControllerImplementation =
+            new PermissionController(address(0));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         DelegationManager delegationImplementation = new DelegationManager(
@@ -201,34 +202,26 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             allocationManager,
             pauserRegistry,
             permissionController,
-            0
+            0,
+            address(0)
         );
         StrategyManager strategyManagerImplementation =
-            new StrategyManager(delegationManager, pauserRegistry);
-        EigenPodManager eigenPodManagerImplementation =
-            new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegationManager, pauserRegistry);
-        AVSDirectory avsDirectoryImplementation =
-            new AVSDirectory(delegationManager, pauserRegistry);
-
-        RewardsCoordinator rewardsCoordinatorImplementation = new RewardsCoordinator(
-            delegationManager,
-            IStrategyManager(address(strategyManager)),
-            allocationManager,
-            pauserRegistry,
-            permissionController,
-            CALCULATION_INTERVAL_SECONDS,
-            MAX_REWARDS_DURATION,
-            MAX_RETROACTIVE_LENGTH,
-            MAX_FUTURE_LENGTH,
-            GENESIS_REWARDS_TIMESTAMP
+            new StrategyManager(delegationManager, pauserRegistry, address(0));
+        EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
+            ethPOSDeposit, eigenPodBeacon, delegationManager, pauserRegistry, address(0)
         );
+        AVSDirectory avsDirectoryImplementation =
+            new AVSDirectory(delegationManager, pauserRegistry, address(0));
+
+        RewardsCoordinator rewardsCoordinatorImplementation = new RewardsCoordinator(address(0));
 
         AllocationManager allocationManagerImplementation = new AllocationManager(
             delegationManager,
             pauserRegistry,
             permissionController,
             uint32(7 days), // DEALLOCATION_DELAY
-            uint32(1 days) // ALLOCATION_CONFIGURATION_DELAY
+            uint32(1 days), // ALLOCATION_CONFIGURATION_DELAY
+            address(0) // Added config parameter
         );
 
         // Third, upgrade the proxy contracts to point to the implementations

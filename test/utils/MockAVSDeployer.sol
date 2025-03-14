@@ -171,7 +171,7 @@ contract MockAVSDeployer is Test {
         strategyManagerMock = new StrategyManagerMock(delegationMock);
         allocationManagerMock = new AllocationManagerMock();
         permissionControllerMock = new PermissionControllerMock();
-        avsDirectoryImplementation = new AVSDirectory(delegationMock, pauserRegistry); // TODO: config value
+        avsDirectoryImplementation = new AVSDirectory(delegationMock, pauserRegistry, address(0));
         avsDirectory = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(
@@ -278,7 +278,8 @@ contract MockAVSDeployer is Test {
             pauserRegistry,
             permissionControllerMock,
             uint32(7 days), // DEALLOCATION_DELAY
-            uint32(1 days) // ALLOCATION_CONFIGURATION_DELAY
+            uint32(1 days), // ALLOCATION_CONFIGURATION_DELAY
+            address(0) // Added config parameter
         );
         proxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(allocationManager))),

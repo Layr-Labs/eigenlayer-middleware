@@ -8,6 +8,7 @@ import {
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
+import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
 
 contract AllocationManagerIntermediate is IAllocationManager {
     function initialize(address initialOwner, uint256 initialPausedStatus) external virtual {}
@@ -149,6 +150,32 @@ contract AllocationManagerIntermediate is IAllocationManager {
         address operator,
         OperatorSet memory operatorSet
     ) external view virtual returns (bool) {}
+
+    function getAllocatedStake(
+        address operator,
+        OperatorSet memory operatorSet,
+        IStrategy strategy
+    ) external view virtual returns (uint256) {
+        return 0;
+    }
+
+    function getEncumberedMagnitude(
+        address operator,
+        IStrategy strategy
+    ) external view virtual returns (uint64) {
+        return 0;
+    }
+
+    function isOperatorSlashable(
+        address operator,
+        OperatorSet memory operatorSet
+    ) external view virtual returns (bool) {
+        return false;
+    }
+
+    function version() external pure virtual returns (string memory) {
+        return "v0.0.1";
+    }
 }
 
 contract AllocationManagerMock is AllocationManagerIntermediate {}

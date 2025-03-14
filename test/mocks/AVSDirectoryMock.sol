@@ -7,6 +7,7 @@ import {
     ISignatureUtilsMixin,
     ISignatureUtilsMixinTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
+import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 
@@ -154,4 +155,20 @@ contract AVSDirectoryMock is IAVSDirectory {
     function isOperatorSetBatch(
         OperatorSet[] calldata operatorSets
     ) external view returns (bool) {}
+
+    /**
+     * @notice Returns the domain separator used for EIP-712 signatures
+     * @return The domain separator
+     */
+    function domainSeparator() external pure returns (bytes32) {
+        return bytes32(0);
+    }
+
+    /**
+     * @notice Returns the version of the contract
+     * @return The version string
+     */
+    function version() external pure returns (string memory) {
+        return "v0.0.1";
+    }
 }

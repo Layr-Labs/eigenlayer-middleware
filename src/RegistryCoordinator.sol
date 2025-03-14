@@ -6,6 +6,9 @@ import {
     IAllocationManager,
     OperatorSet
 } from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {ISignatureUtilsMixin} from
+    "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
+import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
 import {IBLSApkRegistry, IBLSApkRegistryTypes} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
@@ -292,5 +295,21 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         uint8 quorumNumber
     ) external view returns (bool) {
         return _isM2Quorum(quorumNumber);
+    }
+
+    /**
+     * @notice Returns the domain separator used for EIP-712 signatures
+     * @return The domain separator
+     */
+    function domainSeparator() external view override returns (bytes32) {
+        return bytes32(0); // Return a dummy value for now
+    }
+
+    /**
+     * @notice Returns the version of the contract
+     * @return The version string
+     */
+    function version() external pure override returns (string memory) {
+        return "v0.0.1";
     }
 }
