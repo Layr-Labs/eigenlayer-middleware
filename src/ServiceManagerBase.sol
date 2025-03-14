@@ -4,7 +4,8 @@ pragma solidity ^0.8.27;
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {ISignatureUtilsMixin} from
+    "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IRewardsCoordinator} from
@@ -222,7 +223,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      */
     function registerOperatorToAVS(
         address operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+        ISignatureUtilsMixin.SignatureWithSaltAndExpiry memory operatorSignature
     ) public virtual onlyRegistryCoordinator {
         _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
     }

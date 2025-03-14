@@ -20,6 +20,10 @@ import {PermissionController} from
     "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
 import {ITransparentUpgradeableProxy} from
     "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    ISignatureUtilsMixin,
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 
 contract Test_CoreRegistration is MockAVSDeployer {
     // Contracts
@@ -144,7 +148,8 @@ contract Test_CoreRegistration is MockAVSDeployer {
         bytes memory quorumNumbers = new bytes(1);
 
         // Get operator signature
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature =
+        _getOperatorSignature(
             operatorPrivateKey, operator, address(serviceManager), emptySalt, maxExpiry
         );
 
@@ -232,7 +237,8 @@ contract Test_CoreRegistration is MockAVSDeployer {
         bytes memory quorumNumbers
     ) internal {
         // Get operator signature
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature =
+        _getOperatorSignature(
             operatorPrivateKey, operator, address(serviceManager), emptySalt, maxExpiry
         );
 
@@ -252,7 +258,11 @@ contract Test_CoreRegistration is MockAVSDeployer {
         address avs,
         bytes32 salt,
         uint256 expiry
-    ) internal view returns (ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) {
+    )
+        internal
+        view
+        returns (ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature)
+    {
         operatorSignature.salt = salt;
         operatorSignature.expiry = expiry;
         {
