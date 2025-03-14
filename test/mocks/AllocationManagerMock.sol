@@ -151,4 +151,6 @@ contract AllocationManagerIntermediate is IAllocationManager {
     ) external view virtual returns (bool) {}
 }
 
-contract AllocationManagerMock is AllocationManagerIntermediate {}
+contract AllocationManagerMock is AllocationManagerIntermediate {
+    uint32 public constant DEALLOCATION_DELAY = 86400;
+}
