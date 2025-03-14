@@ -10,6 +10,7 @@ import {
     OperatorSet,
     IAllocationManagerTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 
 import {IBLSApkRegistry, IBLSApkRegistryTypes} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry, IStakeRegistryTypes} from "./interfaces/IStakeRegistry.sol";
@@ -106,12 +107,6 @@ contract SlashingRegistryCoordinator is
         _setPausedStatus(_initialPausedStatus);
         _setEjector(_ejector);
         _setAVS(_avs);
-
-        // Add registry contracts to the registries array
-        registries.push(address(stakeRegistry));
-        registries.push(address(blsApkRegistry));
-        registries.push(address(indexRegistry));
-        registries.push(address(socketRegistry));
     }
 
     /// @inheritdoc ISlashingRegistryCoordinator
@@ -188,7 +183,7 @@ contract SlashingRegistryCoordinator is
 
                 require(
                     numOperatorsPerQuorum[i] <= _quorumParams[quorumNumber].maxOperatorCount,
-                    MaxQuorumsReached()
+                    MaxOperatorCountReached()
                 );
             }
         } else if (registrationType == RegistrationType.CHURN) {
@@ -374,7 +369,9 @@ contract SlashingRegistryCoordinator is
     function setEjectionCooldown(
         uint256 _ejectionCooldown
     ) external onlyOwner {
+        uint256 prevEjectionCooldown = ejectionCooldown;
         ejectionCooldown = _ejectionCooldown;
+        emit EjectionCooldownUpdated(prevEjectionCooldown, _ejectionCooldown);
     }
 
     /**
@@ -390,14 +387,16 @@ contract SlashingRegistryCoordinator is
      */
     function _kickOperator(address operator, bytes memory quorumNumbers) internal virtual {
         OperatorInfo storage operatorInfo = _operatorInfo[operator];
+        // Only proceed if operator is currently registered
+        require(operatorInfo.status == OperatorStatus.REGISTERED, OperatorNotRegistered());
+
         bytes32 operatorId = operatorInfo.operatorId;
         uint192 quorumsToRemove =
             uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, quorumCount));
         uint192 currentBitmap = _currentOperatorBitmap(operatorId);
-        if (
-            operatorInfo.status == OperatorStatus.REGISTERED && !quorumsToRemove.isEmpty()
-                && quorumsToRemove.isSubsetOf(currentBitmap)
-        ) {
+
+        // Check if operator is registered for all quorums we're trying to remove them from
+        if (quorumsToRemove.isSubsetOf(currentBitmap)) {
             _forceDeregisterOperator(operator, quorumNumbers);
         }
     }
@@ -463,7 +462,7 @@ contract SlashingRegistryCoordinator is
                 OperatorSetParam memory operatorSetParams = _quorumParams[uint8(quorumNumbers[i])];
                 require(
                     results.numOperatorsPerQuorum[i] <= operatorSetParams.maxOperatorCount,
-                    MaxQuorumsReached()
+                    MaxOperatorCountReached()
                 );
             }
         }
@@ -826,6 +825,11 @@ contract SlashingRegistryCoordinator is
         if (stakeType == IStakeRegistryTypes.StakeType.TOTAL_DELEGATED) {
             stakeRegistry.initializeDelegatedStakeQuorum(quorumNumber, minimumStake, strategyParams);
         } else if (stakeType == IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE) {
+            // For slashable stake quorums, ensure lookAheadPeriod is less than DEALLOCATION_DELAY
+            require(
+                AllocationManager(address(allocationManager)).DEALLOCATION_DELAY() > lookAheadPeriod,
+                LookAheadPeriodTooLong()
+            );
             stakeRegistry.initializeSlashableStakeQuorum(
                 quorumNumber, minimumStake, lookAheadPeriod, strategyParams
             );
@@ -833,6 +837,15 @@ contract SlashingRegistryCoordinator is
 
         indexRegistry.initializeQuorum(quorumNumber);
         blsApkRegistry.initializeQuorum(quorumNumber);
+
+        emit QuorumCreated({
+            quorumNumber: quorumNumber,
+            operatorSetParams: operatorSetParams,
+            minimumStake: minimumStake,
+            strategyParams: strategyParams,
+            stakeType: stakeType,
+            lookAheadPeriod: lookAheadPeriod
+        });
 
         // Hook to allow for any post-create quorum logic
         _afterCreateQuorum(quorumNumber);
@@ -915,6 +928,8 @@ contract SlashingRegistryCoordinator is
     function _setAVS(
         address _avs
     ) internal {
+        address prevAVS = avs;
+        emit AVSUpdated(prevAVS, _avs);
         avs = _avs;
     }
 
@@ -1051,11 +1066,6 @@ contract SlashingRegistryCoordinator is
         bytes32 operatorId
     ) external view returns (uint256) {
         return _operatorBitmapHistory[operatorId].length;
-    }
-
-    /// @notice Returns the number of registries
-    function numRegistries() external view returns (uint256) {
-        return registries.length;
     }
 
     /**

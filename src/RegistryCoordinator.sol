@@ -199,9 +199,16 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         // If operator sets are not enabled, set the m2 quorum bitmap to the current m2 quorum bitmap
         // and enable operator sets
         if (!operatorSetsEnabled) {
-            _m2QuorumBitmap = m2QuorumBitmap();
-            operatorSetsEnabled = true;
+            _enableOperatorSets();
         }
+    }
+
+    /// @dev Internal function to enable operator sets and set the M2 quorum bitmap
+    function _enableOperatorSets() internal {
+        require(!operatorSetsEnabled, OperatorSetsAlreadyEnabled());
+        _m2QuorumBitmap = _getTotalQuorumBitmap();
+        operatorSetsEnabled = true;
+        emit OperatorSetsEnabled();
     }
 
     /// @dev Hook to allow for any post-deregister logic
