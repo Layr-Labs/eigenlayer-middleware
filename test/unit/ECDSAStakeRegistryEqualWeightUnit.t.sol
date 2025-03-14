@@ -5,67 +5,112 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISi
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+import {IAllocationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
 import {
     IECDSAStakeRegistry,
-    IECDSAStakeRegistryTypes
+    IECDSAStakeRegistryTypes,
+    IECDSAStakeRegistryErrors
 } from "../../src/interfaces/IECDSAStakeRegistry.sol";
 import {ECDSAStakeRegistrySetup} from "./ECDSAStakeRegistryUnit.t.sol";
 import {ECDSAStakeRegistryEqualWeight} from
     "../../src/unaudited/examples/ECDSAStakeRegistryEqualWeight.sol";
+import {IAVSDirectory} from "../../src/unaudited/ECDSAStakeRegistry.sol";
 
 contract EqualWeightECDSARegistry is ECDSAStakeRegistrySetup {
     ECDSAStakeRegistryEqualWeight internal fixedWeightRegistry;
+    address internal operator6 = makeAddr("operator6");
+    address internal operator7 = makeAddr("operator7");
 
     function setUp() public virtual override {
         super.setUp();
-        fixedWeightRegistry =
-            new ECDSAStakeRegistryEqualWeight(IDelegationManager(address(mockDelegationManager)));
-        IStrategy mockStrategy = IStrategy(address(0x1234));
-        IECDSAStakeRegistryTypes.Quorum memory quorum =
-            IECDSAStakeRegistryTypes.Quorum({strategies: new StrategyParams[](1)});
-        quorum.strategies[0] = StrategyParams({strategy: mockStrategy, multiplier: 10000});
-        fixedWeightRegistry.initialize(address(mockServiceManager), 100, quorum);
+        fixedWeightRegistry = new ECDSAStakeRegistryEqualWeight(
+            IDelegationManager(address(mockDelegationManager)),
+            IAllocationManager(address(mockAllocationManager)),
+            mockAVSRegistrarAddr,
+            IAVSDirectory(address(mockAVSDirectory))
+        );
 
-        fixedWeightRegistry.permitOperator(operator1);
-        fixedWeightRegistry.permitOperator(operator2);
+        IStrategy mockStrategy = IStrategy(address(0x1234));
+        IECDSAStakeRegistryTypes.Quorum memory quorum = IECDSAStakeRegistryTypes.Quorum({
+            strategies: new IECDSAStakeRegistryTypes.StrategyParams[](1)
+        });
+        quorum.strategies[0] =
+            IECDSAStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 10000});
+
+        uint32[] memory operatorSetIds = new uint32[](2);
+        operatorSetIds[0] = 1;
+        operatorSetIds[1] = 2;
+        IECDSAStakeRegistryTypes.StrategyParams[][] memory strategyParamsArray =
+            new IECDSAStakeRegistryTypes.StrategyParams[][](2);
+
+        strategyParamsArray[0] = new IECDSAStakeRegistryTypes.StrategyParams[](2);
+        strategyParamsArray[0][0] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(900)),
+            multiplier: 3000
+        });
+        strategyParamsArray[0][1] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(901)),
+            multiplier: 3000
+        });
+
+        strategyParamsArray[1] = new IECDSAStakeRegistryTypes.StrategyParams[](2);
+        strategyParamsArray[1][0] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(902)),
+            multiplier: 3000
+        });
+        strategyParamsArray[1][1] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(903)),
+            multiplier: 3000
+        });
+
+        fixedWeightRegistry.initialize(
+            address(mockServiceManager), 100, quorum, operatorSetIds, strategyParamsArray
+        );
+
+        fixedWeightRegistry.permitOperator(operator6);
+        fixedWeightRegistry.permitOperator(operator7);
+
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
-        vm.prank(operator1);
-        fixedWeightRegistry.registerOperatorWithSignature(operatorSignature, operator1);
-        vm.prank(operator2);
-        fixedWeightRegistry.registerOperatorWithSignature(operatorSignature, operator2);
+
+        vm.prank(operator6);
+        fixedWeightRegistry.registerOperatorM2Quorum(operatorSignature, operator6);
+
+        vm.prank(operator7);
+        fixedWeightRegistry.registerOperatorM2Quorum(operatorSignature, operator7);
     }
 
     function test_FixedStakeUpdates() public {
-        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator1), 1);
-        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator2), 1);
+        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator6), 1);
+        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator7), 1);
         assertEq(fixedWeightRegistry.getLastCheckpointTotalWeight(), 2);
 
         vm.roll(block.number + 1);
-        vm.prank(operator1);
-        fixedWeightRegistry.deregisterOperator();
+        vm.prank(operator6);
+        fixedWeightRegistry.deregisterOperatorM2Quorum();
 
-        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator1), 0);
-        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator2), 1);
+        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator6), 0);
+        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator7), 1);
         assertEq(fixedWeightRegistry.getLastCheckpointTotalWeight(), 1);
 
         vm.roll(block.number + 1);
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
-        vm.prank(operator1);
-        fixedWeightRegistry.registerOperatorWithSignature(operatorSignature, operator1);
+        vm.prank(operator6);
+        fixedWeightRegistry.registerOperatorM2Quorum(operatorSignature, operator6);
 
-        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator1), 1);
-        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator2), 1);
+        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator6), 1);
+        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator7), 1);
         assertEq(fixedWeightRegistry.getLastCheckpointTotalWeight(), 2);
 
         vm.roll(block.number + 1);
         address[] memory operators = new address[](2);
-        operators[0] = operator1;
-        operators[1] = operator2;
+        operators[0] = operator6;
+        operators[1] = operator7;
         fixedWeightRegistry.updateOperators(operators);
 
-        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator1), 1);
-        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator2), 1);
+        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator6), 1);
+        assertEq(fixedWeightRegistry.getLastCheckpointOperatorWeight(operator7), 1);
         assertEq(fixedWeightRegistry.getLastCheckpointTotalWeight(), 2);
     }
 }

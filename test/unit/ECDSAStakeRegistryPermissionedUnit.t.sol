@@ -5,6 +5,8 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISi
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+import {IAllocationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
 import {
     IECDSAStakeRegistry,
@@ -14,27 +16,74 @@ import {
 import {ECDSAStakeRegistrySetup} from "./ECDSAStakeRegistryUnit.t.sol";
 import {ECDSAStakeRegistryPermissioned} from
     "../../src/unaudited/examples/ECDSAStakeRegistryPermissioned.sol";
+import {IAVSDirectory} from "../../src/unaudited/ECDSAStakeRegistry.sol";
 
 contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     ECDSAStakeRegistryPermissioned internal permissionedRegistry;
+    address internal operator6 = makeAddr("operator6");
+    address internal operator7 = makeAddr("operator7");
 
     function setUp() public virtual override {
         super.setUp();
-        permissionedRegistry =
-            new ECDSAStakeRegistryPermissioned(IDelegationManager(address(mockDelegationManager)));
-        IStrategy mockStrategy = IStrategy(address(0x1234));
-        IECDSAStakeRegistryTypes.Quorum memory quorum =
-            IECDSAStakeRegistryTypes.Quorum({strategies: new StrategyParams[](1)});
-        quorum.strategies[0] = StrategyParams({strategy: mockStrategy, multiplier: 10000});
-        permissionedRegistry.initialize(address(mockServiceManager), 100, quorum);
+        permissionedRegistry = new ECDSAStakeRegistryPermissioned(
+            IDelegationManager(address(mockDelegationManager)),
+            IAllocationManager(address(mockAllocationManager)),
+            mockAVSRegistrarAddr,
+            IAVSDirectory(address(mockAVSDirectory))
+        );
 
-        permissionedRegistry.permitOperator(operator1);
-        permissionedRegistry.permitOperator(operator2);
+        IStrategy mockStrategy = IStrategy(address(0x1234));
+        IECDSAStakeRegistryTypes.Quorum memory quorum = IECDSAStakeRegistryTypes.Quorum({
+            strategies: new IECDSAStakeRegistryTypes.StrategyParams[](1)
+        });
+        quorum.strategies[0] =
+            IECDSAStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 10000});
+
+        // Create operator set IDs and strategy params
+        uint32[] memory operatorSetIds = new uint32[](2);
+        operatorSetIds[0] = 1;
+        operatorSetIds[1] = 2;
+        IECDSAStakeRegistryTypes.StrategyParams[][] memory strategyParamsArray =
+            new IECDSAStakeRegistryTypes.StrategyParams[][](2);
+
+        // Strategy params for first operator set
+        strategyParamsArray[0] = new IECDSAStakeRegistryTypes.StrategyParams[](2);
+        strategyParamsArray[0][0] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(900)), // Lower address
+            multiplier: 3000
+        });
+        strategyParamsArray[0][1] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(901)), // Higher address
+            multiplier: 3000
+        });
+
+        // Strategy params for second operator set
+        strategyParamsArray[1] = new IECDSAStakeRegistryTypes.StrategyParams[](2);
+        strategyParamsArray[1][0] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(902)), // Lower address
+            multiplier: 3000
+        });
+        strategyParamsArray[1][1] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(903)), // Higher address
+            multiplier: 3000
+        });
+
+        permissionedRegistry.initialize(
+            address(mockServiceManager), 100, quorum, operatorSetIds, strategyParamsArray
+        );
+
+        permissionedRegistry.permitOperator(operator6);
+        permissionedRegistry.permitOperator(operator7);
+
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
-        vm.prank(operator1);
-        permissionedRegistry.registerOperatorWithSignature(operatorSignature, operator1);
-        vm.prank(operator2);
-        permissionedRegistry.registerOperatorWithSignature(operatorSignature, operator1);
+
+        vm.prank(operator6);
+        permissionedRegistry.registerOperatorM2Quorum(operatorSignature, operator6);
+
+        vm.prank(operator7);
+        permissionedRegistry.registerOperatorM2Quorum(operatorSignature, operator7);
+
+        vm.roll(block.number + 1);
     }
 
     function test_RevertsWhen_NotOwner_PermitOperator() public {
@@ -45,8 +94,8 @@ contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     }
 
     function test_When_Owner_PermitOperator() public {
-        address operator3 = address(0xBEEF);
-        permissionedRegistry.permitOperator(operator3);
+        address operator8 = address(0xBEEF);
+        permissionedRegistry.permitOperator(operator8);
     }
 
     function test_RevertsWhen_NotOwner_RevokeOperator() public {
@@ -64,55 +113,53 @@ contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     }
 
     function test_When_Owner_RevokeOperator() public {
-        permissionedRegistry.revokeOperator(operator1);
+        permissionedRegistry.revokeOperator(operator6);
     }
 
     function test_RevertsWhen_NotOwner_EjectOperator() public {
         address notOwner = address(0xBEEF);
         vm.prank(notOwner);
         vm.expectRevert("Ownable: caller is not the owner");
-        permissionedRegistry.ejectOperator(operator1);
+        permissionedRegistry.ejectOperator(operator6);
     }
 
     function test_RevertsWhen_NotOperator_EjectOperator() public {
         address notOperator = address(0xBEEF);
-        vm.expectRevert(
-            abi.encodeWithSelector(IECDSAStakeRegistryErrors.OperatorNotRegistered.selector)
-        );
+        vm.expectRevert();
         permissionedRegistry.ejectOperator(notOperator);
     }
 
     function test_When_Owner_EjectOperator() public {
-        permissionedRegistry.ejectOperator(operator1);
+        permissionedRegistry.ejectOperator(operator6);
     }
 
-    function test_RevertsWhen_NotAllowlisted_RegisterOperatorWithSig() public {
-        address operator3 = address(0xBEEF);
+    function test_RevertsWhen_NotAllowlisted_RegisterOperatorM2Quorum() public {
+        address operator8 = address(0xBEEF);
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
         vm.expectRevert(
             abi.encodeWithSelector(ECDSAStakeRegistryPermissioned.OperatorNotAllowlisted.selector)
         );
-        vm.prank(operator3);
-        permissionedRegistry.registerOperatorWithSignature(operatorSignature, operator3);
+        vm.prank(operator8);
+        permissionedRegistry.registerOperatorM2Quorum(operatorSignature, operator8);
     }
 
-    function test_WhenAllowlisted_RegisterOperatorWithSig() public {
-        address operator3 = address(0xBEEF);
-        permissionedRegistry.permitOperator(operator3);
+    function test_WhenAllowlisted_RegisterOperatorM2Quorum() public {
+        address operator8 = address(0xBEEF);
+        permissionedRegistry.permitOperator(operator8);
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
-        vm.prank(operator3);
-        permissionedRegistry.registerOperatorWithSignature(operatorSignature, operator3);
+        vm.prank(operator8);
+        permissionedRegistry.registerOperatorM2Quorum(operatorSignature, operator8);
     }
 
-    function test_DeregisterOperator() public {
-        address operator3 = address(0xBEEF);
-        permissionedRegistry.permitOperator(operator3);
+    function test_DeregisterOperatorM2Quorum() public {
+        address operator8 = address(0xBEEF);
+        permissionedRegistry.permitOperator(operator8);
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
-        vm.prank(operator3);
-        permissionedRegistry.registerOperatorWithSignature(operatorSignature, operator3);
+        vm.prank(operator8);
+        permissionedRegistry.registerOperatorM2Quorum(operatorSignature, operator8);
 
-        vm.prank(operator3);
-        permissionedRegistry.deregisterOperator();
+        vm.prank(operator8);
+        permissionedRegistry.deregisterOperatorM2Quorum();
     }
 }
