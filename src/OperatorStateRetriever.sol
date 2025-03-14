@@ -331,13 +331,24 @@ contract OperatorStateRetriever {
             }
         }
 
+        // Trim the nonSignerOperatorIds array to the actual count
+        bytes32[] memory trimmedNonSignerOperatorIds = new bytes32[](nonSignerOperatorsCount);
+        for (uint256 i = 0; i < nonSignerOperatorsCount; i++) {
+            trimmedNonSignerOperatorIds[i] = nonSignerOperatorIds[i];
+        }
+
         BN254.G1Point[] memory nonSignerPubkeys = new BN254.G1Point[](nonSignerOperatorsCount);
         for (uint256 i = 0; i < nonSignerOperatorsCount; i++) {
-            address nonSignerOperator = registryCoordinator.getOperatorFromId(nonSignerOperatorIds[i]);
+            address nonSignerOperator = registryCoordinator.getOperatorFromId(trimmedNonSignerOperatorIds[i]);
             (nonSignerPubkeys[i], ) = m.blsApkRegistry.getRegisteredPubkey(nonSignerOperator);
         }
 
-        CheckSignaturesIndices memory checkSignaturesIndices = getCheckSignaturesIndices(registryCoordinator, blockNumber, quorumNumbers, nonSignerOperatorIds);
+        CheckSignaturesIndices memory checkSignaturesIndices = getCheckSignaturesIndices(
+            registryCoordinator, 
+            blockNumber, 
+            quorumNumbers, 
+            trimmedNonSignerOperatorIds
+        );
         return IBLSSignatureCheckerTypes.NonSignerStakesAndSignature({
             nonSignerQuorumBitmapIndices: checkSignaturesIndices.nonSignerQuorumBitmapIndices,
             nonSignerPubkeys: nonSignerPubkeys,
