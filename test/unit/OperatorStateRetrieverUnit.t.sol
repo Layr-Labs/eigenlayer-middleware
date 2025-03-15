@@ -819,8 +819,8 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
 
         // Quorum APKs
         assertEq(result.quorumApks.length, 2, "Should have 2 quorum APKs");
-        (BN254.G1Point memory expectedApk0) = blsApkRegistry.getApk(0);
-        (BN254.G1Point memory expectedApk1) = blsApkRegistry.getApk(1);
+        (BN254.G1Point memory expectedApk0) = _getApkAtBlocknumber(registryCoordinator, 0, block.number);
+        (BN254.G1Point memory expectedApk1) = _getApkAtBlocknumber(registryCoordinator, 1, block.number);
         assertEq(result.quorumApks[0].X, expectedApk0.X, "First quorum APK X mismatch");
         assertEq(result.quorumApks[0].Y, expectedApk0.Y, "First quorum APK Y mismatch");
         assertEq(result.quorumApks[1].X, expectedApk1.X, "Second quorum APK X mismatch");
@@ -906,8 +906,8 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
 
         // Quorum APKs
         assertEq(result.quorumApks.length, 2, "Should have 2 quorum APKs");
-        (BN254.G1Point memory expectedApk0) = blsApkRegistry.getApk(0);
-        (BN254.G1Point memory expectedApk1) = blsApkRegistry.getApk(1);
+        (BN254.G1Point memory expectedApk0) = _getApkAtBlocknumber(registryCoordinator, 0, block.number);
+        (BN254.G1Point memory expectedApk1) = _getApkAtBlocknumber(registryCoordinator, 1, block.number);
         assertEq(result.quorumApks[0].X, expectedApk0.X, "First quorum APK X mismatch");
         assertEq(result.quorumApks[0].Y, expectedApk0.Y, "First quorum APK Y mismatch");
         assertEq(result.quorumApks[1].X, expectedApk1.X, "Second quorum APK X mismatch");
@@ -1013,6 +1013,97 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         assertEq(result.nonSignerStakeIndices[0].length, 1, "Quorum 0 should have 1 non-signer");
         // Quorum 1 should have 1 non-signer (secondOperator)
         assertEq(result.nonSignerStakeIndices[1].length, 1, "Quorum 1 should have 1 non-signer");
+    }
+
+    function test_getNonSignerStakesAndSignature_changingQuorumOperatorSet() public {
+        // setup
+        uint256 quorumBitmapOne = 1;
+        uint256 quorumBitmapThree = 3;
+        cheats.roll(registrationBlockNumber);
+
+        _registerOperatorWithCoordinator(defaultOperator, quorumBitmapOne, defaultPubKey);
+
+        address otherOperator = _incrementAddress(defaultOperator, 1);
+        BN254.G1Point memory otherPubKey = BN254.G1Point(1, 2);
+        _registerOperatorWithCoordinator(otherOperator, quorumBitmapThree, otherPubKey, defaultStake - 1);
+
+        // Generate actual G2 pubkeys
+        BN254.G2Point memory op1G2 = _makeG2Point(2);
+        BN254.G2Point memory op2G2 = _makeG2Point(3);
+
+        // Mock the registry calls so the contract sees those G2 points
+        vm.mockCall(
+            address(blsApkRegistry),
+            abi.encodeWithSelector(IBLSApkRegistry.getOperatorPubkeyG2.selector, defaultOperator),
+            abi.encode(op1G2)
+        );
+        vm.mockCall(
+            address(blsApkRegistry),
+            abi.encodeWithSelector(IBLSApkRegistry.getOperatorPubkeyG2.selector, otherOperator),
+            abi.encode(op2G2)
+        );
+
+        // Prepare inputs
+        BN254.G1Point memory dummySigma = BN254.scalar_mul_tiny(BN254.generatorG1(), 123);
+        address[] memory signingOperators = new address[](2);
+        signingOperators[0] = defaultOperator;
+        signingOperators[1] = otherOperator;
+
+        bytes memory quorumNumbers = new bytes(2);
+        quorumNumbers[0] = bytes1(uint8(0));
+        quorumNumbers[1] = bytes1(uint8(1));
+
+        // Deregister the otherOperator
+        cheats.roll(registrationBlockNumber + 10);
+        cheats.prank(otherOperator);
+        registryCoordinator.deregisterOperator(BitmapUtils.bitmapToBytesArray(quorumBitmapThree));
+
+        // Call the function under test
+        IBLSSignatureCheckerTypes.NonSignerStakesAndSignature memory result =
+            operatorStateRetriever.getNonSignerStakesAndSignature(
+                registryCoordinator,
+                quorumNumbers,
+                dummySigma,
+                signingOperators,
+                registrationBlockNumber
+            );
+
+        // Non-signers
+        assertEq(result.nonSignerQuorumBitmapIndices.length, 0, "Should have no non-signer");
+        assertEq(result.nonSignerPubkeys.length, 0, "Should have no non-signer pubkeys");
+
+        // Quorum APKs
+        assertEq(result.quorumApks.length, 2, "Should have 2 quorum APKs");
+        (BN254.G1Point memory expectedApk0) = _getApkAtBlocknumber(registryCoordinator, 0, registrationBlockNumber);
+        (BN254.G1Point memory expectedApk1) = _getApkAtBlocknumber(registryCoordinator, 1, registrationBlockNumber);
+        assertEq(result.quorumApks[0].X, expectedApk0.X, "First quorum APK X mismatch");
+        assertEq(result.quorumApks[0].Y, expectedApk0.Y, "First quorum APK Y mismatch");
+        assertEq(result.quorumApks[1].X, expectedApk1.X, "Second quorum APK X mismatch");
+        assertEq(result.quorumApks[1].Y, expectedApk1.Y, "Second quorum APK Y mismatch");
+
+        // Aggregated G2 = op1G2 + op2G2
+        BN254.G2Point memory expectedSum = _addG2Points(op1G2, op2G2);
+        assertEq(result.apkG2.X[0], expectedSum.X[0], "aggregated X[0] mismatch");
+        assertEq(result.apkG2.X[1], expectedSum.X[1], "aggregated X[1] mismatch");
+        assertEq(result.apkG2.Y[0], expectedSum.Y[0], "aggregated Y[0] mismatch");
+        assertEq(result.apkG2.Y[1], expectedSum.Y[1], "aggregated Y[1] mismatch");
+
+        // Sigma
+        assertEq(result.sigma.X, dummySigma.X, "Sigma X mismatch");
+        assertEq(result.sigma.Y, dummySigma.Y, "Sigma Y mismatch");
+
+        // Indices
+        assertEq(result.quorumApkIndices.length, 2, "Should have 2 quorum APK indices");
+        assertEq(result.quorumApkIndices[0], 1, "First quorum APK index mismatch");
+        assertEq(result.quorumApkIndices[1], 1, "Second quorum APK index mismatch");
+        assertEq(result.totalStakeIndices.length, 2, "Should have 2 total stake indices");
+        assertEq(result.totalStakeIndices[0], 1, "First total stake index mismatch");
+        assertEq(result.totalStakeIndices[1], 1, "Second total stake index mismatch");
+
+        // Non-signer stake indices
+        assertEq(result.nonSignerStakeIndices.length, 2, "Should have 2 arrays of non-signer stake indices");
+        assertEq(result.nonSignerStakeIndices[0].length, 0, "First quorum non-signer mismatch");
+        assertEq(result.nonSignerStakeIndices[1].length, 0, "Second quorum non-signer mismatch");
     }
 
     function test_getNonSignerStakesAndSignature_revert_signerNeverRegistered() public {
@@ -1257,5 +1348,18 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
             signingOperators,
             initialBlock
         );
+    }
+
+    function _getApkAtBlocknumber(ISlashingRegistryCoordinator registryCoordinator, uint8 quorumNumber, uint32 blockNumber) internal view returns (BN254.G1Point memory) {
+        bytes32[] memory operatorIds = registryCoordinator.indexRegistry().getOperatorListAtBlockNumber(quorumNumber, blockNumber);
+        BN254.G1Point memory apk = BN254.G1Point(0, 0);
+        IBLSApkRegistry blsApkRegistry = registryCoordinator.blsApkRegistry();
+        for (uint256 i = 0; i < operatorIds.length; i++) {
+            address operator = registryCoordinator.getOperatorFromId(operatorIds[i]);
+            BN254.G1Point memory operatorPk;
+            (operatorPk.X, operatorPk.Y) = blsApkRegistry.operatorToPubkey(operator);
+            apk = BN254.plus(apk, operatorPk);
+        }
+        return apk;
     }
 }
