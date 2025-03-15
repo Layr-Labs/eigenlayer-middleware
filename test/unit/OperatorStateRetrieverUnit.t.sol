@@ -731,17 +731,11 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         assertEq(operators[1], address(0), "Should return address(0) for unregistered ID");
     }
 
-    // Some constants at the top level for BN256G2 usage:
-    uint256 constant G2_X0 = 11559732032986387107991004021392285783925812861821192530917403151452391805634; // im
-    uint256 constant G2_X1 = 10857046999023057135944570762232829481370756359578518086990519993285655852781; // re
-    uint256 constant G2_Y0 = 4082367875863433681332203403145435568316851327593401208105741076214120093531;  // im
-    uint256 constant G2_Y1 = 8495653923123431417604973247489272438418190587263600148770280649306958101930;  // re
-
     // helper function to generate a G2 point from a scalar
     function _makeG2Point(uint256 scalar) internal returns (BN254.G2Point memory) {
         // BN256G2.ECTwistMul returns (X0, X1, Y0, Y1) in that order
         (uint256 reX, uint256 imX, uint256 reY, uint256 imY) =
-            BN256G2.ECTwistMul(scalar, G2_X1, G2_X0, G2_Y1, G2_Y0);
+            BN256G2.ECTwistMul(scalar, BN254.G2x0, BN254.G2x1, BN254.G2y0, BN254.G2y1);
 
         // BN254.G2Point uses [im, re] ordering
         return BN254.G2Point(
