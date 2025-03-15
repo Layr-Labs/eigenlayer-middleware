@@ -819,8 +819,8 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
 
         // Quorum APKs
         assertEq(result.quorumApks.length, 2, "Should have 2 quorum APKs");
-        (BN254.G1Point memory expectedApk0) = _getApkAtBlocknumber(registryCoordinator, 0, block.number);
-        (BN254.G1Point memory expectedApk1) = _getApkAtBlocknumber(registryCoordinator, 1, block.number);
+        (BN254.G1Point memory expectedApk0) = _getApkAtBlocknumber(registryCoordinator, 0, uint32(block.number));
+        (BN254.G1Point memory expectedApk1) = _getApkAtBlocknumber(registryCoordinator, 1, uint32(block.number));
         assertEq(result.quorumApks[0].X, expectedApk0.X, "First quorum APK X mismatch");
         assertEq(result.quorumApks[0].Y, expectedApk0.Y, "First quorum APK Y mismatch");
         assertEq(result.quorumApks[1].X, expectedApk1.X, "Second quorum APK X mismatch");
@@ -906,8 +906,8 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
 
         // Quorum APKs
         assertEq(result.quorumApks.length, 2, "Should have 2 quorum APKs");
-        (BN254.G1Point memory expectedApk0) = _getApkAtBlocknumber(registryCoordinator, 0, block.number);
-        (BN254.G1Point memory expectedApk1) = _getApkAtBlocknumber(registryCoordinator, 1, block.number);
+        (BN254.G1Point memory expectedApk0) = _getApkAtBlocknumber(registryCoordinator, 0, uint32(block.number));
+        (BN254.G1Point memory expectedApk1) = _getApkAtBlocknumber(registryCoordinator, 1, uint32(block.number));
         assertEq(result.quorumApks[0].X, expectedApk0.X, "First quorum APK X mismatch");
         assertEq(result.quorumApks[0].Y, expectedApk0.Y, "First quorum APK Y mismatch");
         assertEq(result.quorumApks[1].X, expectedApk1.X, "Second quorum APK X mismatch");
@@ -1074,8 +1074,8 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
 
         // Quorum APKs
         assertEq(result.quorumApks.length, 2, "Should have 2 quorum APKs");
-        (BN254.G1Point memory expectedApk0) = _getApkAtBlocknumber(registryCoordinator, 0, registrationBlockNumber);
-        (BN254.G1Point memory expectedApk1) = _getApkAtBlocknumber(registryCoordinator, 1, registrationBlockNumber);
+        (BN254.G1Point memory expectedApk0) = _getApkAtBlocknumber(registryCoordinator, 0, uint32(registrationBlockNumber));
+        (BN254.G1Point memory expectedApk1) = _getApkAtBlocknumber(registryCoordinator, 1, uint32(registrationBlockNumber));
         assertEq(result.quorumApks[0].X, expectedApk0.X, "First quorum APK X mismatch");
         assertEq(result.quorumApks[0].Y, expectedApk0.Y, "First quorum APK Y mismatch");
         assertEq(result.quorumApks[1].X, expectedApk1.X, "Second quorum APK X mismatch");
