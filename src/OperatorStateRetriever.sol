@@ -292,10 +292,10 @@ contract OperatorStateRetriever {
         bytes32[] memory nonSignerOperatorIds = new bytes32[](16);
         // for every quorum
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            // TODO: This function is not timestamped.
-            // I didn't understand how to use history of quorum apks.
-            m.quorumApks[i] = m.blsApkRegistry.getApk(uint8(quorumNumbers[i]));
             bytes32[] memory operatorIdsInQuorum = m.indexRegistry.getOperatorListAtBlockNumber(uint8(quorumNumbers[i]), blockNumber);
+            // Operator IDs are computed from the hash of the BLS public keys, so an operatorId's public key can't change over time
+            // This lets us compute the APK at the given block number
+            m.quorumApks[i] = _computeG1Apk(registryCoordinator, operatorIdsInQuorum);
             // we check for every operator in the quorum
             for (uint256 j = 0; j < operatorIdsInQuorum.length; j++) {
                 bool isNewNonSigner = true;
@@ -359,5 +359,17 @@ contract OperatorStateRetriever {
             totalStakeIndices: checkSignaturesIndices.totalStakeIndices,
             nonSignerStakeIndices: checkSignaturesIndices.nonSignerStakeIndices
         });
+    }
+
+    function _computeG1Apk(ISlashingRegistryCoordinator registryCoordinator, bytes32[] memory operatorIds) internal view returns (BN254.G1Point memory) {
+        BN254.G1Point memory apk = BN254.G1Point(0, 0);
+        IBLSApkRegistry blsApkRegistry = registryCoordinator.blsApkRegistry();
+        for (uint256 i = 0; i < operatorIds.length; i++) {
+            address operator = registryCoordinator.getOperatorFromId(operatorIds[i]);
+            BN254.G1Point memory operatorPk;
+            (operatorPk.X, operatorPk.Y) = blsApkRegistry.operatorToPubkey(operator);
+            apk = BN254.plus(apk, operatorPk);
+        }
+        return apk;
     }
 }
