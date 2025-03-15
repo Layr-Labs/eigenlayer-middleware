@@ -794,7 +794,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         );
 
         // Prepare inputs
-        BN254.G1Point memory dummySigma = BN254.G1Point(123, 456);
+        BN254.G1Point memory dummySigma = BN254.scalar_mul_tiny(BN254.generatorG1(), 123);
         address[] memory signingOperators = new address[](2);
         signingOperators[0] = defaultOperator;
         signingOperators[1] = otherOperator;
@@ -880,7 +880,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         );
 
         // Prepare input
-        BN254.G1Point memory dummySigma = BN254.G1Point(123, 456);
+        BN254.G1Point memory dummySigma = BN254.scalar_mul_tiny(BN254.generatorG1(), 123);
 
         address[] memory signingOperators = new address[](1);
         signingOperators[0] = defaultOperator; // only op1
@@ -969,7 +969,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         );
         
         // Create a dummy signature
-        BN254.G1Point memory dummySigma = BN254.G1Point(123, 456);
+        BN254.G1Point memory dummySigma = BN254.scalar_mul_tiny(BN254.generatorG1(), 123);
         
         // No signing operators - empty array
         address[] memory signingOperators = new address[](0);
@@ -1031,7 +1031,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         );
         
         // Create a dummy signature
-        BN254.G1Point memory dummySigma = BN254.G1Point(123, 456);
+        BN254.G1Point memory dummySigma = BN254.scalar_mul_tiny(BN254.generatorG1(), 123);
         
         // Try to include an unregistered operator as a signer
         address unregisteredOperator = _incrementAddress(defaultOperator, 1);
@@ -1085,7 +1085,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         );
         
         // Create a dummy signature
-        BN254.G1Point memory dummySigma = BN254.G1Point(123, 456);
+        BN254.G1Point memory dummySigma = BN254.scalar_mul_tiny(BN254.generatorG1(), 123);
         
         // Include both operators as signers
         address[] memory signingOperators = new address[](2);
@@ -1138,7 +1138,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         registryCoordinator.deregisterOperator(BitmapUtils.bitmapToBytesArray(quorumBitmap));
         
         // Create a dummy signature
-        BN254.G1Point memory dummySigma = BN254.G1Point(123, 456);
+        BN254.G1Point memory dummySigma = BN254.scalar_mul_tiny(BN254.generatorG1(), 123);
         
         // Include both operators as signers
         address[] memory signingOperators = new address[](2);
@@ -1175,7 +1175,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         );
         
         // Create a dummy signature
-        BN254.G1Point memory dummySigma = BN254.G1Point(123, 456);
+        BN254.G1Point memory dummySigma = BN254.scalar_mul_tiny(BN254.generatorG1(), 123);
         
         // Include the operator as a signer
         address[] memory signingOperators = new address[](1);
@@ -1238,7 +1238,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         );
         
         // Create a dummy signature
-        BN254.G1Point memory dummySigma = BN254.G1Point(123, 456);
+        BN254.G1Point memory dummySigma = BN254.scalar_mul_tiny(BN254.generatorG1(), 123);
         
         // Include the operator as a signer
         address[] memory signingOperators = new address[](1);

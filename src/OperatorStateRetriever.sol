@@ -30,6 +30,7 @@ contract OperatorStateRetriever {
     }
 
     error OperatorNotRegistered();
+    error InvalidSigma();
 
     /**
      * @notice This function is intended to to be called by AVS operators every time a new task is created (i.e.)
@@ -255,6 +256,9 @@ contract OperatorStateRetriever {
         m.indexRegistry = registryCoordinator.indexRegistry();
         m.blsApkRegistry = registryCoordinator.blsApkRegistry();
 
+        // Safe guard AVSs from generating NonSignerStakesAndSignature with invalid sigma
+        require(_isOnCurve(sigma), InvalidSigma());
+
         m.operatorIds = new bytes32[](operators.length);
         for (uint256 i = 0; i < operators.length; i++) {
             m.operatorIds[i] = registryCoordinator.getOperatorId(operators[i]);
@@ -371,5 +375,13 @@ contract OperatorStateRetriever {
             apk = BN254.plus(apk, operatorPk);
         }
         return apk;
+    }
+
+    function _isOnCurve(BN254.G1Point memory p) internal view returns (bool) {
+        uint256 y2 = mulmod(p.Y, p.Y, BN254.FP_MODULUS);
+        uint256 x2 = mulmod(p.X, p.X, BN254.FP_MODULUS);
+        uint256 x3 = mulmod(p.X, x2, BN254.FP_MODULUS);
+        uint256 rhs = addmod(x3, 3, BN254.FP_MODULUS);
+        return y2 == rhs;
     }
 }
