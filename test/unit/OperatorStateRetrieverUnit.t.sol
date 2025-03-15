@@ -740,13 +740,13 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
     // helper function to generate a G2 point from a scalar
     function _makeG2Point(uint256 scalar) internal returns (BN254.G2Point memory) {
         // BN256G2.ECTwistMul returns (X0, X1, Y0, Y1) in that order
-        (uint256 imX, uint256 reX, uint256 imY, uint256 reY) =
+        (uint256 reX, uint256 imX, uint256 reY, uint256 imY) =
             BN256G2.ECTwistMul(scalar, G2_X1, G2_X0, G2_Y1, G2_Y0);
 
-        // BN254.G2Point uses [re, im] ordering
+        // BN254.G2Point uses [im, re] ordering
         return BN254.G2Point(
-            [reX, imX],
-            [reY, imY]
+            [imX, reX],
+            [imY, reY]
         );
     }
 
