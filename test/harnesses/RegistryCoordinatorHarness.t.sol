@@ -19,13 +19,17 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         IPauserRegistry _pauserRegistry
     )
         RegistryCoordinator(
-            _serviceManager,
-            _stakeRegistry,
-            _blsApkRegistry,
-            _indexRegistry,
-            _socketRegistry,
-            _allocationManager,
-            _pauserRegistry
+            RegistryCoordinatorStorage.RegistryCoordinatorParams(
+                _serviceManager,
+                RegistryCoordinatorStorage.SlashingRegistryParams(
+                    _stakeRegistry,
+                    _blsApkRegistry,
+                    _indexRegistry,
+                    _socketRegistry,
+                    _allocationManager,
+                    _pauserRegistry
+                )
+            )
         )
     {
         _transferOwnership(msg.sender);

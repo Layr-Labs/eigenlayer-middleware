@@ -417,13 +417,17 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         uint32[] memory slashableStakeQuorumLookAheadPeriods = new uint32[](0);
 
         RegistryCoordinator registryCoordinatorImplementation = new RegistryCoordinator(
-            serviceManager,
-            stakeRegistry,
-            blsApkRegistry,
-            indexRegistry,
-            socketRegistry,
-            allocationManager,
-            pauserRegistry
+            RegistryCoordinatorStorage.RegistryCoordinatorParams(
+                serviceManager,
+                RegistryCoordinatorStorage.SlashingRegistryParams(
+                    stakeRegistry,
+                    blsApkRegistry,
+                    indexRegistry,
+                    socketRegistry,
+                    allocationManager,
+                    pauserRegistry
+                )
+            )
         );
         proxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(payable(address(registryCoordinator))),

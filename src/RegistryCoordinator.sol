@@ -28,26 +28,20 @@ import {RegistryCoordinatorStorage} from "./RegistryCoordinatorStorage.sol";
  *
  * @author Layr Labs, Inc.
  */
-contract RegistryCoordinator is RegistryCoordinatorStorage {
+contract RegistryCoordinator is RegistryCoordinatorStorage, SlashingRegistryCoordinator {
     using BitmapUtils for *;
 
     constructor(
-        IServiceManager _serviceManager,
-        IStakeRegistry _stakeRegistry,
-        IBLSApkRegistry _blsApkRegistry,
-        IIndexRegistry _indexRegistry,
-        ISocketRegistry _socketRegistry,
-        IAllocationManager _allocationManager,
-        IPauserRegistry _pauserRegistry
+        RegistryCoordinatorStorage.RegistryCoordinatorParams memory params
     )
-        RegistryCoordinatorStorage(
-            _serviceManager,
-            _stakeRegistry,
-            _blsApkRegistry,
-            _indexRegistry,
-            _socketRegistry,
-            _allocationManager,
-            _pauserRegistry
+        RegistryCoordinatorStorage(params)
+        SlashingRegistryCoordinator(
+            params.slashingParams.stakeRegistry,
+            params.slashingParams.blsApkRegistry,
+            params.slashingParams.indexRegistry,
+            params.slashingParams.socketRegistry,
+            params.slashingParams.allocationManager,
+            params.slashingParams.pauserRegistry
         )
     {}
 

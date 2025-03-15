@@ -25,7 +25,8 @@ import {QuorumBitmapHistoryLib} from "./libraries/QuorumBitmapHistoryLib.sol";
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import {EIP712} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
+import {EIP712Upgradeable} from
+    "@openzeppelin-upgrades/contracts/utils/cryptography/EIP712Upgradeable.sol";
 
 import {Pausable} from "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
 import {SlashingRegistryCoordinatorStorage} from "./SlashingRegistryCoordinatorStorage.sol";
@@ -40,12 +41,12 @@ import {SlashingRegistryCoordinatorStorage} from "./SlashingRegistryCoordinatorS
  * @author Layr Labs, Inc.
  */
 contract SlashingRegistryCoordinator is
-    EIP712,
     Initializable,
     Pausable,
     OwnableUpgradeable,
     SlashingRegistryCoordinatorStorage,
-    ISignatureUtils
+    ISignatureUtils,
+    EIP712Upgradeable
 {
     using BitmapUtils for *;
     using BN254 for BN254.G1Point;
@@ -84,7 +85,6 @@ contract SlashingRegistryCoordinator is
             _socketRegistry,
             _allocationManager
         )
-        EIP712("AVSRegistryCoordinator", "v0.0.1")
         Pausable(_pauserRegistry)
     {
         _disableInitializers();
@@ -96,17 +96,18 @@ contract SlashingRegistryCoordinator is
      *
      */
     function initialize(
-        address _initialOwner,
-        address _churnApprover,
-        address _ejector,
-        uint256 _initialPausedStatus,
-        address _avs
+        address initialOwner,
+        address churnApprover,
+        address ejector,
+        uint256 initialPausedStatus,
+        address avs
     ) external initializer {
-        _transferOwnership(_initialOwner);
-        _setChurnApprover(_churnApprover);
-        _setPausedStatus(_initialPausedStatus);
-        _setEjector(_ejector);
-        _setAVS(_avs);
+        __EIP712_init("AVSRegistryCoordinator", "v0.0.1");
+        _transferOwnership(initialOwner);
+        _setChurnApprover(churnApprover);
+        _setPausedStatus(initialPausedStatus);
+        _setEjector(ejector);
+        _setAVS(avs);
     }
 
     /// @inheritdoc ISlashingRegistryCoordinator
