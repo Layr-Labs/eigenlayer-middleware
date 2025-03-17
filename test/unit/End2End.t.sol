@@ -156,7 +156,7 @@ contract End2EndForkTest is Test {
             operators, middlewareConfig, coreDeployment, middlewareDeployment, strategy
         );
 
-        // _executeSlashing(operators, middlewareConfig, middlewareDeployment);
+        _executeSlashing(operators, middlewareConfig, middlewareDeployment, strategy);
     }
 
     function _setupInitialState()
@@ -415,25 +415,26 @@ contract End2EndForkTest is Test {
         vm.roll(block.number + 100);
     }
 
-    // function _executeSlashing(
-    //     OperatorLib.Operator[] memory operators,
-    //     ConfigData memory middlewareConfig,
-    //     MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployment
-    // ) internal {
-    //     IAllocationManagerTypes.SlashingParams memory slashingParams = IAllocationManagerTypes
-    //         .SlashingParams({
-    //         operator: operators[0].key.addr,
-    //         operatorSetId: 1,
-    //         strategies: new IStrategy[](1),
-    //         wadsToSlash: new uint256[](1),
-    //         description: "Test slashing"
-    //     });
+    function _executeSlashing(
+        OperatorLib.Operator[] memory operators,
+        ConfigData memory middlewareConfig,
+        MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployment,
+        address strategy
+    ) internal {
+        IAllocationManagerTypes.SlashingParams memory slashingParams = IAllocationManagerTypes
+            .SlashingParams({
+            operator: operators[0].key.addr,
+            operatorSetId: 1,
+            strategies: new IStrategy[](1),
+            wadsToSlash: new uint256[](1),
+            description: "Test slashing"
+        });
 
-    //     slashingParams.strategies[0] = IStrategy(middlewareDeployment.strategy);
-    //     slashingParams.wadsToSlash[0] = 0.5e18;
+        slashingParams.strategies[0] = IStrategy(strategy);
+        slashingParams.wadsToSlash[0] = 0.5e18;
 
-    //     ServiceManagerMock(middlewareDeployment.serviceManager).slashOperator(slashingParams);
-    // }
+        ServiceManagerMock(middlewareDeployment.serviceManager).slashOperator(slashingParams);
+    }
 
     function _getAndSortOperators(
         OperatorLib.Operator[] memory operators
