@@ -40,9 +40,8 @@ contract End2EndForkTest is Test {
         uint256 numQuorums;
         uint256[] operatorParams;
         address[][] operators;
+        address proxyAdmin;
     }
-
-    address internal proxyAdmin;
 
     function testCreateOperator() public {
         OperatorLib.Operator memory operator = OperatorLib.createOperator("operator-1");
@@ -98,11 +97,11 @@ contract End2EndForkTest is Test {
         _setupOperatorsAndTokens(operators, coreDeployment, middlewareConfig);
 
         _setupFirstQuorumAndOperatorSet(
-            operators, middlewareConfig, coreDeployment, middlewareDeployment 
+            operators, middlewareConfig, coreDeployment, middlewareDeployment
         );
 
         _setupSecondQuorumAndOperatorSet(
-            operators, middlewareConfig, coreDeployment, middlewareDeployment 
+            operators, middlewareConfig, coreDeployment, middlewareDeployment
         );
 
         _executeSlashing(operators, middlewareConfig, middlewareDeployment);
@@ -130,7 +129,7 @@ contract End2EndForkTest is Test {
         (address token, address strategy) = _deployTokenAndStrategy(coreDeployment.strategyFactory);
 
         // Setup middleware deployment data
-        proxyAdmin = UpgradeableProxyLib.deployProxyAdmin();
+        middlewareConfig.proxyAdmin = UpgradeableProxyLib.deployProxyAdmin();
         middlewareConfig.admin = address(this);
         middlewareConfig.numQuorums = 1;
         middlewareConfig.operatorParams = new uint256[](3);
@@ -141,9 +140,8 @@ contract End2EndForkTest is Test {
         middlewareConfig.token = token;
         middlewareConfig.operators = _getAndSortOperators(operators);
 
-
         middlewareDeployment = MiddlewareDeployLib.deployMiddlewareWithCore(
-            proxyAdmin, middlewareConfig.admin, coreDeployment
+            middlewareConfig.proxyAdmin, middlewareConfig.admin, coreDeployment
         );
 
         vm.startPrank(middlewareDeployment.serviceManager);
@@ -228,7 +226,11 @@ contract End2EndForkTest is Test {
         for (uint256 i = 0; i < 5; i++) {
             vm.startPrank(operators[i].key.addr);
             uint256 shares = OperatorLib.depositTokenIntoStrategy(
-                operators[i], coreDeployment.strategyManager, middlewareConfig.strategy, middlewareConfig.token, mintAmount
+                operators[i],
+                coreDeployment.strategyManager,
+                middlewareConfig.strategy,
+                middlewareConfig.token,
+                mintAmount
             );
             assertTrue(shares > 0, "Should have received shares for deposit");
             vm.stopPrank();
@@ -256,8 +258,10 @@ contract End2EndForkTest is Test {
 
         IStakeRegistry.StrategyParams[] memory strategyParams =
             new IStakeRegistry.StrategyParams[](1);
-        strategyParams[0] =
-            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(middlewareConfig.strategy), multiplier: 1 ether});
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(middlewareConfig.strategy),
+            multiplier: 1 ether
+        });
 
         RegistryCoordinator(middlewareDeployment.registryCoordinator)
             .createTotalDelegatedStakeQuorum(operatorSetParams, 100, strategyParams);
@@ -300,8 +304,10 @@ contract End2EndForkTest is Test {
         vm.startPrank(middlewareConfig.admin);
         IStakeRegistry.StrategyParams[] memory strategyParams =
             new IStakeRegistry.StrategyParams[](1);
-        strategyParams[0] =
-            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(middlewareConfig.strategy), multiplier: 1 ether});
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(middlewareConfig.strategy),
+            multiplier: 1 ether
+        });
 
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
         ISlashingRegistryCoordinatorTypes.OperatorSetParam({
@@ -315,7 +321,9 @@ contract End2EndForkTest is Test {
         );
         vm.stopPrank();
 
-        _setupOperatorAllocations(operators, coreDeployment, middlewareDeployment, middlewareConfig.strategy);
+        _setupOperatorAllocations(
+            operators, coreDeployment, middlewareDeployment, middlewareConfig.strategy
+        );
 
         // Register and update operators for second quorum
         uint32[] memory operatorSetIds = new uint32[](1);

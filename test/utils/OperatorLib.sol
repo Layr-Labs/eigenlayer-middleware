@@ -37,6 +37,8 @@ library OperatorLib {
     using BN254 for *;
     using Strings for uint256;
 
+    Vm private constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+
     struct Wallet {
         uint256 privateKey;
         address addr;
@@ -47,8 +49,6 @@ library OperatorLib {
         BN254.G2Point publicKeyG2;
         BN254.G1Point publicKeyG1;
     }
-
-    Vm private constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
     struct Operator {
         Wallet key;
