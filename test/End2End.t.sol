@@ -186,8 +186,9 @@ contract End2EndForkTest is Test {
         middlewareConfig.operatorParams[1] = 100;
         middlewareConfig.operatorParams[2] = 100;
 
-        middlewareDeployment =
-            MiddlewareDeployLib.deployMiddlewareWithCore(proxyAdmin, middlewareConfig.admin, coreDeployment);
+        middlewareDeployment = MiddlewareDeployLib.deployMiddlewareWithCore(
+            proxyAdmin, middlewareConfig.admin, coreDeployment
+        );
 
         vm.startPrank(middlewareDeployment.serviceManager);
         AllocationManager(coreDeployment.allocationManager).updateAVSMetadataURI(
@@ -241,11 +242,7 @@ contract End2EndForkTest is Test {
         for (uint256 i = 0; i < 5; i++) {
             vm.startPrank(operators[i].key.addr);
             uint256 shares = OperatorLib.depositTokenIntoStrategy(
-                operators[i],
-                coreDeployment.strategyManager,
-                strategy,
-                token,
-                mintAmount
+                operators[i], coreDeployment.strategyManager, strategy, token, mintAmount
             );
             assertTrue(shares > 0, "Should have received shares for deposit");
             vm.stopPrank();
@@ -274,10 +271,8 @@ contract End2EndForkTest is Test {
 
         IStakeRegistry.StrategyParams[] memory strategyParams =
             new IStakeRegistry.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(strategy),
-            multiplier: 1 ether
-        });
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(strategy), multiplier: 1 ether});
 
         RegistryCoordinator(middlewareDeployment.registryCoordinator)
             .createTotalDelegatedStakeQuorum(operatorSetParams, 100, strategyParams);
@@ -323,10 +318,8 @@ contract End2EndForkTest is Test {
         vm.startPrank(middlewareConfig.admin);
         IStakeRegistry.StrategyParams[] memory strategyParams =
             new IStakeRegistry.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(strategy),
-            multiplier: 1 ether
-        });
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(strategy), multiplier: 1 ether});
 
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
         ISlashingRegistryCoordinatorTypes.OperatorSetParam({
