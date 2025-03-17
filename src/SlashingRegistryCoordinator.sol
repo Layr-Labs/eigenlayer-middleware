@@ -663,13 +663,9 @@ contract SlashingRegistryCoordinator is
         address operator,
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory params
     ) internal returns (bytes32 operatorId) {
-        operatorId = blsApkRegistry.getOperatorId(operator);
-        if (operatorId == 0) {
-            operatorId = blsApkRegistry.registerBLSPublicKey(
-                operator, params, pubkeyRegistrationMessageHash(operator)
-            );
-        }
-        return operatorId;
+        return blsApkRegistry.getOrRegisterOperatorId(
+            operator, params, pubkeyRegistrationMessageHash(operator)
+        );
     }
 
     /**
@@ -1105,9 +1101,7 @@ contract SlashingRegistryCoordinator is
     function pubkeyRegistrationMessageHash(
         address operator
     ) public view returns (BN254.G1Point memory) {
-        return BN254.hashToG1(
-            _hashTypedDataV4(keccak256(abi.encode(PUBKEY_REGISTRATION_TYPEHASH, operator)))
-        );
+        return BN254.hashToG1(calculatePubkeyRegistrationMessageHash(operator));
     }
 
     /**
