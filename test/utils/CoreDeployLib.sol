@@ -124,9 +124,6 @@ library CoreDeployLib {
         address strategyBeacon;
         address rewardsCoordinator;
         address permissionController;
-        address eigenStrategy;
-        address eigen;
-        address backingEigen;
     }
 
     function deployContracts(
@@ -349,52 +346,5 @@ library CoreDeployLib {
         UpgradeableProxyLib.upgradeAndCall(
             deployments.rewardsCoordinator, rewardsCoordinatorImpl, upgradeCall
         );
-    }
-
-    function readCoreDeploymentJson(
-        string memory path,
-        uint256 chainId
-    ) internal returns (DeploymentData memory) {
-        string memory filePath = string(abi.encodePacked(path, "/", vm.toString(chainId), ".json"));
-        return parseZeusJson(filePath);
-    }
-
-    function readCoreDeploymentJson(
-        string memory path,
-        uint256 chainId,
-        string memory environment
-    ) internal returns (DeploymentData memory) {
-        string memory filePath =
-            string(abi.encodePacked(path, "/", vm.toString(chainId), "-", environment, ".json"));
-        return parseZeusJson(filePath);
-    }
-
-    function parseZeusJson(
-        string memory filePath
-    ) internal returns (DeploymentData memory) {
-        string memory json = vm.readFile(filePath);
-        require(vm.exists(filePath), "Deployment file does not exist");
-        DeploymentData memory deploymentData;
-
-        deploymentData.delegationManager =
-            json.readAddress(".ZEUS_DEPLOYED_DelegationManager_Proxy");
-        deploymentData.avsDirectory = json.readAddress(".ZEUS_DEPLOYED_AVSDirectory_Proxy");
-        deploymentData.strategyManager = json.readAddress(".ZEUS_DEPLOYED_StrategyManager_Proxy");
-        deploymentData.allocationManager =
-            json.readAddress(".ZEUS_DEPLOYED_AllocationManager_Proxy");
-        deploymentData.eigenPodManager = json.readAddress(".ZEUS_DEPLOYED_EigenPodManager_Proxy");
-        deploymentData.rewardsCoordinator =
-            json.readAddress(".ZEUS_DEPLOYED_RewardsCoordinator_Proxy");
-        deploymentData.eigenPodBeacon = json.readAddress(".ZEUS_DEPLOYED_EigenPod_Beacon");
-        deploymentData.pauserRegistry = json.readAddress(".ZEUS_DEPLOYED_PauserRegistry_Impl");
-        deploymentData.strategyFactory = json.readAddress(".ZEUS_DEPLOYED_StrategyFactory_Proxy");
-        deploymentData.strategyBeacon = json.readAddress(".ZEUS_DEPLOYED_StrategyBase_Beacon");
-        deploymentData.eigenStrategy = json.readAddress(".ZEUS_DEPLOYED_EigenStrategy_Proxy");
-        deploymentData.eigen = json.readAddress(".ZEUS_DEPLOYED_Eigen_Proxy");
-        deploymentData.backingEigen = json.readAddress(".ZEUS_DEPLOYED_BackingEigen_Proxy");
-        deploymentData.permissionController =
-            json.readAddress(".ZEUS_DEPLOYED_PermissionController_Proxy");
-
-        return deploymentData;
     }
 }

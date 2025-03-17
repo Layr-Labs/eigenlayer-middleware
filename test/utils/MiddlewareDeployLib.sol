@@ -119,25 +119,6 @@ library MiddlewareDeployLib {
         return result;
     }
 
-    function deployMiddlewareWithCore(
-        address proxyAdmin,
-        address owner,
-        CoreDeployLib.DeploymentData memory core
-    ) internal returns (MiddlewareDeployData memory result) {
-        // Deploy proxies
-        result = deployEmptyProxies(proxyAdmin);
-
-        // Deploy pauser registry
-        result.pauserRegistry = _deployPauserRegistry(proxyAdmin);
-
-        // Upgrade the proxies
-        upgradeRegistriesM2Coordinator(core, result);
-        ugpradeServiceManager(core, result, owner);
-        upgradeM2Coordinator(core, result, owner);
-
-        return result;
-    }
-
     function deployEmptyProxies(
         address proxyAdmin
     ) internal returns (MiddlewareDeployData memory proxies) {
@@ -190,15 +171,17 @@ library MiddlewareDeployLib {
     }
 
     function upgradeRegistriesM2Coordinator(
-        CoreDeployLib.DeploymentData memory core,
+        address delegationManager,
+        address avsDirectory,
+        address allocationManager,
         MiddlewareDeployData memory deployments
     ) internal {
         address stakeRegistryImpl = address(
             new StakeRegistry(
                 IRegistryCoordinator(deployments.registryCoordinator),
-                IDelegationManager(core.delegationManager),
-                IAVSDirectory(core.avsDirectory),
-                IAllocationManager(core.allocationManager)
+                IDelegationManager(delegationManager),
+                IAVSDirectory(avsDirectory),
+                IAllocationManager(allocationManager)
             )
         );
         UpgradeableProxyLib.upgrade(deployments.stakeRegistry, stakeRegistryImpl);
@@ -214,6 +197,31 @@ library MiddlewareDeployLib {
         address socketRegistryImpl =
             address(new SocketRegistry(IRegistryCoordinator(deployments.registryCoordinator)));
         UpgradeableProxyLib.upgrade(deployments.socketRegistry, socketRegistryImpl);
+    }
+
+    function ugpradeServiceManager(
+        address avsDirectory,
+        address rewardsCoordinator,
+        address allocationManager,
+        MiddlewareDeployData memory deployment,
+        address admin
+    ) internal {
+        address impl = address(
+            new ServiceManagerMock(
+                IAVSDirectory(avsDirectory),
+                IRewardsCoordinator(rewardsCoordinator),
+                IRegistryCoordinator(deployment.registryCoordinator),
+                IStakeRegistry(deployment.stakeRegistry),
+                IPermissionController(deployment.permissionController),
+                IAllocationManager(allocationManager)
+            )
+        );
+        bytes memory serviceManagerUpgradeCall =
+            abi.encodeCall(ServiceManagerMock.initialize, (admin, admin));
+
+        UpgradeableProxyLib.upgradeAndCall(
+            deployment.serviceManager, impl, serviceManagerUpgradeCall
+        );
     }
 
     function ugpradeServiceManager(
@@ -240,7 +248,7 @@ library MiddlewareDeployLib {
     }
 
     function upgradeM2Coordinator(
-        CoreDeployLib.DeploymentData memory core,
+        address allocationManager,
         MiddlewareDeployData memory deployment,
         address admin
     ) internal {
@@ -251,7 +259,7 @@ library MiddlewareDeployLib {
                 IBLSApkRegistry(deployment.blsApkRegistry),
                 IIndexRegistry(deployment.indexRegistry),
                 ISocketRegistry(deployment.socketRegistry),
-                IAllocationManager(core.allocationManager),
+                IAllocationManager(allocationManager),
                 IPauserRegistry(deployment.pauserRegistry)
             )
         );
@@ -312,9 +320,9 @@ library MiddlewareDeployLib {
         UpgradeableProxyLib.upgrade(deployments.instantSlasher, instantSlasherImpl);
     }
 
-    function _deployPauserRegistry(
+    function deployPauserRegistry(
         address admin
-    ) private returns (address) {
+    ) internal returns (address) {
         address[] memory pausers = new address[](2);
         pausers[0] = admin;
         pausers[1] = admin;

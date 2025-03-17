@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
+import {Vm} from "forge-std/Vm.sol";
+import {stdJson} from "forge-std/StdJson.sol";
 import {Test, console2 as console} from "forge-std/Test.sol";
 import {OperatorLib} from "./utils/OperatorLib.sol";
-import {CoreDeployLib} from "./utils/CoreDeployLib.sol";
 import {UpgradeableProxyLib} from "./unit/UpgradeableProxyLib.sol";
 import {MiddlewareDeployLib} from "./utils/MiddlewareDeployLib.sol";
 import {BN254} from "../src/libraries/BN254.sol";
@@ -31,7 +32,25 @@ import {IStrategyFactory} from "eigenlayer-contracts/src/contracts/interfaces/IS
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract End2EndForkTest is Test {
+    using stdJson for string;
     using OperatorLib for *;
+
+    struct DeploymentData {
+        address delegationManager;
+        address avsDirectory;
+        address allocationManager;
+        address strategyManager;
+        address eigenPodManager;
+        address rewardsCoordinator;
+        address eigenPodBeacon;
+        address pauserRegistry;
+        address strategyFactory;
+        address strategyBeacon;
+        address eigenStrategy;
+        address eigen;
+        address backingEigen;
+        address permissionController;
+    }
 
     struct ConfigData {
         address admin;
@@ -88,7 +107,7 @@ contract End2EndForkTest is Test {
     function testEndToEndSetup_M2Migration() public {
         (
             OperatorLib.Operator[] memory operators,
-            CoreDeployLib.DeploymentData memory coreDeployment,
+            DeploymentData memory coreDeployment,
             MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployment,
             ConfigData memory middlewareConfig
         ) = _setupInitialState();
@@ -107,20 +126,54 @@ contract End2EndForkTest is Test {
         _executeSlashing(operators, middlewareConfig, middlewareDeployment);
     }
 
+    function _deployMiddlewareWithCore(
+        address proxyAdmin,
+        address owner
+    )
+        internal
+        returns (
+            MiddlewareDeployLib.MiddlewareDeployData memory middleware,
+            DeploymentData memory core
+        )
+    {
+        string memory rpcUrl = vm.envString("HOLESKY_RPC_URL");
+        vm.createSelectFork(rpcUrl);
+        // Read core deployment data from json
+        core = _readCoreDeploymentJson("./script/config", 17000, "preprod");
+
+        // Deploy proxies
+        middleware = MiddlewareDeployLib.deployEmptyProxies(proxyAdmin);
+
+        // Deploy pauser registry
+        middleware.pauserRegistry = MiddlewareDeployLib.deployPauserRegistry(proxyAdmin);
+
+        // Upgrade the proxies
+        MiddlewareDeployLib.upgradeRegistriesM2Coordinator(
+            core.delegationManager, core.avsDirectory, core.allocationManager, middleware
+        );
+        MiddlewareDeployLib.ugpradeServiceManager(
+            core.avsDirectory, core.rewardsCoordinator, core.allocationManager, middleware, owner
+        );
+        MiddlewareDeployLib.upgradeM2Coordinator(core.allocationManager, middleware, owner);
+
+        return (middleware, core);
+    }
+
     function _setupInitialState()
         internal
         returns (
             OperatorLib.Operator[] memory operators,
-            CoreDeployLib.DeploymentData memory coreDeployment,
+            DeploymentData memory coreDeployment,
             MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployment,
             ConfigData memory middlewareConfig
         )
     {
-        // Fork Holesky testnet
-        string memory rpcUrl = vm.envString("HOLESKY_RPC_URL");
-        vm.createSelectFork(rpcUrl);
-        // Read core deployment data from json
-        coreDeployment = CoreDeployLib.readCoreDeploymentJson("./script/config", 17000, "preprod");
+        middlewareConfig.proxyAdmin = UpgradeableProxyLib.deployProxyAdmin();
+        middlewareConfig.admin = address(this);
+
+        // Deploy middleware with core
+        (middlewareDeployment, coreDeployment) =
+            deployMiddlewareWithCore(middlewareConfig.proxyAdmin, middlewareConfig.admin);
 
         // // Create 5 operators using helper function
         operators = _createOperators(5, 100);
@@ -129,8 +182,6 @@ contract End2EndForkTest is Test {
         (address token, address strategy) = _deployTokenAndStrategy(coreDeployment.strategyFactory);
 
         // Setup middleware deployment data
-        middlewareConfig.proxyAdmin = UpgradeableProxyLib.deployProxyAdmin();
-        middlewareConfig.admin = address(this);
         middlewareConfig.numQuorums = 1;
         middlewareConfig.operatorParams = new uint256[](3);
         middlewareConfig.operatorParams[0] = 10;
@@ -139,10 +190,6 @@ contract End2EndForkTest is Test {
         middlewareConfig.strategy = strategy;
         middlewareConfig.token = token;
         middlewareConfig.operators = _getAndSortOperators(operators);
-
-        middlewareDeployment = MiddlewareDeployLib.deployMiddlewareWithCore(
-            middlewareConfig.proxyAdmin, middlewareConfig.admin, coreDeployment
-        );
 
         vm.startPrank(middlewareDeployment.serviceManager);
         AllocationManager(coreDeployment.allocationManager).updateAVSMetadataURI(
@@ -194,7 +241,7 @@ contract End2EndForkTest is Test {
 
     function _setupOperatorsAndTokens(
         OperatorLib.Operator[] memory operators,
-        CoreDeployLib.DeploymentData memory coreDeployment,
+        DeploymentData memory coreDeployment,
         ConfigData memory middlewareConfig
     ) internal {
         // Verify and register operators
@@ -243,7 +290,7 @@ contract End2EndForkTest is Test {
     function _setupFirstQuorumAndOperatorSet(
         OperatorLib.Operator[] memory operators,
         ConfigData memory middlewareConfig,
-        CoreDeployLib.DeploymentData memory coreDeployment,
+        DeploymentData memory coreDeployment,
         MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployment
     ) internal {
         vm.startPrank(middlewareConfig.admin);
@@ -297,7 +344,7 @@ contract End2EndForkTest is Test {
     function _setupSecondQuorumAndOperatorSet(
         OperatorLib.Operator[] memory operators,
         ConfigData memory middlewareConfig,
-        CoreDeployLib.DeploymentData memory coreDeployment,
+        DeploymentData memory coreDeployment,
         MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployment
     ) internal {
         // Create second quorum
@@ -354,7 +401,7 @@ contract End2EndForkTest is Test {
 
     function _setupOperatorAllocations(
         OperatorLib.Operator[] memory operators,
-        CoreDeployLib.DeploymentData memory coreDeployment,
+        DeploymentData memory coreDeployment,
         MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployment,
         address strategy
     ) internal {
@@ -438,5 +485,52 @@ contract End2EndForkTest is Test {
         }
 
         return registeredOperators;
+    }
+
+    function _readCoreDeploymentJson(
+        string memory path,
+        uint256 chainId
+    ) internal returns (DeploymentData memory) {
+        string memory filePath = string(abi.encodePacked(path, "/", vm.toString(chainId), ".json"));
+        return _parseZeusJson(filePath);
+    }
+
+    function _readCoreDeploymentJson(
+        string memory path,
+        uint256 chainId,
+        string memory environment
+    ) internal returns (DeploymentData memory) {
+        string memory filePath =
+            string(abi.encodePacked(path, "/", vm.toString(chainId), "-", environment, ".json"));
+        return _parseZeusJson(filePath);
+    }
+
+    function _parseZeusJson(
+        string memory filePath
+    ) internal returns (DeploymentData memory) {
+        string memory json = vm.readFile(filePath);
+        require(vm.exists(filePath), "Deployment file does not exist");
+        DeploymentData memory deploymentData;
+
+        deploymentData.delegationManager =
+            json.readAddress(".ZEUS_DEPLOYED_DelegationManager_Proxy");
+        deploymentData.avsDirectory = json.readAddress(".ZEUS_DEPLOYED_AVSDirectory_Proxy");
+        deploymentData.strategyManager = json.readAddress(".ZEUS_DEPLOYED_StrategyManager_Proxy");
+        deploymentData.allocationManager =
+            json.readAddress(".ZEUS_DEPLOYED_AllocationManager_Proxy");
+        deploymentData.eigenPodManager = json.readAddress(".ZEUS_DEPLOYED_EigenPodManager_Proxy");
+        deploymentData.rewardsCoordinator =
+            json.readAddress(".ZEUS_DEPLOYED_RewardsCoordinator_Proxy");
+        deploymentData.eigenPodBeacon = json.readAddress(".ZEUS_DEPLOYED_EigenPod_Beacon");
+        deploymentData.pauserRegistry = json.readAddress(".ZEUS_DEPLOYED_PauserRegistry_Impl");
+        deploymentData.strategyFactory = json.readAddress(".ZEUS_DEPLOYED_StrategyFactory_Proxy");
+        deploymentData.strategyBeacon = json.readAddress(".ZEUS_DEPLOYED_StrategyBase_Beacon");
+        deploymentData.eigenStrategy = json.readAddress(".ZEUS_DEPLOYED_EigenStrategy_Proxy");
+        deploymentData.eigen = json.readAddress(".ZEUS_DEPLOYED_Eigen_Proxy");
+        deploymentData.backingEigen = json.readAddress(".ZEUS_DEPLOYED_BackingEigen_Proxy");
+        deploymentData.permissionController =
+            json.readAddress(".ZEUS_DEPLOYED_PermissionController_Proxy");
+
+        return deploymentData;
     }
 }
