@@ -94,9 +94,13 @@
 #     ]
 
 [profile.ci.fuzz]
+    optimizer=true
+    optimizer_runs = 200
     runs = 32
 
 [profile.intense.fuzz]
+    optimizer=true
+    optimizer_runs = 200
     runs = 5000
 
 [profile.forktest.fuzz]
