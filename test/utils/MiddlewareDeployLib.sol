@@ -122,10 +122,7 @@ library MiddlewareDeployLib {
     function deployMiddlewareWithCore(
         address proxyAdmin,
         CoreDeployLib.DeploymentData memory core
-    )
-        internal
-        returns (MiddlewareDeployData memory result)
-    {
+    ) internal returns (MiddlewareDeployData memory result) {
         // Deploy proxies
         result = deployEmptyProxies(proxyAdmin);
 
@@ -213,11 +210,8 @@ library MiddlewareDeployLib {
             address(new IndexRegistry(IRegistryCoordinator(deployments.registryCoordinator)));
         UpgradeableProxyLib.upgrade(deployments.indexRegistry, indexRegistryImpl);
 
-        address socketRegistryImpl = address(
-            new SocketRegistry(
-                IRegistryCoordinator(deployments.registryCoordinator)
-            )
-        );
+        address socketRegistryImpl =
+            address(new SocketRegistry(IRegistryCoordinator(deployments.registryCoordinator)));
         UpgradeableProxyLib.upgrade(deployments.socketRegistry, socketRegistryImpl);
     }
 

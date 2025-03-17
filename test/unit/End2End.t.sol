@@ -2,7 +2,6 @@
 pragma solidity ^0.8.12;
 
 import {Test, console2 as console} from "forge-std/Test.sol";
-import {IERC20} from "forge-std/interfaces/IERC20.sol";
 import {OperatorLib} from "../../script/utils/OperatorLib.sol";
 import {CoreDeployLib} from "../utils/CoreDeployLib.sol";
 import {UpgradeableProxyLib} from "../../script/utils/UpgradeableProxyLib.sol";
@@ -27,6 +26,9 @@ import {
     ISlashingRegistryCoordinator,
     ISlashingRegistryCoordinatorTypes
 } from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
+import {ERC20Mock} from "../mocks/ERC20Mock.sol";
+import {IStrategyFactory} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyFactory.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract End2EndForkTest is Test {
     // using OperatorLib for *;
@@ -38,6 +40,14 @@ contract End2EndForkTest is Test {
     }
 
     address internal proxyAdmin;
+
+    function _deployTokenAndStrategy(
+        address strategyFactory
+    ) private returns (address token, address strategy) {
+        ERC20Mock tokenContract = new ERC20Mock();
+        token = address(tokenContract);
+        strategy = address(IStrategyFactory(strategyFactory).deployNewStrategy(IERC20(token)));
+    }
 
     function _createOperators(
         uint256 numOperators,
@@ -129,13 +139,14 @@ contract End2EndForkTest is Test {
 
     function testEndToEndSetup_M2Migration() public {
         (
-            OperatorLib.Operator[] memory operators, 
+            OperatorLib.Operator[] memory operators,
             CoreDeployLib.DeploymentData memory coreDeployment,
             MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployment,
             ConfigData memory middlewareConfig
         ) = _setupInitialState();
+        (address token, address strategy) = _deployTokenAndStrategy(coreDeployment.strategyFactory);
 
-        // _setupOperatorsAndTokens(operators, coreDeployment, middlewareDeployment);
+        _setupOperatorsAndTokens(operators, coreDeployment, token, strategy);
 
         // _setupFirstQuorumAndOperatorSet(
         //     operators, middlewareConfig, coreDeployment, middlewareDeployment
@@ -161,11 +172,10 @@ contract End2EndForkTest is Test {
         string memory rpcUrl = vm.envString("HOLESKY_RPC_URL");
         vm.createSelectFork(rpcUrl);
         // Read core deployment data from json
-        coreDeployment =
-            CoreDeployLib.readCoreDeploymentJson("./script/config", 17000, "preprod");
+        coreDeployment = CoreDeployLib.readCoreDeploymentJson("./script/config", 17000, "preprod");
 
         // // Create 5 operators using helper function
-        // operators = _createOperators(5, 100);
+        operators = _createOperators(5, 100);
 
         // Setup middleware deployment data
         proxyAdmin = UpgradeableProxyLib.deployProxyAdmin();
@@ -196,53 +206,54 @@ contract End2EndForkTest is Test {
         vm.stopPrank();
     }
 
-    // function _setupOperatorsAndTokens(
-    //     OperatorLib.Operator[] memory operators,
-    //     CoreDeployLib.DeploymentData memory coreDeployment,
-    //     MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployment
-    // ) internal {
-    // // Verify and register operators
-    // for (uint256 i = 0; i < 5; i++) {
-    //     bool isRegistered = IDelegationManager(coreDeployment.delegationManager).isOperator(
-    //         operators[i].key.addr
-    //     );
-    //     assertFalse(isRegistered, "Operator should not be registered");
-    // }
+    function _setupOperatorsAndTokens(
+        OperatorLib.Operator[] memory operators,
+        CoreDeployLib.DeploymentData memory coreDeployment,
+        address token,
+        address strategy
+    ) internal {
+        // Verify and register operators
+        for (uint256 i = 0; i < 5; i++) {
+            bool isRegistered = IDelegationManager(coreDeployment.delegationManager).isOperator(
+                operators[i].key.addr
+            );
+            assertFalse(isRegistered, "Operator should not be registered");
+        }
 
-    // _registerOperatorsAsEigenLayerOperators(operators, coreDeployment.delegationManager);
+        _registerOperatorsAsEigenLayerOperators(operators, coreDeployment.delegationManager);
 
-    // for (uint256 i = 0; i < 5; i++) {
-    //     bool isRegistered = IDelegationManager(coreDeployment.delegationManager).isOperator(
-    //         operators[i].key.addr
-    //     );
-    //     assertTrue(isRegistered, "Operator should be registered");
-    // }
+        for (uint256 i = 0; i < 5; i++) {
+            bool isRegistered = IDelegationManager(coreDeployment.delegationManager).isOperator(
+                operators[i].key.addr
+            );
+            assertTrue(isRegistered, "Operator should be registered");
+        }
 
-    // // Setup tokens and verify balances
-    // uint256 mintAmount = 1000 * 1e18;
-    // for (uint256 i = 0; i < 5; i++) {
-    //     OperatorLib.mintMockTokens(operators[i], middlewareDeployment.token, mintAmount);
-    //     uint256 balance = IERC20(middlewareDeployment.token).balanceOf(operators[i].key.addr);
-    //     assertEq(balance, mintAmount, "Operator should have correct token balance");
-    // }
+        // Setup tokens and verify balances
+        uint256 mintAmount = 1000 * 1e18;
+        for (uint256 i = 0; i < 5; i++) {
+            OperatorLib.mintMockTokens(operators[i], token, mintAmount);
+            uint256 balance = IERC20(token).balanceOf(operators[i].key.addr);
+            assertEq(balance, mintAmount, "Operator should have correct token balance");
+        }
 
-    // // Handle deposits
-    // for (uint256 i = 0; i < 5; i++) {
-    //     vm.startPrank(operators[i].key.addr);
-    //     uint256 shares = OperatorLib.depositTokenIntoStrategy(
-    //         operators[i],
-    //         coreDeployment.strategyManager,
-    //         middlewareDeployment.strategy,
-    //         middlewareDeployment.token,
-    //         mintAmount
-    //     );
-    //     assertTrue(shares > 0, "Should have received shares for deposit");
-    //     vm.stopPrank();
+        // Handle deposits
+        for (uint256 i = 0; i < 5; i++) {
+            vm.startPrank(operators[i].key.addr);
+            uint256 shares = OperatorLib.depositTokenIntoStrategy(
+                operators[i],
+                coreDeployment.strategyManager,
+                strategy,
+                token,
+                mintAmount
+            );
+            assertTrue(shares > 0, "Should have received shares for deposit");
+            vm.stopPrank();
 
-    //     shares = IStrategy(middlewareDeployment.strategy).shares(operators[i].key.addr);
-    //     assertEq(shares, mintAmount, "Operator shares should equal deposit amount");
-    // }
-    // }
+            shares = IStrategy(strategy).shares(operators[i].key.addr);
+            assertEq(shares, mintAmount, "Operator shares should equal deposit amount");
+        }
+    }
 
     // function _setupFirstQuorumAndOperatorSet(
     //     OperatorLib.Operator[] memory operators,
