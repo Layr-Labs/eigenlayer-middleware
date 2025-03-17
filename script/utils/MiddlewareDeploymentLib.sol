@@ -30,7 +30,6 @@ import {
     ISlashingRegistryCoordinator,
     ISlashingRegistryCoordinatorTypes
 } from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
-import {OperatorStateRetriever} from "../../src/OperatorStateRetriever.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IStrategyFactory} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyFactory.sol";
 import {ServiceManagerMock} from "../../test/mocks/ServiceManagerMock.sol";
@@ -42,7 +41,7 @@ import {PermissionController} from
     "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
 import {OperatorStateRetriever} from "../../src/OperatorStateRetriever.sol";
 import {UpgradeableProxyLib} from "./UpgradeableProxyLib.sol";
-import {CoreDeploymentLib} from "./CoreDeploymentLib.sol";
+import {CoreDeploymentLibs} from "./CoreDeploymentLib.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -100,7 +99,7 @@ library MiddlewareDeploymentLib {
 
     function deployContracts(
         address proxyAdmin,
-        CoreDeploymentLib.DeploymentData memory core,
+        CoreDeploymentLibs.DeploymentData memory core,
         ConfigData memory config
     ) internal returns (DeploymentData memory) {
         DeploymentData memory result;
@@ -134,7 +133,7 @@ library MiddlewareDeploymentLib {
     function upgradeContracts(
         DeploymentData memory deployment,
         ConfigData memory config,
-        CoreDeploymentLib.DeploymentData memory core
+        CoreDeploymentLibs.DeploymentData memory core
     ) internal {
         // Deploy implementation contracts
         ImplementationAddresses memory impls = _deployImplementations(deployment, core);
@@ -168,7 +167,7 @@ library MiddlewareDeploymentLib {
 
     function _deployImplementations(
         DeploymentData memory deployment,
-        CoreDeploymentLib.DeploymentData memory core
+        CoreDeploymentLibs.DeploymentData memory core
     ) private returns (ImplementationAddresses memory impls) {
         impls.serviceManagerImpl = address(
             new ServiceManagerMock(
@@ -282,7 +281,7 @@ library MiddlewareDeploymentLib {
 
     function upgradeContracts(
         DeploymentData memory deployment,
-        CoreDeploymentLib.DeploymentData memory core
+        CoreDeploymentLibs.DeploymentData memory core
     ) internal {
         ImplementationAddresses memory impls = _deployImplementations(deployment, core);
 

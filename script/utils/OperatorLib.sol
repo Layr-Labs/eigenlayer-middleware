@@ -28,7 +28,7 @@ import {IBLSApkRegistry, IBLSApkRegistryTypes} from "../../src/interfaces/IBLSAp
 import {IStrategyFactory} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyFactory.sol";
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {UpgradeableProxyLib} from "./UpgradeableProxyLib.sol";
-import {CoreDeploymentLib} from "./CoreDeploymentLib.sol";
+import {CoreDeploymentLibs} from "./CoreDeploymentLib.sol";
 import {ERC20Mock} from "./MiddlewareDeploymentLib.sol";
 import {BN254} from "../../src/libraries/BN254.sol";
 import {BN256G2} from "./BN256G2.sol";

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.12;
 
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from
@@ -11,7 +11,8 @@ import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPa
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-
+import {PermissionController} from
+    "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
 import {InstantSlasher} from "../../src/slashers/InstantSlasher.sol";
 import {SlashingRegistryCoordinator} from "../../src/SlashingRegistryCoordinator.sol";
 import {SocketRegistry} from "../../src/SocketRegistry.sol";
@@ -25,6 +26,19 @@ import {ISocketRegistry} from "../../src/interfaces/ISocketRegistry.sol";
 import {ISlashingRegistryCoordinator} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 
 import {UpgradeableProxyLib} from "../unit/UpgradeableProxyLib.sol";
+import {OperatorStateRetriever} from "../../src/OperatorStateRetriever.sol";
+import {
+    PauserRegistry,
+    IPauserRegistry
+} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
+import {ServiceManagerMock} from "../mocks/ServiceManagerMock.sol";
+import {CoreDeployLib} from "./CoreDeployLib.sol";
+import {RegistryCoordinator, IRegistryCoordinator} from "../../src/RegistryCoordinator.sol";
+import {IRewardsCoordinator} from
+    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IPermissionController} from
+    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
 
 library MiddlewareDeployLib {
     using UpgradeableProxyLib for address;
@@ -81,6 +95,11 @@ library MiddlewareDeployLib {
         address indexRegistry;
         address stakeRegistry;
         address blsApkRegistry;
+        address operatorStateRetriever;
+        address registryCoordinator;
+        address serviceManager;
+        address pauserRegistry;
+        address permissionController;
     }
 
     function deployMiddleware(
@@ -100,15 +119,38 @@ library MiddlewareDeployLib {
         return result;
     }
 
+    function deployMiddlewareWithCore(
+        address proxyAdmin,
+        CoreDeployLib.DeploymentData memory core
+    )
+        internal
+        returns (MiddlewareDeployData memory result)
+    {
+        // Deploy proxies
+        result = deployEmptyProxies(proxyAdmin);
+
+        // // Deploy pauser registry
+        // result.pauserRegistry = _deployPauserRegistry(proxyAdmin);
+
+        // // Upgrade the proxies
+        // upgradeRegistriesM2Coordinator(core, result);
+        // ugpradeServiceManager(core, result, proxyAdmin);
+        // upgradeM2Coordinator(core, result, proxyAdmin);
+
+        return result;
+    }
+
     function deployEmptyProxies(
         address proxyAdmin
     ) internal returns (MiddlewareDeployData memory proxies) {
         proxies.instantSlasher = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         proxies.slashingRegistryCoordinator = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
+        proxies.registryCoordinator = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         proxies.socketRegistry = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         proxies.indexRegistry = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         proxies.stakeRegistry = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         proxies.blsApkRegistry = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
+        proxies.serviceManager = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         return proxies;
     }
 
@@ -147,6 +189,74 @@ library MiddlewareDeployLib {
             )
         );
         UpgradeableProxyLib.upgrade(deployments.stakeRegistry, stakeRegistryImpl);
+    }
+
+    function upgradeRegistriesM2Coordinator(
+        CoreDeployLib.DeploymentData memory core,
+        MiddlewareDeployData memory deployment
+    ) internal {
+        address stakeRegistryImpl = address(
+            new StakeRegistry(
+                IRegistryCoordinator(deployment.registryCoordinator),
+                IDelegationManager(core.delegationManager),
+                IAVSDirectory(core.avsDirectory),
+                IAllocationManager(core.allocationManager)
+            )
+        );
+
+        address blsApkRegistryImpl =
+            address(new BLSApkRegistry(IRegistryCoordinator(deployment.registryCoordinator)));
+        address indexRegistryImpl =
+            address(new IndexRegistry(IRegistryCoordinator(deployment.registryCoordinator)));
+    }
+
+    function ugpradeServiceManager(
+        CoreDeployLib.DeploymentData memory core,
+        MiddlewareDeployData memory deployment,
+        address admin
+    ) internal {
+        address impl = address(
+            new ServiceManagerMock(
+                IAVSDirectory(core.avsDirectory),
+                IRewardsCoordinator(core.rewardsCoordinator),
+                IRegistryCoordinator(deployment.registryCoordinator),
+                IStakeRegistry(deployment.stakeRegistry),
+                IPermissionController(deployment.permissionController),
+                IAllocationManager(core.allocationManager)
+            )
+        );
+        bytes memory serviceManagerUpgradeCall =
+            abi.encodeCall(ServiceManagerMock.initialize, (admin, admin));
+
+        UpgradeableProxyLib.upgradeAndCall(
+            deployment.serviceManager, impl, serviceManagerUpgradeCall
+        );
+    }
+
+    function upgradeM2Coordinator(
+        CoreDeployLib.DeploymentData memory core,
+        MiddlewareDeployData memory deployment,
+        address admin
+    ) internal {
+        address impl = address(
+            new RegistryCoordinator(
+                IServiceManager(deployment.serviceManager),
+                IStakeRegistry(deployment.stakeRegistry),
+                IBLSApkRegistry(deployment.blsApkRegistry),
+                IIndexRegistry(deployment.indexRegistry),
+                ISocketRegistry(deployment.socketRegistry),
+                IAllocationManager(core.allocationManager),
+                IPauserRegistry(deployment.pauserRegistry)
+            )
+        );
+        bytes memory registryCoordinatorUpgradeCall = abi.encodeCall(
+            SlashingRegistryCoordinator.initialize,
+            (admin, admin, admin, 0, deployment.serviceManager)
+        );
+
+        UpgradeableProxyLib.upgradeAndCall(
+            deployment.registryCoordinator, impl, registryCoordinatorUpgradeCall
+        );
     }
 
     function upgradeCoordinator(
@@ -194,5 +304,14 @@ library MiddlewareDeployLib {
             )
         );
         UpgradeableProxyLib.upgrade(deployments.instantSlasher, instantSlasherImpl);
+    }
+
+    function _deployPauserRegistry(
+        address admin
+    ) private returns (address) {
+        address[] memory pausers = new address[](2);
+        pausers[0] = admin;
+        pausers[1] = admin;
+        return address(new PauserRegistry(pausers, admin));
     }
 }

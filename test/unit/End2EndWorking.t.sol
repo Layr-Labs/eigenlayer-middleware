@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {Test, console2 as console} from "forge-std/Test.sol";
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
 import {OperatorLib} from "../../script/utils/OperatorLib.sol";
-import {CoreDeploymentLib} from "../../script/utils/CoreDeploymentLib.sol";
+import {CoreDeploymentLibs} from "../../script/utils/CoreDeploymentLib.sol";
 import {UpgradeableProxyLib} from "../../script/utils/UpgradeableProxyLib.sol";
 import {MiddlewareDeploymentLib} from "../../script/utils/MiddlewareDeploymentLib.sol";
 import {BN254} from "../../src/libraries/BN254.sol";
@@ -124,7 +124,7 @@ contract End2EndForkTest is Test {
     function testEndToEndSetup_M2Migration() public {
         (
             OperatorLib.Operator[] memory operators,
-            CoreDeploymentLib.DeploymentData memory coreDeployment,
+            CoreDeploymentLibs.DeploymentData memory coreDeployment,
             MiddlewareDeploymentLib.DeploymentData memory middlewareDeployment,
             MiddlewareDeploymentLib.ConfigData memory middlewareConfig
         ) = _setupInitialState();
@@ -146,7 +146,7 @@ contract End2EndForkTest is Test {
         internal
         returns (
             OperatorLib.Operator[] memory operators,
-            CoreDeploymentLib.DeploymentData memory coreDeployment,
+            CoreDeploymentLibs.DeploymentData memory coreDeployment,
             MiddlewareDeploymentLib.DeploymentData memory middlewareDeployment,
             MiddlewareDeploymentLib.ConfigData memory middlewareConfig
         )
@@ -160,7 +160,7 @@ contract End2EndForkTest is Test {
 
         // Read core deployment data from json
         coreDeployment =
-            CoreDeploymentLib.readCoreDeploymentJson("./script/config", 17000, "preprod");
+            CoreDeploymentLibs.readCoreDeploymentJson("./script/config", 17000, "preprod");
 
         // Setup middleware deployment data
         proxyAdmin = UpgradeableProxyLib.deployProxyAdmin();
@@ -196,7 +196,7 @@ contract End2EndForkTest is Test {
 
     function _setupOperatorsAndTokens(
         OperatorLib.Operator[] memory operators,
-        CoreDeploymentLib.DeploymentData memory coreDeployment,
+        CoreDeploymentLibs.DeploymentData memory coreDeployment,
         MiddlewareDeploymentLib.DeploymentData memory middlewareDeployment
     ) internal {
         // Verify and register operators
@@ -245,7 +245,7 @@ contract End2EndForkTest is Test {
     function _setupFirstQuorumAndOperatorSet(
         OperatorLib.Operator[] memory operators,
         MiddlewareDeploymentLib.ConfigData memory middlewareConfig,
-        CoreDeploymentLib.DeploymentData memory coreDeployment,
+        CoreDeploymentLibs.DeploymentData memory coreDeployment,
         MiddlewareDeploymentLib.DeploymentData memory middlewareDeployment
     ) internal {
         vm.startPrank(middlewareConfig.admin);
@@ -301,7 +301,7 @@ contract End2EndForkTest is Test {
     function _setupSecondQuorumAndOperatorSet(
         OperatorLib.Operator[] memory operators,
         MiddlewareDeploymentLib.ConfigData memory middlewareConfig,
-        CoreDeploymentLib.DeploymentData memory coreDeployment,
+        CoreDeploymentLibs.DeploymentData memory coreDeployment,
         MiddlewareDeploymentLib.DeploymentData memory middlewareDeployment
     ) internal {
         // Create second quorum
@@ -357,7 +357,7 @@ contract End2EndForkTest is Test {
 
     function _setupOperatorAllocations(
         OperatorLib.Operator[] memory operators,
-        CoreDeploymentLib.DeploymentData memory coreDeployment,
+        CoreDeploymentLibs.DeploymentData memory coreDeployment,
         MiddlewareDeploymentLib.DeploymentData memory middlewareDeployment
     ) internal {
         uint32 minDelay = 1;
@@ -445,7 +445,7 @@ contract End2EndForkTest is Test {
     function _setupFirstQuorumAndOperatorSet_M2(
         OperatorLib.Operator[] memory operators,
         MiddlewareDeploymentLib.ConfigData memory middlewareConfig,
-        CoreDeploymentLib.DeploymentData memory coreDeployment,
+        CoreDeploymentLibs.DeploymentData memory coreDeployment,
         MiddlewareDeploymentLib.DeploymentData memory middlewareDeployment
     ) internal {
         // Register operators to AVS through AllocationManager
@@ -487,7 +487,7 @@ contract End2EndForkTest is Test {
     function _setupSecondQuorumAndOperatorSet_M2(
         OperatorLib.Operator[] memory operators,
         MiddlewareDeploymentLib.ConfigData memory middlewareConfig,
-        CoreDeploymentLib.DeploymentData memory coreDeployment,
+        CoreDeploymentLibs.DeploymentData memory coreDeployment,
         MiddlewareDeploymentLib.DeploymentData memory middlewareDeployment
     ) internal {
         // Create a second operator set for slashable stake

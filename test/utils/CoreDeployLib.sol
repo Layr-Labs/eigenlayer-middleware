@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.12;
 
+import {Vm} from "forge-std/Vm.sol";
+import {stdJson} from "forge-std/StdJson.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from
     "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -37,8 +39,11 @@ import {PermissionController} from
 
 import {UpgradeableProxyLib} from "../unit/UpgradeableProxyLib.sol";
 
-library CoreDeploymentLib {
+library CoreDeployLib {
+    using stdJson for string;
     using UpgradeableProxyLib for address;
+
+    Vm internal constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
     struct StrategyManagerConfig {
         uint256 initPausedStatus;
@@ -119,6 +124,9 @@ library CoreDeploymentLib {
         address strategyBeacon;
         address rewardsCoordinator;
         address permissionController;
+        address eigenStrategy;
+        address eigen;
+        address backingEigen;
     }
 
     function deployContracts(
@@ -341,5 +349,52 @@ library CoreDeploymentLib {
         UpgradeableProxyLib.upgradeAndCall(
             deployments.rewardsCoordinator, rewardsCoordinatorImpl, upgradeCall
         );
+    }
+
+    function readCoreDeploymentJson(
+        string memory path,
+        uint256 chainId
+    ) internal returns (DeploymentData memory) {
+        string memory filePath = string(abi.encodePacked(path, "/", vm.toString(chainId), ".json"));
+        return parseZeusJson(filePath);
+    }
+
+    function readCoreDeploymentJson(
+        string memory path,
+        uint256 chainId,
+        string memory environment
+    ) internal returns (DeploymentData memory) {
+        string memory filePath =
+            string(abi.encodePacked(path, "/", vm.toString(chainId), "-", environment, ".json"));
+        return parseZeusJson(filePath);
+    }
+
+    function parseZeusJson(
+        string memory filePath
+    ) internal returns (DeploymentData memory) {
+        string memory json = vm.readFile(filePath);
+        require(vm.exists(filePath), "Deployment file does not exist");
+        DeploymentData memory deploymentData;
+
+        deploymentData.delegationManager =
+            json.readAddress(".ZEUS_DEPLOYED_DelegationManager_Proxy");
+        deploymentData.avsDirectory = json.readAddress(".ZEUS_DEPLOYED_AVSDirectory_Proxy");
+        deploymentData.strategyManager = json.readAddress(".ZEUS_DEPLOYED_StrategyManager_Proxy");
+        deploymentData.allocationManager =
+            json.readAddress(".ZEUS_DEPLOYED_AllocationManager_Proxy");
+        deploymentData.eigenPodManager = json.readAddress(".ZEUS_DEPLOYED_EigenPodManager_Proxy");
+        deploymentData.rewardsCoordinator =
+            json.readAddress(".ZEUS_DEPLOYED_RewardsCoordinator_Proxy");
+        deploymentData.eigenPodBeacon = json.readAddress(".ZEUS_DEPLOYED_EigenPod_Beacon");
+        deploymentData.pauserRegistry = json.readAddress(".ZEUS_DEPLOYED_PauserRegistry_Impl");
+        deploymentData.strategyFactory = json.readAddress(".ZEUS_DEPLOYED_StrategyFactory_Proxy");
+        deploymentData.strategyBeacon = json.readAddress(".ZEUS_DEPLOYED_StrategyBase_Beacon");
+        deploymentData.eigenStrategy = json.readAddress(".ZEUS_DEPLOYED_EigenStrategy_Proxy");
+        deploymentData.eigen = json.readAddress(".ZEUS_DEPLOYED_Eigen_Proxy");
+        deploymentData.backingEigen = json.readAddress(".ZEUS_DEPLOYED_BackingEigen_Proxy");
+        deploymentData.permissionController =
+            json.readAddress(".ZEUS_DEPLOYED_PermissionController_Proxy");
+
+        return deploymentData;
     }
 }

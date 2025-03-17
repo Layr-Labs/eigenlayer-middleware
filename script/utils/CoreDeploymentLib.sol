@@ -53,7 +53,7 @@ import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPa
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {StrategyFactory} from "eigenlayer-contracts/src/contracts/strategies/StrategyFactory.sol";
 
-library CoreDeploymentLib {
+library CoreDeploymentLibs {
     using stdJson for string;
 
     Vm internal constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
@@ -409,7 +409,7 @@ library CoreDeploymentLib {
     function readCoreDeploymentJson(
         string memory path,
         uint256 chainId
-    ) internal returns (CoreDeploymentLib.DeploymentData memory) {
+    ) internal returns (CoreDeploymentLibs.DeploymentData memory) {
         string memory filePath = string(abi.encodePacked(path, "/", vm.toString(chainId), ".json"));
         return parseZeusJson(filePath);
     }
@@ -418,7 +418,7 @@ library CoreDeploymentLib {
         string memory path,
         uint256 chainId,
         string memory environment
-    ) internal returns (CoreDeploymentLib.DeploymentData memory) {
+    ) internal returns (CoreDeploymentLibs.DeploymentData memory) {
         string memory filePath =
             string(abi.encodePacked(path, "/", vm.toString(chainId), "-", environment, ".json"));
         return parseZeusJson(filePath);
@@ -426,10 +426,10 @@ library CoreDeploymentLib {
 
     function parseZeusJson(
         string memory filePath
-    ) internal returns (CoreDeploymentLib.DeploymentData memory) {
+    ) internal returns (CoreDeploymentLibs.DeploymentData memory) {
         string memory json = vm.readFile(filePath);
         require(vm.exists(filePath), "Deployment file does not exist");
-        CoreDeploymentLib.DeploymentData memory deploymentData;
+        CoreDeploymentLibs.DeploymentData memory deploymentData;
 
         deploymentData.delegationManager =
             json.readAddress(".ZEUS_DEPLOYED_DelegationManager_Proxy");
