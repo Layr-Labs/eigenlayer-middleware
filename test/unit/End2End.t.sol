@@ -2,7 +2,7 @@
 pragma solidity ^0.8.12;
 
 import {Test, console2 as console} from "forge-std/Test.sol";
-import {OperatorLib} from "../../script/utils/OperatorLib.sol";
+import {OperatorLib} from "../utils/OperatorLib.sol";
 import {CoreDeployLib} from "../utils/CoreDeployLib.sol";
 import {UpgradeableProxyLib} from "../../script/utils/UpgradeableProxyLib.sol";
 import {MiddlewareDeployLib} from "../utils/MiddlewareDeployLib.sol";
@@ -31,7 +31,7 @@ import {IStrategyFactory} from "eigenlayer-contracts/src/contracts/interfaces/IS
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract End2EndForkTest is Test {
-    // using OperatorLib for *;
+    using OperatorLib for *;
 
     struct ConfigData {
         address admin;
