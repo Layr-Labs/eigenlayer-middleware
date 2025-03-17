@@ -129,13 +129,13 @@ library MiddlewareDeployLib {
         // Deploy proxies
         result = deployEmptyProxies(proxyAdmin);
 
-        // // Deploy pauser registry
-        // result.pauserRegistry = _deployPauserRegistry(proxyAdmin);
+        // Deploy pauser registry
+        result.pauserRegistry = _deployPauserRegistry(proxyAdmin);
 
-        // // Upgrade the proxies
-        // upgradeRegistriesM2Coordinator(core, result);
-        // ugpradeServiceManager(core, result, proxyAdmin);
-        // upgradeM2Coordinator(core, result, proxyAdmin);
+        // Upgrade the proxies
+        upgradeRegistriesM2Coordinator(core, result);
+        ugpradeServiceManager(core, result, proxyAdmin);
+        upgradeM2Coordinator(core, result, proxyAdmin);
 
         return result;
     }
@@ -193,21 +193,32 @@ library MiddlewareDeployLib {
 
     function upgradeRegistriesM2Coordinator(
         CoreDeployLib.DeploymentData memory core,
-        MiddlewareDeployData memory deployment
+        MiddlewareDeployData memory deployments
     ) internal {
         address stakeRegistryImpl = address(
             new StakeRegistry(
-                IRegistryCoordinator(deployment.registryCoordinator),
+                IRegistryCoordinator(deployments.registryCoordinator),
                 IDelegationManager(core.delegationManager),
                 IAVSDirectory(core.avsDirectory),
                 IAllocationManager(core.allocationManager)
             )
         );
+        UpgradeableProxyLib.upgrade(deployments.stakeRegistry, stakeRegistryImpl);
 
         address blsApkRegistryImpl =
-            address(new BLSApkRegistry(IRegistryCoordinator(deployment.registryCoordinator)));
+            address(new BLSApkRegistry(IRegistryCoordinator(deployments.registryCoordinator)));
+        UpgradeableProxyLib.upgrade(deployments.blsApkRegistry, blsApkRegistryImpl);
+
         address indexRegistryImpl =
-            address(new IndexRegistry(IRegistryCoordinator(deployment.registryCoordinator)));
+            address(new IndexRegistry(IRegistryCoordinator(deployments.registryCoordinator)));
+        UpgradeableProxyLib.upgrade(deployments.indexRegistry, indexRegistryImpl);
+
+        address socketRegistryImpl = address(
+            new SocketRegistry(
+                IRegistryCoordinator(deployments.registryCoordinator)
+            )
+        );
+        UpgradeableProxyLib.upgrade(deployments.socketRegistry, socketRegistryImpl);
     }
 
     function ugpradeServiceManager(

@@ -179,21 +179,21 @@ contract End2EndForkTest is Test {
         middlewareDeployment =
             MiddlewareDeployLib.deployMiddlewareWithCore(proxyAdmin, coreDeployment);
 
-        // vm.startPrank(middlewareDeployment.serviceManager);
-        // AllocationManager(coreDeployment.allocationManager).updateAVSMetadataURI(
-        //     middlewareDeployment.serviceManager, "metadata"
-        // );
-        // AllocationManager(coreDeployment.allocationManager).setAVSRegistrar(
-        //     middlewareDeployment.serviceManager,
-        //     IAVSRegistrar(middlewareDeployment.registryCoordinator)
-        // );
-        // PermissionController(coreDeployment.permissionController).setAppointee(
-        //     address(middlewareDeployment.serviceManager),
-        //     address(middlewareDeployment.registryCoordinator),
-        //     coreDeployment.allocationManager,
-        //     AllocationManager.createOperatorSets.selector
-        // );
-        // vm.stopPrank();
+        vm.startPrank(middlewareDeployment.serviceManager);
+        AllocationManager(coreDeployment.allocationManager).updateAVSMetadataURI(
+            middlewareDeployment.serviceManager, "metadata"
+        );
+        AllocationManager(coreDeployment.allocationManager).setAVSRegistrar(
+            middlewareDeployment.serviceManager,
+            IAVSRegistrar(middlewareDeployment.registryCoordinator)
+        );
+        PermissionController(coreDeployment.permissionController).setAppointee(
+            address(middlewareDeployment.serviceManager),
+            address(middlewareDeployment.registryCoordinator),
+            coreDeployment.allocationManager,
+            AllocationManager.createOperatorSets.selector
+        );
+        vm.stopPrank();
     }
 
     // function _setupOperatorsAndTokens(
