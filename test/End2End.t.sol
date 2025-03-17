@@ -41,37 +41,6 @@ contract End2EndForkTest is Test {
 
     address internal proxyAdmin;
 
-    function _deployTokenAndStrategy(
-        address strategyFactory
-    ) private returns (address token, address strategy) {
-        ERC20Mock tokenContract = new ERC20Mock();
-        token = address(tokenContract);
-        strategy = address(IStrategyFactory(strategyFactory).deployNewStrategy(IERC20(token)));
-    }
-
-    function _createOperators(
-        uint256 numOperators,
-        uint256 startIndex
-    ) internal returns (OperatorLib.Operator[] memory) {
-        OperatorLib.Operator[] memory operators = new OperatorLib.Operator[](numOperators);
-        for (uint256 i = 0; i < numOperators; i++) {
-            operators[i] =
-                OperatorLib.createOperator(string(abi.encodePacked("operator-", i + startIndex)));
-        }
-        return operators;
-    }
-
-    function _registerOperatorsAsEigenLayerOperators(
-        OperatorLib.Operator[] memory operators,
-        address delegationManager
-    ) internal {
-        for (uint256 i = 0; i < operators.length; i++) {
-            vm.startPrank(operators[i].key.addr);
-            OperatorLib.registerAsOperator(operators[i], delegationManager);
-            vm.stopPrank();
-        }
-    }
-
     function testCreateOperator() public {
         OperatorLib.Operator memory operator = OperatorLib.createOperator("operator-1");
 
@@ -113,29 +82,6 @@ contract End2EndForkTest is Test {
         );
         assertTrue(isValid, "Signature should be valid");
     }
-
-    // function testEndToEndSetup() public {
-    //     (
-    //         OperatorLib.Operator[] memory operators,
-    //         CoreDeployLib.DeploymentData memory coreDeployment,
-    //         MiddlewareDeployLib.DeploymentData memory middlewareDeployment,
-    //         MiddlewareDeployLib.ConfigData memory middlewareConfig
-    //     ) = _setupInitialState();
-
-    //     _setupOperatorsAndTokens(operators, coreDeployment, middlewareDeployment);
-
-    //     //
-
-    //     _setupFirstQuorumAndOperatorSet(
-    //         operators, middlewareConfig, coreDeployment, middlewareDeployment
-    //     );
-
-    //     // _setupSecondQuorumAndOperatorSet(
-    //     //     operators, middlewareConfig, coreDeployment, middlewareDeployment
-    //     // );
-
-    //     _executeSlashing(operators, middlewareConfig, middlewareDeployment);
-    // }
 
     function testEndToEndSetup_M2Migration() public {
         (
@@ -205,6 +151,37 @@ contract End2EndForkTest is Test {
             AllocationManager.createOperatorSets.selector
         );
         vm.stopPrank();
+    }
+
+    function _deployTokenAndStrategy(
+        address strategyFactory
+    ) private returns (address token, address strategy) {
+        ERC20Mock tokenContract = new ERC20Mock();
+        token = address(tokenContract);
+        strategy = address(IStrategyFactory(strategyFactory).deployNewStrategy(IERC20(token)));
+    }
+
+    function _createOperators(
+        uint256 numOperators,
+        uint256 startIndex
+    ) internal returns (OperatorLib.Operator[] memory) {
+        OperatorLib.Operator[] memory operators = new OperatorLib.Operator[](numOperators);
+        for (uint256 i = 0; i < numOperators; i++) {
+            operators[i] =
+                OperatorLib.createOperator(string(abi.encodePacked("operator-", i + startIndex)));
+        }
+        return operators;
+    }
+
+    function _registerOperatorsAsEigenLayerOperators(
+        OperatorLib.Operator[] memory operators,
+        address delegationManager
+    ) internal {
+        for (uint256 i = 0; i < operators.length; i++) {
+            vm.startPrank(operators[i].key.addr);
+            OperatorLib.registerAsOperator(operators[i], delegationManager);
+            vm.stopPrank();
+        }
     }
 
     function _setupOperatorsAndTokens(
@@ -451,153 +428,4 @@ contract End2EndForkTest is Test {
 
         return registeredOperators;
     }
-
-    // function _setupFirstQuorumAndOperatorSet_M2(
-    //     OperatorLib.Operator[] memory operators,
-    //     ConfigData memory middlewareConfig,
-    //     CoreDeployLib.DeploymentData memory coreDeployment,
-    //     MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployment
-    // ) internal {
-    //     // Register operators to AVS through AllocationManager
-    //     uint32[] memory operatorSetIds = new uint32[](1);
-    //     operatorSetIds[0] = 1; // First operator set
-
-    //     // Register each operator to the AVS through M2
-    //     for (uint256 i = 0; i < 5; i++) {
-    //         vm.startPrank(operators[i].key.addr);
-    //         bytes memory quorumNumbers = new bytes(1);
-    //         quorumNumbers[0] = bytes1(uint8(1)); // Quorum 1
-    //         OperatorLib.registerOperatorToAVS_M2(
-    //             operators[i],
-    //             coreDeployment.avsDirectory,
-    //             middlewareDeployment.serviceManager,
-    //             middlewareDeployment.registryCoordinator,
-    //             quorumNumbers,
-    //             "test-socket"
-    //         );
-    //         vm.stopPrank();
-    //     }
-
-    //     // Fast forward 10 blocks
-    //     vm.roll(block.number + 10);
-
-    //     // Get all registered operators and sort them
-    //     address[][] memory registeredOperators = _getAndSortOperators(operators);
-
-    //     // Update operators for quorum 1
-    //     bytes memory quorumNumbers = new bytes(1);
-    //     quorumNumbers[0] = bytes1(uint8(1)); // Quorum 1
-
-    //     vm.prank(middlewareConfig.admin);
-    //     RegistryCoordinator(middlewareDeployment.registryCoordinator).updateOperatorsForQuorum(
-    //         registeredOperators, quorumNumbers
-    //     );
-    // }
-
-    // function _setupSecondQuorumAndOperatorSet_M2(
-    //     OperatorLib.Operator[] memory operators,
-    //     ConfigData memory middlewareConfig,
-    //     CoreDeployLib.DeploymentData memory coreDeployment,
-    //     MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployment
-    // ) internal {
-    //     // Create a second operator set for slashable stake
-    //     IStakeRegistry.StrategyParams[] memory strategyParams2 =
-    //         new IStakeRegistry.StrategyParams[](1);
-    //     strategyParams2[0] = IStakeRegistryTypes.StrategyParams({
-    //         strategy: IStrategy(middlewareDeployment.strategy),
-    //         multiplier: 1 ether
-    //     });
-
-    //     // Configure operator set params
-    //     ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams2 =
-    //     ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-    //         maxOperatorCount: 10,
-    //         kickBIPsOfOperatorStake: 0,
-    //         kickBIPsOfTotalStake: 0
-    //     });
-
-    //     // Create quorum with slashable stake type
-    //     vm.startPrank(middlewareConfig.admin);
-    //     RegistryCoordinator(middlewareDeployment.registryCoordinator).createSlashableStakeQuorum(
-    //         operatorSetParams2,
-    //         100, // minimumStake
-    //         strategyParams2,
-    //         1 days // lookAheadPeriod
-    //     );
-    //     vm.stopPrank();
-
-    //     // Set allocation delay to 1 block for each operator
-    //     uint32 minDelay = 1;
-    //     for (uint256 i = 0; i < 5; i++) {
-    //         vm.startPrank(operators[i].key.addr);
-    //         OperatorLib.setAllocationDelay(
-    //             operators[i], address(coreDeployment.allocationManager), minDelay
-    //         );
-    //         vm.stopPrank();
-    //     }
-
-    //     vm.roll(block.number + 100);
-
-    //     // Set up allocation parameters for each operator
-    //     IStrategy[] memory allocStrategies = new IStrategy[](1);
-    //     allocStrategies[0] = IStrategy(middlewareDeployment.strategy);
-
-    //     uint64[] memory magnitudes = new uint64[](1);
-    //     magnitudes[0] = uint64(1 ether); // Allocate full magnitude to meet minimum stake
-
-    //     OperatorSet memory operatorSet = OperatorSet({
-    //         avs: address(middlewareDeployment.serviceManager),
-    //         id: 2 // Second operator set
-    //     });
-
-    //     IAllocationManagerTypes.AllocateParams[] memory allocParams =
-    //         new IAllocationManagerTypes.AllocateParams[](1);
-    //     allocParams[0] = IAllocationManagerTypes.AllocateParams({
-    //         operatorSet: operatorSet,
-    //         strategies: allocStrategies,
-    //         newMagnitudes: magnitudes
-    //     });
-
-    //     // Allocate stake for each operator using helper function
-    //     for (uint256 i = 0; i < 5; i++) {
-    //         vm.startPrank(operators[i].key.addr);
-    //         OperatorLib.modifyOperatorAllocations(
-    //             operators[i], address(coreDeployment.allocationManager), allocParams
-    //         );
-    //         vm.stopPrank();
-    //     }
-
-    //     vm.roll(block.number + 100);
-
-    //     // Register operators to second operator set
-    //     uint32[] memory operatorSetIds2 = new uint32[](1);
-    //     operatorSetIds2[0] = 2; // Second operator set
-
-    //     // Register each operator to the second set
-    //     for (uint256 i = 0; i < 5; i++) {
-    //         vm.startPrank(operators[i].key.addr);
-    //         OperatorLib.registerOperatorFromAVS_OpSet(
-    //             operators[i],
-    //             coreDeployment.allocationManager,
-    //             middlewareDeployment.registryCoordinator,
-    //             middlewareDeployment.serviceManager,
-    //             operatorSetIds2
-    //         );
-    //         vm.stopPrank();
-    //     }
-
-    //     vm.roll(block.number + 10);
-
-    //     // Get all registered operators for second set and sort them
-    //     address[][] memory registeredOperators2 = _getAndSortOperators(operators);
-
-    //     // Update operators for quorum 2
-    //     bytes memory quorumNumbers2 = new bytes(1);
-    //     quorumNumbers2[0] = bytes1(uint8(2)); // Quorum 2
-
-    //     vm.prank(middlewareConfig.admin);
-    //     RegistryCoordinator(middlewareDeployment.registryCoordinator).updateOperatorsForQuorum(
-    //         registeredOperators2, quorumNumbers2
-    //     );
-    // }
 }
