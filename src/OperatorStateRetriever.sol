@@ -242,7 +242,7 @@ contract OperatorStateRetriever {
         BN254.G2Point apkG2;
         IIndexRegistry indexRegistry;
         IBLSApkRegistry blsApkRegistry;
-        bytes32[] operatorIds;
+        bytes32[] signingOperatorIds;
     }
     function getNonSignerStakesAndSignature(
         ISlashingRegistryCoordinator registryCoordinator,
@@ -259,9 +259,9 @@ contract OperatorStateRetriever {
         // Safe guard AVSs from generating NonSignerStakesAndSignature with invalid sigma
         require(_isOnCurve(sigma), InvalidSigma());
 
-        m.operatorIds = new bytes32[](operators.length);
+        m.signingOperatorIds = new bytes32[](operators.length);
         for (uint256 i = 0; i < operators.length; i++) {
-            m.operatorIds[i] = registryCoordinator.getOperatorId(operators[i]);
+            m.signingOperatorIds[i] = registryCoordinator.getOperatorId(operators[i]);
             BN254.G2Point memory operatorG2Pk = m.blsApkRegistry.getOperatorPubkeyG2(operators[i]);
             (m.apkG2.X[1], m.apkG2.X[0], m.apkG2.Y[1], m.apkG2.Y[0]) = BN256G2.ECTwistAdd(
                 m.apkG2.X[1], 
@@ -277,17 +277,17 @@ contract OperatorStateRetriever {
 
         // extra scope for stack limit
         {
-        uint32[] memory operatorQuorumBitmapIndices = registryCoordinator
-            .getQuorumBitmapIndicesAtBlockNumber(blockNumber, m.operatorIds);
+        uint32[] memory signingOperatorQuorumBitmapIndices = registryCoordinator
+            .getQuorumBitmapIndicesAtBlockNumber(blockNumber, m.signingOperatorIds);
         // check that all operators are registered (this is like the check in getCheckSignaturesIndices, but we check against _signing_ operators)
         for (uint256 i = 0; i < operators.length; i++) {
-            uint192 operatorQuorumBitmap = registryCoordinator
+            uint192 signingOperatorQuorumBitmap = registryCoordinator
                 .getQuorumBitmapAtBlockNumberByIndex(
-                m.operatorIds[i],
+                m.signingOperatorIds[i],
                 blockNumber,
-                operatorQuorumBitmapIndices[i]
+                signingOperatorQuorumBitmapIndices[i]
             );
-            require(operatorQuorumBitmap != 0, OperatorNotRegistered());
+            require(signingOperatorQuorumBitmap != 0, OperatorNotRegistered());
         }
         }
 
@@ -304,8 +304,8 @@ contract OperatorStateRetriever {
             for (uint256 j = 0; j < operatorIdsInQuorum.length; j++) {
                 bool isNewNonSigner = true;
                 // if it is in the signing operators array
-                for (uint256 k = 0; k < m.operatorIds.length; k++) {
-                    if (operatorIdsInQuorum[j] == m.operatorIds[k]) {
+                for (uint256 k = 0; k < m.signingOperatorIds.length; k++) {
+                    if (operatorIdsInQuorum[j] == m.signingOperatorIds[k]) {
                         isNewNonSigner = false;
                         break;
                     }
