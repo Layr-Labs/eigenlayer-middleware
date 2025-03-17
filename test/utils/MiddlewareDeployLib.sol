@@ -121,6 +121,7 @@ library MiddlewareDeployLib {
 
     function deployMiddlewareWithCore(
         address proxyAdmin,
+        address owner,
         CoreDeployLib.DeploymentData memory core
     ) internal returns (MiddlewareDeployData memory result) {
         // Deploy proxies
@@ -131,8 +132,8 @@ library MiddlewareDeployLib {
 
         // Upgrade the proxies
         upgradeRegistriesM2Coordinator(core, result);
-        ugpradeServiceManager(core, result, proxyAdmin);
-        upgradeM2Coordinator(core, result, proxyAdmin);
+        ugpradeServiceManager(core, result, owner);
+        upgradeM2Coordinator(core, result, owner);
 
         return result;
     }

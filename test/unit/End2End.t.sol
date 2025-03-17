@@ -148,9 +148,9 @@ contract End2EndForkTest is Test {
 
         _setupOperatorsAndTokens(operators, coreDeployment, token, strategy);
 
-        // _setupFirstQuorumAndOperatorSet(
-        //     operators, middlewareConfig, coreDeployment, middlewareDeployment
-        // );
+        _setupFirstQuorumAndOperatorSet(
+            operators, middlewareConfig, coreDeployment, middlewareDeployment, strategy
+        );
 
         // _setupSecondQuorumAndOperatorSet(
         //     operators, middlewareConfig, coreDeployment, middlewareDeployment
@@ -179,15 +179,15 @@ contract End2EndForkTest is Test {
 
         // Setup middleware deployment data
         proxyAdmin = UpgradeableProxyLib.deployProxyAdmin();
-        // middlewareConfig.admin = address(this);
-        // middlewareConfig.numQuorums = 1;
-        // middlewareConfig.operatorParams = new uint256[](3);
-        // middlewareConfig.operatorParams[0] = 10;
-        // middlewareConfig.operatorParams[1] = 100;
-        // middlewareConfig.operatorParams[2] = 100;
+        middlewareConfig.admin = address(this);
+        middlewareConfig.numQuorums = 1;
+        middlewareConfig.operatorParams = new uint256[](3);
+        middlewareConfig.operatorParams[0] = 10;
+        middlewareConfig.operatorParams[1] = 100;
+        middlewareConfig.operatorParams[2] = 100;
 
         middlewareDeployment =
-            MiddlewareDeployLib.deployMiddlewareWithCore(proxyAdmin, coreDeployment);
+            MiddlewareDeployLib.deployMiddlewareWithCore(proxyAdmin, middlewareConfig.admin, coreDeployment);
 
         vm.startPrank(middlewareDeployment.serviceManager);
         AllocationManager(coreDeployment.allocationManager).updateAVSMetadataURI(
@@ -255,61 +255,62 @@ contract End2EndForkTest is Test {
         }
     }
 
-    // function _setupFirstQuorumAndOperatorSet(
-    //     OperatorLib.Operator[] memory operators,
-    //     ConfigData memory middlewareConfig,
-    //     CoreDeployLib.DeploymentData memory coreDeployment,
-    //     MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployment
-    // ) internal {
-    //     vm.startPrank(middlewareConfig.admin);
+    function _setupFirstQuorumAndOperatorSet(
+        OperatorLib.Operator[] memory operators,
+        ConfigData memory middlewareConfig,
+        CoreDeployLib.DeploymentData memory coreDeployment,
+        MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployment,
+        address strategy
+    ) internal {
+        vm.startPrank(middlewareConfig.admin);
 
-    //     // Create first quorum
-    //     ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-    //     ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-    //         maxOperatorCount: 10,
-    //         kickBIPsOfOperatorStake: 100,
-    //         kickBIPsOfTotalStake: 100
-    //     });
+        // Create first quorum
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+            maxOperatorCount: 10,
+            kickBIPsOfOperatorStake: 100,
+            kickBIPsOfTotalStake: 100
+        });
 
-    //     IStakeRegistry.StrategyParams[] memory strategyParams =
-    //         new IStakeRegistry.StrategyParams[](1);
-    //     strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-    //         strategy: IStrategy(middlewareDeployment.strategy),
-    //         multiplier: 1 ether
-    //     });
+        IStakeRegistry.StrategyParams[] memory strategyParams =
+            new IStakeRegistry.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(strategy),
+            multiplier: 1 ether
+        });
 
-    //     RegistryCoordinator(middlewareDeployment.registryCoordinator)
-    //         .createTotalDelegatedStakeQuorum(operatorSetParams, 100, strategyParams);
-    //     vm.stopPrank();
+        RegistryCoordinator(middlewareDeployment.registryCoordinator)
+            .createTotalDelegatedStakeQuorum(operatorSetParams, 100, strategyParams);
+        vm.stopPrank();
 
-    //     // Register operators
-    //     uint32[] memory operatorSetIds = new uint32[](1);
-    //     operatorSetIds[0] = 0;
+        // Register operators
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = 0;
 
-    //     for (uint256 i = 0; i < 5; i++) {
-    //         vm.startPrank(operators[i].key.addr);
-    //         OperatorLib.registerOperatorFromAVS_OpSet(
-    //             operators[i],
-    //             coreDeployment.allocationManager,
-    //             middlewareDeployment.registryCoordinator,
-    //             middlewareDeployment.serviceManager,
-    //             operatorSetIds
-    //         );
-    //         vm.stopPrank();
-    //     }
+        for (uint256 i = 0; i < 5; i++) {
+            vm.startPrank(operators[i].key.addr);
+            OperatorLib.registerOperatorFromAVS_OpSet(
+                operators[i],
+                coreDeployment.allocationManager,
+                middlewareDeployment.registryCoordinator,
+                middlewareDeployment.serviceManager,
+                operatorSetIds
+            );
+            vm.stopPrank();
+        }
 
-    //     vm.roll(block.number + 10);
+        vm.roll(block.number + 10);
 
-    //     // // Update operators for quorum
-    //     address[][] memory registeredOperators = _getAndSortOperators(operators);
-    //     bytes memory quorumNumbers = new bytes(1);
-    //     quorumNumbers[0] = bytes1(uint8(0));
+        // // Update operators for quorum
+        address[][] memory registeredOperators = _getAndSortOperators(operators);
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(uint8(0));
 
-    //     vm.prank(middlewareConfig.admin);
-    //     RegistryCoordinator(middlewareDeployment.registryCoordinator).updateOperatorsForQuorum(
-    //         registeredOperators, quorumNumbers
-    //     );
-    // }
+        vm.prank(middlewareConfig.admin);
+        RegistryCoordinator(middlewareDeployment.registryCoordinator).updateOperatorsForQuorum(
+            registeredOperators, quorumNumbers
+        );
+    }
 
     // function _setupSecondQuorumAndOperatorSet(
     //     OperatorLib.Operator[] memory operators,
@@ -432,28 +433,28 @@ contract End2EndForkTest is Test {
     //     ServiceManagerMock(middlewareDeployment.serviceManager).slashOperator(slashingParams);
     // }
 
-    // function _getAndSortOperators(
-    //     OperatorLib.Operator[] memory operators
-    // ) internal pure returns (address[][] memory) {
-    //     address[][] memory registeredOperators = new address[][](1);
-    //     registeredOperators[0] = new address[](5);
-    //     for (uint256 i = 0; i < 5; i++) {
-    //         registeredOperators[0][i] = operators[i].key.addr;
-    //     }
+    function _getAndSortOperators(
+        OperatorLib.Operator[] memory operators
+    ) internal pure returns (address[][] memory) {
+        address[][] memory registeredOperators = new address[][](1);
+        registeredOperators[0] = new address[](5);
+        for (uint256 i = 0; i < 5; i++) {
+            registeredOperators[0][i] = operators[i].key.addr;
+        }
 
-    //     // Sort operator addresses
-    //     for (uint256 i = 0; i < registeredOperators[0].length - 1; i++) {
-    //         for (uint256 j = 0; j < registeredOperators[0].length - i - 1; j++) {
-    //             if (registeredOperators[0][j] > registeredOperators[0][j + 1]) {
-    //                 address temp = registeredOperators[0][j];
-    //                 registeredOperators[0][j] = registeredOperators[0][j + 1];
-    //                 registeredOperators[0][j + 1] = temp;
-    //             }
-    //         }
-    //     }
+        // Sort operator addresses
+        for (uint256 i = 0; i < registeredOperators[0].length - 1; i++) {
+            for (uint256 j = 0; j < registeredOperators[0].length - i - 1; j++) {
+                if (registeredOperators[0][j] > registeredOperators[0][j + 1]) {
+                    address temp = registeredOperators[0][j];
+                    registeredOperators[0][j] = registeredOperators[0][j + 1];
+                    registeredOperators[0][j + 1] = temp;
+                }
+            }
+        }
 
-    //     return registeredOperators;
-    // }
+        return registeredOperators;
+    }
 
     // function _setupFirstQuorumAndOperatorSet_M2(
     //     OperatorLib.Operator[] memory operators,
