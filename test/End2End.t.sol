@@ -173,7 +173,7 @@ contract End2EndForkTest is Test {
 
         // Deploy middleware with core
         (middlewareDeployment, coreDeployment) =
-            deployMiddlewareWithCore(middlewareConfig.proxyAdmin, middlewareConfig.admin);
+            _deployMiddlewareWithCore(middlewareConfig.proxyAdmin, middlewareConfig.admin);
 
         // // Create 5 operators using helper function
         operators = _createOperators(5, 100);
@@ -191,6 +191,7 @@ contract End2EndForkTest is Test {
         middlewareConfig.token = token;
         middlewareConfig.operators = _getAndSortOperators(operators);
 
+        // Set the metadata URI, AVS Registrar and UAM apointee for operator set creation
         vm.startPrank(middlewareDeployment.serviceManager);
         AllocationManager(coreDeployment.allocationManager).updateAVSMetadataURI(
             middlewareDeployment.serviceManager, "metadata"
