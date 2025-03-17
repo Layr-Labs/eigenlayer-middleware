@@ -2,31 +2,31 @@
 pragma solidity ^0.8.12;
 
 import {Test, console2 as console} from "forge-std/Test.sol";
-import {OperatorLib} from "../utils/OperatorLib.sol";
-import {CoreDeployLib} from "../utils/CoreDeployLib.sol";
-import {UpgradeableProxyLib} from "../../script/utils/UpgradeableProxyLib.sol";
-import {MiddlewareDeployLib} from "../utils/MiddlewareDeployLib.sol";
-import {BN254} from "../../src/libraries/BN254.sol";
+import {OperatorLib} from "./utils/OperatorLib.sol";
+import {CoreDeployLib} from "./utils/CoreDeployLib.sol";
+import {UpgradeableProxyLib} from "./unit/UpgradeableProxyLib.sol";
+import {MiddlewareDeployLib} from "./utils/MiddlewareDeployLib.sol";
+import {BN254} from "../src/libraries/BN254.sol";
 import {IDelegationManager} from
-    "../../lib/eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IAllocationManagerTypes} from
-    "../../lib/eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {IStrategy} from "../../lib/eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
-import {IStakeRegistry, IStakeRegistryTypes} from "../../src/interfaces/IStakeRegistry.sol";
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+import {IServiceManager} from "../src/interfaces/IServiceManager.sol";
+import {IStakeRegistry, IStakeRegistryTypes} from "../src/interfaces/IStakeRegistry.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {RegistryCoordinator} from "../../src/RegistryCoordinator.sol";
-import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
+import {RegistryCoordinator} from "../src/RegistryCoordinator.sol";
+import {IRegistryCoordinator} from "../src/interfaces/IRegistryCoordinator.sol";
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 import {PermissionController} from
     "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
-import {ServiceManagerMock} from "../mocks/ServiceManagerMock.sol";
+import {ServiceManagerMock} from "./mocks/ServiceManagerMock.sol";
 import {
     ISlashingRegistryCoordinator,
     ISlashingRegistryCoordinatorTypes
-} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
-import {ERC20Mock} from "../mocks/ERC20Mock.sol";
+} from "../src/interfaces/ISlashingRegistryCoordinator.sol";
+import {ERC20Mock} from "./mocks/ERC20Mock.sol";
 import {IStrategyFactory} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyFactory.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
