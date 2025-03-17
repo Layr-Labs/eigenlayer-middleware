@@ -35,8 +35,11 @@ contract End2EndForkTest is Test {
 
     struct ConfigData {
         address admin;
+        address token;
+        address strategy;
         uint256 numQuorums;
         uint256[] operatorParams;
+        address[][] operators;
     }
 
     address internal proxyAdmin;
@@ -90,19 +93,19 @@ contract End2EndForkTest is Test {
             MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployment,
             ConfigData memory middlewareConfig
         ) = _setupInitialState();
-        (address token, address strategy) = _deployTokenAndStrategy(coreDeployment.strategyFactory);
 
-        _setupOperatorsAndTokens(operators, coreDeployment, token, strategy);
+        // Move this to foundry's setup function.
+        _setupOperatorsAndTokens(operators, coreDeployment, middlewareConfig);
 
         _setupFirstQuorumAndOperatorSet(
-            operators, middlewareConfig, coreDeployment, middlewareDeployment, strategy
+            operators, middlewareConfig, coreDeployment, middlewareDeployment 
         );
 
         _setupSecondQuorumAndOperatorSet(
-            operators, middlewareConfig, coreDeployment, middlewareDeployment, strategy
+            operators, middlewareConfig, coreDeployment, middlewareDeployment 
         );
 
-        _executeSlashing(operators, middlewareConfig, middlewareDeployment, strategy);
+        _executeSlashing(operators, middlewareConfig, middlewareDeployment);
     }
 
     function _setupInitialState()
@@ -123,6 +126,9 @@ contract End2EndForkTest is Test {
         // // Create 5 operators using helper function
         operators = _createOperators(5, 100);
 
+        // Deploy token and strategy
+        (address token, address strategy) = _deployTokenAndStrategy(coreDeployment.strategyFactory);
+
         // Setup middleware deployment data
         proxyAdmin = UpgradeableProxyLib.deployProxyAdmin();
         middlewareConfig.admin = address(this);
@@ -131,6 +137,10 @@ contract End2EndForkTest is Test {
         middlewareConfig.operatorParams[0] = 10;
         middlewareConfig.operatorParams[1] = 100;
         middlewareConfig.operatorParams[2] = 100;
+        middlewareConfig.strategy = strategy;
+        middlewareConfig.token = token;
+        middlewareConfig.operators = _getAndSortOperators(operators);
+
 
         middlewareDeployment = MiddlewareDeployLib.deployMiddlewareWithCore(
             proxyAdmin, middlewareConfig.admin, coreDeployment
@@ -187,8 +197,7 @@ contract End2EndForkTest is Test {
     function _setupOperatorsAndTokens(
         OperatorLib.Operator[] memory operators,
         CoreDeployLib.DeploymentData memory coreDeployment,
-        address token,
-        address strategy
+        ConfigData memory middlewareConfig
     ) internal {
         // Verify and register operators
         for (uint256 i = 0; i < 5; i++) {
@@ -210,8 +219,8 @@ contract End2EndForkTest is Test {
         // Setup tokens and verify balances
         uint256 mintAmount = 1000 * 1e18;
         for (uint256 i = 0; i < 5; i++) {
-            OperatorLib.mintMockTokens(operators[i], token, mintAmount);
-            uint256 balance = IERC20(token).balanceOf(operators[i].key.addr);
+            OperatorLib.mintMockTokens(operators[i], middlewareConfig.token, mintAmount);
+            uint256 balance = IERC20(middlewareConfig.token).balanceOf(operators[i].key.addr);
             assertEq(balance, mintAmount, "Operator should have correct token balance");
         }
 
@@ -219,12 +228,12 @@ contract End2EndForkTest is Test {
         for (uint256 i = 0; i < 5; i++) {
             vm.startPrank(operators[i].key.addr);
             uint256 shares = OperatorLib.depositTokenIntoStrategy(
-                operators[i], coreDeployment.strategyManager, strategy, token, mintAmount
+                operators[i], coreDeployment.strategyManager, middlewareConfig.strategy, middlewareConfig.token, mintAmount
             );
             assertTrue(shares > 0, "Should have received shares for deposit");
             vm.stopPrank();
 
-            shares = IStrategy(strategy).shares(operators[i].key.addr);
+            shares = IStrategy(middlewareConfig.strategy).shares(operators[i].key.addr);
             assertEq(shares, mintAmount, "Operator shares should equal deposit amount");
         }
     }
@@ -233,8 +242,7 @@ contract End2EndForkTest is Test {
         OperatorLib.Operator[] memory operators,
         ConfigData memory middlewareConfig,
         CoreDeployLib.DeploymentData memory coreDeployment,
-        MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployment,
-        address strategy
+        MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployment
     ) internal {
         vm.startPrank(middlewareConfig.admin);
 
@@ -249,7 +257,7 @@ contract End2EndForkTest is Test {
         IStakeRegistry.StrategyParams[] memory strategyParams =
             new IStakeRegistry.StrategyParams[](1);
         strategyParams[0] =
-            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(strategy), multiplier: 1 ether});
+            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(middlewareConfig.strategy), multiplier: 1 ether});
 
         RegistryCoordinator(middlewareDeployment.registryCoordinator)
             .createTotalDelegatedStakeQuorum(operatorSetParams, 100, strategyParams);
@@ -273,14 +281,12 @@ contract End2EndForkTest is Test {
 
         vm.roll(block.number + 10);
 
-        // // Update operators for quorum
-        address[][] memory registeredOperators = _getAndSortOperators(operators);
+        //  Update operators for quorum
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(uint8(0));
-
         vm.prank(middlewareConfig.admin);
         RegistryCoordinator(middlewareDeployment.registryCoordinator).updateOperatorsForQuorum(
-            registeredOperators, quorumNumbers
+            middlewareConfig.operators, quorumNumbers
         );
     }
 
@@ -288,15 +294,14 @@ contract End2EndForkTest is Test {
         OperatorLib.Operator[] memory operators,
         ConfigData memory middlewareConfig,
         CoreDeployLib.DeploymentData memory coreDeployment,
-        MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployment,
-        address strategy
+        MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployment
     ) internal {
         // Create second quorum
         vm.startPrank(middlewareConfig.admin);
         IStakeRegistry.StrategyParams[] memory strategyParams =
             new IStakeRegistry.StrategyParams[](1);
         strategyParams[0] =
-            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(strategy), multiplier: 1 ether});
+            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(middlewareConfig.strategy), multiplier: 1 ether});
 
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
         ISlashingRegistryCoordinatorTypes.OperatorSetParam({
@@ -310,7 +315,7 @@ contract End2EndForkTest is Test {
         );
         vm.stopPrank();
 
-        _setupOperatorAllocations(operators, coreDeployment, middlewareDeployment, strategy);
+        _setupOperatorAllocations(operators, coreDeployment, middlewareDeployment, middlewareConfig.strategy);
 
         // Register and update operators for second quorum
         uint32[] memory operatorSetIds = new uint32[](1);
@@ -330,13 +335,12 @@ contract End2EndForkTest is Test {
 
         vm.roll(block.number + 10);
 
-        address[][] memory registeredOperators = _getAndSortOperators(operators);
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(uint8(1));
 
         vm.prank(middlewareConfig.admin);
         RegistryCoordinator(middlewareDeployment.registryCoordinator).updateOperatorsForQuorum(
-            registeredOperators, quorumNumbers
+            middlewareConfig.operators, quorumNumbers
         );
     }
 
@@ -388,8 +392,7 @@ contract End2EndForkTest is Test {
     function _executeSlashing(
         OperatorLib.Operator[] memory operators,
         ConfigData memory middlewareConfig,
-        MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployment,
-        address strategy
+        MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployment
     ) internal {
         IAllocationManagerTypes.SlashingParams memory slashingParams = IAllocationManagerTypes
             .SlashingParams({
@@ -400,7 +403,7 @@ contract End2EndForkTest is Test {
             description: "Test slashing"
         });
 
-        slashingParams.strategies[0] = IStrategy(strategy);
+        slashingParams.strategies[0] = IStrategy(middlewareConfig.strategy);
         slashingParams.wadsToSlash[0] = 0.5e18;
 
         ServiceManagerMock(middlewareDeployment.serviceManager).slashOperator(slashingParams);
