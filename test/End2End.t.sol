@@ -137,7 +137,7 @@ contract End2EndForkTest is Test {
     {
         string memory rpcUrl = vm.envString("HOLESKY_RPC_URL");
         vm.createSelectFork(rpcUrl);
-        
+
         // Read core deployment data from json
         core = _readCoreDeploymentJson("./script/config", 17000, "preprod");
 
