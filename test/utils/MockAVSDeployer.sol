@@ -8,7 +8,10 @@ import {ITransparentUpgradeableProxy} from
 
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {
+    ISignatureUtilsMixin,
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
 import {BN254} from "../../src/libraries/BN254.sol";
 
@@ -168,7 +171,7 @@ contract MockAVSDeployer is Test {
         strategyManagerMock = new StrategyManagerMock(delegationMock);
         allocationManagerMock = new AllocationManagerMock();
         permissionControllerMock = new PermissionControllerMock();
-        avsDirectoryImplementation = new AVSDirectory(delegationMock, pauserRegistry); // TODO: config value
+        avsDirectoryImplementation = new AVSDirectory(delegationMock, pauserRegistry, "v0.0.1");
         avsDirectory = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(
@@ -275,7 +278,8 @@ contract MockAVSDeployer is Test {
             pauserRegistry,
             permissionControllerMock,
             uint32(7 days), // DEALLOCATION_DELAY
-            uint32(1 days) // ALLOCATION_CONFIGURATION_DELAY
+            uint32(1 days), // ALLOCATION_CONFIGURATION_DELAY
+            "v0.0.1" // Added config parameter
         );
         proxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(allocationManager))),
@@ -314,7 +318,8 @@ contract MockAVSDeployer is Test {
             indexRegistry,
             socketRegistry,
             allocationManagerMock,
-            pauserRegistry
+            pauserRegistry,
+            "v0.0.1"
         );
         {
             proxyAdmin.upgradeAndCall(
@@ -420,7 +425,7 @@ contract MockAVSDeployer is Test {
             _setOperatorWeight(operator, uint8(quorumNumbers[i]), stake);
         }
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
         cheats.prank(operator);
         registryCoordinator.registerOperator(
             quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySignatureAndExpiry
@@ -446,7 +451,7 @@ contract MockAVSDeployer is Test {
             _setOperatorWeight(operator, uint8(quorumNumbers[i]), stakes[uint8(quorumNumbers[i])]);
         }
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
         cheats.prank(operator);
         registryCoordinator.registerOperator(
             quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySignatureAndExpiry
@@ -541,12 +546,12 @@ contract MockAVSDeployer is Test {
         ISlashingRegistryCoordinator.OperatorKickParam[] memory operatorKickParams,
         bytes32 salt,
         uint256 expiry
-    ) internal view returns (ISignatureUtils.SignatureWithSaltAndExpiry memory) {
+    ) internal view returns (ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory) {
         bytes32 digestHash = registryCoordinator.calculateOperatorChurnApprovalDigestHash(
             registeringOperator, registeringOperatorId, operatorKickParams, salt, expiry
         );
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(churnApproverPrivateKey, digestHash);
-        return ISignatureUtils.SignatureWithSaltAndExpiry({
+        return ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
             signature: abi.encodePacked(r, s, v),
             expiry: expiry,
             salt: salt

@@ -7,7 +7,10 @@ import {
     ISlashingRegistryCoordinatorEvents,
     ISlashingRegistryCoordinatorTypes
 } from "./ISlashingRegistryCoordinator.sol";
-import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {
+    ISignatureUtilsMixin,
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {IBLSApkRegistryTypes} from "./IBLSApkRegistry.sol";
 import {IServiceManager} from "./IServiceManager.sol";
 
@@ -72,7 +75,7 @@ interface IRegistryCoordinator is
         bytes memory quorumNumbers,
         string memory socket,
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory params,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature
     ) external;
 
     /**
@@ -94,8 +97,8 @@ interface IRegistryCoordinator is
         string memory socket,
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory params,
         OperatorKickParam[] memory operatorKickParams,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature,
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature
     ) external;
 
     /**

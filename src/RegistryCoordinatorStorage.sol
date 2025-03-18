@@ -52,16 +52,7 @@ abstract contract RegistryCoordinatorStorage is
         ISocketRegistry _socketRegistry,
         IAllocationManager _allocationManager,
         IPauserRegistry _pauserRegistry
-    )
-        SlashingRegistryCoordinator(
-            _stakeRegistry,
-            _blsApkRegistry,
-            _indexRegistry,
-            _socketRegistry,
-            _allocationManager,
-            _pauserRegistry
-        )
-    {
+    ) {
         serviceManager = _serviceManager;
     }
 
