@@ -161,7 +161,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage, SlashingRegistryCoor
             for (uint256 i = 0; i < quorumNumbers.length; i++) {
                 singleQuorumNumber[0] = quorumNumbers[i];
 
-                if (_isM2Quorum(uint8(quorumNumbers[i]))) {
+                if (isM2Quorum(uint8(quorumNumbers[i]))) {
                     // For M2 quorums, use _deregisterOperator
                     _deregisterOperator({operator: operator, quorumNumbers: singleQuorumNumber});
                 } else {
@@ -265,9 +265,9 @@ contract RegistryCoordinator is RegistryCoordinatorStorage, SlashingRegistryCoor
 
     /// @notice Returns true if the quorum number is an M2 quorum
     /// @dev We use bitwise and to check if the quorum number is an M2 quorum
-    function _isM2Quorum(
+    function isM2Quorum(
         uint8 quorumNumber
-    ) internal view returns (bool) {
+    ) public view returns (bool) {
         return m2QuorumBitmap().isSet(quorumNumber);
     }
 
@@ -286,12 +286,5 @@ contract RegistryCoordinator is RegistryCoordinatorStorage, SlashingRegistryCoor
         }
 
         return _getTotalQuorumBitmap();
-    }
-
-    /// @notice Returns true if the quorum number is an M2 quorum
-    function isM2Quorum(
-        uint8 quorumNumber
-    ) external view returns (bool) {
-        return _isM2Quorum(quorumNumber);
     }
 }
