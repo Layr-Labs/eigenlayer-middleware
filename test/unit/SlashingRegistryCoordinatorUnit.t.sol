@@ -43,7 +43,7 @@ import {IBLSApkRegistry, IBLSApkRegistryTypes} from "../../src/interfaces/IBLSAp
 import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
 import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
 import {ISocketRegistry} from "../../src/interfaces/ISocketRegistry.sol";
-import {CoreDeploymentLib} from "../utils/CoreDeployLib.sol";
+import {CoreDeployLib} from "../utils/CoreDeployLib.sol";
 import {
     OperatorWalletLib,
     Operator,
@@ -82,7 +82,7 @@ contract SlashingRegistryCoordinatorUnitTestSetup is
     ProxyAdmin internal proxyAdmin;
     EmptyContract internal emptyContract;
     SlashingRegistryCoordinator internal slashingRegistryCoordinator;
-    CoreDeploymentLib.DeploymentData internal coreDeployment;
+    CoreDeployLib.DeploymentData internal coreDeployment;
     PauserRegistry internal pauserRegistry;
     ERC20Mock internal mockToken;
     StrategyFactory internal strategyFactory;
@@ -173,7 +173,7 @@ contract SlashingRegistryCoordinatorUnitTestSetup is
         pausers[0] = pauser;
         pauserRegistry = new PauserRegistry(pausers, unpauser);
 
-        CoreDeploymentLib.DeploymentConfigData memory configData;
+        CoreDeployLib.DeploymentConfigData memory configData;
         configData.strategyManager.initialOwner = proxyAdminOwner;
         configData.strategyManager.initialStrategyWhitelister = proxyAdminOwner;
         configData.strategyManager.initPausedStatus = 0;
@@ -210,7 +210,7 @@ contract SlashingRegistryCoordinatorUnitTestSetup is
 
         configData.ethPOSDeposit.ethPOSDepositAddress = address(0x123);
 
-        coreDeployment = CoreDeploymentLib.deployContracts(address(proxyAdmin), configData);
+        coreDeployment = CoreDeployLib.deployContracts(address(proxyAdmin), configData);
 
         address strategyManagerOwner = Ownable(coreDeployment.strategyManager).owner();
         vm.stopPrank();
