@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.12;
 
+import {Vm} from "forge-std/Vm.sol";
+import {stdJson} from "forge-std/StdJson.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from
     "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -42,8 +44,11 @@ import {IRewardsCoordinatorTypes} from
 
 import {UpgradeableProxyLib} from "../unit/UpgradeableProxyLib.sol";
 
-library CoreDeploymentLib {
+library CoreDeployLib {
+    using stdJson for string;
     using UpgradeableProxyLib for address;
+
+    Vm internal constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
     struct StrategyManagerConfig {
         uint256 initPausedStatus;

@@ -28,4 +28,10 @@ contract ServiceManagerMock is ServiceManagerBase {
     ) public virtual initializer {
         __ServiceManagerBase_init(initialOwner, rewardsInitiator);
     }
+
+    function slashOperator(
+        IAllocationManager.SlashingParams memory _params
+    ) public {
+        _allocationManager.slashOperator({avs: address(this), params: _params});
+    }
 }
