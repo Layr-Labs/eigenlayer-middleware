@@ -34,6 +34,7 @@ import "../../src/BLSApkRegistry.sol";
 import "../mocks/ServiceManagerMock.sol";
 import "../../src/OperatorStateRetriever.sol";
 import "../../src/SocketRegistry.sol";
+import "../../src/interfaces/IRegistryCoordinator.sol";
 
 // Mocks and More
 import "../../src/libraries/BN254.sol";
@@ -423,14 +424,17 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         uint32[] memory slashableStakeQuorumLookAheadPeriods = new uint32[](0);
 
         RegistryCoordinator registryCoordinatorImplementation = new RegistryCoordinator(
-            serviceManager,
-            stakeRegistry,
-            blsApkRegistry,
-            indexRegistry,
-            socketRegistry,
-            allocationManager,
-            pauserRegistry,
-            "v0.0.1"
+            IRegistryCoordinatorTypes.RegistryCoordinatorParams(
+                serviceManager,
+                IRegistryCoordinatorTypes.SlashingRegistryParams(
+                    stakeRegistry,
+                    blsApkRegistry,
+                    indexRegistry,
+                    socketRegistry,
+                    allocationManager,
+                    pauserRegistry
+                )
+            )
         );
         proxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(payable(address(registryCoordinator))),

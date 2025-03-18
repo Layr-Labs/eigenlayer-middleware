@@ -14,7 +14,9 @@ import {IBLSApkRegistry, IBLSApkRegistryTypes} from "./interfaces/IBLSApkRegistr
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {
+    IRegistryCoordinator, IRegistryCoordinatorTypes
+} from "./interfaces/IRegistryCoordinator.sol";
 import {ISocketRegistry} from "./interfaces/ISocketRegistry.sol";
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
@@ -32,36 +34,21 @@ import {RegistryCoordinatorStorage} from "./RegistryCoordinatorStorage.sol";
  *
  * @author Layr Labs, Inc.
  */
-contract RegistryCoordinator is RegistryCoordinatorStorage {
+contract RegistryCoordinator is RegistryCoordinatorStorage, SlashingRegistryCoordinator {
     using BitmapUtils for *;
 
     constructor(
-        IServiceManager _serviceManager,
-        IStakeRegistry _stakeRegistry,
-        IBLSApkRegistry _blsApkRegistry,
-        IIndexRegistry _indexRegistry,
-        ISocketRegistry _socketRegistry,
-        IAllocationManager _allocationManager,
-        IPauserRegistry _pauserRegistry,
-        string memory _version
+        IRegistryCoordinatorTypes.RegistryCoordinatorParams memory params
     )
-        RegistryCoordinatorStorage(
-            _serviceManager,
-            _stakeRegistry,
-            _blsApkRegistry,
-            _indexRegistry,
-            _socketRegistry,
-            _allocationManager,
-            _pauserRegistry
-        )
+        RegistryCoordinatorStorage(params.serviceManager)
         SlashingRegistryCoordinator(
-            _stakeRegistry,
-            _blsApkRegistry,
-            _indexRegistry,
-            _socketRegistry,
-            _allocationManager,
-            _pauserRegistry,
-            _version
+            params.slashingParams.stakeRegistry,
+            params.slashingParams.blsApkRegistry,
+            params.slashingParams.indexRegistry,
+            params.slashingParams.socketRegistry,
+            params.slashingParams.allocationManager,
+            params.slashingParams.pauserRegistry,
+            "v0.0.1"
         )
     {}
 
@@ -181,7 +168,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
             for (uint256 i = 0; i < quorumNumbers.length; i++) {
                 singleQuorumNumber[0] = quorumNumbers[i];
 
-                if (_isM2Quorum(uint8(quorumNumbers[i]))) {
+                if (isM2Quorum(uint8(quorumNumbers[i]))) {
                     // For M2 quorums, use _deregisterOperator
                     _deregisterOperator({operator: operator, quorumNumbers: singleQuorumNumber});
                 } else {
@@ -283,14 +270,6 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         return (1 << quorumCount) - 1;
     }
 
-    /// @notice Returns true if the quorum number is an M2 quorum
-    /// @dev We use bitwise and to check if the quorum number is an M2 quorum
-    function _isM2Quorum(
-        uint8 quorumNumber
-    ) internal view returns (bool) {
-        return m2QuorumBitmap().isSet(quorumNumber);
-    }
-
     /**
      *
      *                            VIEW FUNCTIONS
@@ -311,8 +290,8 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
     /// @notice Returns true if the quorum number is an M2 quorum
     function isM2Quorum(
         uint8 quorumNumber
-    ) external view returns (bool) {
-        return _isM2Quorum(quorumNumber);
+    ) public view returns (bool) {
+        return m2QuorumBitmap().isSet(quorumNumber);
     }
 
     /**

@@ -8,15 +8,12 @@ import {IBLSApkRegistry, IBLSApkRegistryTypes} from "./interfaces/IBLSApkRegistr
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {
+    IRegistryCoordinator, IRegistryCoordinatorTypes
+} from "./interfaces/IRegistryCoordinator.sol";
 import {ISocketRegistry} from "./interfaces/ISocketRegistry.sol";
 
-import {SlashingRegistryCoordinator} from "./SlashingRegistryCoordinator.sol";
-
-abstract contract RegistryCoordinatorStorage is
-    IRegistryCoordinator,
-    SlashingRegistryCoordinator
-{
+abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
     /**
      *
      *                            CONSTANTS AND IMMUTABLES
@@ -45,13 +42,7 @@ abstract contract RegistryCoordinatorStorage is
     uint256 internal _m2QuorumBitmap;
 
     constructor(
-        IServiceManager _serviceManager,
-        IStakeRegistry _stakeRegistry,
-        IBLSApkRegistry _blsApkRegistry,
-        IIndexRegistry _indexRegistry,
-        ISocketRegistry _socketRegistry,
-        IAllocationManager _allocationManager,
-        IPauserRegistry _pauserRegistry
+        IServiceManager _serviceManager
     ) {
         serviceManager = _serviceManager;
     }
