@@ -33,7 +33,11 @@ import {
 } from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {ServiceManagerMock} from "../mocks/ServiceManagerMock.sol";
 import {CoreDeployLib} from "./CoreDeployLib.sol";
-import {RegistryCoordinator, IRegistryCoordinator} from "../../src/RegistryCoordinator.sol";
+import {
+    RegistryCoordinator,
+    IRegistryCoordinator,
+    IRegistryCoordinatorTypes
+} from "../../src/RegistryCoordinator.sol";
 import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {IPermissionController} from
@@ -199,7 +203,7 @@ library MiddlewareDeployLib {
         UpgradeableProxyLib.upgrade(deployments.socketRegistry, socketRegistryImpl);
     }
 
-    function ugpradeServiceManager(
+    function upgradeServiceManager(
         address avsDirectory,
         address rewardsCoordinator,
         address allocationManager,
@@ -224,7 +228,7 @@ library MiddlewareDeployLib {
         );
     }
 
-    function ugpradeServiceManager(
+    function upgradeServiceManager(
         CoreDeployLib.DeploymentData memory core,
         MiddlewareDeployData memory deployment,
         address admin
@@ -252,17 +256,23 @@ library MiddlewareDeployLib {
         MiddlewareDeployData memory deployment,
         address admin
     ) internal {
-        address impl = address(
-            new RegistryCoordinator(
-                IServiceManager(deployment.serviceManager),
-                IStakeRegistry(deployment.stakeRegistry),
-                IBLSApkRegistry(deployment.blsApkRegistry),
-                IIndexRegistry(deployment.indexRegistry),
-                ISocketRegistry(deployment.socketRegistry),
-                IAllocationManager(allocationManager),
-                IPauserRegistry(deployment.pauserRegistry)
-            )
-        );
+        IRegistryCoordinatorTypes.SlashingRegistryParams memory slashingParams =
+        IRegistryCoordinatorTypes.SlashingRegistryParams({
+            stakeRegistry: IStakeRegistry(deployment.stakeRegistry),
+            blsApkRegistry: IBLSApkRegistry(deployment.blsApkRegistry),
+            indexRegistry: IIndexRegistry(deployment.indexRegistry),
+            socketRegistry: ISocketRegistry(deployment.socketRegistry),
+            allocationManager: IAllocationManager(allocationManager),
+            pauserRegistry: IPauserRegistry(deployment.pauserRegistry)
+        });
+
+        IRegistryCoordinatorTypes.RegistryCoordinatorParams memory params =
+        IRegistryCoordinatorTypes.RegistryCoordinatorParams({
+            serviceManager: IServiceManager(deployment.serviceManager),
+            slashingParams: slashingParams
+        });
+
+        address impl = address(new RegistryCoordinator(params));
         bytes memory registryCoordinatorUpgradeCall = abi.encodeCall(
             SlashingRegistryCoordinator.initialize,
             (admin, admin, admin, 0, deployment.serviceManager)

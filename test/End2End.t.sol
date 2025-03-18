@@ -151,7 +151,7 @@ contract End2EndForkTest is Test {
         MiddlewareDeployLib.upgradeRegistriesM2Coordinator(
             core.delegationManager, core.avsDirectory, core.allocationManager, middleware
         );
-        MiddlewareDeployLib.ugpradeServiceManager(
+        MiddlewareDeployLib.upgradeServiceManager(
             core.avsDirectory, core.rewardsCoordinator, core.allocationManager, middleware, owner
         );
         MiddlewareDeployLib.upgradeM2Coordinator(core.allocationManager, middleware, owner);
