@@ -13,6 +13,7 @@ env:
   FOUNDRY_PROFILE: ci
   RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
   RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
+  HOLESKY_RPC_URL: ${{ secrets.HOLESKY_RPC_URL }}
   CHAIN_ID: ${{ secrets.CHAIN_ID }}
 
 jobs:
