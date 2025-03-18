@@ -260,7 +260,8 @@ library MiddlewareDeployLib {
                 IIndexRegistry(deployment.indexRegistry),
                 ISocketRegistry(deployment.socketRegistry),
                 IAllocationManager(allocationManager),
-                IPauserRegistry(deployment.pauserRegistry)
+                IPauserRegistry(deployment.pauserRegistry),
+                "v0.0.1"
             )
         );
         bytes memory registryCoordinatorUpgradeCall = abi.encodeCall(
