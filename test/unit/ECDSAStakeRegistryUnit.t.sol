@@ -3,7 +3,10 @@ pragma solidity ^0.8.27;
 
 import {Test, console} from "forge-std/Test.sol";
 
-import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {
+    ISignatureUtilsMixin,
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
@@ -24,7 +27,7 @@ contract MockServiceManager {
 
     function registerOperatorToAVS(
         address,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory // solhint-disable-next-line
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory // solhint-disable-next-line
     ) external {}
 }
 
@@ -72,7 +75,7 @@ contract ECDSAStakeRegistrySetup is Test, IECDSAStakeRegistryEvents {
             IECDSAStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 10000});
         registry = new ECDSAStakeRegistry(IDelegationManager(address(mockDelegationManager)));
         registry.initialize(address(mockServiceManager), 100, quorum);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature;
         vm.prank(operator1);
         registry.registerOperatorWithSignature(operatorSignature, operator1);
         vm.prank(operator2);
@@ -193,7 +196,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
     function test_RegisterOperatorWithSignature() public {
         address operator3 = address(0x125);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory signature;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory signature;
         vm.prank(operator3);
         registry.registerOperatorWithSignature(signature, operator3);
         assertTrue(registry.operatorRegistered(operator3));
@@ -204,7 +207,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         assertEq(registry.getLastCheckpointOperatorWeight(operator1), 1000);
         assertEq(registry.getLastCheckpointTotalWeight(), 2000);
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory signature;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory signature;
         vm.expectRevert(IECDSAStakeRegistryErrors.OperatorAlreadyRegistered.selector);
         vm.prank(operator1);
         registry.registerOperatorWithSignature(signature, operator1);
@@ -217,7 +220,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
             abi.encodeWithSelector(
                 MockServiceManager.registerOperatorToAVS.selector,
                 operator1,
-                ISignatureUtils.SignatureWithSaltAndExpiry({
+                ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
                     signature: signatureData,
                     salt: bytes32(uint256(0x120)),
                     expiry: 10
@@ -599,7 +602,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         vm.prank(operator2);
         registry.deregisterOperator();
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature;
         address[] memory operators = new address[](30);
         for (uint256 i; i < operators.length; i++) {
             operators[i] = address(uint160(i));
@@ -621,7 +624,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         registry.deregisterOperator();
         msgHash = keccak256("data");
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature;
         address[] memory operators = new address[](30);
         bytes[] memory signatures = new bytes[](30);
         uint8 v;
@@ -653,7 +656,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     function test_WhenUsingSigningKey_RegierOperatorWithSignature() public {
         address operator = operator3;
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature;
 
         // Register operator with a different signing key
         vm.prank(operator);
@@ -671,7 +674,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     function test_Twice_RegierOperatorWithSignature() public {
         address operator = operator3;
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature;
 
         // Register operator with a different signing key
         vm.prank(operator);
@@ -697,7 +700,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     function test_WhenUsingSigningKey_CheckSignatures() public {
         address operator = operator3;
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature;
 
         // Register operator with a different signing key
         vm.prank(operator);
@@ -723,7 +726,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         address initialSigningKey = address(vm.addr(signerPk));
         address updatedSigningKey = address(vm.addr(signerPk + 1));
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature;
 
         // Register operator with the initial signing key
         vm.prank(operator);
@@ -764,7 +767,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         address initialSigningKey = address(vm.addr(signerPk));
         address updatedSigningKey = address(vm.addr(signerPk + 1));
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature;
 
         // Register operator with the initial signing key
         vm.prank(operator);

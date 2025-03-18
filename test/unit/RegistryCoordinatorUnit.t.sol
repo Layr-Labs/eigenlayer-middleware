@@ -14,6 +14,11 @@ import {
     IRegistryCoordinatorErrors
 } from "../../src/interfaces/IRegistryCoordinator.sol";
 
+import {
+    ISignatureUtilsMixin,
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
+
 import {IBLSApkRegistryTypes} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {QuorumBitmapHistoryLib} from "../../src/libraries/QuorumBitmapHistoryLib.sol";
 import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
@@ -278,7 +283,7 @@ contract RegistryCoordinatorUnitTests_Initialization_Setters is RegistryCoordina
 contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUnitTests {
     function test_registerOperator_revert_paused() public {
         bytes memory emptyQuorumNumbers = new bytes(0);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
 
         // pause registerOperator
         cheats.prank(pauser);
@@ -293,7 +298,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
 
     function test_registerOperator_revert_emptyQuorumNumbers() public {
         bytes memory emptyQuorumNumbers = new bytes(0);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
 
         cheats.expectRevert(bytes4(keccak256("BitmapEmpty()")));
         cheats.prank(defaultOperator);
@@ -304,7 +309,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
 
     function test_registerOperator_revert_invalidQuorum() public {
         bytes memory quorumNumbersTooLarge = new bytes(1);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
 
         quorumNumbersTooLarge[0] = 0xC0;
 
@@ -318,7 +323,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
     function test_registerOperator_revert_nonexistentQuorum() public {
         _deployMockEigenLayerAndAVS(10);
         bytes memory quorumNumbersNotCreated = new bytes(1);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
 
         quorumNumbersNotCreated[0] = 0x0B;
 
@@ -331,7 +336,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
 
     function test_registerOperator_singleQuorum() public {
         bytes memory quorumNumbers = new bytes(1);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
         uint96 actualStake = _setOperatorWeight(defaultOperator, defaultQuorumNumber, defaultStake);
@@ -390,7 +395,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
     ) public {
         // filter the fuzzed input down to only valid quorums
         quorumBitmap = quorumBitmap & MAX_QUORUM_BITMAP;
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
         cheats.assume(quorumBitmap != 0);
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
@@ -456,7 +461,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
     function test_registerOperator_addingQuorumsAfterInitialRegistration() public {
         uint256 registrationBlockNumber = block.number + 100;
         uint256 nextRegistrationBlockNumber = registrationBlockNumber + 100;
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
 
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
@@ -538,7 +543,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
     ) public {
         uint32 numOperators = defaultMaxOperatorCount;
         uint32 registrationBlockNumber = 200;
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
 
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
@@ -573,7 +578,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
     function test_registerOperator_revert_operatorAlreadyRegisteredForQuorum() public {
         uint256 registrationBlockNumber = block.number + 100;
         uint256 nextRegistrationBlockNumber = registrationBlockNumber + 100;
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
 
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
@@ -597,7 +602,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
     // tests for the internal `_registerOperator` function:
     function test_registerOperatorInternal_revert_noQuorums() public {
         bytes memory emptyQuorumNumbers = new bytes(0);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
 
         cheats.expectRevert(bytes4(keccak256("BitmapEmpty()")));
         registryCoordinator._registerOperatorExternal(
@@ -607,7 +612,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
 
     function test_registerOperatorInternal_revert_nonexistentQuorum() public {
         bytes memory quorumNumbersTooLarge = new bytes(1);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
 
         quorumNumbersTooLarge[0] = 0xC0;
 
@@ -618,7 +623,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
     }
 
     function test_registerOperatorInternal_revert_operatorAlreadyRegisteredForQuorum() public {
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
@@ -635,7 +640,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
 
     function test_registerOperatorInternal() public {
         bytes memory quorumNumbers = new bytes(1);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
         defaultStake = _setOperatorWeight(defaultOperator, uint8(quorumNumbers[0]), defaultStake);
@@ -726,7 +731,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
 
     // @notice verifies that an operator who was registered for a single quorum can be deregistered
     function test_deregisterOperator_singleQuorumAndSingleOperator() public {
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
         uint32 registrationBlockNumber = 100;
         uint32 deregistrationBlockNumber = 200;
 
@@ -790,7 +795,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
     function testFuzz_deregisterOperator_fuzzedQuorumAndSingleOperator(
         uint256 quorumBitmap
     ) public {
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
         uint32 registrationBlockNumber = 100;
         uint32 deregistrationBlockNumber = 200;
 
@@ -860,7 +865,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         uint256 registrationQuorumBitmap,
         uint256 deregistrationQuorumBitmap
     ) public {
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
         uint32 registrationBlockNumber = 100;
         uint32 deregistrationBlockNumber = 200;
 
@@ -1077,7 +1082,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
     function test_reregisterOperator() public {
         test_deregisterOperator_singleQuorumAndSingleOperator();
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
         uint32 reregistrationBlockNumber = 201;
 
         bytes memory quorumNumbers = new bytes(1);
@@ -1144,7 +1149,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
 
     // tests for the internal `_deregisterOperator` function:
     function test_deregisterOperatorExternal_revert_noQuorums() public {
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
         uint32 registrationBlockNumber = 100;
         uint32 deregistrationBlockNumber = 200;
 
@@ -1173,7 +1178,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
     }
 
     function test_deregisterOperatorExternal_revert_incorrectQuorums() public {
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
         uint32 registrationBlockNumber = 100;
         uint32 deregistrationBlockNumber = 200;
 
@@ -1202,7 +1207,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         cheats.prank(registryCoordinatorOwner);
         registryCoordinator.setEjectionCooldown(reregistrationDelay);
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
         uint32 registrationBlockNumber = 100;
         uint32 reregistrationBlockNumber = 200;
 
@@ -1234,7 +1239,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         cheats.prank(registryCoordinatorOwner);
         registryCoordinator.setEjectionCooldown(reregistrationDelay);
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
         uint32 registrationBlockNumber = 100;
         uint32 reregistrationBlockNumber = 200;
 
@@ -1267,7 +1272,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         uint256 registrationQuorumBitmap,
         uint256 deregistrationQuorumBitmap
     ) public {
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
         uint32 registrationBlockNumber = 100;
         uint32 deregistrationBlockNumber = 200;
 
@@ -1380,7 +1385,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         // register operator with default stake with default quorum number
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
 
         _setOperatorWeight(defaultOperator, uint8(quorumNumbers[0]), defaultStake);
 
@@ -1420,7 +1425,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         bytes memory quorumNumbers = new bytes(2);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
         quorumNumbers[1] = bytes1(defaultQuorumNumber + 1);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
 
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             _setOperatorWeight(defaultOperator, uint8(quorumNumbers[i]), defaultStake);
@@ -1468,7 +1473,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
     function test_ejectOperator_revert_notEjector() public {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
 
         _setOperatorWeight(defaultOperator, uint8(quorumNumbers[0]), defaultStake);
 
@@ -1494,7 +1499,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
     // @notice tests for correct reversion and return values in the event that an operator registers
     function test_getQuorumBitmapIndicesAtBlockNumber_operatorRegistered() public {
         // register the operator
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
         uint32 registrationBlockNumber = 100;
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
@@ -1737,8 +1742,8 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         emit QuorumIndexUpdate(operatorToRegisterId, defaultQuorumNumber, numOperators - 1);
 
         {
-            ISignatureUtils.SignatureWithSaltAndExpiry memory emptyAVSRegSig;
-            ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry =
+            ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptyAVSRegSig;
+            ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory signatureWithExpiry =
             _signOperatorChurnApproval(
                 operatorToRegister,
                 operatorToRegisterId,
@@ -1803,7 +1808,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
     ) public {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptyAVSRegSig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptyAVSRegSig;
 
         (
             address operatorToRegister,
@@ -1815,7 +1820,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         _setOperatorWeight(operatorToRegister, defaultQuorumNumber, defaultStake);
 
         cheats.roll(registrationBlockNumber);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry =
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory signatureWithExpiry =
         _signOperatorChurnApproval(
             operatorToRegister,
             operatorToRegisterId,
@@ -1840,7 +1845,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
     ) public {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptyAVSRegSig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptyAVSRegSig;
 
         uint96 operatorToKickStake = defaultMaxOperatorCount * defaultStake;
         (
@@ -1860,7 +1865,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         );
 
         cheats.roll(registrationBlockNumber);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry =
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory signatureWithExpiry =
         _signOperatorChurnApproval(
             operatorToRegister,
             operatorToRegisterId,
@@ -1885,7 +1890,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
     ) public {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptyAVSRegSig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptyAVSRegSig;
 
         (
             address operatorToRegister,
@@ -1897,7 +1902,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         _setOperatorWeight(operatorToRegister, defaultQuorumNumber, registeringStake);
 
         cheats.roll(registrationBlockNumber);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry;
         signatureWithSaltAndExpiry.expiry = block.timestamp + 10;
         signatureWithSaltAndExpiry.signature =
             hex"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001B";
@@ -1919,7 +1924,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
     ) public {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptyAVSRegSig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptyAVSRegSig;
 
         (
             address operatorToRegister,
@@ -1932,7 +1937,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         _setOperatorWeight(operatorToRegister, defaultQuorumNumber, registeringStake);
 
         cheats.roll(registrationBlockNumber);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry =
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry =
         _signOperatorChurnApproval(
             operatorToRegister,
             operatorToRegisterId,
@@ -1968,7 +1973,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
     // @notice tests the `updateOperators` function with a single registered operator as input
     function test_updateOperators_singleOperator() public {
         // register the default operator
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
         uint32 registrationBlockNumber = 100;
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
@@ -1997,7 +2002,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         emit log_named_uint("mockReturnData", mockReturnData);
 
         // register the default operator
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
         uint32 registrationBlockNumber = 100;
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(registrationBitmap);
         for (uint256 i = 0; i < quorumNumbers.length; ++i) {
@@ -2089,7 +2094,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
 
     function test_updateOperatorsForQuorum_revert_unregisteredOperator() public {
         // register the default operator
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
         uint32 registrationBlockNumber = 100;
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
@@ -2172,7 +2177,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
 
     function test_updateOperatorsForQuorum_singleOperator() public {
         // register the default operator
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySig;
         uint32 registrationBlockNumber = 100;
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
@@ -2437,8 +2442,12 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
             operatorToRegister.key.addr, address(registryCoordinator), salt, expiry
         );
         bytes memory signature = OperatorKeyOperationsLib.sign(operatorToRegister.key, digestHash);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = ISignatureUtils
-            .SignatureWithSaltAndExpiry({signature: signature, salt: salt, expiry: expiry});
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature =
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
+            signature: signature,
+            salt: salt,
+            expiry: expiry
+        });
 
         bytes32 messageHash =
             registryCoordinator.calculatePubkeyRegistrationMessageHash(operatorToRegister.key.addr);
@@ -2485,7 +2494,7 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(uint8(0));
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory params;
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature;
 
         cheats.expectRevert();
         registryCoordinator.registerOperator(
@@ -2629,7 +2638,7 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
             quorumNumber: 0
         });
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature;
 
         // Encode with RegistrationType.CHURN
         bytes memory data = abi.encode(

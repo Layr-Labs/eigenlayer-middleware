@@ -4,6 +4,10 @@ pragma solidity ^0.8.27;
 import "../../src/interfaces/IRegistryCoordinator.sol";
 import "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 import "../../src/libraries/BN254.sol";
+import {
+    ISignatureUtilsMixin,
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 
 abstract contract RegistryCoordinatorMock is IRegistryCoordinator {
     // Add missing function declarations from interface
@@ -62,15 +66,15 @@ abstract contract RegistryCoordinatorMock is IRegistryCoordinator {
         bytes memory quorumNumbers,
         string memory socket,
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory params,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature
     ) external virtual;
     function registerOperatorWithChurn(
         bytes calldata quorumNumbers,
         string memory socket,
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory params,
-        OperatorKickParam[] memory operatorKickParams,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+        ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory kickParams,
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature,
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature
     ) external virtual;
     function setChurnApprover(
         address _churnApprover

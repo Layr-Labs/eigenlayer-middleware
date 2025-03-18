@@ -188,11 +188,11 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
 
         // Deploy EigenPod Contracts
-        pod = new EigenPod(ethPOSDeposit, eigenPodManager, GENESIS_TIME_LOCAL);
+        pod = new EigenPod(ethPOSDeposit, eigenPodManager, GENESIS_TIME_LOCAL, "v0.0.1");
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
-        PermissionController permissionControllerImplementation = new PermissionController();
+        PermissionController permissionControllerImplementation = new PermissionController("v0.0.1");
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         DelegationManager delegationImplementation = new DelegationManager(
@@ -201,26 +201,31 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             allocationManager,
             pauserRegistry,
             permissionController,
-            0
+            0,
+            "v0.0.1"
         );
         StrategyManager strategyManagerImplementation =
-            new StrategyManager(delegationManager, pauserRegistry);
-        EigenPodManager eigenPodManagerImplementation =
-            new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegationManager, pauserRegistry);
+            new StrategyManager(delegationManager, pauserRegistry, "v0.0.1");
+        EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
+            ethPOSDeposit, eigenPodBeacon, delegationManager, pauserRegistry, "v0.0.1"
+        );
         AVSDirectory avsDirectoryImplementation =
-            new AVSDirectory(delegationManager, pauserRegistry);
+            new AVSDirectory(delegationManager, pauserRegistry, "v0.0.1");
 
         RewardsCoordinator rewardsCoordinatorImplementation = new RewardsCoordinator(
-            delegationManager,
-            IStrategyManager(address(strategyManager)),
-            allocationManager,
-            pauserRegistry,
-            permissionController,
-            CALCULATION_INTERVAL_SECONDS,
-            MAX_REWARDS_DURATION,
-            MAX_RETROACTIVE_LENGTH,
-            MAX_FUTURE_LENGTH,
-            GENESIS_REWARDS_TIMESTAMP
+            IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
+                delegationManager: delegationManager,
+                strategyManager: strategyManager,
+                allocationManager: allocationManager,
+                pauserRegistry: pauserRegistry,
+                permissionController: permissionController,
+                CALCULATION_INTERVAL_SECONDS: CALCULATION_INTERVAL_SECONDS,
+                MAX_REWARDS_DURATION: MAX_REWARDS_DURATION,
+                MAX_RETROACTIVE_LENGTH: MAX_RETROACTIVE_LENGTH,
+                MAX_FUTURE_LENGTH: MAX_FUTURE_LENGTH,
+                GENESIS_REWARDS_TIMESTAMP: GENESIS_REWARDS_TIMESTAMP,
+                version: "v0.0.1"
+            })
         );
 
         AllocationManager allocationManagerImplementation = new AllocationManager(
@@ -228,7 +233,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             pauserRegistry,
             permissionController,
             uint32(7 days), // DEALLOCATION_DELAY
-            uint32(1 days) // ALLOCATION_CONFIGURATION_DELAY
+            uint32(1 days), // ALLOCATION_CONFIGURATION_DELAY
+            "v0.0.1" // Added config parameter
         );
 
         // Third, upgrade the proxy contracts to point to the implementations
@@ -307,7 +313,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
 
         // Deploy and whitelist strategies
-        baseStrategyImplementation = new StrategyBase(strategyManager, pauserRegistry);
+        baseStrategyImplementation = new StrategyBase(strategyManager, pauserRegistry, "v0.0.1");
         for (uint256 i = 0; i < MAX_STRATEGY_COUNT; i++) {
             string memory number = uint256(i).toString();
             string memory stratName = string.concat("StrategyToken", number);
@@ -423,7 +429,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             indexRegistry,
             socketRegistry,
             allocationManager,
-            pauserRegistry
+            pauserRegistry,
+            "v0.0.1"
         );
         proxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(payable(address(registryCoordinator))),
@@ -444,7 +451,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             indexRegistry,
             socketRegistry,
             allocationManager,
-            pauserRegistry
+            pauserRegistry,
+            "v0.0.1"
         );
         cheats.prank(avsAccountIdentifier);
         allocationManager.updateAVSMetadataURI(

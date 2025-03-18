@@ -6,6 +6,10 @@ import {
     IAllocationManager,
     OperatorSet
 } from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {ISignatureUtilsMixin} from
+    "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
+import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
+import {SemVerMixin} from "eigenlayer-contracts/src/contracts/mixins/SemVerMixin.sol";
 import {IBLSApkRegistry, IBLSApkRegistryTypes} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
@@ -38,7 +42,8 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         IIndexRegistry _indexRegistry,
         ISocketRegistry _socketRegistry,
         IAllocationManager _allocationManager,
-        IPauserRegistry _pauserRegistry
+        IPauserRegistry _pauserRegistry,
+        string memory _version
     )
         RegistryCoordinatorStorage(
             _serviceManager,
@@ -48,6 +53,15 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
             _socketRegistry,
             _allocationManager,
             _pauserRegistry
+        )
+        SlashingRegistryCoordinator(
+            _stakeRegistry,
+            _blsApkRegistry,
+            _indexRegistry,
+            _socketRegistry,
+            _allocationManager,
+            _pauserRegistry,
+            _version
         )
     {}
 
@@ -299,5 +313,27 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         uint8 quorumNumber
     ) external view returns (bool) {
         return _isM2Quorum(quorumNumber);
+    }
+
+    /**
+     * @notice Returns the domain separator used for EIP-712 signatures
+     * @return The domain separator
+     */
+    function domainSeparator() external view virtual override returns (bytes32) {
+        return _domainSeparatorV4();
+    }
+
+    /**
+     * @notice Returns the version of the contract
+     * @return The version string
+     */
+    function version()
+        public
+        view
+        virtual
+        override(ISemVerMixin, SemVerMixin)
+        returns (string memory)
+    {
+        return "v0.0.1";
     }
 }

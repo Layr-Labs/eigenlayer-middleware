@@ -3,7 +3,10 @@ pragma solidity ^0.8.27;
 
 import {Test, console} from "forge-std/Test.sol";
 
-import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {
+    ISignatureUtilsMixin,
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IRewardsCoordinator} from
@@ -35,7 +38,7 @@ contract MockDelegationManager {
 contract MockAVSDirectory {
     function registerOperatorToAVS(
         address,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory
     ) external pure {}
 
     function deregisterOperatorFromAVS(
@@ -120,7 +123,7 @@ contract ECDSAServiceManagerSetup is Test {
             10000, // Assuming a threshold weight of 10000 basis points
             quorum
         );
-        ISignatureUtils.SignatureWithSaltAndExpiry memory dummySignature;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory dummySignature;
 
         vm.prank(operator1);
         mockStakeRegistry.registerOperatorWithSignature(dummySignature, operator1);
@@ -131,7 +134,7 @@ contract ECDSAServiceManagerSetup is Test {
 
     function testRegisterOperatorToAVS() public {
         address operator = operator1;
-        ISignatureUtils.SignatureWithSaltAndExpiry memory signature;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory signature;
 
         vm.prank(address(mockStakeRegistry));
         serviceManager.registerOperatorToAVS(operator, signature);

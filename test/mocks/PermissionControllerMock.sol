@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import {IPermissionController} from
     "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
 
 contract PermissionControllerIntermediate is IPermissionController {
     function addPendingAdmin(address account, address admin) external virtual {}
@@ -61,6 +62,14 @@ contract PermissionControllerIntermediate is IPermissionController {
         address target,
         bytes4 selector
     ) external virtual returns (address[] memory) {}
+
+    /**
+     * @notice Returns the version of the contract
+     * @return The version string
+     */
+    function version() external pure virtual returns (string memory) {
+        return "v0.0.1";
+    }
 }
 
 contract PermissionControllerMock is PermissionControllerIntermediate {

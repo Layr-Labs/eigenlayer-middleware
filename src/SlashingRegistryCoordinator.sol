@@ -2,7 +2,8 @@
 pragma solidity ^0.8.27;
 
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
-import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {ISignatureUtilsMixin} from
+    "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {
@@ -10,7 +11,9 @@ import {
     OperatorSet,
     IAllocationManagerTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
 import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
+import {SemVerMixin} from "eigenlayer-contracts/src/contracts/mixins/SemVerMixin.sol";
 
 import {IBLSApkRegistry, IBLSApkRegistryTypes} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry, IStakeRegistryTypes} from "./interfaces/IStakeRegistry.sol";
@@ -40,12 +43,13 @@ import {SlashingRegistryCoordinatorStorage} from "./SlashingRegistryCoordinatorS
  * @author Layr Labs, Inc.
  */
 contract SlashingRegistryCoordinator is
-    EIP712,
+    SlashingRegistryCoordinatorStorage,
     Initializable,
+    EIP712,
+    SemVerMixin,
     Pausable,
     OwnableUpgradeable,
-    SlashingRegistryCoordinatorStorage,
-    ISignatureUtils
+    ISignatureUtilsMixin
 {
     using BitmapUtils for *;
     using BN254 for BN254.G1Point;
@@ -75,7 +79,8 @@ contract SlashingRegistryCoordinator is
         IIndexRegistry _indexRegistry,
         ISocketRegistry _socketRegistry,
         IAllocationManager _allocationManager,
-        IPauserRegistry _pauserRegistry
+        IPauserRegistry _pauserRegistry,
+        string memory _version
     )
         SlashingRegistryCoordinatorStorage(
             _stakeRegistry,
@@ -84,7 +89,8 @@ contract SlashingRegistryCoordinator is
             _socketRegistry,
             _allocationManager
         )
-        EIP712("AVSRegistryCoordinator", "v0.0.1")
+        EIP712("AVSRegistryCoordinator", _version)
+        SemVerMixin(_version)
         Pausable(_pauserRegistry)
     {
         _disableInitializers();
@@ -1123,5 +1129,13 @@ contract SlashingRegistryCoordinator is
         address _avs
     ) public view virtual returns (bool) {
         return _avs == address(avs);
+    }
+
+    /**
+     * @notice Returns the domain separator used for EIP-712 signatures
+     * @return The domain separator
+     */
+    function domainSeparator() external view virtual override returns (bytes32) {
+        return _domainSeparatorV4();
     }
 }
