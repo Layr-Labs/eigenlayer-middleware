@@ -932,7 +932,7 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
      * @dev test that attempting to get APK indices for a block number before the first update reverts
      */
     function testFuzz_quorumApkUpdates_BlockNumberBeforeFirstUpdate(
-        uint32 blockNumber,
+        uint256 blockNumber,
         uint8 quorumNumber
     ) external {
         // Initialize quorum if not already initialized
@@ -949,11 +949,11 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
         _registerOperator(operator, quorumNumbers);
         uint32 firstUpdateBlock = uint32(block.number);
 
-        // Ensure blockNumber is before first update
-        cheats.assume(blockNumber < firstUpdateBlock);
+        // Apply bound to constrain blockNumberParam within the valid range
+        uint256 boundedBlockNumber = bound(blockNumber, 0, firstUpdateBlock - 1);
 
         // Expect revert when querying block before first update
         cheats.expectRevert(IBLSApkRegistryErrors.BlockNumberBeforeFirstUpdate.selector);
-        blsApkRegistry.getApkIndicesAtBlockNumber(quorumNumbers, blockNumber);
+        blsApkRegistry.getApkIndicesAtBlockNumber(quorumNumbers, boundedBlockNumber);
     }
 }

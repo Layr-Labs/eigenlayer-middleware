@@ -186,6 +186,8 @@ contract AllocationManagerIntermediate is IAllocationManager {
 }
 
 contract AllocationManagerMock is AllocationManagerIntermediate {
+    uint32 public constant DEALLOCATION_DELAY = 86400;
+
     function getAllocatedStake(
         address operator,
         IStrategy strategy

@@ -318,7 +318,8 @@ contract MockAVSDeployer is Test {
             indexRegistry,
             socketRegistry,
             allocationManagerMock,
-            pauserRegistry
+            pauserRegistry,
+            "v0.0.1"
         );
         {
             proxyAdmin.upgradeAndCall(

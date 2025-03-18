@@ -16,7 +16,8 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         IIndexRegistry _indexRegistry,
         ISocketRegistry _socketRegistry,
         IAllocationManager _allocationManager,
-        IPauserRegistry _pauserRegistry
+        IPauserRegistry _pauserRegistry,
+        string memory _version
     )
         RegistryCoordinator(
             _serviceManager,
@@ -25,7 +26,8 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
             _indexRegistry,
             _socketRegistry,
             _allocationManager,
-            _pauserRegistry
+            _pauserRegistry,
+            _version
         )
     {
         _transferOwnership(msg.sender);

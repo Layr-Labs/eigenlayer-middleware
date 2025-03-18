@@ -429,7 +429,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             indexRegistry,
             socketRegistry,
             allocationManager,
-            pauserRegistry
+            pauserRegistry,
+            "v0.0.1"
         );
         proxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(payable(address(registryCoordinator))),
@@ -450,7 +451,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             indexRegistry,
             socketRegistry,
             allocationManager,
-            pauserRegistry
+            pauserRegistry,
+            "v0.0.1"
         );
         cheats.prank(avsAccountIdentifier);
         allocationManager.updateAVSMetadataURI(

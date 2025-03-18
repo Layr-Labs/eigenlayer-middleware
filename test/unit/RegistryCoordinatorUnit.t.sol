@@ -569,7 +569,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         _setOperatorWeight(operatorToRegister, defaultQuorumNumber, defaultStake);
 
         cheats.prank(operatorToRegister);
-        cheats.expectRevert(bytes4(keccak256("MaxQuorumsReached()")));
+        cheats.expectRevert(bytes4(keccak256("MaxOperatorCountReached()")));
         registryCoordinator.registerOperator(
             quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
         );

@@ -110,7 +110,8 @@ contract Test_CoreRegistration is MockAVSDeployer {
             indexRegistry,
             socketRegistry,
             allocationManager,
-            pauserRegistry
+            pauserRegistry,
+            "v0.0.1"
         );
 
         // Upgrade Registry Coordinator & ServiceManager
