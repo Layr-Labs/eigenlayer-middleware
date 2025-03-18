@@ -932,7 +932,7 @@ contract ECDSAStakeRegistryEventsTest is ECDSAStakeRegistrySetup {
     }
 
     function test_OperatorRegistered_Event() public {
-        ISignatureUtils.SignatureWithSaltAndExpiry memory sig;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory sig;
 
         // Expect event
         vm.expectEmit(true, true, false, true);
