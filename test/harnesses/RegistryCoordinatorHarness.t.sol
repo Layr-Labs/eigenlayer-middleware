@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import "../../src/RegistryCoordinator.sol";
 import {ISocketRegistry} from "../../src/interfaces/ISocketRegistry.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
+import {IRegistryCoordinatorTypes} from "../../src/interfaces/IRegistryCoordinator.sol";
 
 import "forge-std/Test.sol";
 
@@ -19,9 +20,9 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         IPauserRegistry _pauserRegistry
     )
         RegistryCoordinator(
-            RegistryCoordinatorStorage.RegistryCoordinatorParams(
+            IRegistryCoordinatorTypes.RegistryCoordinatorParams(
                 _serviceManager,
-                RegistryCoordinatorStorage.SlashingRegistryParams(
+                IRegistryCoordinatorTypes.SlashingRegistryParams(
                     _stakeRegistry,
                     _blsApkRegistry,
                     _indexRegistry,

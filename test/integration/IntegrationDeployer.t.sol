@@ -34,6 +34,7 @@ import "../../src/BLSApkRegistry.sol";
 import "../mocks/ServiceManagerMock.sol";
 import "../../src/OperatorStateRetriever.sol";
 import "../../src/SocketRegistry.sol";
+import "../../src/interfaces/IRegistryCoordinator.sol";
 
 // Mocks and More
 import "../../src/libraries/BN254.sol";
@@ -417,9 +418,9 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         uint32[] memory slashableStakeQuorumLookAheadPeriods = new uint32[](0);
 
         RegistryCoordinator registryCoordinatorImplementation = new RegistryCoordinator(
-            RegistryCoordinatorStorage.RegistryCoordinatorParams(
+            IRegistryCoordinatorTypes.RegistryCoordinatorParams(
                 serviceManager,
-                RegistryCoordinatorStorage.SlashingRegistryParams(
+                IRegistryCoordinatorTypes.SlashingRegistryParams(
                     stakeRegistry,
                     blsApkRegistry,
                     indexRegistry,
