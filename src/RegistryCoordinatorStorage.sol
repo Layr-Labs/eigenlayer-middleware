@@ -8,38 +8,12 @@ import {IBLSApkRegistry, IBLSApkRegistryTypes} from "./interfaces/IBLSApkRegistr
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {
+    IRegistryCoordinator, IRegistryCoordinatorTypes
+} from "./interfaces/IRegistryCoordinator.sol";
 import {ISocketRegistry} from "./interfaces/ISocketRegistry.sol";
 
 abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
-    /**
-     * @notice Parameters for initializing SlashingRegistryCoordinator
-     * @param stakeRegistry The StakeRegistry contract that keeps track of operators' stakes
-     * @param blsApkRegistry The BLSApkRegistry contract that keeps track of operators' BLS public keys
-     * @param indexRegistry The IndexRegistry contract that keeps track of ordered operator lists
-     * @param socketRegistry The SocketRegistry contract that keeps track of operators' sockets
-     * @param allocationManager The AllocationManager contract for operator set management
-     * @param pauserRegistry The PauserRegistry contract for pausing functionality
-     */
-    struct SlashingRegistryParams {
-        IStakeRegistry stakeRegistry;
-        IBLSApkRegistry blsApkRegistry;
-        IIndexRegistry indexRegistry;
-        ISocketRegistry socketRegistry;
-        IAllocationManager allocationManager;
-        IPauserRegistry pauserRegistry;
-    }
-
-    /**
-     * @notice Parameters for initializing RegistryCoordinator
-     * @param serviceManager The ServiceManager contract for this AVS
-     * @param slashingParams Parameters for initializing SlashingRegistryCoordinator
-     */
-    struct RegistryCoordinatorParams {
-        IServiceManager serviceManager;
-        SlashingRegistryParams slashingParams;
-    }
-
     /**
      *
      *                            CONSTANTS AND IMMUTABLES
@@ -68,7 +42,7 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
     uint256 internal _m2QuorumBitmap;
 
     constructor(
-        RegistryCoordinatorParams memory params
+        IRegistryCoordinatorTypes.RegistryCoordinatorParams memory params
     ) {
         serviceManager = params.serviceManager;
     }

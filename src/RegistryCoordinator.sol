@@ -10,7 +10,9 @@ import {IBLSApkRegistry, IBLSApkRegistryTypes} from "./interfaces/IBLSApkRegistr
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {
+    IRegistryCoordinator, IRegistryCoordinatorTypes
+} from "./interfaces/IRegistryCoordinator.sol";
 import {ISocketRegistry} from "./interfaces/ISocketRegistry.sol";
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
@@ -32,7 +34,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage, SlashingRegistryCoor
     using BitmapUtils for *;
 
     constructor(
-        RegistryCoordinatorStorage.RegistryCoordinatorParams memory params
+        IRegistryCoordinatorTypes.RegistryCoordinatorParams memory params
     )
         RegistryCoordinatorStorage(params)
         SlashingRegistryCoordinator(
