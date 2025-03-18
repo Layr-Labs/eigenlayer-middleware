@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {Vm} from "forge-std/Vm.sol";
-import {BN254} from "src/libraries/BN254.sol";
+import {BN254} from "../../src/libraries/BN254.sol";
 import {BN256G2} from "./BN256G2.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -87,6 +87,8 @@ library OperatorWalletLib {
         uint256 salt = uint256(keccak256(abi.encodePacked(name)));
         Wallet memory vmWallet = createWallet(salt);
         BLSWallet memory blsWallet = createBLSWallet(salt);
+
+        vm.label(vmWallet.addr, name);
 
         return Operator({key: vmWallet, signingKey: blsWallet});
     }

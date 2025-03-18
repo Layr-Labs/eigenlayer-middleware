@@ -4,7 +4,10 @@ pragma solidity ^0.8.27;
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {
+    ISignatureUtilsMixin,
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IServiceManager} from "../interfaces/IServiceManager.sol";
 import {IServiceManagerUI} from "../interfaces/IServiceManagerUI.sol";
@@ -127,7 +130,7 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
     /// @inheritdoc IServiceManagerUI
     function registerOperatorToAVS(
         address operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature
     ) external virtual onlyStakeRegistry {
         _registerOperatorToAVS(operator, operatorSignature);
     }
@@ -170,7 +173,7 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
      */
     function _registerOperatorToAVS(
         address operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature
     ) internal virtual {
         IAVSDirectory(avsDirectory).registerOperatorToAVS(operator, operatorSignature);
     }

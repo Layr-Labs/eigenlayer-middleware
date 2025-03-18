@@ -6,6 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
 import "./AVSDirectoryMock.sol";
 
 contract RewardsCoordinatorMock is IRewardsCoordinator {
@@ -158,4 +159,12 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
     function MAX_FUTURE_LENGTH() external view override returns (uint32) {}
 
     function GENESIS_REWARDS_TIMESTAMP() external view override returns (uint32) {}
+
+    /**
+     * @notice Returns the version of the contract
+     * @return The version string
+     */
+    function version() external pure returns (string memory) {
+        return "v0.0.1";
+    }
 }

@@ -6,11 +6,17 @@ import {
     IAllocationManager,
     OperatorSet
 } from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {ISignatureUtilsMixin} from
+    "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
+import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
+import {SemVerMixin} from "eigenlayer-contracts/src/contracts/mixins/SemVerMixin.sol";
 import {IBLSApkRegistry, IBLSApkRegistryTypes} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {
+    IRegistryCoordinator, IRegistryCoordinatorTypes
+} from "./interfaces/IRegistryCoordinator.sol";
 import {ISocketRegistry} from "./interfaces/ISocketRegistry.sol";
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
@@ -28,26 +34,21 @@ import {RegistryCoordinatorStorage} from "./RegistryCoordinatorStorage.sol";
  *
  * @author Layr Labs, Inc.
  */
-contract RegistryCoordinator is RegistryCoordinatorStorage {
+contract RegistryCoordinator is RegistryCoordinatorStorage, SlashingRegistryCoordinator {
     using BitmapUtils for *;
 
     constructor(
-        IServiceManager _serviceManager,
-        IStakeRegistry _stakeRegistry,
-        IBLSApkRegistry _blsApkRegistry,
-        IIndexRegistry _indexRegistry,
-        ISocketRegistry _socketRegistry,
-        IAllocationManager _allocationManager,
-        IPauserRegistry _pauserRegistry
+        IRegistryCoordinatorTypes.RegistryCoordinatorParams memory params
     )
-        RegistryCoordinatorStorage(
-            _serviceManager,
-            _stakeRegistry,
-            _blsApkRegistry,
-            _indexRegistry,
-            _socketRegistry,
-            _allocationManager,
-            _pauserRegistry
+        RegistryCoordinatorStorage(params.serviceManager)
+        SlashingRegistryCoordinator(
+            params.slashingParams.stakeRegistry,
+            params.slashingParams.blsApkRegistry,
+            params.slashingParams.indexRegistry,
+            params.slashingParams.socketRegistry,
+            params.slashingParams.allocationManager,
+            params.slashingParams.pauserRegistry,
+            "v0.0.1"
         )
     {}
 
@@ -167,7 +168,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
             for (uint256 i = 0; i < quorumNumbers.length; i++) {
                 singleQuorumNumber[0] = quorumNumbers[i];
 
-                if (_isM2Quorum(uint8(quorumNumbers[i]))) {
+                if (isM2Quorum(uint8(quorumNumbers[i]))) {
                     // For M2 quorums, use _deregisterOperator
                     _deregisterOperator({operator: operator, quorumNumbers: singleQuorumNumber});
                 } else {
@@ -199,9 +200,16 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         // If operator sets are not enabled, set the m2 quorum bitmap to the current m2 quorum bitmap
         // and enable operator sets
         if (!operatorSetsEnabled) {
-            _m2QuorumBitmap = m2QuorumBitmap();
-            operatorSetsEnabled = true;
+            _enableOperatorSets();
         }
+    }
+
+    /// @dev Internal function to enable operator sets and set the M2 quorum bitmap
+    function _enableOperatorSets() internal {
+        require(!operatorSetsEnabled, OperatorSetsAlreadyEnabled());
+        _m2QuorumBitmap = _getTotalQuorumBitmap();
+        operatorSetsEnabled = true;
+        emit OperatorSetsEnabled();
     }
 
     /// @dev Hook to allow for any post-deregister logic
@@ -262,14 +270,6 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
         return (1 << quorumCount) - 1;
     }
 
-    /// @notice Returns true if the quorum number is an M2 quorum
-    /// @dev We use bitwise and to check if the quorum number is an M2 quorum
-    function _isM2Quorum(
-        uint8 quorumNumber
-    ) internal view returns (bool) {
-        return m2QuorumBitmap().isSet(quorumNumber);
-    }
-
     /**
      *
      *                            VIEW FUNCTIONS
@@ -290,7 +290,29 @@ contract RegistryCoordinator is RegistryCoordinatorStorage {
     /// @notice Returns true if the quorum number is an M2 quorum
     function isM2Quorum(
         uint8 quorumNumber
-    ) external view returns (bool) {
-        return _isM2Quorum(quorumNumber);
+    ) public view returns (bool) {
+        return m2QuorumBitmap().isSet(quorumNumber);
+    }
+
+    /**
+     * @notice Returns the domain separator used for EIP-712 signatures
+     * @return The domain separator
+     */
+    function domainSeparator() external view virtual override returns (bytes32) {
+        return _domainSeparatorV4();
+    }
+
+    /**
+     * @notice Returns the version of the contract
+     * @return The version string
+     */
+    function version()
+        public
+        view
+        virtual
+        override(ISemVerMixin, SemVerMixin)
+        returns (string memory)
+    {
+        return "v0.0.1";
     }
 }

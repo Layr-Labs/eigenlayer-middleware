@@ -6,11 +6,17 @@ import {console2 as console} from "forge-std/Test.sol";
 
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IDelegationManagerTypes} from
+    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {StrategyManager} from "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
-import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {
+    ISignatureUtilsMixin,
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
+import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
 import {SlashingLib} from "eigenlayer-contracts/src/contracts/libraries/SlashingLib.sol";
 
 contract DelegationIntermediate is IDelegationManager {
@@ -236,17 +242,53 @@ contract DelegationIntermediate is IDelegationManager {
 
     function getQueuedWithdrawal(
         bytes32 withdrawalRoot
-    ) external view override returns (Withdrawal memory) {}
+    )
+        external
+        view
+        override
+        returns (IDelegationManagerTypes.Withdrawal memory withdrawal, uint256[] memory shares)
+    {
+        return (
+            IDelegationManagerTypes.Withdrawal({
+                staker: address(0),
+                delegatedTo: address(0),
+                withdrawer: address(0),
+                nonce: 0,
+                startBlock: 0,
+                strategies: new IStrategy[](0),
+                scaledShares: new uint256[](0)
+            }),
+            new uint256[](0)
+        );
+    }
 
     function getQueuedWithdrawalRoots(
         address staker
-    ) external view override returns (bytes32[] memory) {}
+    ) external view override returns (bytes32[] memory) {
+        return new bytes32[](0);
+    }
 
     function convertToDepositShares(
         address staker,
         IStrategy[] memory strategies,
         uint256[] memory withdrawableShares
     ) external view override returns (uint256[] memory) {}
+
+    /**
+     * @notice Returns the domain separator used for EIP-712 signatures
+     * @return The domain separator
+     */
+    function domainSeparator() external pure returns (bytes32) {
+        return bytes32(0);
+    }
+
+    /**
+     * @notice Returns the version of the contract
+     * @return The version string
+     */
+    function version() external pure returns (string memory) {
+        return "v0.0.1";
+    }
 }
 
 contract DelegationMock is DelegationIntermediate {

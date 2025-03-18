@@ -8,6 +8,7 @@ import {
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
+import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
 
 contract AllocationManagerIntermediate is IAllocationManager {
     function initialize(address initialOwner, uint256 initialPausedStatus) external virtual {}
@@ -149,6 +150,48 @@ contract AllocationManagerIntermediate is IAllocationManager {
         address operator,
         OperatorSet memory operatorSet
     ) external view virtual returns (bool) {}
+
+    function getAllocatedStake(
+        OperatorSet memory operatorSet,
+        address[] memory operators,
+        IStrategy[] memory strategies
+    ) external view virtual returns (uint256[][] memory slashableStake) {
+        uint256[][] memory result = new uint256[][](operators.length);
+        for (uint256 i = 0; i < operators.length; i++) {
+            result[i] = new uint256[](strategies.length);
+            for (uint256 j = 0; j < strategies.length; j++) {
+                result[i][j] = 0;
+            }
+        }
+        return result;
+    }
+
+    function getEncumberedMagnitude(
+        address operator,
+        IStrategy strategy
+    ) external view virtual returns (uint64) {
+        return 0;
+    }
+
+    function isOperatorSlashable(
+        address operator,
+        OperatorSet memory operatorSet
+    ) external view virtual returns (bool) {
+        return false;
+    }
+
+    function version() external pure virtual returns (string memory) {
+        return "v0.0.1";
+    }
 }
 
-contract AllocationManagerMock is AllocationManagerIntermediate {}
+contract AllocationManagerMock is AllocationManagerIntermediate {
+    uint32 public constant DEALLOCATION_DELAY = 86400;
+
+    function getAllocatedStake(
+        address operator,
+        IStrategy strategy
+    ) external view returns (uint256) {
+        return 0;
+    }
+}

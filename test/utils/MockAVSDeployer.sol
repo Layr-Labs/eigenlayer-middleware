@@ -3,10 +3,15 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ITransparentUpgradeableProxy} from
+    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {
+    ISignatureUtilsMixin,
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
 import {BN254} from "../../src/libraries/BN254.sol";
 
@@ -166,7 +171,7 @@ contract MockAVSDeployer is Test {
         strategyManagerMock = new StrategyManagerMock(delegationMock);
         allocationManagerMock = new AllocationManagerMock();
         permissionControllerMock = new PermissionControllerMock();
-        avsDirectoryImplementation = new AVSDirectory(delegationMock, pauserRegistry); // TODO: config value
+        avsDirectoryImplementation = new AVSDirectory(delegationMock, pauserRegistry, "v0.0.1");
         avsDirectory = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(
@@ -232,26 +237,26 @@ contract MockAVSDeployer is Test {
             allocationManagerMock
         );
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(stakeRegistry))),
+            ITransparentUpgradeableProxy(payable(address(stakeRegistry))),
             address(stakeRegistryImplementation)
         );
 
         socketRegistryImplementation = new SocketRegistry(registryCoordinator);
 
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(socketRegistry))),
+            ITransparentUpgradeableProxy(payable(address(socketRegistry))),
             address(socketRegistryImplementation)
         );
 
         blsApkRegistryImplementation = new BLSApkRegistryHarness(registryCoordinator);
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(blsApkRegistry))),
+            ITransparentUpgradeableProxy(payable(address(blsApkRegistry))),
             address(blsApkRegistryImplementation)
         );
 
         indexRegistryImplementation = new IndexRegistry(registryCoordinator);
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(indexRegistry))),
+            ITransparentUpgradeableProxy(payable(address(indexRegistry))),
             address(indexRegistryImplementation)
         );
 
@@ -264,7 +269,7 @@ contract MockAVSDeployer is Test {
             allocationManagerMock
         );
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(serviceManager))),
+            ITransparentUpgradeableProxy(payable(address(serviceManager))),
             address(serviceManagerImplementation)
         );
 
@@ -273,10 +278,11 @@ contract MockAVSDeployer is Test {
             pauserRegistry,
             permissionControllerMock,
             uint32(7 days), // DEALLOCATION_DELAY
-            uint32(1 days) // ALLOCATION_CONFIGURATION_DELAY
+            uint32(1 days), // ALLOCATION_CONFIGURATION_DELAY
+            "v0.0.1" // Added config parameter
         );
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(allocationManager))),
+            ITransparentUpgradeableProxy(payable(address(allocationManager))),
             address(allocationManagerImplementation)
         );
 
@@ -312,11 +318,12 @@ contract MockAVSDeployer is Test {
             indexRegistry,
             socketRegistry,
             allocationManagerMock,
-            pauserRegistry
+            pauserRegistry,
+            "v0.0.1"
         );
         {
             proxyAdmin.upgradeAndCall(
-                TransparentUpgradeableProxy(payable(address(registryCoordinator))),
+                ITransparentUpgradeableProxy(payable(address(registryCoordinator))),
                 address(registryCoordinatorImplementation),
                 abi.encodeCall(
                     SlashingRegistryCoordinator.initialize,
@@ -418,7 +425,7 @@ contract MockAVSDeployer is Test {
             _setOperatorWeight(operator, uint8(quorumNumbers[i]), stake);
         }
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
         cheats.prank(operator);
         registryCoordinator.registerOperator(
             quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySignatureAndExpiry
@@ -444,7 +451,7 @@ contract MockAVSDeployer is Test {
             _setOperatorWeight(operator, uint8(quorumNumbers[i]), stakes[uint8(quorumNumbers[i])]);
         }
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptySignatureAndExpiry;
         cheats.prank(operator);
         registryCoordinator.registerOperator(
             quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySignatureAndExpiry
@@ -539,12 +546,12 @@ contract MockAVSDeployer is Test {
         ISlashingRegistryCoordinator.OperatorKickParam[] memory operatorKickParams,
         bytes32 salt,
         uint256 expiry
-    ) internal view returns (ISignatureUtils.SignatureWithSaltAndExpiry memory) {
+    ) internal view returns (ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory) {
         bytes32 digestHash = registryCoordinator.calculateOperatorChurnApprovalDigestHash(
             registeringOperator, registeringOperatorId, operatorKickParams, salt, expiry
         );
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(churnApproverPrivateKey, digestHash);
-        return ISignatureUtils.SignatureWithSaltAndExpiry({
+        return ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
             signature: abi.encodePacked(r, s, v),
             expiry: expiry,
             salt: salt

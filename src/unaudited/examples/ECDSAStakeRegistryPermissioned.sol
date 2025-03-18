@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {
+    ISignatureUtilsMixin,
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {ECDSAStakeRegistry} from "../ECDSAStakeRegistry.sol";
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
@@ -102,7 +105,7 @@ contract ECDSAStakeRegistryPermissioned is ECDSAStakeRegistry {
     /// @inheritdoc ECDSAStakeRegistry
     function _registerOperatorWithSig(
         address _operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature,
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory _operatorSignature,
         address _operatorSigningKey
     ) internal override {
         if (allowlistedOperators[_operator] != true) {

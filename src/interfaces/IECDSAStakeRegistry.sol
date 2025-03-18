@@ -4,7 +4,10 @@ pragma solidity ^0.8.27;
 import {IERC1271Upgradeable} from
     "@openzeppelin-upgrades/contracts/interfaces/IERC1271Upgradeable.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {
+    ISignatureUtilsMixin,
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
@@ -139,7 +142,7 @@ interface IECDSAStakeRegistry is
      * @param signingKey The signing key to add to the operator's history.
      */
     function registerOperatorWithSignature(
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature,
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature,
         address signingKey
     ) external;
 

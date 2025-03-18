@@ -5,7 +5,10 @@ import "forge-std/Test.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 // Interfaces
-import "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {
+    ISignatureUtilsMixin,
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
@@ -17,19 +20,19 @@ import "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 
 // Middleware
-import "src/interfaces/IRegistryCoordinator.sol";
-import "src/RegistryCoordinator.sol";
-import "src/BLSApkRegistry.sol";
-import "src/IndexRegistry.sol";
-import "src/StakeRegistry.sol";
-import "src/ServiceManagerBase.sol";
+import "../../src/interfaces/IRegistryCoordinator.sol";
+import "../../src/RegistryCoordinator.sol";
+import "../../src/BLSApkRegistry.sol";
+import "../../src/IndexRegistry.sol";
+import "../../src/StakeRegistry.sol";
+import "../../src/ServiceManagerBase.sol";
 
-import "src/libraries/BN254.sol";
-import "src/libraries/BitmapUtils.sol";
-import "test/integration/TimeMachine.t.sol";
-import "test/integration/utils/Sort.t.sol";
-import "test/integration/utils/BitmapStrings.t.sol";
-import "test/mocks/ServiceManagerMock.sol";
+import "../../src/libraries/BN254.sol";
+import "../../src/libraries/BitmapUtils.sol";
+import "./TimeMachine.t.sol";
+import "./utils/Sort.t.sol";
+import "./utils/BitmapStrings.t.sol";
+import "../mocks/ServiceManagerMock.sol";
 
 interface IUserDeployer {
     function slashingRegistryCoordinator() external view returns (SlashingRegistryCoordinator);
@@ -169,7 +172,7 @@ contract User is Test {
 
         (
             ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory kickParams,
-            ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature
+            ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature
         ) = _generateOperatorKickParams(allQuorums, churnQuorums, churnTargets, standardQuorums);
 
         vm.warp(block.timestamp + 1);
@@ -285,10 +288,10 @@ contract User is Test {
 
     function _genAVSRegistrationSig()
         internal
-        returns (ISignatureUtils.SignatureWithSaltAndExpiry memory)
+        returns (ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory)
     {
-        ISignatureUtils.SignatureWithSaltAndExpiry memory signature = ISignatureUtils
-            .SignatureWithSaltAndExpiry({
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory signature =
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
             signature: new bytes(0),
             salt: bytes32(salt++),
             expiry: type(uint256).max
@@ -355,7 +358,7 @@ contract User is Test {
         virtual
         returns (
             ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory,
-            ISignatureUtils.SignatureWithSaltAndExpiry memory
+            ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory
         )
     {
         ISlashingRegistryCoordinator.OperatorKickParam[] memory kickParams =
@@ -410,8 +413,12 @@ contract User is Test {
             mstore(add(signature, 0x40), s)
         }
         signature[signature.length - 1] = bytes1(v);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature = ISignatureUtils
-            .SignatureWithSaltAndExpiry({signature: signature, salt: _salt, expiry: expiry});
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature =
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
+            signature: signature,
+            salt: _salt,
+            expiry: expiry
+        });
 
         return (kickParams, churnApproverSignature);
     }

@@ -7,6 +7,8 @@ import "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ITransparentUpgradeableProxy} from
+    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
@@ -25,22 +27,23 @@ import "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol"
 import "eigenlayer-contracts/src/test/mocks/ETHDepositMock.sol";
 
 // Middleware contracts
-import "src/RegistryCoordinator.sol";
-import "src/StakeRegistry.sol";
-import "src/IndexRegistry.sol";
-import "src/BLSApkRegistry.sol";
-import "test/mocks/ServiceManagerMock.sol";
-import "src/OperatorStateRetriever.sol";
-import "src/SocketRegistry.sol";
+import "../../src/RegistryCoordinator.sol";
+import "../../src/StakeRegistry.sol";
+import "../../src/IndexRegistry.sol";
+import "../../src/BLSApkRegistry.sol";
+import "../mocks/ServiceManagerMock.sol";
+import "../../src/OperatorStateRetriever.sol";
+import "../../src/SocketRegistry.sol";
+import "../../src/interfaces/IRegistryCoordinator.sol";
 
 // Mocks and More
-import "src/libraries/BN254.sol";
-import "src/libraries/BitmapUtils.sol";
+import "../../src/libraries/BN254.sol";
+import "../../src/libraries/BitmapUtils.sol";
 
 import "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
-// import "src/test/integration/mocks/ServiceManagerMock.t.sol";
-import "test/integration/User.t.sol";
-import "test/integration/OperatorSetUser.t.sol";
+// import "../integration/mocks/ServiceManagerMock.t.sol";
+import "./User.t.sol";
+import "./OperatorSetUser.t.sol";
 
 abstract contract IntegrationDeployer is Test, IUserDeployer {
     using Strings for *;
@@ -186,11 +189,11 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
 
         // Deploy EigenPod Contracts
-        pod = new EigenPod(ethPOSDeposit, eigenPodManager, GENESIS_TIME_LOCAL);
+        pod = new EigenPod(ethPOSDeposit, eigenPodManager, GENESIS_TIME_LOCAL, "v0.0.1");
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
-        PermissionController permissionControllerImplementation = new PermissionController();
+        PermissionController permissionControllerImplementation = new PermissionController("v0.0.1");
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         DelegationManager delegationImplementation = new DelegationManager(
@@ -199,26 +202,31 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             allocationManager,
             pauserRegistry,
             permissionController,
-            0
+            0,
+            "v0.0.1"
         );
         StrategyManager strategyManagerImplementation =
-            new StrategyManager(delegationManager, pauserRegistry);
-        EigenPodManager eigenPodManagerImplementation =
-            new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegationManager, pauserRegistry);
+            new StrategyManager(delegationManager, pauserRegistry, "v0.0.1");
+        EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
+            ethPOSDeposit, eigenPodBeacon, delegationManager, pauserRegistry, "v0.0.1"
+        );
         AVSDirectory avsDirectoryImplementation =
-            new AVSDirectory(delegationManager, pauserRegistry);
+            new AVSDirectory(delegationManager, pauserRegistry, "v0.0.1");
 
         RewardsCoordinator rewardsCoordinatorImplementation = new RewardsCoordinator(
-            delegationManager,
-            IStrategyManager(address(strategyManager)),
-            allocationManager,
-            pauserRegistry,
-            permissionController,
-            CALCULATION_INTERVAL_SECONDS,
-            MAX_REWARDS_DURATION,
-            MAX_RETROACTIVE_LENGTH,
-            MAX_FUTURE_LENGTH,
-            GENESIS_REWARDS_TIMESTAMP
+            IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
+                delegationManager: delegationManager,
+                strategyManager: strategyManager,
+                allocationManager: allocationManager,
+                pauserRegistry: pauserRegistry,
+                permissionController: permissionController,
+                CALCULATION_INTERVAL_SECONDS: CALCULATION_INTERVAL_SECONDS,
+                MAX_REWARDS_DURATION: MAX_REWARDS_DURATION,
+                MAX_RETROACTIVE_LENGTH: MAX_RETROACTIVE_LENGTH,
+                MAX_FUTURE_LENGTH: MAX_FUTURE_LENGTH,
+                GENESIS_REWARDS_TIMESTAMP: GENESIS_REWARDS_TIMESTAMP,
+                version: "v0.0.1"
+            })
         );
 
         AllocationManager allocationManagerImplementation = new AllocationManager(
@@ -226,7 +234,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             pauserRegistry,
             permissionController,
             uint32(7 days), // DEALLOCATION_DELAY
-            uint32(1 days) // ALLOCATION_CONFIGURATION_DELAY
+            uint32(1 days), // ALLOCATION_CONFIGURATION_DELAY
+            "v0.0.1" // Added config parameter
         );
 
         // Third, upgrade the proxy contracts to point to the implementations
@@ -235,7 +244,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         uint256[] memory initializeWithdrawalDelayBlocks = new uint256[](0);
         // DelegationManager
         proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(delegationManager))),
+            ITransparentUpgradeableProxy(payable(address(delegationManager))),
             address(delegationImplementation),
             abi.encodeWithSelector(
                 DelegationManager.initialize.selector,
@@ -245,7 +254,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
         // StrategyManager
         proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(strategyManager))),
+            ITransparentUpgradeableProxy(payable(address(strategyManager))),
             address(strategyManagerImplementation),
             abi.encodeWithSelector(
                 StrategyManager.initialize.selector,
@@ -256,7 +265,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
         // EigenPodManager
         proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(eigenPodManager))),
+            ITransparentUpgradeableProxy(payable(address(eigenPodManager))),
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
@@ -266,7 +275,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
         // AVSDirectory
         proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(avsDirectory))),
+            ITransparentUpgradeableProxy(payable(address(avsDirectory))),
             address(avsDirectoryImplementation),
             abi.encodeWithSelector(
                 AVSDirectory.initialize.selector,
@@ -277,12 +286,12 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
 
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(permissionController))),
+            ITransparentUpgradeableProxy(payable(address(permissionController))),
             address(permissionControllerImplementation)
         );
 
         proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(rewardsCoordinator))),
+            ITransparentUpgradeableProxy(payable(address(rewardsCoordinator))),
             address(rewardsCoordinatorImplementation),
             abi.encodeWithSelector(
                 RewardsCoordinator.initialize.selector,
@@ -295,7 +304,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
 
         proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(allocationManager))),
+            ITransparentUpgradeableProxy(payable(address(allocationManager))),
             address(allocationManagerImplementation),
             abi.encodeWithSelector(
                 AllocationManager.initialize.selector,
@@ -305,7 +314,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
 
         // Deploy and whitelist strategies
-        baseStrategyImplementation = new StrategyBase(strategyManager, pauserRegistry);
+        baseStrategyImplementation = new StrategyBase(strategyManager, pauserRegistry, "v0.0.1");
         for (uint256 i = 0; i < MAX_STRATEGY_COUNT; i++) {
             string memory number = uint256(i).toString();
             string memory stratName = string.concat("StrategyToken", number);
@@ -381,27 +390,27 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             new SocketRegistry(ISlashingRegistryCoordinator(slashingRegistryCoordinator));
 
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(stakeRegistry))),
+            ITransparentUpgradeableProxy(payable(address(stakeRegistry))),
             address(stakeRegistryImplementation)
         );
 
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(blsApkRegistry))),
+            ITransparentUpgradeableProxy(payable(address(blsApkRegistry))),
             address(blsApkRegistryImplementation)
         );
 
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(indexRegistry))),
+            ITransparentUpgradeableProxy(payable(address(indexRegistry))),
             address(indexRegistryImplementation)
         );
 
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(serviceManager))),
+            ITransparentUpgradeableProxy(payable(address(serviceManager))),
             address(serviceManagerImplementation)
         );
 
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(socketRegistry))),
+            ITransparentUpgradeableProxy(payable(address(socketRegistry))),
             address(socketRegistryImplementation)
         );
 
@@ -415,16 +424,20 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         uint32[] memory slashableStakeQuorumLookAheadPeriods = new uint32[](0);
 
         RegistryCoordinator registryCoordinatorImplementation = new RegistryCoordinator(
-            serviceManager,
-            stakeRegistry,
-            blsApkRegistry,
-            indexRegistry,
-            socketRegistry,
-            allocationManager,
-            pauserRegistry
+            IRegistryCoordinatorTypes.RegistryCoordinatorParams(
+                serviceManager,
+                IRegistryCoordinatorTypes.SlashingRegistryParams(
+                    stakeRegistry,
+                    blsApkRegistry,
+                    indexRegistry,
+                    socketRegistry,
+                    allocationManager,
+                    pauserRegistry
+                )
+            )
         );
         proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(registryCoordinator))),
+            ITransparentUpgradeableProxy(payable(address(registryCoordinator))),
             address(registryCoordinatorImplementation),
             abi.encodeWithSelector(
                 SlashingRegistryCoordinator.initialize.selector,
@@ -442,7 +455,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             indexRegistry,
             socketRegistry,
             allocationManager,
-            pauserRegistry
+            pauserRegistry,
+            "v0.0.1"
         );
         cheats.prank(avsAccountIdentifier);
         allocationManager.updateAVSMetadataURI(
@@ -450,7 +464,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
 
         proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(slashingRegistryCoordinator))),
+            ITransparentUpgradeableProxy(payable(address(slashingRegistryCoordinator))),
             address(slashingRegistryCoordinatorImplementation),
             abi.encodeWithSelector(
                 SlashingRegistryCoordinator.initialize.selector,

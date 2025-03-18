@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "test/integration/User.t.sol";
+import "./User.t.sol";
 import "forge-std/console.sol";
 
 contract OperatorSetUser is User {
@@ -90,7 +90,7 @@ contract OperatorSetUser is User {
 
         (
             ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory kickParams,
-            ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature
+            ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature
         ) = _generateOperatorKickParams(allQuorums, churnQuorums, churnTargets, standardQuorums);
 
         // Encode with RegistrationType.CHURN
@@ -162,7 +162,7 @@ contract OperatorSetUser is User {
         override
         returns (
             ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory,
-            ISignatureUtils.SignatureWithSaltAndExpiry memory
+            ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory
         )
     {
         ISlashingRegistryCoordinator.OperatorKickParam[] memory kickParams =
@@ -217,8 +217,12 @@ contract OperatorSetUser is User {
             mstore(add(signature, 0x40), s)
         }
         signature[signature.length - 1] = bytes1(v);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature = ISignatureUtils
-            .SignatureWithSaltAndExpiry({signature: signature, salt: _salt, expiry: expiry});
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature =
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
+            signature: signature,
+            salt: _salt,
+            expiry: expiry
+        });
 
         return (kickParams, churnApproverSignature);
     }

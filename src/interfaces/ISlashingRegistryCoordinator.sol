@@ -53,6 +53,12 @@ interface ISlashingRegistryCoordinatorErrors {
     error MaxQuorumsReached();
     /// @notice Thrown when the provided AVS address does not match the expected one.
     error InvalidAVS();
+    /// @notice Thrown when attempting to kick an operator that is not registered.
+    error OperatorNotRegistered();
+    /// @notice Thrown when lookAheadPeriod is greater than or equal to DEALLOCATION_DELAY.
+    error LookAheadPeriodTooLong();
+    /// @notice Thrown when the number of operators in a quorum would exceed the maximum allowed.
+    error MaxOperatorCountReached();
 }
 
 interface ISlashingRegistryCoordinatorTypes {
@@ -151,6 +157,24 @@ interface ISlashingRegistryCoordinatorEvents is ISlashingRegistryCoordinatorType
     event OperatorDeregistered(address indexed operator, bytes32 indexed operatorId);
 
     /**
+     * @notice Emitted when a new quorum is created.
+     * @param quorumNumber The identifier of the quorum being created.
+     * @param operatorSetParams The operator set parameters for the quorum.
+     * @param minimumStake The minimum stake required for operators in this quorum.
+     * @param strategyParams The strategy parameters for stake calculation.
+     * @param stakeType The type of stake being tracked (TOTAL_DELEGATED or TOTAL_SLASHABLE).
+     * @param lookAheadPeriod The number of blocks to look ahead when calculating slashable stake (only used for TOTAL_SLASHABLE).
+     */
+    event QuorumCreated(
+        uint8 indexed quorumNumber,
+        OperatorSetParam operatorSetParams,
+        uint96 minimumStake,
+        IStakeRegistryTypes.StrategyParams[] strategyParams,
+        IStakeRegistryTypes.StakeType stakeType,
+        uint32 lookAheadPeriod
+    );
+
+    /**
      * @notice Emitted when a quorum's operator set parameters are updated.
      * @dev Emitted in _setOperatorSetParams().
      * @param quorumNumber The identifier of the quorum being updated.
@@ -165,6 +189,13 @@ interface ISlashingRegistryCoordinatorEvents is ISlashingRegistryCoordinatorType
      * @param newChurnApprover The new churn approver address.
      */
     event ChurnApproverUpdated(address prevChurnApprover, address newChurnApprover);
+
+    /**
+     * @notice Emitted when the AVS address is updated.
+     * @param prevAVS The previous AVS address.
+     * @param newAVS The new AVS address.
+     */
+    event AVSUpdated(address prevAVS, address newAVS);
 
     /**
      * @notice Emitted when the ejector address is updated.
@@ -189,6 +220,14 @@ interface ISlashingRegistryCoordinatorEvents is ISlashingRegistryCoordinatorType
      * @param socket The new socket address for the operator (typically an IP address).
      */
     event OperatorSocketUpdate(bytes32 indexed operatorId, string socket);
+
+    /**
+     * @notice Emitted when the ejection cooldown period is updated.
+     * @dev Emitted in setEjectionCooldown().
+     * @param prevEjectionCooldown The previous cooldown duration in seconds.
+     * @param newEjectionCooldown The new cooldown duration in seconds.
+     */
+    event EjectionCooldownUpdated(uint256 prevEjectionCooldown, uint256 newEjectionCooldown);
 }
 
 interface ISlashingRegistryCoordinator is
@@ -266,15 +305,6 @@ interface ISlashingRegistryCoordinator is
     function quorumUpdateBlockNumber(
         uint8 quorumNumber
     ) external view returns (uint256);
-
-    /**
-     * @notice Gets the registry contract address at a specific index.
-     * @param index The index in the registries array.
-     * @return The registry contract address.
-     */
-    function registries(
-        uint256 index
-    ) external view returns (address);
 
     /**
      * @notice The address authorized to approve operator churn operations.
@@ -546,12 +576,6 @@ interface ISlashingRegistryCoordinator is
     function getQuorumBitmapHistoryLength(
         bytes32 operatorId
     ) external view returns (uint256);
-
-    /**
-     * @notice Returns the number of registry contracts managed by this coordinator.
-     * @return The count of registry contracts (typically 3: stake, BLS, and index).
-     */
-    function numRegistries() external view returns (uint256);
 
     /**
      * @notice Calculates the digest hash that must be signed by the churn approver.
