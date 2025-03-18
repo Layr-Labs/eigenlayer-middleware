@@ -42,9 +42,9 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
     uint256 internal _m2QuorumBitmap;
 
     constructor(
-        IRegistryCoordinatorTypes.RegistryCoordinatorParams memory params
+        IServiceManager _serviceManager
     ) {
-        serviceManager = params.serviceManager;
+        serviceManager = _serviceManager;
     }
 
     uint256[48] private __GAP;

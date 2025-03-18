@@ -12,7 +12,10 @@ import {OperatorSetLib} from "eigenlayer-contracts/src/contracts/libraries/Opera
 
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {
+    ISignatureUtilsMixin,
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {ISlasher, ISlasherTypes, ISlasherErrors} from "../../src/interfaces/ISlasher.sol";
@@ -1594,13 +1597,13 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
         ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams,
         bytes32 salt,
         uint256 expiry
-    ) internal view returns (ISignatureUtils.SignatureWithSaltAndExpiry memory) {
+    ) internal view returns (ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory) {
         bytes32 digestHash = slashingRegistryCoordinator.calculateOperatorChurnApprovalDigestHash(
             registeringOperator, registeringOperatorId, operatorKickParams, salt, expiry
         );
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(churnApproverPrivateKey, digestHash);
-        return ISignatureUtils.SignatureWithSaltAndExpiry({
+        return ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
             signature: abi.encodePacked(r, s, v),
             salt: salt,
             expiry: expiry
@@ -1628,7 +1631,7 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
         Operator memory operator,
         ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams,
         string memory socket,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature
     ) internal {
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
             createPubkeyRegistrationParams(operator, operator.key.addr);
@@ -1663,7 +1666,7 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
         internal
         returns (
             ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams,
-            ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature
+            ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature
         )
     {
         _setOperatorWeight(testOperator.key.addr, registeringOperatorStake);
@@ -1681,7 +1684,7 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
     function test_registerOperatorWithChurn() public {
         (
             ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams,
-            ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature
+            ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature
         ) = _setupChurnTest(registeringStake, operatorToKickStake);
 
         _registerOperatorWithChurn(
@@ -1723,7 +1726,7 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
             quorumNumber: uint8(1)
         });
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature =
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature =
         _signChurnApproval(
             testOperator.key.addr, testOperatorId, operatorKickParams, defaultSalt, defaultExpiry
         );
@@ -1769,7 +1772,7 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
             quorumNumber: uint8(quorumNumbers[0])
         });
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature =
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature =
         _signChurnApproval(
             testOperator.key.addr,
             testOperatorId,
@@ -1855,7 +1858,7 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
             quorumNumber: uint8(quorumNumbers[0])
         });
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature =
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature =
         _signChurnApproval(
             testOperator.key.addr, testOperatorId, operatorKickParams, defaultSalt, defaultExpiry
         );
@@ -1898,7 +1901,7 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
             quorumNumber: 0 // Mismatched quorum number (quorumNumbers[0] is 1)
         });
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature =
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature =
         _signChurnApproval(
             testOperator.key.addr,
             testOperatorId,
@@ -1947,7 +1950,7 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
             quorumNumber: uint8(quorumNumbers[0])
         });
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature =
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature =
         _signChurnApproval(
             testOperator.key.addr,
             testOperatorId,

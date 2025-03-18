@@ -9,7 +9,10 @@ import {
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
-import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {
+    ISignatureUtilsMixin,
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {IServiceManager} from "../interfaces/IServiceManager.sol";
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
@@ -66,7 +69,7 @@ contract ECDSAStakeRegistry is
 
     /// @inheritdoc IECDSAStakeRegistry
     function registerOperatorWithSignature(
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature,
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature,
         address signingKey
     ) external {
         _registerOperatorWithSig(msg.sender, operatorSignature, signingKey);
@@ -315,7 +318,7 @@ contract ECDSAStakeRegistry is
     /// @param signingKey The signing key to add to the operator's history
     function _registerOperatorWithSig(
         address operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature,
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature,
         address signingKey
     ) internal virtual {
         if (_operatorRegistered[operator]) {

@@ -20,7 +20,10 @@ import {StrategyBaseTVLLimits} from
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {
+    ISignatureUtilsMixin,
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
@@ -36,6 +39,8 @@ import {IAllocationManager} from
 import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 import {PermissionController} from
     "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
+import {IRewardsCoordinatorTypes} from
+    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 import {UpgradeableProxyLib} from "../unit/UpgradeableProxyLib.sol";
 
@@ -161,12 +166,13 @@ library CoreDeployLib {
         DeploymentConfigData memory config
     ) internal {
         // Deploy core implementations
-        address permissionControllerImpl = address(new PermissionController());
+        address permissionControllerImpl = address(new PermissionController("1.0.0"));
 
         address strategyManagerImpl = address(
             new StrategyManager(
                 IDelegationManager(deployments.delegationManager),
-                IPauserRegistry(deployments.pauserRegistry)
+                IPauserRegistry(deployments.pauserRegistry),
+                "1.0.0"
             )
         );
 
@@ -176,7 +182,8 @@ library CoreDeployLib {
                 IPauserRegistry(deployments.pauserRegistry),
                 IPermissionController(deployments.permissionController),
                 config.allocationManager.deallocationDelay,
-                config.allocationManager.allocationConfigurationDelay
+                config.allocationManager.allocationConfigurationDelay,
+                "1.0.0"
             )
         );
 
@@ -187,14 +194,16 @@ library CoreDeployLib {
                 IAllocationManager(deployments.allocationManager),
                 IPauserRegistry(deployments.pauserRegistry),
                 IPermissionController(deployments.permissionController),
-                config.delegationManager.minWithdrawalDelayBlocks
+                config.delegationManager.minWithdrawalDelayBlocks,
+                "1.0.0"
             )
         );
 
         address avsDirectoryImpl = address(
             new AVSDirectory(
                 IDelegationManager(deployments.delegationManager),
-                IPauserRegistry(deployments.pauserRegistry)
+                IPauserRegistry(deployments.pauserRegistry),
+                "1.0.0"
             )
         );
 
@@ -255,7 +264,8 @@ library CoreDeployLib {
                 IEigenPodManager(deployments.eigenPodManager),
                 config.eigenPod.genesisTimestamp == 0
                     ? uint64(block.timestamp)
-                    : config.eigenPod.genesisTimestamp
+                    : config.eigenPod.genesisTimestamp,
+                "1.0.0"
             )
         );
 
@@ -267,7 +277,8 @@ library CoreDeployLib {
                 IETHPOSDeposit(ethPOSDeposit),
                 IBeacon(deployments.eigenPodBeacon),
                 IDelegationManager(deployments.delegationManager),
-                IPauserRegistry(deployments.pauserRegistry)
+                IPauserRegistry(deployments.pauserRegistry),
+                "1.0.0"
             )
         );
 
@@ -287,7 +298,8 @@ library CoreDeployLib {
         address baseStrategyImpl = address(
             new StrategyBase(
                 IStrategyManager(deployments.strategyManager),
-                IPauserRegistry(deployments.pauserRegistry)
+                IPauserRegistry(deployments.pauserRegistry),
+                "1.0.0"
             )
         );
 
@@ -296,7 +308,8 @@ library CoreDeployLib {
         address strategyFactoryImpl = address(
             new StrategyFactory(
                 IStrategyManager(deployments.strategyManager),
-                IPauserRegistry(deployments.pauserRegistry)
+                IPauserRegistry(deployments.pauserRegistry),
+                "1.0.0"
             )
         );
 
@@ -319,16 +332,19 @@ library CoreDeployLib {
     ) internal {
         address rewardsCoordinatorImpl = address(
             new RewardsCoordinator(
-                IDelegationManager(deployments.delegationManager),
-                IStrategyManager(deployments.strategyManager),
-                IAllocationManager(deployments.allocationManager),
-                IPauserRegistry(deployments.pauserRegistry),
-                IPermissionController(deployments.permissionController),
-                config.rewardsCoordinator.calculationIntervalSeconds,
-                config.rewardsCoordinator.maxRewardsDuration,
-                config.rewardsCoordinator.maxRetroactiveLength,
-                config.rewardsCoordinator.maxFutureLength,
-                config.rewardsCoordinator.genesisRewardsTimestamp
+                IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
+                    delegationManager: IDelegationManager(deployments.delegationManager),
+                    strategyManager: IStrategyManager(deployments.strategyManager),
+                    allocationManager: IAllocationManager(deployments.allocationManager),
+                    pauserRegistry: IPauserRegistry(deployments.pauserRegistry),
+                    permissionController: IPermissionController(deployments.permissionController),
+                    CALCULATION_INTERVAL_SECONDS: config.rewardsCoordinator.calculationIntervalSeconds,
+                    MAX_REWARDS_DURATION: config.rewardsCoordinator.maxRewardsDuration,
+                    MAX_RETROACTIVE_LENGTH: config.rewardsCoordinator.maxRetroactiveLength,
+                    MAX_FUTURE_LENGTH: config.rewardsCoordinator.maxFutureLength,
+                    GENESIS_REWARDS_TIMESTAMP: config.rewardsCoordinator.genesisRewardsTimestamp,
+                    version: "1.0.0"
+                })
             )
         );
 

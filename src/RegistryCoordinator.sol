@@ -6,6 +6,10 @@ import {
     IAllocationManager,
     OperatorSet
 } from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {ISignatureUtilsMixin} from
+    "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
+import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
+import {SemVerMixin} from "eigenlayer-contracts/src/contracts/mixins/SemVerMixin.sol";
 import {IBLSApkRegistry, IBLSApkRegistryTypes} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
@@ -36,14 +40,15 @@ contract RegistryCoordinator is RegistryCoordinatorStorage, SlashingRegistryCoor
     constructor(
         IRegistryCoordinatorTypes.RegistryCoordinatorParams memory params
     )
-        RegistryCoordinatorStorage(params)
+        RegistryCoordinatorStorage(params.serviceManager)
         SlashingRegistryCoordinator(
             params.slashingParams.stakeRegistry,
             params.slashingParams.blsApkRegistry,
             params.slashingParams.indexRegistry,
             params.slashingParams.socketRegistry,
             params.slashingParams.allocationManager,
-            params.slashingParams.pauserRegistry
+            params.slashingParams.pauserRegistry,
+            "v0.0.1"
         )
     {}
 
@@ -265,14 +270,6 @@ contract RegistryCoordinator is RegistryCoordinatorStorage, SlashingRegistryCoor
         return (1 << quorumCount) - 1;
     }
 
-    /// @notice Returns true if the quorum number is an M2 quorum
-    /// @dev We use bitwise and to check if the quorum number is an M2 quorum
-    function isM2Quorum(
-        uint8 quorumNumber
-    ) public view returns (bool) {
-        return m2QuorumBitmap().isSet(quorumNumber);
-    }
-
     /**
      *
      *                            VIEW FUNCTIONS
@@ -288,5 +285,34 @@ contract RegistryCoordinator is RegistryCoordinatorStorage, SlashingRegistryCoor
         }
 
         return _getTotalQuorumBitmap();
+    }
+
+    /// @notice Returns true if the quorum number is an M2 quorum
+    function isM2Quorum(
+        uint8 quorumNumber
+    ) public view returns (bool) {
+        return m2QuorumBitmap().isSet(quorumNumber);
+    }
+
+    /**
+     * @notice Returns the domain separator used for EIP-712 signatures
+     * @return The domain separator
+     */
+    function domainSeparator() external view virtual override returns (bytes32) {
+        return _domainSeparatorV4();
+    }
+
+    /**
+     * @notice Returns the version of the contract
+     * @return The version string
+     */
+    function version()
+        public
+        view
+        virtual
+        override(ISemVerMixin, SemVerMixin)
+        returns (string memory)
+    {
+        return "v0.0.1";
     }
 }

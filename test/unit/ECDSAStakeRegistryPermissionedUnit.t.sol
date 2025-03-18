@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {
+    ISignatureUtilsMixin,
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
@@ -30,7 +33,7 @@ contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
         permissionedRegistry.permitOperator(operator1);
         permissionedRegistry.permitOperator(operator2);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature;
         vm.prank(operator1);
         permissionedRegistry.registerOperatorWithSignature(operatorSignature, operator1);
         vm.prank(operator2);
@@ -89,7 +92,7 @@ contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     function test_RevertsWhen_NotAllowlisted_RegisterOperatorWithSig() public {
         address operator3 = address(0xBEEF);
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature;
         vm.expectRevert(
             abi.encodeWithSelector(ECDSAStakeRegistryPermissioned.OperatorNotAllowlisted.selector)
         );
@@ -100,7 +103,7 @@ contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     function test_WhenAllowlisted_RegisterOperatorWithSig() public {
         address operator3 = address(0xBEEF);
         permissionedRegistry.permitOperator(operator3);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature;
         vm.prank(operator3);
         permissionedRegistry.registerOperatorWithSignature(operatorSignature, operator3);
     }
@@ -108,7 +111,7 @@ contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     function test_DeregisterOperator() public {
         address operator3 = address(0xBEEF);
         permissionedRegistry.permitOperator(operator3);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature;
         vm.prank(operator3);
         permissionedRegistry.registerOperatorWithSignature(operatorSignature, operator3);
 

@@ -17,7 +17,8 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         IIndexRegistry _indexRegistry,
         ISocketRegistry _socketRegistry,
         IAllocationManager _allocationManager,
-        IPauserRegistry _pauserRegistry
+        IPauserRegistry _pauserRegistry,
+        string memory _version
     )
         RegistryCoordinator(
             IRegistryCoordinatorTypes.RegistryCoordinatorParams(

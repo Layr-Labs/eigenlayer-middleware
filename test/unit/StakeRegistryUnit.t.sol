@@ -54,7 +54,8 @@ contract StakeRegistryUnitTests is MockAVSDeployer, IStakeRegistryEvents {
             IIndexRegistry(indexRegistry),
             ISocketRegistry(socketRegistry),
             allocationManager,
-            pauserRegistry
+            pauserRegistry,
+            "v0.0.1"
         );
 
         stakeRegistryImplementation = new StakeRegistryHarness(

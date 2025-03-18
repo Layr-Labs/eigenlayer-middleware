@@ -29,7 +29,8 @@ contract DelegationManagerHarness is DelegationManager {
             _allocationManager,
             _pauserRegistry,
             _permissionController,
-            _MIN_WITHDRAWAL_DELAY
+            _MIN_WITHDRAWAL_DELAY,
+            "v0.0.1"
         )
     {}
 
