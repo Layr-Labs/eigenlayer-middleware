@@ -11,8 +11,14 @@ import {
     ISignatureUtilsMixin,
     ISignatureUtilsMixinTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
-import {IBLSApkRegistryTypes} from "./IBLSApkRegistry.sol";
+import {IBLSApkRegistry, IBLSApkRegistryTypes} from "./IBLSApkRegistry.sol";
 import {IServiceManager} from "./IServiceManager.sol";
+import {IStakeRegistry} from "./IStakeRegistry.sol";
+import {IIndexRegistry} from "./IIndexRegistry.sol";
+import {ISocketRegistry} from "./ISocketRegistry.sol";
+import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
+import {IAllocationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
 interface IRegistryCoordinatorErrors is ISlashingRegistryCoordinatorErrors {
     /// @notice Thrown when operator sets mode is already enabled.
@@ -27,7 +33,35 @@ interface IRegistryCoordinatorErrors is ISlashingRegistryCoordinatorErrors {
     error OnlyM2QuorumsAllowed();
 }
 
-interface IRegistryCoordinatorTypes is ISlashingRegistryCoordinatorTypes {}
+interface IRegistryCoordinatorTypes is ISlashingRegistryCoordinatorTypes {
+    /**
+     * @notice Parameters for initializing SlashingRegistryCoordinator
+     * @param stakeRegistry The StakeRegistry contract that keeps track of operators' stakes
+     * @param blsApkRegistry The BLSApkRegistry contract that keeps track of operators' BLS public keys
+     * @param indexRegistry The IndexRegistry contract that keeps track of ordered operator lists
+     * @param socketRegistry The SocketRegistry contract that keeps track of operators' sockets
+     * @param allocationManager The AllocationManager contract for operator set management
+     * @param pauserRegistry The PauserRegistry contract for pausing functionality
+     */
+    struct SlashingRegistryParams {
+        IStakeRegistry stakeRegistry;
+        IBLSApkRegistry blsApkRegistry;
+        IIndexRegistry indexRegistry;
+        ISocketRegistry socketRegistry;
+        IAllocationManager allocationManager;
+        IPauserRegistry pauserRegistry;
+    }
+
+    /**
+     * @notice Parameters for initializing RegistryCoordinator
+     * @param serviceManager The ServiceManager contract for this AVS
+     * @param slashingParams Parameters for initializing SlashingRegistryCoordinator
+     */
+    struct RegistryCoordinatorParams {
+        IServiceManager serviceManager;
+        SlashingRegistryParams slashingParams;
+    }
+}
 
 interface IRegistryCoordinatorEvents is
     ISlashingRegistryCoordinatorEvents,

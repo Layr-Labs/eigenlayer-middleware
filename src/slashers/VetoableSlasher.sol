@@ -94,7 +94,7 @@ contract VetoableSlasher is IVetoableSlasher, SlasherBase {
         emit SlashingRequestCancelled(requestId);
     }
 
-    /// @notice Internal function to fullfill a slashing request and mark it as completed
+    /// @notice Internal function to fulfill a slashing request and mark it as completed
     /// @param requestId The ID of the slashing request to fulfill
     function _fulfillSlashingRequestAndMarkAsCompleted(
         uint256 requestId
@@ -109,6 +109,10 @@ contract VetoableSlasher is IVetoableSlasher, SlasherBase {
         request.status = IVetoableSlasherTypes.SlashingStatus.Completed;
 
         _fulfillSlashingRequest(requestId, request.params);
+
+        address[] memory operators = new address[](1);
+        operators[0] = request.params.operator;
+        slashingRegistryCoordinator.updateOperators(operators);
     }
 
     /// @notice Internal function to verify if an account is the veto committee

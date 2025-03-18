@@ -163,7 +163,7 @@ interface IBLSApkRegistry is IBLSApkRegistryErrors, IBLSApkRegistryEvents {
      * @param quorumNumbers The quorum numbers to register for, where each byte is an 8-bit integer.
      * @dev Access restricted to the RegistryCoordinator.
      * @dev Preconditions (assumed, not validated):
-     *      1. `quorumNumbers` has no duplicatesd
+     *      1. `quorumNumbers` has no duplicates
      *      2. `quorumNumbers.length` != 0
      *      3. `quorumNumbers` is ordered ascending
      *      4. The operator is not already registered
@@ -291,4 +291,17 @@ interface IBLSApkRegistry is IBLSApkRegistryErrors, IBLSApkRegistryEvents {
     function getOperatorFromPubkeyHash(
         bytes32 pubkeyHash
     ) external view returns (address operator);
+
+    /**
+     * @notice Gets an operator's ID if it exists, or registers a new BLS public key and returns the new ID
+     * @param operator The address of the operator
+     * @param params The parameters for registering a new BLS public key
+     * @param pubkeyRegistrationMessageHash The hash of the message to sign for registration
+     * @return operatorId The operator's ID (pubkey hash)
+     */
+    function getOrRegisterOperatorId(
+        address operator,
+        PubkeyRegistrationParams calldata params,
+        BN254.G1Point calldata pubkeyRegistrationMessageHash
+    ) external returns (bytes32 operatorId);
 }
