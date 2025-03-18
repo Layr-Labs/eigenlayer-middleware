@@ -24,5 +24,9 @@ contract InstantSlasher is IInstantSlasher, SlasherBase {
     ) external virtual override(IInstantSlasher) onlySlasher {
         uint256 requestId = nextRequestId++;
         _fulfillSlashingRequest(requestId, _slashingParams);
+
+        address[] memory operators = new address[](1);
+        operators[0] = _slashingParams.operator;
+        slashingRegistryCoordinator.updateOperators(operators);
     }
 }
