@@ -33,9 +33,6 @@ abstract contract ECDSAStakeRegistryStorage is IECDSAStakeRegistry {
     /// @notice The current operator set ids
     uint32[] public currentOperatorSetIds;
 
-    /// @notice Maps operator set IDs to their strategy parameters
-    mapping(uint32 => StrategyParams[]) public operatorSetStrategyParams;
-
     /// @notice The total amount of multipliers to weigh stakes
     uint256 public constant WAD = 1e18;
 
@@ -47,6 +44,9 @@ abstract contract ECDSAStakeRegistryStorage is IECDSAStakeRegistry {
 
     /// @notice Stores the current quorum configuration
     IECDSAStakeRegistryTypes.Quorum internal _quorum;
+
+    /// @notice strategy parameters for operator sets, mapping from operatorSetId to strategy to multiplier
+    mapping(uint32 => mapping(address => uint256)) internal operatorSetStrategyMultipliers;
 
     /// @notice Specifies the weight required to become an operator
     uint256 internal _minimumWeight;

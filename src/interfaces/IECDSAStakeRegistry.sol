@@ -58,6 +58,13 @@ interface IECDSAStakeRegistryTypes {
         uint96 multiplier;
     }
 
+    /// @notice Struct to represent operator set strategy multiplier
+    struct OperatorSetStrategyMultiplier {
+        uint32 operatorSetId;
+        address strategy;
+        uint256 multiplier;
+    }
+
     /// @notice Configuration for a quorum's strategies.
     /// @param strategies An array of strategy parameters defining the quorum.
     struct Quorum {
@@ -140,12 +147,9 @@ interface IECDSAStakeRegistryEvents is IECDSAStakeRegistryTypes {
      */
     event M2QuorumRegistrationDisabled();
 
-    /*
-     * @notice Emitted when operator set strategy parameters are updated
-     * @param operatorSetId The ID of the operator set that was updated
-     * @param params The new strategy parameters for the operator set
-     */
-    event OperatorSetStrategyParamsUpdated(uint32 indexed operatorSetId, StrategyParams[] params);
+
+    /// @notice Event emitted when operator set strategy multipliers are updated
+    event OperatorSetStrategyMultipliersUpdated(OperatorSetStrategyMultiplier[] params);
 }
 
 interface IECDSAStakeRegistry is

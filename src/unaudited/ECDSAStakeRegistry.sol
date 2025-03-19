@@ -72,10 +72,10 @@ contract ECDSAStakeRegistry is
         uint256 thresholdWeight,
         IECDSAStakeRegistryTypes.Quorum memory quorum,
         uint32[] calldata operatorSetIds,
-        StrategyParams[][] calldata strategyParamsArray
+        OperatorSetStrategyMultiplier[] calldata operatorSetStrategyMultipliers
     ) external initializer {
         __ECDSAStakeRegistry_init(
-            _serviceManager, thresholdWeight, quorum, operatorSetIds, strategyParamsArray
+            _serviceManager, thresholdWeight, quorum, operatorSetIds, operatorSetStrategyMultipliers
         );
     }
 
@@ -86,13 +86,13 @@ contract ECDSAStakeRegistry is
         uint256 thresholdWeight,
         IECDSAStakeRegistryTypes.Quorum memory quorum,
         uint32[] calldata operatorSetIds,
-        StrategyParams[][] calldata strategyParamsArray
+        OperatorSetStrategyMultiplier[] calldata operatorSetStrategyMultipliers
     ) internal onlyInitializing {
         _serviceManager = _serviceManagerAddr;
         _updateStakeThreshold(thresholdWeight);
         _updateQuorumConfig(quorum);
         _setCurrentOperatorSetIds(operatorSetIds);
-        _updateOperatorSetsConfig(operatorSetIds, strategyParamsArray);
+        _updateOperatorSetsConfig(operatorSetStrategyMultipliers);
         __Ownable_init();
     }
 
@@ -174,15 +174,13 @@ contract ECDSAStakeRegistry is
     /**
      * @notice Updates strategy parameters for multiple operator sets (from stake registry view)
      * @notice Strategy params must align with operator set ids on the allocation manager
-     * @param operatorSetIds Array of operator set IDs to update
-     * @param strategyParamsArray Array of strategy parameters arrays for each operator set
+     * @param operatorSetStrategyMultipliers Array of operator set strategy multipliers to update
      */
     function updateOperatorSetsConfig(
-        uint32[] calldata operatorSetIds,
-        StrategyParams[][] calldata strategyParamsArray,
+        OperatorSetStrategyMultiplier[] calldata operatorSetStrategyMultipliers,
         address[] calldata operators
     ) external onlyOwner {
-        _updateOperatorSetsConfig(operatorSetIds, strategyParamsArray);
+        _updateOperatorSetsConfig(operatorSetStrategyMultipliers);
         _updateOperators(operators);
     }
 
@@ -253,15 +251,6 @@ contract ECDSAStakeRegistry is
         return currentOperatorSetIds;
     }
 
-    /// @notice Gets the strategy parameters for a specific operator set
-    /// @param operatorSetId The ID of the operator set to query
-    /// @return The array of strategy parameters for the operator set
-    function getOperatorSetConfig(
-        uint32 operatorSetId
-    ) external view returns (StrategyParams[] memory) {
-        return operatorSetStrategyParams[operatorSetId];
-    }
-
     /// @inheritdoc IECDSAStakeRegistry
     function getLatestOperatorSigningKey(
         address operator
@@ -330,12 +319,18 @@ contract ECDSAStakeRegistry is
     ) public view virtual returns (uint256) {
         uint256 quorumWeight = getQuorumWeight(_operator);
         uint256 operatorSetWeight = getOperatorSetWeight(_operator);
-        return quorumWeight + operatorSetWeight;
+        uint256 totalWeight = quorumWeight + operatorSetWeight;
+        
+        if (totalWeight >= _minimumWeight) {
+            return totalWeight;
+        } else {
+            return 0;
+        }
     }
 
     /// @notice Calculates operator's weight in the quorum
     /// @param operator The operator address to calculate weight for
-    /// @return The operator's weight in quorum, or 0 if below minimum
+    /// @return The operator's weight in quorum
     function getQuorumWeight(
         address operator
     ) public view returns (uint256) {
@@ -354,11 +349,7 @@ contract ECDSAStakeRegistry is
         }
         weight = weight / BPS;
 
-        if (weight >= _minimumWeight) {
-            return weight;
-        } else {
-            return 0;
-        }
+        return weight;
     }
 
     /// @notice Calculates operator's available weight in current operator set
@@ -368,7 +359,7 @@ contract ECDSAStakeRegistry is
     ///      3. Calculate available proportion (currentMagnitude/maxMagnitude)
     ///      4. Sum up available shares weighted by proportion
     /// @param operator The operator address to calculate weight for
-    /// @return The operator's available weight in set, or 0 if below minimum
+    /// @return The operator's available weight in set
     function getOperatorSetWeight(
         address operator
     ) public view virtual returns (uint256) {
@@ -391,7 +382,6 @@ contract ECDSAStakeRegistry is
                 continue;
             }
 
-            StrategyParams[] memory strategyParams = operatorSetStrategyParams[operatorSetId];
             uint256[] memory shares = DELEGATION_MANAGER.getOperatorShares(operator, strategies);
 
             for (uint256 i = 0; i < strategies.length; i++) {
@@ -403,17 +393,14 @@ contract ECDSAStakeRegistry is
                     continue;
                 }
 
-                uint256 slashableProportion =
-                    uint256(allocation.currentMagnitude) * WAD / maxMagnitude;
-                totalWeight +=
-                    shares[i] * slashableProportion * strategyParams[i].multiplier / WAD / BPS;
+                uint256 slashableProportion = uint256(allocation.currentMagnitude) * WAD / maxMagnitude;
+                uint256 multiplier = operatorSetStrategyMultipliers[operatorSetId][address(strategies[i])];
+                
+                totalWeight += shares[i] * slashableProportion * multiplier / WAD / BPS;
             }
         }
-        if (totalWeight >= _minimumWeight) {
-            return totalWeight;
-        } else {
-            return 0;
-        }
+        
+        return totalWeight;
     }
 
     /// @inheritdoc IECDSAStakeRegistry
@@ -804,41 +791,18 @@ contract ECDSAStakeRegistry is
         }
     }
 
-    /// @notice Internal function to update strategy parameters for multiple operator sets
-    /// @param operatorSetIds Array of operator set IDs to update
-    /// @param strategyParamsArray Array of strategy parameters arrays for each operator set
+    /// @notice Internal function to update strategy multipliers for multiple operator sets
+    /// @param params Array of operator set strategy multipliers to update
     function _updateOperatorSetsConfig(
-        uint32[] calldata operatorSetIds,
-        StrategyParams[][] calldata strategyParamsArray
+        OperatorSetStrategyMultiplier[] calldata params
     ) internal {
-        if (operatorSetIds.length != strategyParamsArray.length) {
-            revert InvalidOperatorSetIdsLength();
-        }
-
-        for (uint256 i = 0; i < operatorSetIds.length; i++) {
-            _updateOperatorSetConfig(operatorSetIds[i], strategyParamsArray[i]);
-        }
-    }
-
-    /// @notice Internal function to set strategy parameters for an operator set
-    ///@param operatorSetId The ID of the operator set
-    ///@param params The strategy parameters to set
-
-    function _updateOperatorSetConfig(
-        uint32 operatorSetId,
-        StrategyParams[] memory params
-    ) internal {
-        address lastStrategy;
         for (uint256 i = 0; i < params.length; i++) {
-            address currentStrategy = address(params[i].strategy);
-            if (lastStrategy >= currentStrategy) revert NotSorted();
-            lastStrategy = currentStrategy;
-        }
-
-        delete operatorSetStrategyParams[operatorSetId];
-        for (uint256 i = 0; i < params.length; i++) {
-            operatorSetStrategyParams[operatorSetId].push(params[i]);
-        }
-        emit OperatorSetStrategyParamsUpdated(operatorSetId, params);
+            uint32 operatorSetId = params[i].operatorSetId;
+            address strategy = params[i].strategy;
+            uint256 multiplier = params[i].multiplier;
+            operatorSetStrategyMultipliers[operatorSetId][strategy] = multiplier;
+        }   
+        
+        emit OperatorSetStrategyMultipliersUpdated(params);
     }
 }
