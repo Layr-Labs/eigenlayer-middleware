@@ -19,6 +19,8 @@ contract RegistryCoordinatorMock is IRegistryCoordinator {
 
     function stakeRegistry() external view returns (IStakeRegistry) {}
 
+    function socketRegistry() external view returns (ISocketRegistry) {}
+
     function quorumCount() external view returns (uint8) {}
     /// @notice Returns the bitmap of the quorums the operator is registered for.
     function operatorIdToQuorumBitmap(bytes32 pubkeyHash) external view returns (uint256){}

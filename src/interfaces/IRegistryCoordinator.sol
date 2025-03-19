@@ -4,6 +4,7 @@ pragma solidity ^0.8.12;
 import {IBLSApkRegistry} from "./IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./IStakeRegistry.sol";
 import {IIndexRegistry} from "./IIndexRegistry.sol";
+import {ISocketRegistry} from "./ISocketRegistry.sol";
 import {BN254} from "../libraries/BN254.sol";
 
 /**
@@ -91,6 +92,8 @@ interface IRegistryCoordinator {
     function blsApkRegistry() external view returns (IBLSApkRegistry);
     /// @notice the index Registry contract that will keep track of operators' indexes
     function indexRegistry() external view returns (IIndexRegistry);
+    /// @notice the Socket Registry contract that will keep track of operators' sockets
+    function socketRegistry() external view returns (ISocketRegistry);
 
     /**
      * @notice Ejects the provided operator from the provided quorums from the AVS
