@@ -36,20 +36,16 @@ contract SelfSlasher is ISelfSlasher, SlasherBase {
         uint32 operatorSetId,
         uint256 wadToSlash,
         string calldata description
-    ) external override {
-        // Validate wad to slash
+    ) external {
         if (wadToSlash == 0 || wadToSlash > 1e18) {
             revert InvalidWadToSlash();
         }
 
-        // Get the operator set
         OperatorSet memory operatorSet =
             OperatorSet(slashingRegistryCoordinator.avs(), operatorSetId);
 
-        // Get all strategies from the operator set
         IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
 
-        // Ensure there are strategies in the operator set
         if (strategies.length == 0) {
             revert NoStrategiesInOperatorSet();
         }
@@ -70,7 +66,6 @@ contract SelfSlasher is ISelfSlasher, SlasherBase {
             description: description
         });
 
-        // Execute slashing request
         uint256 requestId = nextRequestId++;
         _fulfillSlashingRequest(requestId, params);
 
