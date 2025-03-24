@@ -11,10 +11,10 @@ import {
     OperatorSet,
     IAllocationManagerTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {ISlashingRegistryCoordinatorTypes} from "./interfaces/ISlashingRegistryCoordinator.sol";
+import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
 import {ISocketRegistry} from "./interfaces/ISocketRegistry.sol";
 
-abstract contract SlashingRegistryCoordinatorStorage is ISlashingRegistryCoordinatorTypes {
+abstract contract SlashingRegistryCoordinatorStorage is ISlashingRegistryCoordinator {
     /**
      *
      *                            CONSTANTS AND IMMUTABLES
