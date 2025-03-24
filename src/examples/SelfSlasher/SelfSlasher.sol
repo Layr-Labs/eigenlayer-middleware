@@ -21,6 +21,9 @@ contract SelfSlasher is ISelfSlasher, SlasherBase {
     /// @notice Error thrown when no strategies are found in the operator set
     error NoStrategiesInOperatorSet();
 
+    /// @notice Error thrown when operator is not slashable in this operator set
+    error OperatorNotSlashable();
+
     /// @notice Constructs the SelfSlasher contract
     /// @param _allocationManager The EigenLayer allocation manager contract
     /// @param _registryCoordinator The registry coordinator for this middleware
@@ -43,6 +46,10 @@ contract SelfSlasher is ISelfSlasher, SlasherBase {
 
         OperatorSet memory operatorSet =
             OperatorSet(slashingRegistryCoordinator.avs(), operatorSetId);
+
+        if (!allocationManager.isOperatorSlashable(msg.sender, operatorSet)) {
+            revert OperatorNotSlashable();
+        }
 
         IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
 
