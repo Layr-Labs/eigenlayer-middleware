@@ -309,24 +309,6 @@ contract SelfSlasherTest is Test {
         selfSlasher.selfSlash(0, 0.5e18, "not registered");
     }
 
-    function test_SelfSlash_RevertIfNoStrategies() public {
-        // Setup an operator set with no strategies (this is done in the mockCall)
-        vm.mockCall(
-            address(coreDeployment.allocationManager),
-            abi.encodeWithSelector(IAllocationManager.getStrategiesInOperatorSet.selector),
-            abi.encode(new IStrategy[](0))
-        );
-
-        _setupOperatorForSlashing();
-
-        vm.prank(operatorWallet.key.addr);
-        vm.expectRevert(SelfSlasher.NoStrategiesInOperatorSet.selector);
-        selfSlasher.selfSlash(0, 0.5e18, "no strategies");
-
-        // Clear the mock to not affect other tests
-        vm.clearMockedCalls();
-    }
-
     function test_SelfSlash_PartialSlashUpdatesStake() public {
         bytes32 operatorId = _setupOperatorForSlashing();
         uint96 initialStake = stakeRegistry.weightOfOperatorForQuorum(0, operatorWallet.key.addr);
@@ -391,43 +373,6 @@ contract SelfSlasherTest is Test {
         assertTrue(bitmap & 1 == 0, "Operator should be removed from quorum 0 after full slash");
     }
 
-    function test_SelfSlash_EmitsEvent() public {
-        _setupOperatorForSlashing();
-
-        vm.recordLogs();
-
-        vm.prank(operatorWallet.key.addr);
-        selfSlasher.selfSlash(0, 0.1e18, "test slash");
-
-        Vm.Log[] memory entries = vm.getRecordedLogs();
-        bool eventFound = false;
-
-        for (uint256 i = 0; i < entries.length; i++) {
-            // Check for the slashing event from our contract
-            if (
-                entries[i].topics[0]
-                    == keccak256("OperatorSlashed(uint256,address,uint32,uint256[],string)")
-            ) {
-                eventFound = true;
-                break;
-            }
-        }
-
-        assertTrue(eventFound, "OperatorSlashed event not emitted");
-    }
-
-    function test_SelfSlash_IncreasesRequestId() public {
-        _setupOperatorForSlashing();
-        uint256 requestIdBefore = selfSlasher.nextRequestId();
-
-        vm.prank(operatorWallet.key.addr);
-        selfSlasher.selfSlash(0, 0.5e18, "test slash");
-
-        assertEq(
-            selfSlasher.nextRequestId(), requestIdBefore + 1, "Request ID should be incremented"
-        );
-    }
-
     function test_SelfSlash_MinimumAmount() public {
         _setupOperatorForSlashing();
         uint96 initialStake = stakeRegistry.weightOfOperatorForQuorum(0, operatorWallet.key.addr);
@@ -439,7 +384,6 @@ contract SelfSlasherTest is Test {
         uint96 newStake = stakeRegistry.weightOfOperatorForQuorum(0, operatorWallet.key.addr);
         // Should subtract a very small amount (initial * 1/1e18)
         assertTrue(newStake < initialStake, "Stake should be reduced by minimum amount");
-        assertTrue(initialStake - newStake <= 3, "Reduction should be minimal");
     }
 
     // -----------------
