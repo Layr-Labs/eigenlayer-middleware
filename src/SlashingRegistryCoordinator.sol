@@ -44,6 +44,7 @@ import {SlashingRegistryCoordinatorStorage} from "./SlashingRegistryCoordinatorS
  * @author Layr Labs, Inc.
  */
 contract SlashingRegistryCoordinator is
+    ISlashingRegistryCoordinator,
     SlashingRegistryCoordinatorStorage,
     Initializable,
     SemVerMixin,
