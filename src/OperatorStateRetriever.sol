@@ -244,6 +244,25 @@ contract OperatorStateRetriever {
         IBLSApkRegistry blsApkRegistry;
         bytes32[] signingOperatorIds;
     }
+
+    /**
+     * @notice Returns the stakes and signature information for signing operators in specified quorums
+     * @param registryCoordinator The registry coordinator contract to fetch operator information from
+     * @param quorumNumbers Array of quorum numbers to check for non-signers
+     * @param sigma The aggregate BLS signature to verify
+     * @param operators Array of operator addresses that signed the message
+     * @param blockNumber is the block number to get the indices for
+     * @return NonSignerStakesAndSignature struct containing:
+     *         - nonSignerQuorumBitmapIndices: Indices for retrieving quorum bitmaps of non-signers
+     *         - nonSignerPubkeys: BLS public keys of operators that did not sign
+     *         - quorumApks: Aggregate public keys for each quorum
+     *         - apkG2: Aggregate public key of all signing operators in G2
+     *         - sigma: The provided signature
+     *         - quorumApkIndices: Indices for retrieving quorum APKs
+     *         - totalStakeIndices: Indices for retrieving total stake info
+     *         - nonSignerStakeIndices: Indices for retrieving non-signer stake info
+     * @dev Computes the indices of operators that signed across all specified quorums
+     */
     function getNonSignerStakesAndSignature(
         ISlashingRegistryCoordinator registryCoordinator,
         bytes calldata quorumNumbers,
@@ -365,6 +384,13 @@ contract OperatorStateRetriever {
         });
     }
 
+    /**
+     * @notice Computes the aggregate public key (APK) in G1 for a list of operators
+     * @dev Aggregetes the individual G1 public keys of operators by adding them together
+     * @param registryCoordinator The registry coordinator contract to fetch operator info from
+     * @param operatorIds Array of operator IDs to compute the aggregate key for
+     * @return The aggregate public key as a G1 point, computed by summing individual operator pubkeys
+     */
     function _computeG1Apk(ISlashingRegistryCoordinator registryCoordinator, bytes32[] memory operatorIds) internal view returns (BN254.G1Point memory) {
         BN254.G1Point memory apk = BN254.G1Point(0, 0);
         IBLSApkRegistry blsApkRegistry = registryCoordinator.blsApkRegistry();
@@ -377,6 +403,12 @@ contract OperatorStateRetriever {
         return apk;
     }
 
+    /**
+     * @notice Checks if a point lies on the BN254 elliptic curve
+     * @dev The curve equation is y^2 = x^3 + 2 (mod p) (https://neuromancer.sk/std/bn/bn254)
+     * @param p The point to check, in G1
+     * @return true if the point lies on the curve, false otherwise
+     */
     function _isOnCurve(BN254.G1Point memory p) internal view returns (bool) {
         uint256 y2 = mulmod(p.Y, p.Y, BN254.FP_MODULUS);
         uint256 x2 = mulmod(p.X, p.X, BN254.FP_MODULUS);
