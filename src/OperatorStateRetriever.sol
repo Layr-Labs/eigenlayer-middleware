@@ -251,8 +251,8 @@ contract OperatorStateRetriever {
      * @param quorumNumbers Array of quorum numbers to check for non-signers
      * @param sigma The aggregate BLS signature to verify
      * @param operators Array of operator addresses that signed the message
-     * @param blockNumber is the block number to get the indices for
-     * @return NonSignerStakesAndSignature struct containing:
+     * @param blockNumber Is the block number to get the indices for
+     * @return NonSignerStakesAndSignature Struct containing:
      *         - nonSignerQuorumBitmapIndices: Indices for retrieving quorum bitmaps of non-signers
      *         - nonSignerPubkeys: BLS public keys of operators that did not sign
      *         - quorumApks: Aggregate public keys for each quorum
@@ -294,11 +294,11 @@ contract OperatorStateRetriever {
             );
         }
 
-        // extra scope for stack limit
+        // Extra scope for stack limit
         {
         uint32[] memory signingOperatorQuorumBitmapIndices = registryCoordinator
             .getQuorumBitmapIndicesAtBlockNumber(blockNumber, m.signingOperatorIds);
-        // check that all operators are registered (this is like the check in getCheckSignaturesIndices, but we check against _signing_ operators)
+        // Check that all operators are registered (this is like the check in getCheckSignaturesIndices, but we check against _signing_ operators)
         for (uint256 i = 0; i < operators.length; i++) {
             uint192 signingOperatorQuorumBitmap = registryCoordinator
                 .getQuorumBitmapAtBlockNumberByIndex(
@@ -310,35 +310,35 @@ contract OperatorStateRetriever {
         }
         }
 
-        // we use this as a dynamic array 
+        // We use this as a dynamic array 
         uint256 nonSignerOperatorsCount = 0;
         bytes32[] memory nonSignerOperatorIds = new bytes32[](16);
-        // for every quorum
+        // For every quorum
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             bytes32[] memory operatorIdsInQuorum = m.indexRegistry.getOperatorListAtBlockNumber(uint8(quorumNumbers[i]), blockNumber);
             // Operator IDs are computed from the hash of the BLS public keys, so an operatorId's public key can't change over time
             // This lets us compute the APK at the given block number
             m.quorumApks[i] = _computeG1Apk(registryCoordinator, operatorIdsInQuorum);
-            // we check for every operator in the quorum
+            // We check for every operator in the quorum
             for (uint256 j = 0; j < operatorIdsInQuorum.length; j++) {
                 bool isNewNonSigner = true;
-                // if it is in the signing operators array
+                // If it is in the signing operators array
                 for (uint256 k = 0; k < m.signingOperatorIds.length; k++) {
                     if (operatorIdsInQuorum[j] == m.signingOperatorIds[k]) {
                         isNewNonSigner = false;
                         break;
                     }
                 }
-                // or already in the non-signing operators array
+                // Or already in the non-signing operators array
                 for (uint256 l = 0; l < nonSignerOperatorsCount; l++) {
                     if (nonSignerOperatorIds[l] == operatorIdsInQuorum[j]) {
                         isNewNonSigner = false;
                         break;
                     }
                 }
-                // and if not, we add it to the non-signing operators array
+                // And if not, we add it to the non-signing operators array
                 if (isNewNonSigner) {
-                    // if we are at the end of the array, we need to resize it
+                    // If we are at the end of the array, we need to resize it
                     if (nonSignerOperatorsCount == nonSignerOperatorIds.length) {
                         uint256 newCapacity = nonSignerOperatorIds.length * 2;
                         bytes32[] memory newNonSignerOperatorIds = new bytes32[](newCapacity);
