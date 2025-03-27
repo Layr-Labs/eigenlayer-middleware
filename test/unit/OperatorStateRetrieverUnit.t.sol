@@ -306,9 +306,9 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         );
         // we're querying for 2 operators, so there should be 2 nonSignerQuorumBitmapIndices
         assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices.length, 2);
-        // the first operator (0) registered for quorum 1, (1) deregistered from quorum 1
+        // the first operator (0) registered for quorum 1, (1) deregistered from quorum 1, and (2) registered for quorum 2
         assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices[0], 2);
-        // the second operator (0) registered for quorum 1 and 2 (1) deregistered from quorum 2
+        // the second operator (0) registered for quorum 1 and 2 (1) deregistered from quorum 2, and (2) registered for quorum 2
         assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices[1], 2);
         // the operators, together, serve 2 quorums so there should be 2 quorumApkIndices
         assertEq(checkSignaturesIndices.quorumApkIndices.length, 2);
