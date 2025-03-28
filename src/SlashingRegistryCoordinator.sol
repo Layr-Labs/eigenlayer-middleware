@@ -44,11 +44,11 @@ import {SlashingRegistryCoordinatorStorage} from "./SlashingRegistryCoordinatorS
  * @author Layr Labs, Inc.
  */
 contract SlashingRegistryCoordinator is
-    SlashingRegistryCoordinatorStorage,
     Initializable,
     SemVerMixin,
     Pausable,
     OwnableUpgradeable,
+    SlashingRegistryCoordinatorStorage,
     EIP712Upgradeable,
     ISignatureUtilsMixin
 {

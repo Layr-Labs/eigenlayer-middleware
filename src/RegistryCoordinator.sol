@@ -34,7 +34,7 @@ import {RegistryCoordinatorStorage} from "./RegistryCoordinatorStorage.sol";
  *
  * @author Layr Labs, Inc.
  */
-contract RegistryCoordinator is RegistryCoordinatorStorage, SlashingRegistryCoordinator {
+contract RegistryCoordinator is SlashingRegistryCoordinator, RegistryCoordinatorStorage {
     using BitmapUtils for *;
 
     constructor(
