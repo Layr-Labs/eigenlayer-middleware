@@ -246,7 +246,7 @@ contract OperatorStateRetriever {
     }
 
     /**
-     * @notice Returns the stakes and signature information for signing operators in specified quorums
+     * @notice Returns the stakes and signature information for non-signing operators in specified quorums
      * @param registryCoordinator The registry coordinator contract to fetch operator information from
      * @param quorumNumbers Array of quorum numbers to check for non-signers
      * @param sigma The aggregate BLS signature to verify
@@ -261,7 +261,7 @@ contract OperatorStateRetriever {
      *         - quorumApkIndices: Indices for retrieving quorum APKs
      *         - totalStakeIndices: Indices for retrieving total stake info
      *         - nonSignerStakeIndices: Indices for retrieving non-signer stake info
-     * @dev Computes the indices of operators that signed across all specified quorums
+     * @dev Computes the indices of operators that did not sign across all specified quorums
      */
     function getNonSignerStakesAndSignature(
         ISlashingRegistryCoordinator registryCoordinator,
