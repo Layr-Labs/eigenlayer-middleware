@@ -409,7 +409,7 @@ contract OperatorStateRetriever {
      * @param p The point to check, in G1
      * @return true if the point lies on the curve, false otherwise
      */
-    function _isOnCurve(BN254.G1Point memory p) internal view returns (bool) {
+    function _isOnCurve(BN254.G1Point memory p) internal pure returns (bool) {
         uint256 y2 = mulmod(p.Y, p.Y, BN254.FP_MODULUS);
         uint256 x2 = mulmod(p.X, p.X, BN254.FP_MODULUS);
         uint256 x3 = mulmod(p.X, x2, BN254.FP_MODULUS);
