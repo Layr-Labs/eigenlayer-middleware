@@ -2,7 +2,8 @@
 pragma solidity ^0.8.27;
 
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
-import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {ISignatureUtilsMixin} from
+    "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {
@@ -10,7 +11,9 @@ import {
     OperatorSet,
     IAllocationManagerTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
 import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
+import {SemVerMixin} from "eigenlayer-contracts/src/contracts/mixins/SemVerMixin.sol";
 
 import {IBLSApkRegistry, IBLSApkRegistryTypes} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry, IStakeRegistryTypes} from "./interfaces/IStakeRegistry.sol";
@@ -25,7 +28,8 @@ import {QuorumBitmapHistoryLib} from "./libraries/QuorumBitmapHistoryLib.sol";
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import {EIP712} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
+import {EIP712Upgradeable} from
+    "@openzeppelin-upgrades/contracts/utils/cryptography/EIP712Upgradeable.sol";
 
 import {Pausable} from "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
 import {SlashingRegistryCoordinatorStorage} from "./SlashingRegistryCoordinatorStorage.sol";
@@ -40,12 +44,13 @@ import {SlashingRegistryCoordinatorStorage} from "./SlashingRegistryCoordinatorS
  * @author Layr Labs, Inc.
  */
 contract SlashingRegistryCoordinator is
-    EIP712,
+    SlashingRegistryCoordinatorStorage,
     Initializable,
+    SemVerMixin,
     Pausable,
     OwnableUpgradeable,
-    SlashingRegistryCoordinatorStorage,
-    ISignatureUtils
+    EIP712Upgradeable,
+    ISignatureUtilsMixin
 {
     using BitmapUtils for *;
     using BN254 for BN254.G1Point;
@@ -75,7 +80,8 @@ contract SlashingRegistryCoordinator is
         IIndexRegistry _indexRegistry,
         ISocketRegistry _socketRegistry,
         IAllocationManager _allocationManager,
-        IPauserRegistry _pauserRegistry
+        IPauserRegistry _pauserRegistry,
+        string memory _version
     )
         SlashingRegistryCoordinatorStorage(
             _stakeRegistry,
@@ -84,7 +90,7 @@ contract SlashingRegistryCoordinator is
             _socketRegistry,
             _allocationManager
         )
-        EIP712("AVSRegistryCoordinator", "v0.0.1")
+        SemVerMixin(_version)
         Pausable(_pauserRegistry)
     {
         _disableInitializers();
@@ -96,17 +102,18 @@ contract SlashingRegistryCoordinator is
      *
      */
     function initialize(
-        address _initialOwner,
-        address _churnApprover,
-        address _ejector,
-        uint256 _initialPausedStatus,
-        address _avs
+        address initialOwner,
+        address churnApprover,
+        address ejector,
+        uint256 initialPausedStatus,
+        address avs
     ) external initializer {
-        _transferOwnership(_initialOwner);
-        _setChurnApprover(_churnApprover);
-        _setPausedStatus(_initialPausedStatus);
-        _setEjector(_ejector);
-        _setAVS(_avs);
+        __EIP712_init("AVSRegistryCoordinator", "v0.0.1");
+        _transferOwnership(initialOwner);
+        _setChurnApprover(churnApprover);
+        _setPausedStatus(initialPausedStatus);
+        _setEjector(ejector);
+        _setAVS(avs);
     }
 
     /// @inheritdoc ISlashingRegistryCoordinator
@@ -662,13 +669,9 @@ contract SlashingRegistryCoordinator is
         address operator,
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory params
     ) internal returns (bytes32 operatorId) {
-        operatorId = blsApkRegistry.getOperatorId(operator);
-        if (operatorId == 0) {
-            operatorId = blsApkRegistry.registerBLSPublicKey(
-                operator, params, pubkeyRegistrationMessageHash(operator)
-            );
-        }
-        return operatorId;
+        return blsApkRegistry.getOrRegisterOperatorId(
+            operator, params, pubkeyRegistrationMessageHash(operator)
+        );
     }
 
     /**
@@ -1104,9 +1107,7 @@ contract SlashingRegistryCoordinator is
     function pubkeyRegistrationMessageHash(
         address operator
     ) public view returns (BN254.G1Point memory) {
-        return BN254.hashToG1(
-            _hashTypedDataV4(keccak256(abi.encode(PUBKEY_REGISTRATION_TYPEHASH, operator)))
-        );
+        return BN254.hashToG1(calculatePubkeyRegistrationMessageHash(operator));
     }
 
     /**
@@ -1123,5 +1124,13 @@ contract SlashingRegistryCoordinator is
         address _avs
     ) public view virtual returns (bool) {
         return _avs == address(avs);
+    }
+
+    /**
+     * @notice Returns the domain separator used for EIP-712 signatures
+     * @return The domain separator
+     */
+    function domainSeparator() external view virtual override returns (bytes32) {
+        return _domainSeparatorV4();
     }
 }

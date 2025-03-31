@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {
+    ISignatureUtilsMixin,
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
@@ -29,7 +32,8 @@ contract EqualWeightECDSARegistry is ECDSAStakeRegistrySetup {
 
         fixedWeightRegistry.permitOperator(operator1);
         fixedWeightRegistry.permitOperator(operator2);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        address operator = address(0x123);
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature;
         vm.prank(operator1);
         fixedWeightRegistry.registerOperatorWithSignature(operatorSignature, operator1);
         vm.prank(operator2);
@@ -50,7 +54,8 @@ contract EqualWeightECDSARegistry is ECDSAStakeRegistrySetup {
         assertEq(fixedWeightRegistry.getLastCheckpointTotalWeight(), 1);
 
         vm.roll(block.number + 1);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        address operator = address(0x123);
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature;
         vm.prank(operator1);
         fixedWeightRegistry.registerOperatorWithSignature(operatorSignature, operator1);
 

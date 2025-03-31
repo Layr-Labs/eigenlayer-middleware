@@ -277,4 +277,37 @@ contract StakeRegistryMock is IStakeRegistry {
     ) external pure returns (bytes32) {
         return bytes32(uint256(keccak256(abi.encodePacked(operator, "operatorId"))));
     }
+
+    /// @notice Calculates the individual kick threshold for an operator
+    function calculateIndividualKickThreshold(
+        uint96 minStake,
+        uint32 kickBips,
+        uint32 multiplier
+    ) external pure returns (uint96) {
+        return uint96(uint256(minStake) * kickBips * multiplier / 10000);
+    }
+
+    /// @notice Calculates the total kick threshold across all operators
+    function calculateTotalKickThreshold(
+        uint96 individualThreshold,
+        uint32 numOperators
+    ) external pure returns (uint96) {
+        return uint96(uint256(individualThreshold) * numOperators / 2);
+    }
+
+    /// @notice Validates if the churn rate is within acceptable limits
+    function validateChurn(
+        uint32 currentOperators,
+        uint32 newOperators,
+        uint32 churnBips
+    ) external pure returns (bool) {
+        if (currentOperators == 0) {
+            return true;
+        }
+
+        uint32 maxChurn = uint32(uint256(currentOperators) * churnBips / 10000);
+        uint32 actualChurn = currentOperators > newOperators ? currentOperators - newOperators : 0;
+
+        return actualChurn <= maxChurn;
+    }
 }

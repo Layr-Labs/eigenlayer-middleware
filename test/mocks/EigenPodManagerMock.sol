@@ -4,6 +4,7 @@ pragma solidity ^0.8.9;
 import "forge-std/Test.sol";
 import "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
 import "eigenlayer-contracts/src/contracts/interfaces/IEigenPodManager.sol";
+import "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
 
 contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
     receive() external payable {}
@@ -30,6 +31,18 @@ contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
     function denebForkTimestamp() external pure returns (uint64) {
         return type(uint64).max;
     }
+
+    function pectraForkTimestamp() external pure returns (uint64) {
+        return type(uint64).max;
+    }
+
+    function setPectraForkTimestamp(
+        uint64 timestamp
+    ) external {}
+
+    function setProofTimestampSetter(
+        address newProofTimestampSetter
+    ) external {}
 
     function createPod() external returns (address) {}
 
@@ -75,7 +88,9 @@ contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
         address staker,
         IStrategy strategy,
         uint256 depositSharesToRemove
-    ) external {}
+    ) external returns (uint256) {
+        return 0;
+    }
 
     function stakerDepositShares(
         address user,
@@ -92,9 +107,10 @@ contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
     function addShares(
         address staker,
         IStrategy strategy,
-        IERC20 token,
         uint256 shares
-    ) external returns (uint256, uint256) {}
+    ) external returns (uint256, uint256) {
+        return (0, 0);
+    }
 
     function beaconChainSlashingFactor(
         address staker
@@ -109,4 +125,12 @@ contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
     function burnableETHShares() external view returns (uint256) {}
 
     function increaseBurnableShares(IStrategy strategy, uint256 addedSharesToBurn) external {}
+
+    /**
+     * @notice Returns the version of the contract
+     * @return The version string
+     */
+    function version() external pure returns (string memory) {
+        return "v0.0.1";
+    }
 }

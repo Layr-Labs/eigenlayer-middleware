@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import "../../src/RegistryCoordinator.sol";
 import {ISocketRegistry} from "../../src/interfaces/ISocketRegistry.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
+import {IRegistryCoordinatorTypes} from "../../src/interfaces/IRegistryCoordinator.sol";
 
 import "forge-std/Test.sol";
 
@@ -16,16 +17,21 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         IIndexRegistry _indexRegistry,
         ISocketRegistry _socketRegistry,
         IAllocationManager _allocationManager,
-        IPauserRegistry _pauserRegistry
+        IPauserRegistry _pauserRegistry,
+        string memory _version
     )
         RegistryCoordinator(
-            _serviceManager,
-            _stakeRegistry,
-            _blsApkRegistry,
-            _indexRegistry,
-            _socketRegistry,
-            _allocationManager,
-            _pauserRegistry
+            IRegistryCoordinatorTypes.RegistryCoordinatorParams(
+                _serviceManager,
+                IRegistryCoordinatorTypes.SlashingRegistryParams(
+                    _stakeRegistry,
+                    _blsApkRegistry,
+                    _indexRegistry,
+                    _socketRegistry,
+                    _allocationManager,
+                    _pauserRegistry
+                )
+            )
         )
     {
         _transferOwnership(msg.sender);

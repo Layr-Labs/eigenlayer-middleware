@@ -82,7 +82,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         address operator,
         PubkeyRegistrationParams calldata params,
         BN254.G1Point calldata pubkeyRegistrationMessageHash
-    ) external onlyRegistryCoordinator returns (bytes32 operatorId) {
+    ) public onlyRegistryCoordinator returns (bytes32 operatorId) {
         bytes32 pubkeyHash = BN254.hashG1Point(params.pubkeyG1);
         require(pubkeyHash != ZERO_PK_HASH, ZeroPubKey());
         require(getOperatorId(operator) == bytes32(0), OperatorAlreadyRegistered());
@@ -122,6 +122,19 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
 
         emit NewPubkeyRegistration(operator, params.pubkeyG1, params.pubkeyG2);
         return pubkeyHash;
+    }
+
+    /// @inheritdoc IBLSApkRegistry
+    function getOrRegisterOperatorId(
+        address operator,
+        PubkeyRegistrationParams calldata params,
+        BN254.G1Point calldata pubkeyRegistrationMessageHash
+    ) external onlyRegistryCoordinator returns (bytes32 operatorId) {
+        operatorId = getOperatorId(operator);
+        if (operatorId == 0) {
+            operatorId = registerBLSPublicKey(operator, params, pubkeyRegistrationMessageHash);
+        }
+        return operatorId;
     }
 
     /// @notice Verifies and registers a G2 public key for an operator that already has a G1 key
