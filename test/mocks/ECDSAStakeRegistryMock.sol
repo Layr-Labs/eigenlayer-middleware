@@ -17,20 +17,6 @@ contract ECDSAStakeRegistryMock is ECDSAStakeRegistry {
     ) ECDSAStakeRegistry(_delegationManager) {}
 
     /**
-     * @notice Sets the operator weight at a specific block for testing
-     * @param operator The operator address
-     * @param blockNumber The block number
-     * @param weight The weight to set
-     */
-    function setOperatorWeightAtBlock(
-        address operator,
-        uint32 blockNumber,
-        uint256 weight
-    ) external {
-        _operatorWeightHistory[operator].push(weight);
-    }
-
-    /**
      * @notice Sets the total weight at a specific block for testing
      * @param blockNumber The block number
      * @param weight The weight to set
