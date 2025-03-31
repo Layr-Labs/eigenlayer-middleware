@@ -17,11 +17,15 @@ import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
 import {ISlashingRegistryCoordinator} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 import {ISocketRegistry} from "../../src/interfaces/ISocketRegistry.sol";
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
-import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IAllocationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IDelegationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
-import {IPermissionController} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {IRewardsCoordinator} from
+    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IPermissionController} from
+    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 
 // Import concrete implementation for deployment
 import {RegistryCoordinator, IRegistryCoordinatorTypes} from "../../src/RegistryCoordinator.sol";
@@ -52,14 +56,16 @@ contract TestServiceManager is ServiceManagerBase {
         IStakeRegistry __stakeRegistry,
         IPermissionController __permissionController,
         IAllocationManager __allocationManager
-    ) ServiceManagerBase(
-        __avsDirectory,
-        __rewardsCoordinator,
-        __registryCoordinator,
-        __stakeRegistry,
-        __permissionController,
-        __allocationManager
-    ) {}
+    )
+        ServiceManagerBase(
+            __avsDirectory,
+            __rewardsCoordinator,
+            __registryCoordinator,
+            __stakeRegistry,
+            __permissionController,
+            __allocationManager
+        )
+    {}
 }
 
 contract EigenDATest is Test {
@@ -117,7 +123,7 @@ contract EigenDATest is Test {
     }
 
     struct IndexRegistryState {
-        uint32[] nextOperatorIds;
+        uint32[] operatorCounts;
     }
 
     struct StakeRegistryState {
@@ -187,7 +193,6 @@ contract EigenDATest is Test {
         );
 
         console.log("Contract upgrades completed. Ready for validation testing.");
-
     }
 
     function _verifyInitialSetup() internal view {
@@ -205,12 +210,10 @@ contract EigenDATest is Test {
             "BLS APK Registry should be deployed"
         );
         require(
-            eigenDAData.addresses.indexRegistry != address(0),
-            "Index Registry should be deployed"
+            eigenDAData.addresses.indexRegistry != address(0), "Index Registry should be deployed"
         );
         require(
-            eigenDAData.addresses.stakeRegistry != address(0),
-            "Stake Registry should be deployed"
+            eigenDAData.addresses.stakeRegistry != address(0), "Stake Registry should be deployed"
         );
 
         // Verify permissions
@@ -226,7 +229,8 @@ contract EigenDATest is Test {
 
     function _capturePreUpgradeState() internal {
         // Registry Coordinator
-        ISlashingRegistryCoordinator rc = ISlashingRegistryCoordinator(eigenDAData.addresses.registryCoordinator);
+        ISlashingRegistryCoordinator rc =
+            ISlashingRegistryCoordinator(eigenDAData.addresses.registryCoordinator);
         preUpgradeStates.registryCoordinator.numQuorums = rc.quorumCount();
 
         // Service Manager
@@ -247,7 +251,7 @@ contract EigenDATest is Test {
         // Initialize arrays for each quorum
         uint8 quorumCount = rc.quorumCount();
         preUpgradeStates.blsApkRegistry.currentApkHashes = new bytes32[](quorumCount);
-        preUpgradeStates.indexRegistry.nextOperatorIds = new uint32[](quorumCount);
+        preUpgradeStates.indexRegistry.operatorCounts = new uint32[](quorumCount);
         preUpgradeStates.stakeRegistry.numStrategies = new uint32[](quorumCount);
 
         // Stake Registry
@@ -257,7 +261,7 @@ contract EigenDATest is Test {
         for (uint8 i = 0; i < quorumCount; i++) {
             // Get operator count for each quorum from IndexRegistry
             uint32 operatorCount = idx.totalOperatorsForQuorum(i);
-            preUpgradeStates.indexRegistry.nextOperatorIds[i] = operatorCount;
+            preUpgradeStates.indexRegistry.operatorCounts[i] = operatorCount;
 
             // Get APK hash for each quorum from BLSApkRegistry
             // Store the hash of the APK as bytes32
@@ -280,10 +284,15 @@ contract EigenDATest is Test {
 
     function _deployNewImplementations() internal {
         // Deploy SocketRegistry first
-        socketRegistry = address(new SocketRegistry(ISlashingRegistryCoordinator(eigenDAData.addresses.registryCoordinator)));
+        socketRegistry = address(
+            new SocketRegistry(
+                ISlashingRegistryCoordinator(eigenDAData.addresses.registryCoordinator)
+            )
+        );
         console.log("Deployed new SocketRegistry instance at:", socketRegistry);
 
-        IRegistryCoordinatorTypes.SlashingRegistryParams memory slashingParams = IRegistryCoordinatorTypes.SlashingRegistryParams({
+        IRegistryCoordinatorTypes.SlashingRegistryParams memory slashingParams =
+        IRegistryCoordinatorTypes.SlashingRegistryParams({
             stakeRegistry: IStakeRegistry(eigenDAData.addresses.stakeRegistry),
             blsApkRegistry: IBLSApkRegistry(eigenDAData.addresses.blsApkRegistry),
             indexRegistry: IIndexRegistry(eigenDAData.addresses.indexRegistry),
@@ -293,14 +302,17 @@ contract EigenDATest is Test {
         });
 
         // Populate RegistryCoordinatorParams
-        IRegistryCoordinatorTypes.RegistryCoordinatorParams memory params = IRegistryCoordinatorTypes.RegistryCoordinatorParams({
+        IRegistryCoordinatorTypes.RegistryCoordinatorParams memory params =
+        IRegistryCoordinatorTypes.RegistryCoordinatorParams({
             serviceManager: IServiceManager(payable(eigenDAData.addresses.eigenDAServiceManager)),
             slashingParams: slashingParams
         });
 
         // Deploy RegistryCoordinator
         newRegistryCoordinatorImpl = address(new RegistryCoordinator(params));
-        console.log("Deployed new RegistryCoordinator implementation at:", newRegistryCoordinatorImpl);
+        console.log(
+            "Deployed new RegistryCoordinator implementation at:", newRegistryCoordinatorImpl
+        );
 
         // Deploy ServiceManagerBase
         // Use extracted addresses for core dependencies
@@ -310,20 +322,23 @@ contract EigenDATest is Test {
         // Use extracted addresses where available
         IAVSDirectory avsDirectory = IAVSDirectory(avsDirectoryAddr);
         IRewardsCoordinator rewardsCoordinator = IRewardsCoordinator(rewardsCoordinatorAddr);
-        ISlashingRegistryCoordinator registryCoordinator = ISlashingRegistryCoordinator(registryCoordinatorAddr);
+        ISlashingRegistryCoordinator registryCoordinator =
+            ISlashingRegistryCoordinator(registryCoordinatorAddr);
         IStakeRegistry stakeRegistry = IStakeRegistry(stakeRegistryAddr);
         IPermissionController permissionController = IPermissionController(permissionControllerAddr);
         IAllocationManager allocationManager = IAllocationManager(allocationManagerAddr);
 
         // Deploy TestServiceManager (concrete implementation)
-        newServiceManagerImpl = address(new TestServiceManager(
-            avsDirectory,
-            rewardsCoordinator,
-            registryCoordinator,
-            stakeRegistry,
-            permissionController,
-            allocationManager
-        ));
+        newServiceManagerImpl = address(
+            new TestServiceManager(
+                avsDirectory,
+                rewardsCoordinator,
+                registryCoordinator,
+                stakeRegistry,
+                permissionController,
+                allocationManager
+            )
+        );
         console.log("Deployed new ServiceManager implementation at:", newServiceManagerImpl);
 
         // Deploy BLSApkRegistry
@@ -338,12 +353,14 @@ contract EigenDATest is Test {
         // Use extracted address for delegationManager
         IDelegationManager delegationManager = IDelegationManager(delegationManagerAddr);
 
-        newStakeRegistryImpl = address(new StakeRegistry(
-            registryCoordinator,
-            delegationManager,
-            avsDirectory,
-            allocationManager // Using null address for now
-        ));
+        newStakeRegistryImpl = address(
+            new StakeRegistry(
+                registryCoordinator,
+                delegationManager,
+                avsDirectory,
+                allocationManager // Using null address for now
+            )
+        );
         console.log("Deployed new StakeRegistry implementation at:", newStakeRegistryImpl);
     }
 
@@ -357,12 +374,16 @@ contract EigenDATest is Test {
 
         EigenDAData memory data = _readEigenDADeploymentJson(jsonPath, 17000);
 
+        vm.rollFork(3592349);
 
-        vm.rollFork(3592349); /// Recent block post ALM upgrade
+        /// Recent block post ALM upgrade
 
-        delegationManagerAddr = address(StakeRegistryExtended(data.addresses.stakeRegistry).delegation());
-        avsDirectoryAddr = address(IServiceManagerExtended(data.addresses.eigenDAServiceManager).avsDirectory());
-        allocationManagerAddr = address(IDelegationManagerExtended(delegationManagerAddr).allocationManager());
+        delegationManagerAddr =
+            address(StakeRegistryExtended(data.addresses.stakeRegistry).delegation());
+        avsDirectoryAddr =
+            address(IServiceManagerExtended(data.addresses.eigenDAServiceManager).avsDirectory());
+        allocationManagerAddr =
+            address(IDelegationManagerExtended(delegationManagerAddr).allocationManager());
         console.log("DelegationManager address:", delegationManagerAddr);
         console.log("AVSDirectory address:", avsDirectoryAddr);
         console.log("Allocation Manager address:", allocationManagerAddr);
@@ -384,37 +405,26 @@ contract EigenDATest is Test {
         // Upgrade each contract using the proxyAdmin
         if (newRegistryCoordinator != address(0)) {
             UpgradeableProxyLib.upgrade(
-                eigenDAData.addresses.registryCoordinator,
-                newRegistryCoordinator
+                eigenDAData.addresses.registryCoordinator, newRegistryCoordinator
             );
         }
 
         if (newServiceManager != address(0)) {
             UpgradeableProxyLib.upgrade(
-                eigenDAData.addresses.eigenDAServiceManager,
-                newServiceManager
+                eigenDAData.addresses.eigenDAServiceManager, newServiceManager
             );
         }
 
         if (newBlsApkRegistry != address(0)) {
-            UpgradeableProxyLib.upgrade(
-                eigenDAData.addresses.blsApkRegistry,
-                newBlsApkRegistry
-            );
+            UpgradeableProxyLib.upgrade(eigenDAData.addresses.blsApkRegistry, newBlsApkRegistry);
         }
 
         if (newIndexRegistry != address(0)) {
-            UpgradeableProxyLib.upgrade(
-                eigenDAData.addresses.indexRegistry,
-                newIndexRegistry
-            );
+            UpgradeableProxyLib.upgrade(eigenDAData.addresses.indexRegistry, newIndexRegistry);
         }
 
         if (newStakeRegistry != address(0)) {
-            UpgradeableProxyLib.upgrade(
-                eigenDAData.addresses.stakeRegistry,
-                newStakeRegistry
-            );
+            UpgradeableProxyLib.upgrade(eigenDAData.addresses.stakeRegistry, newStakeRegistry);
         }
 
         // Deploy and use the new SocketRegistry instance
@@ -448,7 +458,8 @@ contract EigenDATest is Test {
         data.addresses.eigenDAServiceManager = json.readAddress(".addresses.eigenDAServiceManager");
         data.addresses.indexRegistry = json.readAddress(".addresses.indexRegistry");
         data.addresses.mockDispatcher = json.readAddress(".addresses.mockRollup");
-        data.addresses.operatorStateRetriever = json.readAddress(".addresses.operatorStateRetriever");
+        data.addresses.operatorStateRetriever =
+            json.readAddress(".addresses.operatorStateRetriever");
         data.addresses.registryCoordinator = json.readAddress(".addresses.registryCoordinator");
         data.addresses.serviceManagerRouter = json.readAddress(".addresses.serviceManagerRouter");
         data.addresses.stakeRegistry = json.readAddress(".addresses.stakeRegistry");
@@ -458,7 +469,8 @@ contract EigenDATest is Test {
         data.chainInfo.deploymentBlock = json.readUint(".chainInfo.deploymentBlock");
 
         // Parse permissions section
-        data.permissions.eigenDABatchConfirmer = json.readAddress(".permissions.eigenDABatchConfirmer");
+        data.permissions.eigenDABatchConfirmer =
+            json.readAddress(".permissions.eigenDABatchConfirmer");
         data.permissions.eigenDAChurner = json.readAddress(".permissions.eigenDAChurner");
         data.permissions.eigenDAEjector = json.readAddress(".permissions.eigenDAEjector");
         data.permissions.eigenDAOwner = json.readAddress(".permissions.eigenDAOwner");
@@ -499,7 +511,7 @@ contract EigenDATest is Test {
         //     // 2. Verify IndexRegistry state
         //     uint32 operatorCount = idx.totalOperatorsForQuorum(i);
         //     require(
-        //         operatorCount == preUpgradeStates.indexRegistry.nextOperatorIds[i],
+        //         operatorCount == preUpgradeStates.indexRegistry.operatorCounts[i],
         //         "IndexRegistry: Operator count changed after upgrade"
         //     );
 
