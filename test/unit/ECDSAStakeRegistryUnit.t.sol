@@ -863,4 +863,257 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         }
         return (operators, signatures);
     }
+
+    function test_RevertsWhen_ZeroStrategies_UpdateQuorumConfig() public {
+        IECDSAStakeRegistryTypes.Quorum memory invalidQuorum = IECDSAStakeRegistryTypes.Quorum({
+            strategies: new IECDSAStakeRegistryTypes.StrategyParams[](0)
+        });
+        address[] memory operators = new address[](0);
+
+        vm.expectRevert(IECDSAStakeRegistryErrors.InvalidQuorum.selector);
+        registry.updateQuorumConfig(invalidQuorum, operators);
+    }
+
+    function test_RevertsWhen_PartialBPSSum_UpdateQuorumConfig() public {
+        IStrategy s1 = IStrategy(address(0x1));
+        IStrategy s2 = IStrategy(address(0x2));
+        IECDSAStakeRegistryTypes.StrategyParams[] memory strategies =
+            new IECDSAStakeRegistryTypes.StrategyParams[](2);
+        strategies[0] = IECDSAStakeRegistryTypes.StrategyParams({strategy: s1, multiplier: 9000});
+        strategies[1] = IECDSAStakeRegistryTypes.StrategyParams({strategy: s2, multiplier: 999});
+
+        address[] memory operators = new address[](0);
+
+        vm.expectRevert(IECDSAStakeRegistryErrors.InvalidQuorum.selector);
+        registry.updateQuorumConfig(
+            IECDSAStakeRegistryTypes.Quorum({strategies: strategies}), operators
+        );
+    }
+
+    function test_RevertsWhen_ExcessBPSSum_UpdateQuorumConfig() public {
+        IStrategy s1 = IStrategy(address(0x1));
+        IStrategy s2 = IStrategy(address(0x2));
+        IECDSAStakeRegistryTypes.StrategyParams[] memory strategies =
+            new IECDSAStakeRegistryTypes.StrategyParams[](2);
+        strategies[0] = IECDSAStakeRegistryTypes.StrategyParams({strategy: s1, multiplier: 9000});
+        strategies[1] = IECDSAStakeRegistryTypes.StrategyParams({strategy: s2, multiplier: 1001});
+
+        address[] memory operators = new address[](0);
+
+        vm.expectRevert(IECDSAStakeRegistryErrors.InvalidQuorum.selector);
+        registry.updateQuorumConfig(
+            IECDSAStakeRegistryTypes.Quorum({strategies: strategies}), operators
+        );
+    }
+
+    function test_RevertsWhen_FutureReferenceBlock_CheckSignatures() public {
+        bytes32 digest = keccak256("data");
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(operator1Pk, digest);
+        bytes[] memory signatures = new bytes[](1);
+        signatures[0] = abi.encodePacked(r, s, v);
+        address[] memory operators = new address[](1);
+        operators[0] = operator1;
+
+        vm.expectRevert(IECDSAStakeRegistryErrors.InvalidReferenceBlock.selector);
+        registry.isValidSignature(digest, abi.encode(operators, signatures, uint32(block.number)));
+    }
+}
+
+contract ECDSAStakeRegistryEventsTest is ECDSAStakeRegistrySetup {
+    address private newOperator = address(0x123);
+    address private newSigningKey = address(0x456);
+    uint256 private blockBeforeUpdate;
+
+    function setUp() public override {
+        super.setUp();
+        // Ensure block number can be checkpointed
+        vm.roll(block.number + 1);
+        blockBeforeUpdate = block.number;
+    }
+
+    function test_OperatorRegistered_Event() public {
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory sig;
+
+        // Expect event
+        vm.expectEmit(true, true, false, true);
+        emit OperatorRegistered(newOperator, address(mockServiceManager));
+
+        // Test action
+        vm.prank(newOperator);
+        registry.registerOperatorWithSignature(sig, newOperator);
+
+        // Verify state
+        assertTrue(registry.operatorRegistered(newOperator));
+    }
+
+    function test_OperatorDeregistered_Event() public {
+        vm.expectEmit(true, true, false, true);
+        emit OperatorDeregistered(operator1, address(mockServiceManager));
+
+        vm.prank(operator1);
+        registry.deregisterOperator();
+
+        assertFalse(registry.operatorRegistered(operator1));
+    }
+
+    function test_QuorumUpdated_Event() public {
+        IECDSAStakeRegistryTypes.Quorum memory oldQuorum = registry.quorum();
+        IECDSAStakeRegistryTypes.Quorum memory newQuorum = IECDSAStakeRegistryTypes.Quorum({
+            strategies: new IECDSAStakeRegistryTypes.StrategyParams[](1)
+        });
+        newQuorum.strategies[0] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(0x1234)),
+            multiplier: 10000
+        });
+
+        vm.expectEmit(true, true, true, true);
+        emit QuorumUpdated(oldQuorum, newQuorum);
+
+        registry.updateQuorumConfig(newQuorum, new address[](0));
+
+        assertEq(registry.quorum().strategies.length, newQuorum.strategies.length);
+    }
+
+    function test_MinimumWeightUpdated_Event() public {
+        uint256 oldWeight = registry.minimumWeight();
+        uint256 newWeight = 5000;
+
+        vm.expectEmit(true, true, true, true);
+        emit MinimumWeightUpdated(oldWeight, newWeight);
+
+        registry.updateMinimumWeight(newWeight, new address[](0));
+
+        assertEq(registry.minimumWeight(), newWeight);
+    }
+
+    function test_MinimumWeightUpdated_Zero_Threshold() public {
+        registry.updateMinimumWeight(1000, new address[](0));
+        uint256 oldWeight = registry.minimumWeight();
+        uint256 newWeight = 0;
+
+        vm.expectEmit(true, true, true, true);
+        emit MinimumWeightUpdated(oldWeight, newWeight);
+
+        registry.updateMinimumWeight(newWeight, new address[](0));
+
+        assertEq(registry.minimumWeight(), newWeight);
+    }
+
+    function test_OperatorWeightUpdated_Event() public {
+        uint256 oldWeight = registry.getLastCheckpointOperatorWeight(operator1);
+        uint256 newWeight = oldWeight + 100; // Simulate weight increase
+
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = registry.quorum().strategies[0].strategy;
+        uint256[] memory shares = new uint256[](1);
+        shares[0] = newWeight;
+
+        vm.mockCall(
+            address(mockDelegationManager),
+            abi.encodeWithSelector(
+                MockDelegationManager.getOperatorShares.selector, operator1, strategies
+            ),
+            abi.encode(shares)
+        );
+
+        vm.expectEmit(true, true, true, true);
+        emit OperatorWeightUpdated(operator1, oldWeight, newWeight);
+
+        address[] memory operators = new address[](1);
+        operators[0] = operator1;
+        registry.updateOperators(operators);
+
+        assertEq(registry.getLastCheckpointOperatorWeight(operator1), newWeight);
+    }
+
+    function test_TotalWeightUpdated_Event() public {
+        uint256 oldTotal = registry.getLastCheckpointTotalWeight();
+
+        uint256 weight1 = registry.getLastCheckpointOperatorWeight(operator1);
+        uint256 weight2 = registry.getLastCheckpointOperatorWeight(operator2);
+
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = registry.quorum().strategies[0].strategy;
+
+        uint256[] memory shares1 = new uint256[](1);
+        shares1[0] = weight1 * 2;
+
+        uint256[] memory shares2 = new uint256[](1);
+        shares2[0] = weight2 * 2;
+
+        uint256 newTotal = oldTotal + weight1 + weight2;
+
+        vm.mockCall(
+            address(mockDelegationManager),
+            abi.encodeWithSelector(
+                MockDelegationManager.getOperatorShares.selector, operator1, strategies
+            ),
+            abi.encode(shares1)
+        );
+
+        vm.mockCall(
+            address(mockDelegationManager),
+            abi.encodeWithSelector(
+                MockDelegationManager.getOperatorShares.selector, operator2, strategies
+            ),
+            abi.encode(shares2)
+        );
+
+        vm.expectEmit(true, true, true, true);
+        emit TotalWeightUpdated(oldTotal, newTotal);
+
+        address[] memory operators = new address[](2);
+        operators[0] = operator1;
+        operators[1] = operator2;
+        registry.updateOperators(operators);
+
+        assertEq(registry.getLastCheckpointTotalWeight(), newTotal);
+    }
+
+    function test_ThresholdWeightUpdated_Event() public {
+        uint256 newThreshold = 10000000000;
+
+        vm.expectEmit(true, true, true, true);
+        emit ThresholdWeightUpdated(newThreshold);
+
+        vm.prank(registry.owner());
+        registry.updateStakeThreshold(newThreshold);
+
+        assertEq(registry.getLastCheckpointThresholdWeight(), newThreshold);
+    }
+
+    function test_SigningKeyUpdate_Event() public {
+        address oldKey = registry.getLatestOperatorSigningKey(operator1);
+        address newKey = address(0x789);
+
+        vm.expectEmit(true, true, true, true);
+        emit SigningKeyUpdate(operator1, block.number, newKey, oldKey);
+
+        vm.prank(operator1);
+        registry.updateOperatorSigningKey(newKey);
+
+        assertEq(registry.getLatestOperatorSigningKey(operator1), newKey);
+    }
+
+    function test_MultiEvent_DeregisterOperator() public {
+        uint256 oldOperatorWeight = registry.getLastCheckpointOperatorWeight(operator1);
+        uint256 oldTotalWeight = registry.getLastCheckpointTotalWeight();
+        uint256 expectedNewTotal = oldTotalWeight - oldOperatorWeight;
+
+        vm.expectEmit(true, true, true, true);
+        emit OperatorWeightUpdated(operator1, oldOperatorWeight, 0);
+
+        vm.expectEmit(true, true, true, true);
+        emit TotalWeightUpdated(oldTotalWeight, expectedNewTotal);
+
+        vm.expectEmit(true, true, false, true);
+        emit OperatorDeregistered(operator1, address(mockServiceManager));
+
+        vm.prank(operator1);
+        registry.deregisterOperator();
+
+        assertFalse(registry.operatorRegistered(operator1));
+        assertEq(registry.getLastCheckpointOperatorWeight(operator1), 0);
+        assertEq(registry.getLastCheckpointTotalWeight(), expectedNewTotal);
+    }
 }
