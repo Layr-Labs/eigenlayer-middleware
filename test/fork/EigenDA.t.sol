@@ -483,52 +483,47 @@ contract EigenDATest is Test {
     function testValidatePostUpgradeState() public {
         testEigenDAUpgradeSetup();
 
-        // 2. Verify post-upgrade state matches pre-upgrade state
         console.log("Validating post-upgrade contract states");
 
-        // // Get contract instances for post-upgrade validation
-        // ISlashingRegistryCoordinator rc = ISlashingRegistryCoordinator(eigenDAData.addresses.registryCoordinator);
-        // IBLSApkRegistry bls = IBLSApkRegistry(eigenDAData.addresses.blsApkRegistry);
-        // IIndexRegistry idx = IIndexRegistry(eigenDAData.addresses.indexRegistry);
-        // IStakeRegistry stake = IStakeRegistry(eigenDAData.addresses.stakeRegistry);
+        ISlashingRegistryCoordinator rc =
+            ISlashingRegistryCoordinator(eigenDAData.addresses.registryCoordinator);
+        IBLSApkRegistry bls = IBLSApkRegistry(eigenDAData.addresses.blsApkRegistry);
+        IIndexRegistry idx = IIndexRegistry(eigenDAData.addresses.indexRegistry);
+        IStakeRegistry stake = IStakeRegistry(eigenDAData.addresses.stakeRegistry);
 
-        // // Verify quorum count is maintained
-        // uint8 quorumCount = rc.quorumCount();
-        // require(
-        //     quorumCount == preUpgradeStates.registryCoordinator.numQuorums,
-        //     "Quorum count changed after upgrade"
-        // );
+        // Verify quorum count is maintained
+        uint8 quorumCount = rc.quorumCount();
+        console.log("quorum count:", quorumCount);
+        require(
+            quorumCount == preUpgradeStates.registryCoordinator.numQuorums,
+            "Quorum count changed after upgrade"
+        );
 
-        // // Verify each quorum's data is maintained across all registries
-        // for (uint8 i = 0; i < quorumCount; i++) {
-        //     // 1. Verify BLSApkRegistry state
-        //     bytes32 currentApkHash = BN254.hashG1Point(bls.getApk(i));
-        //     require(
-        //         currentApkHash == preUpgradeStates.blsApkRegistry.currentApkHashes[i],
-        //         "BLSApkRegistry: APK hash changed after upgrade"
-        //     );
+        // Verify each quorum's data is maintained across all registries
+        for (uint8 i = 0; i < quorumCount; i++) {
+            // 1. Verify BLSApkRegistry state
+            bytes32 currentApkHash = BN254.hashG1Point(bls.getApk(i));
+            require(
+                currentApkHash == preUpgradeStates.blsApkRegistry.currentApkHashes[i],
+                "BLSApkRegistry: APK hash changed after upgrade"
+            );
 
-        //     // 2. Verify IndexRegistry state
-        //     uint32 operatorCount = idx.totalOperatorsForQuorum(i);
-        //     require(
-        //         operatorCount == preUpgradeStates.indexRegistry.operatorCounts[i],
-        //         "IndexRegistry: Operator count changed after upgrade"
-        //     );
+            // 2. Verify IndexRegistry state
+            uint32 operatorCount = idx.totalOperatorsForQuorum(i);
+            require(
+                operatorCount == preUpgradeStates.indexRegistry.operatorCounts[i],
+                "IndexRegistry: Operator count changed after upgrade"
+            );
 
-        //     // 3. Verify StakeRegistry state - only if quorum exists in StakeRegistry
-        //     if (stake.getTotalStakeHistoryLength(i) > 0) {
-        //         uint256 strategyCount = stake.strategyParamsLength(i);
-        //         require(
-        //             uint32(strategyCount) == preUpgradeStates.stakeRegistry.numStrategies[i],
-        //             "StakeRegistry: Strategy count changed after upgrade"
-        //         );
-        //     }
-        // }
-
-        // // Test Socket Registry integration by checking if the registry coordinator can interact with it
-        // // This is a basic check to ensure the new SocketRegistry contract is properly connected
-        // bool socketRegistryExists = address(rc) != address(0) && socketRegistry != address(0);
-        // require(socketRegistryExists, "Socket Registry not properly integrated");
+            // 3. Verify StakeRegistry state - only if quorum exists in StakeRegistry
+            if (stake.getTotalStakeHistoryLength(i) > 0) {
+                uint256 strategyCount = stake.strategyParamsLength(i);
+                require(
+                    uint32(strategyCount) == preUpgradeStates.stakeRegistry.numStrategies[i],
+                    "StakeRegistry: Strategy count changed after upgrade"
+                );
+            }
+        }
 
         console.log("Post-upgrade validation successful");
     }
