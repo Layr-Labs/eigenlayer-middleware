@@ -34,7 +34,7 @@
     # The number of runs specifies roughly how often each opcode of the deployed code will be executed
     # across the life-time of the contract. This means it is a trade-off parameter between code size (deploy cost)
     # and code execution cost (cost after deployment).
-    optimizer_runs = 100
+    optimizer_runs = 200
 
     # Test Configuration
 

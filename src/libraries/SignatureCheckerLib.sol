@@ -22,7 +22,7 @@ library SignatureCheckerLib {
         address signer,
         bytes32 digestHash,
         bytes memory signature
-    ) internal view {
+    ) external view {
         if (!SignatureCheckerUpgradeable.isValidSignatureNow(signer, digestHash, signature)) {
             revert InvalidSignature();
         }

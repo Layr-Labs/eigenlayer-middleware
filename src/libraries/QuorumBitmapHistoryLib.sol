@@ -50,7 +50,7 @@ library QuorumBitmapHistoryLib {
     function currentOperatorBitmap(
         mapping(bytes32 => ISlashingRegistryCoordinator.QuorumBitmapUpdate[]) storage self,
         bytes32 operatorId
-    ) internal view returns (uint192) {
+    ) external view returns (uint192) {
         uint256 historyLength = self[operatorId].length;
         if (historyLength == 0) {
             return 0;
@@ -68,7 +68,7 @@ library QuorumBitmapHistoryLib {
         mapping(bytes32 => ISlashingRegistryCoordinator.QuorumBitmapUpdate[]) storage self,
         uint32 blockNumber,
         bytes32[] memory operatorIds
-    ) internal view returns (uint32[] memory) {
+    ) external view returns (uint32[] memory) {
         uint32[] memory indices = new uint32[](operatorIds.length);
         for (uint256 i = 0; i < operatorIds.length; i++) {
             indices[i] = getQuorumBitmapIndexAtBlockNumber(self, blockNumber, operatorIds[i]);
@@ -87,7 +87,7 @@ library QuorumBitmapHistoryLib {
         bytes32 operatorId,
         uint32 blockNumber,
         uint256 index
-    ) internal view returns (uint192) {
+    ) external view returns (uint192) {
         ISlashingRegistryCoordinator.QuorumBitmapUpdate memory quorumBitmapUpdate =
             self[operatorId][index];
 
@@ -116,7 +116,7 @@ library QuorumBitmapHistoryLib {
         mapping(bytes32 => ISlashingRegistryCoordinator.QuorumBitmapUpdate[]) storage self,
         bytes32 operatorId,
         uint192 newBitmap
-    ) internal {
+    ) external {
         uint256 historyLength = self[operatorId].length;
 
         if (historyLength == 0) {
