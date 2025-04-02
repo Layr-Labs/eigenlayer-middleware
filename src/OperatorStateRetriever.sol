@@ -283,39 +283,38 @@ contract OperatorStateRetriever {
             m.signingOperatorIds[i] = registryCoordinator.getOperatorId(operators[i]);
             BN254.G2Point memory operatorG2Pk = m.blsApkRegistry.getOperatorPubkeyG2(operators[i]);
             (m.apkG2.X[1], m.apkG2.X[0], m.apkG2.Y[1], m.apkG2.Y[0]) = BN256G2.ECTwistAdd(
-                m.apkG2.X[1], 
-                m.apkG2.X[0], 
-                m.apkG2.Y[1], 
-                m.apkG2.Y[0], 
-                operatorG2Pk.X[1], 
-                operatorG2Pk.X[0], 
-                operatorG2Pk.Y[1], 
+                m.apkG2.X[1],
+                m.apkG2.X[0],
+                m.apkG2.Y[1],
+                m.apkG2.Y[0],
+                operatorG2Pk.X[1],
+                operatorG2Pk.X[0],
+                operatorG2Pk.Y[1],
                 operatorG2Pk.Y[0]
             );
         }
 
         // Extra scope for stack limit
         {
-        uint32[] memory signingOperatorQuorumBitmapIndices = registryCoordinator
-            .getQuorumBitmapIndicesAtBlockNumber(blockNumber, m.signingOperatorIds);
-        // Check that all operators are registered (this is like the check in getCheckSignaturesIndices, but we check against _signing_ operators)
-        for (uint256 i = 0; i < operators.length; i++) {
-            uint192 signingOperatorQuorumBitmap = registryCoordinator
-                .getQuorumBitmapAtBlockNumberByIndex(
-                m.signingOperatorIds[i],
-                blockNumber,
-                signingOperatorQuorumBitmapIndices[i]
-            );
-            require(signingOperatorQuorumBitmap != 0, OperatorNotRegistered());
-        }
+            uint32[] memory signingOperatorQuorumBitmapIndices = registryCoordinator
+                .getQuorumBitmapIndicesAtBlockNumber(blockNumber, m.signingOperatorIds);
+            // Check that all operators are registered (this is like the check in getCheckSignaturesIndices, but we check against _signing_ operators)
+            for (uint256 i = 0; i < operators.length; i++) {
+                uint192 signingOperatorQuorumBitmap = registryCoordinator
+                    .getQuorumBitmapAtBlockNumberByIndex(
+                    m.signingOperatorIds[i], blockNumber, signingOperatorQuorumBitmapIndices[i]
+                );
+                require(signingOperatorQuorumBitmap != 0, OperatorNotRegistered());
+            }
         }
 
-        // We use this as a dynamic array 
+        // We use this as a dynamic array
         uint256 nonSignerOperatorsCount = 0;
         bytes32[] memory nonSignerOperatorIds = new bytes32[](16);
         // For every quorum
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            bytes32[] memory operatorIdsInQuorum = m.indexRegistry.getOperatorListAtBlockNumber(uint8(quorumNumbers[i]), blockNumber);
+            bytes32[] memory operatorIdsInQuorum =
+                m.indexRegistry.getOperatorListAtBlockNumber(uint8(quorumNumbers[i]), blockNumber);
             // Operator IDs are computed from the hash of the BLS public keys, so an operatorId's public key can't change over time
             // This lets us compute the APK at the given block number
             m.quorumApks[i] = _computeG1Apk(registryCoordinator, operatorIdsInQuorum);
@@ -362,15 +361,13 @@ contract OperatorStateRetriever {
 
         BN254.G1Point[] memory nonSignerPubkeys = new BN254.G1Point[](nonSignerOperatorsCount);
         for (uint256 i = 0; i < nonSignerOperatorsCount; i++) {
-            address nonSignerOperator = registryCoordinator.getOperatorFromId(trimmedNonSignerOperatorIds[i]);
-            (nonSignerPubkeys[i], ) = m.blsApkRegistry.getRegisteredPubkey(nonSignerOperator);
+            address nonSignerOperator =
+                registryCoordinator.getOperatorFromId(trimmedNonSignerOperatorIds[i]);
+            (nonSignerPubkeys[i],) = m.blsApkRegistry.getRegisteredPubkey(nonSignerOperator);
         }
 
         CheckSignaturesIndices memory checkSignaturesIndices = getCheckSignaturesIndices(
-            registryCoordinator, 
-            blockNumber, 
-            quorumNumbers, 
-            trimmedNonSignerOperatorIds
+            registryCoordinator, blockNumber, quorumNumbers, trimmedNonSignerOperatorIds
         );
         return IBLSSignatureCheckerTypes.NonSignerStakesAndSignature({
             nonSignerQuorumBitmapIndices: checkSignaturesIndices.nonSignerQuorumBitmapIndices,
@@ -391,7 +388,10 @@ contract OperatorStateRetriever {
      * @param operatorIds Array of operator IDs to compute the aggregate key for
      * @return The aggregate public key as a G1 point, computed by summing individual operator pubkeys
      */
-    function _computeG1Apk(ISlashingRegistryCoordinator registryCoordinator, bytes32[] memory operatorIds) internal view returns (BN254.G1Point memory) {
+    function _computeG1Apk(
+        ISlashingRegistryCoordinator registryCoordinator,
+        bytes32[] memory operatorIds
+    ) internal view returns (BN254.G1Point memory) {
         BN254.G1Point memory apk = BN254.G1Point(0, 0);
         IBLSApkRegistry blsApkRegistry = registryCoordinator.blsApkRegistry();
         for (uint256 i = 0; i < operatorIds.length; i++) {
@@ -409,7 +409,9 @@ contract OperatorStateRetriever {
      * @param p The point to check, in G1
      * @return true if the point lies on the curve, false otherwise
      */
-    function _isOnCurve(BN254.G1Point memory p) internal pure returns (bool) {
+    function _isOnCurve(
+        BN254.G1Point memory p
+    ) internal pure returns (bool) {
         uint256 y2 = mulmod(p.Y, p.Y, BN254.FP_MODULUS);
         uint256 x2 = mulmod(p.X, p.X, BN254.FP_MODULUS);
         uint256 x3 = mulmod(p.X, x2, BN254.FP_MODULUS);
