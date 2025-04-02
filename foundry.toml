@@ -102,6 +102,7 @@
     optimizer=true
     optimizer_runs = 100
     runs = 5000
+    ignore = ["./test/fork/**/*"]
 
 [profile.forktest.fuzz]
     runs = 16

@@ -9,11 +9,7 @@ on:
       - dev
 
 env:
-  FOUNDRY_PROFILE: ci
-  RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
-  RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
-  HOLESKY_RPC_URL: ${{ secrets.HOLESKY_RPC_URL }}
-  CHAIN_ID: ${{ secrets.CHAIN_ID }}
+  FOUNDRY_PROFILE: intense
 
 jobs:
   # -----------------------------------------------------------------------
@@ -47,4 +43,5 @@ jobs:
         run: |
           echo -e "\033[1;33mWarning: This workflow may take several hours to complete.\033[0m"
           echo -e "\033[1;33mThis intense fuzzing workflow is optional but helps catch edge cases through extended testing.\033[0m"
-          FOUNDRY_PROFILE=intense forge test -vvv
+          echo "Current FOUNDRY_PROFILE: $FOUNDRY_PROFILE"
+          forge test -vvv
