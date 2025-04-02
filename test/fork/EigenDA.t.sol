@@ -616,7 +616,9 @@ contract EigenDATest is Test {
         );
 
         ServiceManagerBase(avs).setAppointee(
-            preUpgradeStates.serviceManager.owner, allocationManagerAddr, IAllocationManager.updateAVSMetadataURI.selector
+            preUpgradeStates.serviceManager.owner,
+            allocationManagerAddr,
+            IAllocationManager.updateAVSMetadataURI.selector
         );
 
         // Update AVS metadata URI so we can create operator sets
@@ -625,7 +627,6 @@ contract EigenDATest is Test {
         allocationManager.updateAVSMetadataURI(avs, metadataURI);
 
         vm.stopPrank();
-
 
         address registryCoordinatorOwner =
             OwnableUpgradeable(eigenDAData.addresses.registryCoordinator).owner();
@@ -649,7 +650,6 @@ contract EigenDATest is Test {
             kickBIPsOfOperatorStake: 10500,
             kickBIPsOfTotalStake: 100
         });
-
 
         rc.createSlashableStakeQuorum(
             operatorSetParams[0],
