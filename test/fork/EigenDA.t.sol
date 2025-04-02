@@ -22,22 +22,34 @@ import {IAllocationManager} from
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {IPermissionController} from
     "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {
+    IAllocationManager,
+    OperatorSet,
+    IAllocationManagerTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
 // Import concrete implementation for deployment
 import {RegistryCoordinator, IRegistryCoordinatorTypes} from "../../src/RegistryCoordinator.sol";
+import {ISlashingRegistryCoordinatorTypes} from
+    "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 import {ServiceManagerBase} from "../../src/ServiceManagerBase.sol";
 import {BLSApkRegistry} from "../../src/BLSApkRegistry.sol";
 import {IndexRegistry} from "../../src/IndexRegistry.sol";
-import {StakeRegistry} from "../../src/StakeRegistry.sol";
+import {StakeRegistry, IStakeRegistryTypes} from "../../src/StakeRegistry.sol";
 import {SocketRegistry} from "../../src/SocketRegistry.sol";
 
 // Extended interface to get addresses of other contracts
 interface IServiceManagerExtended {
     function avsDirectory() external view returns (IAVSDirectory);
+}
+
+interface IAVSDirectoryExtended {
+    function permissionController() external view returns (IPermissionController);
 }
 
 interface StakeRegistryExtended {
@@ -48,7 +60,20 @@ interface IDelegationManagerExtended {
     function allocationManager() external view returns (IAllocationManager);
 }
 
-contract TestServiceManager is ServiceManagerBase {
+contract EigenDA_SM_Gap {
+    uint256[50] private __EigenDASM_GAP;
+}
+
+contract BLSSignatureChecker_Pausable_GAP {
+    uint256[100] private __GAP;
+}
+
+// EigenDAServiceManagerStorage, ServiceManagerBase, BLSSignatureChecker, Pausable
+contract TestServiceManager is
+    EigenDA_SM_Gap,
+    ServiceManagerBase,
+    BLSSignatureChecker_Pausable_GAP
+{
     constructor(
         IAVSDirectory __avsDirectory,
         IRewardsCoordinator __rewardsCoordinator,
@@ -325,8 +350,26 @@ contract EigenDATest is Test {
         ISlashingRegistryCoordinator registryCoordinator =
             ISlashingRegistryCoordinator(registryCoordinatorAddr);
         IStakeRegistry stakeRegistry = IStakeRegistry(stakeRegistryAddr);
+        // Fetch PermissionController from AVS Directory
+        permissionControllerAddr =
+            address(IAVSDirectoryExtended(allocationManagerAddr).permissionController());
+        require(permissionControllerAddr != address(0), "PermissionController address not found");
+        console.log("PermissionController address:", permissionControllerAddr);
+
         IPermissionController permissionController = IPermissionController(permissionControllerAddr);
         IAllocationManager allocationManager = IAllocationManager(allocationManagerAddr);
+
+        // Assert all addresses are not zero before deployment
+        assertTrue(address(avsDirectory) != address(0), "AVSDirectory address is zero");
+        // assertTrue(address(rewardsCoordinator) != address(0), "RewardsCoordinator address is zero");
+        assertTrue(
+            address(registryCoordinator) != address(0), "RegistryCoordinator address is zero"
+        );
+        assertTrue(address(stakeRegistry) != address(0), "StakeRegistry address is zero");
+        assertTrue(
+            address(permissionController) != address(0), "PermissionController address is zero"
+        );
+        assertTrue(address(allocationManager) != address(0), "AllocationManager address is zero");
 
         // Deploy TestServiceManager (concrete implementation)
         newServiceManagerImpl = address(
@@ -353,12 +396,16 @@ contract EigenDATest is Test {
         // Use extracted address for delegationManager
         IDelegationManager delegationManager = IDelegationManager(delegationManagerAddr);
 
+        assertTrue(
+            address(registryCoordinator) != address(0), "RegistryCoordinator address is zero"
+        );
+        assertTrue(address(delegationManager) != address(0), "DelegationManager address is zero");
+        assertTrue(address(avsDirectory) != address(0), "AVSDirectory address is zero");
+        assertTrue(address(allocationManager) != address(0), "AllocationManager address is zero");
+
         newStakeRegistryImpl = address(
             new StakeRegistry(
-                registryCoordinator,
-                delegationManager,
-                avsDirectory,
-                allocationManager // Using null address for now
+                registryCoordinator, delegationManager, avsDirectory, allocationManager
             )
         );
         console.log("Deployed new StakeRegistry implementation at:", newStakeRegistryImpl);
@@ -477,6 +524,25 @@ contract EigenDATest is Test {
         data.permissions.eigenDAUpgrader = json.readAddress(".permissions.eigenDAUpgrader");
         data.permissions.pauserRegistry = json.readAddress(".permissions.pauserRegistry");
 
+        // Label all addresses for better debugging and tracing
+        vm.label(data.addresses.blsApkRegistry, "BLSApkRegistry");
+        vm.label(data.addresses.eigenDAProxyAdmin, "EigenDAProxyAdmin");
+        vm.label(data.addresses.eigenDAServiceManager, "EigenDAServiceManager");
+        vm.label(data.addresses.indexRegistry, "IndexRegistry");
+        vm.label(data.addresses.mockDispatcher, "MockDispatcher");
+        vm.label(data.addresses.operatorStateRetriever, "OperatorStateRetriever");
+        vm.label(data.addresses.registryCoordinator, "RegistryCoordinator");
+        vm.label(data.addresses.serviceManagerRouter, "ServiceManagerRouter");
+        vm.label(data.addresses.stakeRegistry, "StakeRegistry");
+
+        // Label permission addresses
+        vm.label(data.permissions.eigenDABatchConfirmer, "EigenDABatchConfirmer");
+        vm.label(data.permissions.eigenDAChurner, "EigenDAChurner");
+        vm.label(data.permissions.eigenDAEjector, "EigenDAEjector");
+        vm.label(data.permissions.eigenDAOwner, "EigenDAOwner");
+        vm.label(data.permissions.eigenDAUpgrader, "EigenDAUpgrader");
+        vm.label(data.permissions.pauserRegistry, "PauserRegistry");
+
         return data;
     }
 
@@ -526,5 +592,74 @@ contract EigenDATest is Test {
         }
 
         console.log("Post-upgrade validation successful");
+    }
+
+    function testPostUpgrade_CreateOperatorSet() public {
+        // Run the upgrade setup first
+        testEigenDAUpgradeSetup();
+
+        console.log("Setting up operator sets post-upgrade...");
+
+        // Get contract instances
+        IRegistryCoordinator rc = IRegistryCoordinator(eigenDAData.addresses.registryCoordinator);
+        IAllocationManager allocationManager = IAllocationManager(allocationManagerAddr);
+
+        address avs = eigenDAData.addresses.eigenDAServiceManager; // Service Manager is the account
+        assert(preUpgradeStates.serviceManager.owner == OwnableUpgradeable(avs).owner());
+
+        console.log("Setting appointee for createOperatorSets...");
+
+        // Define appointee parameters
+        vm.startPrank(preUpgradeStates.serviceManager.owner);
+        ServiceManagerBase(avs).setAppointee(
+            address(rc), allocationManagerAddr, IAllocationManager.createOperatorSets.selector
+        );
+
+        ServiceManagerBase(avs).setAppointee(
+            preUpgradeStates.serviceManager.owner, allocationManagerAddr, IAllocationManager.updateAVSMetadataURI.selector
+        );
+
+        // Update AVS metadata URI so we can create operator sets
+        string memory metadataURI = "https://eigenda.xyz/metadata";
+        console.log("Updating AVS metadata URI...");
+        allocationManager.updateAVSMetadataURI(avs, metadataURI);
+
+        vm.stopPrank();
+
+
+        address registryCoordinatorOwner =
+            OwnableUpgradeable(eigenDAData.addresses.registryCoordinator).owner();
+        vm.startPrank(registryCoordinatorOwner);
+
+        rc.setAVS(avs);
+
+        console.log("Creating a new slashable stake quorum (quorum 1)...");
+        // Create a new quorum with the SlashingRegistryCoordinator
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(0)), // Replace with actual strategy address
+            multiplier: 1
+        });
+
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam[] memory operatorSetParams =
+            new ISlashingRegistryCoordinatorTypes.OperatorSetParam[](1);
+        operatorSetParams[0] = ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+            maxOperatorCount: 100,
+            kickBIPsOfOperatorStake: 10500,
+            kickBIPsOfTotalStake: 100
+        });
+
+
+        rc.createSlashableStakeQuorum(
+            operatorSetParams[0],
+            1 ether, // minimumStake
+            strategyParams,
+            10 // lookAheadPeriod
+        );
+
+        vm.stopPrank();
+
+        console.log("Post-upgrade creation of operator set quorums");
     }
 }
