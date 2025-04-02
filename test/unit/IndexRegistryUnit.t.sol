@@ -424,6 +424,23 @@ contract IndexRegistryUnitTests_configAndGetters is IndexRegistryUnitTests {
         assertEq(quorumUpdate.numOperators, 0, "numOperators not 0");
         assertEq(quorumUpdate.fromBlockNumber, block.number, "fromBlockNumber not correct");
     }
+
+    function test_totalOperatorsForQuorumAtBlockNumber() public {
+        uint8 quorumNumber = nextQuorum;
+        _initializeQuorum();
+        uint32 blockNumInit = uint32(block.number);
+
+        // Initially, 0 operators
+        assertEq(indexRegistry.totalOperatorsForQuorumAtBlockNumber(quorumNumber, blockNumInit), 0);
+
+        vm.roll(block.number + 5);
+        uint32 blockNumReg1 = uint32(block.number);
+        (, bytes32 operatorId1) = _selectNewOperator();
+        _registerOperatorSingleQuorum(operatorId1, quorumNumber);
+        // Check count at current and past blocks
+        assertEq(indexRegistry.totalOperatorsForQuorumAtBlockNumber(quorumNumber, blockNumReg1), 1);
+        assertEq(indexRegistry.totalOperatorsForQuorumAtBlockNumber(quorumNumber, blockNumInit), 0);
+    }
 }
 
 contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
@@ -474,7 +491,7 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
      * 2. quorumNumbers ordered in ascending order
      * 3. quorumBitmap is <= uint192.max
      * 4. quorumNumbers.length != 0
-     * 5. operator is not already registerd for any quorums being registered for
+     * 5. operator is not already registered for any quorums being registered for
      */
     function test_registerOperator() public {
         // register an operator
@@ -601,7 +618,7 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
      * 2. quorumNumbers ordered in ascending order
      * 3. quorumBitmap is <= uint192.max
      * 4. quorumNumbers.length != 0
-     * 5. operator is not already registerd for any quorums being registered for
+     * 5. operator is not already registered for any quorums being registered for
      */
     function testFuzz_registerOperator_MultipleQuorums(
         uint192 bitmap
