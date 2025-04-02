@@ -182,11 +182,17 @@ contract EigenDATest is Test {
         // Setup the Holesky fork and load EigenDA deployment data
         eigenDAData = _setupEigenDAFork("test/utils");
 
-        delegationManagerAddr = address(StakeRegistryExtended(eigenDAData.addresses.stakeRegistry).delegation());
-        avsDirectoryAddr = address(IServiceManagerExtended(eigenDAData.addresses.eigenDAServiceManager).avsDirectory());
-        allocationManagerAddr = address(IDelegationManagerExtended(delegationManagerAddr).allocationManager());
-        permissionControllerAddr = address(IAllocationManagerExtended(allocationManagerAddr).permissionController());
-        rewardsCoordinatorAddr = address(0); /// TODO:
+        delegationManagerAddr =
+            address(StakeRegistryExtended(eigenDAData.addresses.stakeRegistry).delegation());
+        avsDirectoryAddr = address(
+            IServiceManagerExtended(eigenDAData.addresses.eigenDAServiceManager).avsDirectory()
+        );
+        allocationManagerAddr =
+            address(IDelegationManagerExtended(delegationManagerAddr).allocationManager());
+        permissionControllerAddr =
+            address(IAllocationManagerExtended(allocationManagerAddr).permissionController());
+        rewardsCoordinatorAddr = address(0);
+        /// TODO:
 
         _verifyInitialSetup();
 
@@ -266,12 +272,12 @@ contract EigenDATest is Test {
         address serviceManagerOwner = preUpgradeStates.serviceManager.owner;
         vm.startPrank(serviceManagerOwner);
 
-        // Grant RegistryCoordinator permission to call createOperatorSets on AllocationManager
         ServiceManagerBase(serviceManagerAddress).setAppointee(
             address(registryCoordinator),
             allocationManagerAddr,
             IAllocationManager.createOperatorSets.selector
         );
+
         console.log("Appointee set for createOperatorSets");
 
         ServiceManagerBase(serviceManagerAddress).setAppointee(
@@ -286,7 +292,7 @@ contract EigenDATest is Test {
         console.log("Updating AVS metadata URI to:", metadataURI);
         allocationManager.updateAVSMetadataURI(serviceManagerAddress, metadataURI);
 
-        vm.stopPrank(); // Stop impersonating serviceManagerOwner
+        vm.stopPrank();
 
         // Set the AVS address in the Registry Coordinator (requires RC owner) - required before creating operator sets
         address registryCoordinatorOwner =
@@ -296,9 +302,8 @@ contract EigenDATest is Test {
         registryCoordinator.setAVS(serviceManagerAddress);
         vm.stopPrank(); // Stop impersonating registryCoordinatorOwner
 
-        // === Action Phase ===
         console.log("Creating a new slashable stake quorum (quorum 1)...");
-        vm.startPrank(serviceManagerOwner); // Use service manager owner who now has permission via setAppointee
+        vm.startPrank(serviceManagerOwner);
 
         // Define parameters for the new quorum
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParam =
@@ -316,7 +321,7 @@ contract EigenDATest is Test {
         });
 
         uint96 minimumStake = uint96(1 ether);
-        uint32 lookAheadPeriod = 10; // Example value
+        uint32 lookAheadPeriod = 10;
 
         registryCoordinator.createSlashableStakeQuorum(
             operatorSetParam, minimumStake, strategyParams, lookAheadPeriod
@@ -411,7 +416,7 @@ contract EigenDATest is Test {
         // Assert all addresses are not zero before deployment
         assertTrue(permissionControllerAddr != address(0), "PermissionController address not found");
         assertTrue(address(avsDirectory) != address(0), "AVSDirectory address is zero");
-        // assertTrue(address(rewardsCoordinator) != address(0), "RewardsCoordinator address is zero");
+        // assertTrue(address(rewardsCoordinator) != address(0), "RewardsCoordinator address is zero"); //TODO:
         assertTrue(
             address(registryCoordinator) != address(0), "RegistryCoordinator address is zero"
         );
@@ -461,48 +466,21 @@ contract EigenDATest is Test {
         /// Recent block post ALM upgrade
         vm.rollFork(3592349);
 
-
         return data;
     }
 
     function _upgradeContracts() internal {
-        // Impersonate the upgrader account
         vm.startPrank(eigenDAData.permissions.eigenDAUpgrader);
 
-        // Upgrade each contract using the proxyAdmin and new implementations
-        if (newRegistryCoordinatorImpl != address(0)) {
-            UpgradeableProxyLib.upgrade(
-                eigenDAData.addresses.registryCoordinator, newRegistryCoordinatorImpl
-            );
-            console.log("Upgraded RegistryCoordinator to:", newRegistryCoordinatorImpl);
-        }
-
-        if (newServiceManagerImpl != address(0)) {
-            UpgradeableProxyLib.upgrade(
-                eigenDAData.addresses.eigenDAServiceManager, newServiceManagerImpl
-            );
-            console.log("Upgraded EigenDAServiceManager to:", newServiceManagerImpl);
-        }
-
-        if (newBlsApkRegistryImpl != address(0)) {
-            UpgradeableProxyLib.upgrade(eigenDAData.addresses.blsApkRegistry, newBlsApkRegistryImpl);
-            console.log("Upgraded BLSApkRegistry to:", newBlsApkRegistryImpl);
-        }
-
-        if (newIndexRegistryImpl != address(0)) {
-            UpgradeableProxyLib.upgrade(eigenDAData.addresses.indexRegistry, newIndexRegistryImpl);
-            console.log("Upgraded IndexRegistry to:", newIndexRegistryImpl);
-        }
-
-        if (newStakeRegistryImpl != address(0)) {
-            UpgradeableProxyLib.upgrade(eigenDAData.addresses.stakeRegistry, newStakeRegistryImpl);
-            console.log("Upgraded StakeRegistry to:", newStakeRegistryImpl);
-        }
-
-        // SocketRegistry is a new deployment, not an upgrade, log its usage
-        if (socketRegistry != address(0)) {
-            console.log("Using newly deployed SocketRegistry instance at:", socketRegistry);
-        }
+        UpgradeableProxyLib.upgrade(
+            eigenDAData.addresses.registryCoordinator, newRegistryCoordinatorImpl
+        );
+        UpgradeableProxyLib.upgrade(
+            eigenDAData.addresses.eigenDAServiceManager, newServiceManagerImpl
+        );
+        UpgradeableProxyLib.upgrade(eigenDAData.addresses.blsApkRegistry, newBlsApkRegistryImpl);
+        UpgradeableProxyLib.upgrade(eigenDAData.addresses.indexRegistry, newIndexRegistryImpl);
+        UpgradeableProxyLib.upgrade(eigenDAData.addresses.stakeRegistry, newStakeRegistryImpl);
 
         vm.stopPrank();
     }
@@ -559,7 +537,7 @@ contract EigenDATest is Test {
         vm.label(data.addresses.serviceManagerRouter, "ServiceManagerRouter");
         vm.label(data.addresses.stakeRegistry, "StakeRegistry");
 
-        // Label permission addresses
+        // Label permissioned addresses
         vm.label(data.permissions.eigenDABatchConfirmer, "EigenDABatchConfirmer");
         vm.label(data.permissions.eigenDAChurner, "EigenDAChurner");
         vm.label(data.permissions.eigenDAEjector, "EigenDAEjector");
@@ -571,7 +549,7 @@ contract EigenDATest is Test {
     }
 
     function _verifyInitialSetup() internal view {
-        // Verify that contracts are deployed at the expected addresses
+        // Verify that contracts are deployed and at least not null
         require(
             eigenDAData.addresses.registryCoordinator != address(0),
             "Registry Coordinator should be deployed"
@@ -591,7 +569,6 @@ contract EigenDATest is Test {
             eigenDAData.addresses.stakeRegistry != address(0), "Stake Registry should be deployed"
         );
 
-        // Verify permissions
         require(
             eigenDAData.permissions.eigenDAUpgrader != address(0),
             "EigenDA Upgrader should be defined"
