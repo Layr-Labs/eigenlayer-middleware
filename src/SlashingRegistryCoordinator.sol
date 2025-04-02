@@ -153,7 +153,7 @@ contract SlashingRegistryCoordinator is
         address avs,
         uint32[] memory operatorSetIds,
         bytes calldata data
-    ) external override onlyAllocationManager onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
+    ) external virtual override onlyAllocationManager onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         require(supportsAVS(avs), InvalidAVS());
         bytes memory quorumNumbers = _getQuorumNumbers(operatorSetIds);
 
