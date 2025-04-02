@@ -29,6 +29,9 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
      *
      */
 
+    // Slots already used in this contract
+    uint256[13] private __USED;
+
     /// @notice Whether this AVS allows operator sets for creation/registration
     /// @dev If true, then operator sets may be created and operators may register to operator sets via the AllocationManager
     bool public operatorSetsEnabled;
@@ -47,5 +50,5 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
         serviceManager = _serviceManager;
     }
 
-    uint256[48] private __GAP;
+    uint256[35] private __GAP;
 }
