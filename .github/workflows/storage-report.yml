@@ -26,7 +26,7 @@ jobs:
 
       - name: "Generate and prepare the storage reports for current branch"
         run: |
-          bash ./bin/storage-report.sh pr
+          bash ../bin/storage-report.sh pr
 
       - name: Checkout dev
         env:
