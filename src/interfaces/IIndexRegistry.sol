@@ -175,4 +175,15 @@ interface IIndexRegistry is IIndexRegistryErrors, IIndexRegistryEvents {
     function totalOperatorsForQuorum(
         uint8 quorumNumber
     ) external view returns (uint32);
+
+    /*
+     * @notice Returns the total number of operators in quorum `quorumNumber` at block `blockNumber`.
+     * @param quorumNumber The identifier of the quorum.
+     * @param blockNumber The block number to query.
+     * @return The total number of operators at the specified block.
+     */
+    function totalOperatorsForQuorumAtBlockNumber(
+        uint8 quorumNumber,
+        uint32 blockNumber
+    ) external view returns (uint32);
 }
