@@ -147,6 +147,8 @@ interface IRegistryCoordinator is
         bytes memory quorumNumbers
     ) external;
 
+    function operatorSetsEnabled() external view returns (bool);
+
     /**
      * @notice Checks if a quorum is an M2 quorum.
      * @param quorumNumber The quorum identifier.

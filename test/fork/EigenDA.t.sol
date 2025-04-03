@@ -177,11 +177,23 @@ contract EigenDATest is Test {
     address public newStakeRegistryImpl;
     address public socketRegistry;
 
+    // Contract instances
+    ISlashingRegistryCoordinator public registryCoordinator;
+    IBLSApkRegistry public apkRegistry;
+    IIndexRegistry public indexRegistry;
+    IStakeRegistry public stakeRegistry;
+    IServiceManager public serviceManager;
+    IAllocationManager public allocationManager;
+    IAVSDirectory public avsDirectory;
+    IDelegationManagerExtended public delegationManager;
+    IPermissionController public permissionController;
+
     // Test setup function that runs before each test
     function setUp() public virtual {
         // Setup the Holesky fork and load EigenDA deployment data
         eigenDAData = _setupEigenDAFork("test/utils");
 
+        // Store contract addresses
         delegationManagerAddr =
             address(StakeRegistryExtended(eigenDAData.addresses.stakeRegistry).delegation());
         avsDirectoryAddr = address(
@@ -191,8 +203,20 @@ contract EigenDATest is Test {
             address(IDelegationManagerExtended(delegationManagerAddr).allocationManager());
         permissionControllerAddr =
             address(IAllocationManagerExtended(allocationManagerAddr).permissionController());
-        rewardsCoordinatorAddr = address(0);
         /// TODO:
+        rewardsCoordinatorAddr = address(0);
+
+        // Store contract instances
+        registryCoordinator =
+            ISlashingRegistryCoordinator(eigenDAData.addresses.registryCoordinator);
+        apkRegistry = IBLSApkRegistry(eigenDAData.addresses.blsApkRegistry);
+        indexRegistry = IIndexRegistry(eigenDAData.addresses.indexRegistry);
+        stakeRegistry = IStakeRegistry(eigenDAData.addresses.stakeRegistry);
+        serviceManager = IServiceManager(eigenDAData.addresses.eigenDAServiceManager);
+        allocationManager = IAllocationManager(allocationManagerAddr);
+        avsDirectory = IAVSDirectory(avsDirectoryAddr);
+        delegationManager = IDelegationManagerExtended(delegationManagerAddr);
+        permissionController = IPermissionController(permissionControllerAddr);
 
         _verifyInitialSetup();
 
@@ -209,14 +233,8 @@ contract EigenDATest is Test {
         _upgradeContracts();
         console.log("Validating post-upgrade contract states");
 
-        ISlashingRegistryCoordinator rc =
-            ISlashingRegistryCoordinator(eigenDAData.addresses.registryCoordinator);
-        IBLSApkRegistry bls = IBLSApkRegistry(eigenDAData.addresses.blsApkRegistry);
-        IIndexRegistry idx = IIndexRegistry(eigenDAData.addresses.indexRegistry);
-        IStakeRegistry stake = IStakeRegistry(eigenDAData.addresses.stakeRegistry);
-
         // Verify quorum count is maintained
-        uint8 quorumCount = rc.quorumCount();
+        uint8 quorumCount = registryCoordinator.quorumCount();
         console.log("quorum count:", quorumCount);
         require(
             quorumCount == preUpgradeStates.registryCoordinator.numQuorums,
@@ -226,22 +244,22 @@ contract EigenDATest is Test {
         // Verify each quorum's data is maintained across all registries
         for (uint8 i = 0; i < quorumCount; i++) {
             // 1. Verify BLSApkRegistry state
-            bytes32 currentApkHash = BN254.hashG1Point(bls.getApk(i));
+            bytes32 currentApkHash = BN254.hashG1Point(apkRegistry.getApk(i));
             require(
                 currentApkHash == preUpgradeStates.blsApkRegistry.currentApkHashes[i],
                 "BLSApkRegistry: APK hash changed after upgrade"
             );
 
             // 2. Verify IndexRegistry state
-            uint32 operatorCount = idx.totalOperatorsForQuorum(i);
+            uint32 operatorCount = indexRegistry.totalOperatorsForQuorum(i);
             require(
                 operatorCount == preUpgradeStates.indexRegistry.operatorCounts[i],
                 "IndexRegistry: Operator count changed after upgrade"
             );
 
             // 3. Verify StakeRegistry state - only if quorum exists in StakeRegistry
-            if (stake.getTotalStakeHistoryLength(i) > 0) {
-                uint256 strategyCount = stake.strategyParamsLength(i);
+            if (stakeRegistry.getTotalStakeHistoryLength(i) > 0) {
+                uint256 strategyCount = stakeRegistry.strategyParamsLength(i);
                 require(
                     uint32(strategyCount) == preUpgradeStates.stakeRegistry.numStrategies[i],
                     "StakeRegistry: Strategy count changed after upgrade"
@@ -255,15 +273,10 @@ contract EigenDATest is Test {
     function test_PostUpgrade_CreateOperatorSet() public {
         _upgradeContracts();
 
-        IRegistryCoordinator registryCoordinator =
-            IRegistryCoordinator(eigenDAData.addresses.registryCoordinator);
-        IAllocationManager allocationManager = IAllocationManager(allocationManagerAddr);
-        address serviceManagerAddress = eigenDAData.addresses.eigenDAServiceManager;
-
         // Verify the owner remained the same post-upgrade (sanity check)
         require(
             preUpgradeStates.serviceManager.owner
-                == OwnableUpgradeable(serviceManagerAddress).owner(),
+                == OwnableUpgradeable(address(serviceManager)).owner(),
             "Service Manager owner mismatch post-upgrade"
         );
 
@@ -272,7 +285,7 @@ contract EigenDATest is Test {
         address serviceManagerOwner = preUpgradeStates.serviceManager.owner;
         vm.startPrank(serviceManagerOwner);
 
-        ServiceManagerBase(serviceManagerAddress).setAppointee(
+        serviceManager.setAppointee(
             address(registryCoordinator),
             allocationManagerAddr,
             IAllocationManager.createOperatorSets.selector
@@ -280,7 +293,7 @@ contract EigenDATest is Test {
 
         console.log("Appointee set for createOperatorSets");
 
-        ServiceManagerBase(serviceManagerAddress).setAppointee(
+        serviceManager.setAppointee(
             serviceManagerOwner, // Grant permission to the owner itself
             allocationManagerAddr,
             IAllocationManager.updateAVSMetadataURI.selector
@@ -290,7 +303,7 @@ contract EigenDATest is Test {
         // Update AVS metadata URI - required before creating operator sets
         string memory metadataURI = "https://eigenda.xyz/metadata";
         console.log("Updating AVS metadata URI to:", metadataURI);
-        allocationManager.updateAVSMetadataURI(serviceManagerAddress, metadataURI);
+        allocationManager.updateAVSMetadataURI(address(serviceManager), metadataURI);
 
         vm.stopPrank();
 
@@ -299,7 +312,7 @@ contract EigenDATest is Test {
             OwnableUpgradeable(eigenDAData.addresses.registryCoordinator).owner();
         console.log("Setting AVS address in Registry Coordinator...");
         vm.startPrank(registryCoordinatorOwner);
-        registryCoordinator.setAVS(serviceManagerAddress);
+        registryCoordinator.setAVS(address(serviceManager));
         vm.stopPrank(); // Stop impersonating registryCoordinatorOwner
 
         console.log("Creating a new slashable stake quorum (quorum 1)...");
@@ -329,31 +342,31 @@ contract EigenDATest is Test {
 
         vm.stopPrank();
 
+        // Verify that operator sets are enabled in the Registry Coordinator
+        console.log("Verifying operator sets are enabled...");
+        bool operatorSetsEnabled =
+            IRegistryCoordinator(address(registryCoordinator)).operatorSetsEnabled();
+        assertTrue(
+            operatorSetsEnabled,
+            "Operator sets should be enabled after creating a slashable stake quorum"
+        );
+
         console.log("Successfully created new operator set quorum.");
     }
 
     function _captureAndStorePreUpgradeState() internal {
-        ISlashingRegistryCoordinator registryCoordinator =
-            ISlashingRegistryCoordinator(eigenDAData.addresses.registryCoordinator);
         preUpgradeStates.registryCoordinator.numQuorums = registryCoordinator.quorumCount();
 
-        address payable serviceManagerAddress = payable(eigenDAData.addresses.eigenDAServiceManager);
-        OwnableUpgradeable serviceManagerOwnable = OwnableUpgradeable(serviceManagerAddress);
+        OwnableUpgradeable serviceManagerOwnable = OwnableUpgradeable(address(serviceManager));
         preUpgradeStates.serviceManager.owner = serviceManagerOwnable.owner();
 
-        Pausable serviceManagerPausable = Pausable(serviceManagerAddress);
+        Pausable serviceManagerPausable = Pausable(address(serviceManager));
         preUpgradeStates.serviceManager.paused = serviceManagerPausable.paused();
-
-        IBLSApkRegistry blsApkRegistry = IBLSApkRegistry(eigenDAData.addresses.blsApkRegistry);
-
-        IIndexRegistry indexRegistry = IIndexRegistry(eigenDAData.addresses.indexRegistry);
 
         uint8 quorumCount = registryCoordinator.quorumCount();
         preUpgradeStates.blsApkRegistry.currentApkHashes = new bytes32[](quorumCount);
         preUpgradeStates.indexRegistry.operatorCounts = new uint32[](quorumCount);
         preUpgradeStates.stakeRegistry.numStrategies = new uint32[](quorumCount);
-
-        IStakeRegistry stakeRegistry = IStakeRegistry(eigenDAData.addresses.stakeRegistry);
 
         // For each quorum, gather data from all registries
         for (uint8 quorumIndex = 0; quorumIndex < quorumCount; quorumIndex++) {
@@ -364,7 +377,7 @@ contract EigenDATest is Test {
             // Get APK hash for each quorum from BLSApkRegistry
             // Store the hash of the APK as bytes32
             preUpgradeStates.blsApkRegistry.currentApkHashes[quorumIndex] =
-                BN254.hashG1Point(blsApkRegistry.getApk(quorumIndex));
+                BN254.hashG1Point(apkRegistry.getApk(quorumIndex));
 
             // Get strategy count for each quorum from StakeRegistry
             uint256 strategyCount = 0;
@@ -385,33 +398,23 @@ contract EigenDATest is Test {
 
         IRegistryCoordinatorTypes.SlashingRegistryParams memory slashingParams =
         IRegistryCoordinatorTypes.SlashingRegistryParams({
-            stakeRegistry: IStakeRegistry(eigenDAData.addresses.stakeRegistry),
-            blsApkRegistry: IBLSApkRegistry(eigenDAData.addresses.blsApkRegistry),
-            indexRegistry: IIndexRegistry(eigenDAData.addresses.indexRegistry),
+            stakeRegistry: stakeRegistry,
+            blsApkRegistry: apkRegistry,
+            indexRegistry: indexRegistry,
             socketRegistry: ISocketRegistry(socketRegistry),
-            allocationManager: IAllocationManager(allocationManagerAddr),
+            allocationManager: allocationManager,
             pauserRegistry: IPauserRegistry(eigenDAData.permissions.pauserRegistry)
         });
 
         IRegistryCoordinatorTypes.RegistryCoordinatorParams memory params =
         IRegistryCoordinatorTypes.RegistryCoordinatorParams({
-            serviceManager: IServiceManager(payable(eigenDAData.addresses.eigenDAServiceManager)),
+            serviceManager: serviceManager,
             slashingParams: slashingParams
         });
 
         newRegistryCoordinatorImpl = address(new RegistryCoordinator(params));
 
-        address registryCoordinatorAddr = eigenDAData.addresses.registryCoordinator;
-        address stakeRegistryAddr = eigenDAData.addresses.stakeRegistry;
-
-        IAVSDirectory avsDirectory = IAVSDirectory(avsDirectoryAddr);
         IRewardsCoordinator rewardsCoordinator = IRewardsCoordinator(rewardsCoordinatorAddr);
-        ISlashingRegistryCoordinator registryCoordinator =
-            ISlashingRegistryCoordinator(registryCoordinatorAddr);
-        IStakeRegistry stakeRegistry = IStakeRegistry(stakeRegistryAddr);
-
-        IPermissionController permissionController = IPermissionController(permissionControllerAddr);
-        IAllocationManager allocationManager = IAllocationManager(allocationManagerAddr);
 
         // Assert all addresses are not zero before deployment
         assertTrue(permissionControllerAddr != address(0), "PermissionController address not found");
@@ -424,6 +427,9 @@ contract EigenDATest is Test {
         assertTrue(
             address(permissionController) != address(0), "PermissionController address is zero"
         );
+        assertTrue(address(allocationManager) != address(0), "AllocationManager address is zero");
+        assertTrue(delegationManagerAddr != address(0), "DelegationManager address is zero");
+        assertTrue(address(avsDirectory) != address(0), "AVSDirectory address is zero");
         assertTrue(address(allocationManager) != address(0), "AllocationManager address is zero");
 
         newServiceManagerImpl = address(
@@ -439,17 +445,12 @@ contract EigenDATest is Test {
         newBlsApkRegistryImpl = address(new BLSApkRegistry(registryCoordinator));
         newIndexRegistryImpl = address(new IndexRegistry(registryCoordinator));
 
-        assertTrue(
-            address(registryCoordinator) != address(0), "RegistryCoordinator address is zero"
-        );
-        assertTrue(delegationManagerAddr != address(0), "DelegationManager address is zero");
-        assertTrue(address(avsDirectory) != address(0), "AVSDirectory address is zero");
-        assertTrue(address(allocationManager) != address(0), "AllocationManager address is zero");
-
-        IDelegationManager delegationManager = IDelegationManager(delegationManagerAddr);
         newStakeRegistryImpl = address(
             new StakeRegistry(
-                registryCoordinator, delegationManager, avsDirectory, allocationManager
+                registryCoordinator,
+                IDelegationManager(address(delegationManager)),
+                avsDirectory,
+                allocationManager
             )
         );
     }
