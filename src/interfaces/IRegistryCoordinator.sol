@@ -159,6 +159,12 @@ interface IRegistryCoordinator is
     ) external view returns (bool);
 
     /**
+     * @notice Returns whether M2 quorum registration is disabled.
+     * @return True if M2 quorum registration is disabled, false otherwise.
+     */
+    function isM2QuorumRegistrationDisabled() external view returns (bool);
+
+    /**
      * @notice Disables M2 quorum registration for the AVS. Once disabled, this cannot be enabled.
      * @dev When disabled, all registrations to M2 quorums will revert. Deregistrations are still possible.
      */

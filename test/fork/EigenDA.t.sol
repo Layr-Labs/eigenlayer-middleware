@@ -354,6 +354,106 @@ contract EigenDATest is Test {
         console.log("Successfully created new operator set quorum.");
     }
 
+    function test_PostUpgrade_DisableM2() public {
+        _upgradeContracts();
+
+        // Verify the owner remained the same post-upgrade (sanity check)
+        require(
+            preUpgradeStates.serviceManager.owner
+                == OwnableUpgradeable(address(serviceManager)).owner(),
+            "Service Manager owner mismatch post-upgrade"
+        );
+
+        console.log("Configuring permissions for operator set creation...");
+
+        address serviceManagerOwner = preUpgradeStates.serviceManager.owner;
+        vm.startPrank(serviceManagerOwner);
+
+        serviceManager.setAppointee(
+            address(registryCoordinator),
+            allocationManagerAddr,
+            IAllocationManager.createOperatorSets.selector
+        );
+
+        console.log("Appointee set for createOperatorSets");
+
+        serviceManager.setAppointee(
+            serviceManagerOwner, // Grant permission to the owner itself
+            allocationManagerAddr,
+            IAllocationManager.updateAVSMetadataURI.selector
+        );
+        console.log("Appointee set for updateAVSMetadataURI");
+
+        // Update AVS metadata URI - required before creating operator sets
+        string memory metadataURI = "https://eigenda.xyz/metadata";
+        console.log("Updating AVS metadata URI to:", metadataURI);
+        allocationManager.updateAVSMetadataURI(address(serviceManager), metadataURI);
+
+        vm.stopPrank();
+
+        // Set the AVS address in the Registry Coordinator (requires RC owner) - required before creating operator sets
+        address registryCoordinatorOwner =
+            OwnableUpgradeable(eigenDAData.addresses.registryCoordinator).owner();
+        console.log("Setting AVS address in Registry Coordinator...");
+        vm.startPrank(registryCoordinatorOwner);
+        registryCoordinator.setAVS(address(serviceManager));
+        vm.stopPrank(); // Stop impersonating registryCoordinatorOwner
+
+        console.log("Creating a new slashable stake quorum (quorum 1)...");
+        vm.startPrank(serviceManagerOwner);
+
+        // Define parameters for the new quorum
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParam =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+            maxOperatorCount: 100,
+            kickBIPsOfOperatorStake: 10500, // 105%
+            kickBIPsOfTotalStake: 100 // 1%
+        });
+
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(0)), // TODO: Placeholder
+            multiplier: 1 * 1e18
+        });
+
+        uint96 minimumStake = uint96(1 ether);
+        uint32 lookAheadPeriod = 10;
+
+        registryCoordinator.createSlashableStakeQuorum(
+            operatorSetParam, minimumStake, strategyParams, lookAheadPeriod
+        );
+
+        vm.stopPrank();
+
+        // Verify that operator sets are enabled in the Registry Coordinator
+        console.log("Verifying operator sets are enabled...");
+        bool operatorSetsEnabled =
+            IRegistryCoordinator(address(registryCoordinator)).operatorSetsEnabled();
+        assertTrue(
+            operatorSetsEnabled,
+            "Operator sets should be enabled after creating a slashable stake quorum"
+        );
+
+        console.log("Verifying operator sets are enabled...");
+
+        // Disable M2 quorum registration in the Registry Coordinator
+        console.log("Disabling M2 quorum registration...");
+        vm.startPrank(registryCoordinatorOwner);
+        IRegistryCoordinator(address(registryCoordinator)).disableM2QuorumRegistration();
+        vm.stopPrank();
+
+        // Verify M2 quorum registration is disabled
+        bool isM2QuorumRegistrationDisabled =
+            IRegistryCoordinator(address(registryCoordinator)).isM2QuorumRegistrationDisabled();
+        assertTrue(
+            isM2QuorumRegistrationDisabled,
+            "M2 quorum registration should be disabled"
+        );
+
+        console.log("Successfully disabled M2 quorum registration.");
+    }
+
     function _captureAndStorePreUpgradeState() internal {
         preUpgradeStates.registryCoordinator.numQuorums = registryCoordinator.quorumCount();
 
