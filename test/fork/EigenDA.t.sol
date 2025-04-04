@@ -247,8 +247,10 @@ contract EigenDATest is Test {
         // Initialize strategy manager and factory
         strategyManager = delegationManager.strategyManager();
         strategyFactory = IStrategyFactory(strategyManager.strategyWhitelister());
-        serviceManagerOwner = OwnableUpgradeable(eigenDAData.addresses.eigenDAServiceManager).owner();
-        registryCoordinatorOwner = OwnableUpgradeable(eigenDAData.addresses.registryCoordinator).owner();
+        serviceManagerOwner =
+            OwnableUpgradeable(eigenDAData.addresses.eigenDAServiceManager).owner();
+        registryCoordinatorOwner =
+            OwnableUpgradeable(eigenDAData.addresses.registryCoordinator).owner();
 
         _verifyInitialSetup();
 
@@ -331,10 +333,8 @@ contract EigenDATest is Test {
 
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: strategy,
-            multiplier: 1 * 1e18
-        });
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: strategy, multiplier: 1 * 1e18});
 
         uint96 minimumStake = uint96(1 ether);
 
@@ -344,8 +344,6 @@ contract EigenDATest is Test {
         );
 
         vm.stopPrank();
-
-
 
         // Register operators for the new quorum
         uint32[] memory operatorSetIds = new uint32[](1);
@@ -432,10 +430,7 @@ contract EigenDATest is Test {
         // Verify M2 quorum registration is disabled
         bool isM2QuorumRegistrationDisabled =
             IRegistryCoordinator(address(registryCoordinator)).isM2QuorumRegistrationDisabled();
-        assertTrue(
-            isM2QuorumRegistrationDisabled,
-            "M2 quorum registration should be disabled"
-        );
+        assertTrue(isM2QuorumRegistrationDisabled, "M2 quorum registration should be disabled");
 
         console.log("Successfully disabled M2 quorum registration.");
     }
@@ -494,9 +489,7 @@ contract EigenDATest is Test {
         );
 
         serviceManager.setAppointee(
-            serviceManagerOwner,
-            allocationManagerAddr,
-            IAllocationManager.setAVSRegistrar.selector
+            serviceManagerOwner, allocationManagerAddr, IAllocationManager.setAVSRegistrar.selector
         );
 
         console.log("Appointees set for required permissions");
@@ -505,7 +498,9 @@ contract EigenDATest is Test {
         console.log("Updating AVS metadata URI to:", metadataURI);
         allocationManager.updateAVSMetadataURI(address(serviceManager), metadataURI);
 
-        allocationManager.setAVSRegistrar(address(serviceManager), IAVSRegistrar(address(registryCoordinator)));
+        allocationManager.setAVSRegistrar(
+            address(serviceManager), IAVSRegistrar(address(registryCoordinator))
+        );
         vm.stopPrank();
         console.log("AVS Registrar set");
     }
@@ -707,18 +702,16 @@ contract EigenDATest is Test {
         strategy = IStrategyFactory(strategyFactory).deployNewStrategy(IERC20(token));
     }
 
-    function _setupTokensForOperators(uint256 amount) internal returns (address token, IStrategy strategy) {
+    function _setupTokensForOperators(
+        uint256 amount
+    ) internal returns (address token, IStrategy strategy) {
         (token, strategy) = _createTokenAndStrategy();
 
         for (uint256 i = 0; i < OPERATOR_COUNT; i++) {
             OperatorLib.mintMockTokens(operators[i], token, amount);
             vm.startPrank(operators[i].key.addr);
             OperatorLib.depositTokenIntoStrategy(
-                operators[i],
-                address(strategyManager),
-                address(strategy),
-                token,
-                amount
+                operators[i], address(strategyManager), address(strategy), token, amount
             );
             vm.stopPrank();
         }
@@ -789,5 +782,4 @@ contract EigenDATest is Test {
 
         return registeredOperators;
     }
-
 }
