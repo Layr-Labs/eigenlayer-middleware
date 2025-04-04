@@ -268,6 +268,20 @@ contract DelegationIntermediate is IDelegationManager {
         return new bytes32[](0);
     }
 
+    function queuedWithdrawals(
+        bytes32 withdrawalRoot
+    ) external view override returns (IDelegationManagerTypes.Withdrawal memory withdrawal) {
+        return IDelegationManagerTypes.Withdrawal({
+            staker: address(0),
+            delegatedTo: address(0),
+            withdrawer: address(0),
+            nonce: 0,
+            startBlock: 0,
+            strategies: new IStrategy[](0),
+            scaledShares: new uint256[](0)
+        });
+    }
+
     function convertToDepositShares(
         address staker,
         IStrategy[] memory strategies,
