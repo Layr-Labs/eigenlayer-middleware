@@ -591,6 +591,56 @@ contract EigenDATest is Test {
         );
     }
 
+    function test_TotalDelegatedStakeQuorumRegistration() public {
+        _upgradeContracts();
+        _configureUAMAppointees();
+        _createTotalDelegatedStakeOpSet();
+        vm.startPrank(registryCoordinatorOwner);
+        IRegistryCoordinator(address(registryCoordinator)).disableM2QuorumRegistration();
+        vm.stopPrank();
+
+        uint8 quorumCount = registryCoordinator.quorumCount();
+        uint8 totalDelegatedStakeQuorumId = quorumCount - 1;
+
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = totalDelegatedStakeQuorumId;
+
+        for (uint256 i = 0; i < OPERATOR_COUNT; i++) {
+            vm.startPrank(operators[i].key.addr);
+
+            console.log("Registering operator %d: %s", i, operators[i].key.addr);
+
+            OperatorLib.registerOperatorFromAVS_OpSet(
+                operators[i],
+                allocationManagerAddr,
+                address(registryCoordinator),
+                address(serviceManager),
+                operatorSetIds
+            );
+
+            vm.stopPrank();
+        }
+
+        uint32 registeredOperatorCount =
+            indexRegistry.totalOperatorsForQuorum(totalDelegatedStakeQuorumId);
+        assertEq(
+            registeredOperatorCount,
+            OPERATOR_COUNT,
+            "All operators should be registered to operatorset"
+        );
+
+        for (uint256 i = 0; i < OPERATOR_COUNT; i++) {
+            // Check operator registration status in RegistryCoordinator
+            ISlashingRegistryCoordinatorTypes.OperatorStatus status =
+                registryCoordinator.getOperatorStatus(operators[i].key.addr);
+
+            assertTrue(
+                status == ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED,
+                "Operator should be registered"
+            );
+        }
+    }
+
     function _createTotalDelegatedStakeOpSet() internal {
         console.log("Creating a new slashable stake quorum (quorum 1)...");
 
