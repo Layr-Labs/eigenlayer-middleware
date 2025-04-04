@@ -14,7 +14,7 @@ import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
 import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
 import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
 import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
-import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
+import {IBLSApkRegistry, IBLSApkRegistryTypes} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
 import {ISlashingRegistryCoordinator} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 import {ISocketRegistry} from "../../src/interfaces/ISocketRegistry.sol";
@@ -36,6 +36,10 @@ import {
     IAllocationManagerTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {
+    ISignatureUtilsMixin,
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 
 // Import concrete implementation for deployment
 import {RegistryCoordinator, IRegistryCoordinatorTypes} from "../../src/RegistryCoordinator.sol";
@@ -485,13 +489,11 @@ contract EigenDATest is Test {
         _configureUAMAppointees();
         _createTotalDelegatedStakeOpSet();
 
-        // First disable M2 quorum registration
         console.log("Disabling M2 quorum registration...");
         vm.startPrank(registryCoordinatorOwner);
         IRegistryCoordinator(address(registryCoordinator)).disableM2QuorumRegistration();
         vm.stopPrank();
 
-        // Verify M2 quorum registration is disabled
         bool isM2QuorumRegistrationDisabled =
             IRegistryCoordinator(address(registryCoordinator)).isM2QuorumRegistrationDisabled();
         assertTrue(isM2QuorumRegistrationDisabled, "M2 quorum registration should be disabled");
@@ -499,16 +501,49 @@ contract EigenDATest is Test {
         uint8[] memory quorumsToRegister = new uint8[](1);
         quorumsToRegister[0] = 0; // Quorum 0 is an M2 quorum
 
-        // Attempt to register to M2 quorums - this should fail
         console.log("Attempting to register to M2 quorums after disabling M2 registration...");
         vm.startPrank(operators[0].key.addr);
-        vm.expectRevert();
-        OperatorLib.registerOperatorToAVS_M2(
-            operators[0],
-            address(avsDirectory),
-            address(serviceManager),
-            address(registryCoordinator),
-            quorumsToRegister
+
+        bytes32 salt = keccak256(abi.encodePacked(block.timestamp, operators[0].key.addr));
+        uint256 expiry = block.timestamp + 1 hours;
+
+        bytes32 operatorRegistrationDigestHash = avsDirectory
+            .calculateOperatorAVSRegistrationDigestHash(
+            operators[0].key.addr, address(serviceManager), salt, expiry
+        );
+
+        bytes memory signature =
+            OperatorLib.signWithOperatorKey(operators[0], operatorRegistrationDigestHash);
+
+        bytes32 pubkeyRegistrationMessageHash =
+            registryCoordinator.calculatePubkeyRegistrationMessageHash(operators[0].key.addr);
+
+        BN254.G1Point memory blsSig =
+            OperatorLib.signMessage(operators[0].signingKey, pubkeyRegistrationMessageHash);
+
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params = IBLSApkRegistryTypes
+            .PubkeyRegistrationParams({
+            pubkeyG1: operators[0].signingKey.publicKeyG1,
+            pubkeyG2: operators[0].signingKey.publicKeyG2,
+            pubkeyRegistrationSignature: blsSig
+        });
+
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature =
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
+            signature: signature,
+            salt: salt,
+            expiry: expiry
+        });
+
+        uint256 quorumBitmap = 0;
+        for (uint256 i = 0; i < quorumsToRegister.length; i++) {
+            quorumBitmap = BitmapUtils.setBit(quorumBitmap, quorumsToRegister[i]);
+        }
+        bytes memory quorumNumbersBytes = BitmapUtils.bitmapToBytesArray(quorumBitmap);
+
+        vm.expectRevert(bytes4(keccak256("M2QuorumRegistrationIsDisabled()")));
+        IRegistryCoordinator(address(registryCoordinator)).registerOperator(
+            quorumNumbersBytes, "socket", params, operatorSignature
         );
 
         vm.stopPrank();
@@ -559,7 +594,6 @@ contract EigenDATest is Test {
     function _createTotalDelegatedStakeOpSet() internal {
         console.log("Creating a new slashable stake quorum (quorum 1)...");
 
-        // Define parameters for the new quorum
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParam =
         ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: 100,
