@@ -161,6 +161,12 @@ contract EigenDATest is Test {
         uint32[] numStrategies;
     }
 
+    struct M2QuorumOperators {
+        uint8[] quorumNumbers;
+        address[][] operatorIds;
+        string placeholder; // Add a dummy field to avoid getter compiler error
+    }
+
     struct ContractStates {
         RegistryCoordinatorState registryCoordinator;
         ServiceManagerState serviceManager;
@@ -172,6 +178,7 @@ contract EigenDATest is Test {
     // Variables to hold our data
     EigenDAData public eigenDAData;
     ContractStates public preUpgradeStates;
+    M2QuorumOperators public m2QuorumOperators;
 
     // Core contract addresses from StakeRegistry
     address public delegationManagerAddr;
@@ -180,17 +187,12 @@ contract EigenDATest is Test {
     address public permissionControllerAddr;
     address public rewardsCoordinatorAddr;
 
-    // Owner addresses for post-upgrade setup
     address public registryCoordinatorOwner;
     address public serviceManagerOwner;
 
-    // Constant for the number of operators
     uint256 constant OPERATOR_COUNT = 5;
-
-    // Operators array for testing
     OperatorLib.Operator[OPERATOR_COUNT] public operators;
 
-    // New implementation addresses for upgrade
     address public newRegistryCoordinatorImpl;
     address public newServiceManagerImpl;
     address public newBlsApkRegistryImpl;
@@ -198,7 +200,6 @@ contract EigenDATest is Test {
     address public newStakeRegistryImpl;
     address public socketRegistry;
 
-    // Contract instances
     ISlashingRegistryCoordinator public registryCoordinator;
     IBLSApkRegistry public apkRegistry;
     IIndexRegistry public indexRegistry;
@@ -209,18 +210,15 @@ contract EigenDATest is Test {
     IDelegationManagerExtended public delegationManager;
     IPermissionController public permissionController;
 
-    // Variables for token and strategy
     address public token;
     IStrategy public strategy;
     IStrategyFactory public strategyFactory;
     IStrategyManager public strategyManager;
 
-    // Test setup function that runs before each test
     function setUp() public virtual {
         // Setup the Holesky fork and load EigenDA deployment data
         eigenDAData = _setupEigenDAFork("test/utils");
 
-        // Store contract addresses
         delegationManagerAddr =
             address(StakeRegistryExtended(eigenDAData.addresses.stakeRegistry).delegation());
         avsDirectoryAddr = address(
@@ -233,7 +231,6 @@ contract EigenDATest is Test {
         /// TODO:
         rewardsCoordinatorAddr = address(0);
 
-        // Store contract instances
         registryCoordinator =
             ISlashingRegistryCoordinator(eigenDAData.addresses.registryCoordinator);
         apkRegistry = IBLSApkRegistry(eigenDAData.addresses.blsApkRegistry);
@@ -465,6 +462,62 @@ contract EigenDATest is Test {
             }
             preUpgradeStates.stakeRegistry.numStrategies[quorumIndex] = uint32(strategyCount);
         }
+
+        // Record operators for M2 quorums
+        _recordM2QuorumOperators();
+    }
+
+    /// @notice Record the operators in each M2 quorum before the upgrade
+    function _recordM2QuorumOperators() internal {
+        // Use the getM2QuorumOperators function to get M2 quorum operators
+        (uint8[] memory quorumNumbers, address[][] memory operatorLists) = getM2QuorumOperators();
+
+        // Set the values in the m2QuorumOperators struct
+        m2QuorumOperators.quorumNumbers = quorumNumbers;
+        m2QuorumOperators.operatorIds = operatorLists;
+
+        for (uint8 i = 0; i < quorumNumbers.length; i++) {
+            console.log(
+                "Recorded %d operators for quorum %d", operatorLists[i].length, quorumNumbers[i]
+            );
+        }
+    }
+
+    /**
+     * @notice Gets the operators registered to quorums created before operator sets were enabled (M2 quorums)
+     * @return m2QuorumNumbers Array of M2 quorum numbers
+     * @return m2QuorumOperatorLists Array of operator ID arrays corresponding to each quorum number
+     */
+    function getM2QuorumOperators()
+        public
+        view
+        returns (uint8[] memory m2QuorumNumbers, address[][] memory m2QuorumOperatorLists)
+    {
+        uint256 quorumCount = registryCoordinator.quorumCount();
+        m2QuorumNumbers = new uint8[](quorumCount);
+        m2QuorumOperatorLists = new address[][](quorumCount);
+
+        for (uint8 i = 0; i < quorumCount; i++) {
+            uint32 operatorCount = indexRegistry.totalOperatorsForQuorum(i);
+
+            if (operatorCount > 0) {
+                // Get the current list of operators for this quorum using external call
+                bytes32[] memory operatorIds =
+                    indexRegistry.getOperatorListAtBlockNumber(i, uint32(block.number));
+
+                // Convert bytes32 operatorIds to addresses
+                address[] memory operatorAddresses = new address[](operatorIds.length);
+                for (uint256 j = 0; j < operatorIds.length; j++) {
+                    // Use the BLSApkRegistry to get the operator address from the ID
+                    operatorAddresses[j] = apkRegistry.getOperatorFromPubkeyHash(operatorIds[j]);
+                }
+
+                m2QuorumOperatorLists[i] = operatorAddresses;
+                m2QuorumNumbers[i] = i;
+            }
+        }
+
+        return (m2QuorumNumbers, m2QuorumOperatorLists);
     }
 
     function _configureUAMAppointees() internal {
