@@ -319,29 +319,7 @@ contract EigenDATest is Test {
 
         _configureUAMAppointees();
 
-        console.log("Creating a new slashable stake quorum (quorum 1)...");
-
-        // Define parameters for the new quorum
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParam =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 100,
-            kickBIPsOfOperatorStake: 10500, // 105%
-            kickBIPsOfTotalStake: 100 // 1%
-        });
-
-        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
-            new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] =
-            IStakeRegistryTypes.StrategyParams({strategy: strategy, multiplier: 1 * 1e18});
-
-        uint96 minimumStake = uint96(1 ether);
-
-        vm.startPrank(serviceManagerOwner);
-        registryCoordinator.createTotalDelegatedStakeQuorum(
-            operatorSetParam, minimumStake, strategyParams
-        );
-
-        vm.stopPrank();
+        _createTotalDelegatedStakeOpSet();
 
         // Register operators for the new quorum
         uint32[] memory operatorSetIds = new uint32[](1);
@@ -379,6 +357,9 @@ contract EigenDATest is Test {
     function test_PostUpgrade_DeregisterM2Operators() public {
         // Upgrade the contracts first
         _upgradeContracts();
+        _configureUAMAppointees();
+
+        _createTotalDelegatedStakeOpSet();
 
         uint256 totalDeregisteredOperators = 0;
 
@@ -437,6 +418,10 @@ contract EigenDATest is Test {
         // Upgrade contracts first
         _upgradeContracts();
 
+        _configureUAMAppointees();
+
+        _createTotalDelegatedStakeOpSet();
+
         // Use existing operators that were created in setUp
         console.log("Using %d existing operators", OPERATOR_COUNT);
 
@@ -465,6 +450,89 @@ contract EigenDATest is Test {
         }
 
         console.log("Successfully registered %d operators to M2 quorums", OPERATOR_COUNT);
+    }
+
+    function test_PostUpgrade_DisableM2() public {
+        _upgradeContracts();
+
+        _configureUAMAppointees();
+
+        // Create a slashable stake quorum with lookAheadPeriod
+        _createSlashableStakeOpSet(10);
+
+        // Verify that operator sets are enabled in the Registry Coordinator
+        console.log("Verifying operator sets are enabled...");
+        bool operatorSetsEnabled =
+            IRegistryCoordinator(address(registryCoordinator)).operatorSetsEnabled();
+        assertTrue(
+            operatorSetsEnabled,
+            "Operator sets should be enabled after creating a slashable stake quorum"
+        );
+
+        // Disable M2 quorum registration in the Registry Coordinator
+        console.log("Disabling M2 quorum registration...");
+        vm.startPrank(registryCoordinatorOwner);
+        IRegistryCoordinator(address(registryCoordinator)).disableM2QuorumRegistration();
+        vm.stopPrank();
+
+        // Verify M2 quorum registration is disabled
+        bool isM2QuorumRegistrationDisabled =
+            IRegistryCoordinator(address(registryCoordinator)).isM2QuorumRegistrationDisabled();
+        assertTrue(isM2QuorumRegistrationDisabled, "M2 quorum registration should be disabled");
+
+        console.log("Successfully disabled M2 quorum registration.");
+    }
+
+    function _createTotalDelegatedStakeOpSet() internal {
+        console.log("Creating a new slashable stake quorum (quorum 1)...");
+
+        // Define parameters for the new quorum
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParam =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+            maxOperatorCount: 100,
+            kickBIPsOfOperatorStake: 10500, // 105%
+            kickBIPsOfTotalStake: 100 // 1%
+        });
+
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: strategy, multiplier: 1 * 1e18});
+
+        uint96 minimumStake = uint96(1 ether);
+
+        vm.startPrank(serviceManagerOwner);
+        registryCoordinator.createTotalDelegatedStakeQuorum(
+            operatorSetParam, minimumStake, strategyParams
+        );
+        vm.stopPrank();
+    }
+
+    function _createSlashableStakeOpSet(
+        uint32 lookAheadPeriod
+    ) internal {
+        console.log("Creating a new slashable stake quorum with look ahead period...");
+
+        // Define parameters for the new quorum
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParam =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+            maxOperatorCount: 100,
+            kickBIPsOfOperatorStake: 10500, // 105%
+            kickBIPsOfTotalStake: 100 // 1%
+        });
+
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: strategy, multiplier: 1 * 1e18});
+
+        uint96 minimumStake = uint96(1 ether);
+
+        vm.startPrank(serviceManagerOwner);
+        registryCoordinator.createSlashableStakeQuorum(
+            operatorSetParam, minimumStake, strategyParams, lookAheadPeriod
+        );
+        vm.stopPrank();
     }
 
     function _captureAndStorePreUpgradeState() internal {
@@ -500,63 +568,6 @@ contract EigenDATest is Test {
 
         // Record operators for M2 quorums
         _recordM2QuorumOperators();
-    }
-
-    function test_PostUpgrade_DisableM2() public {
-        _upgradeContracts();
-
-        _configureUAMAppointees();
-
-        console.log("Creating a new slashable stake quorum (quorum 1)...");
-        vm.startPrank(serviceManagerOwner);
-
-        // Define parameters for the new quorum
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParam =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 100,
-            kickBIPsOfOperatorStake: 10500, // 105%
-            kickBIPsOfTotalStake: 100 // 1%
-        });
-
-        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
-            new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(0)), // TODO: Placeholder
-            multiplier: 1 * 1e18
-        });
-
-        uint96 minimumStake = uint96(1 ether);
-        uint32 lookAheadPeriod = 10;
-
-        registryCoordinator.createSlashableStakeQuorum(
-            operatorSetParam, minimumStake, strategyParams, lookAheadPeriod
-        );
-
-        vm.stopPrank();
-
-        // Verify that operator sets are enabled in the Registry Coordinator
-        console.log("Verifying operator sets are enabled...");
-        bool operatorSetsEnabled =
-            IRegistryCoordinator(address(registryCoordinator)).operatorSetsEnabled();
-        assertTrue(
-            operatorSetsEnabled,
-            "Operator sets should be enabled after creating a slashable stake quorum"
-        );
-
-        console.log("Verifying operator sets are enabled...");
-
-        // Disable M2 quorum registration in the Registry Coordinator
-        console.log("Disabling M2 quorum registration...");
-        vm.startPrank(registryCoordinatorOwner);
-        IRegistryCoordinator(address(registryCoordinator)).disableM2QuorumRegistration();
-        vm.stopPrank();
-
-        // Verify M2 quorum registration is disabled
-        bool isM2QuorumRegistrationDisabled =
-            IRegistryCoordinator(address(registryCoordinator)).isM2QuorumRegistrationDisabled();
-        assertTrue(isM2QuorumRegistrationDisabled, "M2 quorum registration should be disabled");
-
-        console.log("Successfully disabled M2 quorum registration.");
     }
 
     function _recordM2QuorumOperators() internal {
