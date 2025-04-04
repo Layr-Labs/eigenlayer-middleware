@@ -180,6 +180,10 @@ contract EigenDATest is Test {
     address public permissionControllerAddr;
     address public rewardsCoordinatorAddr;
 
+    // Owner addresses for post-upgrade setup
+    address public registryCoordinatorOwner;
+    address public serviceManagerOwner;
+
     // Constant for the number of operators
     uint256 constant OPERATOR_COUNT = 5;
 
@@ -243,19 +247,22 @@ contract EigenDATest is Test {
         // Initialize strategy manager and factory
         strategyManager = delegationManager.strategyManager();
         strategyFactory = IStrategyFactory(strategyManager.strategyWhitelister());
-
-        // Create operators with static size
-        _createOperators();
-
-        // Setup tokens and strategy for operators
-        uint256 operatorTokenAmount = 10 ether;
-        (token, strategy) = _setupTokensForOperators(operatorTokenAmount);
+        serviceManagerOwner = OwnableUpgradeable(eigenDAData.addresses.eigenDAServiceManager).owner();
+        registryCoordinatorOwner = OwnableUpgradeable(eigenDAData.addresses.registryCoordinator).owner();
 
         _verifyInitialSetup();
 
         _captureAndStorePreUpgradeState();
 
         _deployNewImplementations();
+
+        _createOperators();
+
+        uint256 operatorTokenAmount = 10 ether;
+        (token, strategy) = _setupTokensForOperators(operatorTokenAmount);
+
+        console.log("Registering operators in EigenLayer...");
+        _registerOperatorsAsEigenLayerOperators();
     }
 
     function test_Upgrade() public {
@@ -265,6 +272,10 @@ contract EigenDATest is Test {
     function test_ValidatePostUpgradeState() public {
         _upgradeContracts();
         console.log("Validating post-upgrade contract states");
+        require(
+            serviceManagerOwner == OwnableUpgradeable(address(serviceManager)).owner(),
+            "Service Manager owner mismatch post-upgrade"
+        );
 
         // Verify quorum count is maintained
         uint8 quorumCount = registryCoordinator.quorumCount();
@@ -306,57 +317,7 @@ contract EigenDATest is Test {
     function test_PostUpgrade_CreateOperatorSet() public {
         _upgradeContracts();
 
-        // Verify the owner remained the same post-upgrade (sanity check)
-        require(
-            preUpgradeStates.serviceManager.owner
-                == OwnableUpgradeable(address(serviceManager)).owner(),
-            "Service Manager owner mismatch post-upgrade"
-        );
-
-        console.log("Configuring permissions for operator set creation...");
-
-        address serviceManagerOwner = preUpgradeStates.serviceManager.owner;
-        vm.startPrank(serviceManagerOwner);
-
-        serviceManager.setAppointee(
-            address(registryCoordinator),
-            allocationManagerAddr,
-            IAllocationManager.createOperatorSets.selector
-        );
-
-        console.log("Appointee set for createOperatorSets");
-
-        serviceManager.setAppointee(
-            serviceManagerOwner, // Grant permission to the owner itself
-            allocationManagerAddr,
-            IAllocationManager.updateAVSMetadataURI.selector
-        );
-
-        serviceManager.setAppointee(
-            serviceManagerOwner, // Grant permission to the owner itself
-            allocationManagerAddr,
-            IAllocationManager.setAVSRegistrar.selector
-        );
-        console.log("Appointee set for updateAVSMetadataURI");
-
-        // Update AVS metadata URI - required before creating operator sets
-        string memory metadataURI = "https://eigenda.xyz/metadata";
-        console.log("Updating AVS metadata URI to:", metadataURI);
-        allocationManager.updateAVSMetadataURI(address(serviceManager), metadataURI);
-
-        vm.stopPrank();
-
-        // Set the AVS address in the Registry Coordinator (requires RC owner) - required before creating operator sets
-        address registryCoordinatorOwner =
-            OwnableUpgradeable(eigenDAData.addresses.registryCoordinator).owner();
-        console.log("Setting AVS address in Registry Coordinator...");
-        vm.startPrank(registryCoordinatorOwner);
-        registryCoordinator.setAVS(address(serviceManager));
-        vm.stopPrank(); // Stop impersonating registryCoordinatorOwner
-
-        vm.startPrank(serviceManagerOwner);
-        allocationManager.setAVSRegistrar(address(serviceManager), IAVSRegistrar(address(registryCoordinator)));
-        vm.stopPrank();
+        _configureUAMAppointees();
 
         console.log("Creating a new slashable stake quorum (quorum 1)...");
 
@@ -384,13 +345,11 @@ contract EigenDATest is Test {
 
         vm.stopPrank();
 
-        // Register operators as EigenLayer operators
-        console.log("Registering operators in EigenLayer...");
-        _registerOperatorsAsEigenLayerOperators();
+
 
         // Register operators for the new quorum
         uint32[] memory operatorSetIds = new uint32[](1);
-        operatorSetIds[0] = 3; // Quorum 1 (slashable)
+        operatorSetIds[0] = 3; // Quorum 3 (totalDelegatedStake)
 
         console.log("Registering operators for quorum 1...");
         for (uint256 i = 0; i < OPERATOR_COUNT; i++) {
@@ -424,47 +383,7 @@ contract EigenDATest is Test {
     function test_PostUpgrade_DisableM2() public {
         _upgradeContracts();
 
-        // Verify the owner remained the same post-upgrade (sanity check)
-        require(
-            preUpgradeStates.serviceManager.owner
-                == OwnableUpgradeable(address(serviceManager)).owner(),
-            "Service Manager owner mismatch post-upgrade"
-        );
-
-        console.log("Configuring permissions for operator set creation...");
-
-        address serviceManagerOwner = preUpgradeStates.serviceManager.owner;
-        vm.startPrank(serviceManagerOwner);
-
-        serviceManager.setAppointee(
-            address(registryCoordinator),
-            allocationManagerAddr,
-            IAllocationManager.createOperatorSets.selector
-        );
-
-        console.log("Appointee set for createOperatorSets");
-
-        serviceManager.setAppointee(
-            serviceManagerOwner, // Grant permission to the owner itself
-            allocationManagerAddr,
-            IAllocationManager.updateAVSMetadataURI.selector
-        );
-        console.log("Appointee set for updateAVSMetadataURI");
-
-        // Update AVS metadata URI - required before creating operator sets
-        string memory metadataURI = "https://eigenda.xyz/metadata";
-        console.log("Updating AVS metadata URI to:", metadataURI);
-        allocationManager.updateAVSMetadataURI(address(serviceManager), metadataURI);
-
-        vm.stopPrank();
-
-        // Set the AVS address in the Registry Coordinator (requires RC owner) - required before creating operator sets
-        address registryCoordinatorOwner =
-            OwnableUpgradeable(eigenDAData.addresses.registryCoordinator).owner();
-        console.log("Setting AVS address in Registry Coordinator...");
-        vm.startPrank(registryCoordinatorOwner);
-        registryCoordinator.setAVS(address(serviceManager));
-        vm.stopPrank(); // Stop impersonating registryCoordinatorOwner
+        _configureUAMAppointees();
 
         console.log("Creating a new slashable stake quorum (quorum 1)...");
         vm.startPrank(serviceManagerOwner);
@@ -524,9 +443,6 @@ contract EigenDATest is Test {
     function _captureAndStorePreUpgradeState() internal {
         preUpgradeStates.registryCoordinator.numQuorums = registryCoordinator.quorumCount();
 
-        OwnableUpgradeable serviceManagerOwnable = OwnableUpgradeable(address(serviceManager));
-        preUpgradeStates.serviceManager.owner = serviceManagerOwnable.owner();
-
         Pausable serviceManagerPausable = Pausable(address(serviceManager));
         preUpgradeStates.serviceManager.paused = serviceManagerPausable.paused();
 
@@ -554,6 +470,44 @@ contract EigenDATest is Test {
             }
             preUpgradeStates.stakeRegistry.numStrategies[quorumIndex] = uint32(strategyCount);
         }
+    }
+
+    function _configureUAMAppointees() internal {
+        console.log("Configuring permissions for operator set creation...");
+
+        console.log("Setting AVS address in Registry Coordinator...");
+        vm.startPrank(registryCoordinatorOwner);
+        registryCoordinator.setAVS(address(serviceManager));
+        vm.stopPrank();
+
+        console.log("Appointee set for createOperatorSets");
+        vm.startPrank(serviceManagerOwner);
+        serviceManager.setAppointee(
+            address(registryCoordinator),
+            allocationManagerAddr,
+            IAllocationManager.createOperatorSets.selector
+        );
+        serviceManager.setAppointee(
+            serviceManagerOwner,
+            allocationManagerAddr,
+            IAllocationManager.updateAVSMetadataURI.selector
+        );
+
+        serviceManager.setAppointee(
+            serviceManagerOwner,
+            allocationManagerAddr,
+            IAllocationManager.setAVSRegistrar.selector
+        );
+
+        console.log("Appointees set for required permissions");
+
+        string memory metadataURI = "https://eigenda.xyz/metadata";
+        console.log("Updating AVS metadata URI to:", metadataURI);
+        allocationManager.updateAVSMetadataURI(address(serviceManager), metadataURI);
+
+        allocationManager.setAVSRegistrar(address(serviceManager), IAVSRegistrar(address(registryCoordinator)));
+        vm.stopPrank();
+        console.log("AVS Registrar set");
     }
 
     function _deployNewImplementations() internal {
