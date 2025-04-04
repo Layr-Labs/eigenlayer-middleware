@@ -259,6 +259,7 @@ contract EigenDATest is Test {
 
         uint256 operatorTokenAmount = 10 ether;
         (token, strategy) = _setupTokensForOperators(operatorTokenAmount);
+        _setUpTokensForExistingQuorums(1000 ether);
 
         console.log("Registering operators in EigenLayer...");
         _registerOperatorsAsEigenLayerOperators();
@@ -375,6 +376,132 @@ contract EigenDATest is Test {
         console.log("Successfully created new operator set quorum with %d operators", operatorCount);
     }
 
+    function test_PostUpgrade_DeregisterM2Operators() public {
+        // Upgrade the contracts first
+        _upgradeContracts();
+
+        uint256 totalDeregisteredOperators = 0;
+
+        console.log("Deregistering M2 quorum operators...");
+
+        // Iterate through quorums and deregister each operator
+        for (uint8 i = 0; i < m2QuorumOperators.quorumNumbers.length; i++) {
+            uint8 quorumNumber = m2QuorumOperators.quorumNumbers[i];
+            address[] memory operatorAddresses = m2QuorumOperators.operatorIds[i];
+
+            console.log(
+                "Deregistering %d operators from quorum %d", operatorAddresses.length, quorumNumber
+            );
+
+            // Prepare quorum number array for deregistration
+            uint8[] memory quorumNumbersArray = new uint8[](1);
+            quorumNumbersArray[0] = quorumNumber;
+
+            // Deregister each operator from the quorum
+            for (uint256 j = 0; j < operatorAddresses.length; j++) {
+                address operatorAddr = operatorAddresses[j];
+
+                OperatorLib.Wallet memory wallet;
+                wallet.addr = operatorAddr;
+
+                OperatorLib.Operator memory operator;
+                operator.key = wallet;
+
+                vm.startPrank(operatorAddr);
+
+                OperatorLib.deregisterOperatorFromAVS_M2(
+                    operator, address(registryCoordinator), quorumNumbersArray
+                );
+
+                vm.stopPrank();
+                totalDeregisteredOperators++;
+            }
+        }
+
+        console.log(
+            "Successfully deregistered %d operators from M2 quorums", totalDeregisteredOperators
+        );
+
+        // Verify operators are deregistered by checking the updated operator counts
+        for (uint8 i = 0; i < m2QuorumOperators.quorumNumbers.length; i++) {
+            uint8 quorumNumber = m2QuorumOperators.quorumNumbers[i];
+            if (m2QuorumOperators.operatorIds[i].length > 0) {
+                uint32 operatorCountAfter = indexRegistry.totalOperatorsForQuorum(quorumNumber);
+                assertEq(operatorCountAfter, 0, "Operators should be deregistered from quorum");
+                console.log("Verified quorum %d now has 0 operators", quorumNumber);
+            }
+        }
+    }
+
+    function test_PostUpgrade_RegisterToM2Quorums() public {
+        // Upgrade contracts first
+        _upgradeContracts();
+
+        // Use existing operators that were created in setUp
+        console.log("Using %d existing operators", OPERATOR_COUNT);
+
+        console.log("Registering operators to M2 quorums...");
+
+        uint256 quorumCount = 1;
+        uint8[] memory quorumsToRegister = new uint8[](quorumCount);
+        for (uint8 i = 0; i < quorumCount; i++) {
+            quorumsToRegister[i] = 0;
+        }
+
+        // Register each operator to the existing M2 quorums
+        for (uint256 i = 0; i < OPERATOR_COUNT; i++) {
+            vm.startPrank(operators[i].key.addr);
+
+            OperatorLib.registerOperatorToAVS_M2(
+                operators[i],
+                address(avsDirectory),
+                address(serviceManager),
+                address(registryCoordinator),
+                quorumsToRegister
+            );
+
+            vm.stopPrank();
+            console.log("Registered operator %d to M2 quorums", i + 1);
+        }
+
+        console.log("Successfully registered %d operators to M2 quorums", OPERATOR_COUNT);
+    }
+
+    function _captureAndStorePreUpgradeState() internal {
+        preUpgradeStates.registryCoordinator.numQuorums = registryCoordinator.quorumCount();
+
+        Pausable serviceManagerPausable = Pausable(address(serviceManager));
+        preUpgradeStates.serviceManager.paused = serviceManagerPausable.paused();
+
+        uint8 quorumCount = registryCoordinator.quorumCount();
+        preUpgradeStates.blsApkRegistry.currentApkHashes = new bytes32[](quorumCount);
+        preUpgradeStates.indexRegistry.operatorCounts = new uint32[](quorumCount);
+        preUpgradeStates.stakeRegistry.numStrategies = new uint32[](quorumCount);
+
+        // For each quorum, gather data from all registries
+        for (uint8 quorumIndex = 0; quorumIndex < quorumCount; quorumIndex++) {
+            // Get operator count for each quorum from IndexRegistry
+            uint32 operatorCount = indexRegistry.totalOperatorsForQuorum(quorumIndex);
+            preUpgradeStates.indexRegistry.operatorCounts[quorumIndex] = operatorCount;
+
+            // Get APK hash for each quorum from BLSApkRegistry
+            // Store the hash of the APK as bytes32
+            preUpgradeStates.blsApkRegistry.currentApkHashes[quorumIndex] =
+                BN254.hashG1Point(apkRegistry.getApk(quorumIndex));
+
+            // Get strategy count for each quorum from StakeRegistry
+            uint256 strategyCount = 0;
+            // Check if quorum exists in StakeRegistry before querying
+            if (stakeRegistry.getTotalStakeHistoryLength(quorumIndex) > 0) {
+                strategyCount = stakeRegistry.strategyParamsLength(quorumIndex);
+            }
+            preUpgradeStates.stakeRegistry.numStrategies[quorumIndex] = uint32(strategyCount);
+        }
+
+        // Record operators for M2 quorums
+        _recordM2QuorumOperators();
+    }
+
     function test_PostUpgrade_DisableM2() public {
         _upgradeContracts();
 
@@ -432,45 +559,9 @@ contract EigenDATest is Test {
         console.log("Successfully disabled M2 quorum registration.");
     }
 
-    function _captureAndStorePreUpgradeState() internal {
-        preUpgradeStates.registryCoordinator.numQuorums = registryCoordinator.quorumCount();
-
-        Pausable serviceManagerPausable = Pausable(address(serviceManager));
-        preUpgradeStates.serviceManager.paused = serviceManagerPausable.paused();
-
-        uint8 quorumCount = registryCoordinator.quorumCount();
-        preUpgradeStates.blsApkRegistry.currentApkHashes = new bytes32[](quorumCount);
-        preUpgradeStates.indexRegistry.operatorCounts = new uint32[](quorumCount);
-        preUpgradeStates.stakeRegistry.numStrategies = new uint32[](quorumCount);
-
-        // For each quorum, gather data from all registries
-        for (uint8 quorumIndex = 0; quorumIndex < quorumCount; quorumIndex++) {
-            // Get operator count for each quorum from IndexRegistry
-            uint32 operatorCount = indexRegistry.totalOperatorsForQuorum(quorumIndex);
-            preUpgradeStates.indexRegistry.operatorCounts[quorumIndex] = operatorCount;
-
-            // Get APK hash for each quorum from BLSApkRegistry
-            // Store the hash of the APK as bytes32
-            preUpgradeStates.blsApkRegistry.currentApkHashes[quorumIndex] =
-                BN254.hashG1Point(apkRegistry.getApk(quorumIndex));
-
-            // Get strategy count for each quorum from StakeRegistry
-            uint256 strategyCount = 0;
-            // Check if quorum exists in StakeRegistry before querying
-            if (stakeRegistry.getTotalStakeHistoryLength(quorumIndex) > 0) {
-                strategyCount = stakeRegistry.strategyParamsLength(quorumIndex);
-            }
-            preUpgradeStates.stakeRegistry.numStrategies[quorumIndex] = uint32(strategyCount);
-        }
-
-        // Record operators for M2 quorums
-        _recordM2QuorumOperators();
-    }
-
-    /// @notice Record the operators in each M2 quorum before the upgrade
     function _recordM2QuorumOperators() internal {
         // Use the getM2QuorumOperators function to get M2 quorum operators
-        (uint8[] memory quorumNumbers, address[][] memory operatorLists) = getM2QuorumOperators();
+        (uint8[] memory quorumNumbers, address[][] memory operatorLists) = _getM2QuorumOperators();
 
         // Set the values in the m2QuorumOperators struct
         m2QuorumOperators.quorumNumbers = quorumNumbers;
@@ -483,12 +574,7 @@ contract EigenDATest is Test {
         }
     }
 
-    /**
-     * @notice Gets the operators registered to quorums created before operator sets were enabled (M2 quorums)
-     * @return m2QuorumNumbers Array of M2 quorum numbers
-     * @return m2QuorumOperatorLists Array of operator ID arrays corresponding to each quorum number
-     */
-    function getM2QuorumOperators()
+    function _getM2QuorumOperators()
         public
         view
         returns (uint8[] memory m2QuorumNumbers, address[][] memory m2QuorumOperatorLists)
@@ -753,6 +839,44 @@ contract EigenDATest is Test {
         ERC20Mock tokenContract = new ERC20Mock();
         token = address(tokenContract);
         strategy = IStrategyFactory(strategyFactory).deployNewStrategy(IERC20(token));
+    }
+
+    function _setUpTokensForExistingQuorums(
+        uint256 amount
+    ) internal {
+        uint8 quorumNumber = 0;
+        uint8 strategyIndex = 2;
+        /// Strategy with a token we can deal with foundry
+        IStakeRegistry.StrategyParams memory stratParams =
+            stakeRegistry.strategyParamsByIndex(quorumNumber, strategyIndex);
+
+        address strategyAddress = address(stratParams.strategy);
+
+        console.log("Using strategy %s for quorum %d", strategyAddress, quorumNumber);
+
+        // For each operator, deposit tokens into each strategy
+        for (uint256 opIndex = 0; opIndex < OPERATOR_COUNT; opIndex++) {
+            // Get the underlying token for this strategy
+            IERC20 underlyingTokenIERC20 = IStrategy(strategyAddress).underlyingToken();
+            address tokenAddress = address(underlyingTokenIERC20);
+
+            deal(tokenAddress, operators[opIndex].key.addr, amount, true);
+
+            vm.startPrank(operators[opIndex].key.addr);
+            // Deposit tokens into the strategy
+            OperatorLib.depositTokenIntoStrategy(
+                operators[opIndex], address(strategyManager), strategyAddress, tokenAddress, amount
+            );
+
+            console.log(
+                "Deposited %d tokens into strategy %s for operator %s",
+                amount,
+                strategyAddress,
+                operators[opIndex].key.addr
+            );
+
+            vm.stopPrank();
+        }
     }
 
     function _setupTokensForOperators(
