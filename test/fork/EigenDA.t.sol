@@ -8,6 +8,8 @@ import {UpgradeableProxyLib} from "../unit/UpgradeableProxyLib.sol";
 import {BN254} from "../../src/libraries/BN254.sol";
 import {Pausable} from "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import {OperatorLib} from "../utils/OperatorLib.sol";
+import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
 
 import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
 import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
@@ -22,6 +24,7 @@ import {IAllocationManager} from
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
@@ -32,6 +35,7 @@ import {
     OperatorSet,
     IAllocationManagerTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Import concrete implementation for deployment
 import {RegistryCoordinator, IRegistryCoordinatorTypes} from "../../src/RegistryCoordinator.sol";
@@ -42,6 +46,11 @@ import {BLSApkRegistry} from "../../src/BLSApkRegistry.sol";
 import {IndexRegistry} from "../../src/IndexRegistry.sol";
 import {StakeRegistry, IStakeRegistryTypes} from "../../src/StakeRegistry.sol";
 import {SocketRegistry} from "../../src/SocketRegistry.sol";
+
+// Import ERC20Mock contract
+import {ERC20Mock} from "../mocks/ERC20Mock.sol";
+import {IStrategyFactory} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyFactory.sol";
+import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 
 // Extended interface to get addresses of other contracts
 interface IServiceManagerExtended {
@@ -54,6 +63,7 @@ interface StakeRegistryExtended {
 
 interface IDelegationManagerExtended {
     function allocationManager() external view returns (IAllocationManager);
+    function strategyManager() external view returns (IStrategyManager);
 }
 
 interface IAllocationManagerExtended {
@@ -95,6 +105,7 @@ contract TestServiceManager is
 
 contract EigenDATest is Test {
     using stdJson for string;
+    using OperatorLib for *;
 
     struct EigenDADeploymentData {
         address blsApkRegistry;
@@ -169,6 +180,12 @@ contract EigenDATest is Test {
     address public permissionControllerAddr;
     address public rewardsCoordinatorAddr;
 
+    // Constant for the number of operators
+    uint256 constant OPERATOR_COUNT = 5;
+
+    // Operators array for testing
+    OperatorLib.Operator[OPERATOR_COUNT] public operators;
+
     // New implementation addresses for upgrade
     address public newRegistryCoordinatorImpl;
     address public newServiceManagerImpl;
@@ -187,6 +204,12 @@ contract EigenDATest is Test {
     IAVSDirectory public avsDirectory;
     IDelegationManagerExtended public delegationManager;
     IPermissionController public permissionController;
+
+    // Variables for token and strategy
+    address public token;
+    IStrategy public strategy;
+    IStrategyFactory public strategyFactory;
+    IStrategyManager public strategyManager;
 
     // Test setup function that runs before each test
     function setUp() public virtual {
@@ -217,6 +240,16 @@ contract EigenDATest is Test {
         avsDirectory = IAVSDirectory(avsDirectoryAddr);
         delegationManager = IDelegationManagerExtended(delegationManagerAddr);
         permissionController = IPermissionController(permissionControllerAddr);
+        // Initialize strategy manager and factory
+        strategyManager = delegationManager.strategyManager();
+        strategyFactory = IStrategyFactory(strategyManager.strategyWhitelister());
+
+        // Create operators with static size
+        _createOperators();
+
+        // Setup tokens and strategy for operators
+        uint256 operatorTokenAmount = 10 ether;
+        (token, strategy) = _setupTokensForOperators(operatorTokenAmount);
 
         _verifyInitialSetup();
 
@@ -298,6 +331,12 @@ contract EigenDATest is Test {
             allocationManagerAddr,
             IAllocationManager.updateAVSMetadataURI.selector
         );
+
+        serviceManager.setAppointee(
+            serviceManagerOwner, // Grant permission to the owner itself
+            allocationManagerAddr,
+            IAllocationManager.setAVSRegistrar.selector
+        );
         console.log("Appointee set for updateAVSMetadataURI");
 
         // Update AVS metadata URI - required before creating operator sets
@@ -315,8 +354,11 @@ contract EigenDATest is Test {
         registryCoordinator.setAVS(address(serviceManager));
         vm.stopPrank(); // Stop impersonating registryCoordinatorOwner
 
-        console.log("Creating a new slashable stake quorum (quorum 1)...");
         vm.startPrank(serviceManagerOwner);
+        allocationManager.setAVSRegistrar(address(serviceManager), IAVSRegistrar(address(registryCoordinator)));
+        vm.stopPrank();
+
+        console.log("Creating a new slashable stake quorum (quorum 1)...");
 
         // Define parameters for the new quorum
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParam =
@@ -329,18 +371,39 @@ contract EigenDATest is Test {
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(0)), // TODO: Placeholder
+            strategy: strategy,
             multiplier: 1 * 1e18
         });
 
         uint96 minimumStake = uint96(1 ether);
-        uint32 lookAheadPeriod = 10;
 
-        registryCoordinator.createSlashableStakeQuorum(
-            operatorSetParam, minimumStake, strategyParams, lookAheadPeriod
+        vm.startPrank(serviceManagerOwner);
+        registryCoordinator.createTotalDelegatedStakeQuorum(
+            operatorSetParam, minimumStake, strategyParams
         );
 
         vm.stopPrank();
+
+        // Register operators as EigenLayer operators
+        console.log("Registering operators in EigenLayer...");
+        _registerOperatorsAsEigenLayerOperators();
+
+        // Register operators for the new quorum
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = 3; // Quorum 1 (slashable)
+
+        console.log("Registering operators for quorum 1...");
+        for (uint256 i = 0; i < OPERATOR_COUNT; i++) {
+            vm.startPrank(operators[i].key.addr);
+            OperatorLib.registerOperatorFromAVS_OpSet(
+                operators[i],
+                allocationManagerAddr,
+                address(registryCoordinator),
+                address(serviceManager),
+                operatorSetIds
+            );
+            vm.stopPrank();
+        }
 
         // Verify that operator sets are enabled in the Registry Coordinator
         console.log("Verifying operator sets are enabled...");
@@ -351,7 +414,11 @@ contract EigenDATest is Test {
             "Operator sets should be enabled after creating a slashable stake quorum"
         );
 
-        console.log("Successfully created new operator set quorum.");
+        // Verify operators are registered
+        uint32 operatorCount = indexRegistry.totalOperatorsForQuorum(3);
+        assertEq(operatorCount, OPERATOR_COUNT, "All operators should be registered");
+
+        console.log("Successfully created new operator set quorum with %d operators", operatorCount);
     }
 
     function test_PostUpgrade_DisableM2() public {
@@ -679,4 +746,94 @@ contract EigenDATest is Test {
             "Pauser Registry should be defined"
         );
     }
+
+    function _createTokenAndStrategy() internal returns (address token, IStrategy strategy) {
+        ERC20Mock tokenContract = new ERC20Mock();
+        token = address(tokenContract);
+        strategy = IStrategyFactory(strategyFactory).deployNewStrategy(IERC20(token));
+    }
+
+    function _setupTokensForOperators(uint256 amount) internal returns (address token, IStrategy strategy) {
+        (token, strategy) = _createTokenAndStrategy();
+
+        for (uint256 i = 0; i < OPERATOR_COUNT; i++) {
+            OperatorLib.mintMockTokens(operators[i], token, amount);
+            vm.startPrank(operators[i].key.addr);
+            OperatorLib.depositTokenIntoStrategy(
+                operators[i],
+                address(strategyManager),
+                address(strategy),
+                token,
+                amount
+            );
+            vm.stopPrank();
+        }
+    }
+
+    function _createOperators() internal {
+        for (uint256 i = 0; i < OPERATOR_COUNT; i++) {
+            operators[i] = OperatorLib.createOperator(string(abi.encodePacked("operator-", i + 1)));
+        }
+    }
+
+    function _createOperators(
+        uint256 numOperators
+    ) internal returns (OperatorLib.Operator[] memory) {
+        OperatorLib.Operator[] memory ops = new OperatorLib.Operator[](numOperators);
+        for (uint256 i = 0; i < numOperators; i++) {
+            ops[i] = OperatorLib.createOperator(string(abi.encodePacked("operator-", i + 1)));
+        }
+        return ops;
+    }
+
+    /**
+     * @dev Registers operators as EigenLayer operators
+     */
+    function _registerOperatorsAsEigenLayerOperators() internal {
+        for (uint256 i = 0; i < OPERATOR_COUNT; i++) {
+            vm.startPrank(operators[i].key.addr);
+            OperatorLib.registerAsOperator(operators[i], delegationManagerAddr);
+            vm.stopPrank();
+        }
+    }
+
+    /**
+     * @dev Registers operators as EigenLayer operators
+     * @param operatorsToRegister Array of operators to register
+     */
+    function _registerOperatorsAsEigenLayerOperators(
+        OperatorLib.Operator[] memory operatorsToRegister
+    ) internal {
+        for (uint256 i = 0; i < operatorsToRegister.length; i++) {
+            vm.startPrank(operatorsToRegister[i].key.addr);
+            OperatorLib.registerAsOperator(operatorsToRegister[i], delegationManagerAddr);
+            vm.stopPrank();
+        }
+    }
+
+    /**
+     * @dev Gets and sorts operator addresses for use in quorum updates
+     * @return Sorted two-dimensional array of operator addresses
+     */
+    function _getAndSortOperators() internal view returns (address[][] memory) {
+        address[][] memory registeredOperators = new address[][](1);
+        registeredOperators[0] = new address[](OPERATOR_COUNT);
+        for (uint256 i = 0; i < OPERATOR_COUNT; i++) {
+            registeredOperators[0][i] = operators[i].key.addr;
+        }
+
+        // Sort operator addresses
+        for (uint256 i = 0; i < registeredOperators[0].length - 1; i++) {
+            for (uint256 j = 0; j < registeredOperators[0].length - i - 1; j++) {
+                if (registeredOperators[0][j] > registeredOperators[0][j + 1]) {
+                    address temp = registeredOperators[0][j];
+                    registeredOperators[0][j] = registeredOperators[0][j + 1];
+                    registeredOperators[0][j + 1] = temp;
+                }
+            }
+        }
+
+        return registeredOperators;
+    }
+
 }
