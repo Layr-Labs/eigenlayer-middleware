@@ -415,11 +415,8 @@ contract EigenDATest is Test {
     }
 
     function test_PostUpgrade_RegisterToM2Quorums() public {
-        // Upgrade contracts first
         _upgradeContracts();
-
         _configureUAMAppointees();
-
         _createTotalDelegatedStakeOpSet();
 
         // Use existing operators that were created in setUp
@@ -481,6 +478,82 @@ contract EigenDATest is Test {
         assertTrue(isM2QuorumRegistrationDisabled, "M2 quorum registration should be disabled");
 
         console.log("Successfully disabled M2 quorum registration.");
+    }
+
+    function test_PostUpgrade_DisableM2_Registration() public {
+        _upgradeContracts();
+        _configureUAMAppointees();
+        _createTotalDelegatedStakeOpSet();
+
+        // First disable M2 quorum registration
+        console.log("Disabling M2 quorum registration...");
+        vm.startPrank(registryCoordinatorOwner);
+        IRegistryCoordinator(address(registryCoordinator)).disableM2QuorumRegistration();
+        vm.stopPrank();
+
+        // Verify M2 quorum registration is disabled
+        bool isM2QuorumRegistrationDisabled =
+            IRegistryCoordinator(address(registryCoordinator)).isM2QuorumRegistrationDisabled();
+        assertTrue(isM2QuorumRegistrationDisabled, "M2 quorum registration should be disabled");
+
+        uint8[] memory quorumsToRegister = new uint8[](1);
+        quorumsToRegister[0] = 0; // Quorum 0 is an M2 quorum
+
+        // Attempt to register to M2 quorums - this should fail
+        console.log("Attempting to register to M2 quorums after disabling M2 registration...");
+        vm.startPrank(operators[0].key.addr);
+        vm.expectRevert();
+        OperatorLib.registerOperatorToAVS_M2(
+            operators[0],
+            address(avsDirectory),
+            address(serviceManager),
+            address(registryCoordinator),
+            quorumsToRegister
+        );
+
+        vm.stopPrank();
+        console.log("Successfully verified M2 registration is disabled");
+    }
+
+    function test_PostUpgrade_DisableM2_Deregistration() public {
+        _upgradeContracts();
+        _configureUAMAppointees();
+
+        // Register operators to M2 quorums before disabling M2 registration
+        console.log("Registering operators to M2 quorums before disabling registration...");
+        uint8[] memory quorumsToRegister = new uint8[](1);
+        quorumsToRegister[0] = 0; // Quorum 0 is an M2 quorum
+
+        // Now disable M2 quorum registration
+        console.log("Disabling M2 quorum registration...");
+        vm.startPrank(registryCoordinatorOwner);
+        IRegistryCoordinator(address(registryCoordinator)).disableM2QuorumRegistration();
+        vm.stopPrank();
+
+        // Verify M2 quorum registration is disabled
+        bool isM2QuorumRegistrationDisabled =
+            IRegistryCoordinator(address(registryCoordinator)).isM2QuorumRegistrationDisabled();
+        assertTrue(isM2QuorumRegistrationDisabled, "M2 quorum registration should be disabled");
+
+        // Attempt to deregister operator from M2 quorums - this should succeed
+        console.log("Attempting to deregister from M2 quorums after disabling M2 registration...");
+        address operatorAddr = m2QuorumOperators.operatorIds[0][0];
+
+        OperatorLib.Wallet memory wallet;
+        wallet.addr = operatorAddr;
+
+        OperatorLib.Operator memory operator;
+        operator.key = wallet;
+
+        vm.startPrank(operatorAddr);
+        OperatorLib.deregisterOperatorFromAVS_M2(
+            operators[0], address(registryCoordinator), quorumsToRegister
+        );
+        vm.stopPrank();
+
+        console.log(
+            "Successfully verified deregistration from M2 quorums is still possible after disabling registration"
+        );
     }
 
     function _createTotalDelegatedStakeOpSet() internal {
