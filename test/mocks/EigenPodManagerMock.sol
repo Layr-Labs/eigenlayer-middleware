@@ -32,6 +32,18 @@ contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
         return type(uint64).max;
     }
 
+    function pectraForkTimestamp() external pure returns (uint64) {
+        return type(uint64).max;
+    }
+
+    function setPectraForkTimestamp(
+        uint64 timestamp
+    ) external {}
+
+    function setProofTimestampSetter(
+        address newProofTimestampSetter
+    ) external {}
+
     function createPod() external returns (address) {}
 
     function stake(

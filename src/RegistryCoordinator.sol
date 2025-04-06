@@ -34,7 +34,7 @@ import {RegistryCoordinatorStorage} from "./RegistryCoordinatorStorage.sol";
  *
  * @author Layr Labs, Inc.
  */
-contract RegistryCoordinator is RegistryCoordinatorStorage, SlashingRegistryCoordinator {
+contract RegistryCoordinator is SlashingRegistryCoordinator, RegistryCoordinatorStorage {
     using BitmapUtils for *;
 
     constructor(
@@ -64,7 +64,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage, SlashingRegistryCoor
         string memory socket,
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory params,
         SignatureWithSaltAndExpiry memory operatorSignature
-    ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
+    ) external virtual onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         require(!isM2QuorumRegistrationDisabled, M2QuorumRegistrationIsDisabled());
         require(
             quorumNumbers.orderedBytesArrayToBitmap().isSubsetOf(m2QuorumBitmap()),
@@ -98,7 +98,7 @@ contract RegistryCoordinator is RegistryCoordinatorStorage, SlashingRegistryCoor
         OperatorKickParam[] memory operatorKickParams,
         SignatureWithSaltAndExpiry memory churnApproverSignature,
         SignatureWithSaltAndExpiry memory operatorSignature
-    ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
+    ) external virtual onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         require(!isM2QuorumRegistrationDisabled, M2QuorumRegistrationIsDisabled());
         require(
             quorumNumbers.orderedBytesArrayToBitmap().isSubsetOf(m2QuorumBitmap()),

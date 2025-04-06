@@ -129,7 +129,7 @@ contract StakeRegistry is StakeRegistryStorage {
         address[] memory operators,
         bytes32[] memory operatorIds,
         uint8 quorumNumber
-    ) external onlySlashingRegistryCoordinator returns (bool[] memory) {
+    ) external virtual onlySlashingRegistryCoordinator returns (bool[] memory) {
         bool[] memory shouldBeDeregistered = new bool[](operators.length);
 
         /**
