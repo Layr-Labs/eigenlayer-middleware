@@ -383,7 +383,7 @@ contract OperatorStateRetriever {
 
     /**
      * @notice Computes the aggregate public key (APK) in G1 for a list of operators
-     * @dev Aggregetes the individual G1 public keys of operators by adding them together
+     * @dev Aggregates the individual G1 public keys of operators by adding them together
      * @param registryCoordinator The registry coordinator contract to fetch operator info from
      * @param operatorIds Array of operator IDs to compute the aggregate key for
      * @return The aggregate public key as a G1 point, computed by summing individual operator pubkeys
