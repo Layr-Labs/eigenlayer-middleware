@@ -405,7 +405,7 @@ contract OperatorStateRetriever {
 
     /**
      * @notice Checks if a point lies on the BN254 elliptic curve
-     * @dev The curve equation is y^2 = x^3 + 2 (mod p) (https://neuromancer.sk/std/bn/bn254)
+     * @dev The curve equation is y^2 = x^3 + 3 (mod p)
      * @param p The point to check, in G1
      * @return true if the point lies on the curve, false otherwise
      */
