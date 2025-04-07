@@ -332,6 +332,14 @@ contract IndexRegistry is IndexRegistryStorage {
         return _latestQuorumUpdate(quorumNumber).numOperators;
     }
 
+    /// @inheritdoc IIndexRegistry
+    function totalOperatorsForQuorumAtBlockNumber(
+        uint8 quorumNumber,
+        uint32 blockNumber
+    ) external view returns (uint32) {
+        return _operatorCountAtBlockNumber(quorumNumber, blockNumber);
+    }
+
     function _checkRegistryCoordinator() internal view {
         require(msg.sender == address(registryCoordinator), OnlyRegistryCoordinator());
     }

@@ -1,0 +1,49 @@
+
+name: Storage Layout
+
+on:
+  push:
+    branches:
+      - master
+      - mainnet
+      - testnet-goerli
+      - dev
+  pull_request:
+
+jobs:
+  check_storage:
+    name: CI
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: "Generate and prepare the storage reports for current branch"
+        run: |
+          bash ./bin/storage-report.sh pr
+
+      - name: Checkout dev
+        env:
+          TARGET: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch origin $TARGET
+          git checkout $TARGET
+
+      - name: "Generate and prepare the storage reports for target branch"
+        run: |
+          bash ./bin/storage-report.sh target
+
+      - name: Compare outputs
+        run: |
+          if diff --unified pr target; then
+            echo "No differences found"
+          else
+            echo "::error::Differences found between PR and target branch storage layouts"
+            exit 1
+          fi
