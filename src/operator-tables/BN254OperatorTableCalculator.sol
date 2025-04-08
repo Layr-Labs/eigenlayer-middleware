@@ -140,6 +140,11 @@ contract BN254OperatorTableCalculator is IBN254OperatorTableCalculator {
         
         // For each operator, calculate their weights and build the operator info
         for (uint256 i = 0; i < operators.length; i++) {
+            // Verify the operator has a registered pubkey
+            if (operatorToPubkey[operators[i]].X == 0 && operatorToPubkey[operators[i]].Y == 0) {
+                revert(string(abi.encodePacked("Operator has no registered pubkey: ", operators[i])));
+            }
+            
             BN254OperatorInfo memory operatorInfo = BN254OperatorInfo({
                 pubkey: operatorToPubkey[operators[i]],
                 weights: new uint96[](numWeightTypes)
@@ -199,9 +204,15 @@ contract BN254OperatorTableCalculator is IBN254OperatorTableCalculator {
         // Get the operator address at the specified index
         address operator = operators[operatorIndex];
         
+        // Verify the operator has a registered pubkey
+        if (operatorToPubkey[operator].X == 0 && operatorToPubkey[operator].Y == 0) {
+            revert(string(abi.encodePacked("Operator has no registered pubkey: ", operator)));
+        }
+        
         // Get operator's stake allocations
         address[] memory operatorArray = new address[](1);
         operatorArray[0] = operator;
+        
         uint256[][] memory allocatedStake = allocationManager.getAllocatedStake(
             operatorSet,
             operatorArray,
@@ -261,6 +272,11 @@ contract BN254OperatorTableCalculator is IBN254OperatorTableCalculator {
         
         // For each operator, calculate their weights and hash their info
         for (uint256 i = 0; i < operators.length; i++) {
+            // Verify the operator has a registered pubkey
+            if (operatorToPubkey[operators[i]].X == 0 && operatorToPubkey[operators[i]].Y == 0) {
+                revert(string(abi.encodePacked("Operator has no registered pubkey: ", operators[i])));
+            }
+            
             BN254OperatorInfo memory operatorInfo = BN254OperatorInfo({
                 pubkey: operatorToPubkey[operators[i]],
                 weights: new uint96[](numWeightTypes)

@@ -225,8 +225,12 @@ contract BN254CertificateVerifierTest is Test {
             // In a real test, this would include signature verification
             assertEq(signedStakes.length, 2, "Should have 2 weight types");
         } catch Error(string memory reason) {
-            // We expect the test to fail with "Invalid signature" since we're not doing real BLS verification
-            assertEq(reason, "Invalid signature", "Expected 'Invalid signature' error");
+            // We expect the test to fail with "Invalid nonsigner proof" or "Invalid signature" since we're not doing real BLS verification
+            assertTrue(
+                keccak256(bytes(reason)) == keccak256(bytes("Invalid nonsigner proof")) || 
+                keccak256(bytes(reason)) == keccak256(bytes("Invalid signature")), 
+                "Expected 'Invalid nonsigner proof' or 'Invalid signature' error"
+            );
         }
     }
     

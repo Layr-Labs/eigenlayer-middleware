@@ -14,8 +14,14 @@ library MerkleTreeLib {
     function merkleRoot(bytes32[] memory leaves) internal pure returns (bytes32 root) {
         require(leaves.length > 0, "Empty leaves");
         
+        // Base case: single leaf
         if (leaves.length == 1) {
             return leaves[0];
+        }
+        
+        // Special case for 2 leaves to avoid recursion
+        if (leaves.length == 2) {
+            return keccak256(abi.encodePacked(leaves[0], leaves[1]));
         }
         
         // Create a new array for the next level of the tree
@@ -27,6 +33,7 @@ library MerkleTreeLib {
         for (uint256 i = 0; i < n; i += 2) {
             uint256 j = i / 2;
             if (i + 1 < n) {
+                // If we have a pair, hash them together
                 nextLevel[j] = keccak256(abi.encodePacked(leaves[i], leaves[i + 1]));
             } else {
                 // If there's an odd number of nodes, the last node is carried forward
@@ -35,6 +42,7 @@ library MerkleTreeLib {
         }
         
         // Recursively compute the root of the next level
+        // This will eventually hit one of our base cases (1 or 2 leaves)
         return merkleRoot(nextLevel);
     }
     
@@ -49,11 +57,38 @@ library MerkleTreeLib {
         require(index < leaves.length, "Index out of bounds");
         
         if (leaves.length == 1) {
-            return "";
+            // For a single leaf, there's no proof needed
+            return abi.encode(new bytes32[](0));
         }
         
-        // Initialize proof
-        bytes32[] memory siblings = new bytes32[]((leaves.length <= 2) ? 1 : 32 - clz(leaves.length - 1));
+        // Calculate the max possible proof size - log2 of number of leaves, rounded up
+        // We'll use a safe approximation for array sizing
+        uint256 maxProofSize = 32; // This is definitely enough for any reasonable number of leaves
+        
+        // If leaves.length is small, calculate a more precise size
+        if (leaves.length <= 2) {
+            maxProofSize = 1;
+        } else if (leaves.length <= 4) {
+            maxProofSize = 2;
+        } else if (leaves.length <= 8) {
+            maxProofSize = 3;
+        } else if (leaves.length <= 16) {
+            maxProofSize = 4;
+        } else if (leaves.length <= 32) {
+            maxProofSize = 5;
+        } else if (leaves.length <= 64) {
+            maxProofSize = 6;
+        } else if (leaves.length <= 128) {
+            maxProofSize = 7;
+        } else if (leaves.length <= 256) {
+            maxProofSize = 8;
+        } else {
+            // For larger arrays, calculate a tighter bound using clz
+            maxProofSize = 256 - uint256(clz(leaves.length - 1));
+        }
+        
+        // Initialize proof array
+        bytes32[] memory siblings = new bytes32[](maxProofSize);
         uint256 siblingCount = 0;
         
         // Start with the leaves
@@ -66,11 +101,19 @@ library MerkleTreeLib {
             uint256 nextLevelSize = (n + 1) / 2;
             bytes32[] memory nextLevel = new bytes32[](nextLevelSize);
             
-            // Get sibling index
-            uint256 siblingIndex = (currentIndex % 2 == 0) ? currentIndex + 1 : currentIndex - 1;
+            // Calculate sibling index
+            uint256 siblingIndex;
+            if (currentIndex % 2 == 0) {
+                // Current node is left child, sibling is right
+                siblingIndex = currentIndex + 1;
+            } else {
+                // Current node is right child, sibling is left
+                siblingIndex = currentIndex - 1;
+            }
             
             // Add sibling to proof if it exists
             if (siblingIndex < n) {
+                require(siblingCount < maxProofSize, "Proof size exceeded");
                 siblings[siblingCount++] = currentLevel[siblingIndex];
             }
             
@@ -78,8 +121,10 @@ library MerkleTreeLib {
             for (uint256 i = 0; i < n; i += 2) {
                 uint256 j = i / 2;
                 if (i + 1 < n) {
+                    // If we have a pair, hash them together
                     nextLevel[j] = keccak256(abi.encodePacked(currentLevel[i], currentLevel[i + 1]));
                 } else {
+                    // If we have a single node, promote it to the next level
                     nextLevel[j] = currentLevel[i];
                 }
             }
@@ -145,7 +190,7 @@ library MerkleTreeLib {
      * @return The number of leading zeros
      */
     function clz(uint256 x) internal pure returns (uint8) {
-        if (x == 0) return 255; // Can only store up to 255 in uint8
+        if (x == 0) return 254; // Use 254 to ensure we stay safely within uint8 range
         
         uint8 n = 0;
         if (x & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000000000000000000000 == 0) { n += 128; x <<= 128; }
