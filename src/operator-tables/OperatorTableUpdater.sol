@@ -161,9 +161,12 @@ contract OperatorTableUpdater {
         // Update the verifier
         (bool success,) = verifier.call(
             abi.encodeWithSignature(
-                "updateOperatorTable(uint32,((bytes32,uint32,(uint256,uint256),uint96[])))",
+                "updateOperatorTable(uint32,(bytes32,uint32,(uint256,uint256),uint96[]))",
                 referenceTimestamp,
-                operatorSetInfo
+                operatorSetInfo.operatorInfoTreeRoot,
+                operatorSetInfo.numOperators,
+                operatorSetInfo.aggregatePubkey,
+                operatorSetInfo.totalWeights
             )
         );
         
@@ -230,7 +233,7 @@ contract OperatorTableUpdater {
         // Eject the operators
         (bool success,) = verifier.call(
             abi.encodeWithSignature(
-                "ejectOperators(uint32,uint32[],(uint32,bytes,(uint256,uint256,uint96[]))[])",
+                "ejectOperators(uint32,uint32[],(uint32,bytes,(uint256,uint256,uint96[])[]))",
                 referenceTimestamp,
                 operatorIndices,
                 witnesses
