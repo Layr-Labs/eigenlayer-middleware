@@ -14,3 +14,7 @@ node_modules/
 
 
 *.DS_Store
+
+CLAUDE.md 
+PRIMER.md 
+SPEC.md
