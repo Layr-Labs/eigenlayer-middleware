@@ -5,16 +5,20 @@ import "./interfaces/IECDSATypes.sol";
 import "./interfaces/IECDSAOperatorTableCalculator.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
+import "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 /**
  * @title ECDSAOperatorTableCalculator
  * @notice Calculates operator tables with ECDSA keys and stake weights
  * @dev Default implementation that returns operators with their ECDSA keys and 
- *      linearly combined weights. AVSs can extend this for custom behavior.
+ *      stake weights fetched from EigenLayer contracts
  */
 contract ECDSAOperatorTableCalculator is IECDSAOperatorTableCalculator, Ownable {
     using Address for address;
 
+    /* ========== CUSTOM ERRORS ========== */
+    
     /// @notice Error thrown when the weight calculation fails
     error WeightCalculationFailed(address operator, string reason);
 
@@ -23,7 +27,18 @@ contract ECDSAOperatorTableCalculator is IECDSAOperatorTableCalculator, Ownable 
     
     /// @notice Error thrown when weights array length is invalid
     error InvalidWeightsLength(uint256 provided, uint256 expected);
+    
+    /// @notice Error thrown when strategy configuration is invalid
+    error InvalidStrategyConfiguration(string reason);
+    
+    /// @notice Error thrown when allocation manager is not set
+    error AllocationManagerNotSet();
 
+    /* ========== STATE VARIABLES ========== */
+    
+    /// @notice The allocation manager contract for accessing slashable stakes
+    IAllocationManager public allocationManager;
+    
     /// @dev AVS to strategy multiplier mapping
     mapping(address => mapping(uint32 => mapping(address => uint16))) private _strategyMultipliers;
     
@@ -38,7 +53,13 @@ contract ECDSAOperatorTableCalculator is IECDSAOperatorTableCalculator, Ownable 
     
     /// @dev Weight array configuration - number of weight values per operator 
     uint256 private _weightCount;
+    
+    /// @dev Constants for weight array indices
+    uint8 private constant SLASHABLE_WEIGHT_INDEX = 0;
+    uint8 private constant DELEGATED_WEIGHT_INDEX = 1;
 
+    /* ========== EVENTS ========== */
+    
     /**
      * @notice Emitted when strategy configuration is updated
      * @param avs The AVS address
@@ -64,19 +85,33 @@ contract ECDSAOperatorTableCalculator is IECDSAOperatorTableCalculator, Ownable 
         uint32 indexed id, 
         address[] operators
     );
+    
+    /**
+     * @notice Emitted when allocation manager is updated
+     * @param previousAllocationManager The previous allocation manager address
+     * @param newAllocationManager The new allocation manager address
+     */
+    event AllocationManagerUpdated(
+        address indexed previousAllocationManager,
+        address indexed newAllocationManager
+    );
+
+    /* ========== CONSTRUCTOR ========== */
 
     /**
      * @notice Constructs the calculator with initial weight configuration
      * @param weightCount_ Number of weight values per operator
+     * @param allocationManager_ The allocation manager contract address
      */
-    constructor(uint256 weightCount_) {
+    constructor(uint256 weightCount_, address allocationManager_) {
         setWeightCount(weightCount_);
+        _setAllocationManager(allocationManager_);
     }
 
+    /* ========== EXTERNAL FUNCTIONS ========== */
+
     /**
-     * @notice Calculates operator table for a given operator set
-     * @param operatorSet The operator set to calculate for
-     * @return operatorInfos Array of operator infos with pubkeys and weights
+     * @inheritdoc IECDSAOperatorTableCalculator
      */
     function calculateOperatorTable(IECDSATypes.OperatorSet calldata operatorSet) 
         external view override returns(IECDSATypes.ECDSAOperatorInfo[] memory operatorInfos) 
@@ -84,16 +119,24 @@ contract ECDSAOperatorTableCalculator is IECDSAOperatorTableCalculator, Ownable 
         address avs = operatorSet.avs;
         uint32 id = operatorSet.id;
         
+        // Get the list of operators for this AVS/ID
         address[] memory operators = _operators[avs][id];
         if (operators.length == 0) {
             revert OperatorSetNotFound(avs, id);
         }
         
+        // Check if allocation manager is set
+        if (address(allocationManager) == address(0)) {
+            revert AllocationManagerNotSet();
+        }
+        
+        // Create operator info array
         operatorInfos = new IECDSATypes.ECDSAOperatorInfo[](operators.length);
         
         // Get all strategies for this AVS/operator set
         address[] memory strategies = _strategies[avs][id];
         
+        // Calculate weights for each operator
         for (uint256 i = 0; i < operators.length; i++) {
             address operator = operators[i];
             
@@ -116,8 +159,19 @@ contract ECDSAOperatorTableCalculator is IECDSAOperatorTableCalculator, Ownable 
      * @dev Only the owner can call this function
      */
     function setWeightCount(uint256 weightCount_) public onlyOwner {
-        require(weightCount_ > 0, "Weight count must be positive");
+        if (weightCount_ == 0) {
+            revert InvalidWeightsLength(weightCount_, 1);
+        }
         _weightCount = weightCount_;
+    }
+    
+    /**
+     * @notice Updates the allocation manager contract address
+     * @param newAllocationManager The new allocation manager address
+     * @dev Only the owner can call this function
+     */
+    function setAllocationManager(address newAllocationManager) external onlyOwner {
+        _setAllocationManager(newAllocationManager);
     }
     
     /**
@@ -142,8 +196,13 @@ contract ECDSAOperatorTableCalculator is IECDSAOperatorTableCalculator, Ownable 
         address[] calldata strategies_,
         uint16[] calldata multipliers
     ) external onlyOwner {
-        require(strategies_.length == multipliers.length, "Length mismatch");
-        require(strategies_.length > 0, "No strategies provided");
+        if (strategies_.length != multipliers.length) {
+            revert InvalidStrategyConfiguration("Length mismatch");
+        }
+        
+        if (strategies_.length == 0) {
+            revert InvalidStrategyConfiguration("No strategies provided");
+        }
         
         // Remove old strategy configurations
         address[] memory oldStrategies = _strategies[avs][id];
@@ -157,11 +216,31 @@ contract ECDSAOperatorTableCalculator is IECDSAOperatorTableCalculator, Ownable 
         // Store multipliers
         uint16 totalMultiplier = 0;
         for (uint256 i = 0; i < strategies_.length; i++) {
+            // Check for address zero
+            if (strategies_[i] == address(0)) {
+                revert InvalidStrategyConfiguration("Zero strategy address");
+            }
+            
+            // Check for duplicate strategies
+            for (uint256 j = 0; j < i; j++) {
+                if (strategies_[j] == strategies_[i]) {
+                    revert InvalidStrategyConfiguration("Duplicate strategy");
+                }
+            }
+            
+            // Check for zero multiplier
+            if (multipliers[i] == 0) {
+                revert InvalidStrategyConfiguration("Zero multiplier");
+            }
+            
             _strategyMultipliers[avs][id][strategies_[i]] = multipliers[i];
             totalMultiplier += multipliers[i];
         }
         
-        require(totalMultiplier == BPS_DENOMINATOR, "Multipliers must sum to 10000");
+        // Ensure multipliers sum to 100%
+        if (totalMultiplier != BPS_DENOMINATOR) {
+            revert InvalidStrategyConfiguration("Multipliers must sum to 10000");
+        }
         
         emit StrategiesConfigured(avs, id, strategies_, multipliers);
     }
@@ -178,12 +257,44 @@ contract ECDSAOperatorTableCalculator is IECDSAOperatorTableCalculator, Ownable 
         uint32 id,
         address[] calldata operators_
     ) external onlyOwner {
-        require(operators_.length > 0, "No operators provided");
+        if (operators_.length == 0) {
+            revert InvalidStrategyConfiguration("No operators provided");
+        }
+        
+        // Check for duplicate operators
+        for (uint256 i = 0; i < operators_.length; i++) {
+            if (operators_[i] == address(0)) {
+                revert InvalidStrategyConfiguration("Zero operator address");
+            }
+            
+            for (uint256 j = 0; j < i; j++) {
+                if (operators_[j] == operators_[i]) {
+                    revert InvalidStrategyConfiguration("Duplicate operator");
+                }
+            }
+        }
         
         // Replace existing operators
         _operators[avs][id] = operators_;
         
         emit OperatorsRegistered(avs, id, operators_);
+    }
+
+    /* ========== INTERNAL FUNCTIONS ========== */
+    
+    /**
+     * @notice Sets the allocation manager
+     * @param newAllocationManager The new allocation manager address
+     */
+    function _setAllocationManager(address newAllocationManager) internal {
+        if (newAllocationManager == address(0)) {
+            revert InvalidStrategyConfiguration("Zero allocation manager address");
+        }
+        
+        address previousAllocationManager = address(allocationManager);
+        allocationManager = IAllocationManager(newAllocationManager);
+        
+        emit AllocationManagerUpdated(previousAllocationManager, newAllocationManager);
     }
     
     /**
@@ -204,12 +315,12 @@ contract ECDSAOperatorTableCalculator is IECDSAOperatorTableCalculator, Ownable 
         
         if (_weightCount == 1) {
             // Single weight configuration: [slashable_weight]
-            weights[0] = _calculateCombinedWeight(avs, id, operator, strategies);
+            weights[SLASHABLE_WEIGHT_INDEX] = _calculateCombinedWeight(avs, id, operator, strategies);
         } 
         else if (_weightCount == 2) {
             // Dual weight configuration: [slashable_weight, delegated_weight]
-            weights[0] = _calculateCombinedWeight(avs, id, operator, strategies);
-            weights[1] = _calculateDelegatedWeight(operator, strategies);
+            weights[SLASHABLE_WEIGHT_INDEX] = _calculateCombinedWeight(avs, id, operator, strategies);
+            weights[DELEGATED_WEIGHT_INDEX] = _calculateDelegatedWeight(operator, strategies);
         }
         else {
             // Multi-strategy configuration
@@ -285,33 +396,40 @@ contract ECDSAOperatorTableCalculator is IECDSAOperatorTableCalculator, Ownable 
         address operator,
         address strategy
     ) internal view returns (uint96 slashableWeight, uint96 delegatedWeight) {
-        // In a real implementation, this would query the Eigenlayer contracts
-        // or any other source of stake information.
-        // For simplicity, we're returning mock values here.
+        // Create single-element arrays for operator and strategy
+        address[] memory operators = new address[](1);
+        operators[0] = operator;
         
-        try this.mockExternalWeightCall(operator, strategy) returns (uint96 slashable, uint96 delegated) {
-            return (slashable, delegated);
+        // Create IStrategy array with the strategy
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = IStrategy(strategy);
+        
+        // Get current block number for stakes
+        uint32 futureBlock = uint32(block.number);
+        
+        try allocationManager.getMinimumSlashableStake(
+            OperatorSet({avs: strategy, id: 0}), // Strategy represents AVS and ID 0
+            operators,
+            strategies,
+            futureBlock
+        ) returns (uint256[][] memory slashableStake) {
+            // If we have results, use the first operator's first strategy stake
+            if (slashableStake.length > 0 && slashableStake[0].length > 0) {
+                slashableWeight = uint96(slashableStake[0][0]);
+            } else {
+                slashableWeight = 0;
+            }
+            
+            // In a real implementation, this would also fetch delegated stake
+            // For this example, we'll set delegated to double the slashable
+            delegatedWeight = uint96(uint256(slashableWeight) * 2);
+            
+            return (slashableWeight, delegatedWeight);
         } catch Error(string memory reason) {
             revert WeightCalculationFailed(operator, reason);
+        } catch {
+            revert WeightCalculationFailed(operator, "Unknown error fetching stake");
         }
-    }
-    
-    /**
-     * @notice Mock external call to simulate weight calculation
-     * @dev This simulates an external call that might fail
-     */
-    function mockExternalWeightCall(address operator, address strategy) external view returns (uint96, uint96) {
-        // Simulate querying external contracts for weights
-        // In production, this would call into Eigenlayer or other stake sources
-        
-        // Simple deterministic weight based on addresses
-        uint256 operatorValue = uint256(uint160(operator));
-        uint256 strategyValue = uint256(uint160(strategy));
-        
-        uint96 slashableWeight = uint96((operatorValue ^ strategyValue) % 1000000);
-        uint96 delegatedWeight = uint96((operatorValue & strategyValue) % 2000000);
-        
-        return (slashableWeight, delegatedWeight);
     }
     
     /**
@@ -319,7 +437,7 @@ contract ECDSAOperatorTableCalculator is IECDSAOperatorTableCalculator, Ownable 
      * @param operatorInfos The operator infos to sort
      */
     function _sortOperatorInfos(IECDSATypes.ECDSAOperatorInfo[] memory operatorInfos) internal pure {
-        // Simple insertion sort for operator infos
+        // Simple insertion sort for operator infos (gas efficient for small arrays)
         for (uint i = 1; i < operatorInfos.length; i++) {
             IECDSATypes.ECDSAOperatorInfo memory temp = operatorInfos[i];
             int j = int(i) - 1;

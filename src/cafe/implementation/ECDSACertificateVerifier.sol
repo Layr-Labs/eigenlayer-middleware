@@ -22,6 +22,13 @@ contract ECDSACertificateVerifier is
 {
     using ECDSA for bytes32;
 
+    /* ========== CONSTANTS ========== */
+    
+    /// @dev Denominator for proportion calculations in basis points
+    uint16 private constant BPS_DENOMINATOR = 10000;
+
+    /* ========== CONSTRUCTOR ========== */
+
     /**
      * @notice Constructs a new certificate verifier
      * @param operatorSet_ The operator set this verifier is for
@@ -33,9 +40,24 @@ contract ECDSACertificateVerifier is
         address operatorTableUpdater_,
         uint32 maxOperatorTableStaleness_
     ) ECDSACertificateVerifierStorage(operatorSet_, operatorTableUpdater_, maxOperatorTableStaleness_) {
+        // Validate input parameters
+        if (operatorTableUpdater_ == address(0)) {
+            revert UnauthorizedTableUpdater(address(0), address(0));
+        }
+        
+        if (maxOperatorTableStaleness_ == 0) {
+            revert StaleOperatorTable(0, block.timestamp, 0);
+        }
+        
+        if (operatorSet_.avs == address(0)) {
+            revert StaleOperatorTable(0, block.timestamp, maxOperatorTableStaleness_);
+        }
+        
         // Transfer ownership to msg.sender
         _transferOwnership(msg.sender);
     }
+
+    /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
     /**
      * @inheritdoc IECDSACertificateVerifier
@@ -75,6 +97,69 @@ contract ECDSACertificateVerifier is
     /**
      * @inheritdoc IECDSACertificateVerifier
      */
+    function getOperatorInfoAt(uint256 index) 
+        external view returns (IECDSATypes.ECDSAOperatorInfo memory) 
+    {
+        if (index >= _operatorTable.length) {
+            revert InvalidWeightsLength(index, _operatorTable.length);
+        }
+        return _operatorTable[index];
+    }
+
+    /**
+     * @inheritdoc IECDSACertificateVerifier
+     */
+    function getOperatorCount() external view returns (uint256) {
+        return _operatorTable.length;
+    }
+
+    /**
+     * @inheritdoc IECDSACertificateVerifier
+     */
+    function verifyCertificate(IECDSATypes.ECDSACertificate memory cert) 
+        public view returns (uint96[] memory) 
+    {
+        // Check that the certificate's fields are valid
+        if (cert.referenceTimestamp == 0 || cert.messageHash == bytes32(0) || cert.sig.length == 0) {
+            revert InvalidSignature(0);
+        }
+        
+        // Check that the table isn't stale
+        _validateTableFreshness(cert.referenceTimestamp);
+        
+        // Decode signatures from the certificate
+        (address[] memory signers, bytes[] memory signatures) = _decodeSignatures(cert.sig);
+        
+        // Initialize stakes array with same length as total weights
+        uint96[] memory signedStakes = new uint96[](_totalWeights.length);
+        
+        // Validate signatures and accumulate weights
+        for (uint256 i = 0; i < signers.length; i++) {
+            // Verify the signature
+            bool isValid = _verifySignature(signers[i], cert.messageHash, signatures[i]);
+            if (!isValid) {
+                revert InvalidSignature(i);
+            }
+            
+            // Find operator in the table (binary search)
+            int256 index = _findOperatorIndex(signers[i]);
+            if (index >= 0) {
+                // Add operator's weights to signed stakes
+                IECDSATypes.ECDSAOperatorInfo memory operator = _operatorTable[uint256(index)];
+                for (uint256 j = 0; j < signedStakes.length; j++) {
+                    signedStakes[j] += operator.weights[j];
+                }
+            }
+        }
+        
+        return signedStakes;
+    }
+
+    /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
+
+    /**
+     * @inheritdoc IECDSACertificateVerifier
+     */
     function updateOperatorTable(
         uint32 referenceTimestamp,
         IECDSATypes.ECDSAOperatorInfo[] memory operatorInfos
@@ -85,8 +170,13 @@ contract ECDSACertificateVerifier is
         }
 
         // Basic validation
-        require(operatorInfos.length > 0, "Empty operator table");
-        require(referenceTimestamp <= block.timestamp, "Future timestamp");
+        if (operatorInfos.length == 0) {
+            revert InvalidWeightsLength(0, 1);
+        }
+        
+        if (referenceTimestamp > block.timestamp) {
+            revert StaleOperatorTable(referenceTimestamp, block.timestamp, _maxOperatorTableStaleness);
+        }
         
         // Validate operator sorting and weights consistency
         _validateOperatorTable(operatorInfos);
@@ -134,11 +224,15 @@ contract ECDSACertificateVerifier is
         }
         
         // Verify reference timestamp matches current table
-        require(referenceTimestamp == _currentTableReferenceTimestamp, "Timestamp mismatch");
+        if (referenceTimestamp != _currentTableReferenceTimestamp) {
+            revert StaleOperatorTable(referenceTimestamp, block.timestamp, _maxOperatorTableStaleness);
+        }
         
         // Validate indices
         for (uint256 i = 0; i < operatorIndices.length; i++) {
-            require(operatorIndices[i] < _operatorTable.length, "Invalid operator index");
+            if (operatorIndices[i] >= _operatorTable.length) {
+                revert InvalidWeightsLength(operatorIndices[i], _operatorTable.length);
+            }
         }
         
         // Sort indices in descending order for safe removal
@@ -173,7 +267,9 @@ contract ECDSACertificateVerifier is
      * @inheritdoc IECDSACertificateVerifier
      */
     function setOperatorTableUpdater(address newOperatorTableUpdater) external onlyOwner {
-        require(newOperatorTableUpdater != address(0), "Zero address");
+        if (newOperatorTableUpdater == address(0)) {
+            revert UnauthorizedTableUpdater(address(0), _operatorTableUpdater);
+        }
         address previousUpdater = _operatorTableUpdater;
         _operatorTableUpdater = newOperatorTableUpdater;
         
@@ -184,7 +280,9 @@ contract ECDSACertificateVerifier is
      * @inheritdoc IECDSACertificateVerifier
      */
     function setMaxOperatorTableStaleness(uint32 newMaxStaleness) external onlyOwner {
-        require(newMaxStaleness > 0, "Zero staleness");
+        if (newMaxStaleness == 0) {
+            revert StaleOperatorTable(0, block.timestamp, _maxOperatorTableStaleness);
+        }
         uint32 previousStaleness = _maxOperatorTableStaleness;
         _maxOperatorTableStaleness = newMaxStaleness;
         
@@ -194,62 +292,12 @@ contract ECDSACertificateVerifier is
     /**
      * @inheritdoc IECDSACertificateVerifier
      */
-    function verifyCertificate(
-        IECDSATypes.ECDSACertificate memory cert
-    ) public view returns (uint96[] memory) {
-        return _verifyCertificate(cert);
-    }
-
-    /**
-     * @dev Internal implementation of certificate verification
-     * @param cert The certificate to verify
-     * @return Array of stake amounts for each strategy signed by authenticated operators
-     */
-    function _verifyCertificate(
-        IECDSATypes.ECDSACertificate memory cert
-    ) internal view returns (uint96[] memory) {
-        // Ensure that all of the necessary fields in the certificate are not the zero value or empty
-        _verifyNonZeroCertificateFields(cert);
-
-        // Validate that the certificate matches the current operator table
-        _validateOperatorTable(cert.operatorTableHash);
-
-        // Initialize arrays to track signer status and total signed stake
-        uint256 numOperators = cert.signatures.length;
-        uint96[] memory totalSignedStakeInStrategy = new uint96[](numStrategies);
-
-        // Check signatures and accumulate stake
-        for (uint256 i = 0; i < numOperators; i++) {
-            address signer = _recoverSigner(cert.signatures[i], cert.digestHash);
-            uint256 operatorId = _operatorIdForAddress[signer];
-            
-            // Skip if not a registered operator or already counted
-            if (operatorId == 0) {
-                continue;
-            }
-
-            // Get operator's stake across different strategies
-            uint96[] memory operatorStakes = _operatorStakesByStrategy[operatorId];
-
-            // Add operator's stake to each strategy's total
-            for (uint256 strategyIdx = 0; strategyIdx < numStrategies; strategyIdx++) {
-                totalSignedStakeInStrategy[strategyIdx] += operatorStakes[strategyIdx];
-            }
-        }
-
-        emit CertificateVerified(cert.digestHash, cert.operatorTableHash);
-        return totalSignedStakeInStrategy;
-    }
-
-    /**
-     * @inheritdoc IECDSACertificateVerifier
-     */
     function verifyCertificateProportion(
         IECDSATypes.ECDSACertificate memory cert,
         uint16[] memory totalStakeProportionThresholds
-    ) external view returns (bool) {
-        // Get signed stakes by calling the internal implementation
-        uint96[] memory signedStakes = _verifyCertificate(cert);
+    ) external returns (bool) {
+        // Get signed stakes
+        uint96[] memory signedStakes = verifyCertificate(cert);
         
         // Validate thresholds length
         if (totalStakeProportionThresholds.length != signedStakes.length) {
@@ -262,13 +310,16 @@ contract ECDSACertificateVerifier is
             if (totalStakeProportionThresholds[i] == 0) continue;
             
             // Calculate required stake based on proportion
-            uint256 requiredStake = (uint256(_totalWeights[i]) * totalStakeProportionThresholds[i]) / 10000;
+            uint256 requiredStake = (uint256(_totalWeights[i]) * totalStakeProportionThresholds[i]) / BPS_DENOMINATOR;
             
             // Check if signed stake meets required stake
             if (signedStakes[i] < requiredStake) {
                 revert ThresholdNotMet(i, signedStakes[i], requiredStake);
             }
         }
+
+        // Emit the verification event
+        emit CertificateVerified(cert.referenceTimestamp, cert.messageHash, signedStakes);
         
         return true;
     }
@@ -279,9 +330,9 @@ contract ECDSACertificateVerifier is
     function verifyCertificateNominal(
         IECDSATypes.ECDSACertificate memory cert,
         uint96[] memory totalStakeNominalThresholds
-    ) external view returns (bool) {
-        // Get signed stakes by calling the internal implementation
-        uint96[] memory signedStakes = _verifyCertificate(cert);
+    ) external returns (bool) {
+        // Get signed stakes
+        uint96[] memory signedStakes = verifyCertificate(cert);
         
         // Validate thresholds length
         if (totalStakeNominalThresholds.length != signedStakes.length) {
@@ -298,26 +349,14 @@ contract ECDSACertificateVerifier is
                 revert ThresholdNotMet(i, signedStakes[i], totalStakeNominalThresholds[i]);
             }
         }
+
+        // Emit the verification event
+        emit CertificateVerified(cert.referenceTimestamp, cert.messageHash, signedStakes);
         
         return true;
     }
 
-    /**
-     * @inheritdoc IECDSACertificateVerifier
-     */
-    function getOperatorInfoAt(uint256 index) 
-        external view returns (IECDSATypes.ECDSAOperatorInfo memory) 
-    {
-        require(index < _operatorTable.length, "Index out of bounds");
-        return _operatorTable[index];
-    }
-
-    /**
-     * @inheritdoc IECDSACertificateVerifier
-     */
-    function getOperatorCount() external view returns (uint256) {
-        return _operatorTable.length;
-    }
+    /* ========== INTERNAL FUNCTIONS ========== */
 
     /**
      * @notice Validates the operator table by checking sorting and weights consistency
@@ -375,8 +414,13 @@ contract ECDSACertificateVerifier is
         (address[] memory signers, bytes[] memory signatures) = abi.decode(sigData, (address[], bytes[]));
         
         // Validate arrays
-        require(signers.length == signatures.length, "Length mismatch");
-        require(signers.length > 0, "No signatures");
+        if (signers.length == 0 || signatures.length == 0) {
+            revert InvalidSignature(0);
+        }
+        
+        if (signers.length != signatures.length) {
+            revert InvalidWeightsLength(signers.length, signatures.length);
+        }
         
         // Validate signers are sorted
         for (uint256 i = 1; i < signers.length; i++) {
@@ -400,11 +444,21 @@ contract ECDSACertificateVerifier is
         bytes32 messageHash, 
         bytes memory signature
     ) internal pure returns (bool) {
+        // Validate signature length to prevent malleability
+        if (signature.length != 65) {
+            return false;
+        }
+        
         // Hash the message according to EIP-191
         bytes32 ethSignedMessageHash = messageHash.toEthSignedMessageHash();
         
         // Recover signer address from signature
         address recoveredAddress = ethSignedMessageHash.recover(signature);
+        
+        // Guard against zero address (invalid signature)
+        if (recoveredAddress == address(0)) {
+            return false;
+        }
         
         // Verify recovered address matches expected signer
         return recoveredAddress == signer;

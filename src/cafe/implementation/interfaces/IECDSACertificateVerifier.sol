@@ -203,7 +203,7 @@ interface IECDSACertificateVerifier is
     function verifyCertificateProportion(
         IECDSATypes.ECDSACertificate memory cert, 
         uint16[] memory totalStakeProportionThresholds
-    ) external view returns(bool);
+    ) external returns(bool);
     
     /**
      * @notice Verifies a certificate against nominal stake thresholds
@@ -215,7 +215,7 @@ interface IECDSACertificateVerifier is
     function verifyCertificateNominal(
         IECDSATypes.ECDSACertificate memory cert, 
         uint96[] memory totalStakeNominalThresholds
-    ) external view returns(bool);
+    ) external returns(bool);
     
     /**
      * @notice Gets the operator information at a specific index
