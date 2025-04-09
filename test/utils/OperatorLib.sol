@@ -35,10 +35,12 @@ import {CoreDeployLib} from "./CoreDeployLib.sol";
 import {ERC20Mock} from "../mocks/ERC20Mock.sol";
 import {BN254} from "../../src/libraries/BN254.sol";
 import {BN256G2} from "./BN256G2.sol";
+import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
 
 library OperatorLib {
     using BN254 for *;
     using Strings for uint256;
+    using BitmapUtils for *;
 
     Vm private constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
@@ -172,8 +174,7 @@ library OperatorLib {
         address avsDirectory,
         address serviceManager,
         address registryCoordinator,
-        bytes memory quorumNumbers,
-        string memory socket
+        uint8[] memory quorumNumbers
     ) internal {
         IAVSDirectory avsDirectoryInstance = IAVSDirectory(avsDirectory);
         RegistryCoordinator registryCoordinatorInstance = RegistryCoordinator(registryCoordinator);
@@ -207,18 +208,32 @@ library OperatorLib {
             expiry: expiry
         });
 
+        // Convert quorumNumbers to bytes using BitmapUtils
+        uint256 quorumBitmap = 0;
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            quorumBitmap = BitmapUtils.setBit(quorumBitmap, quorumNumbers[i]);
+        }
+        bytes memory quorumNumbersBytes = BitmapUtils.bitmapToBytesArray(quorumBitmap);
+
         // Call the registerOperator function on the registry
         registryCoordinatorInstance.registerOperator(
-            quorumNumbers, socket, params, operatorSignature
+            quorumNumbersBytes, "socket", params, operatorSignature
         );
     }
 
     function deregisterOperatorFromAVS_M2(
         Operator memory operator,
-        address registryCoordinator
+        address registryCoordinator,
+        uint8[] memory quorumNumbers
     ) internal {
-        vm.prank(operator.key.addr);
-        RegistryCoordinator(registryCoordinator).deregisterOperator("");
+        // Convert quorumNumbers to bytes using BitmapUtils
+        uint256 quorumBitmap = 0;
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            quorumBitmap = BitmapUtils.setBit(quorumBitmap, quorumNumbers[i]);
+        }
+        bytes memory quorumNumbersBytes = BitmapUtils.bitmapToBytesArray(quorumBitmap);
+
+        RegistryCoordinator(registryCoordinator).deregisterOperator(quorumNumbersBytes);
     }
 
     function registerOperatorFromAVS_OpSet(

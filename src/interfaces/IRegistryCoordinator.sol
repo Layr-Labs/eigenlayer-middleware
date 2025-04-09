@@ -147,6 +147,8 @@ interface IRegistryCoordinator is
         bytes memory quorumNumbers
     ) external;
 
+    function operatorSetsEnabled() external view returns (bool);
+
     /**
      * @notice Checks if a quorum is an M2 quorum.
      * @param quorumNumber The quorum identifier.
@@ -155,6 +157,12 @@ interface IRegistryCoordinator is
     function isM2Quorum(
         uint8 quorumNumber
     ) external view returns (bool);
+
+    /**
+     * @notice Returns whether M2 quorum registration is disabled.
+     * @return True if M2 quorum registration is disabled, false otherwise.
+     */
+    function isM2QuorumRegistrationDisabled() external view returns (bool);
 
     /**
      * @notice Disables M2 quorum registration for the AVS. Once disabled, this cannot be enabled.
