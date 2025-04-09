@@ -237,7 +237,7 @@ contract OperatorStateRetriever {
     }
 
     // avoid stack too deep
-    struct GetNontSignerStakesAndSignatureMemory {
+    struct GetNonSignerStakesAndSignatureMemory {
         BN254.G1Point[] quorumApks;
         BN254.G2Point apkG2;
         IIndexRegistry indexRegistry;
@@ -270,7 +270,7 @@ contract OperatorStateRetriever {
         address[] calldata operators,
         uint32 blockNumber
     ) external view returns (IBLSSignatureCheckerTypes.NonSignerStakesAndSignature memory) {
-        GetNontSignerStakesAndSignatureMemory memory m;
+        GetNonSignerStakesAndSignatureMemory memory m;
         m.quorumApks = new BN254.G1Point[](quorumNumbers.length);
         m.indexRegistry = registryCoordinator.indexRegistry();
         m.blsApkRegistry = registryCoordinator.blsApkRegistry();
