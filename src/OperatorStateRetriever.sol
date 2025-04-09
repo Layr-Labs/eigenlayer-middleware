@@ -278,6 +278,7 @@ contract OperatorStateRetriever {
         // Safe guard AVSs from generating NonSignerStakesAndSignature with invalid sigma
         require(_isOnCurve(sigma), InvalidSigma());
 
+        // Compute the g2 APK of the signing operator set
         m.signingOperatorIds = new bytes32[](operators.length);
         for (uint256 i = 0; i < operators.length; i++) {
             m.signingOperatorIds[i] = registryCoordinator.getOperatorId(operators[i]);
