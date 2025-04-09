@@ -1,1 +1,55 @@
- 
+// Cursor MDC rule for Solidity code quality
+//
+// This rule enforces general code quality best practices in Solidity
+// to improve readability, maintainability, and prevent common issues.
+//
+// @author Solidity Expert
+// @applies_to *.sol
+// @directory_pattern src/cafe/**
+
+{
+  "name": "code-quality",
+  "description": "Enforces code quality best practices for Solidity development",
+  "severity": "info",
+  "pattern": {
+    "magic_numbers": {
+      "pattern": "(?<magic_number>(?<!uint\\d+\\s)\\b\\d{4,}\\b)",
+      "not_preceded_by": "0x|version|pragma|timestamp|date|block\\.number|block\\.timestamp",
+      "message": "Magic number detected: define constants for numeric literals"
+    },
+    "long_function": {
+      "pattern": "function\\s+(?<func_name>\\w+)[^{]*{(?<func_body>([^}]*\\n){20,})}",
+      "message": "Long function: consider breaking into smaller functions for better readability and testability"
+    },
+    "missing_natspec": {
+      "pattern": "function\\s+(?<func_name>\\w+)[^{]*{",
+      "not_preceded_by": "\\s*\\/\\/\\/|\\s*\\/\\*\\*",
+      "message": "Function without NatSpec documentation: add NatSpec comments to improve documentation"
+    },
+    "redundant_visibility": {
+      "pattern": "function\\s+(?<func_name>\\w+)[^{]*\\binternal\\s+view\\b[^{]*{",
+      "message": "Redundant visibility for internal view functions: internal functions are implicitly viewed"
+    },
+    "missing_override": {
+      "pattern": "function\\s+(?<func_name>\\w+)[^{]*{",
+      "where": "func_name in ['transfer', 'balanceOf', 'approve', 'allowance', 'transferFrom', 'name', 'symbol', 'decimals', 'totalSupply', 'supportsInterface']",
+      "not_contains": "override",
+      "message": "Possibly missing override keyword for standard interface implementation"
+    },
+    "interface_implementation": {
+      "pattern": "contract\\s+(?<contract_name>\\w+)[^{]*is\\s+(?<interface_name>\\w+)[^{]*{",
+      "not_contains": "override",
+      "message": "Contract implementing interface without override keywords: add override keyword to all interface implementation functions"
+    }
+  },
+  "message": "Improve code quality with consistent style and best practices",
+  "recommendations": [
+    "Use named constants instead of magic numbers",
+    "Keep functions short and focused on a single responsibility",
+    "Add NatSpec documentation to all public functions and contracts",
+    "Explicitly mark overridden functions with the override keyword",
+    "Use consistent naming conventions (camelCase for functions, PascalCase for contracts)",
+    "Use explicit visibility modifiers for all functions and state variables",
+    "Consider function organization: group similar functions together"
+  ]
+} 

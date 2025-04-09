@@ -1,1 +1,51 @@
- 
+// Cursor MDC rule for confirmation conditions in Solidity
+//
+// This rule enforces proper implementation of proportional and nominal confirmation conditions
+// as described in the certificate verification system specs.
+//
+// @author Solidity Expert
+// @applies_to *.sol
+// @directory_pattern src/cafe/**
+
+{
+  "name": "confirmation-conditions",
+  "description": "Enforces proper implementation of proportional and nominal confirmation conditions",
+  "severity": "warning",
+  "pattern": {
+    "missing_proportional_threshold": {
+      "pattern": "contract\\s+(?<contract_name>\\w*[Cc]ertificate\\w*|\\w*[Vv]erifier\\w*)[^{]*{(?<contract_body>[^}]*)}",
+      "not_contains": "\\bverifyCertificateProportion\\b|\\bproportionalThreshold\\b|\\btotalStakeProportionThresholds\\b",
+      "message": "Missing proportional threshold verification: implement proportional stake thresholds"
+    },
+    "missing_nominal_threshold": {
+      "pattern": "contract\\s+(?<contract_name>\\w*[Cc]ertificate\\w*|\\w*[Vv]erifier\\w*)[^{]*{(?<contract_body>[^}]*)}",
+      "not_contains": "\\bverifyCertificateNominal\\b|\\bnominalThreshold\\b|\\btotalStakeNominalThresholds\\b",
+      "message": "Missing nominal threshold verification: implement nominal stake thresholds"
+    },
+    "improper_proportion_type": {
+      "pattern": "\\btotalStakeProportionThresholds\\b[^;]*;",
+      "not_contains": "uint16",
+      "message": "Improper type for proportion threshold: use uint16 for basis points representation"
+    },
+    "improper_nominal_type": {
+      "pattern": "\\btotalStakeNominalThresholds\\b[^;]*;",
+      "not_contains": "uint96",
+      "message": "Improper type for nominal threshold: use uint96 to match weight type"
+    },
+    "missing_base_verification": {
+      "pattern": "function\\s+(?<func_name>verifyCertificateProportion|verifyCertificateNominal)[^{]*{(?<func_body>[^}]*)}",
+      "not_contains": "verifyCertificate",
+      "message": "Missing base verification call: reuse common verification logic from verifyCertificate"
+    }
+  },
+  "message": "Implement both proportional and nominal confirmation conditions as specified",
+  "recommendations": [
+    "Implement both verifyCertificateProportion and verifyCertificateNominal functions",
+    "Use uint16 arrays for proportional thresholds (in basis points)",
+    "Use uint96 arrays for nominal thresholds (matching weight type)",
+    "Ensure threshold arrays match the length of weight arrays",
+    "Implement a base verifyCertificate function that returns signed stake amounts",
+    "Add descriptive error messages for threshold failures",
+    "Consider implementing a configurable threshold mode selection mechanism"
+  ]
+} 

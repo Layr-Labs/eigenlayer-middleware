@@ -1,1 +1,51 @@
- 
+// Cursor MDC rule for ECDSA signature verification in Solidity
+//
+// This rule enforces best practices for ECDSA signature verification based on the ECDSAStakeRegistry pattern.
+// Proper signature verification is crucial for security in smart contracts that rely on off-chain signatures.
+//
+// @author Solidity Expert
+// @applies_to *.sol
+// @directory_pattern src/cafe/**
+
+{
+  "name": "ecdsa-signature-verification",
+  "description": "Enforces secure ECDSA signature verification practices modeled after ECDSAStakeRegistry",
+  "severity": "error",
+  "pattern": {
+    "ecrecover_usage_without_validation": {
+      "pattern": "ecrecover\\s*\\([^;]*\\)",
+      "not_preceded_by": "require|if\\s*\\(",
+      "message": "Unchecked ecrecover result: always validate the returned address is not zero-address"
+    },
+    "signature_length_validation_missing": {
+      "pattern": "function\\s+(?<func_name>\\w+)[^{]*\\bsignature[s]?\\b[^{]*{(?<func_body>[^}]*)}",
+      "not_contains": "\\.length",
+      "message": "Signature length validation missing: verify signature length to prevent signature malleability"
+    },
+    "signature_replay_protection_missing": {
+      "pattern": "function\\s+(?<func_name>\\w+)[^{]*\\bsignature[s]?\\b[^{]*{(?<func_body>[^}]*)}",
+      "not_contains": "\\bnonce\\b|\\bexpiry\\b|\\bblock\\.number\\b|\\bblock\\.timestamp\\b|\\bsalt\\b",
+      "message": "Signature replay protection missing: include nonce, expiry, or salt to prevent signature reuse"
+    },
+    "missing_signature_validation": {
+      "pattern": "function\\s+(?<func_name>\\w+)[^{]*\\bsignature[s]?\\b[^{]*{(?<func_body>[^}]*)}",
+      "not_contains": "isValidSignature|isValidSignatureNow|SignatureChecker|ECDSA\\.recover",
+      "message": "Missing signature validation: use OpenZeppelin's SignatureChecker or ECDSA libraries"
+    },
+    "s_value_validation_missing": {
+      "pattern": "function\\s+(?<func_name>\\w+)[^{]*\\bsignature[s]?\\b[^{]*{(?<func_body>[^}]*)}",
+      "not_contains": "\\bs\\s*<=\\s*|\\bmalleable\\b",
+      "message": "S-value validation missing: check for signature malleability by validating the S-value"
+    }
+  },
+  "message": "Implement secure ECDSA signature verification following ECDSAStakeRegistry pattern",
+  "recommendations": [
+    "Use OpenZeppelin's SignatureChecker for signature validation",
+    "Validate signature length to prevent signature malleability",
+    "Include replay protection with nonce, expiry timestamp, or salt",
+    "Validate the recovered address is not the zero-address",
+    "Consider using reference block numbers for historical signature validation",
+    "Implement sorted signatures validation when verifying multiple signatures",
+    "Store signing keys in a history structure for traceability and historical validation"
+  ]
+} 

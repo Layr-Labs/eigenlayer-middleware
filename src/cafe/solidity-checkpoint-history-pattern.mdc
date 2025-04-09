@@ -1,1 +1,46 @@
- 
+// Cursor MDC rule for checkpoint history pattern in Solidity
+//
+// This rule enforces the checkpoint history pattern for tracking value changes over time,
+// based on the approach used in ECDSAStakeRegistry.
+//
+// @author Solidity Expert
+// @applies_to *.sol
+// @directory_pattern src/cafe/**
+
+{
+  "name": "checkpoint-history-pattern",
+  "description": "Enforces the checkpoint history pattern for tracking historical values at different blocks",
+  "severity": "warning",
+  "pattern": {
+    "historical_value_without_checkpoint": {
+      "pattern": "function\\s+(?<func_name>get\\w+AtBlock)[^{]*{(?<func_body>[^}]*)}",
+      "not_contains": "checkpoint|History|getAtBlock|getAtPreviousBlock",
+      "message": "Historical value function without checkpoint pattern: implement a history tracking mechanism"
+    },
+    "checkpoint_update_without_event": {
+      "pattern": "\\b(?<checkpoint_method>push|update|checkpoint|record)\\s*\\([^;]*\\);",
+      "not_followed_by": "emit",
+      "message": "Checkpoint update without event emission: emit events for checkpoint updates"
+    },
+    "checkpoint_history_not_initialized": {
+      "pattern": "using\\s+(?<checkpoint_lib>\\w+)\\s+for\\s+(?<checkpoint_lib>\\w+)\\.History",
+      "not_contains": "initialize|init",
+      "message": "Checkpoint history may not be initialized: ensure checkpoint histories are properly initialized"
+    },
+    "missing_historical_access": {
+      "pattern": "(?<value_name>\\w+)History\\s+(?<variable_name>\\w+);",
+      "not_followed_by": "function\\s+get\\w+AtBlock",
+      "message": "History variable without historical access method: implement getXAtBlock functions"
+    }
+  },
+  "message": "Implement the checkpoint history pattern for tracking values over time",
+  "recommendations": [
+    "Use OpenZeppelin's CheckpointUpgradeable library for creating historical checkpoints",
+    "Implement getXAtBlock methods for all checkpoint history variables",
+    "Emit events when adding checkpoints to allow off-chain tracking",
+    "Use block numbers as reference points for historical data",
+    "Consider gas costs when frequently updating checkpoints",
+    "Initialize checkpoint histories in constructor or initializer functions",
+    "Validate block numbers in historical queries to prevent future lookups"
+  ]
+} 

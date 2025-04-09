@@ -1,1 +1,45 @@
- 
+// Cursor MDC rule for flexible stake weights in Solidity
+//
+// This rule enforces proper implementation of the flexible stake weight system
+// described in the certificate verification system specs.
+//
+// @author Solidity Expert
+// @applies_to *.sol
+// @directory_pattern src/cafe/**
+
+{
+  "name": "flexible-stake-weights",
+  "description": "Enforces proper implementation of flexible stake weights for operator tables",
+  "severity": "warning",
+  "pattern": {
+    "inflexible_weight_array": {
+      "pattern": "struct\\s+(?<struct_name>\\w*Operator\\w*)\\s*{[^}]*}",
+      "not_contains": "\\buint96\\s*\\[\\s*\\]\\s*\\bweights\\b",
+      "message": "Operator struct without flexible weight array: use dynamic uint96[] for weight storage"
+    },
+    "hardcoded_weight_indexes": {
+      "pattern": "\\bweights\\s*\\[\\s*(?<index>\\d+)\\s*\\]",
+      "message": "Hardcoded weight index: use named constants for weight indices for better maintainability"
+    },
+    "missing_weight_interpretation": {
+      "pattern": "function\\s+(?<func_name>\\w*[Vv]erify\\w*|\\w*[Cc]ertificate\\w*)[^{]*{(?<func_body>[^}]*)}",
+      "not_contains": "\\bslashable\\b|\\bdelegated\\b",
+      "message": "Missing weight interpretation: document meaning of each weight index"
+    },
+    "insufficient_weight_validation": {
+      "pattern": "function\\s+(?<func_name>update\\w*[Tt]able|register\\w*)[^{]*{(?<func_body>[^}]*)}",
+      "not_contains": "\\brequire\\b.*\\.length|weights\\.length\\s*[=!]=",
+      "message": "Insufficient weight array validation: validate weight array length"
+    }
+  },
+  "message": "Implement flexible stake weight handling as specified in the certificate verification specs",
+  "recommendations": [
+    "Use dynamic uint96[] arrays for weight storage to support multiple strategies",
+    "Define named constants for weight indices (e.g., SLASHABLE_WEIGHT_INDEX, DELEGATED_WEIGHT_INDEX)",
+    "Support single, dual, and multiple weight configurations as specified in the specs",
+    "Validate weight array lengths during updates to ensure consistency",
+    "Document the meaning of each weight index in comments",
+    "Consider implementing helper functions for retrieving specific weight types",
+    "Support both proportional and nominal threshold validations for all weight types"
+  ]
+} 

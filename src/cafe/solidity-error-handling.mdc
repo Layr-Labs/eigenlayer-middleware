@@ -1,1 +1,52 @@
- 
+// Cursor MDC rule for error handling in Solidity
+//
+// This rule enforces best practices for error handling in Solidity
+// to improve debugging, error reporting, and user experience.
+//
+// @author Solidity Expert
+// @applies_to *.sol
+// @directory_pattern src/cafe/**
+
+{
+  "name": "error-handling",
+  "description": "Enforces best practices for error handling in Solidity contracts",
+  "severity": "warning",
+  "pattern": {
+    "require_without_message": {
+      "pattern": "require\\s*\\((?<condition>[^,\\)]+)\\)",
+      "not_contains": ",",
+      "message": "Require statement without error message: add descriptive error messages to help with debugging"
+    },
+    "assert_usage": {
+      "pattern": "assert\\s*\\((?<condition>[^\\)]+)\\)",
+      "message": "Usage of assert(): assert should only be used for invariants and internal errors, use require for input validation"
+    },
+    "revert_without_reason": {
+      "pattern": "revert\\s*\\(\\)",
+      "message": "Revert without reason: provide an error message or use custom errors to help with debugging"
+    },
+    "try_catch_empty": {
+      "pattern": "try\\s+[^{]+{[^}]*}\\s*catch(?<catch_body>\\s*{\\s*})",
+      "message": "Empty catch block: handle errors appropriately in catch blocks"
+    },
+    "unchecked_external_call": {
+      "pattern": "(?<external_call>\\.call{[^}]*}\\([^;]*\\))",
+      "not_followed_by": "\\.isSuccess|require|if\\s*\\(|revert|assert",
+      "message": "Unchecked external call result: always check the success of low-level calls"
+    },
+    "old_style_errors": {
+      "pattern": "error[A-Z]\\w*\\s*\\(\\s*string\\s*\\)",
+      "message": "Old-style string errors: use custom error types without string parameters for gas efficiency"
+    }
+  },
+  "message": "Implement comprehensive error handling to improve contract robustness",
+  "recommendations": [
+    "Use custom errors (introduced in Solidity 0.8.4) for gas-efficient error handling",
+    "Add descriptive error messages to all require statements",
+    "Reserve assert for invariants; use require for input validation",
+    "Always check return values of external calls",
+    "Handle errors appropriately in catch blocks",
+    "Be specific about error conditions in error messages",
+    "Consider using try/catch for external calls to handle errors gracefully"
+  ]
+} 

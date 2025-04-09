@@ -1,1 +1,50 @@
- 
+// Cursor MDC rule for input validation in Solidity
+//
+// This rule enforces comprehensive input validation to prevent exploits
+// and ensure contract logic works as expected with all possible inputs.
+//
+// @author Solidity Expert
+// @applies_to *.sol
+// @directory_pattern src/cafe/**
+
+{
+  "name": "input-validation",
+  "description": "Enforces proper validation of function inputs to prevent unexpected behaviors",
+  "severity": "warning",
+  "pattern": {
+    "address_validation": {
+      "pattern": "function\\s+(?<func_name>\\w+)\\s*\\([^\\)]*(?<param_name>\\w+)\\s*:\\s*address[^\\)]*\\)\\s*(?:external|public)[^{]*{(?<func_body>[^}]*)}",
+      "not_contains": "require\\(\\s*(?<param_name>\\w+)\\s*!=\\s*address\\(0\\)|!=\\s*address\\(0\\)",
+      "message": "Address parameter without zero-address validation: add require statement to validate"
+    },
+    "array_length_validation": {
+      "pattern": "function\\s+(?<func_name>\\w+)\\s*\\([^\\)]*(?<param_name>\\w+)\\s*:\\s*(?<array_type>\\w+\\[\\s*\\])[^\\)]*\\)\\s*(?:external|public)[^{]*{(?<func_body>[^}]*)}",
+      "not_contains": "require\\(\\s*(?<param_name>\\w+)(\\.length)",
+      "message": "Array parameter without length validation: validate array length to prevent unexpected behaviors"
+    },
+    "uint_range_validation": {
+      "pattern": "function\\s+(?<func_name>\\w+)\\s*\\([^\\)]*(?<param_name>\\w+)\\s*:\\s*uint[^\\)]*\\)\\s*(?:external|public)[^{]*{(?<func_body>[^}]*)}",
+      "not_contains": "require\\(\\s*(?<param_name>\\w+)\\s*[<>=!]",
+      "message": "Uint parameter without range validation: consider adding bounds checks"
+    },
+    "insufficient_require_msg": {
+      "pattern": "require\\s*\\([^,\\)]*\\)",
+      "not_contains": "require\\s*\\([^,\\)]*,",
+      "message": "Require statement without error message: add descriptive error messages to help with debugging"
+    },
+    "unsafe_type_casting": {
+      "pattern": "(?<unsafe_cast>uint(?<target_size>\\d*)\\((?<source>.*))\\)",
+      "message": "Unsafe type casting: check bounds before casting to prevent truncation"
+    }
+  },
+  "message": "Implement comprehensive input validation for all function parameters",
+  "recommendations": [
+    "Validate address parameters are not zero-address (address(0))",
+    "Check array lengths to prevent empty arrays or excessive gas consumption",
+    "Validate numeric inputs are within expected bounds",
+    "Add descriptive error messages to all require statements",
+    "Use SafeCast for type conversions",
+    "Consider implementing maximum and minimum constants for numeric parameters",
+    "Validate that input addresses are contracts when expected (using ERC165 or extcodesize checks)"
+  ]
+} 

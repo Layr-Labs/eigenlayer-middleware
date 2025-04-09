@@ -1,1 +1,50 @@
- 
+// Cursor MDC rule for event emission in Solidity
+//
+// This rule enforces proper event emission for significant state changes
+// to support off-chain monitoring, indexing, and API development.
+//
+// @author Solidity Expert
+// @applies_to *.sol
+// @directory_pattern src/cafe/**
+
+{
+  "name": "event-emission",
+  "description": "Ensures proper event emission for important state changes",
+  "severity": "warning",
+  "pattern": {
+    "state_change_without_event": {
+      "pattern": "function\\s+(?<func_name>\\w+)[^{]*{(?<func_body>[^}]*(?<state_change>\\bstate\\.|=|\\+=|\\-=|\\*=|\\/=)[^}]*)}",
+      "not_contains": "emit\\s+\\w+",
+      "message": "State-changing function without event emission: emit events for important state changes"
+    },
+    "transfer_without_event": {
+      "pattern": "function\\s+(?<func_name>\\w+)[^{]*{(?<func_body>[^}]*(?<transfer>\\.transfer\\(|\\.call{value:|\\.send\\()[^}]*)}",
+      "not_contains": "emit\\s+\\w+",
+      "message": "Fund transfer without event emission: emit events for all asset transfers"
+    },
+    "ownership_change_without_event": {
+      "pattern": "function\\s+(?<func_name>transferOwnership|setOwner|changeOwner)\\s*\\([^\\)]*\\)[^{]*{(?<func_body>[^}]*)}",
+      "not_contains": "emit\\s+\\w+",
+      "message": "Ownership change without event emission: emit events for ownership transfers"
+    },
+    "access_control_change_without_event": {
+      "pattern": "function\\s+(?<func_name>\\w*[Rr]ole\\w*|\\w*[Aa]ccess\\w*|\\w*[Pp]ermission\\w*)\\s*\\([^\\)]*\\)[^{]*{(?<func_body>[^}]*)}",
+      "not_contains": "emit\\s+\\w+",
+      "message": "Access control change without event emission: emit events for role/permission changes"
+    },
+    "insufficient_event_indexing": {
+      "pattern": "event\\s+(?<event_name>\\w+)\\s*\\((?<event_params>[^\\)]*)\\)",
+      "not_contains": "indexed",
+      "message": "Event without indexed parameters: consider indexing key parameters for efficient filtering"
+    }
+  },
+  "message": "Emit events for all significant state changes to support off-chain monitoring",
+  "recommendations": [
+    "Emit events for all state-changing operations",
+    "Include all relevant data in events (before and after values)",
+    "Index important parameters in events (up to 3 per event)",
+    "Use events for transfer operations, ownership changes, and access control modifications",
+    "Consider standardized events (like those in ERC standards) when appropriate",
+    "Be consistent with event naming patterns (e.g., past tense verb)"
+  ]
+} 

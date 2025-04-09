@@ -1,1 +1,47 @@
- 
+// Cursor MDC rule for operator table calculator in Solidity
+//
+// This rule enforces best practices for the OperatorTableCalculator component
+// as described in the certificate verification system specs.
+//
+// @author Solidity Expert
+// @applies_to *.sol
+// @directory_pattern src/cafe/**
+
+{
+  "name": "operator-table-calculator",
+  "description": "Enforces best practices for the OperatorTableCalculator component",
+  "severity": "warning",
+  "pattern": {
+    "missing_calculator_interface": {
+      "pattern": "interface\\s+(?<interface_name>\\w+)",
+      "not_pattern": "interface\\s+I\\w*OperatorTableCalculator\\b",
+      "message": "Missing OperatorTableCalculator interface: implement the interface as specified in the specs"
+    },
+    "improper_calculator_return": {
+      "pattern": "function\\s+calculateOperatorTable[^{]*{(?<func_body>[^}]*)}",
+      "not_contains": "\\w+\\[\\s*\\]\\s+memory\\s+operatorInfos",
+      "message": "Improper return type for calculateOperatorTable: should return an array of operator info structs"
+    },
+    "insufficient_operatorset_validation": {
+      "pattern": "function\\s+calculateOperatorTable[^{]*{(?<func_body>[^}]*)}",
+      "not_contains": "require\\(\\s*operatorSet\\.",
+      "message": "Insufficient operatorSet validation: validate the operatorSet parameters"
+    },
+    "hardcoded_weight_calculation": {
+      "pattern": "function\\s+calculateOperatorTable[^{]*{(?<func_body>[^}]*)}",
+      "contains": "\\d{4,}",
+      "message": "Hardcoded values in weight calculation: use configurable strategy parameters"
+    }
+  },
+  "message": "Implement a proper OperatorTableCalculator as specified in the certificate verification specs",
+  "recommendations": [
+    "Implement the IECDSAOperatorTableCalculator interface as defined in the specs",
+    "Return ECDSAOperatorInfo[] with pubkey and flexible weight arrays",
+    "Support the OperatorSet structure with AVS address and ID",
+    "Validate input parameters before calculation",
+    "Use configurable strategy parameters for weight calculation",
+    "Support linearly combined weights from different strategies",
+    "Allow AVSs to extend the calculator with custom implementations",
+    "Document the meaning of each weight in the returned array"
+  ]
+} 

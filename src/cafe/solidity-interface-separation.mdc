@@ -1,1 +1,37 @@
- 
+// Cursor MDC rule for interface separation in Solidity
+//
+// This rule enforces the best practice of keeping interfaces separate from implementation contracts.
+// Separating interfaces improves code organization, readability, and reusability.
+//
+// @author Solidity Expert
+// @applies_to *.sol
+// @directory_pattern src/cafe/**
+
+{
+  "name": "interface-separation",
+  "description": "Enforces interfaces to be defined in separate files from their implementations",
+  "severity": "warning",
+  "pattern": {
+    "interface_and_contract_in_same_file": {
+      "pattern": "(?:interface\\s+(?<interface_name>I\\w+)[^{]*{[^}]*}).*(?:contract\\s+(?<contract_name>\\w+))",
+      "message": "Interface and contract implementation found in the same file: move interface to a separate file"
+    },
+    "multiple_interfaces_in_implementation_file": {
+      "pattern": "(?:contract\\s+(?<contract_name>\\w+)[^{]*{).*(?:interface\\s+(?<interface_name>I\\w+))",
+      "message": "Interface defined in implementation file: move interface to a separate file"
+    },
+    "non_standard_interface_naming": {
+      "pattern": "interface\\s+(?<interface_name>\\w+)",
+      "where": "!interface_name.startsWith('I')",
+      "message": "Interface name does not follow naming convention: interface names should start with 'I'"
+    }
+  },
+  "message": "Separate interfaces from implementations by placing them in dedicated files",
+  "recommendations": [
+    "Move interfaces to dedicated files in an interfaces/ directory",
+    "Name interface files after the interface they contain (e.g., IToken.sol for IToken interface)",
+    "Prefix interface names with 'I' to clearly identify them",
+    "Consider grouping related interfaces in a single file if they are small and closely related",
+    "For storage structures related to interfaces, consider a separate storage file pattern (e.g., ExampleStorage.sol)"
+  ]
+} 

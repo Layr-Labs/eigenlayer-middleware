@@ -1,1 +1,46 @@
- 
+// Cursor MDC rule for operator table verification in Solidity
+//
+// This rule enforces best practices for operator table verification as specified in the
+// certificate verification system design from the specs folder.
+//
+// @author Solidity Expert
+// @applies_to *.sol
+// @directory_pattern src/cafe/**
+
+{
+  "name": "operator-table-verification",
+  "description": "Enforces best practices for operator table verification in certificate systems",
+  "severity": "warning",
+  "pattern": {
+    "missing_operator_table_freshness_check": {
+      "pattern": "function\\s+(?<func_name>\\w*[Vv]erify\\w*|\\w*[Cc]ertificate\\w*)[^{]*{(?<func_body>[^}]*)}",
+      "not_contains": "\\breferenceTimestamp\\b|\\bstale(ness)?\\b|block\\.timestamp\\s*-\\s*\\w+\\s*[<>]=?",
+      "message": "Certificate verification without freshness check: validate operator table is not stale"
+    },
+    "unsorted_operators_verification": {
+      "pattern": "function\\s+(?<func_name>\\w*[Vv]erify\\w*|\\w*[Cc]ertificate\\w*)[^{]*{(?<func_body>[^}]*)}",
+      "not_contains": "\\bsorted\\b|\\bordered\\b|\\bas(c|d)ending\\b",
+      "message": "Certificate verification without sorted operators check: validate operators are ordered"
+    },
+    "missing_weight_threshold_validation": {
+      "pattern": "function\\s+(?<func_name>\\w*[Vv]erify\\w*|\\w*[Cc]ertificate\\w*)[^{]*{(?<func_body>[^}]*)}",
+      "not_contains": "\\b(threshold|proportion|nominal)\\b.*\\b(weight|stake)\\b",
+      "message": "Verification without stake threshold validation: validate signed stakes meet required thresholds"
+    },
+    "improper_pubkey_validation": {
+      "pattern": "function\\s+(?<func_name>\\w*[Vv]erify\\w*|\\w*[Cc]ertificate\\w*)[^{]*{(?<func_body>[^}]*)}",
+      "not_contains": "\\bpubkey\\b|\\bsigningKey\\b",
+      "message": "Verification without explicit pubkey validation: validate signature against stored public keys"
+    }
+  },
+  "message": "Implement proper operator table verification following the certificate verification specifications",
+  "recommendations": [
+    "Validate operator table freshness using reference timestamps",
+    "Implement a maxOperatorTableStaleness limit for security",
+    "Ensure operators are sorted in ascending order for efficient signature verification",
+    "Implement both proportional and nominal stake threshold validation",
+    "Use multi-dimensional stake weights (slashable, delegated) as specified",
+    "Implement comprehensive certificate validation with signature verification",
+    "Separate verification logic from threshold checking"
+  ]
+} 
