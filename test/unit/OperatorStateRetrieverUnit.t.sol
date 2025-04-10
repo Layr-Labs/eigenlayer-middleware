@@ -907,7 +907,9 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         // Validate
         // One non-signer => otherOperator
         assertEq(result.nonSignerQuorumBitmapIndices.length, 1, "Should have 1 non-signer");
-        assertEq(result.nonSignerQuorumBitmapIndices[0], 0, "Unexpected non-signer quorum bitmap index");
+        assertEq(
+            result.nonSignerQuorumBitmapIndices[0], 0, "Unexpected non-signer quorum bitmap index"
+        );
         assertEq(result.nonSignerPubkeys.length, 1, "Should have 1 non-signer pubkey");
         assertEq(result.nonSignerPubkeys[0].X, otherPubKey.X, "Unexpected non-signer pubkey X");
         assertEq(result.nonSignerPubkeys[0].Y, otherPubKey.Y, "Unexpected non-signer pubkey Y");
