@@ -263,6 +263,7 @@ contract OperatorStateRetriever {
      *         - totalStakeIndices: Indices for retrieving total stake info
      *         - nonSignerStakeIndices: Indices for retrieving non-signer stake info
      * @dev Computes the indices of operators that did not sign across all specified quorums
+     * @dev This function does not validate the signature matches the provided parameters, only that it's in a valid format
      */
     function getNonSignerStakesAndSignature(
         ISlashingRegistryCoordinator registryCoordinator,
