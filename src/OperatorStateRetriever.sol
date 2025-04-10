@@ -30,6 +30,7 @@ contract OperatorStateRetriever {
     }
 
     error OperatorNotRegistered();
+    /// @dev Thrown when the signature is not on the curve.
     error InvalidSigma();
 
     /**
