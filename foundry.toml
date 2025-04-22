@@ -21,8 +21,10 @@
         "@openzeppelin/=lib/openzeppelin-contracts/",
         "@openzeppelin-upgrades/=lib/openzeppelin-contracts-upgradeable/",
         "eigenlayer-contracts/=lib/eigenlayer-contracts/",
-
+        "@openzeppelin-v5/=lib/openzeppelin-contracts-v5/",
+        "@openzeppelin-upgrades-v5/=lib/openzeppelin-contracts-v5-upgradeable/",
     ]
+
     # Specifies the exact version of Solidity to use, overriding auto-detection.
     solc_version = '0.8.27'
     # If enabled, treats Solidity compiler warnings as errors, preventing artifact generation if warnings are present.
