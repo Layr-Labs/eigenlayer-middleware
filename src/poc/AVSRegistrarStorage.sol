@@ -17,9 +17,13 @@ abstract contract AVSRegistrarStorage is IAVSRegistrar {
     /// @notice The AVS the registrar is for.
     address public immutable avs;
 
-    constructor(address _allocationManager, address _avs) {
+    /// @notice The operator set id the registrar is for.
+    uint32 public immutable operatorSetId;
+
+    constructor(address _allocationManager, address _avs, uint32 _operatorSetId) {
         allocationManager = IAllocationManager(_allocationManager);
         avs = _avs;
+        operatorSetId = _operatorSetId;
     }
 
     // TODO: Move errors to the interface

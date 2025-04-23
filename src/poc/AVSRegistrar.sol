@@ -9,8 +9,11 @@ import {
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 
 import {AVSRegistrarStorage} from "./AVSRegistrarStorage.sol";
+import {Initializable} from "@openzeppelin-upgrades-v5/contracts/proxy/utils/Initializable.sol";
+import {ContextUpgradeable} from "@openzeppelin-upgrades-v5/contracts/utils/ContextUpgradeable.sol";
 
-abstract contract AVSRegistrar is AVSRegistrarStorage {
+/// @notice A single-operator set AVS registrar
+abstract contract AVSRegistrar is Initializable, ContextUpgradeable, AVSRegistrarStorage {
     modifier onlyAllocationManager() {
         require(msg.sender == address(allocationManager), OnlyAllocationManager());
         _;
@@ -18,8 +21,13 @@ abstract contract AVSRegistrar is AVSRegistrarStorage {
 
     constructor(
         address _allocationManager,
-        address _avs
-    ) AVSRegistrarStorage(_allocationManager, _avs) {}
+        address _avs,
+        uint32 operatorSetId
+    ) AVSRegistrarStorage(_allocationManager, _avs, operatorSetId) {}
+
+    function __AVSRegistrar_init() internal onlyInitializing {}
+
+    function __AVSRegistrar_init_unchained() internal onlyInitializing {}
 
     /// @inheritdoc IAVSRegistrar
     /// @dev EigenLayer Core checks that:
@@ -30,7 +38,12 @@ abstract contract AVSRegistrar is AVSRegistrarStorage {
         address avs,
         uint32[] calldata operatorSetIds,
         bytes calldata data
-    ) external virtual override onlyAllocationManager {}
+    ) external virtual override onlyAllocationManager {
+        require(supportsAVS(avs), "Invalid AVS");
+        require(operatorSetIds.length == 1, "Only accepts one operator set id");
+        require(operatorSetIds[0] == operatorSetId, "Invalid operator set id");
+        _afterRegisterOperator(operator, data);
+    }
 
     /// @inheritdoc IAVSRegistrar
     /// @dev EigenLayer Core checks that:
@@ -40,12 +53,25 @@ abstract contract AVSRegistrar is AVSRegistrarStorage {
         address operator,
         address avs,
         uint32[] calldata operatorSetIds
-    ) external virtual override onlyAllocationManager {}
+    ) external virtual override onlyAllocationManager {
+        require(supportsAVS(avs), "Invalid AVS");
+        require(operatorSetIds.length == 1, "Only accepts one operator set id");
+        require(operatorSetIds[0] == operatorSetId, "Invalid operator set id");
+        _afterDeregisterOperator(operator);
+    }
 
     /// @inheritdoc IAVSRegistrar
     function supportsAVS(
         address _avs
-    ) external view override returns (bool) {
+    ) public view override returns (bool) {
         return avs == _avs;
     }
+
+    function _afterRegisterOperator(address operator, bytes calldata data) internal virtual {}
+
+    function _afterDeregisterOperator(
+        address operator
+    ) internal virtual {}
+
+    function _parseRegistrationData(bytes calldata data) internal view virtual returns (bytes memory);
 }

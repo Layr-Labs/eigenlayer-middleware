@@ -22,7 +22,7 @@
         "@openzeppelin-upgrades/=lib/openzeppelin-contracts-upgradeable/",
         "eigenlayer-contracts/=lib/eigenlayer-contracts/",
         "@openzeppelin-v5/=lib/openzeppelin-contracts-v5/",
-        "@openzeppelin-upgrades-v5/=lib/openzeppelin-contracts-v5-upgradeable/",
+        "@openzeppelin-upgrades-v5/=lib/openzeppelin-contracts-upgradeable-v5/",
     ]
 
     # Specifies the exact version of Solidity to use, overriding auto-detection.
