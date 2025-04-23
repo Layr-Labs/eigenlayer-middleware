@@ -72,7 +72,7 @@ abstract contract SocketRegistry is AVSRegistrar, SocketRegistryStorage {
 
     function _parseRegistrationData(
         bytes calldata data
-    ) internal virtual view override returns (bytes memory) {
+    ) internal view virtual override returns (bytes memory) {
         return data[_getSocketRegistryStorage().startIndex:_getSocketRegistryStorage().endIndex];
     }
 }

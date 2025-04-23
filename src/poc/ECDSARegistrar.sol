@@ -62,7 +62,7 @@ abstract contract ECDSARegistrar is AVSRegistrar, ECDSARegistrarStorage {
 
     function _parseRegistrationData(
         bytes calldata data
-    ) internal virtual view override returns (bytes memory) {
+    ) internal view virtual override returns (bytes memory) {
         return data[_getECDSARegistrarStorage().startIndex:_getECDSARegistrarStorage().endIndex];
     }
 }

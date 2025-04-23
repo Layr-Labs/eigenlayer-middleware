@@ -73,5 +73,7 @@ abstract contract AVSRegistrar is Initializable, ContextUpgradeable, AVSRegistra
         address operator
     ) internal virtual {}
 
-    function _parseRegistrationData(bytes calldata data) internal view virtual returns (bytes memory);
+    function _parseRegistrationData(
+        bytes calldata data
+    ) internal view virtual returns (bytes memory);
 }
