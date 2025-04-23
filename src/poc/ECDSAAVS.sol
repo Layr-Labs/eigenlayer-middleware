@@ -12,6 +12,13 @@ contract AVS is ECDSARegistrar, SocketRegistry {
         uint32 operatorSetId
     ) AVSRegistrar(allocationManager, avs, operatorSetId) {}
 
+    /**
+     * @notice Initializes the AVS contract
+     * @param ecdsaRegistrarStartIndex The start index of the ECDSARegistrar
+     * @param ecdsaRegistrarEndIndex The end index of the ECDSARegistrar
+     * @param socketRegistryStartIndex The start index of the SocketRegistry
+     * @param socketRegistryEndIndex The end index of the SocketRegistry
+     */
     function initialize(
         uint256 ecdsaRegistrarStartIndex,
         uint256 ecdsaRegistrarEndIndex,
