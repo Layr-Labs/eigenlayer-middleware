@@ -44,8 +44,9 @@ contract LinearSlashableStakeCalculator is Ownable, IOperatorWeightCalculator {
     /// @notice The allocation manager contract in core
     AllocationManager public immutable allocationManager;
 
-    constructor(AllocationManager _allocationManager) {
+    constructor(AllocationManager _allocationManager, address _owner) {
         allocationManager = _allocationManager;
+        _transferOwnership(_owner);
     }
 
     /**

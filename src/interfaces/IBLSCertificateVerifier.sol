@@ -17,7 +17,7 @@ interface IBLSCertificateVerifierErrors {
 interface IBLSCertificateVerifierTypes is IBLSTableCalculatorTypes {
     /// @notice A witness for an operator
     /// @param operatorIndex the index of the nonsigner in the `BN254OperatorInfo` tree
-    /// @param operatorInfoProofs merkle proofs of the nonsigner at the index. VEmpty if operator is in cache.
+    /// @param operatorInfoProofs merkle proofs of the nonsigner at the index. Empty if operator is in cache.
     /// @param operatorInfo the `BN254OperatorInfo` for the operator
     struct BN254OperatorInfoWitness {
         uint32 operatorIndex;
@@ -44,10 +44,10 @@ interface IBLSCertificateVerifierTypes is IBLSTableCalculatorTypes {
 
 interface IBLSCertificateVerifierEvents is IBLSCertificateVerifierTypes {
     /// @notice Emitted when a table is updated
-    event TableUpdated(uint32 referenceTimestamp);
+    event TableUpdated(uint32 referenceTimestamp, BN254.G1Point pubkey, bytes32 operatorInfoTreeRoot);
 }
 
-interface IBLSCertificateVerifier is IBLSCertificateVerifierTypes, IBLSCertificateVerifierEvents {
+interface IBLSCertificateVerifier is IBLSCertificateVerifierErrors, IBLSCertificateVerifierEvents {
     /// @notice the operatorSet the CertificateVerifier is for
     function operatorSet() external returns (OperatorSet memory);
 
@@ -56,6 +56,9 @@ interface IBLSCertificateVerifier is IBLSCertificateVerifierTypes, IBLSCertifica
 
     /// @return the maximum amount of seconds that a operator table can be in the past
     function maxOperatorTableStaleness() external returns (uint32);
+
+    /// @notice The latest reference timestamp of the operator table
+    function latestReferenceTimestamp() external returns (uint32);
 
     /**
      * @notice updates the operator table
@@ -120,4 +123,18 @@ interface IBLSCertificateVerifier is IBLSCertificateVerifierTypes, IBLSCertifica
         BN254Certificate memory cert,
         uint96[] memory totalStakeNominalThresholds
     ) external view returns (bool);
+
+    /**
+     * @notice sets the operator table updater
+     * @param _operatorTableUpdater the address of the operator table updater
+     * @dev only callable by the owner
+     */
+    function setOperatorTableUpdater(address _operatorTableUpdater) external;
+
+    /**
+     * @notice sets the max operator table staleness
+     * @param _maxOperatorTableStaleness the max operator table staleness
+     * @dev only callable by the owner
+     */
+    function setMaxOperatorTableStaleness(uint32 _maxOperatorTableStaleness) external;
 }

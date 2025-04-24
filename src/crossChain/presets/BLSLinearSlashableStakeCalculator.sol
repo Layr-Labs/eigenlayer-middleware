@@ -17,9 +17,9 @@ import {BN254} from "../../libraries/BN254.sol";
 /// @dev This contract assumes that all operator stakes are stored in the `AllocationManager`
 /// @dev This contract calculates slashable operator stakes based on the `LinearSlashableStakeCalculator`
 contract BLSLinearSlashableStakeCalculator is BLSTableCalculator, LinearSlashableStakeCalculator {
-    constructor(AllocationManager _allocationManager, IBLSApkRegistry _blsApkRegistry) 
+    constructor(IBLSApkRegistry _blsApkRegistry, AllocationManager _allocationManager, address _owner) 
         BLSTableCalculator(_blsApkRegistry)
-        LinearSlashableStakeCalculator(_allocationManager)
+        LinearSlashableStakeCalculator(_allocationManager, _owner)
     {}
     
     /**
