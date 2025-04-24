@@ -62,11 +62,13 @@ interface IBLSCertificateVerifier is IBLSCertificateVerifierTypes, IBLSCertifica
      * @param referenceTimestamp the timestamp at which the operatorSetInfo and
      * operatorInfoTreeRoot were sourced
      * @param operatorSetInfo the aggregate information about the operatorSet
+     * @param operatorInfoTreeRoot the merkleRoot of all operatorInfos
      * @dev only callable by the operatorTableUpdater
      */
     function updateOperatorTable(
         uint32 referenceTimestamp,
-        BN254OperatorSetInfo memory operatorSetInfo
+        BN254OperatorSetInfo memory operatorSetInfo,
+        bytes32 operatorInfoTreeRoot
     ) external;
 
     /**
