@@ -20,9 +20,9 @@
         "ds-test/=lib/ds-test/src/",
         "@openzeppelin/=lib/openzeppelin-contracts/",
         "@openzeppelin-upgrades/=lib/openzeppelin-contracts-upgradeable/",
-        "eigenlayer-contracts/=lib/eigenlayer-contracts/",
-
+        "eigenlayer-contracts/=lib/eigenlayer-contracts/"
     ]
+    
     # Specifies the exact version of Solidity to use, overriding auto-detection.
     solc_version = '0.8.27'
     # If enabled, treats Solidity compiler warnings as errors, preventing artifact generation if warnings are present.
