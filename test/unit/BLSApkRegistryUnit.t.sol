@@ -9,6 +9,7 @@ import "../utils/BLSMockAVSDeployer.sol";
 
 import {IBLSApkRegistryEvents} from "../events/IBLSApkRegistryEvents.sol";
 import {IBLSApkRegistryErrors} from "../../src/interfaces/IBLSApkRegistry.sol";
+import {IBLSTableCalculatorTypes} from "../../src/interfaces/IBLSTableCalculator.sol";
 
 contract BLSApkRegistryUnitTests is BLSMockAVSDeployer, IBLSApkRegistryEvents {
     using BitmapUtils for uint192;
@@ -173,6 +174,49 @@ contract BLSApkRegistryUnitTests is BLSMockAVSDeployer, IBLSApkRegistryEvents {
 
         blsApkRegistry.setBLSPublicKey(operator, pubkey);
         return (pubkey, pubkeyHash);
+    }
+
+    function testYash() public {
+        IBLSTableCalculatorTypes.BN254OperatorInfo[] memory operatorInfos = testRandomEncoding();
+        console.logBytes(abi.encode(operatorInfos));
+    }
+
+    function testRandomEncoding() public returns (IBLSTableCalculatorTypes.BN254OperatorInfo[] memory) {
+        uint256 randomSeed1 = 0;
+        uint256 randomSeed2 = 1;
+
+        BN254.G1Point memory pubkey1 = BN254.hashToG1(_getRandomPk(randomSeed1));
+        BN254.G1Point memory pubkey2 = BN254.hashToG1(_getRandomPk(randomSeed2));
+
+        uint96[] memory weights1 = new uint96[](1);
+        weights1[0] = 1e18;
+
+        uint96[] memory weights2 = new uint96[](1);
+        weights2[0] = 2e18;
+
+        bytes memory operatorLeaf1 = abi.encodePacked(pubkey1.X, pubkey1.Y, weights1);
+        bytes memory operatorLeaf2 = abi.encodePacked(pubkey2.X, pubkey2.Y, weights2);
+
+        console.log("pubkey1.X", pubkey1.X);
+        console.log("pubkey1.Y", pubkey1.Y);
+        // console.log("weights1", weights1);
+        console.logBytes(operatorLeaf1);
+        console.log("pubkey2.X", pubkey2.X);
+        console.log("pubkey2.Y", pubkey2.Y);
+        // console.log("weights2", weights2);
+        console.logBytes(operatorLeaf2);
+
+        IBLSTableCalculatorTypes.BN254OperatorInfo[] memory operatorInfos = new IBLSTableCalculatorTypes.BN254OperatorInfo[](2);
+        operatorInfos[0] = IBLSTableCalculatorTypes.BN254OperatorInfo({
+            pubkey: pubkey1,
+            weights: weights1
+        });
+        operatorInfos[1] = IBLSTableCalculatorTypes.BN254OperatorInfo({
+            pubkey: pubkey2,
+            weights: weights2   
+        });
+
+        return operatorInfos;
     }
 
     /**
@@ -412,6 +456,19 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is BLSApkRegistryUnitTests
 
         (BN254.G1Point memory registeredPubkey, bytes32 registeredpkHash) =
             blsApkRegistry.getRegisteredPubkey(operator);
+
+
+        uint96[] memory weights = new uint96[](1);
+        weights[0] = 1e18;
+        IBLSTableCalculatorTypes.BN254OperatorInfo memory operatorInfo = IBLSTableCalculatorTypes.BN254OperatorInfo({
+            pubkey: registeredPubkey,
+            weights: weights
+        });
+        bytes memory operatorLeaf = abi.encodePacked(operatorInfo.pubkey.X, operatorInfo.pubkey.Y, operatorInfo.weights);
+        console.log("registeredPubkey.X", registeredPubkey.X);
+        console.log("registeredPubkey.Y", registeredPubkey.Y);
+        console.logBytes(operatorLeaf);
+
         assertEq(registeredPubkey.X, defaultPubkey.X, "registeredPubkey not set correctly");
         assertEq(registeredPubkey.Y, defaultPubkey.Y, "registeredPubkey not set correctly");
         assertEq(registeredpkHash, defaultPubkeyHash, "registeredpkHash not set correctly");
