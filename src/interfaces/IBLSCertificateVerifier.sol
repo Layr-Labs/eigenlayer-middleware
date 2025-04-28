@@ -21,7 +21,7 @@ interface IBLSCertificateVerifierTypes is IBLSTableCalculatorTypes {
     /// @param operatorInfo the `BN254OperatorInfo` for the operator
     struct BN254OperatorInfoWitness {
         uint32 operatorIndex;
-        bytes operatorInfoProofs;
+        bytes32[] operatorInfoProofs;
         IBLSTableCalculatorTypes.BN254OperatorInfo operatorInfo;
     }
 
@@ -96,7 +96,7 @@ interface IBLSCertificateVerifier is IBLSCertificateVerifierErrors, IBLSCertific
      */
     function verifyCertificate(
         BN254Certificate memory cert
-    ) external view returns (uint96[] memory signedStakes);
+    ) external returns (uint96[] memory signedStakes);
 
     /**
      * @notice verifies a certificate and makes sure that the signed stakes meet
@@ -109,7 +109,7 @@ interface IBLSCertificateVerifier is IBLSCertificateVerifierErrors, IBLSCertific
     function verifyCertificateProportion(
         BN254Certificate memory cert,
         uint16[] memory totalStakeProportionThresholds
-    ) external view returns (bool);
+    ) external returns (bool);
 
     /**
      * @notice verifies a certificate and makes sure that the signed stakes meet
@@ -122,7 +122,7 @@ interface IBLSCertificateVerifier is IBLSCertificateVerifierErrors, IBLSCertific
     function verifyCertificateNominal(
         BN254Certificate memory cert,
         uint96[] memory totalStakeNominalThresholds
-    ) external view returns (bool);
+    ) external returns (bool);
 
     /**
      * @notice sets the operator table updater

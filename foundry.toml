@@ -20,7 +20,8 @@
         "ds-test/=lib/ds-test/src/",
         "@openzeppelin/=lib/openzeppelin-contracts/",
         "@openzeppelin-upgrades/=lib/openzeppelin-contracts-upgradeable/",
-        "eigenlayer-contracts/=lib/eigenlayer-contracts/"
+        "eigenlayer-contracts/=lib/eigenlayer-contracts/",
+        "murky/=lib/murky/src/"
     ]
     
     # Specifies the exact version of Solidity to use, overriding auto-detection.
