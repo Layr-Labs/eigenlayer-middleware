@@ -55,7 +55,7 @@ contract BLSCertificateVerifierTest is Test {
         // Set standard test message hash
         msgHash = keccak256(abi.encodePacked("test message"));
         
-        // Set up the aggregate public key in G2 (same as in BLSMockAVSDeployer)
+        // Set up the aggregate public key in G2
         aggSignerApkG2.X[1] =
             19101821850089705274637533855249918363070101489527618151493230256975900223847;
         aggSignerApkG2.X[0] =
@@ -66,7 +66,7 @@ contract BLSCertificateVerifierTest is Test {
             4185483097059047421902184823581361466320657066600218863748375739772335928910;
     }
     
-    // Generate signer and non-signer private keys (adapted from BLSMockAVSDeployer)
+    // Generate signer and non-signer private keys
     function generateSignerAndNonSignerPrivateKeys(
         uint256 pseudoRandomNumber,
         uint256 numSigners,
@@ -115,7 +115,7 @@ contract BLSCertificateVerifierTest is Test {
         return (signerPrivKeys, nonSignerPrivKeys);
     }
     
-    // Helper to hash a public key (adapted from BLSMockAVSDeployer)
+    // Helper to hash a public key
     function toPubkeyHash(uint256 privKey) internal view returns (bytes32) {
         return BN254.generatorG1().scalar_mul(privKey).hashG1Point();
     }
