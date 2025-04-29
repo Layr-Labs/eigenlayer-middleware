@@ -13,6 +13,11 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         _deployMockEigenLayerAndAVS(numQuorums);
     }
 
+    /// @dev Used by inheriting contracts to test custom state retrievers
+    function setOperatorStateRetriever(address operatorStateRetrieverAddress) internal {
+        operatorStateRetriever = OperatorStateRetriever(operatorStateRetrieverAddress);
+    }
+
     function test_getOperatorState_revert_neverRegistered() public {
         cheats.expectRevert(
             "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId"
