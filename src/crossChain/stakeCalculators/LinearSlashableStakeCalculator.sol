@@ -101,7 +101,9 @@ contract LinearSlashableStakeCalculator is Ownable, IOperatorWeightCalculator {
         bytes32 operatorSetKey = operatorSet.key();
         EnumerableMap.AddressToUintMap storage multipliers = _multipliers[operatorSetKey];
 
+        weights = new uint96[][](operators.length);
         for (uint256 operatorIndex = 0; operatorIndex < operators.length; operatorIndex++) {
+            weights[operatorIndex] = new uint96[](strategies.length);
             // 1. For the given operator, loop through the strategies and calculate the operator's weight for the opereatorSet
             for (uint256 stratIndex = 0; stratIndex < strategies.length; stratIndex++) {
                 // Update the weight for the operator and strategy, only if there's a nonzero minimum slashable stake
