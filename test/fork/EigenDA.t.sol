@@ -881,7 +881,7 @@ contract EigenDATest is Test {
     function _setupEigenDAFork(
         string memory jsonPath
     ) internal returns (EigenDAData memory) {
-        string memory rpcUrl = vm.envString("RPC_HOLESKY");
+        string memory rpcUrl = vm.envString("HOLESKY_RPC_URL");
 
         vm.createSelectFork(rpcUrl);
 
