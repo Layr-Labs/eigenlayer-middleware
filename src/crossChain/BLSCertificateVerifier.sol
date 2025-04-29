@@ -135,8 +135,8 @@ contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
             }
             
             // Check if we need to verify and cache the operator info
-            bool operatorInfoExists = keccak256(abi.encode(operatorInfos[referenceTimestamp][operatorIndex].pubkey)) != 
-                                     keccak256(abi.encode(BN254.G1Point(0, 0)));
+            bool operatorInfoExists = operatorInfos[referenceTimestamp][operatorIndex].pubkey.X != 0 || 
+                        operatorInfos[referenceTimestamp][operatorIndex].pubkey.Y != 0;
             
             if (!operatorInfoExists) {
                 // Find the matching witness
@@ -442,11 +442,6 @@ contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
     ) internal view returns (bool verified) {
         bytes32 leaf = keccak256(abi.encode(operatorInfo));
         bytes32 root = operatorInfoTreeRoots[referenceTimestamp];
-        
-        if (proof.length == 0) {
-            return leaf == root;
-        }
-        
         // Use OpenZeppelin's MerkleProof to verify
         return MerkleProof.verify(proof, root, leaf);
     }

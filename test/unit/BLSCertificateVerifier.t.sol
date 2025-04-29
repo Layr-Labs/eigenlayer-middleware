@@ -72,9 +72,6 @@ contract BLSCertificateVerifierTest is Test {
         uint256 numSigners,
         uint256 numNonSigners
     ) internal view returns (uint256[] memory, uint256[] memory) {
-        uint256[] memory signerPrivateKeys = new uint256[](numSigners);
-        
-        // Generate private keys using the same approach as EigenLayer
         uint256[] memory signerPrivKeys = new uint256[](numSigners);
         uint256 sum = 0;
 
@@ -230,9 +227,7 @@ contract BLSCertificateVerifierTest is Test {
         
         for (uint256 i = 0; i < nonSignerIndices.length; i++) {
             uint32 nonSignerIndex = nonSignerIndices[i];
-            console.log("get merkle proof");
             bytes32[] memory proof = getMerkleProof(ops, nonSignerIndex);
-            console.log("got merkle proof");
             
             witnesses[i] = IBLSCertificateVerifierTypes.BN254OperatorInfoWitness({
                 operatorIndex: nonSignerIndex,
