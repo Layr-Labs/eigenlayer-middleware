@@ -10,7 +10,10 @@ import {BLSSigCheckOperatorStateRetriever} from
     "../../src/unaudited/BLSSigCheckOperatorStateRetriever.sol";
 import {OperatorStateRetrieverUnitTests} from "./OperatorStateRetrieverUnit.t.sol";
 
-contract BLSSigCheckOperatorStateRetrieverUnitTests is MockAVSDeployer, OperatorStateRetrieverUnitTests {
+contract BLSSigCheckOperatorStateRetrieverUnitTests is
+    MockAVSDeployer,
+    OperatorStateRetrieverUnitTests
+{
     using BN254 for BN254.G1Point;
 
     BLSSigCheckOperatorStateRetriever sigCheckOperatorStateRetriever;

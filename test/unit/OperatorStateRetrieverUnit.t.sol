@@ -14,7 +14,9 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
     }
 
     /// @dev Used by inheriting contracts to test custom state retrievers
-    function setOperatorStateRetriever(address operatorStateRetrieverAddress) internal {
+    function setOperatorStateRetriever(
+        address operatorStateRetrieverAddress
+    ) internal {
         operatorStateRetriever = OperatorStateRetriever(operatorStateRetrieverAddress);
     }
 

@@ -20,6 +20,7 @@ contract BLSSigCheckOperatorStateRetriever is OperatorStateRetriever {
     /// @dev Thrown when the signature is not on the curve.
     error InvalidSigma();
     // avoid stack too deep
+
     struct GetNonSignerStakesAndSignatureMemory {
         BN254.G1Point[] quorumApks;
         BN254.G2Point apkG2;
