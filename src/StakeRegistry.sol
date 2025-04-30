@@ -798,7 +798,7 @@ contract StakeRegistry is StakeRegistryStorage {
             QuorumNotSlashable()
         );
         require(
-            AllocationManager(address(allocationManager)).DEALLOCATION_DELAY() >= _lookAheadBlocks,
+            _lookAheadBlocks <= AllocationManager(address(allocationManager)).DEALLOCATION_DELAY(),
             LookAheadPeriodTooLong()
         );
         uint32 oldLookAheadDays = slashableStakeLookAheadPerQuorum[quorumNumber];
