@@ -61,7 +61,7 @@ contract EjectionManager is OwnableUpgradeable, EjectionManagerStorage {
                             && stakeForEjection + operatorStake > amountEjectable
                     ) {
                         ratelimitHit = true;
-                        
+
                         break;
                     }
 

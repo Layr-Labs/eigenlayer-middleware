@@ -150,7 +150,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
             );
         }
     }
-    
+
     function testEjectOperators_MultipleOperatorOutsideRatelimit() public {
         /// @dev Since the `ejectableStakePercent` is 10%, only 1 operator can be ejected
         uint8 operatorsCanEject = 1;
@@ -202,7 +202,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
 
     /// @dev Regression test for Hexens Slashing EG2-2
     /// @dev The quorum ejection params are set to 10%. Previously an operator would have been ejected due to
-    /// @dev a bug that allowed an ejection to occur if there was at least 1 operator to eject, regardless of the limit. 
+    /// @dev a bug that allowed an ejection to occur if there was at least 1 operator to eject, regardless of the limit.
     function testEjectOperators_regression_inclusiveRateLimit() public {
         /// @dev The quorum ejection params are set to 10%, which does not need to be updated
         uint8 numOperators = 1;
