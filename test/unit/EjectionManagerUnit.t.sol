@@ -150,9 +150,10 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
             );
         }
     }
-
+    
     function testEjectOperators_MultipleOperatorOutsideRatelimit() public {
-        uint8 operatorsCanEject = 2;
+        /// @dev Since the `ejectableStakePercent` is 10%, only 1 operator can be ejected
+        uint8 operatorsCanEject = 1;
         uint8 operatorsToEject = 10;
         uint8 numOperators = 10;
         uint96 stake = 1 ether;
@@ -199,8 +200,46 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         }
     }
 
+    /// @dev Regression test for Hexens Slashing EG2-2
+    /// @dev The quorum ejection params are set to 10%. Previously an operator would have been ejected due to
+    /// @dev a bug that allowed an ejection to occur if there was at least 1 operator to eject, regardless of the limit. 
+    function testEjectOperators_regression_inclusiveRateLimit() public {
+        /// @dev The quorum ejection params are set to 10%, which does not need to be updated
+        uint8 numOperators = 1;
+        uint96 stake = 1 ether;
+
+        _registerOperators(numOperators, stake);
+
+        bytes32[][] memory operatorIds = new bytes32[][](numQuorums);
+        for (uint8 i = 0; i < numQuorums; i++) {
+            operatorIds[i] = new bytes32[](numOperators);
+            for (uint256 j = 0; j < numOperators; j++) {
+                operatorIds[i][j] =
+                    registryCoordinator.getOperatorId(_incrementAddress(defaultOperator, j));
+            }
+        }
+
+        for (uint8 i = 0; i < numOperators; i++) {
+            assertEq(
+                uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))),
+                uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED)
+            );
+        }
+
+        cheats.prank(ejector);
+        ejectionManager.ejectOperators(operatorIds);
+
+        /// @dev The operator should not be ejected due to the rate limit
+        for (uint8 i = 0; i < numOperators; i++) {
+            assertEq(
+                uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))),
+                uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED)
+            );
+        }
+    }
+
     function testEjectOperators_NoEjectionForNoEjectableStake() public {
-        uint8 operatorsCanEject = 2;
+        uint8 operatorsCanEject = 1;
         uint8 operatorsToEject = 10;
         uint8 numOperators = 10;
         uint96 stake = 1 ether;
