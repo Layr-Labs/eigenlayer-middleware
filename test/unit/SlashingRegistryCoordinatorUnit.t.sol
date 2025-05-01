@@ -1937,16 +1937,49 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
         );
     }
 
+    /// @dev Asserts that an operator cannot be churned out if it is not registered for the quorum
+    /// @dev We register the operator to kick in quorum 2 so that it is still registered after deregistration
     function test_registerOperatorWithChurn_revert_notRegisteredForQuorum() public {
         _setOperatorWeight(testOperator.key.addr, registeringStake);
+        _setOperatorWeight(operatorToKick.key.addr, operatorToKickStake);
 
-        Operator memory unregisteredOperator = operatorsByID[operatorIds.at(5)];
-        _setOperatorWeight(unregisteredOperator.key.addr, operatorToKickStake);
+        // Create a new quorum
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 1 ether});
 
+        vm.startPrank(proxyAdminOwner);
+        slashingRegistryCoordinator.createTotalDelegatedStakeQuorum(
+            operatorSetParams,
+            1 ether, // minimum stake
+            strategyParams
+        );
+        vm.stopPrank();
+
+        // Register the operatorToKick in the new quorum
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = 2;
+        registerOperatorInSlashingRegistryCoordinator(operatorToKick, "socket:8545", operatorSetIds);
+
+        // Deregister the operatorToKick from quorum 1
+        IAllocationManagerTypes.DeregisterParams memory deregisterParams = IAllocationManagerTypes
+            .DeregisterParams({
+            operator: operatorToKick.key.addr,
+            avs: address(serviceManager),
+            operatorSetIds: operatorSetIds
+        });
+
+        vm.prank(operatorToKick.key.addr);
+        IAllocationManager(coreDeployment.allocationManager).deregisterFromOperatorSets(
+            deregisterParams
+        );
+
+        // Try to churn the operator
         ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams =
             new ISlashingRegistryCoordinatorTypes.OperatorKickParam[](quorumNumbers.length);
         operatorKickParams[0] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
-            operator: unregisteredOperator.key.addr,
+            operator: operatorToKick.key.addr,
             quorumNumber: uint8(quorumNumbers[0])
         });
 
@@ -1980,7 +2013,7 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
         }
 
         vm.prank(testOperator.key.addr);
-        vm.expectRevert(abi.encodeWithSignature("OperatorNotRegistered()"));
+        vm.expectRevert(abi.encodeWithSignature("OperatorNotRegisteredForQuorum()"));
         IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
             testOperator.key.addr, registerParams
         );

@@ -677,6 +677,7 @@ contract SlashingRegistryCoordinator is
     /**
      * @notice Validates that an incoming operator is eligible to replace an existing
      * operator based on the stake of both
+     * @dev In order to be churned out, the existing operator must be registered for the quorum
      * @dev In order to churn, the incoming operator needs to have more stake than the
      * existing operator by a proportion given by `kickBIPsOfOperatorStake`
      * @dev In order to be churned out, the existing operator needs to have a proportion
@@ -704,6 +705,10 @@ contract SlashingRegistryCoordinator is
         bytes32 idToKick = _operatorInfo[operatorToKick].operatorId;
         require(newOperator != operatorToKick, CannotChurnSelf());
         require(kickParams.quorumNumber == quorumNumber, QuorumOperatorCountMismatch());
+        require(
+            quorumNumber.isSubsetOf(_currentOperatorBitmap(idToKick)),
+            OperatorNotRegisteredForQuorum()
+        );
 
         // Get the target operator's stake and check that it is below the kick thresholds
         uint96 operatorToKickStake = stakeRegistry.getCurrentStake(idToKick, quorumNumber);
