@@ -830,7 +830,8 @@ contract SlashingRegistryCoordinator is
         } else if (stakeType == IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE) {
             // For slashable stake quorums, ensure lookAheadPeriod is less than DEALLOCATION_DELAY
             require(
-                AllocationManager(address(allocationManager)).DEALLOCATION_DELAY() > lookAheadPeriod,
+                lookAheadPeriod
+                    <= AllocationManager(address(allocationManager)).DEALLOCATION_DELAY(),
                 LookAheadPeriodTooLong()
             );
             stakeRegistry.initializeSlashableStakeQuorum(
