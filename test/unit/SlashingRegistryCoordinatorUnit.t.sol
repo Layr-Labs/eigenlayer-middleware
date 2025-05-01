@@ -735,7 +735,7 @@ contract SlashingRegistryCoordinator_CreateSlashableStakeQuorum is
         uint32 deallocationDelay =
             AllocationManager(address(coreDeployment.allocationManager)).DEALLOCATION_DELAY();
 
-        uint32 tooLongLookAheadPeriod = deallocationDelay;
+        uint32 tooLongLookAheadPeriod = deallocationDelay + 1;
 
         vm.prank(proxyAdminOwner);
         vm.expectRevert(LookAheadPeriodTooLong.selector);
