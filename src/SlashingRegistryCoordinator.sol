@@ -182,7 +182,6 @@ contract SlashingRegistryCoordinator is
                 socket: socket,
                 checkMaxOperatorCount: true
             }).numOperatorsPerQuorum;
-            
         } else if (registrationType == RegistrationType.CHURN) {
             // Decode registration data from bytes
             (
