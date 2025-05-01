@@ -62,16 +62,6 @@ contract EjectionManager is OwnableUpgradeable, EjectionManagerStorage {
                     ) {
                         ratelimitHit = true;
 
-                        stakeForEjection += operatorStake;
-                        ++ejectedOperators;
-
-                        slashingRegistryCoordinator.ejectOperator(
-                            slashingRegistryCoordinator.getOperatorFromId(operatorIds[i][j]),
-                            abi.encodePacked(quorumNumber)
-                        );
-
-                        emit OperatorEjected(operatorIds[i][j], quorumNumber);
-
                         break;
                     }
 
