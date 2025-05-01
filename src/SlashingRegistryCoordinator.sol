@@ -175,24 +175,13 @@ contract SlashingRegistryCoordinator is
         bytes32 operatorId = _getOrCreateOperatorId(operator, params);
 
         if (registrationType == RegistrationType.NORMAL) {
-            uint32[] memory numOperatorsPerQuorum = _registerOperator({
+            _registerOperator({
                 operator: operator,
                 operatorId: operatorId,
                 quorumNumbers: quorumNumbers,
                 socket: socket,
                 checkMaxOperatorCount: true
             }).numOperatorsPerQuorum;
-
-            // For each quorum, validate that the new operator count does not exceed the maximum
-            // (If it does, an operator needs to be replaced -- see `registerOperatorWithChurn`)
-            for (uint256 i = 0; i < quorumNumbers.length; i++) {
-                uint8 quorumNumber = uint8(quorumNumbers[i]);
-
-                require(
-                    numOperatorsPerQuorum[i] <= _quorumParams[quorumNumber].maxOperatorCount,
-                    MaxOperatorCountReached()
-                );
-            }
         } else if (registrationType == RegistrationType.CHURN) {
             // Decode registration data from bytes
             (
