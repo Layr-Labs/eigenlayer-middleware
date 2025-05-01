@@ -31,6 +31,8 @@ interface IStakeRegistryErrors {
     error EmptyStakeHistory();
     /// @notice Thrown when the quorum is not slashable and the caller attempts to set the look ahead period.
     error QuorumNotSlashable();
+    /// @notice Thrown when the look ahead period is too long.
+    error LookAheadPeriodTooLong();
 }
 
 interface IStakeRegistryTypes {

@@ -9,6 +9,7 @@ import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSD
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 
 import {StakeRegistryStorage, IStrategy} from "./StakeRegistryStorage.sol";
 
@@ -795,6 +796,10 @@ contract StakeRegistry is StakeRegistryStorage {
         require(
             stakeTypePerQuorum[quorumNumber] == IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE,
             QuorumNotSlashable()
+        );
+        require(
+            _lookAheadBlocks <= AllocationManager(address(allocationManager)).DEALLOCATION_DELAY(),
+            LookAheadPeriodTooLong()
         );
         uint32 oldLookAheadDays = slashableStakeLookAheadPerQuorum[quorumNumber];
         slashableStakeLookAheadPerQuorum[quorumNumber] = _lookAheadBlocks;
