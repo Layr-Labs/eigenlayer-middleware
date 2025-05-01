@@ -59,6 +59,8 @@ interface ISlashingRegistryCoordinatorErrors {
     error LookAheadPeriodTooLong();
     /// @notice Thrown when the number of operators in a quorum would exceed the maximum allowed.
     error MaxOperatorCountReached();
+    /// @notice Thrown when the operator is not registered for the quorum.
+    error OperatorNotRegisteredForQuorum();
 }
 
 interface ISlashingRegistryCoordinatorTypes {
