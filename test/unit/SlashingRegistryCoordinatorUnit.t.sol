@@ -1965,7 +1965,6 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
         // Register extra operator in the new quorum
         registerOperatorInSlashingRegistryCoordinator(extraOperator1, "socket:8545", uint32(2));
 
-
         // Setup churn data
         ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams =
             new ISlashingRegistryCoordinatorTypes.OperatorKickParam[](quorumNumbers.length);
