@@ -1937,17 +1937,40 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
         );
     }
 
+    /// @dev Asserts that an operator cannot be churned out if it is not registered for the quorum
     function test_registerOperatorWithChurn_revert_notRegisteredForQuorum() public {
         _setOperatorWeight(testOperator.key.addr, registeringStake);
+        _setOperatorWeight(operatorToKick.key.addr, operatorToKickStake);
 
-        Operator memory unregisteredOperator = operatorsByID[operatorIds.at(5)];
-        _setOperatorWeight(unregisteredOperator.key.addr, operatorToKickStake);
+        // Create a new quorum
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] =
+            IStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 1 ether});
 
+        operatorSetParams = ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+            maxOperatorCount: 1,
+            kickBIPsOfOperatorStake: 5000,
+            kickBIPsOfTotalStake: 5000
+        });
+
+        vm.startPrank(proxyAdminOwner);
+        slashingRegistryCoordinator.createTotalDelegatedStakeQuorum(
+            operatorSetParams,
+            1 ether, // minimum stake
+            strategyParams
+        );
+        vm.stopPrank();
+
+        // Register extra operator in the new quorum
+        registerOperatorInSlashingRegistryCoordinator(extraOperator1, "socket:8545", uint32(2));
+
+        // Setup churn data
         ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams =
             new ISlashingRegistryCoordinatorTypes.OperatorKickParam[](quorumNumbers.length);
         operatorKickParams[0] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
-            operator: unregisteredOperator.key.addr,
-            quorumNumber: uint8(quorumNumbers[0])
+            operator: operatorToKick.key.addr,
+            quorumNumber: uint8(2) // 3rd quorum
         });
 
         ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature =
@@ -1955,7 +1978,7 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
             testOperator.key.addr,
             testOperatorId,
             operatorKickParams,
-            bytes32(uint256(3)), // Different salt from previous tests
+            bytes32(uint256(4)),
             defaultExpiry
         );
 
@@ -1965,7 +1988,7 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
         IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
             .RegisterParams({
             avs: address(serviceManager),
-            operatorSetIds: new uint32[](quorumNumbers.length),
+            operatorSetIds: new uint32[](1),
             data: abi.encode(
                 ISlashingRegistryCoordinatorTypes.RegistrationType.CHURN,
                 "socket:8545",
@@ -1975,12 +1998,10 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
             )
         });
 
-        for (uint256 i = 0; i < quorumNumbers.length; i++) {
-            registerParams.operatorSetIds[i] = uint8(quorumNumbers[i]);
-        }
+        registerParams.operatorSetIds[0] = uint32(2);
 
         vm.prank(testOperator.key.addr);
-        vm.expectRevert(abi.encodeWithSignature("OperatorNotRegistered()"));
+        vm.expectRevert(abi.encodeWithSignature("OperatorNotRegisteredForQuorum()"));
         IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
             testOperator.key.addr, registerParams
         );
