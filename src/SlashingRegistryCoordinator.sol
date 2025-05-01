@@ -705,8 +705,11 @@ contract SlashingRegistryCoordinator is
         bytes32 idToKick = _operatorInfo[operatorToKick].operatorId;
         require(newOperator != operatorToKick, CannotChurnSelf());
         require(kickParams.quorumNumber == quorumNumber, QuorumOperatorCountMismatch());
+
+        uint192 quorumBitmap;
+        quorumBitmap = uint192(BitmapUtils.setBit(quorumBitmap, quorumNumber));
         require(
-            quorumNumber.isSubsetOf(_currentOperatorBitmap(idToKick)),
+            quorumBitmap.isSubsetOf(_currentOperatorBitmap(idToKick)),
             OperatorNotRegisteredForQuorum()
         );
 
