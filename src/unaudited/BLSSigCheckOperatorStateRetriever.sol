@@ -10,6 +10,7 @@ import {BitmapUtils} from "../libraries/BitmapUtils.sol";
 import {BN254} from "../libraries/BN254.sol";
 import {BN256G2} from "./BN256G2.sol";
 import {OperatorStateRetriever} from "../OperatorStateRetriever.sol";
+import {ECUtils} from "./ECUtils.sol";
 
 /**
  * @title BLSSigCheckOperatorStateRetriever with view functions that allow to retrieve the state of an AVSs registry system.
@@ -17,6 +18,8 @@ import {OperatorStateRetriever} from "../OperatorStateRetriever.sol";
  * @author Bread coop
  */
 contract BLSSigCheckOperatorStateRetriever is OperatorStateRetriever {
+    using ECUtils for BN254.G1Point;
+
     /// @dev Thrown when the signature is not on the curve.
     error InvalidSigma();
     // avoid stack too deep
@@ -61,7 +64,7 @@ contract BLSSigCheckOperatorStateRetriever is OperatorStateRetriever {
         m.blsApkRegistry = registryCoordinator.blsApkRegistry();
 
         // Safe guard AVSs from generating NonSignerStakesAndSignature with invalid sigma
-        require(_isOnCurve(sigma), InvalidSigma());
+        require(sigma.isOnCurve(), InvalidSigma());
 
         // Compute the g2 APK of the signing operator set
         m.signingOperatorIds = new bytes32[](operators.length);
@@ -187,21 +190,5 @@ contract BLSSigCheckOperatorStateRetriever is OperatorStateRetriever {
             apk = BN254.plus(apk, operatorPk);
         }
         return apk;
-    }
-
-    /**
-     * @notice Checks if a point lies on the BN254 elliptic curve
-     * @dev The curve equation is y^2 = x^3 + 3 (mod p)
-     * @param p The point to check, in G1
-     * @return true if the point lies on the curve, false otherwise
-     */
-    function _isOnCurve(
-        BN254.G1Point memory p
-    ) internal pure returns (bool) {
-        uint256 y2 = mulmod(p.Y, p.Y, BN254.FP_MODULUS);
-        uint256 x2 = mulmod(p.X, p.X, BN254.FP_MODULUS);
-        uint256 x3 = mulmod(p.X, x2, BN254.FP_MODULUS);
-        uint256 rhs = addmod(x3, 3, BN254.FP_MODULUS);
-        return y2 == rhs;
     }
 }
