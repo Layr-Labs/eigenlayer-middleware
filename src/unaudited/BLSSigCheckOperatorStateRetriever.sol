@@ -19,6 +19,7 @@ import {ECUtils} from "./ECUtils.sol";
  */
 contract BLSSigCheckOperatorStateRetriever is OperatorStateRetriever {
     using ECUtils for BN254.G1Point;
+    using BN254 for BN254.G1Point;
     using BitmapUtils for uint256;
 
     /// @dev Thrown when the signature is not on the curve.
@@ -146,12 +147,9 @@ contract BLSSigCheckOperatorStateRetriever is OperatorStateRetriever {
 
         // Trim the nonSignerOperatorIds array to the actual count
         bytes32[] memory trimmedNonSignerOperatorIds = new bytes32[](nonSignerOperatorsCount);
-        for (uint256 i = 0; i < nonSignerOperatorsCount; i++) {
-            trimmedNonSignerOperatorIds[i] = nonSignerOperatorIds[i];
-        }
-
         BN254.G1Point[] memory nonSignerPubkeys = new BN254.G1Point[](nonSignerOperatorsCount);
         for (uint256 i = 0; i < nonSignerOperatorsCount; i++) {
+            trimmedNonSignerOperatorIds[i] = nonSignerOperatorIds[i];
             address nonSignerOperator =
                 registryCoordinator.getOperatorFromId(trimmedNonSignerOperatorIds[i]);
             (nonSignerPubkeys[i],) = m.blsApkRegistry.getRegisteredPubkey(nonSignerOperator);
@@ -189,7 +187,7 @@ contract BLSSigCheckOperatorStateRetriever is OperatorStateRetriever {
             address operator = registryCoordinator.getOperatorFromId(operatorIds[i]);
             BN254.G1Point memory operatorPk;
             (operatorPk.X, operatorPk.Y) = blsApkRegistry.operatorToPubkey(operator);
-            apk = BN254.plus(apk, operatorPk);
+            apk = apk.plus(operatorPk);
         }
         return apk;
     }
