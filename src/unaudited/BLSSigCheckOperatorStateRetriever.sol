@@ -96,7 +96,10 @@ contract BLSSigCheckOperatorStateRetriever is OperatorStateRetriever {
                     .getQuorumBitmapAtBlockNumberByIndex(
                     m.signingOperatorIds[i], blockNumber, signingOperatorQuorumBitmapIndices[i]
                 );
-                require(!uint256(signingOperatorQuorumBitmap).noBitsInCommon(bitmap), OperatorNotRegistered());
+                require(
+                    !uint256(signingOperatorQuorumBitmap).noBitsInCommon(bitmap),
+                    OperatorNotRegistered()
+                );
             }
         }
 

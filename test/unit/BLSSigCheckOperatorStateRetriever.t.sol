@@ -609,7 +609,9 @@ contract BLSSigCheckOperatorStateRetrieverUnitTests is
         );
     }
 
-    function test_getNonSignerStakesAndSignature_revert_operatorRegisteredToIrrelevantQuorum() public {
+    function test_getNonSignerStakesAndSignature_revert_operatorRegisteredToIrrelevantQuorum()
+        public
+    {
         // setup
         uint256 quorumBitmapOne = 1;
         cheats.roll(registrationBlockNumber);
@@ -654,7 +656,6 @@ contract BLSSigCheckOperatorStateRetrieverUnitTests is
             registryCoordinator, quorumNumbers, dummySigma, signingOperators, uint32(block.number)
         );
     }
-
 
     function _getApkAtBlocknumber(
         ISlashingRegistryCoordinator registryCoordinator,
