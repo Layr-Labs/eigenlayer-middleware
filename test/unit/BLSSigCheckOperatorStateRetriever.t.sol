@@ -526,8 +526,9 @@ contract BLSSigCheckOperatorStateRetrieverUnitTests is
         signingOperators[0] = defaultOperator;
 
         // Try to query for a non-existent quorum (quorum 9)
-        bytes memory invalidQuorumNumbers = new bytes(1);
-        invalidQuorumNumbers[0] = bytes1(uint8(9)); // Invalid quorum number
+        bytes memory invalidQuorumNumbers = new bytes(2);
+        invalidQuorumNumbers[0] = bytes1(uint8(0));
+        invalidQuorumNumbers[1] = bytes1(uint8(9)); // Invalid quorum number
 
         // Should revert because quorum 9 doesn't exist, but with a different error message
         cheats.expectRevert(
@@ -593,8 +594,9 @@ contract BLSSigCheckOperatorStateRetrieverUnitTests is
         signingOperators[0] = defaultOperator;
 
         // Try to query for the newly created quorum but at a historical block
-        bytes memory newQuorumNumbers = new bytes(1);
-        newQuorumNumbers[0] = bytes1(uint8(numQuorums));
+        bytes memory newQuorumNumbers = new bytes(2);
+        newQuorumNumbers[0] = bytes1(uint8(0));
+        newQuorumNumbers[1] = bytes1(uint8(8));
 
         // Should revert when querying for the newly created quorum at a block before it was created
         cheats.expectRevert(
@@ -606,6 +608,53 @@ contract BLSSigCheckOperatorStateRetrieverUnitTests is
             registryCoordinator, newQuorumNumbers, dummySigma, signingOperators, initialBlock
         );
     }
+
+    function test_getNonSignerStakesAndSignature_revert_operatorRegisteredToIrrelevantQuorum() public {
+        // setup
+        uint256 quorumBitmapOne = 1;
+        cheats.roll(registrationBlockNumber);
+
+        _registerOperatorWithCoordinator(defaultOperator, quorumBitmapOne, defaultPubKey);
+
+        address otherOperator = _incrementAddress(defaultOperator, 1);
+        BN254.G1Point memory otherPubKey = BN254.G1Point(1, 2);
+        _registerOperatorWithCoordinator(
+            otherOperator, quorumBitmapOne, otherPubKey, defaultStake - 1
+        );
+
+        // Generate actual G2 pubkeys
+        BN254.G2Point memory op1G2 = _makeG2Point(2);
+        BN254.G2Point memory op2G2 = _makeG2Point(3);
+
+        // Mock the registry calls so the contract sees those G2 points
+        vm.mockCall(
+            address(blsApkRegistry),
+            abi.encodeWithSelector(IBLSApkRegistry.getOperatorPubkeyG2.selector, defaultOperator),
+            abi.encode(op1G2)
+        );
+        vm.mockCall(
+            address(blsApkRegistry),
+            abi.encodeWithSelector(IBLSApkRegistry.getOperatorPubkeyG2.selector, otherOperator),
+            abi.encode(op2G2)
+        );
+
+        // Prepare inputs
+        BN254.G1Point memory dummySigma = BN254.scalar_mul_tiny(BN254.generatorG1(), 123);
+        address[] memory signingOperators = new address[](2);
+        signingOperators[0] = defaultOperator;
+        signingOperators[1] = otherOperator;
+
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(uint8(2));
+
+        // Call the function under test
+        vm.expectRevert(OperatorStateRetriever.OperatorNotRegistered.selector);
+        IBLSSignatureCheckerTypes.NonSignerStakesAndSignature memory result =
+        sigCheckOperatorStateRetriever.getNonSignerStakesAndSignature(
+            registryCoordinator, quorumNumbers, dummySigma, signingOperators, uint32(block.number)
+        );
+    }
+
 
     function _getApkAtBlocknumber(
         ISlashingRegistryCoordinator registryCoordinator,
