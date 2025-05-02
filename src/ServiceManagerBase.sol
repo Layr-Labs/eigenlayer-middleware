@@ -28,7 +28,6 @@ import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordi
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
-import {LibMergeSort} from "./libraries/LibMergeSort.sol";
 
 /**
  * @title Minimal implementation of a ServiceManager-type contract.
