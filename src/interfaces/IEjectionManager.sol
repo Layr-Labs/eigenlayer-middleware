@@ -116,6 +116,9 @@ interface IEjectionManager is IEjectionManagerErrors, IEjectionManagerEvents {
      * @notice Ejects operators specified in `operatorIds` from the AVS's RegistryCoordinator under a rate limit.
      * @param operatorIds The ids of the operators to eject for each quorum.
      * @dev This function will eject as many operators as possible prioritizing operators at the lower index.
+     * @dev This function calculates the amount ejectable in totality, without updating percentages after each ejection.
+     *      The behavior can result in ejection capability being different for a single ejection with multiple operators 
+     *      versus multiple ejections for multiple operators.
      * @dev The owner can eject operators without recording of stake ejection.
      */
     function ejectOperators(
