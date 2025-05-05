@@ -111,8 +111,87 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         );
     }
 
-    function testEjectOperators_MultipleOperatorInsideRatelimit() public {
+    /// @dev Tests that ejecting multiple operators in one call h
+    function testEjectOperators_singleCall() public {
         uint8 operatorsToEject = 10;
+        uint8 numOperators = 100;
+        uint96 stake = 1 ether;
+        _registerOperators(numOperators, stake);
+
+        // Get quroums to deregister
+        bytes32[][] memory operatorIds = new bytes32[][](numQuorums);
+        for (uint8 i = 0; i < numQuorums; i++) {
+            operatorIds[i] = new bytes32[](operatorsToEject);
+            for (uint256 j = 0; j < operatorsToEject; j++) {
+                operatorIds[i][j] =
+                    registryCoordinator.getOperatorId(_incrementAddress(defaultOperator, j));
+            }
+        }
+
+        cheats.prank(ejector);
+        ejectionManager.ejectOperators(operatorIds);
+
+        for (uint8 i = 0; i < operatorsToEject - 1; i++) {
+            assertEq(
+                uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))),
+                uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED)
+            );
+        }
+
+        // The 10th operator should not be ejected
+        assertEq(
+            uint8(
+                registryCoordinator.getOperatorStatus(
+                    _incrementAddress(defaultOperator, operatorsToEject - 1)
+                )
+            ),
+            uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED)
+        );
+    }
+
+    /// @dev Same test as above, but with multiple calls, end state should be the same
+    function testEjectOperators_multipleCalls() public {
+        uint8 operatorsToEject = 10;
+        uint8 numOperators = 100;
+        uint96 stake = 1 ether;
+        _registerOperators(numOperators, stake);
+
+        for (uint8 i = 0; i < operatorsToEject; i++) {
+            // Setup operatorIds for next call
+            uint8 operatorsToEjectPerCall = 1;
+            bytes32[][] memory operatorIds = new bytes32[][](numQuorums);
+            for (uint8 j = 0; j < numQuorums; j++) {
+                operatorIds[j] = new bytes32[](operatorsToEjectPerCall);
+                for (uint256 k = 0; k < operatorsToEjectPerCall; k++) {
+                    operatorIds[j][k] =
+                        registryCoordinator.getOperatorId(_incrementAddress(defaultOperator, i));
+                }
+            }
+
+            cheats.prank(ejector);
+            ejectionManager.ejectOperators(operatorIds);
+        }
+
+        for (uint8 i = 0; i < operatorsToEject - 1; i++) {
+            assertEq(
+                uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))),
+                uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED)
+            );
+        }
+
+        // The 10th operator should not be ejected
+        assertEq(
+            uint8(
+                registryCoordinator.getOperatorStatus(
+                    _incrementAddress(defaultOperator, operatorsToEject - 1)
+                )
+            ),
+            uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED)
+        );
+    }
+
+    function testEjectOperators_MultipleOperatorInsideRatelimit() public {
+        uint8 operatorsToEject = 9;
         uint8 numOperators = 100;
         uint96 stake = 1 ether;
         _registerOperators(numOperators, stake);
@@ -388,7 +467,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
     }
 
     function testEjectOperators_MultipleOperatorAfterRatelimitReset() public {
-        uint8 operatorsToEject = 10;
+        uint8 operatorsToEject = 9;
         uint8 numOperators = 100;
         uint96 stake = 1 ether;
 

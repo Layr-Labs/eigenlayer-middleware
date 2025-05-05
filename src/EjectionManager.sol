@@ -8,11 +8,12 @@ import {
     ISlashingRegistryCoordinator,
     IStakeRegistry
 } from "./EjectionManagerStorage.sol";
-
+import {console} from "forge-std/console.sol";
 /**
  * @title Used for automated ejection of operators from the SlashingRegistryCoordinator under a ratelimit
  * @author Layr Labs, Inc.
  */
+
 contract EjectionManager is OwnableUpgradeable, EjectionManagerStorage {
     constructor(
         ISlashingRegistryCoordinator _slashingRegistryCoordinator,
@@ -61,12 +62,15 @@ contract EjectionManager is OwnableUpgradeable, EjectionManagerStorage {
                             && stakeForEjection + operatorStake > amountEjectable
                     ) {
                         ratelimitHit = true;
-
+                        console.log("ratelimitHit", ratelimitHit);
                         break;
                     }
 
                     stakeForEjection += operatorStake;
                     ++ejectedOperators;
+                    // Update amount ejectable after each ejection to ensure consistent behavior between single and multiple ejections
+                    amountEjectable = amountEjectableForQuorum(quorumNumber);
+                    console.log("amountEjectable", amountEjectable);
 
                     slashingRegistryCoordinator.ejectOperator(
                         slashingRegistryCoordinator.getOperatorFromId(operatorIds[i][j]),
