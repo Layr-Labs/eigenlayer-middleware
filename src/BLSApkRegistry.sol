@@ -314,7 +314,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     }
 
     function _checkRegistryCoordinator() internal view {
-        require(msg.sender == address(registryCoordinator), OnlyRegistryCoordinatorOwner());
+        require(msg.sender == address(registryCoordinator), OnlyRegistryCoordinator());
     }
 
     function _checkRegistryCoordinatorOwner() internal view {
