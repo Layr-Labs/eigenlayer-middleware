@@ -33,15 +33,6 @@ contract BLSSignatureChecker is BLSSignatureCheckerStorage {
         ISlashingRegistryCoordinator _registryCoordinator
     ) BLSSignatureCheckerStorage(_registryCoordinator) {}
 
-    /// ACTIONS
-
-    /// @inheritdoc IBLSSignatureChecker
-    function setStaleStakesForbidden(
-        bool value
-    ) external onlyCoordinatorOwner {
-        _setStaleStakesForbidden(value);
-    }
-
     /// VIEW
 
     /// @inheritdoc IBLSSignatureChecker
@@ -138,21 +129,7 @@ contract BLSSignatureChecker is BLSSignatureCheckerStorage {
          * - subtract the stake for each nonsigner to calculate the stake belonging to signers
          */
         {
-            bool _staleStakesForbidden = staleStakesForbidden;
-            uint256 withdrawalDelayBlocks =
-                _staleStakesForbidden ? delegation.minWithdrawalDelayBlocks() : 0;
-
             for (uint256 i = 0; i < quorumNumbers.length; i++) {
-                // If we're disallowing stale stake updates, check that each quorum's last update block
-                // is within withdrawalDelayBlocks
-                if (_staleStakesForbidden) {
-                    require(
-                        registryCoordinator.quorumUpdateBlockNumber(uint8(quorumNumbers[i]))
-                            + withdrawalDelayBlocks > referenceBlockNumber,
-                        StaleStakesForbidden()
-                    );
-                }
-
                 // Validate params.quorumApks is correct for this quorum at the referenceBlockNumber,
                 // then add it to the total apk
                 require(
@@ -243,12 +220,5 @@ contract BLSSignatureChecker is BLSSignatureCheckerStorage {
             apkG2,
             PAIRING_EQUALITY_CHECK_GAS
         );
-    }
-
-    function _setStaleStakesForbidden(
-        bool value
-    ) internal {
-        staleStakesForbidden = value;
-        emit StaleStakesForbiddenUpdate(value);
     }
 }
