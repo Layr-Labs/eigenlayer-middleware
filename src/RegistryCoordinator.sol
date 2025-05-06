@@ -187,10 +187,9 @@ contract RegistryCoordinator is SlashingRegistryCoordinator, RegistryCoordinator
         // filter out M2 quorums from the quorum numbers
         uint256 operatorSetBitmap =
             quorumNumbers.orderedBytesArrayToBitmap().minus(m2QuorumBitmap());
-        if (!operatorSetBitmap.isEmpty()) {
-            // call the parent _forceDeregisterOperator function for operator sets quorums
-            super._forceDeregisterOperator(operator, operatorSetBitmap.bitmapToBytesArray());
-        }
+            
+        // call the parent _forceDeregisterOperator function for operator sets quorums
+        super._forceDeregisterOperator(operator, operatorSetBitmap.bitmapToBytesArray());
     }
 
     /// @dev Hook to prevent any new quorums from being created if operator sets are not enabled
