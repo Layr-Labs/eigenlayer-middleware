@@ -20,8 +20,6 @@ interface IBLSSignatureCheckerErrors {
     error InvalidReferenceBlocknumber();
     /// @notice Thrown when the non signer pubkeys are not sorted.
     error NonSignerPubkeysNotSorted();
-    /// @notice Thrown when StakeRegistry updates have not been updated within withdrawalDelayBlocks window
-    error StaleStakesForbidden();
     /// @notice Thrown when the quorum apk hash in storage does not match provided quorum apk.
     error InvalidQuorumApkHash();
     /// @notice Thrown when BLS pairing precompile call fails.
@@ -70,12 +68,7 @@ interface IBLSSignatureCheckerTypes {
     }
 }
 
-interface IBLSSignatureCheckerEvents is IBLSSignatureCheckerTypes {
-    /// @notice Emitted when `staleStakesForbiddenUpdate` is set.
-    event StaleStakesForbiddenUpdate(bool value);
-}
-
-interface IBLSSignatureChecker is IBLSSignatureCheckerErrors, IBLSSignatureCheckerEvents {
+interface IBLSSignatureChecker is IBLSSignatureCheckerErrors, IBLSSignatureCheckerTypes {
     /* STATE */
 
     /*
@@ -105,23 +98,6 @@ interface IBLSSignatureChecker is IBLSSignatureCheckerErrors, IBLSSignatureCheck
      * @dev This value is immutable and set during contract construction.
      */
     function delegation() external view returns (IDelegationManager);
-
-    /*
-     * @notice Returns whether stale stakes are forbidden in signature verification.
-     * @return True if stale stakes are forbidden, false otherwise.
-     */
-    function staleStakesForbidden() external view returns (bool);
-
-    /* ACTIONS */
-
-    /*
-     * @notice Sets `value` as the new staleStakesForbidden flag.
-     * @param value True to forbid stale stakes, false to allow them.
-     * @dev Access restricted to the registry coordinator owner.
-     */
-    function setStaleStakesForbidden(
-        bool value
-    ) external;
 
     /* VIEW */
 

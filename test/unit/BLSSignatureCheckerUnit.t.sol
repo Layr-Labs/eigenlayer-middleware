@@ -16,32 +16,10 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
 
     BLSSignatureChecker blsSignatureChecker;
 
-    event StaleStakesForbiddenUpdate(bool value);
-
     function setUp() public virtual {
         _setUpBLSMockAVSDeployer();
 
         blsSignatureChecker = new BLSSignatureChecker(registryCoordinator);
-    }
-
-    function test_setStaleStakesForbidden_revert_notRegCoordOwner() public {
-        cheats.expectRevert(IBLSSignatureCheckerErrors.OnlyRegistryCoordinatorOwner.selector);
-        blsSignatureChecker.setStaleStakesForbidden(true);
-    }
-
-    function test_setStaleStakesForbidden() public {
-        testFuzz_setStaleStakesForbidden(false);
-        testFuzz_setStaleStakesForbidden(true);
-    }
-
-    function testFuzz_setStaleStakesForbidden(
-        bool newState
-    ) public {
-        cheats.expectEmit(true, true, true, true, address(blsSignatureChecker));
-        emit StaleStakesForbiddenUpdate(newState);
-        cheats.prank(registryCoordinatorOwner);
-        blsSignatureChecker.setStaleStakesForbidden(newState);
-        assertEq(blsSignatureChecker.staleStakesForbidden(), newState, "state not set correctly");
     }
 
     // this test checks that a valid signature from maxOperatorsToRegister with a random number of nonsigners is checked
@@ -335,52 +313,6 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
             nonSignerStakesAndSignature.nonSignerPubkeys[0]
         );
         cheats.expectRevert(IBLSSignatureCheckerErrors.NonSignerPubkeysNotSorted.selector);
-        blsSignatureChecker.checkSignatures(
-            msgHash, quorumNumbers, referenceBlockNumber, nonSignerStakesAndSignature
-        );
-    }
-
-    function test_checkSignatures_revert_staleStakes() public {
-        uint256 numNonSigners = 2;
-        uint256 quorumBitmap = 1;
-        uint256 nonRandomNumber = 777;
-        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
-
-        (
-            uint32 referenceBlockNumber,
-            BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
-        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(
-            nonRandomNumber, numNonSigners, quorumBitmap
-        );
-
-        // make sure the `staleStakesForbidden` flag is set to 'true'
-        testFuzz_setStaleStakesForbidden(true);
-
-        uint256 stalestUpdateBlock = type(uint256).max;
-        for (uint256 i = 0; i < quorumNumbers.length; ++i) {
-            uint256 quorumUpdateBlockNumber =
-                registryCoordinator.quorumUpdateBlockNumber(uint8(quorumNumbers[i]));
-            if (quorumUpdateBlockNumber < stalestUpdateBlock) {
-                stalestUpdateBlock = quorumUpdateBlockNumber;
-            }
-        }
-
-        // move referenceBlockNumber forward to a block number the last block number where the stakes will be considered "not stale"
-        referenceBlockNumber =
-            uint32(stalestUpdateBlock + delegationMock.minWithdrawalDelayBlocks()) - 1;
-        // roll forward to make the reference block number valid
-        // we roll to referenceBlockNumber + 1 because the current block number is not a valid reference block
-
-        cheats.roll(referenceBlockNumber + 1);
-        blsSignatureChecker.checkSignatures(
-            msgHash, quorumNumbers, referenceBlockNumber, nonSignerStakesAndSignature
-        );
-
-        // move referenceBlockNumber forward one more block, making the stakes "stale"
-        referenceBlockNumber += 1;
-        // roll forward to reference + 1 to ensure the referenceBlockNumber is still valid
-        cheats.roll(referenceBlockNumber + 1);
-        cheats.expectRevert(IBLSSignatureCheckerErrors.StaleStakesForbidden.selector);
         blsSignatureChecker.checkSignatures(
             msgHash, quorumNumbers, referenceBlockNumber, nonSignerStakesAndSignature
         );
