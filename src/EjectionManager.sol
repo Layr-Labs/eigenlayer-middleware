@@ -8,11 +8,11 @@ import {
     ISlashingRegistryCoordinator,
     IStakeRegistry
 } from "./EjectionManagerStorage.sol";
-
 /**
  * @title Used for automated ejection of operators from the SlashingRegistryCoordinator under a ratelimit
  * @author Layr Labs, Inc.
  */
+
 contract EjectionManager is OwnableUpgradeable, EjectionManagerStorage {
     constructor(
         ISlashingRegistryCoordinator _slashingRegistryCoordinator,
@@ -74,6 +74,9 @@ contract EjectionManager is OwnableUpgradeable, EjectionManagerStorage {
                     );
 
                     emit OperatorEjected(operatorIds[i][j], quorumNumber);
+
+                    // Update amount ejectable after each ejection to ensure consistent behavior between single and multiple ejections
+                    amountEjectable = amountEjectableForQuorum(quorumNumber);
                 }
             }
 
