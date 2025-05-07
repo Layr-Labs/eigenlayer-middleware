@@ -104,7 +104,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
             )
         ) % BN254.FR_MODULUS;
 
-        // e(sigma + P * gamma, -[1]_2) = e(H(m) + [1]_1 * gamma, P')
+        // e(sigma + P * gamma, [1]_2) = e(H(m) + [1]_1 * gamma, P')
         require(
             BN254.pairing(
                 params.pubkeyRegistrationSignature.plus(params.pubkeyG1.scalar_mul(gamma)),
