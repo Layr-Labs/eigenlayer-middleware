@@ -21,8 +21,8 @@ abstract contract BLSSignatureCheckerStorage is IBLSSignatureChecker {
 
     /// STATE
 
-    /// @inheritdoc IBLSSignatureChecker
-    bool public staleStakesForbidden;
+    /// @dev Deprecated storage for the staleStakesForbidden flag.
+    bool internal __deprecated_staleStakesForbidden;
 
     constructor(
         ISlashingRegistryCoordinator _registryCoordinator
