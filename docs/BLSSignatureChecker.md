@@ -90,7 +90,6 @@ This method performs the following steps. Note that each step involves lookups o
     * `quorumNumbers` MUST be an ordered list of valid, initialized quorums
     * `params.nonSignerPubkeys` MUST ONLY contain unique pubkeys, in ascending order of their pubkey hash
 * For each quorum:
-    * If stale stakes are forbidden (see [`BLSSignatureChecker.setStaleStakesForbidden`](#blssignaturecheckersetstalestakesforbidden)), check the last `quorumUpdateBlockNumber` is within `DelegationManager.minWithdrawalDelayBlocks` of `referenceBlockNumber`. This references a value in the EigenLayer core contracts - see [EigenLayer core docs][core-docs-dev] for more info.
     * Validate that each `params.quorumApks` corresponds to the quorum's apk at the `referenceBlockNumber`
 * For each historical state lookup, the `referenceBlockNumber` and provided index MUST point to a valid historical entry: 
     * `referenceBlockNumber` MUST come after the entry's `updateBlockNumber`
@@ -173,27 +172,3 @@ For each quorum, this returns:
 * `uint32[] quorumApkIndices`: The indices in `BLSApkRegistry.apkHistory` where the quorum's apk can be found at `referenceBlockNumber`. Length is equal to the number of quorums in `quorumNumbers`.
 * `uint32[] totalStakeIndices`: The indices in `StakeRegistry._totalStakeHistory` where each quorum's total stake can be found at `referenceBlockNumber`. Length is equal to the number of quorums in `quorumNumbers`.
 * `uint32[][] nonSignerStakeIndices`: For each quorum, a list of the indices of each nonsigner's `StakeRegistry.operatorStakeHistory` entry at `referenceBlockNumber`. Length is equal to the number of quorums in `quorumNumbers`, and each sub-list is equal in length to the number of nonsigners in `nonSignerOperatorIds` registered for that quorum at `referenceBlockNumber`
-
----
-
-### System Configuration
-
-#### `BLSSignatureChecker.setStaleStakesForbidden`
-
-```solidity
-function setStaleStakesForbidden(
-    bool value
-) 
-    external 
-    onlyCoordinatorOwner
-```
-
-This method allows the `RegistryCoordinator` Owner to update `staleStakesForbidden` in the `BLSSignatureChecker`. If stale stakes are forbidden, `BLSSignatureChecker.checkSignatures` will perform an additional check when querying each quorum's apk, Operator stakes, and total stakes.
-
-This additional check requires that each quorum was updated within a certain block window of the `referenceBlockNumber` passed into `BLSSignatureChecker.checkSignatures`.
-
-*Effects*:
-* Sets `staleStakesForbidden` to `value`
-
-*Requirements*:
-* Caller MUST be the `RegistryCoordinator` Owner

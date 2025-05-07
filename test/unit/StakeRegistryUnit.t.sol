@@ -1102,28 +1102,23 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
      *                         setSlashableStakeLookahead
      *
      */
-    function testFuzz_setSlashableStakeLookahead_Revert_WhenNotRegistryCoordinatorOwner(
-        uint8 quorumNumber,
-        uint32 lookAheadBlocks
-    ) public {
+    function test_setSlashableStakeLookahead_Revert_WhenNotRegistryCoordinatorOwner() public {
         cheats.expectRevert(IStakeRegistryErrors.OnlySlashingRegistryCoordinatorOwner.selector);
-        stakeRegistry.setSlashableStakeLookahead(quorumNumber, lookAheadBlocks);
+        stakeRegistry.setSlashableStakeLookahead(0, 0);
     }
 
     function testFuzz_setSlashableStakeLookahead_Revert_WhenQuorumDoesNotExist(
-        uint8 quorumNumber,
-        uint32 lookAheadBlocks
+        uint8 quorumNumber
     ) public {
         // quorums [0,nextQuorum) are initialized, so use an invalid quorumNumber
         cheats.assume(quorumNumber >= nextQuorum);
         cheats.expectRevert(IStakeRegistryErrors.QuorumDoesNotExist.selector);
         cheats.prank(registryCoordinatorOwner);
-        stakeRegistry.setSlashableStakeLookahead(quorumNumber, lookAheadBlocks);
+        stakeRegistry.setSlashableStakeLookahead(quorumNumber, 0);
     }
 
     function testFuzz_setSlashableStakeLookahead_Revert_WhenQourumNotSlashable(
-        uint8 quorumNumber,
-        uint32 lookAheadBlocks
+        uint8 quorumNumber
     ) public {
         // Only consider existing quorums and quorums which use delegated stake
         cheats.assume(quorumNumber < nextQuorum);
@@ -1132,6 +1127,35 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
                 == IStakeRegistryTypes.StakeType.TOTAL_DELEGATED
         );
         cheats.expectRevert(IStakeRegistryErrors.QuorumNotSlashable.selector);
+        cheats.prank(registryCoordinatorOwner);
+        stakeRegistry.setSlashableStakeLookahead(quorumNumber, 0);
+    }
+
+    function testFuzz_setSlashableStakeLookahead_Revert_WhenLookAheadPeriodTooLong(
+        uint32 lookAheadBlocks
+    ) public {
+        uint32 deallocationDelay =
+            AllocationManager(address(allocationManager)).DEALLOCATION_DELAY();
+        console.log("deallocationDelay", deallocationDelay);
+        cheats.assume(lookAheadBlocks > deallocationDelay);
+
+        uint8 quorumNumber = nextQuorum;
+        // Create a new slashable quorum
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams(
+            IStrategy(address(uint160(uint256(keccak256(abi.encodePacked(quorumNumber)))))),
+            uint96(WEIGHTING_DIVISOR)
+        );
+        cheats.startPrank(address(registryCoordinator));
+        stakeRegistry.initializeSlashableStakeQuorum(
+            quorumNumber,
+            1,
+            AllocationManager(address(allocationManager)).DEALLOCATION_DELAY(),
+            strategyParams
+        );
+        cheats.stopPrank();
+        cheats.expectRevert(IStakeRegistryErrors.LookAheadPeriodTooLong.selector);
         cheats.prank(registryCoordinatorOwner);
         stakeRegistry.setSlashableStakeLookahead(quorumNumber, lookAheadBlocks);
     }
@@ -1142,6 +1166,13 @@ contract StakeRegistryUnitTests_Config is StakeRegistryUnitTests {
     ) public {
         // Only consider non-existing quorums
         cheats.assume(quorumNumber >= nextQuorum);
+        lookAheadBlocks = uint32(
+            bound(
+                lookAheadBlocks,
+                0,
+                AllocationManager(address(allocationManager)).DEALLOCATION_DELAY()
+            )
+        );
 
         // Create a new slashable quorum
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =

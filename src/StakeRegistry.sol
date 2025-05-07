@@ -9,6 +9,7 @@ import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSD
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 
 import {StakeRegistryStorage, IStrategy} from "./StakeRegistryStorage.sol";
 
@@ -137,8 +138,7 @@ contract StakeRegistry is StakeRegistryStorage {
          * in the quorum's total stake.
          *
          * If the operator no longer has the minimum stake required to be registered
-         * in the quorum, the quorum number is added to `quorumsToRemove`, which
-         * is returned to the registry coordinator.
+         * in the quorum, the operator is marked for removal.
          */
         _checkQuorumExists(quorumNumber);
 
@@ -795,6 +795,10 @@ contract StakeRegistry is StakeRegistryStorage {
         require(
             stakeTypePerQuorum[quorumNumber] == IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE,
             QuorumNotSlashable()
+        );
+        require(
+            _lookAheadBlocks <= AllocationManager(address(allocationManager)).DEALLOCATION_DELAY(),
+            LookAheadPeriodTooLong()
         );
         uint32 oldLookAheadDays = slashableStakeLookAheadPerQuorum[quorumNumber];
         slashableStakeLookAheadPerQuorum[quorumNumber] = _lookAheadBlocks;

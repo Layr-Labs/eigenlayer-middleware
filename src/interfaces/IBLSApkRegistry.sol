@@ -4,8 +4,10 @@ pragma solidity ^0.8.27;
 import {BN254} from "../libraries/BN254.sol";
 
 interface IBLSApkRegistryErrors {
-    /// @notice Thrown when a non-RegistryCoordinator address calls a restricted function.
+    /// @notice Thrown when a non-RegistryCoordinator owner address calls a restricted function.
     error OnlyRegistryCoordinatorOwner();
+    /// @notice Thrown when a non-RegistryCoordinator address calls a restricted function.
+    error OnlyRegistryCoordinator();
     /// @notice Thrown when attempting to initialize a quorum that already exists.
     error QuorumAlreadyExists();
     /// @notice Thrown when a quorum does not exist.

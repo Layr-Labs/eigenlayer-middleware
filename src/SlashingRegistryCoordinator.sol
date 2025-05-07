@@ -175,24 +175,13 @@ contract SlashingRegistryCoordinator is
         bytes32 operatorId = _getOrCreateOperatorId(operator, params);
 
         if (registrationType == RegistrationType.NORMAL) {
-            uint32[] memory numOperatorsPerQuorum = _registerOperator({
+            _registerOperator({
                 operator: operator,
                 operatorId: operatorId,
                 quorumNumbers: quorumNumbers,
                 socket: socket,
                 checkMaxOperatorCount: true
             }).numOperatorsPerQuorum;
-
-            // For each quorum, validate that the new operator count does not exceed the maximum
-            // (If it does, an operator needs to be replaced -- see `registerOperatorWithChurn`)
-            for (uint256 i = 0; i < quorumNumbers.length; i++) {
-                uint8 quorumNumber = uint8(quorumNumbers[i]);
-
-                require(
-                    numOperatorsPerQuorum[i] <= _quorumParams[quorumNumber].maxOperatorCount,
-                    MaxOperatorCountReached()
-                );
-            }
         } else if (registrationType == RegistrationType.CHURN) {
             // Decode registration data from bytes
             (
@@ -677,6 +666,7 @@ contract SlashingRegistryCoordinator is
     /**
      * @notice Validates that an incoming operator is eligible to replace an existing
      * operator based on the stake of both
+     * @dev In order to be churned out, the existing operator must be registered for the quorum
      * @dev In order to churn, the incoming operator needs to have more stake than the
      * existing operator by a proportion given by `kickBIPsOfOperatorStake`
      * @dev In order to be churned out, the existing operator needs to have a proportion
@@ -704,6 +694,13 @@ contract SlashingRegistryCoordinator is
         bytes32 idToKick = _operatorInfo[operatorToKick].operatorId;
         require(newOperator != operatorToKick, CannotChurnSelf());
         require(kickParams.quorumNumber == quorumNumber, QuorumOperatorCountMismatch());
+
+        uint192 quorumBitmap;
+        quorumBitmap = uint192(BitmapUtils.setBit(quorumBitmap, quorumNumber));
+        require(
+            quorumBitmap.isSubsetOf(_currentOperatorBitmap(idToKick)),
+            OperatorNotRegisteredForQuorum()
+        );
 
         // Get the target operator's stake and check that it is below the kick thresholds
         uint96 operatorToKickStake = stakeRegistry.getCurrentStake(idToKick, quorumNumber);
@@ -830,7 +827,8 @@ contract SlashingRegistryCoordinator is
         } else if (stakeType == IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE) {
             // For slashable stake quorums, ensure lookAheadPeriod is less than DEALLOCATION_DELAY
             require(
-                AllocationManager(address(allocationManager)).DEALLOCATION_DELAY() > lookAheadPeriod,
+                lookAheadPeriod
+                    <= AllocationManager(address(allocationManager)).DEALLOCATION_DELAY(),
                 LookAheadPeriodTooLong()
             );
             stakeRegistry.initializeSlashableStakeQuorum(
