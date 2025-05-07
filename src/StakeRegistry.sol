@@ -138,8 +138,7 @@ contract StakeRegistry is StakeRegistryStorage {
          * in the quorum's total stake.
          *
          * If the operator no longer has the minimum stake required to be registered
-         * in the quorum, the quorum number is added to `quorumsToRemove`, which
-         * is returned to the registry coordinator.
+         * in the quorum, the operator is marked for removal.
          */
         _checkQuorumExists(quorumNumber);
 
