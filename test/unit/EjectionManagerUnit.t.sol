@@ -514,7 +514,8 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
     }
 
     function testEjectOperators_NoRatelimitForOwner() public {
-        uint8 operatorsToEject = 100;
+        // Eject 75% of stake, more than the 10% limit
+        uint8 operatorsToEject = 75;
         uint8 numOperators = 100;
         uint96 stake = 1 ether;
         _registerOperators(numOperators, stake);
