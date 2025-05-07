@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import {IBLSTableCalculator} from "../interfaces/IBLSTableCalculator.sol";
-
+import {IOperatorTableCalculator} from "../interfaces/IOperatorTableCalculator.sol";
 import {IStakeRegistry} from "../interfaces/IStakeRegistry.sol";
 import {IBLSApkRegistry} from "../interfaces/IBLSApkRegistry.sol";
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
@@ -18,9 +18,14 @@ abstract contract BLSTableCalculator is IBLSTableCalculator {
     constructor(IBLSApkRegistry _blsApkRegistry) {
         blsApkRegistry = _blsApkRegistry;
     }
+
+    /// @inheritdoc IOperatorTableCalculator
+    function calculateOperatorTableBytes(OperatorSet calldata operatorSet) external view returns (bytes memory operatorTableBytes) {
+        return abi.encode(calculateOperatorTable(operatorSet));
+    }
     
     /// @inheritdoc IBLSTableCalculator
-    function calculateOperatorTable(OperatorSet calldata operatorSet) external view returns (BN254OperatorSetInfo memory operatorSetInfo) {
+    function calculateOperatorTable(OperatorSet calldata operatorSet) public view returns (BN254OperatorSetInfo memory operatorSetInfo) {
         validateOperatorSet(operatorSet);
 
         // Get the weights for all operators in the operatorSet

@@ -4,7 +4,9 @@ pragma solidity ^0.8.27;
 import {BN254} from "../libraries/BN254.sol";
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+import {IOperatorTableCalculator} from "./IOperatorTableCalculator.sol";
 import {IOperatorWeightCalculator} from "./IOperatorWeightCalculator.sol";
+
 interface IBLSTableCalculatorErrors {
     /// @notice Thrown when the operatorSet does not exist in EigenLayer core.
     error InvalidOperatorSet();
@@ -33,7 +35,7 @@ interface IBLSTableCalculatorTypes {
 interface IBLSTableCalculatorEvents is IBLSTableCalculatorTypes {
 }
 
-interface IBLSTableCalculator is IOperatorWeightCalculator, IBLSTableCalculatorErrors, IBLSTableCalculatorEvents {
+interface IBLSTableCalculator is IOperatorTableCalculator, IOperatorWeightCalculator, IBLSTableCalculatorErrors, IBLSTableCalculatorEvents {
     /**
      * @notice calculates the operatorInfos for a given operatorSet
      * @param operatorSet the operatorSet to calculate the operator table for
