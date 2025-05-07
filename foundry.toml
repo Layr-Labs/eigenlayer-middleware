@@ -109,7 +109,7 @@
 
 [rpc_endpoints]
     mainnet = "${RPC_MAINNET}"
-    holesky = "${RPC_HOLESKY}"
+    holesky = "${HOLESKY_RPC_URL}"
 
 [etherscan]
     mainnet = { key = "${ETHERSCAN_API_KEY}" }

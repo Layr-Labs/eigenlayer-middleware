@@ -112,8 +112,8 @@ contract OperatorStateRetriever {
         ISlashingRegistryCoordinator registryCoordinator,
         uint32 referenceBlockNumber,
         bytes calldata quorumNumbers,
-        bytes32[] calldata nonSignerOperatorIds
-    ) external view returns (CheckSignaturesIndices memory) {
+        bytes32[] memory nonSignerOperatorIds
+    ) public view returns (CheckSignaturesIndices memory) {
         IStakeRegistry stakeRegistry = registryCoordinator.stakeRegistry();
         CheckSignaturesIndices memory checkSignaturesIndices;
 
