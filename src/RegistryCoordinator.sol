@@ -187,10 +187,9 @@ contract RegistryCoordinator is SlashingRegistryCoordinator, RegistryCoordinator
         // filter out M2 quorums from the quorum numbers
         uint256 operatorSetBitmap =
             quorumNumbers.orderedBytesArrayToBitmap().minus(m2QuorumBitmap());
-        if (!operatorSetBitmap.isEmpty()) {
-            // call the parent _forceDeregisterOperator function for operator sets quorums
-            super._forceDeregisterOperator(operator, operatorSetBitmap.bitmapToBytesArray());
-        }
+
+        // call the parent _forceDeregisterOperator function for operator sets quorums
+        super._forceDeregisterOperator(operator, operatorSetBitmap.bitmapToBytesArray());
     }
 
     /// @dev Hook to prevent any new quorums from being created if operator sets are not enabled
@@ -235,10 +234,7 @@ contract RegistryCoordinator is SlashingRegistryCoordinator, RegistryCoordinator
 
     /**
      * @dev Helper function to update operator stakes and deregister operators with insufficient stake
-     * This function handles two cases:
-     * 1. Operators who no longer meet the minimum stake requirement for a quorum
-     * 2. Operators who have been force-deregistered from the AllocationManager but not from this contract
-     * (e.g. due to out of gas errors in the deregistration callback)
+     * This function handles Operators who no longer meet the minimum stake requirement for a quorum
      * @param operators The list of operators to check and update
      * @param operatorIds The corresponding operator IDs
      * @param quorumNumber The quorum number to check stakes for

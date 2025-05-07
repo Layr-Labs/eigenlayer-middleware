@@ -287,7 +287,7 @@ contract BLSApkRegistryUnitTests_configAndGetters is BLSApkRegistryUnitTests {
         cheats.assume(nonCoordinatorAddress != address(registryCoordinator));
 
         cheats.prank(address(nonCoordinatorAddress));
-        cheats.expectRevert(IBLSApkRegistryErrors.OnlyRegistryCoordinatorOwner.selector);
+        cheats.expectRevert(IBLSApkRegistryErrors.OnlyRegistryCoordinator.selector);
         blsApkRegistry.initializeQuorum(defaultQuorumNumber);
     }
 }
@@ -306,7 +306,7 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is BLSApkRegistryUnitTests
             registryCoordinator.pubkeyRegistrationMessageHash(defaultOperator);
 
         cheats.prank(address(nonCoordinatorAddress));
-        cheats.expectRevert(IBLSApkRegistryErrors.OnlyRegistryCoordinatorOwner.selector);
+        cheats.expectRevert(IBLSApkRegistryErrors.OnlyRegistryCoordinator.selector);
         blsApkRegistry.registerBLSPublicKey(defaultOperator, pubkeyRegistrationParams, messageHash);
     }
 
@@ -434,7 +434,7 @@ contract BLSApkRegistryUnitTests_registerOperator is BLSApkRegistryUnitTests {
         cheats.assume(nonCoordinatorAddress != address(registryCoordinator));
 
         cheats.prank(nonCoordinatorAddress);
-        cheats.expectRevert(IBLSApkRegistryErrors.OnlyRegistryCoordinatorOwner.selector);
+        cheats.expectRevert(IBLSApkRegistryErrors.OnlyRegistryCoordinator.selector);
         blsApkRegistry.registerOperator(nonCoordinatorAddress, new bytes(0));
     }
 
@@ -537,7 +537,7 @@ contract BLSApkRegistryUnitTests_deregisterOperator is BLSApkRegistryUnitTests {
         cheats.assume(nonCoordinatorAddress != address(registryCoordinator));
 
         cheats.prank(nonCoordinatorAddress);
-        cheats.expectRevert(IBLSApkRegistryErrors.OnlyRegistryCoordinatorOwner.selector);
+        cheats.expectRevert(IBLSApkRegistryErrors.OnlyRegistryCoordinator.selector);
         blsApkRegistry.deregisterOperator(nonCoordinatorAddress, new bytes(0));
     }
 
