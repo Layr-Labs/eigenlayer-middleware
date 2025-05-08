@@ -26,7 +26,7 @@ interface IBN254TableCalculatorTypes {
      * @param totalWeights The total weights of the operators in the operatorSet.
      *
      * @dev The operatorInfoTreeRoot is the root of a merkle tree that contains the operatorInfos for each operator in the operatorSet.
-     * It is used by the `IBN254CertificateVerifier` to verify stakes against the non-signing operators
+     * It is calculated in this function and used by the `IBN254CertificateVerifier` to verify stakes against the non-signing operators
      *
      * @dev Retrieval of the `aggregatePubKey` depends on maintaining a key registry contract, see `BLSAPKRegistry` for an example implementation.
      *

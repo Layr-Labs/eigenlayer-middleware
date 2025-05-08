@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 import {IOperatorTableCalculator} from "./IOperatorTableCalculator.sol";
 
-interface ECDSATableCalculatorTypes {
+interface IECDSATableCalculatorTypes {
     /**
      * @notice A struct that contains information about a single operator
      * @param pubkey The address of the operator
@@ -18,7 +18,7 @@ interface ECDSATableCalculatorTypes {
     }
 }
 
-interface IECDSATableCalculator is IOperatorTableCalculator, ECDSATableCalculatorTypes {
+interface IECDSATableCalculator is IOperatorTableCalculator, IECDSATableCalculatorTypes {
     /**
      * @notice calculates the operatorInfos for a given operatorSet
      * @param operatorSet the operatorSet to calculate the operator table for
