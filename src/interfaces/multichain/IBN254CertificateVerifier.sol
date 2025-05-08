@@ -25,15 +25,13 @@ interface IBN254CertificateVerifierTypes is IBN254TableCalculatorTypes {
      * @param messageHash the hash of the message that was signed by operators and used to verify the aggregated signature
      * @param signature the G1 signature of the message
      * @param apk the G2 aggregate public key
-     * @param nonSignerIndices the indices of the non-signing operators
-     * @param nonSignerWitnesses an array of witnesses of operators
+     * @param nonSignerWitnesses an array of witnesses of non-signing operators
      */
     struct BN254Certificate {
         uint32 referenceTimestamp;
         bytes32 messageHash;
         BN254.G1Point signature;
         BN254.G2Point apk;
-        uint32[] nonSignerIndices;
         BN254OperatorInfoWitness[] nonSignerWitnesses;
     }
 }
