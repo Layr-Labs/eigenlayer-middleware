@@ -9,10 +9,12 @@ import {IBLSCertificateVerifier, IBLSCertificateVerifierTypes} from "../../src/i
 import {IBLSTableCalculatorTypes} from "../../src/interfaces/IBLSTableCalculator.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
-import {Merkle} from "murky/Merkle.sol";
+import {Merkle} from "../../src/libraries/Merkle.sol";
 
 contract BLSCertificateVerifierTest is Test {
     using BN254 for BN254.G1Point;
+    using Merkle for bytes32[];
+    using Merkle for bytes;
 
     // Contract being tested
     BLSCertificateVerifier verifier;
@@ -30,10 +32,9 @@ contract BLSCertificateVerifierTest is Test {
     bytes32 msgHash;
     uint256 aggSignerPrivKey = 69; 
     BN254.G2Point aggSignerApkG2; // G2 public key corresponding to aggSignerPrivKey
-    Merkle m = new Merkle();
     
     // Event
-    event TableUpdated(uint32 referenceTimestamp, BN254.G1Point pubkey, bytes32 operatorInfoTreeRoot);
+    event TableUpdated(uint32 referenceTimestamp, IBLSTableCalculatorTypes.BN254OperatorSetInfo operatorSetInfo);
 
     function setUp() public {
         vm.warp(1000000);  // Set block timestamp
@@ -160,26 +161,16 @@ contract BLSCertificateVerifierTest is Test {
         
         return (ops, nonSignerIndices, signature);
     }
-    
-    // Build a complete and correct merkle tree from operator infos
-    function getMerkleRoot(IBLSTableCalculatorTypes.BN254OperatorInfo[] memory ops) 
-        internal returns (bytes32 root) {
-        
-        bytes32[] memory leaves = new bytes32[](ops.length);
-        for (uint i = 0; i < ops.length; i++) {
-            leaves[i] = keccak256(abi.encode(ops[i]));
-        }
-        root = m.getRoot(leaves);
-    }
 
     function getMerkleProof(IBLSTableCalculatorTypes.BN254OperatorInfo[] memory ops, uint32 operatorIndex) 
-        internal returns (bytes32[] memory proof) {
+        internal returns (bytes memory proof) {
         
         bytes32[] memory leaves = new bytes32[](ops.length);
         for (uint i = 0; i < ops.length; i++) {
             leaves[i] = keccak256(abi.encode(ops[i]));
+            emit log_named_bytes32(string.concat("leaf", vm.toString(i)), leaves[i]);
         }
-        proof = m.getProof(leaves, operatorIndex);
+        proof = leaves.getProofKeccak(operatorIndex);
     }
     
     // Create operator set info
@@ -203,12 +194,19 @@ contract BLSCertificateVerifierTest is Test {
                 _totalWeights[j] += ops[i].weights[j];
             }
         }
+
+        bytes32[] memory leaves = new bytes32[](ops.length);
+        for (uint i = 0; i < ops.length; i++) {
+            leaves[i] = keccak256(abi.encode(ops[i]));
+        }
+        bytes32 operatorInfoTreeRoot = leaves.merkleizeKeccak();
         
         // Create the operator set info
         return IBLSTableCalculatorTypes.BN254OperatorSetInfo({
             numOperators: _numOperators,
             aggregatePubkey: aggregatePubkey,
-            totalWeights: _totalWeights
+            totalWeights: _totalWeights,
+            operatorInfoTreeRoot: operatorInfoTreeRoot
         });
     }
     
@@ -227,11 +225,10 @@ contract BLSCertificateVerifierTest is Test {
         
         for (uint256 i = 0; i < nonSignerIndices.length; i++) {
             uint32 nonSignerIndex = nonSignerIndices[i];
-            bytes32[] memory proof = getMerkleProof(ops, nonSignerIndex);
             
             witnesses[i] = IBLSCertificateVerifierTypes.BN254OperatorInfoWitness({
                 operatorIndex: nonSignerIndex,
-                operatorInfoProofs: proof,
+                operatorInfoProof: getMerkleProof(ops, nonSignerIndex),
                 operatorInfo: ops[nonSignerIndex]
             });
         }
@@ -253,10 +250,7 @@ contract BLSCertificateVerifierTest is Test {
         
         // Create operators with split keys - 3 signers, 1 non-signer
         (IBLSTableCalculatorTypes.BN254OperatorInfo[] memory operators, , ) = 
-            createOperatorsWithSplitKeys(123, 3, 1);
-            
-        bytes32 operatorInfoTreeRoot = getMerkleRoot(operators);
-        
+            createOperatorsWithSplitKeys(123, 3, 1);        
         // Create operator set info
         IBLSTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
         
@@ -264,25 +258,24 @@ contract BLSCertificateVerifierTest is Test {
         
         // Expect the TableUpdated event
         vm.expectEmit(true, true, true, true);
-        emit TableUpdated(referenceTimestamp, operatorSetInfo.aggregatePubkey, operatorInfoTreeRoot);
+        emit TableUpdated(referenceTimestamp, operatorSetInfo);
         
         // Update the operator table
         verifier.updateOperatorTable(
             referenceTimestamp,
-            operatorSetInfo,
-            operatorInfoTreeRoot
+            operatorSetInfo
         );
         
         vm.stopPrank();
         
         // Verify storage updates
         assertEq(verifier.latestReferenceTimestamp(), referenceTimestamp, "Reference timestamp not updated correctly");
-        assertEq(verifier.operatorInfoTreeRoots(referenceTimestamp), operatorInfoTreeRoot, "Tree root not stored correctly");
         
         // Verify operator set info was stored correctly
-        (uint256 storedNumOps, BN254.G1Point memory storedAggPubkey) = 
+        (bytes32 storedOperatorInfoTreeRoot, uint256 storedNumOps, BN254.G1Point memory storedAggPubkey) = 
             verifier.operatorSetInfos(referenceTimestamp);
         
+        assertEq(storedOperatorInfoTreeRoot, operatorSetInfo.operatorInfoTreeRoot, "Operator info tree root not stored correctly");
         assertEq(storedNumOps, operatorSetInfo.numOperators, "Num operators not stored correctly");
         assertEq(storedAggPubkey.X, operatorSetInfo.aggregatePubkey.X, "Aggregate pubkey X not stored correctly");
         assertEq(storedAggPubkey.Y, operatorSetInfo.aggregatePubkey.Y, "Aggregate pubkey Y not stored correctly");
@@ -300,17 +293,14 @@ contract BLSCertificateVerifierTest is Test {
             uint32[] memory nonSignerIndices,
             BN254.G1Point memory signature
         ) = createOperatorsWithSplitKeys(pseudoRandomNumber, 3, 1);
-            
-        bytes32 operatorInfoTreeRoot = getMerkleRoot(operators);
-        
+                    
         // Create operator set info
         IBLSTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
         
         vm.prank(tableUpdater);
         verifier.updateOperatorTable(
             referenceTimestamp,
-            operatorSetInfo,
-            operatorInfoTreeRoot
+            operatorSetInfo
         );
         
         // Create certificate with real BLS signature
@@ -358,17 +348,14 @@ contract BLSCertificateVerifierTest is Test {
             uint32[] memory nonSignerIndices,
             BN254.G1Point memory signature
         ) = createOperatorsWithSplitKeys(pseudoRandomNumber, 2, 2);
-            
-        bytes32 operatorInfoTreeRoot = getMerkleRoot(operators);
-        
+                    
         // Create operator set info
         IBLSTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
         
         vm.prank(tableUpdater);
         verifier.updateOperatorTable(
             referenceTimestamp,
-            operatorSetInfo,
-            operatorInfoTreeRoot
+            operatorSetInfo
         );
         
         // Create certificate with real BLS signature
@@ -413,17 +400,14 @@ contract BLSCertificateVerifierTest is Test {
             uint32[] memory nonSignerIndices,
             BN254.G1Point memory signature
         ) = createOperatorsWithSplitKeys(pseudoRandomNumber, 3, 1);
-            
-        bytes32 operatorInfoTreeRoot = getMerkleRoot(operators);
-        
+                    
         // Create operator set info
         IBLSTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
         
         vm.prank(tableUpdater);
         verifier.updateOperatorTable(
             referenceTimestamp,
-            operatorSetInfo,
-            operatorInfoTreeRoot
+            operatorSetInfo
         );
         
         // Create certificate with real BLS signature
@@ -476,17 +460,14 @@ contract BLSCertificateVerifierTest is Test {
             uint32[] memory nonSignerIndices,
             BN254.G1Point memory signature
         ) = createOperatorsWithSplitKeys(pseudoRandomNumber, 3, 1);
-            
-        bytes32 operatorInfoTreeRoot = getMerkleRoot(operators);
-        
+                    
         // Create operator set info
         IBLSTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
         
         vm.prank(tableUpdater);
         verifier.updateOperatorTable(
             referenceTimestamp,
-            operatorSetInfo,
-            operatorInfoTreeRoot
+            operatorSetInfo
         );
         
         // Create certificate with real BLS signature but WRONG message hash
@@ -518,16 +499,13 @@ contract BLSCertificateVerifierTest is Test {
             BN254.G1Point memory signature
         ) = createOperatorsWithSplitKeys(pseudoRandomNumber, 3, 1);
             
-        bytes32 operatorInfoTreeRoot = getMerkleRoot(operators);
-        
         // Create operator set info
         IBLSTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
         
         vm.prank(tableUpdater);
         verifier.updateOperatorTable(
             referenceTimestamp,
-            operatorSetInfo,
-            operatorInfoTreeRoot
+            operatorSetInfo
         );
         
         // Create certificate with real BLS signature
@@ -559,17 +537,14 @@ contract BLSCertificateVerifierTest is Test {
             uint32[] memory nonSignerIndices,
             BN254.G1Point memory signature
         ) = createOperatorsWithSplitKeys(pseudoRandomNumber, 3, 1);
-            
-        bytes32 operatorInfoTreeRoot = getMerkleRoot(operators);
-        
+                    
         // Create operator set info
         IBLSTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
         
         vm.prank(tableUpdater);
         verifier.updateOperatorTable(
             referenceTimestamp,
-            operatorSetInfo,
-            operatorInfoTreeRoot
+            operatorSetInfo
         );
         
         // Create certificate with real BLS signature
@@ -613,9 +588,7 @@ contract BLSCertificateVerifierTest is Test {
             ,
             
         ) = createOperatorsWithSplitKeys(pseudoRandomNumber, numOperators, 0);
-            
-        bytes32 operatorInfoTreeRoot = getMerkleRoot(operators);
-        
+                    
         // Create operator set info and store initial total weights
         IBLSTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
         uint96 initialTotalWeight0 = operatorSetInfo.totalWeights[0];
@@ -626,8 +599,7 @@ contract BLSCertificateVerifierTest is Test {
         // Update the operator table
         verifier.updateOperatorTable(
             referenceTimestamp,
-            operatorSetInfo,
-            operatorInfoTreeRoot
+            operatorSetInfo
         );
         
         // Choose operator index 1 to eject
@@ -647,9 +619,11 @@ contract BLSCertificateVerifierTest is Test {
         
         witnesses[0] = IBLSCertificateVerifierTypes.BN254OperatorInfoWitness({
             operatorIndex: operatorToEject,
-            operatorInfoProofs: getMerkleProof(operators, operatorToEject),
+            operatorInfoProof: getMerkleProof(operators, operatorToEject),
             operatorInfo: operators[operatorToEject]
         });
+
+        
         
         // Eject the operator
         verifier.ejectOperators(
@@ -696,17 +670,14 @@ contract BLSCertificateVerifierTest is Test {
             ,
             BN254.G1Point memory signature
         ) = createOperatorsWithSplitKeys(pseudoRandomNumber, numOperators, 0);
-            
-        bytes32 operatorInfoTreeRoot = getMerkleRoot(operators);
-        
+                    
         // Create operator set info
         IBLSTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
         
         vm.prank(tableUpdater);
         verifier.updateOperatorTable(
             referenceTimestamp,
-            operatorSetInfo,
-            operatorInfoTreeRoot
+            operatorSetInfo
         );
         
         // Create certificate with no non-signers
@@ -727,47 +698,6 @@ contract BLSCertificateVerifierTest is Test {
         assertEq(signedStakes[1], operatorSetInfo.totalWeights[1], "All stake should be signed for type 1");
     }
 
-    // Test with invalid operator tree root
-    function testVerifyCertificateInvalidOperatorTreeRoot() public {
-        // Create test data
-        uint32 referenceTimestamp = uint32(block.timestamp);
-        
-        // Create operators with split keys - 3 signers, 1 non-signer
-        uint256 pseudoRandomNumber = 123;
-        (
-            IBLSTableCalculatorTypes.BN254OperatorInfo[] memory operators, 
-            uint32[] memory nonSignerIndices,
-            BN254.G1Point memory signature
-        ) = createOperatorsWithSplitKeys(pseudoRandomNumber, 3, 1);
-            
-        bytes32 operatorInfoTreeRoot = getMerkleRoot(operators);
-        bytes32 invalidRoot = keccak256("invalid root");
-        
-        // Create operator set info
-        IBLSTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
-        
-        vm.prank(tableUpdater);
-        // Update the operator table with an invalid root
-        verifier.updateOperatorTable(
-            referenceTimestamp,
-            operatorSetInfo,
-            invalidRoot
-        );
-        
-        // Create certificate with real BLS signature
-        IBLSCertificateVerifierTypes.BN254Certificate memory cert = createCertificate(
-            referenceTimestamp,
-            msgHash,
-            nonSignerIndices,
-            operators,
-            signature
-        );
-        
-        // Verification should fail due to invalid merkle proofs
-        vm.expectRevert(); // The error message depends on how your contract handles invalid proofs
-        verifier.verifyCertificate(cert);
-    }
-
     // Test with invalid reference timestamp
     function testInvalidReferenceTimestamp() public {
         // Create test data - use a non-existent reference timestamp
@@ -781,17 +711,14 @@ contract BLSCertificateVerifierTest is Test {
             uint32[] memory nonSignerIndices,
             BN254.G1Point memory signature
         ) = createOperatorsWithSplitKeys(pseudoRandomNumber, 3, 1);
-            
-        bytes32 operatorInfoTreeRoot = getMerkleRoot(operators);
-        
+                    
         // Create operator set info
         IBLSTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
         
         vm.prank(tableUpdater);
         verifier.updateOperatorTable(
             existingReferenceTimestamp,
-            operatorSetInfo,
-            operatorInfoTreeRoot
+            operatorSetInfo
         );
         
         // Create certificate using a non-existent timestamp

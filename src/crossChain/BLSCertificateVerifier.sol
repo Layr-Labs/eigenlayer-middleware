@@ -8,7 +8,7 @@ import {IBLSTableCalculator, IBLSTableCalculatorTypes} from "../interfaces/IBLST
 import {IBLSCertificateVerifier, IBLSCertificateVerifierTypes} from "../interfaces/IBLSCertificateVerifier.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {BitmapUtils} from "../libraries/BitmapUtils.sol";
-import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import {Merkle} from "../libraries/Merkle.sol";
 
 /**
  * @title BLSCertificateVerifier
@@ -17,7 +17,7 @@ import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProo
  *      caches operator information for efficient verification
  */
 contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
-
+    using Merkle for bytes;
     using BN254 for BN254.G1Point;
 
     // Gas limit for pairing operations to prevent DoS
@@ -34,9 +34,6 @@ contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
 
     // Maximum staleness allowed for an operator table (in seconds)
     uint32 private _maxOperatorTableStaleness;
-
-    // Mapping from reference timestamp to operatorInfoTreeRoot
-    mapping(uint32 => bytes32) public operatorInfoTreeRoots;
 
     // Mapping from reference timestamp to operator set info
     mapping(uint32 => IBLSTableCalculatorTypes.BN254OperatorSetInfo) public operatorSetInfos;
@@ -93,19 +90,17 @@ contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
      */
     function updateOperatorTable(
         uint32 referenceTimestamp,
-        IBLSTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo,
-        bytes32 operatorInfoTreeRoot
+        IBLSTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo
     ) external onlyTableUpdater {
         // Require that the new timestamp is greater than the latest reference timestamp
         require(referenceTimestamp > latestReferenceTimestamp, "Invalid timestamp");
 
         // Store the operator set info and tree root
         operatorSetInfos[referenceTimestamp] = operatorSetInfo;
-        operatorInfoTreeRoots[referenceTimestamp] = operatorInfoTreeRoot;
         latestReferenceTimestamp = referenceTimestamp;
 
         // Emit event
-        emit TableUpdated(referenceTimestamp, operatorSetInfo.aggregatePubkey, operatorInfoTreeRoot);
+        emit TableUpdated(referenceTimestamp, operatorSetInfo);
     }
 
     /**
@@ -117,12 +112,6 @@ contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
         IBLSCertificateVerifierTypes.BN254OperatorInfoWitness[] calldata witnesses
     ) external onlyTableUpdater {
         // Ensure the reference timestamp exists
-        bytes32 treeRoot = operatorInfoTreeRoots[referenceTimestamp];
-        if (treeRoot == bytes32(0)) {
-            revert("Refrence timestamp does not exist");
-        }
-        
-        // Get the operator set info
         IBLSTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = operatorSetInfos[referenceTimestamp];
         
         // Process each operator to eject
@@ -160,7 +149,7 @@ contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
                     referenceTimestamp,
                     operatorIndex,
                     witness.operatorInfo,
-                    witness.operatorInfoProofs
+                    witness.operatorInfoProof
                 );
                 
                 if (!verified) {
@@ -323,16 +312,13 @@ contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
         if (block.timestamp > cert.referenceTimestamp + _maxOperatorTableStaleness) {
             revert TableStale();
         }
-        
-        // Check that this reference timestamp exists
-        bytes32 operatorInfoTreeRoot = operatorInfoTreeRoots[cert.referenceTimestamp];
-        if (operatorInfoTreeRoot == bytes32(0)) {
-            revert("timestamp does not exist");
-        }
 
         // Get operator set info
         IBLSTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = operatorSetInfos[cert.referenceTimestamp];
-        
+        // Check that this reference timestamp exists
+        if (operatorSetInfos[cert.referenceTimestamp].operatorInfoTreeRoot == bytes32(0)) {
+            revert("timestamp does not exist");
+        }
         // Initialize signed stakes with total stakes
         uint96[] memory totalStakes = operatorSetInfo.totalWeights;
         signedStakes = new uint96[](totalStakes.length);
@@ -382,7 +368,7 @@ contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
                     cert.referenceTimestamp,
                     nonSignerIndex,
                     witness.operatorInfo,
-                    witness.operatorInfoProofs
+                    witness.operatorInfoProof
                 );
                 
                 if (!verified) {
@@ -438,12 +424,12 @@ contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
         uint32 referenceTimestamp,
         uint32 operatorIndex,
         IBLSTableCalculatorTypes.BN254OperatorInfo memory operatorInfo,
-        bytes32[] memory proof
+        bytes memory proof
     ) internal view returns (bool verified) {
         bytes32 leaf = keccak256(abi.encode(operatorInfo));
-        bytes32 root = operatorInfoTreeRoots[referenceTimestamp];
+        bytes32 root = operatorSetInfos[referenceTimestamp].operatorInfoTreeRoot;
         // Use OpenZeppelin's MerkleProof to verify
-        return MerkleProof.verify(proof, root, leaf);
+        return proof.verifyInclusionKeccak(root, leaf, operatorIndex);
     }
 
     function getOperatorInfo(uint32 referenceTimestamp, uint256 operatorIndex) public view returns (IBLSTableCalculatorTypes.BN254OperatorInfo memory) {

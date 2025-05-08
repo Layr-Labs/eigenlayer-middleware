@@ -7,10 +7,12 @@ import {IStakeRegistry} from "../interfaces/IStakeRegistry.sol";
 import {IBLSApkRegistry} from "../interfaces/IBLSApkRegistry.sol";
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
+import {Merkle} from "../libraries/Merkle.sol";
 import {BN254} from "../libraries/BN254.sol";
 
 /// @notice A contract that calculates the operator table for a given operatorSet
 abstract contract BLSTableCalculator is IBLSTableCalculator {
+    using Merkle for bytes32[];
 
     /// @notice The BLS Aggregate Pubkey Registry contract that will keep track of operators' aggregate BLS public keys per quorum
     IBLSApkRegistry public immutable blsApkRegistry;
@@ -36,14 +38,23 @@ abstract contract BLSTableCalculator is IBLSTableCalculator {
         // 2. Iterating through each sub-array and summing the weights
         uint256 subArrayLength = weights[0].length;
         uint96[] memory totalWeights = new uint96[](subArrayLength);
+        bytes32[] memory operatorInfoLeaves = new bytes32[](operators.length);
 
-        for (uint256 i = 0; i < weights.length; i++) {
+        for (uint256 i = 0; i < operators.length; i++) {
             for (uint256 j = 0; j < subArrayLength; j++) {
                 totalWeights[j] += weights[i][j];
             }
+            (BN254.G1Point memory pubkey,) = blsApkRegistry.getRegisteredPubkey(operators[i]);
+            operatorInfoLeaves[i] = keccak256(abi.encode(BN254OperatorInfo({
+                pubkey: pubkey,
+                weights: weights[i]
+            })));
         }
+
+        bytes32 operatorInfoTreeRoot = operatorInfoLeaves.merkleizeKeccak();
         
         return BN254OperatorSetInfo({
+            operatorInfoTreeRoot: operatorInfoTreeRoot,
             numOperators: operators.length,
             aggregatePubkey: blsApkRegistry.getApk(uint8(operatorSet.id)),
             totalWeights: totalWeights
