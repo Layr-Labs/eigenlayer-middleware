@@ -40,21 +40,4 @@ interface IOperatorTableCalculator {
     function getOperatorWeightCalculator(
         OperatorSet calldata operatorSet
     ) external view returns (IOperatorWeightCalculator);
-
-    /**
-     * @notice Validates that the operatorSet exists
-     * @param operatorSet the operatorSet to validate
-     * @return true if the operatorSet exists, false otherwise
-     */
-    function validateOperatorSet(
-        OperatorSet calldata operatorSet
-    ) external view returns (bool);
-
-    /**
-     * @notice Gets the keyRegistry address
-     * @dev This contract assumes a single keyRegistry for all operatorSets
-     * @return keyRegistry the keyRegistry address
-     * @dev The keyRegistry is an immutable contract set upon deployment
-     */
-    function getKeyRegistry() external view returns (address keyRegistry);
 }
