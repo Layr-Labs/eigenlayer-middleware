@@ -21,7 +21,7 @@ interface IECDSCertificateVerifierTypes is IECDSATableCalculatorTypes {
 
 interface IECDSACertificateVerifierEvents is IECDSCertificateVerifierTypes {
     /// @notice Emitted when a table is updated
-    event TableUpdated(uint32 referenceTimestamp);
+    event TableUpdated(uint32 referenceTimestamp, ECDSAOperatorInfo[] operatorInfos);
 }
 
 /// @notice A base table manager interface that handles operator table updates
