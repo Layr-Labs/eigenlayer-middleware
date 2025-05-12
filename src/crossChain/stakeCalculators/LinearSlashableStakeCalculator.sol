@@ -33,7 +33,7 @@ contract LinearSlashableStakeCalculator is Ownable, IOperatorWeightCalculator {
     mapping(bytes32 operatorSetKey => EnumerableMap.AddressToUintMap) internal _multipliers;
 
     /// @notice The lookahead blocks for the slashable stake calculation
-    uint256 public lookaheadBlocks = 100_800;
+    uint256 public lookaheadBlocks = 100800;
 
     /// @notice Emitted when a strategy multiplier is set
     event StrategyMultiplierSet(address indexed strategy, uint96 multiplier);
@@ -53,17 +53,27 @@ contract LinearSlashableStakeCalculator is Ownable, IOperatorWeightCalculator {
      * @notice Set the multipliers for each strategy
      * @param strategiesAndMultipliers The strategies and their multipliers
      */
-    function setStrategyMultipliers(OperatorSet memory operatorSet, StrategyAndMultiplier[] memory strategiesAndMultipliers) external onlyOwner {
+    function setStrategyMultipliers(
+        OperatorSet memory operatorSet,
+        StrategyAndMultiplier[] memory strategiesAndMultipliers
+    ) external onlyOwner {
         // Validate the lengths of strategies and multipliers
         IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
-        require(strategies.length == strategiesAndMultipliers.length, "Incorrect length of strategyAndMultipliers");
+        require(
+            strategies.length == strategiesAndMultipliers.length,
+            "Incorrect length of strategyAndMultipliers"
+        );
 
         // Get the key for the operatorSet
         bytes32 operatorSetKey = operatorSet.key();
 
         for (uint256 i = 0; i < strategiesAndMultipliers.length; i++) {
-            _multipliers[operatorSetKey].set(strategiesAndMultipliers[i].strategy, strategiesAndMultipliers[i].multiplier);
-            emit StrategyMultiplierSet(strategiesAndMultipliers[i].strategy, strategiesAndMultipliers[i].multiplier);
+            _multipliers[operatorSetKey].set(
+                strategiesAndMultipliers[i].strategy, strategiesAndMultipliers[i].multiplier
+            );
+            emit StrategyMultiplierSet(
+                strategiesAndMultipliers[i].strategy, strategiesAndMultipliers[i].multiplier
+            );
         }
     }
 
@@ -71,7 +81,9 @@ contract LinearSlashableStakeCalculator is Ownable, IOperatorWeightCalculator {
      * @notice Set the lookahead blocks for the slashable stake calculation
      * @param _lookaheadBlocks The lookahead blocks to set
      */
-    function setLookaheadBlocks(uint256 _lookaheadBlocks) external onlyOwner {
+    function setLookaheadBlocks(
+        uint256 _lookaheadBlocks
+    ) external onlyOwner {
         require(_lookaheadBlocks < allocationManager.DEALLOCATION_DELAY(), LookaheadBlocksTooHigh());
         lookaheadBlocks = _lookaheadBlocks;
         emit LookaheadBlocksSet(_lookaheadBlocks);
@@ -83,11 +95,18 @@ contract LinearSlashableStakeCalculator is Ownable, IOperatorWeightCalculator {
      * @return operators The addresses of the operators in the operatorSet
      * @return weights The weights for each operator in the operatorSet
      */
-    function getOperatorWeights(OperatorSet calldata operatorSet) public virtual view override returns (address[] memory operators, uint96[][] memory weights) {
+    function getOperatorWeights(
+        OperatorSet calldata operatorSet
+    )
+        public
+        view
+        virtual
+        override
+        returns (address[] memory operators, uint96[][] memory weights)
+    {
         // Get all operators & strategies in the operatorSet
         operators = allocationManager.getMembers(operatorSet);
         IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
-
 
         // Get the minimum slashable stake for each operator
         uint256[][] memory minSlashableStake = allocationManager.getMinimumSlashableStake({
@@ -109,16 +128,19 @@ contract LinearSlashableStakeCalculator is Ownable, IOperatorWeightCalculator {
                 // Update the weight for the operator and strategy, only if there's a nonzero minimum slashable stake
                 if (minSlashableStake[operatorIndex][stratIndex] > 0) {
                     // Get the multiplier for the strategy
-                    (bool exists, uint256 value) = multipliers.tryGet(address(strategies[stratIndex]));
+                    (bool exists, uint256 value) =
+                        multipliers.tryGet(address(strategies[stratIndex]));
                     uint96 multiplier = exists ? uint96(value) : 0;
 
                     // We're only returning the weights of slashable stake in this calculator, hence the 0 index
-                    weights[operatorIndex][0] += uint96(minSlashableStake[operatorIndex][stratIndex] * multiplier / WEIGHTING_DIVISOR);
+                    weights[operatorIndex][0] += uint96(
+                        minSlashableStake[operatorIndex][stratIndex] * multiplier
+                            / WEIGHTING_DIVISOR
+                    );
                 }
             }
         }
-        
+
         return (operators, weights);
     }
 }
-

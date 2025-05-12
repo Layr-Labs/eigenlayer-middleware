@@ -95,13 +95,13 @@ library Merkle {
         for (uint256 i = 0; i < leaves.length; i++) {
             layer[i] = leaves[i];
         }
-        
+
         //while we haven't computed the root
         while (numNodesInLayer != 1) {
-            uint256 numNodesInNextLayer = numNodesInLayer/2;
+            uint256 numNodesInNextLayer = numNodesInLayer / 2;
             //overwrite the first numNodesInLayer nodes in layer with the pairwise hashes of their children
             for (uint256 i = 0; i < numNodesInNextLayer; i++) {
-                layer[i] = keccak256(abi.encodePacked(layer[2*i], layer[2*i + 1]));
+                layer[i] = keccak256(abi.encodePacked(layer[2 * i], layer[2 * i + 1]));
             }
             //the next layer above has half as many nodes
             numNodesInLayer = numNodesInNextLayer;
@@ -136,10 +136,10 @@ library Merkle {
                 }
             }
 
-            uint256 numNodesInNextLayer = numNodesInLayer/2;
+            uint256 numNodesInNextLayer = numNodesInLayer / 2;
             //overwrite the first numNodesInLayer nodes in layer with the pairwise hashes of their children
             for (uint256 i = 0; i < numNodesInNextLayer; i++) {
-                layer[i] = keccak256(abi.encodePacked(layer[2*i], layer[2*i + 1]));
+                layer[i] = keccak256(abi.encodePacked(layer[2 * i], layer[2 * i + 1]));
             }
             //the next layer above has half as many nodes
             numNodesInLayer = numNodesInNextLayer;

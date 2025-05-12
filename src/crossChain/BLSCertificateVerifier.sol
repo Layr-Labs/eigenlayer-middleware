@@ -1,11 +1,15 @@
-
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
 import {BN254} from "../libraries/BN254.sol";
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
-import {IBLSTableCalculator, IBLSTableCalculatorTypes} from "../interfaces/IBLSTableCalculator.sol";
-import {IBLSCertificateVerifier, IBLSCertificateVerifierTypes} from "../interfaces/IBLSCertificateVerifier.sol";
+import {
+    IBLSTableCalculator, IBLSTableCalculatorTypes
+} from "../interfaces/IBLSTableCalculator.sol";
+import {
+    IBLSCertificateVerifier,
+    IBLSCertificateVerifierTypes
+} from "../interfaces/IBLSCertificateVerifier.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {BitmapUtils} from "../libraries/BitmapUtils.sol";
 import {Merkle} from "../libraries/Merkle.sol";
@@ -40,7 +44,8 @@ contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
 
     // Mapping from reference timestamp to operator index to operator info
     // This is used to cache operator info that has been proven against a tree root
-    mapping(uint32 => mapping(uint256 => IBLSTableCalculatorTypes.BN254OperatorInfo)) public operatorInfos;
+    mapping(uint32 => mapping(uint256 => IBLSTableCalculatorTypes.BN254OperatorInfo)) public
+        operatorInfos;
 
     // Modifier to restrict access to the operator table updater
     modifier onlyTableUpdater() {
@@ -112,26 +117,27 @@ contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
         IBLSCertificateVerifierTypes.BN254OperatorInfoWitness[] calldata witnesses
     ) external onlyTableUpdater {
         // Ensure the reference timestamp exists
-        IBLSTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = operatorSetInfos[referenceTimestamp];
-        
+        IBLSTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo =
+            operatorSetInfos[referenceTimestamp];
+
         // Process each operator to eject
         for (uint256 i = 0; i < operatorIndices.length; i++) {
             uint32 operatorIndex = operatorIndices[i];
-            
+
             // Ensure index is valid
             if (operatorIndex >= operatorSetInfo.numOperators) {
                 revert("Operator index not valid");
             }
-            
+
             // Check if we need to verify and cache the operator info
-            bool operatorInfoExists = operatorInfos[referenceTimestamp][operatorIndex].pubkey.X != 0 || 
-                        operatorInfos[referenceTimestamp][operatorIndex].pubkey.Y != 0;
-            
+            bool operatorInfoExists = operatorInfos[referenceTimestamp][operatorIndex].pubkey.X != 0
+                || operatorInfos[referenceTimestamp][operatorIndex].pubkey.Y != 0;
+
             if (!operatorInfoExists) {
                 // Find the matching witness
                 IBLSCertificateVerifierTypes.BN254OperatorInfoWitness memory witness;
                 bool found = false;
-                
+
                 for (uint256 j = 0; j < witnesses.length; j++) {
                     if (witnesses[j].operatorIndex == operatorIndex) {
                         witness = witnesses[j];
@@ -139,11 +145,11 @@ contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
                         break;
                     }
                 }
-                
+
                 if (!found) {
                     revert("bad witnesses");
                 }
-                
+
                 // Verify and cache the witness
                 bool verified = _verifyOperatorInfoMerkleProof(
                     referenceTimestamp,
@@ -151,26 +157,26 @@ contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
                     witness.operatorInfo,
                     witness.operatorInfoProof
                 );
-                
+
                 if (!verified) {
                     revert("merkle verification failed");
                 }
-                
+
                 // Cache the operator info
                 operatorInfos[referenceTimestamp][operatorIndex] = witness.operatorInfo;
             }
-            
+
             // Get the operator info for updating
-            IBLSTableCalculatorTypes.BN254OperatorInfo storage operatorInfo = 
+            IBLSTableCalculatorTypes.BN254OperatorInfo storage operatorInfo =
                 operatorInfos[referenceTimestamp][operatorIndex];
-            
+
             // Zero out the operator's weights - keep track of total to subtract
             uint96[] memory ejectedWeights = new uint96[](operatorInfo.weights.length);
             for (uint256 j = 0; j < operatorInfo.weights.length; j++) {
                 ejectedWeights[j] = operatorInfo.weights[j];
                 operatorInfo.weights[j] = 0;
             }
-            
+
             // Update the total weights for the operator set
             for (uint256 j = 0; j < operatorSetInfo.totalWeights.length; j++) {
                 if (j < ejectedWeights.length) {
@@ -178,7 +184,7 @@ contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
                 }
             }
         }
-        
+
         // Update the operator set info with new total weights
         operatorSetInfos[referenceTimestamp] = operatorSetInfo;
     }
@@ -201,25 +207,27 @@ contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
     ) external returns (bool) {
         // Get signed stakes
         uint96[] memory signedStakes = _verifyCertificate(cert);
-        
+
         // Get total stakes from the operator set info
-        IBLSTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = operatorSetInfos[cert.referenceTimestamp];
+        IBLSTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo =
+            operatorSetInfos[cert.referenceTimestamp];
         uint96[] memory totalStakes = operatorSetInfo.totalWeights;
-        
+
         // Verify that each stake meets the threshold
         require(signedStakes.length == totalStakeProportionThresholds.length, "Length mismatch");
-        
+
         for (uint256 i = 0; i < signedStakes.length; i++) {
             // Calculate threshold as proportion of total stake
             // totalStakeProportionThresholds is a percentage with 2 decimal places (e.g. 6600 = 66%)
-            uint96 threshold = uint96(uint256(totalStakes[i]) * uint256(totalStakeProportionThresholds[i]) / 10000);
-            
+            uint96 threshold =
+                uint96(uint256(totalStakes[i]) * uint256(totalStakeProportionThresholds[i]) / 10000);
+
             // If signed stake doesn't meet threshold, return false
             if (signedStakes[i] < threshold) {
                 return false;
             }
         }
-        
+
         return true;
     }
 
@@ -232,31 +240,35 @@ contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
     ) external returns (bool) {
         // Get signed stakes
         uint96[] memory signedStakes = _verifyCertificate(cert);
-        
+
         // Verify that each stake meets the threshold
         require(signedStakes.length == totalStakeNominalThresholds.length, "Length mismatch");
-        
+
         for (uint256 i = 0; i < signedStakes.length; i++) {
             // If signed stake doesn't meet nominal threshold, return false
             if (signedStakes[i] < totalStakeNominalThresholds[i]) {
                 return false;
             }
         }
-        
+
         return true;
     }
 
     /**
      * @inheritdoc IBLSCertificateVerifier
      */
-    function setOperatorTableUpdater(address _newOperatorTableUpdater) external onlyOwner {
+    function setOperatorTableUpdater(
+        address _newOperatorTableUpdater
+    ) external onlyOwner {
         _operatorTableUpdater = _newOperatorTableUpdater;
     }
 
     /**
      * @inheritdoc IBLSCertificateVerifier
      */
-    function setMaxOperatorTableStaleness(uint32 _newMaxOperatorTableStaleness) external onlyOwner {
+    function setMaxOperatorTableStaleness(
+        uint32 _newMaxOperatorTableStaleness
+    ) external onlyOwner {
         _maxOperatorTableStaleness = _newMaxOperatorTableStaleness;
     }
 
@@ -290,12 +302,12 @@ contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
                 )
             )
         ) % BN254.FR_MODULUS;
-        
+
         (pairingSuccessful, signatureValid) = BN254.safePairing(
-            signature.plus(aggPubkey.scalar_mul(gamma)),  // sigma + apk*gamma
-            BN254.negGeneratorG2(),                       // -G2
+            signature.plus(aggPubkey.scalar_mul(gamma)), // sigma + apk*gamma
+            BN254.negGeneratorG2(), // -G2
             BN254.hashToG1(msgHash).plus(BN254.generatorG1().scalar_mul(gamma)), // H(m) + g1*gamma
-            apkG2,                                        // apkG2
+            apkG2, // apkG2
             PAIRING_EQUALITY_CHECK_GAS
         );
     }
@@ -314,7 +326,8 @@ contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
         }
 
         // Get operator set info
-        IBLSTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = operatorSetInfos[cert.referenceTimestamp];
+        IBLSTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo =
+            operatorSetInfos[cert.referenceTimestamp];
         // Check that this reference timestamp exists
         if (operatorSetInfos[cert.referenceTimestamp].operatorInfoTreeRoot == bytes32(0)) {
             revert("timestamp does not exist");
@@ -322,35 +335,38 @@ contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
         // Initialize signed stakes with total stakes
         uint96[] memory totalStakes = operatorSetInfo.totalWeights;
         signedStakes = new uint96[](totalStakes.length);
-        
+
         for (uint256 i = 0; i < totalStakes.length; i++) {
             signedStakes[i] = totalStakes[i];
         }
-        
+
         // Validate non-signer indices are sorted (for efficiency and to prevent duplicates)
         for (uint256 i = 1; i < cert.nonSignerIndices.length; i++) {
-            if (cert.nonSignerIndices[i] <= cert.nonSignerIndices[i-1]) {
+            if (cert.nonSignerIndices[i] <= cert.nonSignerIndices[i - 1]) {
                 revert("non-signers not sorted");
             }
         }
-        
+
         // Cache non-signer operator infos if needed and build the aggregate non-signer public key
         BN254.G1Point memory nonSignerApk = BN254.G1Point(0, 0);
-        
+
         for (uint256 i = 0; i < cert.nonSignerIndices.length; i++) {
             uint32 nonSignerIndex = cert.nonSignerIndices[i];
-            
+
             // Make sure index is valid
             if (nonSignerIndex >= operatorSetInfo.numOperators) {
                 revert("non-signer index not valid");
             }
-            
+
             // Check if this operator's info is already cached
-            if (keccak256(abi.encode(operatorInfos[cert.referenceTimestamp][nonSignerIndex].pubkey)) == keccak256(abi.encode(BN254.G1Point(0, 0)))) {
+            if (
+                keccak256(abi.encode(operatorInfos[cert.referenceTimestamp][nonSignerIndex].pubkey))
+                    == keccak256(abi.encode(BN254.G1Point(0, 0)))
+            ) {
                 // Find the matching witness
                 IBLSCertificateVerifierTypes.BN254OperatorInfoWitness memory witness;
                 bool found = false;
-                
+
                 for (uint256 j = 0; j < cert.nonSignerWitnesses.length; j++) {
                     if (cert.nonSignerWitnesses[j].operatorIndex == nonSignerIndex) {
                         witness = cert.nonSignerWitnesses[j];
@@ -358,11 +374,11 @@ contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
                         break;
                     }
                 }
-                
+
                 if (!found) {
                     revert("bad certificate");
                 }
-                
+
                 // Verify the merkle proof
                 bool verified = _verifyOperatorInfoMerkleProof(
                     cert.referenceTimestamp,
@@ -370,22 +386,22 @@ contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
                     witness.operatorInfo,
                     witness.operatorInfoProof
                 );
-                
+
                 if (!verified) {
                     revert("operator merkle proof failed");
                 }
-                
+
                 // Cache the operator info
-                    operatorInfos[cert.referenceTimestamp][nonSignerIndex] = witness.operatorInfo;
+                operatorInfos[cert.referenceTimestamp][nonSignerIndex] = witness.operatorInfo;
             }
-            
+
             // Get the non-signer info
-            IBLSTableCalculatorTypes.BN254OperatorInfo memory nonSignerInfo = 
+            IBLSTableCalculatorTypes.BN254OperatorInfo memory nonSignerInfo =
                 operatorInfos[cert.referenceTimestamp][nonSignerIndex];
-            
+
             // Add the non-signer's public key to the aggregate non-signer key
             nonSignerApk = nonSignerApk.plus(nonSignerInfo.pubkey);
-            
+
             // Subtract non-signer weights from the signed stakes
             for (uint256 j = 0; j < nonSignerInfo.weights.length; j++) {
                 if (j < signedStakes.length) {
@@ -393,22 +409,18 @@ contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
                 }
             }
         }
-        
+
         // Calculate the adjusted aggregate public key (signers only) by subtracting non-signers from total
         BN254.G1Point memory signerApk = operatorSetInfo.aggregatePubkey.plus(nonSignerApk.negate());
-        
+
         // Verify the BLS signature
-        (bool pairingSuccessful, bool signatureValid) = trySignatureVerification(
-            cert.messageHash,
-            signerApk,      
-            cert.apk,       
-            cert.signature  
-        );
-        
+        (bool pairingSuccessful, bool signatureValid) =
+            trySignatureVerification(cert.messageHash, signerApk, cert.apk, cert.signature);
+
         if (!pairingSuccessful || !signatureValid) {
             revert CertVerificationFailed();
         }
-        
+
         return signedStakes;
     }
 
@@ -432,11 +444,16 @@ contract BLSCertificateVerifier is IBLSCertificateVerifier, Ownable {
         return proof.verifyInclusionKeccak(root, leaf, operatorIndex);
     }
 
-    function getOperatorInfo(uint32 referenceTimestamp, uint256 operatorIndex) public view returns (IBLSTableCalculatorTypes.BN254OperatorInfo memory) {
+    function getOperatorInfo(
+        uint32 referenceTimestamp,
+        uint256 operatorIndex
+    ) public view returns (IBLSTableCalculatorTypes.BN254OperatorInfo memory) {
         return operatorInfos[referenceTimestamp][operatorIndex];
     }
 
-    function getOperatorSetInfo(uint32 referenceTimestamp) public view returns (IBLSTableCalculatorTypes.BN254OperatorSetInfo memory) {
+    function getOperatorSetInfo(
+        uint32 referenceTimestamp
+    ) public view returns (IBLSTableCalculatorTypes.BN254OperatorSetInfo memory) {
         return operatorSetInfos[referenceTimestamp];
     }
 }

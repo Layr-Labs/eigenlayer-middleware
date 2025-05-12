@@ -44,10 +44,15 @@ interface IBLSCertificateVerifierTypes is IBLSTableCalculatorTypes {
 
 interface IBLSCertificateVerifierEvents is IBLSCertificateVerifierTypes {
     /// @notice Emitted when a table is updated
-    event TableUpdated(uint32 referenceTimestamp, IBLSTableCalculatorTypes.BN254OperatorSetInfo operatorSetInfo);
+    event TableUpdated(
+        uint32 referenceTimestamp, IBLSTableCalculatorTypes.BN254OperatorSetInfo operatorSetInfo
+    );
 }
 
-interface IBLSCertificateVerifier is IBLSCertificateVerifierErrors, IBLSCertificateVerifierEvents {
+interface IBLSCertificateVerifier is
+    IBLSCertificateVerifierErrors,
+    IBLSCertificateVerifierEvents
+{
     /// @notice the operatorSet the CertificateVerifier is for
     function operatorSet() external returns (OperatorSet memory);
 
@@ -127,12 +132,16 @@ interface IBLSCertificateVerifier is IBLSCertificateVerifierErrors, IBLSCertific
      * @param _operatorTableUpdater the address of the operator table updater
      * @dev only callable by the owner
      */
-    function setOperatorTableUpdater(address _operatorTableUpdater) external;
+    function setOperatorTableUpdater(
+        address _operatorTableUpdater
+    ) external;
 
     /**
      * @notice sets the max operator table staleness
      * @param _maxOperatorTableStaleness the max operator table staleness
      * @dev only callable by the owner
      */
-    function setMaxOperatorTableStaleness(uint32 _maxOperatorTableStaleness) external;
+    function setMaxOperatorTableStaleness(
+        uint32 _maxOperatorTableStaleness
+    ) external;
 }

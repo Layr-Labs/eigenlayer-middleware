@@ -34,10 +34,14 @@ interface IBLSTableCalculatorTypes {
     }
 }
 
-interface IBLSTableCalculatorEvents is IBLSTableCalculatorTypes {
-}
+interface IBLSTableCalculatorEvents is IBLSTableCalculatorTypes {}
 
-interface IBLSTableCalculator is IOperatorTableCalculator, IOperatorWeightCalculator, IBLSTableCalculatorErrors, IBLSTableCalculatorEvents {
+interface IBLSTableCalculator is
+    IOperatorTableCalculator,
+    IOperatorWeightCalculator,
+    IBLSTableCalculatorErrors,
+    IBLSTableCalculatorEvents
+{
     /**
      * @notice calculates the operatorInfos for a given operatorSet
      * @param operatorSet the operatorSet to calculate the operator table for
