@@ -22,20 +22,26 @@ interface IBLSTableCalculatorTypes {
     }
 
     /// @notice Information about all operators for a given operatorSet
+    /// @param operatorInfoTreeRoot The root of the operatorInfo tree.
     /// @param numOperators The number of operators in the operatorSet.
     /// @param aggregatePubkey The aggregate G1 public key of the operators in the operatorSet.
     /// @param totalWeights The total weights of the operators in the operatorSet.
     struct BN254OperatorSetInfo {
+        bytes32 operatorInfoTreeRoot;
         uint256 numOperators;
         BN254.G1Point aggregatePubkey;
         uint96[] totalWeights;
     }
 }
 
-interface IBLSTableCalculatorEvents is IBLSTableCalculatorTypes {
-}
+interface IBLSTableCalculatorEvents is IBLSTableCalculatorTypes {}
 
-interface IBLSTableCalculator is IOperatorTableCalculator, IOperatorWeightCalculator, IBLSTableCalculatorErrors, IBLSTableCalculatorEvents {
+interface IBLSTableCalculator is
+    IOperatorTableCalculator,
+    IOperatorWeightCalculator,
+    IBLSTableCalculatorErrors,
+    IBLSTableCalculatorEvents
+{
     /**
      * @notice calculates the operatorInfos for a given operatorSet
      * @param operatorSet the operatorSet to calculate the operator table for

@@ -21,7 +21,7 @@ interface IBLSCertificateVerifierTypes is IBLSTableCalculatorTypes {
     /// @param operatorInfo the `BN254OperatorInfo` for the operator
     struct BN254OperatorInfoWitness {
         uint32 operatorIndex;
-        bytes32[] operatorInfoProofs;
+        bytes operatorInfoProof;
         IBLSTableCalculatorTypes.BN254OperatorInfo operatorInfo;
     }
 
@@ -44,10 +44,15 @@ interface IBLSCertificateVerifierTypes is IBLSTableCalculatorTypes {
 
 interface IBLSCertificateVerifierEvents is IBLSCertificateVerifierTypes {
     /// @notice Emitted when a table is updated
-    event TableUpdated(uint32 referenceTimestamp, BN254.G1Point pubkey, bytes32 operatorInfoTreeRoot);
+    event TableUpdated(
+        uint32 referenceTimestamp, IBLSTableCalculatorTypes.BN254OperatorSetInfo operatorSetInfo
+    );
 }
 
-interface IBLSCertificateVerifier is IBLSCertificateVerifierErrors, IBLSCertificateVerifierEvents {
+interface IBLSCertificateVerifier is
+    IBLSCertificateVerifierErrors,
+    IBLSCertificateVerifierEvents
+{
     /// @notice the operatorSet the CertificateVerifier is for
     function operatorSet() external returns (OperatorSet memory);
 
@@ -65,13 +70,11 @@ interface IBLSCertificateVerifier is IBLSCertificateVerifierErrors, IBLSCertific
      * @param referenceTimestamp the timestamp at which the operatorSetInfo and
      * operatorInfoTreeRoot were sourced
      * @param operatorSetInfo the aggregate information about the operatorSet
-     * @param operatorInfoTreeRoot the merkleRoot of all operatorInfos
      * @dev only callable by the operatorTableUpdater
      */
     function updateOperatorTable(
         uint32 referenceTimestamp,
-        BN254OperatorSetInfo memory operatorSetInfo,
-        bytes32 operatorInfoTreeRoot
+        BN254OperatorSetInfo memory operatorSetInfo
     ) external;
 
     /**
@@ -129,12 +132,16 @@ interface IBLSCertificateVerifier is IBLSCertificateVerifierErrors, IBLSCertific
      * @param _operatorTableUpdater the address of the operator table updater
      * @dev only callable by the owner
      */
-    function setOperatorTableUpdater(address _operatorTableUpdater) external;
+    function setOperatorTableUpdater(
+        address _operatorTableUpdater
+    ) external;
 
     /**
      * @notice sets the max operator table staleness
      * @param _maxOperatorTableStaleness the max operator table staleness
      * @dev only callable by the owner
      */
-    function setMaxOperatorTableStaleness(uint32 _maxOperatorTableStaleness) external;
+    function setMaxOperatorTableStaleness(
+        uint32 _maxOperatorTableStaleness
+    ) external;
 }
