@@ -18,6 +18,7 @@ import {
 } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
 import {SlashingLib} from "eigenlayer-contracts/src/contracts/libraries/SlashingLib.sol";
+import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
 contract DelegationIntermediate is IDelegationManager {
     function initialize(address initialOwner, uint256 initialPausedStatus) external virtual {}
@@ -235,6 +236,8 @@ contract DelegationIntermediate is IDelegationManager {
 
     function slashOperatorShares(
         address operator,
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
         IStrategy strategy,
         uint64 prevMaxMagnitude,
         uint64 newMaxMagnitude

@@ -5,8 +5,9 @@ import "forge-std/Test.sol";
 import "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
 import "eigenlayer-contracts/src/contracts/interfaces/IEigenPodManager.sol";
 import "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
+import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
-contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
+contract EigenPodManagerMock is Pausable, IEigenPodManager, Test {
     receive() external payable {}
     fallback() external payable {}
 
@@ -123,6 +124,13 @@ contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
     ) external {}
 
     function burnableETHShares() external view returns (uint256) {}
+
+    function increaseBurnableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
+        IStrategy strategy,
+        uint256 addedSharesToBurn
+    ) external {}
 
     function increaseBurnableShares(IStrategy strategy, uint256 addedSharesToBurn) external {}
 

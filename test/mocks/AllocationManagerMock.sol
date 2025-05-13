@@ -11,9 +11,78 @@ import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPa
 import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
 
 contract AllocationManagerIntermediate is IAllocationManager {
+    function burnOrDistributeShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId
+    ) external virtual {}
+
+    function burnOrDistributeShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
+        IStrategy strategy
+    ) external virtual {}
+
+    function createRedistributingOperatorSets(
+        address avs,
+        CreateSetParams[] calldata params,
+        address[] calldata redistributionRecipients
+    ) external virtual {}
+
+    function getBurnOrRedistributionBlock(
+        OperatorSet memory operatorSet,
+        IStrategy strategy,
+        uint256 slashId
+    ) external view virtual returns (uint32) {
+        return 0;
+    }
+
+    function getOperatorSetBurnableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
+        IStrategy strategy
+    ) external view virtual returns (uint256 shares) {
+        return 0;
+    }
+
+    function getOperatorSetStrategiesWithBurnableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId
+    ) external view virtual returns (address[] memory, uint256[] memory) {
+        return (new address[](0), new uint256[](0));
+    }
+
+    function getRedistributionRecipient(
+        OperatorSet memory operatorSet
+    ) external view virtual returns (address) {
+        return address(0);
+    }
+
+    function getSlashCount(
+        OperatorSet memory operatorSet
+    ) external view virtual returns (uint256) {
+        return 0;
+    }
+
+    function isOperatorRedistributable(
+        address operator
+    ) external view virtual returns (bool) {
+        return false;
+    }
+
+    function isRedistributingOperatorSet(
+        OperatorSet memory operatorSet
+    ) external view virtual returns (bool) {
+        return false;
+    }
+
     function initialize(address initialOwner, uint256 initialPausedStatus) external virtual {}
 
-    function slashOperator(address avs, SlashingParams calldata params) external virtual {}
+    function slashOperator(
+        address avs,
+        SlashingParams calldata params
+    ) external virtual returns (uint256 slashId, uint256[] memory shares) {
+        return (0, new uint256[](0));
+    }
 
     function modifyAllocations(
         address operator,

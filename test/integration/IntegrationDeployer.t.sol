@@ -206,7 +206,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             "v0.0.1"
         );
         StrategyManager strategyManagerImplementation =
-            new StrategyManager(delegationManager, pauserRegistry, "v0.0.1");
+            new StrategyManager(allocationManager, delegationManager, pauserRegistry, "v0.0.1");
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit, eigenPodBeacon, delegationManager, pauserRegistry, "v0.0.1"
         );
@@ -230,6 +230,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
 
         AllocationManager allocationManagerImplementation = new AllocationManager(
+            strategyManager,
             delegationManager,
             pauserRegistry,
             permissionController,

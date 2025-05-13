@@ -170,6 +170,7 @@ library CoreDeployLib {
 
         address strategyManagerImpl = address(
             new StrategyManager(
+                IAllocationManager(deployments.allocationManager),
                 IDelegationManager(deployments.delegationManager),
                 IPauserRegistry(deployments.pauserRegistry),
                 "1.0.0"
@@ -178,6 +179,7 @@ library CoreDeployLib {
 
         address allocationManagerImpl = address(
             new AllocationManager(
+                IStrategyManager(deployments.strategyManager),
                 IDelegationManager(deployments.delegationManager),
                 IPauserRegistry(deployments.pauserRegistry),
                 IPermissionController(deployments.permissionController),

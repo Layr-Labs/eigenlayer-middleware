@@ -35,6 +35,7 @@ import {
 import {ISlashingRegistryCoordinator} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
 import {SocketRegistry} from "../../src/SocketRegistry.sol";
+import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
 import {EigenPodManagerMock} from "../mocks/EigenPodManagerMock.sol";
@@ -274,6 +275,7 @@ contract MockAVSDeployer is Test {
         );
 
         allocationManagerImplementation = new AllocationManager(
+            IStrategyManager(address(strategyManagerMock)),
             delegationMock,
             pauserRegistry,
             permissionControllerMock,
