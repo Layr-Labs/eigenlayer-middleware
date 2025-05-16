@@ -719,7 +719,10 @@ contract BLSSigCheckOperatorStateRetrieverUnitTests is
         for (uint256 i = 1; i < result.nonSignerPubkeys.length; i++) {
             bytes32 hash_i = result.nonSignerPubkeys[i].hashG1Point();
             bytes32 hash_prev = result.nonSignerPubkeys[i - 1].hashG1Point();
-            assertTrue(uint256(hash_i) > uint256(hash_prev), "Non-signer pubkeys should be sorted by hash in ascending order");
+            assertTrue(
+                uint256(hash_i) > uint256(hash_prev),
+                "Non-signer pubkeys should be sorted by hash in ascending order"
+            );
         }
     }
 
