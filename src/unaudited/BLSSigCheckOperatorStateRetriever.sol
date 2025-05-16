@@ -10,7 +10,7 @@ import {BitmapUtils} from "../libraries/BitmapUtils.sol";
 import {BN254} from "../libraries/BN254.sol";
 import {BN256G2} from "./BN256G2.sol";
 import {OperatorStateRetriever} from "../OperatorStateRetriever.sol";
-import {BLSSigCheckUtils,Arrays} from "./BLSSigCheckUtils.sol";
+import {BLSSigCheckUtils, Arrays} from "./BLSSigCheckUtils.sol";
 
 /**
  * @title BLSSigCheckOperatorStateRetriever with view functions that allow to retrieve the state of an AVSs registry system.

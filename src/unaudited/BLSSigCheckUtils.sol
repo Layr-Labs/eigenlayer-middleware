@@ -5,7 +5,6 @@ import {BN254} from "../libraries/BN254.sol";
 import {StorageSlot} from "@openzeppelin/contracts/utils/StorageSlot.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-
 /**
  * @dev Provides a set of functions to compare values.
  *
@@ -59,7 +58,9 @@ library SlotDerivation {
     /**
      * @dev Derive an ERC-7201 slot from a string (namespace).
      */
-    function erc7201Slot(string memory namespace) internal pure returns (bytes32 slot) {
+    function erc7201Slot(
+        string memory namespace
+    ) internal pure returns (bytes32 slot) {
         assembly ("memory-safe") {
             mstore(0x00, sub(keccak256(add(namespace, 0x20), mload(namespace)), 1))
             slot := and(keccak256(0x00, 0x20), not(0xff))
@@ -78,7 +79,9 @@ library SlotDerivation {
     /**
      * @dev Derive the location of the first element in an array from the slot where the length is stored.
      */
-    function deriveArray(bytes32 slot) internal pure returns (bytes32 result) {
+    function deriveArray(
+        bytes32 slot
+    ) internal pure returns (bytes32 result) {
         assembly ("memory-safe") {
             mstore(0x00, slot)
             result := keccak256(0x00, 0x20)
@@ -143,7 +146,10 @@ library SlotDerivation {
     /**
      * @dev Derive the location of a mapping element from the key.
      */
-    function deriveMapping(bytes32 slot, string memory key) internal pure returns (bytes32 result) {
+    function deriveMapping(
+        bytes32 slot,
+        string memory key
+    ) internal pure returns (bytes32 result) {
         assembly ("memory-safe") {
             let length := mload(key)
             let begin := add(key, 0x20)
@@ -202,7 +208,9 @@ library Arrays {
     /**
      * @dev Variant of {sort} that sorts an array of uint256 in increasing order.
      */
-    function sort(uint256[] memory array) internal pure returns (uint256[] memory) {
+    function sort(
+        uint256[] memory array
+    ) internal pure returns (uint256[] memory) {
         sort(array, Comparators.lt);
         return array;
     }
@@ -231,7 +239,9 @@ library Arrays {
     /**
      * @dev Variant of {sort} that sorts an array of address in increasing order.
      */
-    function sort(address[] memory array) internal pure returns (address[] memory) {
+    function sort(
+        address[] memory array
+    ) internal pure returns (address[] memory) {
         sort(_castToUint256Array(array), Comparators.lt);
         return array;
     }
@@ -260,7 +270,9 @@ library Arrays {
     /**
      * @dev Variant of {sort} that sorts an array of bytes32 in increasing order.
      */
-    function sort(bytes32[] memory array) internal pure returns (bytes32[] memory) {
+    function sort(
+        bytes32[] memory array
+    ) internal pure returns (bytes32[] memory) {
         sort(_castToUint256Array(array), Comparators.lt);
         return array;
     }
@@ -274,7 +286,11 @@ library Arrays {
      * IMPORTANT: Memory locations between `begin` and `end` are not validated/zeroed. This function should
      * be used only if the limits are within a memory array.
      */
-    function _quickSort(uint256 begin, uint256 end, function(uint256, uint256) pure returns (bool) comp) private pure {
+    function _quickSort(
+        uint256 begin,
+        uint256 end,
+        function(uint256, uint256) pure returns (bool) comp
+    ) private pure {
         unchecked {
             if (end - begin < 0x40) return;
 
@@ -301,7 +317,9 @@ library Arrays {
     /**
      * @dev Pointer to the memory location of the first element of `array`.
      */
-    function _begin(uint256[] memory array) private pure returns (uint256 ptr) {
+    function _begin(
+        uint256[] memory array
+    ) private pure returns (uint256 ptr) {
         assembly ("memory-safe") {
             ptr := add(array, 0x20)
         }
@@ -311,7 +329,9 @@ library Arrays {
      * @dev Pointer to the memory location of the first memory word (32bytes) after `array`. This is the memory word
      * that comes just after the last element of the array.
      */
-    function _end(uint256[] memory array) private pure returns (uint256 ptr) {
+    function _end(
+        uint256[] memory array
+    ) private pure returns (uint256 ptr) {
         unchecked {
             return _begin(array) + array.length * 0x20;
         }
@@ -320,7 +340,9 @@ library Arrays {
     /**
      * @dev Load memory word (as a uint256) at location `ptr`.
      */
-    function _mload(uint256 ptr) private pure returns (uint256 value) {
+    function _mload(
+        uint256 ptr
+    ) private pure returns (uint256 value) {
         assembly {
             value := mload(ptr)
         }
@@ -339,14 +361,18 @@ library Arrays {
     }
 
     /// @dev Helper: low level cast address memory array to uint256 memory array
-    function _castToUint256Array(address[] memory input) private pure returns (uint256[] memory output) {
+    function _castToUint256Array(
+        address[] memory input
+    ) private pure returns (uint256[] memory output) {
         assembly {
             output := input
         }
     }
 
     /// @dev Helper: low level cast bytes32 memory array to uint256 memory array
-    function _castToUint256Array(bytes32[] memory input) private pure returns (uint256[] memory output) {
+    function _castToUint256Array(
+        bytes32[] memory input
+    ) private pure returns (uint256[] memory output) {
         assembly {
             output := input
         }
@@ -383,7 +409,10 @@ library Arrays {
      * support for repeated elements in the array. The {lowerBound} function should
      * be used instead.
      */
-    function findUpperBound(uint256[] storage array, uint256 element) internal view returns (uint256) {
+    function findUpperBound(
+        uint256[] storage array,
+        uint256 element
+    ) internal view returns (uint256) {
         uint256 low = 0;
         uint256 high = array.length;
 
@@ -482,7 +511,10 @@ library Arrays {
     /**
      * @dev Same as {lowerBound}, but with an array in memory.
      */
-    function lowerBoundMemory(uint256[] memory array, uint256 element) internal pure returns (uint256) {
+    function lowerBoundMemory(
+        uint256[] memory array,
+        uint256 element
+    ) internal pure returns (uint256) {
         uint256 low = 0;
         uint256 high = array.length;
 
@@ -511,7 +543,10 @@ library Arrays {
     /**
      * @dev Same as {upperBound}, but with an array in memory.
      */
-    function upperBoundMemory(uint256[] memory array, uint256 element) internal pure returns (uint256) {
+    function upperBoundMemory(
+        uint256[] memory array,
+        uint256 element
+    ) internal pure returns (uint256) {
         uint256 low = 0;
         uint256 high = array.length;
 
@@ -542,7 +577,10 @@ library Arrays {
      *
      * WARNING: Only use if you are certain `pos` is lower than the array length.
      */
-    function unsafeAccess(address[] storage arr, uint256 pos) internal pure returns (StorageSlot.AddressSlot storage) {
+    function unsafeAccess(
+        address[] storage arr,
+        uint256 pos
+    ) internal pure returns (StorageSlot.AddressSlot storage) {
         bytes32 slot;
         assembly ("memory-safe") {
             slot := arr.slot
@@ -555,7 +593,10 @@ library Arrays {
      *
      * WARNING: Only use if you are certain `pos` is lower than the array length.
      */
-    function unsafeAccess(bytes32[] storage arr, uint256 pos) internal pure returns (StorageSlot.Bytes32Slot storage) {
+    function unsafeAccess(
+        bytes32[] storage arr,
+        uint256 pos
+    ) internal pure returns (StorageSlot.Bytes32Slot storage) {
         bytes32 slot;
         assembly ("memory-safe") {
             slot := arr.slot
@@ -568,7 +609,10 @@ library Arrays {
      *
      * WARNING: Only use if you are certain `pos` is lower than the array length.
      */
-    function unsafeAccess(uint256[] storage arr, uint256 pos) internal pure returns (StorageSlot.Uint256Slot storage) {
+    function unsafeAccess(
+        uint256[] storage arr,
+        uint256 pos
+    ) internal pure returns (StorageSlot.Uint256Slot storage) {
         bytes32 slot;
         assembly ("memory-safe") {
             slot := arr.slot
@@ -581,7 +625,10 @@ library Arrays {
      *
      * WARNING: Only use if you are certain `pos` is lower than the array length.
      */
-    function unsafeAccess(bytes[] storage arr, uint256 pos) internal pure returns (StorageSlot.BytesSlot storage) {
+    function unsafeAccess(
+        bytes[] storage arr,
+        uint256 pos
+    ) internal pure returns (StorageSlot.BytesSlot storage) {
         bytes32 slot;
         assembly ("memory-safe") {
             slot := arr.slot
@@ -594,7 +641,10 @@ library Arrays {
      *
      * WARNING: Only use if you are certain `pos` is lower than the array length.
      */
-    function unsafeAccess(string[] storage arr, uint256 pos) internal pure returns (StorageSlot.StringSlot storage) {
+    function unsafeAccess(
+        string[] storage arr,
+        uint256 pos
+    ) internal pure returns (StorageSlot.StringSlot storage) {
         bytes32 slot;
         assembly ("memory-safe") {
             slot := arr.slot
@@ -607,7 +657,10 @@ library Arrays {
      *
      * WARNING: Only use if you are certain `pos` is lower than the array length.
      */
-    function unsafeMemoryAccess(address[] memory arr, uint256 pos) internal pure returns (address res) {
+    function unsafeMemoryAccess(
+        address[] memory arr,
+        uint256 pos
+    ) internal pure returns (address res) {
         assembly {
             res := mload(add(add(arr, 0x20), mul(pos, 0x20)))
         }
@@ -618,7 +671,10 @@ library Arrays {
      *
      * WARNING: Only use if you are certain `pos` is lower than the array length.
      */
-    function unsafeMemoryAccess(bytes32[] memory arr, uint256 pos) internal pure returns (bytes32 res) {
+    function unsafeMemoryAccess(
+        bytes32[] memory arr,
+        uint256 pos
+    ) internal pure returns (bytes32 res) {
         assembly {
             res := mload(add(add(arr, 0x20), mul(pos, 0x20)))
         }
@@ -629,7 +685,10 @@ library Arrays {
      *
      * WARNING: Only use if you are certain `pos` is lower than the array length.
      */
-    function unsafeMemoryAccess(uint256[] memory arr, uint256 pos) internal pure returns (uint256 res) {
+    function unsafeMemoryAccess(
+        uint256[] memory arr,
+        uint256 pos
+    ) internal pure returns (uint256 res) {
         assembly {
             res := mload(add(add(arr, 0x20), mul(pos, 0x20)))
         }
@@ -640,7 +699,10 @@ library Arrays {
      *
      * WARNING: Only use if you are certain `pos` is lower than the array length.
      */
-    function unsafeMemoryAccess(bytes[] memory arr, uint256 pos) internal pure returns (bytes memory res) {
+    function unsafeMemoryAccess(
+        bytes[] memory arr,
+        uint256 pos
+    ) internal pure returns (bytes memory res) {
         assembly {
             res := mload(add(add(arr, 0x20), mul(pos, 0x20)))
         }
@@ -651,7 +713,10 @@ library Arrays {
      *
      * WARNING: Only use if you are certain `pos` is lower than the array length.
      */
-    function unsafeMemoryAccess(string[] memory arr, uint256 pos) internal pure returns (string memory res) {
+    function unsafeMemoryAccess(
+        string[] memory arr,
+        uint256 pos
+    ) internal pure returns (string memory res) {
         assembly {
             res := mload(add(add(arr, 0x20), mul(pos, 0x20)))
         }

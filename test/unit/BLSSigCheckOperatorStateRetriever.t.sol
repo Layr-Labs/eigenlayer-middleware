@@ -699,22 +699,25 @@ contract BLSSigCheckOperatorStateRetrieverUnitTests is
 
         // Call the function under test
         IBLSSignatureCheckerTypes.NonSignerStakesAndSignature memory result =
-            sigCheckOperatorStateRetriever.getNonSignerStakesAndSignature(
-                registryCoordinator, quorumNumbers, dummySigma, signingOperators, uint32(block.number)
-            );
+        sigCheckOperatorStateRetriever.getNonSignerStakesAndSignature(
+            registryCoordinator, quorumNumbers, dummySigma, signingOperators, uint32(block.number)
+        );
 
         // Verify we have 2 non-signers
         assertEq(result.nonSignerQuorumBitmapIndices.length, 2, "Should have 2 non-signers");
         assertEq(result.nonSignerPubkeys.length, 2, "Should have 2 non-signer pubkeys");
 
         // Verify the non-signers are operators[1] and operators[3]
-        assertEq(result.nonSignerQuorumBitmapIndices[0], 0, "First non-signer should be operators[1]");
-        assertEq(result.nonSignerQuorumBitmapIndices[1], 0, "Second non-signer should be operators[3]");
+        assertEq(
+            result.nonSignerQuorumBitmapIndices[0], 0, "First non-signer should be operators[1]"
+        );
+        assertEq(
+            result.nonSignerQuorumBitmapIndices[1], 0, "Second non-signer should be operators[3]"
+        );
 
         // Verify the addresses are sorted (operators[1] < operators[3])
         assertTrue(
-            operators[1] < operators[3],
-            "Non-signer addresses should be sorted in ascending order"
+            operators[1] < operators[3], "Non-signer addresses should be sorted in ascending order"
         );
     }
 
@@ -761,15 +764,15 @@ contract BLSSigCheckOperatorStateRetrieverUnitTests is
         for (uint256 i = 0; i < numSigners; i++) {
             signingOperators[i] = operators[i]; // Use first numSigners operators as signers
         }
-        
+
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(uint8(0));
 
         // Call the function under test
         IBLSSignatureCheckerTypes.NonSignerStakesAndSignature memory result =
-            sigCheckOperatorStateRetriever.getNonSignerStakesAndSignature(
-                registryCoordinator, quorumNumbers, dummySigma, signingOperators, uint32(block.number)
-            );
+        sigCheckOperatorStateRetriever.getNonSignerStakesAndSignature(
+            registryCoordinator, quorumNumbers, dummySigma, signingOperators, uint32(block.number)
+        );
 
         // Verify we have the correct number of non-signers
         uint256 expectedNonSigners = numOperators - numSigners;
