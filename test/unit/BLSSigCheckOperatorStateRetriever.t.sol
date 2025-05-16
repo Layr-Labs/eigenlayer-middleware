@@ -715,10 +715,12 @@ contract BLSSigCheckOperatorStateRetrieverUnitTests is
             result.nonSignerQuorumBitmapIndices[1], 0, "Second non-signer should be operators[3]"
         );
 
-        // Verify the addresses are sorted (operators[1] < operators[3])
-        assertTrue(
-            operators[1] < operators[3], "Non-signer addresses should be sorted in ascending order"
-        );
+        // Verify the non-signers are sorted by pubkey hash
+        for (uint256 i = 1; i < result.nonSignerPubkeys.length; i++) {
+            bytes32 hash_i = result.nonSignerPubkeys[i].hashG1Point();
+            bytes32 hash_prev = result.nonSignerPubkeys[i - 1].hashG1Point();
+            assertTrue(uint256(hash_i) > uint256(hash_prev), "Non-signer pubkeys should be sorted by hash in ascending order");
+        }
     }
 
     function test_getNonSignerStakesAndSignature_nonSignersAreSorted_fuzzed(
