@@ -3,13 +3,11 @@ pragma solidity ^0.8.27;
 
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
-import {BN254} from "../../libraries/BN254.sol"; 
+import {BN254} from "../../libraries/BN254.sol";
 import {IECDSATableCalculatorTypes} from "./IECDSATableCalculator.sol";
 import {IBN254TableCalculatorTypes} from "./IBN254TableCalculator.sol";
 
-
 interface ICertificateVerifierTypes is IBN254TableCalculatorTypes, IECDSATableCalculatorTypes {
-
     /**
      * @notice The type of key used by the operatorSet. An OperatorSet can
      * only generate one Operator Table for an OperatorSet for a given OperatorKeyType.
@@ -101,7 +99,6 @@ interface ICertificateVerifierErrors {
 /// @notice This is a base interface that all curve certificate verifiers (eg. BN254, ECDSA) must implement
 /// @dev A single `CertificateVerifier` can be used for ONLY 1 operatorSet
 interface ICertificateVerifier is ICertificateVerifierEvents, ICertificateVerifierErrors {
-    
     /* GLOBAL TABLE ROOT INTERFACE */
 
     /**
@@ -114,16 +111,18 @@ interface ICertificateVerifier is ICertificateVerifierEvents, ICertificateVerifi
      *      or is in storage on the L1 `CrossChainRegistry` and validates against
      *      EigenDA
      */
-	function confirmGlobalTableRoot(
-		BN254Certificate calldata globalOperatorTableRootCert,
-		uint32 referenceTimestamp,
-		bytes32 globalOperatorTableRoot
-	) external;
-	
-	/**
-	 * @notice Set the operatorSet which certifies against global roots
-	 */
-	function setGlobalRootConfirmerOperatorSet(OperatorSet calldata operatorSet) external;
+    function confirmGlobalTableRoot(
+        BN254Certificate calldata globalOperatorTableRootCert,
+        uint32 referenceTimestamp,
+        bytes32 globalOperatorTableRoot
+    ) external;
+
+    /**
+     * @notice Set the operatorSet which certifies against global roots
+     */
+    function setGlobalRootConfirmerOperatorSet(
+        OperatorSet calldata operatorSet
+    ) external;
 
     /* ECDSA CERTIFICATE VERIFIER INTERFACE */
 
@@ -178,7 +177,6 @@ interface ICertificateVerifier is ICertificateVerifierEvents, ICertificateVerifi
         ECDSACertificate memory cert,
         uint96[] memory totalStakeNominalThresholds
     ) external returns (bool);
-
 
     /* BN254 CERTIFICATE VERIFIER INTERFACE */
 
@@ -238,14 +236,22 @@ interface ICertificateVerifier is ICertificateVerifierEvents, ICertificateVerifi
     /* OPERATOR SET CONFIG INTERFACE */
 
     /// @notice the address of the owner of the OperatorSet
-    function getOperatorSetOwner(OperatorSet memory operatorSet) external returns (address);
+    function getOperatorSetOwner(
+        OperatorSet memory operatorSet
+    ) external returns (address);
 
     /// @notice the address of the entity that can update the OperatorSet's operator table
-    function operatorTableUpdater(OperatorSet memory operatorSet) external returns (address);
+    function operatorTableUpdater(
+        OperatorSet memory operatorSet
+    ) external returns (address);
 
     /// @return the maximum amount of seconds that a operator table can be in the past for a given operatorSet
-    function maxOperatorTableStaleness(OperatorSet memory operatorSet) external returns (uint32);
+    function maxOperatorTableStaleness(
+        OperatorSet memory operatorSet
+    ) external returns (uint32);
 
     /// @notice The latest reference timestamp of the operator table for a given operatorSet
-    function latestReferenceTimestamp(OperatorSet memory operatorSet) external returns (uint32);
+    function latestReferenceTimestamp(
+        OperatorSet memory operatorSet
+    ) external returns (uint32);
 }
