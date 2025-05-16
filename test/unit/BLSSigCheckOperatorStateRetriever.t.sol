@@ -657,6 +657,152 @@ contract BLSSigCheckOperatorStateRetrieverUnitTests is
         );
     }
 
+    function test_getNonSignerStakesAndSignature_nonSignersAreSorted() public {
+        // Setup - register multiple operators
+        uint256 quorumBitmap = 1; // Quorum 0 only
+        cheats.roll(registrationBlockNumber);
+
+        // Register 4 operators with different addresses
+        address[] memory operators = new address[](4);
+        operators[0] = _incrementAddress(defaultOperator, 1); // Lowest address
+        operators[1] = _incrementAddress(defaultOperator, 2);
+        operators[2] = _incrementAddress(defaultOperator, 3);
+        operators[3] = _incrementAddress(defaultOperator, 4); // Highest address
+
+        // Register each operator with a different pubkey, incrementing the block each time
+        for (uint256 i = 0; i < operators.length; i++) {
+            BN254.G1Point memory pubKey = BN254.scalar_mul_tiny(BN254.generatorG1(), uint16(i + 1));
+            _registerOperatorWithCoordinator(operators[i], quorumBitmap, pubKey);
+            cheats.roll(block.number + 1); // increment block after each registration
+        }
+
+        // Create G2 points for all operators
+        for (uint256 i = 0; i < operators.length; i++) {
+            BN254.G2Point memory opG2 = _makeG2Point(i + 2);
+            vm.mockCall(
+                address(blsApkRegistry),
+                abi.encodeWithSelector(IBLSApkRegistry.getOperatorPubkeyG2.selector, operators[i]),
+                abi.encode(opG2)
+            );
+        }
+
+        // Create a dummy signature
+        BN254.G1Point memory dummySigma = BN254.scalar_mul_tiny(BN254.generatorG1(), 123);
+
+        // Only have operators[0] and operators[2] sign
+        address[] memory signingOperators = new address[](2);
+        signingOperators[0] = operators[0];
+        signingOperators[1] = operators[2];
+
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(uint8(0));
+
+        // Call the function under test
+        IBLSSignatureCheckerTypes.NonSignerStakesAndSignature memory result =
+            sigCheckOperatorStateRetriever.getNonSignerStakesAndSignature(
+                registryCoordinator, quorumNumbers, dummySigma, signingOperators, uint32(block.number)
+            );
+
+        // Verify we have 2 non-signers
+        assertEq(result.nonSignerQuorumBitmapIndices.length, 2, "Should have 2 non-signers");
+        assertEq(result.nonSignerPubkeys.length, 2, "Should have 2 non-signer pubkeys");
+
+        // Verify the non-signers are operators[1] and operators[3]
+        assertEq(result.nonSignerQuorumBitmapIndices[0], 0, "First non-signer should be operators[1]");
+        assertEq(result.nonSignerQuorumBitmapIndices[1], 0, "Second non-signer should be operators[3]");
+
+        // Verify the addresses are sorted (operators[1] < operators[3])
+        assertTrue(
+            operators[1] < operators[3],
+            "Non-signer addresses should be sorted in ascending order"
+        );
+    }
+
+    function test_getNonSignerStakesAndSignature_nonSignersAreSorted_fuzzed(
+        uint8 numOperators,
+        uint8 numSigners
+    ) public {
+        // Bound the fuzzed values to reasonable ranges
+        numOperators = uint8(bound(numOperators, 5, 10)); // At least 5 operators, max 10
+        numSigners = uint8(bound(numSigners, 2, numOperators - 1)); // At least 2 signers, but not all operators
+
+        // Setup - register multiple operators
+        uint256 quorumBitmap = 1; // Quorum 0 only
+        cheats.roll(registrationBlockNumber);
+
+        // Register operators with different addresses
+        address[] memory operators = new address[](numOperators);
+        for (uint256 i = 0; i < numOperators; i++) {
+            operators[i] = _incrementAddress(defaultOperator, i + 1);
+        }
+
+        // Register each operator with a different pubkey
+        for (uint256 i = 0; i < operators.length; i++) {
+            BN254.G1Point memory pubKey = BN254.scalar_mul_tiny(BN254.generatorG1(), uint16(i + 1));
+            _registerOperatorWithCoordinator(operators[i], quorumBitmap, pubKey);
+            cheats.roll(block.number + 1); // increment block after each registration
+        }
+
+        // Create G2 points for all operators
+        for (uint256 i = 0; i < operators.length; i++) {
+            BN254.G2Point memory opG2 = _makeG2Point(i + 2);
+            vm.mockCall(
+                address(blsApkRegistry),
+                abi.encodeWithSelector(IBLSApkRegistry.getOperatorPubkeyG2.selector, operators[i]),
+                abi.encode(opG2)
+            );
+        }
+
+        // Create a dummy signature
+        BN254.G1Point memory dummySigma = BN254.scalar_mul_tiny(BN254.generatorG1(), 123);
+
+        // Select random signers from the registered operators
+        address[] memory signingOperators = new address[](numSigners);
+        for (uint256 i = 0; i < numSigners; i++) {
+            signingOperators[i] = operators[i]; // Use first numSigners operators as signers
+        }
+        
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(uint8(0));
+
+        // Call the function under test
+        IBLSSignatureCheckerTypes.NonSignerStakesAndSignature memory result =
+            sigCheckOperatorStateRetriever.getNonSignerStakesAndSignature(
+                registryCoordinator, quorumNumbers, dummySigma, signingOperators, uint32(block.number)
+            );
+
+        // Verify we have the correct number of non-signers
+        uint256 expectedNonSigners = numOperators - numSigners;
+        assertEq(
+            result.nonSignerQuorumBitmapIndices.length,
+            expectedNonSigners,
+            "Should have correct number of non-signers"
+        );
+        assertEq(
+            result.nonSignerPubkeys.length,
+            expectedNonSigners,
+            "Should have correct number of non-signer pubkeys"
+        );
+
+        // Get the actual non-signer addresses from the registry
+        address[] memory nonSignerAddresses = new address[](expectedNonSigners);
+        for (uint256 i = 0; i < expectedNonSigners; i++) {
+            nonSignerAddresses[i] = registryCoordinator.getOperatorFromId(
+                bytes32(uint256(result.nonSignerQuorumBitmapIndices[i]))
+            );
+        }
+
+        // Verify the non-signers are sorted by pubkey hash
+        for (uint256 i = 1; i < result.nonSignerPubkeys.length; i++) {
+            bytes32 hash_i = result.nonSignerPubkeys[i].hashG1Point();
+            bytes32 hash_prev = result.nonSignerPubkeys[i - 1].hashG1Point();
+            assertTrue(
+                uint256(hash_i) > uint256(hash_prev),
+                "Non-signer pubkeys should be sorted by hash in ascending order"
+            );
+        }
+    }
+
     function _getApkAtBlocknumber(
         ISlashingRegistryCoordinator registryCoordinator,
         uint8 quorumNumber,
