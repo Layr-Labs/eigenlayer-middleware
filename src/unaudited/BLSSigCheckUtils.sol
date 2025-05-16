@@ -1,13 +1,175 @@
-// SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v5.3.0) (utils/Arrays.sol)
-// This file was procedurally generated from scripts/generate/templates/Arrays.js.
-
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.20;
 
-import {Comparators} from "./Comparators.sol";
-import {SlotDerivation} from "./SlotDerivation.sol";
+import {BN254} from "../libraries/BN254.sol";
 import {StorageSlot} from "@openzeppelin/contracts/utils/StorageSlot.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
+
+/**
+ * @dev Provides a set of functions to compare values.
+ *
+ * _Available since v5.1._
+ */
+library Comparators {
+    function lt(uint256 a, uint256 b) internal pure returns (bool) {
+        return a < b;
+    }
+
+    function gt(uint256 a, uint256 b) internal pure returns (bool) {
+        return a > b;
+    }
+}
+
+/**
+ * @dev Library for computing storage (and transient storage) locations from namespaces and deriving slots
+ * corresponding to standard patterns. The derivation method for array and mapping matches the storage layout used by
+ * the solidity language / compiler.
+ *
+ * See https://docs.soliditylang.org/en/v0.8.20/internals/layout_in_storage.html#mappings-and-dynamic-arrays[Solidity docs for mappings and dynamic arrays.].
+ *
+ * Example usage:
+ * ```solidity
+ * contract Example {
+ *     // Add the library methods
+ *     using StorageSlot for bytes32;
+ *     using SlotDerivation for bytes32;
+ *
+ *     // Declare a namespace
+ *     string private constant _NAMESPACE = "<namespace>"; // eg. OpenZeppelin.Slot
+ *
+ *     function setValueInNamespace(uint256 key, address newValue) internal {
+ *         _NAMESPACE.erc7201Slot().deriveMapping(key).getAddressSlot().value = newValue;
+ *     }
+ *
+ *     function getValueInNamespace(uint256 key) internal view returns (address) {
+ *         return _NAMESPACE.erc7201Slot().deriveMapping(key).getAddressSlot().value;
+ *     }
+ * }
+ * ```
+ *
+ * TIP: Consider using this library along with {StorageSlot}.
+ *
+ * NOTE: This library provides a way to manipulate storage locations in a non-standard way. Tooling for checking
+ * upgrade safety will ignore the slots accessed through this library.
+ *
+ * _Available since v5.1._
+ */
+library SlotDerivation {
+    /**
+     * @dev Derive an ERC-7201 slot from a string (namespace).
+     */
+    function erc7201Slot(string memory namespace) internal pure returns (bytes32 slot) {
+        assembly ("memory-safe") {
+            mstore(0x00, sub(keccak256(add(namespace, 0x20), mload(namespace)), 1))
+            slot := and(keccak256(0x00, 0x20), not(0xff))
+        }
+    }
+
+    /**
+     * @dev Add an offset to a slot to get the n-th element of a structure or an array.
+     */
+    function offset(bytes32 slot, uint256 pos) internal pure returns (bytes32 result) {
+        unchecked {
+            return bytes32(uint256(slot) + pos);
+        }
+    }
+
+    /**
+     * @dev Derive the location of the first element in an array from the slot where the length is stored.
+     */
+    function deriveArray(bytes32 slot) internal pure returns (bytes32 result) {
+        assembly ("memory-safe") {
+            mstore(0x00, slot)
+            result := keccak256(0x00, 0x20)
+        }
+    }
+
+    /**
+     * @dev Derive the location of a mapping element from the key.
+     */
+    function deriveMapping(bytes32 slot, address key) internal pure returns (bytes32 result) {
+        assembly ("memory-safe") {
+            mstore(0x00, and(key, shr(96, not(0))))
+            mstore(0x20, slot)
+            result := keccak256(0x00, 0x40)
+        }
+    }
+
+    /**
+     * @dev Derive the location of a mapping element from the key.
+     */
+    function deriveMapping(bytes32 slot, bool key) internal pure returns (bytes32 result) {
+        assembly ("memory-safe") {
+            mstore(0x00, iszero(iszero(key)))
+            mstore(0x20, slot)
+            result := keccak256(0x00, 0x40)
+        }
+    }
+
+    /**
+     * @dev Derive the location of a mapping element from the key.
+     */
+    function deriveMapping(bytes32 slot, bytes32 key) internal pure returns (bytes32 result) {
+        assembly ("memory-safe") {
+            mstore(0x00, key)
+            mstore(0x20, slot)
+            result := keccak256(0x00, 0x40)
+        }
+    }
+
+    /**
+     * @dev Derive the location of a mapping element from the key.
+     */
+    function deriveMapping(bytes32 slot, uint256 key) internal pure returns (bytes32 result) {
+        assembly ("memory-safe") {
+            mstore(0x00, key)
+            mstore(0x20, slot)
+            result := keccak256(0x00, 0x40)
+        }
+    }
+
+    /**
+     * @dev Derive the location of a mapping element from the key.
+     */
+    function deriveMapping(bytes32 slot, int256 key) internal pure returns (bytes32 result) {
+        assembly ("memory-safe") {
+            mstore(0x00, key)
+            mstore(0x20, slot)
+            result := keccak256(0x00, 0x40)
+        }
+    }
+
+    /**
+     * @dev Derive the location of a mapping element from the key.
+     */
+    function deriveMapping(bytes32 slot, string memory key) internal pure returns (bytes32 result) {
+        assembly ("memory-safe") {
+            let length := mload(key)
+            let begin := add(key, 0x20)
+            let end := add(begin, length)
+            let cache := mload(end)
+            mstore(end, slot)
+            result := keccak256(begin, add(length, 0x20))
+            mstore(end, cache)
+        }
+    }
+
+    /**
+     * @dev Derive the location of a mapping element from the key.
+     */
+    function deriveMapping(bytes32 slot, bytes memory key) internal pure returns (bytes32 result) {
+        assembly ("memory-safe") {
+            let length := mload(key)
+            let begin := add(key, 0x20)
+            let end := add(begin, length)
+            let cache := mload(end)
+            mstore(end, slot)
+            result := keccak256(begin, add(length, 0x20))
+            mstore(end, cache)
+        }
+    }
+}
 
 /**
  * @dev Collection of functions related to array types.
@@ -548,5 +710,27 @@ library Arrays {
         assembly ("memory-safe") {
             sstore(array.slot, len)
         }
+    }
+}
+
+/**
+ * @title ECUtils
+ * @notice Library containing utility functions for elliptic curve operations
+ */
+library BLSSigCheckUtils {
+    /**
+     * @notice Checks if a point lies on the BN254 elliptic curve
+     * @dev The curve equation is y^2 = x^3 + 3 (mod p)
+     * @param p The point to check, in G1
+     * @return true if the point lies on the curve, false otherwise
+     */
+    function isOnCurve(
+        BN254.G1Point memory p
+    ) internal pure returns (bool) {
+        uint256 y2 = mulmod(p.Y, p.Y, BN254.FP_MODULUS);
+        uint256 x2 = mulmod(p.X, p.X, BN254.FP_MODULUS);
+        uint256 x3 = mulmod(p.X, x2, BN254.FP_MODULUS);
+        uint256 rhs = addmod(x3, 3, BN254.FP_MODULUS);
+        return y2 == rhs;
     }
 }

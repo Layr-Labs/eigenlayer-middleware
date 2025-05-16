@@ -784,14 +784,6 @@ contract BLSSigCheckOperatorStateRetrieverUnitTests is
             "Should have correct number of non-signer pubkeys"
         );
 
-        // Get the actual non-signer addresses from the registry
-        address[] memory nonSignerAddresses = new address[](expectedNonSigners);
-        for (uint256 i = 0; i < expectedNonSigners; i++) {
-            nonSignerAddresses[i] = registryCoordinator.getOperatorFromId(
-                bytes32(uint256(result.nonSignerQuorumBitmapIndices[i]))
-            );
-        }
-
         // Verify the non-signers are sorted by pubkey hash
         for (uint256 i = 1; i < result.nonSignerPubkeys.length; i++) {
             bytes32 hash_i = result.nonSignerPubkeys[i].hashG1Point();
