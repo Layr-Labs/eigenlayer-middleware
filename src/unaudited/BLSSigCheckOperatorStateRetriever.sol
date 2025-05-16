@@ -10,7 +10,7 @@ import {BitmapUtils} from "../libraries/BitmapUtils.sol";
 import {BN254} from "../libraries/BN254.sol";
 import {BN256G2} from "./BN256G2.sol";
 import {OperatorStateRetriever} from "../OperatorStateRetriever.sol";
-import {ECUtils} from "./ECUtils.sol";
+import {BLSSigCheckUtils, Arrays} from "./BLSSigCheckUtils.sol";
 
 /**
  * @title BLSSigCheckOperatorStateRetriever with view functions that allow to retrieve the state of an AVSs registry system.
@@ -18,9 +18,10 @@ import {ECUtils} from "./ECUtils.sol";
  * @author Bread coop
  */
 contract BLSSigCheckOperatorStateRetriever is OperatorStateRetriever {
-    using ECUtils for BN254.G1Point;
+    using BLSSigCheckUtils for BN254.G1Point;
     using BN254 for BN254.G1Point;
     using BitmapUtils for uint256;
+    using Arrays for bytes32[];
 
     /// @dev Thrown when the signature is not on the curve.
     error InvalidSigma();
@@ -150,9 +151,13 @@ contract BLSSigCheckOperatorStateRetriever is OperatorStateRetriever {
 
         // Trim the nonSignerOperatorIds array to the actual count
         bytes32[] memory trimmedNonSignerOperatorIds = new bytes32[](nonSignerOperatorsCount);
-        BN254.G1Point[] memory nonSignerPubkeys = new BN254.G1Point[](nonSignerOperatorsCount);
         for (uint256 i = 0; i < nonSignerOperatorsCount; i++) {
             trimmedNonSignerOperatorIds[i] = nonSignerOperatorIds[i];
+        }
+        trimmedNonSignerOperatorIds = Arrays.sort(trimmedNonSignerOperatorIds);
+
+        BN254.G1Point[] memory nonSignerPubkeys = new BN254.G1Point[](nonSignerOperatorsCount);
+        for (uint256 i = 0; i < nonSignerOperatorsCount; i++) {
             address nonSignerOperator =
                 registryCoordinator.getOperatorFromId(trimmedNonSignerOperatorIds[i]);
             (nonSignerPubkeys[i],) = m.blsApkRegistry.getRegisteredPubkey(nonSignerOperator);
