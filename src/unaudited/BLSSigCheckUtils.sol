@@ -5,6 +5,10 @@ import {BN254} from "../libraries/BN254.sol";
 import {StorageSlot} from "@openzeppelin/contracts/utils/StorageSlot.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
+// The following libraries (Comparators, Arrays and SlotDerivation) are copy-pasted from OpenZeppelin v5.1
+// since an earlier version of OpenZeppelin is being used that doesn't include these utilities.
+// This allows us to use these newer utilities without upgrading the entire dependency and messing with already
+// existing code.
 /**
  * @dev Provides a set of functions to compare values.
  *
