@@ -178,6 +178,23 @@ interface ICertificateVerifier is ICertificateVerifierEvents, ICertificateVerifi
         uint96[] memory totalStakeNominalThresholds
     ) external returns (bool);
 
+    /**
+     * @notice Ejects operators from the operatorSet. Operator ejection technically occurs on the L1 but to avoid having
+     * to wait until the OperatorTable is updated on L2, we allow for more immediate ejection of operators for a more
+     * concurrent operator registration view. This function is specific for operatorSets with OperatorKeyType.ECDSA
+     * @param operatorSet the operatorSet to eject operators from
+     * @param referenceTimestamp the timestamp of the operator table against which
+     * the ejection is being done
+     * @param operatorIndices the indices of the operators to eject
+     * @dev only callable by the ejector
+     * @dev We pass in an `operatorSet` for future-proofing a global `TableManager` contract
+     */
+    function ejectECDSAOperators(
+        OperatorSet calldata operatorSet,
+        uint32 referenceTimestamp,
+        uint32[] calldata operatorIndices
+    ) external;
+
     /* BN254 CERTIFICATE VERIFIER INTERFACE */
 
     /**
@@ -232,6 +249,25 @@ interface ICertificateVerifier is ICertificateVerifierEvents, ICertificateVerifi
         BN254Certificate memory cert,
         uint96[] memory totalStakeNominalThresholds
     ) external returns (bool);
+
+    /**
+     * @notice Ejects operators from the operatorSet. Operator ejection technically occurs on the L1 but to avoid having
+     * to wait until the OperatorTable is updated on L2, we allow for more immediate ejection of operators for a more
+     * concurrent operator registration view. This function is specific for operatorSets with OperatorKeyType.BN254
+     * @param operatorSet the operatorSet to eject operators from
+     * @param referenceTimestamp the timestamp of the operator tbale against which
+     * the ejection is being done
+     * @param operatorIndices the indices of the operators to eject
+     * @param witnesses for the operators that are not already in storage
+     * @dev only callable by the ejector
+     * @dev We pass in an `operatorSet` for future-proofing a global `TableManager` contract
+     */
+    function ejectBN254Operators(
+        OperatorSet calldata operatorSet,
+        uint32 referenceTimestamp,
+        uint32[] calldata operatorIndices,
+        BN254OperatorInfoWitness[] calldata witnesses
+    ) external;
 
     /* OPERATOR SET CONFIG INTERFACE */
 
