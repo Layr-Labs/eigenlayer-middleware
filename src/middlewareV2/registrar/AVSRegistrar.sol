@@ -12,16 +12,11 @@ import {
 import {AVSRegistrarStorage} from "./AVSRegistrarStorage.sol";
 import {IKeyRegistrar} from "../../interfaces/IKeyRegistrar.sol";
 
-/// @notice A minimal AVSRegistrar contract that is used to register/deregister operators for an AVS
-contract AVSRegistrar is AVSRegistrarStorage {
-    using OperatorSetLib for OperatorSet;
+import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
-    modifier forThisAVS(
-        address avs
-    ) {
-        require(supportsAVS(avs), InvalidAVS());
-        _;
-    }
+/// @notice A minimal AVSRegistrar contract that is used to register/deregister operators for an AVS
+contract AVSRegistrar is Initializable, AVSRegistrarStorage {
+    using OperatorSetLib for OperatorSet;
 
     modifier onlyAllocationManager() {
         require(msg.sender == address(allocationManager), NotAllocationManager());
@@ -33,7 +28,9 @@ contract AVSRegistrar is AVSRegistrarStorage {
         IAllocationManager _allocationManager,
         IKeyRegistrar _keyRegistrar,
         IKeyRegistrar.CurveType _curveType
-    ) AVSRegistrarStorage(_avs, _allocationManager, _keyRegistrar, _curveType) {}
+    ) AVSRegistrarStorage(_avs, _allocationManager, _keyRegistrar, _curveType) {
+        _disableInitializers();
+    }
 
     /// @inheritdoc IAVSRegistrar
     function registerOperator(
@@ -41,7 +38,7 @@ contract AVSRegistrar is AVSRegistrarStorage {
         address avs,
         uint32[] calldata operatorSetIds,
         bytes calldata data
-    ) external virtual forThisAVS(avs) onlyAllocationManager {
+    ) external virtual onlyAllocationManager {
         _beforeRegisterOperator(operator, operatorSetIds, data);
 
         // Check that the operator has a valid key
@@ -57,7 +54,7 @@ contract AVSRegistrar is AVSRegistrarStorage {
         address operator,
         address avs,
         uint32[] calldata operatorSetIds
-    ) external virtual forThisAVS(avs) onlyAllocationManager {
+    ) external virtual onlyAllocationManager {
         _beforeDeregisterOperator(operator, operatorSetIds);
 
         _afterDeregisterOperator(operator, operatorSetIds);

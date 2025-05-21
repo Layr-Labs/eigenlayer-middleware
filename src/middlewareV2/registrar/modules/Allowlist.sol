@@ -4,22 +4,25 @@ pragma solidity ^0.8.27;
 import {IAllowlist} from "../../../interfaces/IAllowlist.sol";
 import {AllowlistStorage} from "./AllowlistStorage.sol";
 
-import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from
     "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import {EnumerableSetUpgradeable} from
     "openzeppelin-contracts-upgradeable/contracts/utils/structs/EnumerableSetUpgradeable.sol";
 
-contract Allowlist is Initializable, OwnableUpgradeable, AllowlistStorage {
-    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
+import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
-    constructor() {
-        _disableInitializers();
-    }
+abstract contract Allowlist is OwnableUpgradeable, AllowlistStorage {
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
     function initialize(
         address _owner
-    ) external initializer {
+    ) public virtual initializer {
+        _initializeAllowlist(_owner);
+    }
+
+    function _initializeAllowlist(
+        address _owner
+    ) internal onlyInitializing {
         __Ownable_init();
         _transferOwnership(_owner);
     }

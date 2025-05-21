@@ -16,6 +16,12 @@ contract AVSRegistrarWithAllowlist is AVSRegistrar, Allowlist {
         IKeyRegistrar.CurveType _curveType
     ) AVSRegistrar(_avs, _allocationManager, _keyRegistrar, _curveType) {}
 
+    function initialize(
+        address admin
+    ) public override initializer {
+        _initializeAllowlist(admin);
+    }
+
     /// @notice Set the socket for the operator
     function _beforeRegisterOperator(
         address operator,
