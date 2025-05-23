@@ -4,264 +4,596 @@ pragma solidity ^0.8.27;
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {BN254} from "./libraries/BN254.sol";
+import {PermissionControllerMixin} from "eigenlayer-contracts/src/contracts/mixins/PermissionControllerMixin.sol";
+import {IPermissionController} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 
 /**
  * @title KeyRegistrar
- * @notice A core singleton contract that manages operator keys for different AVSs
+ * @notice A core singleton contract that manages operator keys for different AVSs with global key uniqueness
  * @dev Provides registration, deregistration, and rotation of keys with support for aggregate keys
+ *      Keys must be unique globally across all AVSs and operator sets
+ *      Operators call functions directly to manage their own keys
  */
-contract KeyRegistrar is Initializable, OwnableUpgradeable {
+contract KeyRegistrar is Initializable, OwnableUpgradeable, PermissionControllerMixin {
     using BN254 for BN254.G1Point;
-
-    /// @dev Returns the hash of the zero pubkey for BN254 aka BN254.G1Point(0,0)
-    bytes32 internal constant ZERO_PK_HASH = hex"ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5";
 
     /// @dev Enum defining supported curve types
     enum CurveType {
         ECDSA,
         BN254
-        // BLS12_381 // Future support
     }
 
-    /// @dev Structure to store key information across different curves
+    /// @dev Structure to store key information
     struct KeyInfo {
         bool isRegistered;
         uint256 lastRotationBlock;
+        bytes keyData; // Flexible storage for different curve types
     }
 
-    /// @dev Maps (AVS, operator, curve type) to key info
-    mapping(address => mapping(address => mapping(CurveType => KeyInfo))) private avsOperatorKeyInfo;
+    /// @dev Configuration for each operator set
+    struct OperatorSetConfig {
+        CurveType curveType;
+        bool isActive;
+        uint256 rotationDelay; // AVS-specific rotation delay in blocks
+    }
 
-    /// @dev Maps (AVS, operator) to their ECDSA public keys
-    mapping(address => mapping(address => bytes)) private avsOperatorToECDSAKey;
+    /// @dev Maps (avs, operatorSetId, operator) to their key info
+    mapping(address => mapping(uint32 => mapping(address => KeyInfo))) private operatorKeyInfo;
 
-    /// @dev Maps (AVS, operator) to their BN254 G1 points
-    mapping(address => mapping(address => BN254.G1Point)) private avsOperatorToBN254Key;
+    /// @dev Maps (avs, operatorSetId) to their configuration
+    mapping(address => mapping(uint32 => OperatorSetConfig)) private operatorSetConfigs;
 
-    /// @dev Maps (AVS, operator) to their BN254 G2 points (for BLS verification)
-    mapping(address => mapping(address => BN254.G2Point)) private avsOperatorToBN254KeyG2;
-
-    /// @dev Maps (AVS, operator, curve type) to key hash for quick lookup
-    mapping(address => mapping(address => mapping(CurveType => bytes32))) private avsOperatorToKeyHash;
-
-    /// @dev Maps (AVS, curve type, key hash) to operator address for reverse lookup
-    mapping(address => mapping(CurveType => mapping(bytes32 => address))) private avsKeyHashToOperator;
-
-    /// @dev Maps (AVS, operatorSetId) to their aggregate BN254 G1 point
+    /// @dev Maps (avs, operatorSetId) to their aggregate BN254 G1 point
     mapping(address => mapping(uint32 => BN254.G1Point)) private avsOperatorSetToAggregateBN254Key;
 
-    /// @dev Maps AVS to their authorized registrar contract
-    mapping(address => address) public avsToRegistrar;
-
-    /// @dev Optional delay period before a key rotation takes effect (in blocks)
-    uint256 public rotationDelay;
+    /// @dev Global mapping of key hash to registration status - enforces global uniqueness
+    mapping(bytes32 => bool) private globalKeyRegistry;
 
     /// Events
-    event RegistrarAuthorized(address indexed avs, address indexed registrar);
-    event KeyRegistered(address indexed avs, address indexed operator, CurveType curveType, bytes pubkey);
-    event KeyDeregistered(address indexed avs, address indexed operator, CurveType curveType);
-    event KeyRotationInitiated(address indexed avs, address indexed operator, CurveType curveType, bytes oldKey, bytes newKey, uint256 effectiveBlock);
+    event KeyRegistered(address indexed avs, uint32 indexed operatorSetId, address indexed operator, CurveType curveType, bytes pubkey);
+    event KeyDeregistered(address indexed avs, uint32 indexed operatorSetId, address indexed operator, CurveType curveType);
+    event KeyRotationInitiated(address indexed avs, uint32 indexed operatorSetId, address indexed operator, CurveType curveType, bytes oldKey, bytes newKey, uint256 effectiveBlock);
     event AggregateBN254KeyUpdated(address indexed avs, uint32 indexed operatorSetId, BN254.G1Point newAggregateKey);
-    event RotationDelayUpdated(uint256 oldDelay, uint256 newDelay);
+    event OperatorSetConfigured(address indexed avs, uint32 indexed operatorSetId, CurveType curveType, uint256 rotationDelay);
 
     /// Errors
     error KeyAlreadyRegistered();
     error KeyNotRegistered();
     error InvalidKeyFormat();
-    error ZeroAddress();
     error ZeroPubkey();
-    error KeyRotationInProgress();
     error InvalidCurveType();
     error Unauthorized();
-    error OperatorNotFound();
-
-    /// @dev Only the authorized registrar for an AVS can call functions with this modifier
-    modifier onlyAVSRegistrar(address avs) {
-        if (msg.sender != avsToRegistrar[avs] && msg.sender != owner()) {
-            revert Unauthorized();
-        }
-        _;
-    }
-
-    /// @dev Initializes the contract
-    /// @param initialRotationDelay Initial key rotation delay in blocks
-    function initialize(uint256 initialRotationDelay) external initializer {
-        __Ownable_init();
-        rotationDelay = initialRotationDelay;
-    }
+    error InvalidSignature();
+    error InvalidKeypair();
+    error OperatorSetNotConfigured();
+    error RotationTooSoon(uint256 lastRotation, uint256 delay);
 
     /**
-     * @notice Authorize a registrar contract for a specific AVS
-     * @param registrar Address of the registrar contract
+     * @dev Constructor for the KeyRegistrar contract
+     * @param _permissionController The permission controller contract
      */
-    function authorizeRegistrar(address registrar) external {
-        if (registrar == address(0)) {
-            revert ZeroAddress();
-        }
-        avsToRegistrar[msg.sender] = registrar;
-        emit RegistrarAuthorized(msg.sender, registrar);
+    constructor(
+        IPermissionController _permissionController
+    ) PermissionControllerMixin(_permissionController) {
+        _disableInitializers();
     }
 
     /**
-     * @notice Registers a new cryptographic key for an operator with a specific AVS
+     * @dev Initializes the contract ownership
+     * @param initialOwner Initial owner of the contract
+     */
+    function initialize(address initialOwner) external initializer {
+        _transferOwnership(initialOwner);
+    }
+
+    /**
+     * @notice Configures an operator set with curve type and rotation delay
      * @param avs Address of the AVS
-     * @param operator Address of the operator
-     * @param operatorSetIds Array of operator set IDs to add the operator to (only for BN254 keys)
+     * @param operatorSetId ID of the operator set
      * @param curveType Type of curve (ECDSA, BN254)
+     * @param rotationDelay Delay in blocks before key rotation takes effect
+     * @dev Only authorized callers for the AVS can configure operator sets
+     */
+    function configureOperatorSet(
+        address avs,
+        uint32 operatorSetId,
+        CurveType curveType,
+        uint256 rotationDelay
+    ) external checkCanCall(avs) {
+        
+        operatorSetConfigs[avs][operatorSetId] = OperatorSetConfig({
+            curveType: curveType,
+            isActive: true,
+            rotationDelay: rotationDelay
+        });
+
+        emit OperatorSetConfigured(avs, operatorSetId, curveType, rotationDelay);
+    }
+
+    /**
+     * @notice Registers a cryptographic key for an operator with a specific AVS
+     * @param operator Address of the operator to register key for
+     * @param avs Address of the AVS
+     * @param operatorSetId ID of the operator set
      * @param pubkey Public key bytes
+     * @param signature Signature proving ownership (only needed for BN254 keys)
      * @return alreadyRegistered True if the key was already registered
+     * @dev Can be called by operator directly or by addresses they've authorized via PermissionController
      */
     function registerKey(
-        address avs,
         address operator,
-        uint32[] calldata operatorSetIds,
-        CurveType curveType,
-        bytes calldata pubkey
-    ) external onlyAVSRegistrar(avs) returns (bool alreadyRegistered) {
-        if (avs == address(0) || operator == address(0)) {
-            revert ZeroAddress();
-        }
+        address avs,
+        uint32 operatorSetId,
+        bytes calldata pubkey,
+        bytes calldata signature
+    ) external checkCanCall(operator) returns (bool alreadyRegistered) {
         
+        OperatorSetConfig memory config = operatorSetConfigs[avs][operatorSetId];
+        if (!config.isActive) revert OperatorSetNotConfigured();
+
         // Check if the key is already registered
-        if (avsOperatorKeyInfo[avs][operator][curveType].isRegistered) {
+        if (operatorKeyInfo[avs][operatorSetId][operator].isRegistered) {
             return true;
         }
 
-        // Validate key format and register based on curve type
-        if (curveType == CurveType.ECDSA) {
-            _registerECDSAKey(avs, operator, pubkey);
-        } else if (curveType == CurveType.BN254) {
-            BN254.G1Point memory operatorKey = _registerBN254Key(avs, operator, pubkey);
-            
-            // Update aggregate keys for specified operator sets
-            for (uint256 i = 0; i < operatorSetIds.length; i++) {
-                uint32 operatorSetId = operatorSetIds[i];
-                _updateAggregateBN254Key(avs, operatorSetId, operatorKey, true);
-            }
-        } else {
+        // Register key based on curve type
+        if (config.curveType == CurveType.ECDSA) {
+            _registerECDSAKey(avs, operatorSetId, operator, pubkey);
+        } 
+        else if (config.curveType == CurveType.BN254) {
+            _registerBN254Key(avs, operatorSetId, operator, pubkey, signature);
+        } 
+        else {
             revert InvalidCurveType();
         }
 
-        // Update key info
-        avsOperatorKeyInfo[avs][operator][curveType] = KeyInfo({
-            isRegistered: true,
-            lastRotationBlock: block.number
-        });
-
-        emit KeyRegistered(avs, operator, curveType, pubkey);
+        emit KeyRegistered(avs, operatorSetId, operator, config.curveType, pubkey);
         return false;
     }
 
     /**
-     * @notice Deregisters a cryptographic key for an operator with a specific AVS
+     * @notice Validates and registers an ECDSA public key
      * @param avs Address of the AVS
+     * @param operatorSetId ID of the operator set
      * @param operator Address of the operator
-     * @param operatorSetIds Array of operator set IDs to remove the operator from (only for BN254 keys)
-     * @param curveType Type of curve (ECDSA, BN254)
+     * @param pubkey The ECDSA public key bytes
+     * @dev Validates key format and ensures global uniqueness
+     */
+    function _registerECDSAKey(
+        address avs,
+        uint32 operatorSetId,
+        address operator,
+        bytes calldata pubkey
+    ) internal {
+        // Validate ECDSA public key format
+        if (pubkey.length != 65) revert InvalidKeyFormat();
+        if (pubkey[0] != 0x04) revert InvalidKeyFormat(); // Must be uncompressed format
+        
+        // Reject zero public keys
+        bool isZero = true;
+        for (uint i = 1; i < 65; i++) {
+            if (pubkey[i] != 0) {
+                isZero = false;
+                break;
+            }
+        }
+        if (isZero) revert ZeroPubkey();
+
+        bytes32 keyHash = keccak256(pubkey);
+        
+        // Check global uniqueness - reject if key has ever been used
+        if (globalKeyRegistry[keyHash]) {
+            revert KeyAlreadyRegistered();
+        }
+
+        // Store key data
+        operatorKeyInfo[avs][operatorSetId][operator] = KeyInfo({
+            isRegistered: true,
+            lastRotationBlock: block.number,
+            keyData: pubkey
+        });
+        
+        // Update global key registry
+        globalKeyRegistry[keyHash] = true;
+    }
+
+    /**
+     * @notice Validates and registers a BN254 public key
+     * @param avs Address of the AVS
+     * @param operatorSetId ID of the operator set
+     * @param operator Address of the operator
+     * @param pubkey The BN254 public key bytes (G1 and G2 components)
+     * @param signature Signature proving key ownership
+     * @dev Validates keypair, verifies signature, and ensures global uniqueness
+     */
+    function _registerBN254Key(
+        address avs,
+        uint32 operatorSetId,
+        address operator,
+        bytes calldata pubkey,
+        bytes calldata signature
+    ) internal {
+        BN254.G1Point memory g1Point;
+
+        {
+        // Decode BN254 G1 and G2 points from the pubkey bytes
+        (uint256 g1X, uint256 g1Y, uint256[2] memory g2X, uint256[2] memory g2Y) = 
+            abi.decode(pubkey, (uint256, uint256, uint256[2], uint256[2]));
+
+        // Validate G1 point
+        g1Point = BN254.G1Point(g1X, g1Y);
+        if (g1X == 0 && g1Y == 0) {
+            revert ZeroPubkey();
+        }
+
+        // Construct BN254 G2 point from coordinates
+        BN254.G2Point memory g2Point = BN254.G2Point(g2X, g2Y);
+
+        // Verify that G1 and G2 form a valid keypair
+        if (!BN254.pairing(g1Point, BN254.negGeneratorG2(), BN254.generatorG1(), g2Point)) {
+            revert InvalidKeypair();
+        }
+
+        // Verify the signature to prevent rogue key attacks with domain separation
+        bytes32 messageHash = keccak256(abi.encodePacked(
+            "EigenLayer.KeyRegistrar.v1", // Domain separator
+            address(this), // Contract address for additional separation
+            avs, 
+            operatorSetId, 
+            operator, 
+            pubkey
+        ));
+        verifyBN254Signature(messageHash, signature, g1Point, g2Point);
+        }
+
+        // Calculate key hash and check global uniqueness
+        bytes32 keyHash = BN254.hashG1Point(g1Point);
+        if (globalKeyRegistry[keyHash]) {
+            revert KeyAlreadyRegistered();
+        }
+
+        // Store the key data
+        operatorKeyInfo[avs][operatorSetId][operator] = KeyInfo({
+            isRegistered: true,
+            lastRotationBlock: block.number,
+            keyData: pubkey
+        });
+        
+        // Update global key registry
+        globalKeyRegistry[keyHash] = true;
+        
+        // Update the aggregate key
+        _updateAggregateBN254Key(avs, operatorSetId, g1Point, true);
+    }
+
+    /**
+     * @notice Deregisters a cryptographic key for an operator with a specific AVS
+     * @param operator Address of the operator to deregister key for
+     * @param avs Address of the AVS
+     * @param operatorSetId ID of the operator set
      * @return removed True if the key was removed
+     * @dev Can be called by operator directly or by addresses they've authorized via PermissionController
      */
     function deregisterKey(
-        address avs,
         address operator,
-        uint32[] calldata operatorSetIds,
-        CurveType curveType
-    ) external onlyAVSRegistrar(avs) returns (bool removed) {
-        if (!avsOperatorKeyInfo[avs][operator][curveType].isRegistered) {
+        address avs,
+        uint32 operatorSetId
+    ) external checkCanCall(operator) returns (bool removed) {
+        
+        OperatorSetConfig memory config = operatorSetConfigs[avs][operatorSetId];
+        if (!config.isActive) revert OperatorSetNotConfigured();
+        
+        KeyInfo memory keyInfo = operatorKeyInfo[avs][operatorSetId][operator];
+        
+        if (!keyInfo.isRegistered) {
             return false;
         }
 
-        // Get the key hash before deleting
-        bytes32 keyHash = avsOperatorToKeyHash[avs][operator][curveType];
-
-        // For BN254 keys, update the aggregate keys
-        if (curveType == CurveType.BN254) {
-            BN254.G1Point memory operatorKey = avsOperatorToBN254Key[avs][operator];
+        // If this is a BN254 key, update the aggregate key
+        if (config.curveType == CurveType.BN254) {
+            // Extract the G1 point from the stored key data
+            (uint256 g1X, uint256 g1Y, , ) = abi.decode(keyInfo.keyData, (uint256, uint256, uint256[2], uint256[2]));
+            BN254.G1Point memory g1Point = BN254.G1Point(g1X, g1Y);
             
-            // Update aggregate keys for specified operator sets
-            for (uint256 i = 0; i < operatorSetIds.length; i++) {
-                uint32 operatorSetId = operatorSetIds[i];
-                _updateAggregateBN254Key(avs, operatorSetId, operatorKey, false);
+            // Update aggregate key (subtract this key)
+            _updateAggregateBN254Key(avs, operatorSetId, g1Point, false);
+        }
+
+        // Note: We don't remove from globalKeyRegistry on deregistration
+        // This ensures keys can never be reused, even after deregistration
+
+        // Clear key info
+        delete operatorKeyInfo[avs][operatorSetId][operator];
+
+        emit KeyDeregistered(avs, operatorSetId, operator, config.curveType);
+        return true;
+    }
+
+    /**
+     * @notice Initiates key rotation for an operator with a specific AVS
+     * @param operator Address of the operator to rotate key for
+     * @param avs Address of the AVS
+     * @param operatorSetId ID of the operator set
+     * @param newPubkey New public key bytes
+     * @param signature Signature proving ownership (only needed for BN254 keys)
+     * @dev Can be called by operator directly or by addresses they've authorized via PermissionController
+     */
+    function rotateKey(
+        address operator,
+        address avs,
+        uint32 operatorSetId,
+        bytes calldata newPubkey,
+        bytes calldata signature
+    ) external checkCanCall(operator) {
+        
+        OperatorSetConfig memory config = operatorSetConfigs[avs][operatorSetId];
+        if (!config.isActive) revert OperatorSetNotConfigured();
+        
+        KeyInfo memory keyInfo = operatorKeyInfo[avs][operatorSetId][operator];
+        
+        // Check if key is registered
+        if (!keyInfo.isRegistered) {
+            revert KeyNotRegistered();
+        }
+
+        // Check rotation delay
+        if (block.number < keyInfo.lastRotationBlock + config.rotationDelay) {
+            revert RotationTooSoon(keyInfo.lastRotationBlock, config.rotationDelay);
+        }
+
+        // Get old key for event emission
+        bytes memory oldKey = keyInfo.keyData;
+        
+        if (config.curveType == CurveType.ECDSA) {
+            _rotateECDSAKey(avs, operatorSetId, operator, newPubkey);
+        } 
+        else if (config.curveType == CurveType.BN254) {
+            _rotateBN254Key(avs, operatorSetId, operator, keyInfo.keyData, newPubkey, signature);
+        }
+        else {
+            revert InvalidCurveType();
+        }
+        
+        emit KeyRotationInitiated(
+            avs, 
+            operatorSetId, 
+            operator, 
+            config.curveType, 
+            oldKey, 
+            newPubkey, 
+            block.number + config.rotationDelay
+        );
+    }
+    
+    /**
+     * @notice Validates and rotates an ECDSA public key
+     * @param avs Address of the AVS
+     * @param operatorSetId ID of the operator set
+     * @param operator Address of the operator
+     * @param newPubkey The new ECDSA public key bytes
+     * @dev Validates new key format and ensures global uniqueness
+     */
+    function _rotateECDSAKey(
+        address avs,
+        uint32 operatorSetId,
+        address operator,
+        bytes calldata newPubkey
+    ) internal {
+        // Validate new key format
+        if (newPubkey.length != 65) revert InvalidKeyFormat();
+        if (newPubkey[0] != 0x04) revert InvalidKeyFormat();
+        
+        bool isZero = true;
+        for (uint i = 1; i < 65; i++) {
+            if (newPubkey[i] != 0) {
+                isZero = false;
+                break;
             }
         }
-
-        // Reset key storage based on curve type
-        if (curveType == CurveType.ECDSA) {
-            delete avsOperatorToECDSAKey[avs][operator];
-        } else if (curveType == CurveType.BN254) {
-            delete avsOperatorToBN254Key[avs][operator];
-            delete avsOperatorToBN254KeyG2[avs][operator];
+        if (isZero) revert ZeroPubkey();
+        
+        // Check global uniqueness for new key
+        bytes32 newKeyHash = keccak256(newPubkey);
+        if (globalKeyRegistry[newKeyHash]) {
+            revert KeyAlreadyRegistered();
         }
-
-        // Clear mappings
-        delete avsKeyHashToOperator[avs][curveType][keyHash];
-        delete avsOperatorToKeyHash[avs][operator][curveType];
-        delete avsOperatorKeyInfo[avs][operator][curveType];
-
-        emit KeyDeregistered(avs, operator, curveType);
-        return true;
+        
+        // Update global key registry with new key
+        globalKeyRegistry[newKeyHash] = true;
+        
+        // Update key info
+        uint256 effectiveBlock = block.number + operatorSetConfigs[avs][operatorSetId].rotationDelay;
+        operatorKeyInfo[avs][operatorSetId][operator] = KeyInfo({
+            isRegistered: true,
+            lastRotationBlock: effectiveBlock,
+            keyData: newPubkey
+        });
+    }
+    
+    /**
+     * @notice Validates and rotates a BN254 public key
+     * @param avs Address of the AVS
+     * @param operatorSetId ID of the operator set
+     * @param operator Address of the operator
+     * @param oldKey The current key data
+     * @param newPubkey The new BN254 public key bytes
+     * @param signature Signature proving ownership of new key
+     * @dev Validates new keypair, verifies signature, and updates aggregate key
+     */
+    function _rotateBN254Key(
+        address avs,
+        uint32 operatorSetId,
+        address operator,
+        bytes memory oldKey,
+        bytes calldata newPubkey,
+        bytes calldata signature
+    ) internal {
+        BN254.G1Point memory newG1Point;
+        
+        {
+        // Decode and validate new key
+        (uint256 newG1X, uint256 newG1Y, uint256[2] memory newG2X, uint256[2] memory newG2Y) = 
+            abi.decode(newPubkey, (uint256, uint256, uint256[2], uint256[2]));
+        
+        newG1Point = BN254.G1Point(newG1X, newG1Y);
+        if (newG1X == 0 && newG1Y == 0) {
+            revert ZeroPubkey();
+        }
+        
+        BN254.G2Point memory newG2Point = BN254.G2Point(newG2X, newG2Y);
+        
+        // Verify that G1 and G2 form a valid keypair
+        if (!BN254.pairing(newG1Point, BN254.negGeneratorG2(), BN254.generatorG1(), newG2Point)) {
+            revert InvalidKeypair();
+        }
+        
+        // Verify the signature to prevent rogue key attacks with domain separation
+        bytes32 messageHash = keccak256(abi.encodePacked(
+            "EigenLayer.KeyRegistrar.v1", // Domain separator
+            address(this), // Contract address for additional separation
+            avs, 
+            operatorSetId, 
+            operator, 
+            newPubkey
+        ));
+        verifyBN254Signature(messageHash, signature, newG1Point, newG2Point);
+        }
+        
+        // Check global uniqueness for new key
+        bytes32 newKeyHash = BN254.hashG1Point(newG1Point);
+        if (globalKeyRegistry[newKeyHash]) {
+            revert KeyAlreadyRegistered();
+        }
+        
+        // Update global key registry with new key
+        globalKeyRegistry[newKeyHash] = true;
+        
+        // Get old BN254 key for aggregate key update
+        BN254.G1Point memory oldG1Point;
+        {
+        (uint256 oldG1X, uint256 oldG1Y, , ) = abi.decode(oldKey, (uint256, uint256, uint256[2], uint256[2]));
+        oldG1Point = BN254.G1Point(oldG1X, oldG1Y);
+        }
+        
+        // Update the aggregate key
+        _updateOperatorSetAggregateBN254Key(avs, operatorSetId, oldG1Point, newG1Point);
+        
+        // Update key info
+        uint256 effectiveBlock = block.number + operatorSetConfigs[avs][operatorSetId].rotationDelay;
+        operatorKeyInfo[avs][operatorSetId][operator] = KeyInfo({
+            isRegistered: true,
+            lastRotationBlock: effectiveBlock,
+            keyData: newPubkey
+        });
     }
 
     /**
      * @notice Checks if a key is registered for an operator with a specific AVS
      * @param avs Address of the AVS
+     * @param operatorSetId ID of the operator set
      * @param operator Address of the operator
-     * @param curveType Type of curve (ECDSA, BN254)
      * @return True if the key is registered
      */
     function isRegistered(
         address avs,
-        address operator,
-        CurveType curveType
+        uint32 operatorSetId,
+        address operator
     ) external view returns (bool) {
-        return avsOperatorKeyInfo[avs][operator][curveType].isRegistered;
+        return operatorKeyInfo[avs][operatorSetId][operator].isRegistered;
     }
 
     /**
-     * @notice Initiates key rotation for an operator with a specific AVS
+     * @notice Gets the configuration for an operator set
      * @param avs Address of the AVS
-     * @param operator Address of the operator
-     * @param operatorSetIds Array of operator set IDs to update (only for BN254 keys)
-     * @param curveType Type of curve (ECDSA, BN254)
-     * @param newPubkey New public key bytes
+     * @param operatorSetId ID of the operator set
+     * @return The operator set configuration
      */
-    function rotateKey(
+    function getOperatorSetConfig(
         address avs,
-        address operator,
-        uint32[] calldata operatorSetIds,
-        CurveType curveType,
-        bytes calldata newPubkey
-    ) external onlyAVSRegistrar(avs) {
-        // Check if key is registered
-        if (!avsOperatorKeyInfo[avs][operator][curveType].isRegistered) {
-            revert KeyNotRegistered();
+        uint32 operatorSetId
+    ) external view returns (OperatorSetConfig memory) {
+        return operatorSetConfigs[avs][operatorSetId];
+    }
+
+    /**
+     * @notice Gets the BN254 public key for an operator with a specific AVS
+     * @param avs Address of the AVS
+     * @param operatorSetId ID of the operator set
+     * @param operator Address of the operator
+     * @return g1Point The BN254 G1 public key
+     * @return g2Point The BN254 G2 public key
+     */
+    function getBN254Key(
+        address avs, 
+        uint32 operatorSetId, 
+        address operator
+    ) external view returns (BN254.G1Point memory g1Point, BN254.G2Point memory g2Point) {
+        KeyInfo memory keyInfo = operatorKeyInfo[avs][operatorSetId][operator];
+        
+        if (!keyInfo.isRegistered) {
+            // Create default values for an empty key
+            uint256[2] memory zeroArray = [uint256(0), uint256(0)];
+            return (BN254.G1Point(0, 0), BN254.G2Point(zeroArray, zeroArray));
         }
+        
+        (uint256 g1X, uint256 g1Y, uint256[2] memory g2X, uint256[2] memory g2Y) = 
+            abi.decode(keyInfo.keyData, (uint256, uint256, uint256[2], uint256[2]));
+        
+        return (BN254.G1Point(g1X, g1Y), BN254.G2Point(g2X, g2Y));
+    }
 
-        // Get old key
-        bytes memory oldKey;
-        if (curveType == CurveType.ECDSA) {
-            oldKey = avsOperatorToECDSAKey[avs][operator];
-            _registerECDSAKey(avs, operator, newPubkey);
-        } else if (curveType == CurveType.BN254) {
-            BN254.G1Point memory oldKeyPoint = avsOperatorToBN254Key[avs][operator];
-            oldKey = abi.encode(oldKeyPoint.X, oldKeyPoint.Y);
-            
-            // Register new key
-            BN254.G1Point memory newKeyPoint = _registerBN254Key(avs, operator, newPubkey);
-            
-            // Update all specified operator sets
-            for (uint256 i = 0; i < operatorSetIds.length; i++) {
-                uint32 operatorSetId = operatorSetIds[i];
-                _updateOperatorSetAggregateBN254Key(avs, operatorSetId, oldKeyPoint, newKeyPoint);
-            }
-        } else {
-            revert InvalidCurveType();
+    /**
+     * @notice Gets the ECDSA public key for an operator with a specific AVS
+     * @param avs Address of the AVS
+     * @param operatorSetId ID of the operator set
+     * @param operator Address of the operator
+     * @return pubkey The ECDSA public key
+     */
+    function getECDSAKey(
+        address avs, 
+        uint32 operatorSetId, 
+        address operator
+    ) external view returns (bytes memory) {
+        KeyInfo memory keyInfo = operatorKeyInfo[avs][operatorSetId][operator];
+        return keyInfo.keyData;
+    }
+
+    /**
+     * @notice Checks if a key hash is globally registered
+     * @param keyHash Hash of the key
+     * @return True if the key is globally registered
+     */
+    function isKeyGloballyRegistered(bytes32 keyHash) external view returns (bool) {
+        return globalKeyRegistry[keyHash];
+    }
+
+    /**
+     * @notice Gets the key hash for an operator with a specific AVS
+     * @param avs Address of the AVS
+     * @param operatorSetId ID of the operator set
+     * @param operator Address of the operator
+     * @return keyHash The key hash
+     */
+    function getKeyHash(
+        address avs,
+        uint32 operatorSetId,
+        address operator
+    ) external view returns (bytes32) {
+        KeyInfo memory keyInfo = operatorKeyInfo[avs][operatorSetId][operator];
+        OperatorSetConfig memory config = operatorSetConfigs[avs][operatorSetId];
+        
+        if (!keyInfo.isRegistered) {
+            return bytes32(0);
         }
-
-        // Update rotation timestamp
-        uint256 effectiveBlock = block.number + rotationDelay;
-        avsOperatorKeyInfo[avs][operator][curveType].lastRotationBlock = effectiveBlock;
-
-        emit KeyRotationInitiated(avs, operator, curveType, oldKey, newPubkey, effectiveBlock);
+        
+        if (config.curveType == CurveType.ECDSA) {
+            return keccak256(keyInfo.keyData);
+        } else if (config.curveType == CurveType.BN254) {
+            (uint256 g1X, uint256 g1Y, , ) = abi.decode(keyInfo.keyData, (uint256, uint256, uint256[2], uint256[2]));
+            return BN254.hashG1Point(BN254.G1Point(g1X, g1Y));
+        }
+        
+        revert InvalidCurveType();
     }
 
     /**
@@ -326,147 +658,54 @@ contract KeyRegistrar is Initializable, OwnableUpgradeable {
     }
 
     /**
-     * @notice Sets the rotation delay for key rotations
-     * @param newDelay New delay in blocks
+     * @notice Verifies a BN254 signature using Fiat-Shamir challenge to prevent rogue key attacks
+     * @param messageHash Hash of the message being signed
+     * @param signature The signature bytes
+     * @param pubkeyG1 The G1 component of the public key
+     * @param pubkeyG2 The G2 component of the public key
+     * @dev Uses gamma challenge value derived from message and public key components
      */
-    function setRotationDelay(uint256 newDelay) external onlyOwner {
-        uint256 oldDelay = rotationDelay;
-        rotationDelay = newDelay;
-        emit RotationDelayUpdated(oldDelay, newDelay);
-    }
-
-    /**
-     * @notice Gets the BN254 public key for an operator with a specific AVS
-     * @param avs Address of the AVS
-     * @param operator Address of the operator
-     * @return pubkey The BN254 G1 public key
-     */
-    function getBN254Key(address avs, address operator) external view returns (BN254.G1Point memory) {
-        return avsOperatorToBN254Key[avs][operator];
-    }
-
-    /**
-     * @notice Gets the BN254 G2 public key for an operator with a specific AVS
-     * @param avs Address of the AVS
-     * @param operator Address of the operator
-     * @return pubkeyG2 The BN254 G2 public key
-     */
-    function getBN254KeyG2(address avs, address operator) external view returns (BN254.G2Point memory) {
-        return avsOperatorToBN254KeyG2[avs][operator];
-    }
-
-    /**
-     * @notice Gets the ECDSA public key for an operator with a specific AVS
-     * @param avs Address of the AVS
-     * @param operator Address of the operator
-     * @return pubkey The ECDSA public key
-     */
-    function getECDSAKey(address avs, address operator) external view returns (bytes memory) {
-        return avsOperatorToECDSAKey[avs][operator];
-    }
-
-    /**
-     * @notice Gets the operator address from a key hash for a specific AVS
-     * @param avs Address of the AVS
-     * @param curveType Type of curve
-     * @param keyHash Hash of the key
-     * @return operator The operator address
-     */
-    function getOperatorFromKeyHash(
-        address avs,
-        CurveType curveType,
-        bytes32 keyHash
-    ) external view returns (address) {
-        return avsKeyHashToOperator[avs][curveType][keyHash];
-    }
-
-    /**
-     * @notice Gets the key hash for an operator with a specific AVS
-     * @param avs Address of the AVS
-     * @param operator Address of the operator
-     * @param curveType Type of curve
-     * @return keyHash The key hash
-     */
-    function getKeyHash(
-        address avs,
-        address operator,
-        CurveType curveType
-    ) external view returns (bytes32) {
-        return avsOperatorToKeyHash[avs][operator][curveType];
-    }
-
-    /**
-     * @notice Registers an ECDSA key for an operator with a specific AVS
-     * @param avs Address of the AVS
-     * @param operator Address of the operator
-     * @param pubkey ECDSA public key bytes
-     */
-    function _registerECDSAKey(
-        address avs,
-        address operator,
-        bytes memory pubkey
-    ) internal {
-        if (pubkey.length != 65) {
-            revert InvalidKeyFormat();
-        }
-
-        bytes32 keyHash = keccak256(pubkey);
-        address existingOperator = avsKeyHashToOperator[avs][CurveType.ECDSA][keyHash];
+    function verifyBN254Signature(
+        bytes32 messageHash,
+        bytes memory signature,
+        BN254.G1Point memory pubkeyG1,
+        BN254.G2Point memory pubkeyG2
+    ) internal view {
+        // Decode signature
+        (uint256 sigX, uint256 sigY) = abi.decode(signature, (uint256, uint256));
+        BN254.G1Point memory sigPoint = BN254.G1Point(sigX, sigY);
         
-        if (existingOperator != address(0) && existingOperator != operator) {
-            revert KeyAlreadyRegistered();
-        }
-
-        avsOperatorToECDSAKey[avs][operator] = pubkey;
-        avsOperatorToKeyHash[avs][operator][CurveType.ECDSA] = keyHash;
-        avsKeyHashToOperator[avs][CurveType.ECDSA][keyHash] = operator;
-    }
-
-    /**
-     * @notice Registers a BN254 key for an operator with a specific AVS
-     * @param avs Address of the AVS
-     * @param operator Address of the operator
-     * @param pubkey BN254.G1Point and BN254.G2Point encoded as bytes
-     * @return The registered BN254.G1Point
-     */
-    function _registerBN254Key(
-        address avs,
-        address operator,
-        bytes memory pubkey
-    ) internal returns (BN254.G1Point memory) {
-        // Decode BN254 G1 and G2 points from the pubkey bytes
-        (uint256 g1X, uint256 g1Y, uint256[2] memory g2X, uint256[2] memory g2Y) = 
-            abi.decode(pubkey, (uint256, uint256, uint256[2], uint256[2]));
-
-        // Validate G1 point
-        BN254.G1Point memory g1Point = BN254.G1Point(g1X, g1Y);
-        if (g1X == 0 && g1Y == 0) {
-            revert ZeroPubkey();
-        }
-
-        // Create G2 point
-        BN254.G2Point memory g2Point = BN254.G2Point(g2X, g2Y);
-
-        // Verify that G1 and G2 form a valid keypair
-        require(
-            BN254.pairing(g1Point, BN254.negGeneratorG2(), BN254.generatorG1(), g2Point),
-            "Invalid BLS keypair"
+        // Generate challenge value using Fiat-Shamir transform to prevent rogue key attacks
+        uint256 gamma = uint256(
+            keccak256(
+                abi.encodePacked(
+                    messageHash,
+                    pubkeyG1.X,
+                    pubkeyG1.Y,
+                    pubkeyG2.X[0],
+                    pubkeyG2.X[1],
+                    pubkeyG2.Y[0],
+                    pubkeyG2.Y[1],
+                    sigPoint.X,
+                    sigPoint.Y
+                )
+            )
+        ) % BN254.FR_MODULUS;
+        
+        // Convert messageHash to G1 point
+        BN254.G1Point memory msgPoint = BN254.hashToG1(messageHash);
+        
+        // Verify signature using both G1 and G2 components with gamma challenge
+        // e(sig + pubkey_G1*gamma, G2) = e(msg + G1*gamma, pubkey_G2)
+        bool isValid = BN254.pairing(
+            sigPoint.plus(pubkeyG1.scalar_mul(gamma)), // sig + pubkey_G1*gamma
+            BN254.generatorG2(),
+            msgPoint.plus(BN254.generatorG1().scalar_mul(gamma)).negate(), // -(msg + G1*gamma)
+            pubkeyG2
         );
-
-        // Calculate key hash
-        bytes32 keyHash = BN254.hashG1Point(g1Point);
-        address existingOperator = avsKeyHashToOperator[avs][CurveType.BN254][keyHash];
         
-        if (existingOperator != address(0) && existingOperator != operator) {
-            revert KeyAlreadyRegistered();
+        if (!isValid) {
+            revert InvalidSignature();
         }
-
-        // Store the key
-        avsOperatorToBN254Key[avs][operator] = g1Point;
-        avsOperatorToBN254KeyG2[avs][operator] = g2Point;
-        avsOperatorToKeyHash[avs][operator][CurveType.BN254] = keyHash;
-        avsKeyHashToOperator[avs][CurveType.BN254][keyHash] = operator;
-        
-        return g1Point;
     }
 }
