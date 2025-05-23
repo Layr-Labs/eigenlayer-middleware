@@ -21,7 +21,9 @@ import {SlashingLib} from "eigenlayer-contracts/src/contracts/libraries/Slashing
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
 contract DelegationIntermediate is IDelegationManager {
-    function initialize(address initialOwner, uint256 initialPausedStatus) external virtual {}
+    function initialize(
+        uint256 initialPausedStatus
+    ) external virtual {}
 
     function registerAsOperator(
         OperatorDetails calldata registeringOperatorDetails,
@@ -238,10 +240,10 @@ contract DelegationIntermediate is IDelegationManager {
         address operator,
         OperatorSet calldata operatorSet,
         uint256 slashId,
-        IStrategy strategy,
-        uint64 prevMaxMagnitude,
-        uint64 newMaxMagnitude
-    ) external {}
+        IStrategy[] calldata strategies,
+        uint64[] calldata prevMaxMagnitudes,
+        uint64[] calldata newMaxMagnitudes
+    ) external virtual override returns (uint256[] memory) {}
 
     function getQueuedWithdrawal(
         bytes32 withdrawalRoot

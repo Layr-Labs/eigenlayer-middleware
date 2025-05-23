@@ -275,7 +275,6 @@ contract MockAVSDeployer is Test {
         );
 
         allocationManagerImplementation = new AllocationManager(
-            IStrategyManager(address(strategyManagerMock)),
             delegationMock,
             pauserRegistry,
             permissionControllerMock,

@@ -75,7 +75,9 @@ contract AllocationManagerIntermediate is IAllocationManager {
         return false;
     }
 
-    function initialize(address initialOwner, uint256 initialPausedStatus) external virtual {}
+    function initialize(
+        uint256 initialPausedStatus
+    ) external virtual {}
 
     function slashOperator(
         address avs,

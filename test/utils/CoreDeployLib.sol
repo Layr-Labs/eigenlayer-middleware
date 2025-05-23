@@ -27,6 +27,10 @@ import {
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
+import {ISlashEscrowFactory} from
+    "eigenlayer-contracts/src/contracts/interfaces/ISlashEscrowFactory.sol";
+import {SlashEscrowFactory} from "eigenlayer-contracts/src/contracts/core/SlashEscrowFactory.sol";
+import {SlashEscrow} from "eigenlayer-contracts/src/contracts/core/SlashEscrow.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IEigenPodManager} from "eigenlayer-contracts/src/contracts/interfaces/IEigenPodManager.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
@@ -49,6 +53,12 @@ library CoreDeployLib {
     using UpgradeableProxyLib for address;
 
     Vm internal constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+
+    struct SlashEscrowFactoryConfig {
+        uint256 initPausedStatus;
+        address initialOwner;
+        uint32 initialGlobalDelayBlocks;
+    }
 
     struct StrategyManagerConfig {
         uint256 initPausedStatus;
@@ -106,6 +116,7 @@ library CoreDeployLib {
     }
 
     struct DeploymentConfigData {
+        SlashEscrowFactoryConfig slashEscrowFactory;
         StrategyManagerConfig strategyManager;
         DelegationManagerConfig delegationManager;
         EigenPodManagerConfig eigenPodManager;
@@ -120,6 +131,7 @@ library CoreDeployLib {
     struct DeploymentData {
         address delegationManager;
         address avsDirectory;
+        address slashEscrowFactory;
         address strategyManager;
         address eigenPodManager;
         address allocationManager;
@@ -150,6 +162,7 @@ library CoreDeployLib {
     ) internal returns (DeploymentData memory proxies) {
         proxies.delegationManager = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         proxies.avsDirectory = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
+        proxies.slashEscrowFactory = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         proxies.strategyManager = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         proxies.eigenPodManager = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         proxies.allocationManager = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
@@ -168,10 +181,20 @@ library CoreDeployLib {
         // Deploy core implementations
         address permissionControllerImpl = address(new PermissionController("1.0.0"));
 
+        address slashEscrowFactoryImpl = address(
+            new SlashEscrowFactory(
+                IAllocationManager(deployments.allocationManager),
+                IStrategyManager(deployments.strategyManager),
+                IPauserRegistry(deployments.pauserRegistry),
+                new SlashEscrow(),
+                "1.0.0"
+            )
+        );
+
         address strategyManagerImpl = address(
             new StrategyManager(
-                IAllocationManager(deployments.allocationManager),
                 IDelegationManager(deployments.delegationManager),
+                ISlashEscrowFactory(deployments.slashEscrowFactory),
                 IPauserRegistry(deployments.pauserRegistry),
                 "1.0.0"
             )
@@ -179,7 +202,6 @@ library CoreDeployLib {
 
         address allocationManagerImpl = address(
             new AllocationManager(
-                IStrategyManager(deployments.strategyManager),
                 IDelegationManager(deployments.delegationManager),
                 IPauserRegistry(deployments.pauserRegistry),
                 IPermissionController(deployments.permissionController),
@@ -213,6 +235,18 @@ library CoreDeployLib {
         UpgradeableProxyLib.upgrade(deployments.permissionController, permissionControllerImpl);
 
         bytes memory upgradeCall = abi.encodeCall(
+            SlashEscrowFactory.initialize,
+            (
+                config.slashEscrowFactory.initialOwner,
+                config.slashEscrowFactory.initPausedStatus,
+                config.slashEscrowFactory.initialGlobalDelayBlocks
+            )
+        );
+
+        UpgradeableProxyLib.upgradeAndCall(
+            deployments.slashEscrowFactory, slashEscrowFactoryImpl, upgradeCall
+        );
+        upgradeCall = abi.encodeCall(
             StrategyManager.initialize,
             (
                 config.strategyManager.initialOwner,
@@ -225,16 +259,14 @@ library CoreDeployLib {
         );
 
         upgradeCall = abi.encodeCall(
-            DelegationManager.initialize,
-            (config.delegationManager.initialOwner, config.delegationManager.initPausedStatus)
+            DelegationManager.initialize, (config.delegationManager.initPausedStatus)
         );
         UpgradeableProxyLib.upgradeAndCall(
             deployments.delegationManager, delegationManagerImpl, upgradeCall
         );
 
         upgradeCall = abi.encodeCall(
-            AllocationManager.initialize,
-            (config.allocationManager.initialOwner, config.allocationManager.initPausedStatus)
+            AllocationManager.initialize, (config.allocationManager.initPausedStatus)
         );
         UpgradeableProxyLib.upgradeAndCall(
             deployments.allocationManager, allocationManagerImpl, upgradeCall

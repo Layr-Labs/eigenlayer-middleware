@@ -15,6 +15,8 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 
 // Core contracts
 import "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
+import "eigenlayer-contracts/src/contracts/core/SlashEscrow.sol";
+import "eigenlayer-contracts/src/contracts/core/SlashEscrowFactory.sol";
 import "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
 import "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
@@ -53,6 +55,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     // Core contracts to deploy
     DelegationManager delegationManager;
     AVSDirectory public avsDirectory;
+    SlashEscrowFactory slashEscrowFactory;
     StrategyManager strategyManager;
     EigenPodManager eigenPodManager;
     RewardsCoordinator rewardsCoordinator;
@@ -154,6 +157,11 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
+        slashEscrowFactory = SlashEscrowFactory(
+            address(
+                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
+            )
+        );
         strategyManager = StrategyManager(
             address(
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
@@ -205,8 +213,15 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             0,
             "v0.0.1"
         );
+        SlashEscrowFactory slashEscrowFactoryImplementation = new SlashEscrowFactory(
+            IAllocationManager(allocationManager),
+            IStrategyManager(strategyManager),
+            IPauserRegistry(pauserRegistry),
+            new SlashEscrow(),
+            "v0.0.1"
+        );
         StrategyManager strategyManagerImplementation =
-            new StrategyManager(allocationManager, delegationManager, pauserRegistry, "v0.0.1");
+            new StrategyManager(delegationManager, slashEscrowFactory, pauserRegistry, "v0.0.1");
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit, eigenPodBeacon, delegationManager, pauserRegistry, "v0.0.1"
         );
@@ -230,7 +245,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
 
         AllocationManager allocationManagerImplementation = new AllocationManager(
-            strategyManager,
             delegationManager,
             pauserRegistry,
             permissionController,
@@ -251,6 +265,17 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 DelegationManager.initialize.selector,
                 eigenLayerReputedMultisig, // initialOwner
                 0 /* initialPausedStatus */
+            )
+        );
+        // SlashEscrowFactory
+        proxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(payable(address(slashEscrowFactory))),
+            address(slashEscrowFactoryImplementation),
+            abi.encodeWithSelector(
+                SlashEscrowFactory.initialize.selector,
+                eigenLayerReputedMultisig, // initialOwner
+                0, // initialPausedStatus
+                0 // initialGlobalDelayBlocks
             )
         );
         // StrategyManager
