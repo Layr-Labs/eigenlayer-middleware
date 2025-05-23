@@ -60,13 +60,19 @@ contract KeyRegistrar is Initializable, OwnableUpgradeable, PermissionController
     error KeyAlreadyRegistered();
     error KeyNotRegistered();
     error InvalidKeyFormat();
+    error ZeroAddress();
     error ZeroPubkey();
+    error KeyRotationInProgress();
     error InvalidCurveType();
     error Unauthorized();
+    error OperatorNotFound();
     error InvalidSignature();
     error InvalidKeypair();
     error OperatorSetNotConfigured();
+    error WrongCurveType();
     error RotationTooSoon(uint256 lastRotation, uint256 delay);
+    error InvalidOperatorSet(address avs, uint32 operatorSetId);
+    error KeyNotFound(address avs, uint32 operatorSetId, address operator);
 
     /**
      * @dev Constructor for the KeyRegistrar contract
@@ -83,6 +89,7 @@ contract KeyRegistrar is Initializable, OwnableUpgradeable, PermissionController
      * @param initialOwner Initial owner of the contract
      */
     function initialize(address initialOwner) external initializer {
+        if (initialOwner == address(0)) revert ZeroAddress();
         _transferOwnership(initialOwner);
     }
 
@@ -100,6 +107,7 @@ contract KeyRegistrar is Initializable, OwnableUpgradeable, PermissionController
         CurveType curveType,
         uint256 rotationDelay
     ) external checkCanCall(avs) {
+        if (avs == address(0)) revert ZeroAddress();
         
         operatorSetConfigs[avs][operatorSetId] = OperatorSetConfig({
             curveType: curveType,
@@ -117,8 +125,8 @@ contract KeyRegistrar is Initializable, OwnableUpgradeable, PermissionController
      * @param operatorSetId ID of the operator set
      * @param pubkey Public key bytes
      * @param signature Signature proving ownership (only needed for BN254 keys)
-     * @return alreadyRegistered True if the key was already registered
      * @dev Can be called by operator directly or by addresses they've authorized via PermissionController
+     * @dev Reverts if key is already registered
      */
     function registerKey(
         address operator,
@@ -126,14 +134,14 @@ contract KeyRegistrar is Initializable, OwnableUpgradeable, PermissionController
         uint32 operatorSetId,
         bytes calldata pubkey,
         bytes calldata signature
-    ) external checkCanCall(operator) returns (bool alreadyRegistered) {
+    ) external checkCanCall(operator) {
         
         OperatorSetConfig memory config = operatorSetConfigs[avs][operatorSetId];
         if (!config.isActive) revert OperatorSetNotConfigured();
 
         // Check if the key is already registered
         if (operatorKeyInfo[avs][operatorSetId][operator].isRegistered) {
-            return true;
+            revert KeyAlreadyRegistered();
         }
 
         // Register key based on curve type
@@ -148,7 +156,6 @@ contract KeyRegistrar is Initializable, OwnableUpgradeable, PermissionController
         }
 
         emit KeyRegistered(avs, operatorSetId, operator, config.curveType, pubkey);
-        return false;
     }
 
     /**
@@ -271,14 +278,14 @@ contract KeyRegistrar is Initializable, OwnableUpgradeable, PermissionController
      * @param operator Address of the operator to deregister key for
      * @param avs Address of the AVS
      * @param operatorSetId ID of the operator set
-     * @return removed True if the key was removed
      * @dev Can be called by operator directly or by addresses they've authorized via PermissionController
+     * @dev Succeeds silently if key was not registered
      */
     function deregisterKey(
         address operator,
         address avs,
         uint32 operatorSetId
-    ) external checkCanCall(operator) returns (bool removed) {
+    ) external checkCanCall(operator) {
         
         OperatorSetConfig memory config = operatorSetConfigs[avs][operatorSetId];
         if (!config.isActive) revert OperatorSetNotConfigured();
@@ -286,7 +293,7 @@ contract KeyRegistrar is Initializable, OwnableUpgradeable, PermissionController
         KeyInfo memory keyInfo = operatorKeyInfo[avs][operatorSetId][operator];
         
         if (!keyInfo.isRegistered) {
-            return false;
+            return; // Silently succeed if key was not registered
         }
 
         // If this is a BN254 key, update the aggregate key
@@ -306,7 +313,6 @@ contract KeyRegistrar is Initializable, OwnableUpgradeable, PermissionController
         delete operatorKeyInfo[avs][operatorSetId][operator];
 
         emit KeyDeregistered(avs, operatorSetId, operator, config.curveType);
-        return true;
     }
 
     /**
