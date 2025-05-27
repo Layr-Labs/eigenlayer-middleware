@@ -21,6 +21,16 @@ interface IBLSTableCalculatorTypes {
         uint96[] weights;
     }
 
+    /// @notice Contains information about a single operator
+    /// @param pubkeyG1 The G1 public key of the operator.
+    /// @param pubkeyG2 The G2 public key of the operator.
+    /// @param weights The weights of the operator for a single operatorSet.
+    struct BN254FullOperatorInfo {
+        BN254.G1Point pubkeyG1;
+        BN254.G2Point pubkeyG2;
+        uint96[] weights;
+    }
+
     /// @notice Information about all operators for a given operatorSet
     /// @param operatorInfoTreeRoot The root of the operatorInfo tree.
     /// @param numOperators The number of operators in the operatorSet.
@@ -51,10 +61,11 @@ interface IBLSTableCalculator is IOperatorTableCalculator, IOperatorWeightCalcul
      * @notice Get the operatorInfos for a given operatorSet
      * @param operatorSet the operatorSet to get the operatorInfos for
      * @return operatorInfos the operatorInfos for the given operatorSet
+     * @return operatorInfoLeaves the leaves of the operatorInfo tree for the given operatorSet
      */
-    function getOperatorInfos(
+    function getOperatorInfosAndLeaves(
         OperatorSet calldata operatorSet
-    ) external view returns (BN254OperatorInfo[] memory operatorInfos);
+    ) external view returns (BN254FullOperatorInfo[] memory operatorInfos, bytes32[] memory operatorInfoLeaves);
 
     /**
      * @notice Validates that the operatorSet exists

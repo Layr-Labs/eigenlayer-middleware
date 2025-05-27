@@ -62,21 +62,27 @@ abstract contract BLSTableCalculator is IBLSTableCalculator {
     }
 
     /// @inheritdoc IBLSTableCalculator
-    function getOperatorInfos(OperatorSet calldata operatorSet) external view returns (BN254OperatorInfo[] memory) {
+    function getOperatorInfosAndLeaves(OperatorSet calldata operatorSet) external view returns (BN254FullOperatorInfo[] memory, bytes32[] memory) {
         // Get the weights for all operators
         (address[] memory operators, uint96[][] memory weights) = getOperatorWeights(operatorSet);
 
-        BN254OperatorInfo[] memory operatorInfos = new BN254OperatorInfo[](operators.length);
+        BN254FullOperatorInfo[] memory operatorInfos = new BN254FullOperatorInfo[](operators.length);
+        bytes32[] memory operatorInfoLeaves = new bytes32[](operators.length);
 
         for (uint256 i = 0; i < operators.length; i++) {
             (BN254.G1Point memory pubkey,) = blsApkRegistry.getRegisteredPubkey(operators[i]);
-            operatorInfos[i] = BN254OperatorInfo({
-                pubkey: pubkey,
+            operatorInfos[i] = BN254FullOperatorInfo({
+                pubkeyG1: pubkey,
+                pubkeyG2: blsApkRegistry.getOperatorPubkeyG2(operators[i]),
                 weights: weights[i]
             });
+            operatorInfoLeaves[i] = keccak256(abi.encode(BN254OperatorInfo({
+                pubkey: pubkey,
+                weights: weights[i]
+            })));
         }
 
-        return operatorInfos;
+        return (operatorInfos, operatorInfoLeaves);
     }
 
     /// @dev This function must be implemented by an `IOperatorWeightCalculator`

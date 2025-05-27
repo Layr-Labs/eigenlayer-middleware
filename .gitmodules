@@ -14,3 +14,6 @@
 [submodule "lib/murky"]
 	path = lib/murky
 	url = https://github.com/dmfxyz/murky
+[submodule "lib/eigenlayer-middleware"]
+	path = lib/eigenlayer-middleware
+	url = https://github.com/Layr-Labs/eigenlayer-middleware
