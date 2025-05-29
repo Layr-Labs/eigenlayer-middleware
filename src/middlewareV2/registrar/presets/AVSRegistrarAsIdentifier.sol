@@ -22,9 +22,8 @@ contract AVSRegistrarAsIdentifier is Initializable, AVSRegistrar, SocketRegistry
         address _avs,
         IAllocationManager _allocationManager,
         IPermissionController _permissionController,
-        IKeyRegistrar _keyRegistrar,
-        IKeyRegistrar.CurveType _curveType
-    ) AVSRegistrar(_avs, _allocationManager, _keyRegistrar, _curveType) {
+        IKeyRegistrar _keyRegistrar
+    ) AVSRegistrar(_avs, _allocationManager, _keyRegistrar) {
         // Set the permission controller for future interactions
         permissionController = _permissionController;
     }

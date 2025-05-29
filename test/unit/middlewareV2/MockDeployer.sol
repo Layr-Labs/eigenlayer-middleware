@@ -7,7 +7,8 @@ import {ITransparentUpgradeableProxy} from
     "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {AllocationManagerMock} from "eigenlayer-contracts/src/test/mocks/AllocationManagerMock.sol";
-import {Randomness, Random} from "../../utils/Random.sol";
+import {KeyRegistrarMock} from "../../mocks/KeyRegistrarMock.sol";
+import {Randomness, Random} from "eigenlayer-contracts/src/test/utils/Random.sol";
 
 import "forge-std/Test.sol";
 

@@ -26,9 +26,8 @@ contract AVSRegistrar is Initializable, AVSRegistrarStorage {
     constructor(
         address _avs,
         IAllocationManager _allocationManager,
-        IKeyRegistrar _keyRegistrar,
-        IKeyRegistrar.CurveType _curveType
-    ) AVSRegistrarStorage(_avs, _allocationManager, _keyRegistrar, _curveType) {
+        IKeyRegistrar _keyRegistrar
+    ) AVSRegistrarStorage(_avs, _allocationManager, _keyRegistrar, IKeyRegistrar.CurveType.BN254) {
         _disableInitializers();
     }
 
@@ -41,7 +40,7 @@ contract AVSRegistrar is Initializable, AVSRegistrarStorage {
     ) external virtual onlyAllocationManager {
         _beforeRegisterOperator(operator, operatorSetIds, data);
 
-        // Check that the operator has a valid key
+        // Check that the operator has a valid key and update key if needed
         _validateOperatorKeys(operator, operatorSetIds);
 
         _afterRegisterOperator(operator, operatorSetIds, data);
@@ -56,6 +55,9 @@ contract AVSRegistrar is Initializable, AVSRegistrarStorage {
         uint32[] calldata operatorSetIds
     ) external virtual onlyAllocationManager {
         _beforeDeregisterOperator(operator, operatorSetIds);
+
+        // Remove operator keys from the key registrar
+        _removeOperatorKeys(operator, operatorSetIds);
 
         _afterDeregisterOperator(operator, operatorSetIds);
 
@@ -88,9 +90,24 @@ contract AVSRegistrar is Initializable, AVSRegistrarStorage {
         for (uint32 i = 0; i < operatorSetIds.length; i++) {
             OperatorSet memory operatorSet = OperatorSet({avs: avs, id: operatorSetIds[i]});
             require(
-                keyRegistrar.isRegistered(operator, operatorSet, curveType),
+                keyRegistrar.checkAndUpdateKey(operatorSet, operator),
                 KeyNotRegistered(operatorSetIds[i])
             );
+        }
+    }
+
+    /**
+     * @notice Removes the operator keys from the key registrar
+     * @param operator The operator to remove
+     * @param operatorSetIds The operator sets to remove
+     */
+    function _removeOperatorKeys(
+        address operator,
+        uint32[] calldata operatorSetIds
+    ) internal {
+        for (uint32 i = 0; i < operatorSetIds.length; i++) {
+            OperatorSet memory operatorSet = OperatorSet({avs: avs, id: operatorSetIds[i]});
+            keyRegistrar.removeKey(operatorSet, operator);
         }
     }
 

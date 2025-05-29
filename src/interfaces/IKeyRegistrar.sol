@@ -10,10 +10,18 @@ interface IKeyRegistrar {
         BN254
     }
 
-    /// TODO: inherit from actual KeyRegistrar
-    function isRegistered(
-        address operator,
+    function checkAndUpdateKey(
         OperatorSet calldata operatorSet,
-        CurveType curveType
+        address operator
+    ) external returns (bool);
+
+    function removeKey(
+        OperatorSet calldata operatorSet,
+        address operator
+    ) external;
+
+    function isRegistered(
+        OperatorSet calldata operatorSet,
+        address operator
     ) external view returns (bool);
 }

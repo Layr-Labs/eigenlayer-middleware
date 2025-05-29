@@ -12,9 +12,8 @@ contract AVSRegistrarWithAllowlist is AVSRegistrar, Allowlist {
     constructor(
         address _avs,
         IAllocationManager _allocationManager,
-        IKeyRegistrar _keyRegistrar,
-        IKeyRegistrar.CurveType _curveType
-    ) AVSRegistrar(_avs, _allocationManager, _keyRegistrar, _curveType) {}
+        IKeyRegistrar _keyRegistrar
+    ) AVSRegistrar(_avs, _allocationManager, _keyRegistrar) {}
 
     function initialize(
         address admin

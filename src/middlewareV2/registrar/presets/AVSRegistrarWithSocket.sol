@@ -12,9 +12,8 @@ contract AVSRegistrarWithSocket is AVSRegistrar, SocketRegistry {
     constructor(
         address _avs,
         IAllocationManager _allocationManager,
-        IKeyRegistrar _keyRegistrar,
-        IKeyRegistrar.CurveType _curveType
-    ) AVSRegistrar(_avs, _allocationManager, _keyRegistrar, _curveType) {}
+        IKeyRegistrar _keyRegistrar
+    ) AVSRegistrar(_avs, _allocationManager, _keyRegistrar) {}
 
     /// @notice Set the socket for the operator
     function _afterRegisterOperator(
