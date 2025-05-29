@@ -10,7 +10,7 @@ import {
 } from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
 import {AVSRegistrarStorage} from "./AVSRegistrarStorage.sol";
-import {IKeyRegistrar} from "../../interfaces/IKeyRegistrar.sol";
+import {IKeyRegistrar} from "src/interfaces/IKeyRegistrar.sol";
 
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
@@ -83,16 +83,10 @@ contract AVSRegistrar is Initializable, AVSRegistrarStorage {
      * @param operatorSetIds The operator sets to validate
      * @dev This function assumes the operator has already registered a key in the Key Registrar
      */
-    function _validateOperatorKeys(
-        address operator,
-        uint32[] calldata operatorSetIds
-    ) internal view {
+    function _validateOperatorKeys(address operator, uint32[] calldata operatorSetIds) internal {
         for (uint32 i = 0; i < operatorSetIds.length; i++) {
             OperatorSet memory operatorSet = OperatorSet({avs: avs, id: operatorSetIds[i]});
-            require(
-                keyRegistrar.checkAndUpdateKey(operatorSet, operator),
-                KeyNotRegistered(operatorSetIds[i])
-            );
+            require(keyRegistrar.checkAndUpdateKey(operatorSet, operator), KeyNotRegistered());
         }
     }
 
@@ -101,10 +95,7 @@ contract AVSRegistrar is Initializable, AVSRegistrarStorage {
      * @param operator The operator to remove
      * @param operatorSetIds The operator sets to remove
      */
-    function _removeOperatorKeys(
-        address operator,
-        uint32[] calldata operatorSetIds
-    ) internal {
+    function _removeOperatorKeys(address operator, uint32[] calldata operatorSetIds) internal {
         for (uint32 i = 0; i < operatorSetIds.length; i++) {
             OperatorSet memory operatorSet = OperatorSet({avs: avs, id: operatorSetIds[i]});
             keyRegistrar.removeKey(operatorSet, operator);

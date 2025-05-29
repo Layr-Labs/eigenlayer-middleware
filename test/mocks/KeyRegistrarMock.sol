@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {OperatorSet, OperatorSetLib} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
-import {IKeyRegistrar} from "src/interfaces/IKeyRegistrar.sol";
-
+import "src/interfaces/IKeyRegistrar.sol";
 
 contract KeyRegistrarMock is IKeyRegistrar {
     using OperatorSetLib for OperatorSet;
@@ -33,10 +31,7 @@ contract KeyRegistrarMock is IKeyRegistrar {
         return _operatorRegistered[operatorSet.key()][operator];
     }
 
-    function removeKey(
-        OperatorSet calldata operatorSet,
-        address operator
-    ) external {
+    function removeKey(OperatorSet calldata operatorSet, address operator) external {
         _operatorRegistered[operatorSet.key()][operator] = false;
     }
 }

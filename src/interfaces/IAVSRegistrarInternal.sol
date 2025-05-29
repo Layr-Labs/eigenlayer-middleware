@@ -3,9 +3,7 @@ pragma solidity ^0.8.27;
 
 interface IAVSRegistrarErrors {
     /// @notice Thrown when a key is not registered
-    error KeyNotRegistered(uint32 operatorSetId);
-    /// @notice Thrown when the AVSRegistrar does not support the AVS
-    error InvalidAVS();
+    error KeyNotRegistered();
     /// @notice Thrown when the caller is not the allocation manager
     error NotAllocationManager();
 }
