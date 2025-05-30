@@ -10,7 +10,8 @@ abstract contract AllowlistStorage is IAllowlist {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
     /// @dev Mapping from operatorSet to the allowed operators for that operatorSet
-    mapping(bytes32 operatorSetKey => EnumerableSetUpgradeable.AddressSet allowedOperators) internal _allowedOperators;
+    mapping(bytes32 operatorSetKey => EnumerableSetUpgradeable.AddressSet allowedOperators) internal
+        _allowedOperators;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new

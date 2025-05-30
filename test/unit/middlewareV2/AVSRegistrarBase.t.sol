@@ -16,7 +16,11 @@ import {
 import {ArrayLib} from "eigenlayer-contracts/src/test/utils/ArrayLib.sol";
 import "test/utils/Random.sol";
 
-abstract contract AVSRegistrarBase is MockEigenLayerDeployer, IAVSRegistrarErrors, IAVSRegistrarEvents {
+abstract contract AVSRegistrarBase is
+    MockEigenLayerDeployer,
+    IAVSRegistrarErrors,
+    IAVSRegistrarEvents
+{
     AVSRegistrar internal avsRegistrar;
     AVSRegistrar internal avsRegistrarImplementation;
 

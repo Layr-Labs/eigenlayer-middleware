@@ -2,11 +2,11 @@
 pragma solidity ^0.8.27;
 
 import "./AVSRegistrarBase.t.sol";
-import {AVSRegistrarWithAllowlist} from "src/middlewareV2/registrar/presets/AVSRegistrarAllowlist.sol";
+import {AVSRegistrarWithAllowlist} from
+    "src/middlewareV2/registrar/presets/AVSRegistrarAllowlist.sol";
 import {IAllowlistErrors, IAllowlistEvents} from "src/interfaces/IAllowlist.sol";
 
 contract AVSRegistrarAllowlistUnitTests is AVSRegistrarBase, IAllowlistErrors, IAllowlistEvents {
-
     AVSRegistrarWithAllowlist public avsRegistrarWithAllowlist;
     address public allowlistAdmin = address(this);
 
@@ -22,21 +22,22 @@ contract AVSRegistrarAllowlistUnitTests is AVSRegistrarBase, IAllowlistErrors, I
         avsRegistrarWithAllowlist = AVSRegistrarWithAllowlist(
             address(
                 new TransparentUpgradeableProxy(
-                    address(avsRegistrarImplementation), 
+                    address(avsRegistrarImplementation),
                     address(proxyAdmin),
-                    abi.encodeWithSelector(AVSRegistrarWithAllowlist.initialize.selector, address(this))
+                    abi.encodeWithSelector(
+                        AVSRegistrarWithAllowlist.initialize.selector, address(this)
+                    )
                 )
             )
         );
     }
 
-    function _addOperatorToAllowlist(
-        address operator,
-        uint32[] memory operatorSetIds
-    ) internal {
+    function _addOperatorToAllowlist(address operator, uint32[] memory operatorSetIds) internal {
         for (uint32 i; i < operatorSetIds.length; ++i) {
             cheats.prank(allowlistAdmin);
-            avsRegistrarWithAllowlist.addOperatorToAllowlist(OperatorSet({avs: AVS, id: operatorSetIds[i]}), operator);
+            avsRegistrarWithAllowlist.addOperatorToAllowlist(
+                OperatorSet({avs: AVS, id: operatorSetIds[i]}), operator
+            );
         }
     }
 }
@@ -44,7 +45,9 @@ contract AVSRegistrarAllowlistUnitTests is AVSRegistrarBase, IAllowlistErrors, I
 contract AVSRegistrarAllowlistUnitTests_initialize is AVSRegistrarAllowlistUnitTests {
     function test_initialization() public view {
         // Check the admin is set
-        assertEq(avsRegistrarWithAllowlist.owner(), allowlistAdmin, "Initialization: owner incorrect");
+        assertEq(
+            avsRegistrarWithAllowlist.owner(), allowlistAdmin, "Initialization: owner incorrect"
+        );
     }
 
     function test_revert_alreadyInitialized() public {
@@ -63,7 +66,9 @@ contract AVSRegistrarAllowlistUnitTests_addOperatorToAllowlist is AVSRegistrarAl
 
         cheats.expectRevert("Ownable: caller is not the owner");
         cheats.prank(notOwner);
-        avsRegistrarWithAllowlist.addOperatorToAllowlist(OperatorSet({avs: AVS, id: 0}), defaultOperator);
+        avsRegistrarWithAllowlist.addOperatorToAllowlist(
+            OperatorSet({avs: AVS, id: 0}), defaultOperator
+        );
     }
 
     function test_revert_operatorAlreadyInAllowlist() public {
@@ -71,7 +76,9 @@ contract AVSRegistrarAllowlistUnitTests_addOperatorToAllowlist is AVSRegistrarAl
 
         cheats.expectRevert(OperatorAlreadyInAllowlist.selector);
         cheats.prank(allowlistAdmin);
-        avsRegistrarWithAllowlist.addOperatorToAllowlist(OperatorSet({avs: AVS, id: 0}), defaultOperator);
+        avsRegistrarWithAllowlist.addOperatorToAllowlist(
+            OperatorSet({avs: AVS, id: 0}), defaultOperator
+        );
     }
 
     function testFuzz_correctness(
@@ -84,19 +91,30 @@ contract AVSRegistrarAllowlistUnitTests_addOperatorToAllowlist is AVSRegistrarAl
         // Add operator to allowlist
         for (uint32 i; i < operatorSetIds.length; ++i) {
             cheats.expectEmit(true, true, true, true);
-            emit OperatorAddedToAllowlist(OperatorSet({avs: AVS, id: operatorSetIds[i]}), defaultOperator);
+            emit OperatorAddedToAllowlist(
+                OperatorSet({avs: AVS, id: operatorSetIds[i]}), defaultOperator
+            );
             cheats.prank(allowlistAdmin);
-            avsRegistrarWithAllowlist.addOperatorToAllowlist(OperatorSet({avs: AVS, id: operatorSetIds[i]}), defaultOperator);
+            avsRegistrarWithAllowlist.addOperatorToAllowlist(
+                OperatorSet({avs: AVS, id: operatorSetIds[i]}), defaultOperator
+            );
         }
 
         // Check the operator is in the allowlist
         for (uint32 i; i < operatorSetIds.length; ++i) {
-            assertTrue(avsRegistrarWithAllowlist.isOperatorAllowed(OperatorSet({avs: AVS, id: operatorSetIds[i]}), defaultOperator), "Operator not in allowlist");
+            assertTrue(
+                avsRegistrarWithAllowlist.isOperatorAllowed(
+                    OperatorSet({avs: AVS, id: operatorSetIds[i]}), defaultOperator
+                ),
+                "Operator not in allowlist"
+            );
         }
     }
 }
 
-contract AVSRegistrarAllowlistUnitTests_removeOperatorFromAllowlist is AVSRegistrarAllowlistUnitTests {
+contract AVSRegistrarAllowlistUnitTests_removeOperatorFromAllowlist is
+    AVSRegistrarAllowlistUnitTests
+{
     using ArrayLib for *;
 
     function testFuzz_revert_notOwner(
@@ -108,7 +126,9 @@ contract AVSRegistrarAllowlistUnitTests_removeOperatorFromAllowlist is AVSRegist
     function test_revert_operatorNotInAllowlist() public {
         cheats.expectRevert(OperatorNotInAllowlist.selector);
         cheats.prank(allowlistAdmin);
-        avsRegistrarWithAllowlist.removeOperatorFromAllowlist(OperatorSet({avs: AVS, id: 0}), defaultOperator);
+        avsRegistrarWithAllowlist.removeOperatorFromAllowlist(
+            OperatorSet({avs: AVS, id: 0}), defaultOperator
+        );
     }
 
     function testFuzz_correctness(
@@ -124,14 +144,23 @@ contract AVSRegistrarAllowlistUnitTests_removeOperatorFromAllowlist is AVSRegist
         // Remove operator from allowlist
         for (uint32 i; i < operatorSetIds.length; ++i) {
             cheats.expectEmit(true, true, true, true);
-            emit OperatorRemovedFromAllowlist(OperatorSet({avs: AVS, id: operatorSetIds[i]}), defaultOperator);
+            emit OperatorRemovedFromAllowlist(
+                OperatorSet({avs: AVS, id: operatorSetIds[i]}), defaultOperator
+            );
             cheats.prank(allowlistAdmin);
-            avsRegistrarWithAllowlist.removeOperatorFromAllowlist(OperatorSet({avs: AVS, id: operatorSetIds[i]}), defaultOperator);
+            avsRegistrarWithAllowlist.removeOperatorFromAllowlist(
+                OperatorSet({avs: AVS, id: operatorSetIds[i]}), defaultOperator
+            );
         }
 
         // Check the operator is not in the allowlist
         for (uint32 i; i < operatorSetIds.length; ++i) {
-            assertFalse(avsRegistrarWithAllowlist.isOperatorAllowed(OperatorSet({avs: AVS, id: operatorSetIds[i]}), defaultOperator), "Operator still in allowlist");
+            assertFalse(
+                avsRegistrarWithAllowlist.isOperatorAllowed(
+                    OperatorSet({avs: AVS, id: operatorSetIds[i]}), defaultOperator
+                ),
+                "Operator still in allowlist"
+            );
         }
     }
 }
@@ -160,9 +189,13 @@ contract AVSRegistrarAllowistUnitTest_getRegisteredOperators is AVSRegistrarAllo
 
         // Get the allowed operators
         for (uint32 i; i < operatorSetIds.length; ++i) {
-            // Note: although ordering is not guaranteed generally, it works here since we do not do any removes. 
-            address[] memory allowedOperators = avsRegistrarWithAllowlist.getAllowedOperators(OperatorSet({avs: AVS, id: operatorSetIds[i]}));
-            assertEq(allowedOperators.length, operators.length, "Incorrect number of allowed operators");
+            // Note: although ordering is not guaranteed generally, it works here since we do not do any removes.
+            address[] memory allowedOperators = avsRegistrarWithAllowlist.getAllowedOperators(
+                OperatorSet({avs: AVS, id: operatorSetIds[i]})
+            );
+            assertEq(
+                allowedOperators.length, operators.length, "Incorrect number of allowed operators"
+            );
             for (uint32 j; j < allowedOperators.length; ++j) {
                 assertTrue(allowedOperators[j] == operators[j], "Allowed operator incorrect");
             }
@@ -180,14 +213,18 @@ contract AVSRegistrarAllowListUnitTests_registerOperator is AVSRegistrarAllowlis
 
         cheats.prank(notAllocationManager);
         cheats.expectRevert(NotAllocationManager.selector);
-        avsRegistrarWithAllowlist.registerOperator(defaultOperator, AVS, defaultOperatorSetId.toArrayU32(), "0x");
+        avsRegistrarWithAllowlist.registerOperator(
+            defaultOperator, AVS, defaultOperatorSetId.toArrayU32(), "0x"
+        );
     }
 
     function test_revert_operatorNotInAllowlist() public {
         // Register operator
         cheats.expectRevert(OperatorNotInAllowlist.selector);
         cheats.prank(address(allocationManagerMock));
-        avsRegistrarWithAllowlist.registerOperator(defaultOperator, AVS, defaultOperatorSetId.toArrayU32(), "0x");
+        avsRegistrarWithAllowlist.registerOperator(
+            defaultOperator, AVS, defaultOperatorSetId.toArrayU32(), "0x"
+        );
     }
 
     function test_revert_keyNotRegistered() public {
@@ -197,7 +234,9 @@ contract AVSRegistrarAllowListUnitTests_registerOperator is AVSRegistrarAllowlis
         // Register operator
         cheats.expectRevert(KeyNotRegistered.selector);
         cheats.prank(address(allocationManagerMock));
-        avsRegistrarWithAllowlist.registerOperator(defaultOperator, AVS, defaultOperatorSetId.toArrayU32(), "0x");
+        avsRegistrarWithAllowlist.registerOperator(
+            defaultOperator, AVS, defaultOperatorSetId.toArrayU32(), "0x"
+        );
     }
 
     function testFuzz_correctness(

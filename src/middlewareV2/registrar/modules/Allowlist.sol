@@ -10,7 +10,10 @@ import {EnumerableSetUpgradeable} from
     "openzeppelin-contracts-upgradeable/contracts/utils/structs/EnumerableSetUpgradeable.sol";
 
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import {OperatorSet, OperatorSetLib} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
+import {
+    OperatorSet,
+    OperatorSetLib
+} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
 abstract contract Allowlist is OwnableUpgradeable, AllowlistStorage {
     using OperatorSetLib for OperatorSet;

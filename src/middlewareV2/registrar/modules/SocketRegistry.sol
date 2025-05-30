@@ -1,58 +1,57 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import {ISocketRegistry} from "../../../interfaces/ISocketRegistryV2.sol";
 import {SocketRegistryStorage} from "./SocketRegistryStorage.sol";
-import {ISocketRegistry} from "../../../interfaces/ISocketRegistry.sol";
+import {
+    OperatorSetLib,
+    OperatorSet
+} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
 /// @notice A module that allows for the setting and removal of operator sockets
 abstract contract SocketRegistry is SocketRegistryStorage {
-    /// @notice Emitted when an operator socket is set
-    event OperatorSocketSet(address indexed operator, string socket);
+    using OperatorSetLib for OperatorSet;
 
-    /// @notice Emitted when an operator socket is removed
-    event OperatorSocketRemoved(address indexed operator);
-
-    /**
-     * @notice Gets the socket for an operator.
-     * @param operator The operator to get the socket for.
-     * @return The socket for the operator.
-     */
+    /// @inheritdoc ISocketRegistry
     function getOperatorSocket(
-        address operator
+        address operator,
+        OperatorSet memory operatorSet
     ) external view returns (string memory) {
-        return operatorToSocket[operator];
+        return _operatorToSocket[operator][operatorSet.key()];
     }
 
-    /**
-     * @notice Updates the socket for the operator.
-     * @param socket The socket (any arbitrary string as deemed useful by an AVS) to set.
-     * @dev This function can only be called by the operator themselves.
-     */
+    /// @inheritdoc ISocketRegistry
     function updateSocket(
+        address operator,
+        OperatorSet memory operatorSet,
         string memory socket
     ) external {
-        _setOperatorSocket(msg.sender, socket);
+        require(msg.sender == operator, CallerNotOperator());
+        _setOperatorSocket(operator, operatorSet, socket);
     }
 
     /**
      * @notice Sets the socket for an operator.
      * @param operator The address of the operator to set the socket for.
+     * @param operatorSet The operator set to set the socket for.
      * @param socket The socket (any arbitrary string as deemed useful by an AVS) to set.
      * @dev This function assumes a single socket per operator, for all operatorSets.
      */
-    function _setOperatorSocket(address operator, string memory socket) internal {
-        operatorToSocket[operator] = socket;
-        emit OperatorSocketSet(operator, socket);
+    function _setOperatorSocket(
+        address operator,
+        OperatorSet memory operatorSet,
+        string memory socket
+    ) internal {
+        _operatorToSocket[operator][operatorSet.key()] = socket;
+        emit OperatorSocketSet(operator, operatorSet, socket);
     }
 
     /**
      * @notice Deletes the socket for an operator.
      * @param operator The address of the operator to delete the socket for.
      */
-    function _removeOperatorSocket(
-        address operator
-    ) internal {
-        delete operatorToSocket[operator];
-        emit OperatorSocketRemoved(operator);
+    function _removeOperatorSocket(address operator, OperatorSet memory operatorSet) internal {
+        delete _operatorToSocket[operator][operatorSet.key()];
+        emit OperatorSocketRemoved(operator, operatorSet);
     }
 }

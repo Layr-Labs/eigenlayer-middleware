@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "./AVSRegistrarBase.t.sol";
+
 contract AVSRegistrarUnitTests is AVSRegistrarBase {
     function setUp() public override {
         super.setUp();

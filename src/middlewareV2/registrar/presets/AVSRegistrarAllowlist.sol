@@ -31,7 +31,10 @@ contract AVSRegistrarWithAllowlist is AVSRegistrar, Allowlist {
         super._beforeRegisterOperator(operator, operatorSetIds, data);
 
         for (uint32 i; i < operatorSetIds.length; ++i) {
-            require(isOperatorAllowed(OperatorSet({avs: avs, id: operatorSetIds[i]}), operator), OperatorNotInAllowlist());
+            require(
+                isOperatorAllowed(OperatorSet({avs: avs, id: operatorSetIds[i]}), operator),
+                OperatorNotInAllowlist()
+            );
         }
     }
 }

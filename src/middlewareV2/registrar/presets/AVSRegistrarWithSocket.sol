@@ -7,6 +7,10 @@ import {IAllocationManager} from
 import {IKeyRegistrar} from "../../../interfaces/IKeyRegistrar.sol";
 import {AVSRegistrar} from "../AVSRegistrar.sol";
 import {SocketRegistry} from "../modules/SocketRegistry.sol";
+import {
+    OperatorSetLib,
+    OperatorSet
+} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
 contract AVSRegistrarWithSocket is AVSRegistrar, SocketRegistry {
     constructor(
@@ -23,8 +27,13 @@ contract AVSRegistrarWithSocket is AVSRegistrar, SocketRegistry {
     ) internal override {
         super._afterRegisterOperator(operator, operatorSetIds, data);
 
-        string memory socket = abi.decode(data, (string));
-        _setOperatorSocket(operator, socket);
+        // Decode data and validate length
+        string[] memory sockets = abi.decode(data, (string[]));
+        require(sockets.length == operatorSetIds.length, DataLengthMismatch());
+
+        for (uint32 i; i < operatorSetIds.length; ++i) {
+            _setOperatorSocket(operator, OperatorSet({avs: avs, id: operatorSetIds[i]}), sockets[i]);
+        }
     }
 
     /// @notice Remove the socket for the operator
@@ -34,6 +43,8 @@ contract AVSRegistrarWithSocket is AVSRegistrar, SocketRegistry {
     ) internal override {
         super._afterDeregisterOperator(operator, operatorSetIds);
 
-        _removeOperatorSocket(operator);
+        for (uint32 i; i < operatorSetIds.length; ++i) {
+            _removeOperatorSocket(operator, OperatorSet({avs: avs, id: operatorSetIds[i]}));
+        }
     }
 }
