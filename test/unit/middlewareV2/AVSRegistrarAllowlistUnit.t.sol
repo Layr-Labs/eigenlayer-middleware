@@ -268,7 +268,9 @@ contract AVSRegistrarAllowListUnitTests_deregisterOperator is AVSRegistrarAllowl
 
         cheats.prank(notAllocationManager);
         cheats.expectRevert(NotAllocationManager.selector);
-        avsRegistrarWithAllowlist.deregisterOperator(defaultOperator, AVS, defaultOperatorSetId.toArrayU32());
+        avsRegistrarWithAllowlist.deregisterOperator(
+            defaultOperator, AVS, defaultOperatorSetId.toArrayU32()
+        );
     }
 
     function testFuzz_correctness(

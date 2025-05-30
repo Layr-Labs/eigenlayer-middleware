@@ -115,7 +115,7 @@ contract AVSRegistrarSocketUnitTests_registerOperator is AVSRegistrarSocketUnitT
         }
         cheats.expectEmit(true, true, true, true);
         emit OperatorRegistered(defaultOperator, operatorSetIds);
-        
+
         cheats.prank(address(allocationManagerMock));
         avsRegistrarWithSocket.registerOperator(defaultOperator, AVS, operatorSetIds, socketData);
 
