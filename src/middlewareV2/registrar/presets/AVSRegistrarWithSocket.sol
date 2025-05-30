@@ -20,6 +20,8 @@ contract AVSRegistrarWithSocket is AVSRegistrar, SocketRegistry {
     ) AVSRegistrar(_avs, _allocationManager, _keyRegistrar) {}
 
     /// @notice Set the socket for the operator
+    /// @dev This function sets the socket even if the operator is already registered
+    /// @dev Operator's should make sure to always provide the socket when registering
     function _afterRegisterOperator(
         address operator,
         uint32[] calldata operatorSetIds,
@@ -27,24 +29,8 @@ contract AVSRegistrarWithSocket is AVSRegistrar, SocketRegistry {
     ) internal override {
         super._afterRegisterOperator(operator, operatorSetIds, data);
 
-        // Decode data and validate length
-        string[] memory sockets = abi.decode(data, (string[]));
-        require(sockets.length == operatorSetIds.length, DataLengthMismatch());
-
-        for (uint32 i; i < operatorSetIds.length; ++i) {
-            _setOperatorSocket(operator, OperatorSet({avs: avs, id: operatorSetIds[i]}), sockets[i]);
-        }
-    }
-
-    /// @notice Remove the socket for the operator
-    function _afterDeregisterOperator(
-        address operator,
-        uint32[] calldata operatorSetIds
-    ) internal override {
-        super._afterDeregisterOperator(operator, operatorSetIds);
-
-        for (uint32 i; i < operatorSetIds.length; ++i) {
-            _removeOperatorSocket(operator, OperatorSet({avs: avs, id: operatorSetIds[i]}));
-        }
+        // Set operator socket
+        string memory socket = abi.decode(data, (string));
+        _setOperatorSocket(operator, socket);
     }
 }

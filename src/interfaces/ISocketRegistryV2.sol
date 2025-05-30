@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
-
 interface ISocketRegistryErrors {
     /// @notice Thrown when the caller is not the operator
     error CallerNotOperator();
@@ -13,10 +11,7 @@ interface ISocketRegistryErrors {
 
 interface ISocketRegistryEvents {
     /// @notice Emitted when an operator socket is set
-    event OperatorSocketSet(address indexed operator, OperatorSet operatorSet, string socket);
-
-    /// @notice Emitted when an operator socket is removed
-    event OperatorSocketRemoved(address indexed operator, OperatorSet operatorSet);
+    event OperatorSocketSet(address indexed operator, string socket);
 }
 
 interface ISocketRegistry is ISocketRegistryErrors, ISocketRegistryEvents {
@@ -26,20 +21,17 @@ interface ISocketRegistry is ISocketRegistryErrors, ISocketRegistryEvents {
      * @return The socket for the operator.
      */
     function getOperatorSocket(
-        address operator,
-        OperatorSet memory operatorSet
+        address operator
     ) external view returns (string memory);
 
     /**
      * @notice Updates the socket for an operator.
      * @param operator The operator to set the socket for.
-     * @param operatorSet The operator set to set the socket for.
      * @param socket The socket to set for the operator.
      * @dev This function can only be called by the operator themselves.
      */
     function updateSocket(
         address operator,
-        OperatorSet memory operatorSet,
         string memory socket
     ) external;
 }

@@ -14,44 +14,31 @@ abstract contract SocketRegistry is SocketRegistryStorage {
 
     /// @inheritdoc ISocketRegistry
     function getOperatorSocket(
-        address operator,
-        OperatorSet memory operatorSet
+        address operator
     ) external view returns (string memory) {
-        return _operatorToSocket[operator][operatorSet.key()];
+        return _operatorToSocket[operator];
     }
 
     /// @inheritdoc ISocketRegistry
     function updateSocket(
         address operator,
-        OperatorSet memory operatorSet,
         string memory socket
     ) external {
         require(msg.sender == operator, CallerNotOperator());
-        _setOperatorSocket(operator, operatorSet, socket);
+        _setOperatorSocket(operator, socket);
     }
 
     /**
      * @notice Sets the socket for an operator.
      * @param operator The address of the operator to set the socket for.
-     * @param operatorSet The operator set to set the socket for.
      * @param socket The socket (any arbitrary string as deemed useful by an AVS) to set.
-     * @dev This function assumes a single socket per operator, for all operatorSets.
+     * @dev This function sets a single socket per operator, regardless of operatorSet.
      */
     function _setOperatorSocket(
         address operator,
-        OperatorSet memory operatorSet,
         string memory socket
     ) internal {
-        _operatorToSocket[operator][operatorSet.key()] = socket;
-        emit OperatorSocketSet(operator, operatorSet, socket);
-    }
-
-    /**
-     * @notice Deletes the socket for an operator.
-     * @param operator The address of the operator to delete the socket for.
-     */
-    function _removeOperatorSocket(address operator, OperatorSet memory operatorSet) internal {
-        delete _operatorToSocket[operator][operatorSet.key()];
-        emit OperatorSocketRemoved(operator, operatorSet);
+        _operatorToSocket[operator] = socket;
+        emit OperatorSocketSet(operator, socket);
     }
 }

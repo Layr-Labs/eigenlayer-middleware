@@ -33,21 +33,12 @@ contract AVSRegistrarSocketUnitTests is
         );
 
         // Encode defaultSocker into data
-        string[] memory sockets = new string[](1);
-        sockets[0] = defaultSocket;
-        socketData = abi.encode(sockets);
+        socketData = abi.encode(defaultSocket);
     }
 
     function _registerOperator(
         uint32[] memory operatorSetIds
     ) internal {
-        // Generate an array of sockets
-        string[] memory sockets = new string[](operatorSetIds.length);
-        for (uint32 i; i < operatorSetIds.length; ++i) {
-            sockets[i] = defaultSocket;
-        }
-        socketData = abi.encode(sockets);
-
         // Register operator
         _registerKey(defaultOperator, operatorSetIds);
         cheats.prank(address(allocationManagerMock));
@@ -78,19 +69,6 @@ contract AVSRegistrarSocketUnitTests_registerOperator is AVSRegistrarSocketUnitT
         );
     }
 
-    function testFuzz_revert_dataLengthMismatch() public {
-        // Generate random operator set ids & register keys
-        uint32[] memory operatorSetIds = new uint32[](2);
-        operatorSetIds[0] = defaultOperatorSetId;
-        operatorSetIds[1] = defaultOperatorSetId + 1;
-        _registerKey(defaultOperator, operatorSetIds);
-
-        // Register operator
-        cheats.expectRevert(DataLengthMismatch.selector);
-        cheats.prank(address(allocationManagerMock));
-        avsRegistrarWithSocket.registerOperator(defaultOperator, AVS, operatorSetIds, socketData);
-    }
-
     function testFuzz_correctness(
         Randomness r
     ) public rand(r) {
@@ -99,33 +77,18 @@ contract AVSRegistrarSocketUnitTests_registerOperator is AVSRegistrarSocketUnitT
         uint32[] memory operatorSetIds = r.Uint32Array(numOperatorSetIds, 0, type(uint32).max);
         _registerKey(defaultOperator, operatorSetIds);
 
-        // Generate an array of sockets
-        string[] memory sockets = new string[](numOperatorSetIds);
-        for (uint32 i; i < numOperatorSetIds; ++i) {
-            sockets[i] = defaultSocket;
-        }
-        socketData = abi.encode(sockets);
-
         // Register operator
-        for (uint32 i; i < numOperatorSetIds; ++i) {
-            cheats.expectEmit(true, true, true, true);
-            emit OperatorSocketSet(
-                defaultOperator, OperatorSet({avs: AVS, id: operatorSetIds[i]}), defaultSocket
-            );
-        }
+        cheats.expectEmit(true, true, true, true);
+        emit OperatorSocketSet(defaultOperator, defaultSocket);
         cheats.expectEmit(true, true, true, true);
         emit OperatorRegistered(defaultOperator, operatorSetIds);
 
         cheats.prank(address(allocationManagerMock));
         avsRegistrarWithSocket.registerOperator(defaultOperator, AVS, operatorSetIds, socketData);
 
-        // Check that the sockets are set
-        for (uint32 i; i < numOperatorSetIds; ++i) {
-            string memory socket = avsRegistrarWithSocket.getOperatorSocket(
-                defaultOperator, OperatorSet({avs: AVS, id: operatorSetIds[i]})
-            );
-            assertEq(socket, sockets[i], "Socket mismatch");
-        }
+        // Check that the socket is set
+        string memory socket = avsRegistrarWithSocket.getOperatorSocket(defaultOperator);
+        assertEq(socket, defaultSocket, "Socket mismatch");
     }
 }
 
@@ -151,28 +114,16 @@ contract AVSRegistrarSocketUnitTests_DeregisterOperator is AVSRegistrarSocketUni
         uint32 numOperatorSetIds = r.Uint32(1, 50);
         uint32[] memory operatorSetIds = r.Uint32Array(numOperatorSetIds, 0, type(uint32).max);
 
-        // Set sockets
         _registerOperator(operatorSetIds);
 
-        // Deregister operator
-        for (uint32 i; i < numOperatorSetIds; ++i) {
-            cheats.expectEmit(true, true, true, true);
-            emit OperatorSocketRemoved(
-                defaultOperator, OperatorSet({avs: AVS, id: operatorSetIds[i]})
-            );
-        }
         cheats.expectEmit(true, true, true, true);
         emit OperatorDeregistered(defaultOperator, operatorSetIds);
         cheats.prank(address(allocationManagerMock));
         avsRegistrarWithSocket.deregisterOperator(defaultOperator, AVS, operatorSetIds);
 
-        // Check that the sockets are removed
-        for (uint32 i; i < numOperatorSetIds; ++i) {
-            string memory socket = avsRegistrarWithSocket.getOperatorSocket(
-                defaultOperator, OperatorSet({avs: AVS, id: operatorSetIds[i]})
-            );
-            assertEq(socket, "", "Socket mismatch");
-        }
+        // Check that the socket still exists
+        string memory socket = avsRegistrarWithSocket.getOperatorSocket(defaultOperator);
+        assertEq(socket, defaultSocket, "Socket mismatch");
     }
 }
 
@@ -187,9 +138,7 @@ contract AVSRegistrarSocketUnitTests_updateSocket is AVSRegistrarSocketUnitTests
 
         cheats.prank(notOperator);
         cheats.expectRevert(CallerNotOperator.selector);
-        avsRegistrarWithSocket.updateSocket(
-            defaultOperator, OperatorSet({avs: AVS, id: defaultOperatorSetId}), defaultSocket
-        );
+        avsRegistrarWithSocket.updateSocket(defaultOperator, defaultSocket);
     }
 
     function test_updateSocket() public {
@@ -198,18 +147,12 @@ contract AVSRegistrarSocketUnitTests_updateSocket is AVSRegistrarSocketUnitTests
         string memory newSocket = "NewSocket";
 
         cheats.expectEmit(true, true, true, true);
-        emit OperatorSocketSet(
-            defaultOperator, OperatorSet({avs: AVS, id: defaultOperatorSetId}), newSocket
-        );
+        emit OperatorSocketSet(defaultOperator, newSocket);
         cheats.prank(defaultOperator);
-        avsRegistrarWithSocket.updateSocket(
-            defaultOperator, OperatorSet({avs: AVS, id: defaultOperatorSetId}), newSocket
-        );
+        avsRegistrarWithSocket.updateSocket(defaultOperator, newSocket);
 
         // Check that the socket is updated
-        string memory socket = avsRegistrarWithSocket.getOperatorSocket(
-            defaultOperator, OperatorSet({avs: AVS, id: defaultOperatorSetId})
-        );
+        string memory socket = avsRegistrarWithSocket.getOperatorSocket(defaultOperator);
         assertEq(socket, newSocket, "Socket mismatch");
     }
 }

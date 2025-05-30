@@ -14,9 +14,8 @@ abstract contract SocketRegistryStorage is ISocketRegistry {
      *
      */
 
-    /// @notice A mapping from operator addresses to operatorSet to socker
-    mapping(address operator => mapping(bytes32 operatorSetKey => string operatorSocket)) internal
-        _operatorToSocket;
+    /// @notice A mapping from operator address to socket
+    mapping(address operator => string operatorSocket) internal _operatorToSocket;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
