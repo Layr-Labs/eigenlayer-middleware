@@ -107,14 +107,15 @@ contract AVSRegistrarSocketUnitTests_registerOperator is AVSRegistrarSocketUnitT
         socketData = abi.encode(sockets);
 
         // Register operator
-        cheats.expectEmit(true, true, true, true);
-        emit OperatorRegistered(defaultOperator, operatorSetIds);
         for (uint32 i; i < numOperatorSetIds; ++i) {
             cheats.expectEmit(true, true, true, true);
             emit OperatorSocketSet(
                 defaultOperator, OperatorSet({avs: AVS, id: operatorSetIds[i]}), defaultSocket
             );
         }
+        cheats.expectEmit(true, true, true, true);
+        emit OperatorRegistered(defaultOperator, operatorSetIds);
+        
         cheats.prank(address(allocationManagerMock));
         avsRegistrarWithSocket.registerOperator(defaultOperator, AVS, operatorSetIds, socketData);
 

@@ -268,7 +268,7 @@ contract AVSRegistrarAllowListUnitTests_deregisterOperator is AVSRegistrarAllowl
 
         cheats.prank(notAllocationManager);
         cheats.expectRevert(NotAllocationManager.selector);
-        avsRegistrar.deregisterOperator(defaultOperator, AVS, defaultOperatorSetId.toArrayU32());
+        avsRegistrarWithAllowlist.deregisterOperator(defaultOperator, AVS, defaultOperatorSetId.toArrayU32());
     }
 
     function testFuzz_correctness(
@@ -282,6 +282,6 @@ contract AVSRegistrarAllowListUnitTests_deregisterOperator is AVSRegistrarAllowl
         cheats.expectEmit(true, true, true, true);
         emit OperatorDeregistered(defaultOperator, operatorSetIds);
         cheats.prank(address(allocationManagerMock));
-        avsRegistrar.deregisterOperator(defaultOperator, AVS, operatorSetIds);
+        avsRegistrarWithAllowlist.deregisterOperator(defaultOperator, AVS, operatorSetIds);
     }
 }
