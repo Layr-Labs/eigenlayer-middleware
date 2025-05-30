@@ -22,22 +22,13 @@ abstract contract AVSRegistrarStorage is IAVSRegistrar, IAVSRegistrarInternal {
     /// @notice The allocation manager in EigenLayer core
     IAllocationManager public immutable allocationManager;
 
-    /// @notice The curve type that the Key Registrar is using
-    IKeyRegistrar.CurveType public immutable curveType;
-
     /// @notice Pointer to the EigenLayer core Key Registrar
     IKeyRegistrar public immutable keyRegistrar;
 
-    constructor(
-        address _avs,
-        IAllocationManager _allocationManager,
-        IKeyRegistrar _keyRegistrar,
-        IKeyRegistrar.CurveType _curveType
-    ) {
+    constructor(address _avs, IAllocationManager _allocationManager, IKeyRegistrar _keyRegistrar) {
         avs = _avs;
         allocationManager = _allocationManager;
         keyRegistrar = _keyRegistrar;
-        curveType = _curveType;
     }
 
     /**

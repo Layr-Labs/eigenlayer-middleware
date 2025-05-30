@@ -27,7 +27,7 @@ contract AVSRegistrar is Initializable, AVSRegistrarStorage {
         address _avs,
         IAllocationManager _allocationManager,
         IKeyRegistrar _keyRegistrar
-    ) AVSRegistrarStorage(_avs, _allocationManager, _keyRegistrar, IKeyRegistrar.CurveType.BN254) {
+    ) AVSRegistrarStorage(_avs, _allocationManager, _keyRegistrar) {
         _disableInitializers();
     }
 
