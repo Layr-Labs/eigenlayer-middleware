@@ -10,8 +10,10 @@ import {EnumerableSetUpgradeable} from
     "openzeppelin-contracts-upgradeable/contracts/utils/structs/EnumerableSetUpgradeable.sol";
 
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import {OperatorSet, OperatorSetLib} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
 abstract contract Allowlist is OwnableUpgradeable, AllowlistStorage {
+    using OperatorSetLib for OperatorSet;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
     function initialize(
@@ -29,31 +31,34 @@ abstract contract Allowlist is OwnableUpgradeable, AllowlistStorage {
 
     /// @inheritdoc IAllowlist
     function addOperatorToAllowlist(
+        OperatorSet memory operatorSet,
         address operator
     ) external onlyOwner {
-        EnumerableSetUpgradeable.AddressSet storage allowedOperators = _allowedOperators;
-        require(allowedOperators.add(operator), OperatorAlreadyInAllowlist());
+        require(_allowedOperators[operatorSet.key()].add(operator), OperatorAlreadyInAllowlist());
+        emit OperatorAddedToAllowlist(operatorSet, operator);
     }
 
     /// @inheritdoc IAllowlist
     function removeOperatorFromAllowlist(
+        OperatorSet memory operatorSet,
         address operator
     ) external onlyOwner {
-        EnumerableSetUpgradeable.AddressSet storage allowedOperators = _allowedOperators;
-        require(allowedOperators.remove(operator), OperatorNotInAllowlist());
+        require(_allowedOperators[operatorSet.key()].remove(operator), OperatorNotInAllowlist());
+        emit OperatorRemovedFromAllowlist(operatorSet, operator);
     }
 
     /// @inheritdoc IAllowlist
     function isOperatorAllowed(
+        OperatorSet memory operatorSet,
         address operator
     ) public view returns (bool) {
-        EnumerableSetUpgradeable.AddressSet storage allowedOperators = _allowedOperators;
-        return allowedOperators.contains(operator);
+        return _allowedOperators[operatorSet.key()].contains(operator);
     }
 
     /// @inheritdoc IAllowlist
-    function getAllowedOperators() external view returns (address[] memory) {
-        EnumerableSetUpgradeable.AddressSet storage allowedOperators = _allowedOperators;
-        return allowedOperators.values();
+    function getAllowedOperators(
+        OperatorSet memory operatorSet
+    ) external view returns (address[] memory) {
+        return _allowedOperators[operatorSet.key()].values();
     }
 }

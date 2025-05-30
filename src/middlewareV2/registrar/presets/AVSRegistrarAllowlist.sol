@@ -7,6 +7,7 @@ import {IAllocationManager} from
 import {IKeyRegistrar} from "../../../interfaces/IKeyRegistrar.sol";
 import {AVSRegistrar} from "../AVSRegistrar.sol";
 import {Allowlist} from "../modules/Allowlist.sol";
+import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
 contract AVSRegistrarWithAllowlist is AVSRegistrar, Allowlist {
     constructor(
@@ -21,7 +22,7 @@ contract AVSRegistrarWithAllowlist is AVSRegistrar, Allowlist {
         _initializeAllowlist(admin);
     }
 
-    /// @notice Set the socket for the operator
+    /// @notice Before registering operator, check if the operator is in the allowlist
     function _beforeRegisterOperator(
         address operator,
         uint32[] calldata operatorSetIds,
@@ -29,6 +30,8 @@ contract AVSRegistrarWithAllowlist is AVSRegistrar, Allowlist {
     ) internal override {
         super._beforeRegisterOperator(operator, operatorSetIds, data);
 
-        require(isOperatorAllowed(operator), "Operator not in allowlist");
+        for (uint32 i; i < operatorSetIds.length; ++i) {
+            require(isOperatorAllowed(OperatorSet({avs: avs, id: operatorSetIds[i]}), operator), OperatorNotInAllowlist());
+        }
     }
 }

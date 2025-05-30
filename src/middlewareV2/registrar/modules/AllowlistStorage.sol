@@ -9,13 +9,13 @@ import {EnumerableSetUpgradeable} from
 abstract contract AllowlistStorage is IAllowlist {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
-    /// @dev This data structure takes up 2 storage slots
-    EnumerableSetUpgradeable.AddressSet internal _allowedOperators;
+    /// @dev Mapping from operatorSet to the allowed operators for that operatorSet
+    mapping(bytes32 operatorSetKey => EnumerableSetUpgradeable.AddressSet allowedOperators) internal _allowedOperators;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[48] private __GAP;
+    uint256[49] private __GAP;
 }
