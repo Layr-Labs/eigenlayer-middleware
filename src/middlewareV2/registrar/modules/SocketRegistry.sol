@@ -20,10 +20,7 @@ abstract contract SocketRegistry is SocketRegistryStorage {
     }
 
     /// @inheritdoc ISocketRegistry
-    function updateSocket(
-        address operator,
-        string memory socket
-    ) external {
+    function updateSocket(address operator, string memory socket) external {
         require(msg.sender == operator, CallerNotOperator());
         _setOperatorSocket(operator, socket);
     }
@@ -34,10 +31,7 @@ abstract contract SocketRegistry is SocketRegistryStorage {
      * @param socket The socket (any arbitrary string as deemed useful by an AVS) to set.
      * @dev This function sets a single socket per operator, regardless of operatorSet.
      */
-    function _setOperatorSocket(
-        address operator,
-        string memory socket
-    ) internal {
+    function _setOperatorSocket(address operator, string memory socket) internal {
         _operatorToSocket[operator] = socket;
         emit OperatorSocketSet(operator, socket);
     }

@@ -30,8 +30,5 @@ interface ISocketRegistry is ISocketRegistryErrors, ISocketRegistryEvents {
      * @param socket The socket to set for the operator.
      * @dev This function can only be called by the operator themselves.
      */
-    function updateSocket(
-        address operator,
-        string memory socket
-    ) external;
+    function updateSocket(address operator, string memory socket) external;
 }
