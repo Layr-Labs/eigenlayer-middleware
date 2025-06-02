@@ -2,10 +2,13 @@
 pragma solidity ^0.8.27;
 
 import {
-    IKeyRegistrarTypes, IKeyRegistrar, BN254
+    IKeyRegistrarTypes,
+    IKeyRegistrar,
+    BN254
 } from "eigenlayer-contracts/src/contracts/interfaces//IKeyRegistrar.sol";
 import {
-    OperatorSetLib, OperatorSet
+    OperatorSetLib,
+    OperatorSet
 } from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
 
@@ -30,12 +33,11 @@ contract KeyRegistrarMock is IKeyRegistrar {
         return _operatorRegistered[operatorSet.key()][operator];
     }
 
-    function initialize(address initialOwner) external {}
-
-    function configureOperatorSet(
-        OperatorSet memory operatorSet,
-        CurveType curveType
+    function initialize(
+        address initialOwner
     ) external {}
+
+    function configureOperatorSet(OperatorSet memory operatorSet, CurveType curveType) external {}
 
     function registerKey(
         address operator,
@@ -44,11 +46,8 @@ contract KeyRegistrarMock is IKeyRegistrar {
         bytes calldata signature
     ) external {}
 
-    function deregisterKey(
-        address operator,
-        OperatorSet memory operatorSet
-    ) external {}
-    
+    function deregisterKey(address operator, OperatorSet memory operatorSet) external {}
+
     function isRegistered(
         OperatorSet memory operatorSet,
         address operator
@@ -59,7 +58,7 @@ contract KeyRegistrarMock is IKeyRegistrar {
     ) external pure returns (OperatorSetConfig memory) {}
 
     function getBN254Key(
-        OperatorSet memory operatorSet, 
+        OperatorSet memory operatorSet,
         address operator
     ) external view returns (BN254.G1Point memory g1Point, BN254.G2Point memory g2Point) {}
 
@@ -70,11 +69,13 @@ contract KeyRegistrarMock is IKeyRegistrar {
      * @return pubkey The ECDSA public key
      */
     function getECDSAKey(
-        OperatorSet memory operatorSet, 
+        OperatorSet memory operatorSet,
         address operator
     ) external pure returns (bytes memory) {}
 
-    function isKeyGloballyRegistered(bytes32 keyHash) external view returns (bool) {}
+    function isKeyGloballyRegistered(
+        bytes32 keyHash
+    ) external view returns (bool) {}
 
     function getKeyHash(
         OperatorSet memory operatorSet,
@@ -93,5 +94,5 @@ contract KeyRegistrarMock is IKeyRegistrar {
     }
 
     receive() external payable {}
-    fallback() external payable {} 
+    fallback() external payable {}
 }
