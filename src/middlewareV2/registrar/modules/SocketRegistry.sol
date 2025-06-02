@@ -9,6 +9,7 @@ import {
 } from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
 /// @notice A module that allows for the setting and removal of operator sockets
+/// @dev This contract assumes a single socket per operator
 abstract contract SocketRegistry is SocketRegistryStorage {
     using OperatorSetLib for OperatorSet;
 

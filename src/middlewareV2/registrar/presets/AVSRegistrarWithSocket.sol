@@ -21,7 +21,7 @@ contract AVSRegistrarWithSocket is AVSRegistrar, SocketRegistry {
 
     /// @notice Set the socket for the operator
     /// @dev This function sets the socket even if the operator is already registered
-    /// @dev Operator's should make sure to always provide the socket when registering
+    /// @dev Operators should make sure to always provide the socket when registering
     function _afterRegisterOperator(
         address operator,
         uint32[] calldata operatorSetIds,
