@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "./AVSRegistrarBase.t.sol";
+import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 import {AVSRegistrarWithAllowlist} from
     "src/middlewareV2/registrar/presets/AVSRegistrarWithAllowlist.sol";
 import {IAllowlistErrors, IAllowlistEvents} from "src/interfaces/IAllowlist.sol";

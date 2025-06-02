@@ -10,7 +10,7 @@ import {
 } from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 import {
     IKeyRegistrarTypes, IKeyRegistrar
-} from "eigenlayer-contracts/src/contracts/interfaces//IKeyRegistrar.sol";
+} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 
 import {AVSRegistrarStorage} from "./AVSRegistrarStorage.sol";
 

@@ -8,7 +8,7 @@ import {IAVSRegistrarErrors, IAVSRegistrarEvents} from "src/interfaces/IAVSRegis
 import {AVSRegistrar} from "src/middlewareV2/registrar/AVSRegistrar.sol";
 import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {IKeyRegistrar} from "src/interfaces/IKeyRegistrar.sol";
+import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 import {
     OperatorSet,
     OperatorSetLib

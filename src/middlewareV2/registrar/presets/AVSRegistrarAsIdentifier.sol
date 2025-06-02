@@ -5,8 +5,8 @@ import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IPermissionController} from
     "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 
-import {IKeyRegistrar} from "../../../interfaces/IKeyRegistrar.sol";
 import {AVSRegistrar} from "../AVSRegistrar.sol";
 import {SocketRegistry} from "../modules/SocketRegistry.sol";
 

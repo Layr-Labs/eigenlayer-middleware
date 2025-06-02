@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 import "./AVSRegistrarBase.t.sol";
 
 contract AVSRegistrarUnitTests is AVSRegistrarBase {

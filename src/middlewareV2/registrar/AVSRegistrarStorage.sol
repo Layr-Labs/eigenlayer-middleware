@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
-import {IKeyRegistrar} from "../../interfaces/IKeyRegistrar.sol";
+import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 import {IAVSRegistrarInternal} from "../../interfaces/IAVSRegistrarInternal.sol";
 import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
