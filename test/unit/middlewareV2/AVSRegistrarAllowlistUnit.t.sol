@@ -3,10 +3,14 @@ pragma solidity ^0.8.27;
 
 import "./AVSRegistrarBase.t.sol";
 import {AVSRegistrarWithAllowlist} from
-    "src/middlewareV2/registrar/presets/AVSRegistrarAllowlist.sol";
+    "src/middlewareV2/registrar/presets/AVSRegistrarWithAllowlist.sol";
 import {IAllowlistErrors, IAllowlistEvents} from "src/interfaces/IAllowlist.sol";
 
-contract AVSRegistrarAllowlistUnitTests is AVSRegistrarBase, IAllowlistErrors, IAllowlistEvents {
+contract AVSRegistrarWithAllowlistUnitTests is
+    AVSRegistrarBase,
+    IAllowlistErrors,
+    IAllowlistEvents
+{
     AVSRegistrarWithAllowlist public avsRegistrarWithAllowlist;
     address public allowlistAdmin = address(this);
 
@@ -42,7 +46,7 @@ contract AVSRegistrarAllowlistUnitTests is AVSRegistrarBase, IAllowlistErrors, I
     }
 }
 
-contract AVSRegistrarAllowlistUnitTests_initialize is AVSRegistrarAllowlistUnitTests {
+contract AVSRegistrarWithAllowlistUnitTests_initialize is AVSRegistrarWithAllowlistUnitTests {
     function test_initialization() public view {
         // Check the admin is set
         assertEq(
@@ -56,7 +60,9 @@ contract AVSRegistrarAllowlistUnitTests_initialize is AVSRegistrarAllowlistUnitT
     }
 }
 
-contract AVSRegistrarAllowlistUnitTests_addOperatorToAllowlist is AVSRegistrarAllowlistUnitTests {
+contract AVSRegistrarWithAllowlistUnitTests_addOperatorToAllowlist is
+    AVSRegistrarWithAllowlistUnitTests
+{
     using ArrayLib for *;
 
     function testFuzz_revert_notOwner(
@@ -112,8 +118,8 @@ contract AVSRegistrarAllowlistUnitTests_addOperatorToAllowlist is AVSRegistrarAl
     }
 }
 
-contract AVSRegistrarAllowlistUnitTests_removeOperatorFromAllowlist is
-    AVSRegistrarAllowlistUnitTests
+contract AVSRegistrarWithAllowlistUnitTests_removeOperatorFromAllowlist is
+    AVSRegistrarWithAllowlistUnitTests
 {
     using ArrayLib for *;
 
@@ -165,7 +171,9 @@ contract AVSRegistrarAllowlistUnitTests_removeOperatorFromAllowlist is
     }
 }
 
-contract AVSRegistrarAllowistUnitTest_getRegisteredOperators is AVSRegistrarAllowlistUnitTests {
+contract AVSRegistrarAllowistUnitTest_getRegisteredOperators is
+    AVSRegistrarWithAllowlistUnitTests
+{
     using ArrayLib for *;
 
     function testFuzz_correctness(
@@ -203,7 +211,9 @@ contract AVSRegistrarAllowistUnitTest_getRegisteredOperators is AVSRegistrarAllo
     }
 }
 
-contract AVSRegistrarAllowListUnitTests_registerOperator is AVSRegistrarAllowlistUnitTests {
+contract AVSRegistrarWithAllowlistUnitTests_registerOperator is
+    AVSRegistrarWithAllowlistUnitTests
+{
     using ArrayLib for *;
 
     function testFuzz_revert_notAllocationManager(
@@ -258,7 +268,9 @@ contract AVSRegistrarAllowListUnitTests_registerOperator is AVSRegistrarAllowlis
     }
 }
 
-contract AVSRegistrarAllowListUnitTests_deregisterOperator is AVSRegistrarAllowlistUnitTests {
+contract AVSRegistrarWithAllowlistUnitTests_deregisterOperator is
+    AVSRegistrarWithAllowlistUnitTests
+{
     using ArrayLib for *;
 
     function testFuzz_revert_notAllocationManager(

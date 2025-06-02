@@ -15,7 +15,7 @@ abstract contract AVSRegistrarStorage is IAVSRegistrar, IAVSRegistrarInternal {
      *
      */
 
-    /// @notice The AVS that this registar is for
+    /// @notice The AVS that this registrar is for
     /// @dev In practice, the AVS address in EigenLayer core is address that initialized the Metadata URI.
     address public immutable avs;
 
