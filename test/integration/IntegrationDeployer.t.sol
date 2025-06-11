@@ -24,6 +24,8 @@ import "eigenlayer-contracts/src/contracts/pods/EigenPodManager.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPod.sol";
 import "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
+import "eigenlayer-contracts/src/contracts/core/SlashEscrowFactory.sol";
+import "eigenlayer-contracts/src/contracts/core/SlashEscrow.sol";
 import "eigenlayer-contracts/src/test/mocks/ETHDepositMock.sol";
 
 // Middleware contracts
@@ -62,6 +64,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     ETHPOSDepositMock ethPOSDeposit;
     AllocationManager public allocationManager;
     PermissionController permissionController;
+    SlashEscrowFactory slashEscrowFactory;
 
     // Base strategy implementation in case we want to create more strategies later
     StrategyBase baseStrategyImplementation;
@@ -188,8 +191,14 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             )
         );
 
+        slashEscrowFactory = SlashEscrowFactory(
+            address(
+                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
+            )
+        );
+
         // Deploy EigenPod Contracts
-        pod = new EigenPod(ethPOSDeposit, eigenPodManager, GENESIS_TIME_LOCAL, "v0.0.1");
+        pod = new EigenPod(ethPOSDeposit, eigenPodManager, "v0.0.1");
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
@@ -206,7 +215,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             "v0.0.1"
         );
         StrategyManager strategyManagerImplementation =
-            new StrategyManager(delegationManager, pauserRegistry, "v0.0.1");
+            new StrategyManager(delegationManager, slashEscrowFactory, pauserRegistry, "v0.0.1");
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit, eigenPodBeacon, delegationManager, pauserRegistry, "v0.0.1"
         );
@@ -238,6 +247,14 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             "v0.0.1" // Added config parameter
         );
 
+        // Deploy SlashEscrow implementation
+        SlashEscrow slashEscrowImpl = new SlashEscrow();
+
+        // Deploy SlashEscrowFactory implementation
+        SlashEscrowFactory slashEscrowFactoryImplementation = new SlashEscrowFactory(
+            allocationManager, strategyManager, pauserRegistry, slashEscrowImpl, "v0.0.1"
+        );
+
         // Third, upgrade the proxy contracts to point to the implementations
         uint256 minWithdrawalDelayBlocks = 7 days / 12 seconds;
         IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
@@ -247,9 +264,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             ITransparentUpgradeableProxy(payable(address(delegationManager))),
             address(delegationImplementation),
             abi.encodeWithSelector(
-                DelegationManager.initialize.selector,
-                eigenLayerReputedMultisig, // initialOwner
-                0 /* initialPausedStatus */
+                DelegationManager.initialize.selector, 0 /* initialPausedStatus */
             )
         );
         // StrategyManager
@@ -308,8 +323,19 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             address(allocationManagerImplementation),
             abi.encodeWithSelector(
                 AllocationManager.initialize.selector,
-                eigenLayerReputedMultisig, // initialOwner
                 0 // initialPausedStatus
+            )
+        );
+
+        // SlashEscrowFactory
+        proxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(payable(address(slashEscrowFactory))),
+            address(slashEscrowFactoryImplementation),
+            abi.encodeWithSelector(
+                SlashEscrowFactory.initialize.selector,
+                eigenLayerReputedMultisig, // initialOwner
+                0, // initialPausedStatus
+                7 days / 12 // initialGlobalDelayBlocks (7 days worth of blocks)
             )
         );
 
