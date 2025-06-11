@@ -18,9 +18,14 @@ import {
 } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
 import {SlashingLib} from "eigenlayer-contracts/src/contracts/libraries/SlashingLib.sol";
+import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
 contract DelegationIntermediate is IDelegationManager {
     function initialize(address initialOwner, uint256 initialPausedStatus) external virtual {}
+
+    function initialize(
+        uint256 initialPausedStatus
+    ) external virtual {}
 
     function registerAsOperator(
         OperatorDetails calldata registeringOperatorDetails,
@@ -240,6 +245,15 @@ contract DelegationIntermediate is IDelegationManager {
         uint64 newMaxMagnitude
     ) external {}
 
+    function slashOperatorShares(
+        address operator,
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
+        IStrategy strategy,
+        uint64 prevMaxMagnitude,
+        uint64 newMaxMagnitude
+    ) external virtual returns (uint256 totalDepositSharesToSlash) {}
+
     function getQueuedWithdrawal(
         bytes32 withdrawalRoot
     )
@@ -308,6 +322,10 @@ contract DelegationIntermediate is IDelegationManager {
 contract DelegationMock is DelegationIntermediate {
     mapping(address => bool) internal _isOperator;
     mapping(address => mapping(IStrategy => uint256)) internal _weightOf;
+
+    function initialize(
+        uint256 initialPausedStatus
+    ) external override {}
 
     function setOperatorShares(
         address operator,

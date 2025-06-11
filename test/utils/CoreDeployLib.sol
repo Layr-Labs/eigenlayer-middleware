@@ -43,6 +43,10 @@ import {IRewardsCoordinatorTypes} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 import {UpgradeableProxyLib} from "../unit/UpgradeableProxyLib.sol";
+import {SlashEscrowFactory} from "eigenlayer-contracts/src/contracts/core/SlashEscrowFactory.sol";
+import {SlashEscrow} from "eigenlayer-contracts/src/contracts/core/SlashEscrow.sol";
+import {ISlashEscrowFactory} from
+    "eigenlayer-contracts/src/contracts/interfaces/ISlashEscrowFactory.sol";
 
 library CoreDeployLib {
     using stdJson for string;
@@ -129,6 +133,7 @@ library CoreDeployLib {
         address strategyBeacon;
         address rewardsCoordinator;
         address permissionController;
+        address slashEscrowFactory;
     }
 
     function deployContracts(
@@ -158,6 +163,7 @@ library CoreDeployLib {
         proxies.strategyFactory = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         proxies.rewardsCoordinator = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         proxies.permissionController = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
+        proxies.slashEscrowFactory = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         return proxies;
     }
 
@@ -168,9 +174,24 @@ library CoreDeployLib {
         // Deploy core implementations
         address permissionControllerImpl = address(new PermissionController("1.0.0"));
 
+        // Deploy SlashEscrow implementation
+        SlashEscrow slashEscrowImpl = new SlashEscrow();
+
+        // Deploy SlashEscrowFactory implementation
+        address slashEscrowFactoryImpl = address(
+            new SlashEscrowFactory(
+                IAllocationManager(deployments.allocationManager),
+                IStrategyManager(deployments.strategyManager),
+                IPauserRegistry(deployments.pauserRegistry),
+                slashEscrowImpl,
+                "1.0.0"
+            )
+        );
+
         address strategyManagerImpl = address(
             new StrategyManager(
                 IDelegationManager(deployments.delegationManager),
+                ISlashEscrowFactory(deployments.slashEscrowFactory),
                 IPauserRegistry(deployments.pauserRegistry),
                 "1.0.0"
             )
@@ -223,16 +244,14 @@ library CoreDeployLib {
         );
 
         upgradeCall = abi.encodeCall(
-            DelegationManager.initialize,
-            (config.delegationManager.initialOwner, config.delegationManager.initPausedStatus)
+            DelegationManager.initialize, (config.delegationManager.initPausedStatus)
         );
         UpgradeableProxyLib.upgradeAndCall(
             deployments.delegationManager, delegationManagerImpl, upgradeCall
         );
 
         upgradeCall = abi.encodeCall(
-            AllocationManager.initialize,
-            (config.allocationManager.initialOwner, config.allocationManager.initPausedStatus)
+            AllocationManager.initialize, (config.allocationManager.initPausedStatus)
         );
         UpgradeableProxyLib.upgradeAndCall(
             deployments.allocationManager, allocationManagerImpl, upgradeCall
@@ -243,6 +262,19 @@ library CoreDeployLib {
             (config.avsDirectory.initialOwner, config.avsDirectory.initPausedStatus)
         );
         UpgradeableProxyLib.upgradeAndCall(deployments.avsDirectory, avsDirectoryImpl, upgradeCall);
+
+        // Upgrade and initialize SlashEscrowFactory
+        upgradeCall = abi.encodeCall(
+            SlashEscrowFactory.initialize,
+            (
+                config.avsDirectory.initialOwner, // Using same owner as other contracts
+                0, // initialPausedStatus
+                7 days / 12 // initialGlobalDelayBlocks (7 days worth of blocks)
+            )
+        );
+        UpgradeableProxyLib.upgradeAndCall(
+            deployments.slashEscrowFactory, slashEscrowFactoryImpl, upgradeCall
+        );
     }
 
     function deployAndConfigurePods(
@@ -262,9 +294,6 @@ library CoreDeployLib {
             new EigenPod(
                 IETHPOSDeposit(ethPOSDeposit),
                 IEigenPodManager(deployments.eigenPodManager),
-                config.eigenPod.genesisTimestamp == 0
-                    ? uint64(block.timestamp)
-                    : config.eigenPod.genesisTimestamp,
                 "1.0.0"
             )
         );
