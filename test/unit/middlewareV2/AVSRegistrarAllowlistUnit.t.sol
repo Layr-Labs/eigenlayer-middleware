@@ -6,7 +6,6 @@ import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyR
 import {AVSRegistrarWithAllowlist} from
     "src/middlewareV2/registrar/presets/AVSRegistrarWithAllowlist.sol";
 import {IAllowlistErrors, IAllowlistEvents} from "src/interfaces/IAllowlist.sol";
-import {TestArrayLib} from "test/utils/TestArrayLib.sol";
 
 contract AVSRegistrarWithAllowlistUnitTests is
     AVSRegistrarBase,
@@ -65,7 +64,7 @@ contract AVSRegistrarWithAllowlistUnitTests_initialize is AVSRegistrarWithAllowl
 contract AVSRegistrarWithAllowlistUnitTests_addOperatorToAllowlist is
     AVSRegistrarWithAllowlistUnitTests
 {
-    using TestArrayLib for *;
+    using ArrayLib for *;
 
     function testFuzz_revert_notOwner(
         address notOwner
@@ -123,7 +122,7 @@ contract AVSRegistrarWithAllowlistUnitTests_addOperatorToAllowlist is
 contract AVSRegistrarWithAllowlistUnitTests_removeOperatorFromAllowlist is
     AVSRegistrarWithAllowlistUnitTests
 {
-    using TestArrayLib for *;
+    using ArrayLib for *;
 
     function testFuzz_revert_notOwner(
         address notOwner
@@ -176,7 +175,7 @@ contract AVSRegistrarWithAllowlistUnitTests_removeOperatorFromAllowlist is
 contract AVSRegistrarAllowistUnitTest_getRegisteredOperators is
     AVSRegistrarWithAllowlistUnitTests
 {
-    using TestArrayLib for *;
+    using ArrayLib for *;
 
     function testFuzz_correctness(
         Randomness r
@@ -216,7 +215,7 @@ contract AVSRegistrarAllowistUnitTest_getRegisteredOperators is
 contract AVSRegistrarWithAllowlistUnitTests_registerOperator is
     AVSRegistrarWithAllowlistUnitTests
 {
-    using TestArrayLib for *;
+    using ArrayLib for *;
 
     function testFuzz_revert_notAllocationManager(
         address notAllocationManager
@@ -273,7 +272,7 @@ contract AVSRegistrarWithAllowlistUnitTests_registerOperator is
 contract AVSRegistrarWithAllowlistUnitTests_deregisterOperator is
     AVSRegistrarWithAllowlistUnitTests
 {
-    using TestArrayLib for *;
+    using ArrayLib for *;
 
     function testFuzz_revert_notAllocationManager(
         address notAllocationManager

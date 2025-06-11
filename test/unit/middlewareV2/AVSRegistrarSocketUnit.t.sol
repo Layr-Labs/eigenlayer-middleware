@@ -48,7 +48,7 @@ contract AVSRegistrarSocketUnitTests is
 }
 
 contract AVSRegistrarSocketUnitTests_registerOperator is AVSRegistrarSocketUnitTests {
-    using TestArrayLib for *;
+    using ArrayLib for *;
 
     function testFuzz_revert_notAllocationManager(
         address notAllocationManager
@@ -94,7 +94,7 @@ contract AVSRegistrarSocketUnitTests_registerOperator is AVSRegistrarSocketUnitT
 }
 
 contract AVSRegistrarSocketUnitTests_DeregisterOperator is AVSRegistrarSocketUnitTests {
-    using TestArrayLib for *;
+    using ArrayLib for *;
 
     function testFuzz_revert_notAllocationManager(
         address notAllocationManager
@@ -129,7 +129,7 @@ contract AVSRegistrarSocketUnitTests_DeregisterOperator is AVSRegistrarSocketUni
 }
 
 contract AVSRegistrarSocketUnitTests_updateSocket is AVSRegistrarSocketUnitTests {
-    using TestArrayLib for *;
+    using ArrayLib for *;
 
     function testFuzz_revert_notOperator(
         address notOperator
