@@ -13,7 +13,7 @@ import {
     OperatorSet,
     OperatorSetLib
 } from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
-import {ArrayLib} from "eigenlayer-contracts/src/test/utils/ArrayLib.sol";
+import {TestArrayLib} from "test/utils/TestArrayLib.sol";
 import "test/utils/Random.sol";
 
 abstract contract AVSRegistrarBase is

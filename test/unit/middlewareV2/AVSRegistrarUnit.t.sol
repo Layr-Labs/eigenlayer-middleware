@@ -25,7 +25,7 @@ contract AVSRegistrarUnitTests is AVSRegistrarBase {
 }
 
 contract AVSRegistrarUnitTests_RegisterOperator is AVSRegistrarUnitTests {
-    using ArrayLib for *;
+    using TestArrayLib for *;
 
     function testFuzz_revert_notAllocationManager(
         address notAllocationManager
@@ -60,7 +60,7 @@ contract AVSRegistrarUnitTests_RegisterOperator is AVSRegistrarUnitTests {
 }
 
 contract AVSRegistrarUnitTests_DeregisterOperator is AVSRegistrarUnitTests {
-    using ArrayLib for *;
+    using TestArrayLib for *;
 
     function testFuzz_revert_notAllocationManager(
         address notAllocationManager

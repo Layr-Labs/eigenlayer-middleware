@@ -53,9 +53,9 @@ contract KeyRegistrarMock is IKeyRegistrar {
         address operator
     ) external pure returns (bool) {}
 
-    function getOperatorSetConfig(
+    function getOperatorSetCurveType(
         OperatorSet memory operatorSet
-    ) external pure returns (OperatorSetConfig memory) {}
+    ) external pure returns (CurveType) {}
 
     function getBN254Key(
         OperatorSet memory operatorSet,
@@ -72,6 +72,17 @@ contract KeyRegistrarMock is IKeyRegistrar {
         OperatorSet memory operatorSet,
         address operator
     ) external pure returns (bytes memory) {}
+
+    /**
+     * @notice Gets the ECDSA public key for an operator with a specific operator set
+     * @param operatorSet The operator set to get the key for
+     * @param operator Address of the operator
+     * @return pubkey The ECDSA public key
+     */
+    function getECDSAAddress(
+        OperatorSet memory operatorSet,
+        address operator
+    ) external pure returns (address) {}
 
     function isKeyGloballyRegistered(
         bytes32 keyHash
