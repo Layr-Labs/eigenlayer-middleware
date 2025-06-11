@@ -13,7 +13,10 @@ import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVe
 contract AllocationManagerIntermediate is IAllocationManager {
     function initialize(address initialOwner, uint256 initialPausedStatus) external virtual {}
 
-    function slashOperator(address avs, SlashingParams calldata params) external virtual returns (uint256 slashId, uint256[] memory shares) {}
+    function slashOperator(
+        address avs,
+        SlashingParams calldata params
+    ) external virtual returns (uint256 slashId, uint256[] memory shares) {}
 
     function modifyAllocations(
         address operator,
@@ -183,31 +186,31 @@ contract AllocationManagerIntermediate is IAllocationManager {
     function version() external pure virtual returns (string memory) {
         return "v0.0.1";
     }
-    
+
     function DEALLOCATION_DELAY() external pure virtual returns (uint32) {}
-    
+
     function createRedistributingOperatorSets(
         address avs,
         CreateSetParams[] calldata params,
         address[] calldata redistributionRecipients
     ) external virtual {}
-    
+
     function getRedistributionRecipient(
         OperatorSet memory operatorSet
     ) external pure virtual returns (address) {}
-    
+
     function getSlashCount(
         OperatorSet memory operatorSet
     ) external pure virtual returns (uint256) {}
-    
+
     function initialize(
         uint256 initialPausedStatus
     ) external virtual {}
-    
+
     function isOperatorRedistributable(
         address operator
     ) external pure virtual returns (bool) {}
-    
+
     function isRedistributingOperatorSet(
         OperatorSet memory operatorSet
     ) external pure virtual returns (bool) {}
@@ -219,35 +222,35 @@ contract AllocationManagerMock is AllocationManagerIntermediate {
     function DEALLOCATION_DELAY() external pure override returns (uint32) {
         return _DEALLOCATION_DELAY;
     }
-    
+
     function createRedistributingOperatorSets(
         address avs,
         CreateSetParams[] calldata params,
         address[] calldata redistributionRecipients
     ) external override {}
-    
+
     function getRedistributionRecipient(
         OperatorSet memory operatorSet
     ) external pure override returns (address) {
         return address(0);
     }
-    
+
     function getSlashCount(
         OperatorSet memory operatorSet
     ) external pure override returns (uint256) {
         return 0;
     }
-    
+
     function initialize(
         uint256 initialPausedStatus
     ) external override {}
-    
+
     function isOperatorRedistributable(
         address operator
     ) external pure override returns (bool) {
         return false;
     }
-    
+
     function isRedistributingOperatorSet(
         OperatorSet memory operatorSet
     ) external pure override returns (bool) {

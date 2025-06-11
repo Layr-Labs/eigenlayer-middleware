@@ -171,7 +171,7 @@ library CoreDeployLib {
 
         // Deploy mock SlashEscrowFactory
         SlashEscrowFactoryMock slashEscrowFactory = new SlashEscrowFactoryMock();
-        
+
         address strategyManagerImpl = address(
             new StrategyManager(
                 IDelegationManager(deployments.delegationManager),
@@ -228,16 +228,14 @@ library CoreDeployLib {
         );
 
         upgradeCall = abi.encodeCall(
-            DelegationManager.initialize,
-            (config.delegationManager.initPausedStatus)
+            DelegationManager.initialize, (config.delegationManager.initPausedStatus)
         );
         UpgradeableProxyLib.upgradeAndCall(
             deployments.delegationManager, delegationManagerImpl, upgradeCall
         );
 
         upgradeCall = abi.encodeCall(
-            AllocationManager.initialize,
-            (config.allocationManager.initPausedStatus)
+            AllocationManager.initialize, (config.allocationManager.initPausedStatus)
         );
         UpgradeableProxyLib.upgradeAndCall(
             deployments.allocationManager, allocationManagerImpl, upgradeCall

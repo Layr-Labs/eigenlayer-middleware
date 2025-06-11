@@ -22,7 +22,7 @@ import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/Operator
 
 contract DelegationIntermediate is IDelegationManager {
     function initialize(address initialOwner, uint256 initialPausedStatus) external virtual {}
-    
+
     function initialize(
         uint256 initialPausedStatus
     ) external virtual {}
@@ -244,7 +244,7 @@ contract DelegationIntermediate is IDelegationManager {
         uint64 prevMaxMagnitude,
         uint64 newMaxMagnitude
     ) external {}
-    
+
     function slashOperatorShares(
         address operator,
         OperatorSet calldata operatorSet,
@@ -322,7 +322,7 @@ contract DelegationIntermediate is IDelegationManager {
 contract DelegationMock is DelegationIntermediate {
     mapping(address => bool) internal _isOperator;
     mapping(address => mapping(IStrategy => uint256)) internal _weightOf;
-    
+
     function initialize(
         uint256 initialPausedStatus
     ) external override {}

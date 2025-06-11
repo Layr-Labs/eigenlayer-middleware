@@ -250,8 +250,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             ITransparentUpgradeableProxy(payable(address(delegationManager))),
             address(delegationImplementation),
             abi.encodeWithSelector(
-                DelegationManager.initialize.selector,
-                0 /* initialPausedStatus */
+                DelegationManager.initialize.selector, 0 /* initialPausedStatus */
             )
         );
         // StrategyManager
