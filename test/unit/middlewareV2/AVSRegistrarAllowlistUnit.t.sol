@@ -279,6 +279,7 @@ contract AVSRegistrarWithAllowlistUnitTests_deregisterOperator is
         address notAllocationManager
     ) public {
         cheats.assume(notAllocationManager != address(allocationManagerMock));
+        cheats.assume(notAllocationManager != address(proxyAdmin));
 
         cheats.prank(notAllocationManager);
         cheats.expectRevert(NotAllocationManager.selector);

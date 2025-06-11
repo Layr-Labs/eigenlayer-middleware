@@ -31,6 +31,7 @@ contract AVSRegistrarUnitTests_RegisterOperator is AVSRegistrarUnitTests {
         address notAllocationManager
     ) public {
         cheats.assume(notAllocationManager != address(allocationManagerMock));
+        cheats.assume(notAllocationManager != address(proxyAdmin));
 
         cheats.prank(notAllocationManager);
         cheats.expectRevert(NotAllocationManager.selector);
@@ -66,6 +67,7 @@ contract AVSRegistrarUnitTests_DeregisterOperator is AVSRegistrarUnitTests {
         address notAllocationManager
     ) public {
         cheats.assume(notAllocationManager != address(allocationManagerMock));
+        cheats.assume(notAllocationManager != address(proxyAdmin));
 
         cheats.prank(notAllocationManager);
         cheats.expectRevert(NotAllocationManager.selector);

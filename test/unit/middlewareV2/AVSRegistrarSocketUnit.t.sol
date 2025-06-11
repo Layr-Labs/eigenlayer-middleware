@@ -136,6 +136,7 @@ contract AVSRegistrarSocketUnitTests_updateSocket is AVSRegistrarSocketUnitTests
     ) public {
         _registerOperator(defaultOperatorSetId.toArrayU32());
         cheats.assume(notOperator != defaultOperator);
+        cheats.assume(notOperator != address(proxyAdmin));
 
         cheats.prank(notOperator);
         cheats.expectRevert(CallerNotOperator.selector);

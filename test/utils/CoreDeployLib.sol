@@ -43,6 +43,7 @@ import {IRewardsCoordinatorTypes} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 import {UpgradeableProxyLib} from "../unit/UpgradeableProxyLib.sol";
+import {SlashEscrowFactoryMock} from "../mocks/SlashEscrowFactoryMock.sol";
 
 library CoreDeployLib {
     using stdJson for string;
@@ -168,9 +169,13 @@ library CoreDeployLib {
         // Deploy core implementations
         address permissionControllerImpl = address(new PermissionController("1.0.0"));
 
+        // Deploy mock SlashEscrowFactory
+        SlashEscrowFactoryMock slashEscrowFactory = new SlashEscrowFactoryMock();
+        
         address strategyManagerImpl = address(
             new StrategyManager(
                 IDelegationManager(deployments.delegationManager),
+                slashEscrowFactory,
                 IPauserRegistry(deployments.pauserRegistry),
                 "1.0.0"
             )
@@ -224,7 +229,7 @@ library CoreDeployLib {
 
         upgradeCall = abi.encodeCall(
             DelegationManager.initialize,
-            (config.delegationManager.initialOwner, config.delegationManager.initPausedStatus)
+            (config.delegationManager.initPausedStatus)
         );
         UpgradeableProxyLib.upgradeAndCall(
             deployments.delegationManager, delegationManagerImpl, upgradeCall
@@ -232,7 +237,7 @@ library CoreDeployLib {
 
         upgradeCall = abi.encodeCall(
             AllocationManager.initialize,
-            (config.allocationManager.initialOwner, config.allocationManager.initPausedStatus)
+            (config.allocationManager.initPausedStatus)
         );
         UpgradeableProxyLib.upgradeAndCall(
             deployments.allocationManager, allocationManagerImpl, upgradeCall
@@ -262,9 +267,6 @@ library CoreDeployLib {
             new EigenPod(
                 IETHPOSDeposit(ethPOSDeposit),
                 IEigenPodManager(deployments.eigenPodManager),
-                config.eigenPod.genesisTimestamp == 0
-                    ? uint64(block.timestamp)
-                    : config.eigenPod.genesisTimestamp,
                 "1.0.0"
             )
         );

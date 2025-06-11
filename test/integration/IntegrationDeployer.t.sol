@@ -41,6 +41,7 @@ import "../../src/libraries/BN254.sol";
 import "../../src/libraries/BitmapUtils.sol";
 
 import "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
+import "../mocks/SlashEscrowFactoryMock.sol";
 // import "../integration/mocks/ServiceManagerMock.t.sol";
 import "./User.t.sol";
 import "./OperatorSetUser.t.sol";
@@ -62,6 +63,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     ETHPOSDepositMock ethPOSDeposit;
     AllocationManager public allocationManager;
     PermissionController permissionController;
+    SlashEscrowFactoryMock slashEscrowFactory;
 
     // Base strategy implementation in case we want to create more strategies later
     StrategyBase baseStrategyImplementation;
@@ -144,6 +146,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         // Deploy mocks
         EmptyContract emptyContract = new EmptyContract();
         ethPOSDeposit = new ETHPOSDepositMock();
+        slashEscrowFactory = new SlashEscrowFactoryMock();
 
         /**
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
@@ -189,7 +192,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
 
         // Deploy EigenPod Contracts
-        pod = new EigenPod(ethPOSDeposit, eigenPodManager, GENESIS_TIME_LOCAL, "v0.0.1");
+        pod = new EigenPod(ethPOSDeposit, eigenPodManager, "v0.0.1");
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
@@ -206,7 +209,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             "v0.0.1"
         );
         StrategyManager strategyManagerImplementation =
-            new StrategyManager(delegationManager, pauserRegistry, "v0.0.1");
+            new StrategyManager(delegationManager, slashEscrowFactory, pauserRegistry, "v0.0.1");
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit, eigenPodBeacon, delegationManager, pauserRegistry, "v0.0.1"
         );
@@ -248,7 +251,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             address(delegationImplementation),
             abi.encodeWithSelector(
                 DelegationManager.initialize.selector,
-                eigenLayerReputedMultisig, // initialOwner
                 0 /* initialPausedStatus */
             )
         );
@@ -308,7 +310,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             address(allocationManagerImplementation),
             abi.encodeWithSelector(
                 AllocationManager.initialize.selector,
-                eigenLayerReputedMultisig, // initialOwner
                 0 // initialPausedStatus
             )
         );
