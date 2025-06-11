@@ -24,6 +24,8 @@ import "eigenlayer-contracts/src/contracts/pods/EigenPodManager.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPod.sol";
 import "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
+import "eigenlayer-contracts/src/contracts/core/SlashEscrowFactory.sol";
+import "eigenlayer-contracts/src/contracts/core/SlashEscrow.sol";
 import "eigenlayer-contracts/src/test/mocks/ETHDepositMock.sol";
 
 // Middleware contracts
@@ -41,7 +43,6 @@ import "../../src/libraries/BN254.sol";
 import "../../src/libraries/BitmapUtils.sol";
 
 import "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
-import "../mocks/SlashEscrowFactoryMock.sol";
 // import "../integration/mocks/ServiceManagerMock.t.sol";
 import "./User.t.sol";
 import "./OperatorSetUser.t.sol";
@@ -63,7 +64,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     ETHPOSDepositMock ethPOSDeposit;
     AllocationManager public allocationManager;
     PermissionController permissionController;
-    SlashEscrowFactoryMock slashEscrowFactory;
+    SlashEscrowFactory slashEscrowFactory;
 
     // Base strategy implementation in case we want to create more strategies later
     StrategyBase baseStrategyImplementation;
@@ -146,7 +147,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         // Deploy mocks
         EmptyContract emptyContract = new EmptyContract();
         ethPOSDeposit = new ETHPOSDepositMock();
-        slashEscrowFactory = new SlashEscrowFactoryMock();
 
         /**
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
@@ -186,6 +186,12 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
 
         rewardsCoordinator = RewardsCoordinator(
+            address(
+                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
+            )
+        );
+
+        slashEscrowFactory = SlashEscrowFactory(
             address(
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
@@ -239,6 +245,14 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             uint32(7 days), // DEALLOCATION_DELAY
             uint32(1 days), // ALLOCATION_CONFIGURATION_DELAY
             "v0.0.1" // Added config parameter
+        );
+
+        // Deploy SlashEscrow implementation
+        SlashEscrow slashEscrowImpl = new SlashEscrow();
+
+        // Deploy SlashEscrowFactory implementation
+        SlashEscrowFactory slashEscrowFactoryImplementation = new SlashEscrowFactory(
+            allocationManager, strategyManager, pauserRegistry, slashEscrowImpl, "v0.0.1"
         );
 
         // Third, upgrade the proxy contracts to point to the implementations
@@ -310,6 +324,18 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             abi.encodeWithSelector(
                 AllocationManager.initialize.selector,
                 0 // initialPausedStatus
+            )
+        );
+
+        // SlashEscrowFactory
+        proxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(payable(address(slashEscrowFactory))),
+            address(slashEscrowFactoryImplementation),
+            abi.encodeWithSelector(
+                SlashEscrowFactory.initialize.selector,
+                eigenLayerReputedMultisig, // initialOwner
+                0, // initialPausedStatus
+                7 days / 12 // initialGlobalDelayBlocks (7 days worth of blocks)
             )
         );
 
