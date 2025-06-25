@@ -155,7 +155,7 @@ contract AllocationManagerIntermediate is IAllocationManager {
     ) external view virtual returns (bool) {}
 
     function getAllocatedStake(
-        OperatorSet memory /* operatorSet */,
+        OperatorSet memory, /* operatorSet */
         address[] memory operators,
         IStrategy[] memory strategies
     ) external view virtual returns (uint256[][] memory slashableStake) {
@@ -170,14 +170,14 @@ contract AllocationManagerIntermediate is IAllocationManager {
     }
 
     function getEncumberedMagnitude(
-        address /* operator */,
+        address, /* operator */
         IStrategy /* strategy */
     ) external view virtual returns (uint64) {
         return 0;
     }
 
     function isOperatorSlashable(
-        address /* operator */,
+        address, /* operator */
         OperatorSet memory /* operatorSet */
     ) external view virtual returns (bool) {
         return false;
@@ -258,7 +258,7 @@ contract AllocationManagerMock is AllocationManagerIntermediate {
     }
 
     function getAllocatedStake(
-        address /* operator */,
+        address, /* operator */
         IStrategy /* strategy */
     ) external pure returns (uint256) {
         return 0;
