@@ -126,7 +126,7 @@ contract AVSRegistrarWithAllowlistUnitTests_removeOperatorFromAllowlist is
 
     function testFuzz_revert_notOwner(
         address notOwner
-    ) public {
+    ) public view {
         cheats.assume(notOwner != allowlistAdmin);
     }
 

@@ -155,7 +155,7 @@ contract AllocationManagerIntermediate is IAllocationManager {
     ) external view virtual returns (bool) {}
 
     function getAllocatedStake(
-        OperatorSet memory operatorSet,
+        OperatorSet memory, /* operatorSet */
         address[] memory operators,
         IStrategy[] memory strategies
     ) external view virtual returns (uint256[][] memory slashableStake) {
@@ -170,15 +170,15 @@ contract AllocationManagerIntermediate is IAllocationManager {
     }
 
     function getEncumberedMagnitude(
-        address operator,
-        IStrategy strategy
+        address, /* operator */
+        IStrategy /* strategy */
     ) external view virtual returns (uint64) {
         return 0;
     }
 
     function isOperatorSlashable(
-        address operator,
-        OperatorSet memory operatorSet
+        address, /* operator */
+        OperatorSet memory /* operatorSet */
     ) external view virtual returns (bool) {
         return false;
     }
@@ -230,13 +230,13 @@ contract AllocationManagerMock is AllocationManagerIntermediate {
     ) external override {}
 
     function getRedistributionRecipient(
-        OperatorSet memory operatorSet
+        OperatorSet memory /* operatorSet */
     ) external pure override returns (address) {
         return address(0);
     }
 
     function getSlashCount(
-        OperatorSet memory operatorSet
+        OperatorSet memory /* operatorSet */
     ) external pure override returns (uint256) {
         return 0;
     }
@@ -246,21 +246,21 @@ contract AllocationManagerMock is AllocationManagerIntermediate {
     ) external override {}
 
     function isOperatorRedistributable(
-        address operator
+        address /* operator */
     ) external pure override returns (bool) {
         return false;
     }
 
     function isRedistributingOperatorSet(
-        OperatorSet memory operatorSet
+        OperatorSet memory /* operatorSet */
     ) external pure override returns (bool) {
         return false;
     }
 
     function getAllocatedStake(
-        address operator,
-        IStrategy strategy
-    ) external view returns (uint256) {
+        address, /* operator */
+        IStrategy /* strategy */
+    ) external pure returns (uint256) {
         return 0;
     }
 }
