@@ -104,6 +104,29 @@ contract KeyRegistrarMock is IKeyRegistrar {
         return "v0.0.1";
     }
 
+    function getECDSAKeyRegistrationMessageHash(
+        address operator,
+        OperatorSet memory operatorSet,
+        address keyAddress
+    ) external pure returns (bytes32) {
+        return keccak256(abi.encode(operator, operatorSet, keyAddress));
+    }
+
+    function getBN254KeyRegistrationMessageHash(
+        address operator,
+        OperatorSet memory operatorSet,
+        bytes calldata keyData
+    ) external pure returns (bytes32) {
+        return keccak256(abi.encode(operator, operatorSet, keyData));
+    }
+
+    function encodeBN254KeyData(
+        BN254.G1Point memory g1Point,
+        BN254.G2Point memory g2Point
+    ) external pure returns (bytes memory) {
+        return abi.encode(g1Point, g2Point);
+    }
+
     receive() external payable {}
     fallback() external payable {}
 }

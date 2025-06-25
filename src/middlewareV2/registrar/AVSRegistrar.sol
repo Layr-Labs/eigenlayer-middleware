@@ -37,7 +37,7 @@ contract AVSRegistrar is Initializable, AVSRegistrarStorage {
     /// @inheritdoc IAVSRegistrar
     function registerOperator(
         address operator,
-        address avs,
+        address /* avs */,
         uint32[] calldata operatorSetIds,
         bytes calldata data
     ) external virtual onlyAllocationManager {
@@ -54,7 +54,7 @@ contract AVSRegistrar is Initializable, AVSRegistrarStorage {
     /// @inheritdoc IAVSRegistrar
     function deregisterOperator(
         address operator,
-        address avs,
+        address /* avs */,
         uint32[] calldata operatorSetIds
     ) external virtual onlyAllocationManager {
         _beforeDeregisterOperator(operator, operatorSetIds);
@@ -83,7 +83,7 @@ contract AVSRegistrar is Initializable, AVSRegistrarStorage {
      * @param operatorSetIds The operator sets to validate
      * @dev This function assumes the operator has already registered a key in the Key Registrar
      */
-    function _validateOperatorKeys(address operator, uint32[] calldata operatorSetIds) internal {
+    function _validateOperatorKeys(address operator, uint32[] calldata operatorSetIds) internal view {
         for (uint32 i = 0; i < operatorSetIds.length; i++) {
             OperatorSet memory operatorSet = OperatorSet({avs: avs, id: operatorSetIds[i]});
             require(keyRegistrar.checkKey(operatorSet, operator), KeyNotRegistered());
