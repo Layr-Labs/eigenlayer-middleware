@@ -12,6 +12,7 @@ import "./ECDSATableCalculatorBase.sol";
 /**
  * @title ECDSATableCalculator
  * @notice Implementation that calculates ECDSA operator tables using the sum of the minimum slashable stake weights
+ * @dev This contract assumes that slashable stake is values the **same** across all strategies.
  */
 contract ECDSATableCalculator is ECDSATableCalculatorBase {
     // Immutables
