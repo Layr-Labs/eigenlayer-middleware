@@ -2,7 +2,10 @@
 pragma solidity >=0.5.0;
 
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
-import {IOperatorTableCalculator, IOperatorTableCalculatorTypes} from "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
+import {
+    IOperatorTableCalculator,
+    IOperatorTableCalculatorTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
 
 interface IBN254TableCalculator is IOperatorTableCalculator, IOperatorTableCalculatorTypes {
     /**
