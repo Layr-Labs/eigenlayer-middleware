@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {KeyRegistrar, IKeyRegistrarTypes} from "eigenlayer-contracts/src/contracts/permissions/KeyRegistrar.sol";
+import {
+    KeyRegistrar,
+    IKeyRegistrarTypes
+} from "eigenlayer-contracts/src/contracts/permissions/KeyRegistrar.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
-import {IOperatorTableCalculatorTypes} from "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
+import {IOperatorTableCalculatorTypes} from
+    "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
 import {IBN254TableCalculator} from "../../../src/interfaces/IBN254TableCalculator.sol";
 import {
     OperatorSet,
@@ -11,7 +15,8 @@ import {
 } from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 import {BN254} from "eigenlayer-contracts/src/contracts/libraries/BN254.sol";
 
-import {BN254TableCalculatorBase} from "../../../src/middlewareV2/tableCalculator/BN254TableCalculatorBase.sol";
+import {BN254TableCalculatorBase} from
+    "../../../src/middlewareV2/tableCalculator/BN254TableCalculatorBase.sol";
 import {MockEigenLayerDeployer} from "./MockDeployer.sol";
 import "test/utils/Random.sol";
 
@@ -19,22 +24,25 @@ import "test/utils/Random.sol";
 contract BN254TableCalculatorBaseHarness is BN254TableCalculatorBase {
     // Storage for mock weights
     mapping(bytes32 => address[]) internal _mockOperators;
-    mapping(bytes32 => uint[][]) internal _mockWeights;
+    mapping(bytes32 => uint256[][]) internal _mockWeights;
 
-    constructor(IKeyRegistrar _keyRegistrar) BN254TableCalculatorBase(_keyRegistrar) {}
+    constructor(
+        IKeyRegistrar _keyRegistrar
+    ) BN254TableCalculatorBase(_keyRegistrar) {}
 
-    function setMockOperatorWeights(OperatorSet calldata operatorSet, address[] memory operators, uint[][] memory weights) external {
+    function setMockOperatorWeights(
+        OperatorSet calldata operatorSet,
+        address[] memory operators,
+        uint256[][] memory weights
+    ) external {
         bytes32 key = operatorSet.key();
         _mockOperators[key] = operators;
         _mockWeights[key] = weights;
     }
 
-    function _getOperatorWeights(OperatorSet calldata operatorSet)
-        internal
-        view
-        override
-        returns (address[] memory operators, uint[][] memory weights)
-    {
+    function _getOperatorWeights(
+        OperatorSet calldata operatorSet
+    ) internal view override returns (address[] memory operators, uint256[][] memory weights) {
         bytes32 key = operatorSet.key();
         operators = _mockOperators[key];
         weights = _mockWeights[key];
@@ -45,7 +53,11 @@ contract BN254TableCalculatorBaseHarness is BN254TableCalculatorBase {
  * @title BN254TableCalculatorBaseUnitTests
  * @notice Base contract for all BN254TableCalculatorBase unit tests
  */
-contract BN254TableCalculatorBaseUnitTests is MockEigenLayerDeployer, IOperatorTableCalculatorTypes, IKeyRegistrarTypes {
+contract BN254TableCalculatorBaseUnitTests is
+    MockEigenLayerDeployer,
+    IOperatorTableCalculatorTypes,
+    IKeyRegistrarTypes
+{
     using BN254 for BN254.G1Point;
     using OperatorSetLib for OperatorSet;
 
@@ -64,9 +76,9 @@ contract BN254TableCalculatorBaseUnitTests is MockEigenLayerDeployer, IOperatorT
     OperatorSet alternativeOperatorSet;
 
     // BN254 test keys
-    uint constant BN254_PRIV_KEY_1 = 69;
-    uint constant BN254_PRIV_KEY_2 = 123;
-    uint constant BN254_PRIV_KEY_3 = 456;
+    uint256 constant BN254_PRIV_KEY_1 = 69;
+    uint256 constant BN254_PRIV_KEY_2 = 123;
+    uint256 constant BN254_PRIV_KEY_3 = 456;
 
     BN254.G1Point bn254G1Key1;
     BN254.G1Point bn254G1Key2;
@@ -90,15 +102,23 @@ contract BN254TableCalculatorBaseUnitTests is MockEigenLayerDeployer, IOperatorT
         bn254G1Key2 = BN254.generatorG1().scalar_mul(BN254_PRIV_KEY_2);
 
         // Valid G2 points that correspond to the private keys
-        bn254G2Key1.X[1] = 19_101_821_850_089_705_274_637_533_855_249_918_363_070_101_489_527_618_151_493_230_256_975_900_223_847;
-        bn254G2Key1.X[0] = 5_334_410_886_741_819_556_325_359_147_377_682_006_012_228_123_419_628_681_352_847_439_302_316_235_957;
-        bn254G2Key1.Y[1] = 354_176_189_041_917_478_648_604_979_334_478_067_325_821_134_838_555_150_300_539_079_146_482_658_331;
-        bn254G2Key1.Y[0] = 4_185_483_097_059_047_421_902_184_823_581_361_466_320_657_066_600_218_863_748_375_739_772_335_928_910;
+        bn254G2Key1.X[1] =
+            19101821850089705274637533855249918363070101489527618151493230256975900223847;
+        bn254G2Key1.X[0] =
+            5334410886741819556325359147377682006012228123419628681352847439302316235957;
+        bn254G2Key1.Y[1] =
+            354176189041917478648604979334478067325821134838555150300539079146482658331;
+        bn254G2Key1.Y[0] =
+            4185483097059047421902184823581361466320657066600218863748375739772335928910;
 
-        bn254G2Key2.X[1] = 19_276_105_129_625_393_659_655_050_515_259_006_463_014_579_919_681_138_299_520_812_914_148_935_621_072;
-        bn254G2Key2.X[0] = 14_066_454_060_412_929_535_985_836_631_817_650_877_381_034_334_390_275_410_072_431_082_437_297_539_867;
-        bn254G2Key2.Y[1] = 12_642_665_914_920_339_463_975_152_321_804_664_028_480_770_144_655_934_937_445_922_690_262_428_344_269;
-        bn254G2Key2.Y[0] = 10_109_651_107_942_685_361_120_988_628_892_759_706_059_655_669_161_016_107_907_096_760_613_704_453_218;
+        bn254G2Key2.X[1] =
+            19276105129625393659655050515259006463014579919681138299520812914148935621072;
+        bn254G2Key2.X[0] =
+            14066454060412929535985836631817650877381034334390275410072431082437297539867;
+        bn254G2Key2.Y[1] =
+            12642665914920339463975152321804664028480770144655934937445922690262428344269;
+        bn254G2Key2.Y[0] =
+            10109651107942685361120988628892759706059655669161016107907096760613704453218;
 
         // Configure operator sets in AllocationManager
         allocationManagerMock.setAVSRegistrar(avs1, avs1);
@@ -109,7 +129,9 @@ contract BN254TableCalculatorBaseUnitTests is MockEigenLayerDeployer, IOperatorT
         keyRegistrar.configureOperatorSet(defaultOperatorSet, IKeyRegistrarTypes.CurveType.BN254);
 
         vm.prank(avs2);
-        keyRegistrar.configureOperatorSet(alternativeOperatorSet, IKeyRegistrarTypes.CurveType.BN254);
+        keyRegistrar.configureOperatorSet(
+            alternativeOperatorSet, IKeyRegistrarTypes.CurveType.BN254
+        );
     }
 
     // Helper functions
@@ -118,7 +140,7 @@ contract BN254TableCalculatorBaseUnitTests is MockEigenLayerDeployer, IOperatorT
         OperatorSet memory operatorSet,
         BN254.G1Point memory g1Key,
         BN254.G2Point memory g2Key,
-        uint privKey
+        uint256 privKey
     ) internal {
         bytes memory pubkey = abi.encode(g1Key.X, g1Key.Y, g2Key.X, g2Key.Y);
         bytes memory signature = _generateBN254Signature(operator, operatorSet, pubkey, privKey);
@@ -127,13 +149,20 @@ contract BN254TableCalculatorBaseUnitTests is MockEigenLayerDeployer, IOperatorT
         keyRegistrar.registerKey(operator, operatorSet, pubkey, signature);
     }
 
-    function _generateBN254Signature(address operator, OperatorSet memory operatorSet, bytes memory pubkey, uint privKey)
-        internal
-        view
-        returns (bytes memory)
-    {
+    function _generateBN254Signature(
+        address operator,
+        OperatorSet memory operatorSet,
+        bytes memory pubkey,
+        uint256 privKey
+    ) internal view returns (bytes memory) {
         bytes32 structHash = keccak256(
-            abi.encode(keyRegistrar.BN254_KEY_REGISTRATION_TYPEHASH(), operator, operatorSet.avs, operatorSet.id, keccak256(pubkey))
+            abi.encode(
+                keyRegistrar.BN254_KEY_REGISTRATION_TYPEHASH(),
+                operator,
+                operatorSet.avs,
+                operatorSet.id,
+                keccak256(pubkey)
+            )
         );
         bytes32 messageHash = keyRegistrar.domainSeparator();
         messageHash = keccak256(abi.encodePacked("\x19\x01", messageHash, structHash));
@@ -144,20 +173,27 @@ contract BN254TableCalculatorBaseUnitTests is MockEigenLayerDeployer, IOperatorT
         return abi.encode(signature.X, signature.Y);
     }
 
-    function _createSingleWeightArray(uint weight) internal pure returns (uint[][] memory) {
-        uint[][] memory weights = new uint[][](1);
-        weights[0] = new uint[](1);
+    function _createSingleWeightArray(
+        uint256 weight
+    ) internal pure returns (uint256[][] memory) {
+        uint256[][] memory weights = new uint256[][](1);
+        weights[0] = new uint256[](1);
         weights[0][0] = weight;
         return weights;
     }
 
-    function _createMultiWeightArray(uint[] memory weightValues) internal pure returns (uint[][] memory) {
-        uint[][] memory weights = new uint[][](1);
+    function _createMultiWeightArray(
+        uint256[] memory weightValues
+    ) internal pure returns (uint256[][] memory) {
+        uint256[][] memory weights = new uint256[][](1);
         weights[0] = weightValues;
         return weights;
     }
 
-    function _addG1Points(BN254.G1Point memory p1, BN254.G1Point memory p2) internal view returns (BN254.G1Point memory) {
+    function _addG1Points(
+        BN254.G1Point memory p1,
+        BN254.G1Point memory p2
+    ) internal view returns (BN254.G1Point memory) {
         if (p1.X == 0 && p1.Y == 0) return p2;
         if (p2.X == 0 && p2.Y == 0) return p1;
         return BN254.plus(p1, p2);
@@ -168,11 +204,13 @@ contract BN254TableCalculatorBaseUnitTests is MockEigenLayerDeployer, IOperatorT
  * @title BN254TableCalculatorBaseUnitTests_calculateOperatorTable
  * @notice Unit tests for BN254TableCalculatorBase.calculateOperatorTable
  */
-contract BN254TableCalculatorBaseUnitTests_calculateOperatorTable is BN254TableCalculatorBaseUnitTests {
+contract BN254TableCalculatorBaseUnitTests_calculateOperatorTable is
+    BN254TableCalculatorBaseUnitTests
+{
     function test_noOperators() public {
         // Set empty operators and weights
         address[] memory operators = new address[](0);
-        uint[][] memory weights = new uint[][](0);
+        uint256[][] memory weights = new uint256[][](0);
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
         BN254OperatorSetInfo memory info = calculator.calculateOperatorTable(defaultOperatorSet);
@@ -189,7 +227,7 @@ contract BN254TableCalculatorBaseUnitTests_calculateOperatorTable is BN254TableC
         operators[0] = operator1;
         operators[1] = operator2;
 
-        uint[][] memory weights = new uint[][](2);
+        uint256[][] memory weights = new uint256[][](2);
         weights[0] = _createSingleWeightArray(100)[0];
         weights[1] = _createSingleWeightArray(200)[0];
 
@@ -199,7 +237,11 @@ contract BN254TableCalculatorBaseUnitTests_calculateOperatorTable is BN254TableC
 
         // When no operators have registered keys, operatorCount should be 0 and return empty table
         assertEq(info.numOperators, 0, "Should have 0 operators when none are registered");
-        assertEq(info.totalWeights.length, 0, "Should have empty total weights when no operators registered");
+        assertEq(
+            info.totalWeights.length,
+            0,
+            "Should have empty total weights when no operators registered"
+        );
         assertEq(info.operatorInfoTreeRoot, bytes32(0), "Should have zero tree root");
         assertEq(info.aggregatePubkey.X, 0, "Aggregate pubkey X should be 0");
         assertEq(info.aggregatePubkey.Y, 0, "Aggregate pubkey Y should be 0");
@@ -207,15 +249,19 @@ contract BN254TableCalculatorBaseUnitTests_calculateOperatorTable is BN254TableC
 
     function test_allOperatorsRegistered() public {
         // Register operators
-        _registerOperatorKey(operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1);
-        _registerOperatorKey(operator2, defaultOperatorSet, bn254G1Key2, bn254G2Key2, BN254_PRIV_KEY_2);
+        _registerOperatorKey(
+            operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1
+        );
+        _registerOperatorKey(
+            operator2, defaultOperatorSet, bn254G1Key2, bn254G2Key2, BN254_PRIV_KEY_2
+        );
 
         // Set operators and weights
         address[] memory operators = new address[](2);
         operators[0] = operator1;
         operators[1] = operator2;
 
-        uint[][] memory weights = new uint[][](2);
+        uint256[][] memory weights = new uint256[][](2);
         weights[0] = _createSingleWeightArray(100)[0];
         weights[1] = _createSingleWeightArray(200)[0];
 
@@ -235,22 +281,26 @@ contract BN254TableCalculatorBaseUnitTests_calculateOperatorTable is BN254TableC
 
     function test_multipleWeightTypes() public {
         // Register operators
-        _registerOperatorKey(operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1);
-        _registerOperatorKey(operator2, defaultOperatorSet, bn254G1Key2, bn254G2Key2, BN254_PRIV_KEY_2);
+        _registerOperatorKey(
+            operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1
+        );
+        _registerOperatorKey(
+            operator2, defaultOperatorSet, bn254G1Key2, bn254G2Key2, BN254_PRIV_KEY_2
+        );
 
         // Set operators and weights with multiple types
         address[] memory operators = new address[](2);
         operators[0] = operator1;
         operators[1] = operator2;
 
-        uint[][] memory weights = new uint[][](2);
-        uint[] memory op1Weights = new uint[](3);
+        uint256[][] memory weights = new uint256[][](2);
+        uint256[] memory op1Weights = new uint256[](3);
         op1Weights[0] = 100;
         op1Weights[1] = 150;
         op1Weights[2] = 50;
         weights[0] = op1Weights;
 
-        uint[] memory op2Weights = new uint[](3);
+        uint256[] memory op2Weights = new uint256[](3);
         op2Weights[0] = 200;
         op2Weights[1] = 250;
         op2Weights[2] = 100;
@@ -268,7 +318,9 @@ contract BN254TableCalculatorBaseUnitTests_calculateOperatorTable is BN254TableC
 
     function test_mixedRegistrationStatus() public {
         // Register only operator1
-        _registerOperatorKey(operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1);
+        _registerOperatorKey(
+            operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1
+        );
 
         // Set operators and weights
         address[] memory operators = new address[](3);
@@ -276,7 +328,7 @@ contract BN254TableCalculatorBaseUnitTests_calculateOperatorTable is BN254TableC
         operators[1] = operator2; // not registered
         operators[2] = operator3; // not registered
 
-        uint[][] memory weights = new uint[][](3);
+        uint256[][] memory weights = new uint256[][](3);
         weights[0] = _createSingleWeightArray(100)[0];
         weights[1] = _createSingleWeightArray(200)[0];
         weights[2] = _createSingleWeightArray(300)[0];
@@ -297,10 +349,12 @@ contract BN254TableCalculatorBaseUnitTests_calculateOperatorTable is BN254TableC
 
         address[] memory operators = new address[](1);
         operators[0] = newOperator;
-        uint[][] memory weights = new uint[][](1);
+        uint256[][] memory weights = new uint256[][](1);
         weights[0] = _createSingleWeightArray(100)[0];
 
-        _registerOperatorKey(newOperator, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1);
+        _registerOperatorKey(
+            newOperator, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1
+        );
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
         BN254OperatorSetInfo memory info = calculator.calculateOperatorTable(defaultOperatorSet);
@@ -312,14 +366,16 @@ contract BN254TableCalculatorBaseUnitTests_calculateOperatorTable is BN254TableC
 
     function test_subsetOfOperatorsRegistered() public {
         // Register operator1 and operator3, but not operator2
-        _registerOperatorKey(operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1);
+        _registerOperatorKey(
+            operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1
+        );
 
         // Set operators and weights
         address[] memory operators = new address[](3);
         operators[0] = operator1; // registered
         operators[1] = operator2; // not registered
 
-        uint[][] memory weights = new uint[][](3);
+        uint256[][] memory weights = new uint256[][](3);
         weights[0] = _createSingleWeightArray(100)[0];
         weights[1] = _createSingleWeightArray(200)[0]; // This weight won't be included
 
@@ -346,7 +402,7 @@ contract BN254TableCalculatorBaseUnitTests_calculateOperatorTable is BN254TableC
         operators[1] = operator2;
         operators[2] = operator3;
 
-        uint[][] memory weights = new uint[][](3);
+        uint256[][] memory weights = new uint256[][](3);
         weights[0] = _createSingleWeightArray(100)[0];
         weights[1] = _createSingleWeightArray(200)[0];
         weights[2] = _createSingleWeightArray(300)[0];
@@ -369,15 +425,19 @@ contract BN254TableCalculatorBaseUnitTests_calculateOperatorTable is BN254TableC
  * @title BN254TableCalculatorBaseUnitTests_calculateOperatorTableBytes
  * @notice Unit tests for BN254TableCalculatorBase.calculateOperatorTableBytes
  */
-contract BN254TableCalculatorBaseUnitTests_calculateOperatorTableBytes is BN254TableCalculatorBaseUnitTests {
+contract BN254TableCalculatorBaseUnitTests_calculateOperatorTableBytes is
+    BN254TableCalculatorBaseUnitTests
+{
     function test_encodesCorrectly() public {
         // Register operator
-        _registerOperatorKey(operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1);
+        _registerOperatorKey(
+            operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1
+        );
 
         // Set operators and weights
         address[] memory operators = new address[](1);
         operators[0] = operator1;
-        uint[][] memory weights = _createSingleWeightArray(100);
+        uint256[][] memory weights = _createSingleWeightArray(100);
 
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
@@ -392,16 +452,20 @@ contract BN254TableCalculatorBaseUnitTests_calculateOperatorTableBytes is BN254T
         assertEq(decodedInfo.aggregatePubkey.Y, bn254G1Key1.Y, "Aggregate pubkey Y mismatch");
     }
 
-    function testFuzz_encodesCorrectly(uint weight) public {
+    function testFuzz_encodesCorrectly(
+        uint256 weight
+    ) public {
         weight = bound(weight, 1, 1e18);
 
         // Register operator
-        _registerOperatorKey(operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1);
+        _registerOperatorKey(
+            operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1
+        );
 
         // Set operators and weights
         address[] memory operators = new address[](1);
         operators[0] = operator1;
-        uint[][] memory weights = _createSingleWeightArray(weight);
+        uint256[][] memory weights = _createSingleWeightArray(weight);
 
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
@@ -418,44 +482,50 @@ contract BN254TableCalculatorBaseUnitTests_calculateOperatorTableBytes is BN254T
  * @title BN254TableCalculatorBaseUnitTests_getOperatorWeights
  * @notice Unit tests for BN254TableCalculatorBase.getOperatorWeights
  */
-contract BN254TableCalculatorBaseUnitTests_getOperatorWeights is BN254TableCalculatorBaseUnitTests {
+contract BN254TableCalculatorBaseUnitTests_getOperatorWeights is
+    BN254TableCalculatorBaseUnitTests
+{
     function test_returnsImplementationResult() public {
         // Set mock weights
         address[] memory expectedOperators = new address[](2);
         expectedOperators[0] = operator1;
         expectedOperators[1] = operator2;
 
-        uint[][] memory expectedWeights = new uint[][](2);
+        uint256[][] memory expectedWeights = new uint256[][](2);
         expectedWeights[0] = _createSingleWeightArray(100)[0];
         expectedWeights[1] = _createSingleWeightArray(200)[0];
 
         calculator.setMockOperatorWeights(defaultOperatorSet, expectedOperators, expectedWeights);
 
-        (address[] memory operators, uint[][] memory weights) = calculator.getOperatorWeights(defaultOperatorSet);
+        (address[] memory operators, uint256[][] memory weights) =
+            calculator.getOperatorWeights(defaultOperatorSet);
 
         assertEq(operators.length, expectedOperators.length, "Operators length mismatch");
         assertEq(weights.length, expectedWeights.length, "Weights length mismatch");
 
-        for (uint i = 0; i < operators.length; i++) {
+        for (uint256 i = 0; i < operators.length; i++) {
             assertEq(operators[i], expectedOperators[i], "Operator address mismatch");
             assertEq(weights[i][0], expectedWeights[i][0], "Weight value mismatch");
         }
     }
 
-    function testFuzz_returnsImplementationResult(uint8 numOperators) public {
+    function testFuzz_returnsImplementationResult(
+        uint8 numOperators
+    ) public {
         numOperators = uint8(bound(numOperators, 0, 20));
 
         address[] memory expectedOperators = new address[](numOperators);
-        uint[][] memory expectedWeights = new uint[][](numOperators);
+        uint256[][] memory expectedWeights = new uint256[][](numOperators);
 
-        for (uint i = 0; i < numOperators; i++) {
+        for (uint256 i = 0; i < numOperators; i++) {
             expectedOperators[i] = address(uint160(i + 100));
             expectedWeights[i] = _createSingleWeightArray((i + 1) * 100)[0];
         }
 
         calculator.setMockOperatorWeights(defaultOperatorSet, expectedOperators, expectedWeights);
 
-        (address[] memory operators, uint[][] memory weights) = calculator.getOperatorWeights(defaultOperatorSet);
+        (address[] memory operators, uint256[][] memory weights) =
+            calculator.getOperatorWeights(defaultOperatorSet);
 
         assertEq(operators.length, numOperators, "Operators length mismatch");
         assertEq(weights.length, numOperators, "Weights length mismatch");
@@ -466,7 +536,9 @@ contract BN254TableCalculatorBaseUnitTests_getOperatorWeights is BN254TableCalcu
  * @title BN254TableCalculatorBaseUnitTests_getOperatorWeight
  * @notice Unit tests for BN254TableCalculatorBase.getOperatorWeight
  */
-contract BN254TableCalculatorBaseUnitTests_getOperatorWeight is BN254TableCalculatorBaseUnitTests {
+contract BN254TableCalculatorBaseUnitTests_getOperatorWeight is
+    BN254TableCalculatorBaseUnitTests
+{
     function test_operatorExists() public {
         // Set operators and weights
         address[] memory operators = new address[](3);
@@ -474,16 +546,28 @@ contract BN254TableCalculatorBaseUnitTests_getOperatorWeight is BN254TableCalcul
         operators[1] = operator2;
         operators[2] = operator3;
 
-        uint[][] memory weights = new uint[][](3);
+        uint256[][] memory weights = new uint256[][](3);
         weights[0] = _createSingleWeightArray(100)[0];
         weights[1] = _createSingleWeightArray(200)[0];
         weights[2] = _createSingleWeightArray(300)[0];
 
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
-        assertEq(calculator.getOperatorWeight(defaultOperatorSet, operator1), 100, "Operator1 weight mismatch");
-        assertEq(calculator.getOperatorWeight(defaultOperatorSet, operator2), 200, "Operator2 weight mismatch");
-        assertEq(calculator.getOperatorWeight(defaultOperatorSet, operator3), 300, "Operator3 weight mismatch");
+        assertEq(
+            calculator.getOperatorWeight(defaultOperatorSet, operator1),
+            100,
+            "Operator1 weight mismatch"
+        );
+        assertEq(
+            calculator.getOperatorWeight(defaultOperatorSet, operator2),
+            200,
+            "Operator2 weight mismatch"
+        );
+        assertEq(
+            calculator.getOperatorWeight(defaultOperatorSet, operator3),
+            300,
+            "Operator3 weight mismatch"
+        );
     }
 
     function test_operatorDoesNotExist() public {
@@ -492,42 +576,60 @@ contract BN254TableCalculatorBaseUnitTests_getOperatorWeight is BN254TableCalcul
         operators[0] = operator1;
         operators[1] = operator2;
 
-        uint[][] memory weights = new uint[][](2);
+        uint256[][] memory weights = new uint256[][](2);
         weights[0] = _createSingleWeightArray(100)[0];
         weights[1] = _createSingleWeightArray(200)[0];
 
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
-        assertEq(calculator.getOperatorWeight(defaultOperatorSet, operator3), 0, "Non-existent operator should return 0");
-        assertEq(calculator.getOperatorWeight(defaultOperatorSet, address(0xdead)), 0, "Random address should return 0");
+        assertEq(
+            calculator.getOperatorWeight(defaultOperatorSet, operator3),
+            0,
+            "Non-existent operator should return 0"
+        );
+        assertEq(
+            calculator.getOperatorWeight(defaultOperatorSet, address(0xdead)),
+            0,
+            "Random address should return 0"
+        );
     }
 
     function test_emptyOperatorSet() public {
         // Set empty operators and weights
         address[] memory operators = new address[](0);
-        uint[][] memory weights = new uint[][](0);
+        uint256[][] memory weights = new uint256[][](0);
 
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
-        assertEq(calculator.getOperatorWeight(defaultOperatorSet, operator1), 0, "Should return 0 for empty set");
+        assertEq(
+            calculator.getOperatorWeight(defaultOperatorSet, operator1),
+            0,
+            "Should return 0 for empty set"
+        );
     }
 
-    function testFuzz_getOperatorWeight(address operator, uint weight) public {
+    function testFuzz_getOperatorWeight(address operator, uint256 weight) public {
         weight = bound(weight, 0, 1e18);
 
         // Set single operator
         address[] memory operators = new address[](1);
         operators[0] = operator;
 
-        uint[][] memory weights = _createSingleWeightArray(weight);
+        uint256[][] memory weights = _createSingleWeightArray(weight);
 
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
-        assertEq(calculator.getOperatorWeight(defaultOperatorSet, operator), weight, "Weight mismatch");
+        assertEq(
+            calculator.getOperatorWeight(defaultOperatorSet, operator), weight, "Weight mismatch"
+        );
 
         // Different operator should return 0
-        address differentOperator = address(uint160(uint(uint160(operator)) + 1));
-        assertEq(calculator.getOperatorWeight(defaultOperatorSet, differentOperator), 0, "Different operator should return 0");
+        address differentOperator = address(uint160(uint256(uint160(operator)) + 1));
+        assertEq(
+            calculator.getOperatorWeight(defaultOperatorSet, differentOperator),
+            0,
+            "Different operator should return 0"
+        );
     }
 }
 
@@ -542,7 +644,7 @@ contract BN254TableCalculatorBaseUnitTests_getOperatorInfos is BN254TableCalcula
         operators[0] = operator1;
         operators[1] = operator2;
 
-        uint[][] memory weights = new uint[][](2);
+        uint256[][] memory weights = new uint256[][](2);
         weights[0] = _createSingleWeightArray(100)[0];
         weights[1] = _createSingleWeightArray(200)[0];
 
@@ -553,7 +655,7 @@ contract BN254TableCalculatorBaseUnitTests_getOperatorInfos is BN254TableCalcula
         assertEq(infos.length, 2, "Should have 2 operator infos");
 
         // Both should have zero pubkeys since not registered
-        for (uint i = 0; i < infos.length; i++) {
+        for (uint256 i = 0; i < infos.length; i++) {
             assertEq(infos[i].pubkey.X, 0, "Unregistered operator pubkey X should be 0");
             assertEq(infos[i].pubkey.Y, 0, "Unregistered operator pubkey Y should be 0");
             assertEq(infos[i].weights.length, 0, "Unregistered operator weights should be empty");
@@ -562,7 +664,9 @@ contract BN254TableCalculatorBaseUnitTests_getOperatorInfos is BN254TableCalcula
 
     function test_someOperatorsNotRegistered() public {
         // Register only operator1 (skip operator3 to avoid pairing issues)
-        _registerOperatorKey(operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1);
+        _registerOperatorKey(
+            operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1
+        );
 
         // Set operators and weights
         address[] memory operators = new address[](3);
@@ -570,7 +674,7 @@ contract BN254TableCalculatorBaseUnitTests_getOperatorInfos is BN254TableCalcula
         operators[1] = operator2; // not registered
         operators[2] = operator3; // not registered
 
-        uint[][] memory weights = new uint[][](3);
+        uint256[][] memory weights = new uint256[][](3);
         weights[0] = _createSingleWeightArray(100)[0];
         weights[1] = _createSingleWeightArray(200)[0];
         weights[2] = _createSingleWeightArray(300)[0];
@@ -599,15 +703,19 @@ contract BN254TableCalculatorBaseUnitTests_getOperatorInfos is BN254TableCalcula
 
     function test_allOperatorsRegistered() public {
         // Register all operators
-        _registerOperatorKey(operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1);
-        _registerOperatorKey(operator2, defaultOperatorSet, bn254G1Key2, bn254G2Key2, BN254_PRIV_KEY_2);
+        _registerOperatorKey(
+            operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1
+        );
+        _registerOperatorKey(
+            operator2, defaultOperatorSet, bn254G1Key2, bn254G2Key2, BN254_PRIV_KEY_2
+        );
 
         // Set operators and weights
         address[] memory operators = new address[](2);
         operators[0] = operator1;
         operators[1] = operator2;
 
-        uint[][] memory weights = new uint[][](2);
+        uint256[][] memory weights = new uint256[][](2);
         weights[0] = _createSingleWeightArray(100)[0];
         weights[1] = _createSingleWeightArray(200)[0];
 
@@ -630,14 +738,16 @@ contract BN254TableCalculatorBaseUnitTests_getOperatorInfos is BN254TableCalcula
 
     function test_multipleWeightTypes() public {
         // Register operator
-        _registerOperatorKey(operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1);
+        _registerOperatorKey(
+            operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1
+        );
 
         // Set operators and weights with multiple types
         address[] memory operators = new address[](1);
         operators[0] = operator1;
 
-        uint[][] memory weights = new uint[][](1);
-        uint[] memory multiWeights = new uint[](3);
+        uint256[][] memory weights = new uint256[][](1);
+        uint256[] memory multiWeights = new uint256[](3);
         multiWeights[0] = 100;
         multiWeights[1] = 200;
         multiWeights[2] = 300;
@@ -654,21 +764,31 @@ contract BN254TableCalculatorBaseUnitTests_getOperatorInfos is BN254TableCalcula
         assertEq(infos[0].weights[2], 300, "Weight[2] mismatch");
     }
 
-    function testFuzz_getOperatorInfos(uint8 numOperators) public {
+    function testFuzz_getOperatorInfos(
+        uint8 numOperators
+    ) public {
         numOperators = uint8(bound(numOperators, 1, 5));
 
         address[] memory operators = new address[](numOperators);
-        uint[][] memory weights = new uint[][](numOperators);
+        uint256[][] memory weights = new uint256[][](numOperators);
 
         // Generate operators and weights
-        for (uint i = 0; i < numOperators; i++) {
+        for (uint256 i = 0; i < numOperators; i++) {
             operators[i] = address(uint160(i + 100));
             weights[i] = _createSingleWeightArray((i + 1) * 100)[0];
         }
 
         // Register some operators with valid keys
-        if (numOperators >= 1) _registerOperatorKey(operators[0], defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1);
-        if (numOperators >= 3) _registerOperatorKey(operators[2], defaultOperatorSet, bn254G1Key2, bn254G2Key2, BN254_PRIV_KEY_2);
+        if (numOperators >= 1) {
+            _registerOperatorKey(
+                operators[0], defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1
+            );
+        }
+        if (numOperators >= 3) {
+            _registerOperatorKey(
+                operators[2], defaultOperatorSet, bn254G1Key2, bn254G2Key2, BN254_PRIV_KEY_2
+            );
+        }
 
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
@@ -676,15 +796,20 @@ contract BN254TableCalculatorBaseUnitTests_getOperatorInfos is BN254TableCalcula
 
         assertEq(infos.length, numOperators, "Operator info count mismatch");
 
-        for (uint i = 0; i < numOperators; i++) {
+        for (uint256 i = 0; i < numOperators; i++) {
             if ((i == 0 && numOperators >= 1) || (i == 2 && numOperators >= 3)) {
                 // Registered operators should have weights
                 assertEq(infos[i].weights.length, 1, "Registered operator should have weights");
                 assertEq(infos[i].weights[0], (i + 1) * 100, "Weight value mismatch");
-                assertTrue(infos[i].pubkey.X != 0 || infos[i].pubkey.Y != 0, "Registered operator should have pubkey");
+                assertTrue(
+                    infos[i].pubkey.X != 0 || infos[i].pubkey.Y != 0,
+                    "Registered operator should have pubkey"
+                );
             } else {
                 // Unregistered operators should have empty weights
-                assertEq(infos[i].weights.length, 0, "Unregistered operator should have empty weights");
+                assertEq(
+                    infos[i].weights.length, 0, "Unregistered operator should have empty weights"
+                );
                 assertEq(infos[i].pubkey.X, 0, "Unregistered operator pubkey X should be 0");
                 assertEq(infos[i].pubkey.Y, 0, "Unregistered operator pubkey Y should be 0");
             }

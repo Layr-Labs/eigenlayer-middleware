@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {KeyRegistrar, IKeyRegistrarTypes} from "eigenlayer-contracts/src/contracts/permissions/KeyRegistrar.sol";
+import {
+    KeyRegistrar,
+    IKeyRegistrarTypes
+} from "eigenlayer-contracts/src/contracts/permissions/KeyRegistrar.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
-import {IOperatorTableCalculatorTypes} from "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
+import {IOperatorTableCalculatorTypes} from
+    "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
 import {IECDSATableCalculator} from "../../../src/interfaces/IECDSATableCalculator.sol";
 import {
     OperatorSet,
@@ -11,31 +15,34 @@ import {
 } from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 import {SlashingLib} from "eigenlayer-contracts/src/contracts/libraries/SlashingLib.sol";
 import {AllocationManagerMock} from "eigenlayer-contracts/src/test/mocks/AllocationManagerMock.sol";
-import {ECDSATableCalculatorBase} from "../../../src/middlewareV2/tableCalculator/ECDSATableCalculatorBase.sol";
+import {ECDSATableCalculatorBase} from
+    "../../../src/middlewareV2/tableCalculator/ECDSATableCalculatorBase.sol";
 import {MockEigenLayerDeployer} from "./MockDeployer.sol";
 import "test/utils/Random.sol";
-
 
 // Mock implementation for testing abstract contract
 contract ECDSATableCalculatorBaseHarness is ECDSATableCalculatorBase {
     // Storage for mock weights
     mapping(bytes32 => address[]) internal _mockOperators;
-    mapping(bytes32 => uint[][]) internal _mockWeights;
+    mapping(bytes32 => uint256[][]) internal _mockWeights;
 
-    constructor(IKeyRegistrar _keyRegistrar) ECDSATableCalculatorBase(_keyRegistrar) {}
+    constructor(
+        IKeyRegistrar _keyRegistrar
+    ) ECDSATableCalculatorBase(_keyRegistrar) {}
 
-    function setMockOperatorWeights(OperatorSet calldata operatorSet, address[] memory operators, uint[][] memory weights) external {
+    function setMockOperatorWeights(
+        OperatorSet calldata operatorSet,
+        address[] memory operators,
+        uint256[][] memory weights
+    ) external {
         bytes32 key = operatorSet.key();
         _mockOperators[key] = operators;
         _mockWeights[key] = weights;
     }
 
-    function _getOperatorWeights(OperatorSet calldata operatorSet)
-        internal
-        view
-        override
-        returns (address[] memory operators, uint[][] memory weights)
-    {
+    function _getOperatorWeights(
+        OperatorSet calldata operatorSet
+    ) internal view override returns (address[] memory operators, uint256[][] memory weights) {
         bytes32 key = operatorSet.key();
         operators = _mockOperators[key];
         weights = _mockWeights[key];
@@ -46,7 +53,11 @@ contract ECDSATableCalculatorBaseHarness is ECDSATableCalculatorBase {
  * @title ECDSATableCalculatorBaseUnitTests
  * @notice Base contract for all ECDSATableCalculatorBase unit tests
  */
-contract ECDSATableCalculatorBaseUnitTests is MockEigenLayerDeployer, IOperatorTableCalculatorTypes, IKeyRegistrarTypes {
+contract ECDSATableCalculatorBaseUnitTests is
+    MockEigenLayerDeployer,
+    IOperatorTableCalculatorTypes,
+    IKeyRegistrarTypes
+{
     using OperatorSetLib for OperatorSet;
 
     // Test contracts
@@ -64,9 +75,12 @@ contract ECDSATableCalculatorBaseUnitTests is MockEigenLayerDeployer, IOperatorT
     OperatorSet alternativeOperatorSet;
 
     // ECDSA test keys (private keys for signature generation)
-    uint constant ECDSA_PRIV_KEY_1 = 0x1234567890123456789012345678901234567890123456789012345678901234;
-    uint constant ECDSA_PRIV_KEY_2 = 0x9876543210987654321098765432109876543210987654321098765432109876;
-    uint constant ECDSA_PRIV_KEY_3 = 0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890;
+    uint256 constant ECDSA_PRIV_KEY_1 =
+        0x1234567890123456789012345678901234567890123456789012345678901234;
+    uint256 constant ECDSA_PRIV_KEY_2 =
+        0x9876543210987654321098765432109876543210987654321098765432109876;
+    uint256 constant ECDSA_PRIV_KEY_3 =
+        0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890;
 
     // ECDSA addresses (public keys)
     address public ecdsaAddress1;
@@ -107,37 +121,51 @@ contract ECDSATableCalculatorBaseUnitTests is MockEigenLayerDeployer, IOperatorT
         keyRegistrar.configureOperatorSet(defaultOperatorSet, IKeyRegistrarTypes.CurveType.ECDSA);
 
         vm.prank(avs2);
-        keyRegistrar.configureOperatorSet(alternativeOperatorSet, IKeyRegistrarTypes.CurveType.ECDSA);
+        keyRegistrar.configureOperatorSet(
+            alternativeOperatorSet, IKeyRegistrarTypes.CurveType.ECDSA
+        );
     }
 
     // Helper functions
-    function _registerOperatorKey(address operator, OperatorSet memory operatorSet, address ecdsaAddress, uint privKey) internal {
-        bytes memory signature = _generateECDSASignature(operator, operatorSet, ecdsaAddress, privKey);
+    function _registerOperatorKey(
+        address operator,
+        OperatorSet memory operatorSet,
+        address ecdsaAddress,
+        uint256 privKey
+    ) internal {
+        bytes memory signature =
+            _generateECDSASignature(operator, operatorSet, ecdsaAddress, privKey);
 
         vm.prank(operator);
         keyRegistrar.registerKey(operator, operatorSet, abi.encodePacked(ecdsaAddress), signature);
     }
 
-    function _generateECDSASignature(address operator, OperatorSet memory operatorSet, address ecdsaAddress, uint privKey)
-        internal
-        view
-        returns (bytes memory)
-    {
-        bytes32 messageHash = keyRegistrar.getECDSAKeyRegistrationMessageHash(operator, operatorSet, ecdsaAddress);
+    function _generateECDSASignature(
+        address operator,
+        OperatorSet memory operatorSet,
+        address ecdsaAddress,
+        uint256 privKey
+    ) internal view returns (bytes memory) {
+        bytes32 messageHash =
+            keyRegistrar.getECDSAKeyRegistrationMessageHash(operator, operatorSet, ecdsaAddress);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privKey, messageHash);
         return abi.encodePacked(r, s, v);
     }
 
-    function _createSingleWeightArray(uint weight) internal pure returns (uint[][] memory) {
-        uint[][] memory weights = new uint[][](1);
-        weights[0] = new uint[](1);
+    function _createSingleWeightArray(
+        uint256 weight
+    ) internal pure returns (uint256[][] memory) {
+        uint256[][] memory weights = new uint256[][](1);
+        weights[0] = new uint256[](1);
         weights[0][0] = weight;
         return weights;
     }
 
-    function _createMultiWeightArray(uint[] memory weightValues) internal pure returns (uint[][] memory) {
-        uint[][] memory weights = new uint[][](1);
+    function _createMultiWeightArray(
+        uint256[] memory weightValues
+    ) internal pure returns (uint256[][] memory) {
+        uint256[][] memory weights = new uint256[][](1);
         weights[0] = weightValues;
         return weights;
     }
@@ -147,11 +175,13 @@ contract ECDSATableCalculatorBaseUnitTests is MockEigenLayerDeployer, IOperatorT
  * @title ECDSATableCalculatorBaseUnitTests_calculateOperatorTable
  * @notice Unit tests for ECDSATableCalculatorBase.calculateOperatorTable
  */
-contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTable is ECDSATableCalculatorBaseUnitTests {
+contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTable is
+    ECDSATableCalculatorBaseUnitTests
+{
     function test_noOperators() public {
         // Set empty operators and weights
         address[] memory operators = new address[](0);
-        uint[][] memory weights = new uint[][](0);
+        uint256[][] memory weights = new uint256[][](0);
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
         ECDSAOperatorInfo[] memory infos = calculator.calculateOperatorTable(defaultOperatorSet);
@@ -165,7 +195,7 @@ contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTable is ECDSATableC
         operators[0] = operator1;
         operators[1] = operator2;
 
-        uint[][] memory weights = new uint[][](2);
+        uint256[][] memory weights = new uint256[][](2);
         weights[0] = _createSingleWeightArray(100)[0];
         weights[1] = _createSingleWeightArray(200)[0];
 
@@ -187,7 +217,7 @@ contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTable is ECDSATableC
         operators[0] = operator1;
         operators[1] = operator2;
 
-        uint[][] memory weights = new uint[][](2);
+        uint256[][] memory weights = new uint256[][](2);
         weights[0] = _createSingleWeightArray(100)[0];
         weights[1] = _createSingleWeightArray(200)[0];
 
@@ -212,14 +242,14 @@ contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTable is ECDSATableC
         operators[0] = operator1;
         operators[1] = operator2;
 
-        uint[][] memory weights = new uint[][](2);
-        uint[] memory op1Weights = new uint[](3);
+        uint256[][] memory weights = new uint256[][](2);
+        uint256[] memory op1Weights = new uint256[](3);
         op1Weights[0] = 100;
         op1Weights[1] = 150;
         op1Weights[2] = 50;
         weights[0] = op1Weights;
 
-        uint[] memory op2Weights = new uint[](3);
+        uint256[] memory op2Weights = new uint256[](3);
         op2Weights[0] = 200;
         op2Weights[1] = 250;
         op2Weights[2] = 100;
@@ -250,7 +280,7 @@ contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTable is ECDSATableC
         operators[1] = operator2; // not registered
         operators[2] = operator3; // not registered
 
-        uint[][] memory weights = new uint[][](3);
+        uint256[][] memory weights = new uint256[][](3);
         weights[0] = _createSingleWeightArray(100)[0];
         weights[1] = _createSingleWeightArray(200)[0];
         weights[2] = _createSingleWeightArray(300)[0];
@@ -270,7 +300,7 @@ contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTable is ECDSATableC
 
         address[] memory operators = new address[](1);
         operators[0] = newOperator;
-        uint[][] memory weights = new uint[][](1);
+        uint256[][] memory weights = new uint256[][](1);
         weights[0] = _createSingleWeightArray(100)[0];
 
         _registerOperatorKey(newOperator, defaultOperatorSet, ecdsaAddress1, ECDSA_PRIV_KEY_1);
@@ -293,7 +323,7 @@ contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTable is ECDSATableC
         operators[0] = operator1; // registered
         operators[1] = operator2; // registered
 
-        uint[][] memory weights = new uint[][](2);
+        uint256[][] memory weights = new uint256[][](2);
         weights[0] = _createSingleWeightArray(100)[0];
         weights[1] = _createSingleWeightArray(200)[0];
 
@@ -319,7 +349,7 @@ contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTable is ECDSATableC
         operators[1] = operator2; // not registered
         operators[2] = operator3; // registered
 
-        uint[][] memory weights = new uint[][](3);
+        uint256[][] memory weights = new uint256[][](3);
         weights[0] = _createSingleWeightArray(100)[0];
         weights[1] = _createSingleWeightArray(200)[0]; // This weight won't be included
         weights[2] = _createSingleWeightArray(300)[0];
@@ -342,7 +372,7 @@ contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTable is ECDSATableC
         operators[1] = operator2;
         operators[2] = operator3;
 
-        uint[][] memory weights = new uint[][](3);
+        uint256[][] memory weights = new uint256[][](3);
         weights[0] = _createSingleWeightArray(100)[0];
         weights[1] = _createSingleWeightArray(200)[0];
         weights[2] = _createSingleWeightArray(300)[0];
@@ -356,26 +386,30 @@ contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTable is ECDSATableC
         assertEq(infos.length, 0, "Should have 0 operators when none are registered");
     }
 
-    function testFuzz_calculateOperatorTable(Randomness r, uint8 numOperators, uint8 numRegistered) public rand(r) {
+    function testFuzz_calculateOperatorTable(
+        Randomness r,
+        uint8 numOperators,
+        uint8 numRegistered
+    ) public rand(r) {
         numOperators = uint8(r.Uint256() % 10 + 1); // 1-10 operators
         numRegistered = uint8(r.Uint256() % (numOperators + 1)); // 0 to numOperators registered
 
         address[] memory operators = new address[](numOperators);
-        uint[][] memory weights = new uint[][](numOperators);
+        uint256[][] memory weights = new uint256[][](numOperators);
 
         // Generate random operators and weights
-        for (uint i = 0; i < numOperators; i++) {
+        for (uint256 i = 0; i < numOperators; i++) {
             operators[i] = address(uint160(r.Uint256()));
             weights[i] = _createSingleWeightArray(r.Uint256() % 1000 + 1)[0];
         }
 
         // Register random subset of operators
-        uint[] memory registeredIndices = new uint[](numRegistered);
-        for (uint i = 0; i < numRegistered; i++) {
-            uint idx = r.Uint256() % numOperators;
+        uint256[] memory registeredIndices = new uint256[](numRegistered);
+        for (uint256 i = 0; i < numRegistered; i++) {
+            uint256 idx = r.Uint256() % numOperators;
             // Ensure unique indices
             bool unique = true;
-            for (uint j = 0; j < i; j++) {
+            for (uint256 j = 0; j < i; j++) {
                 if (registeredIndices[j] == idx) {
                     unique = false;
                     break;
@@ -383,8 +417,13 @@ contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTable is ECDSATableC
             }
             if (unique) {
                 registeredIndices[i] = idx;
-                address ecdsaAddr = vm.addr(uint(keccak256(abi.encode(operators[idx], i))));
-                _registerOperatorKey(operators[idx], defaultOperatorSet, ecdsaAddr, uint(keccak256(abi.encode(operators[idx], i))));
+                address ecdsaAddr = vm.addr(uint256(keccak256(abi.encode(operators[idx], i))));
+                _registerOperatorKey(
+                    operators[idx],
+                    defaultOperatorSet,
+                    ecdsaAddr,
+                    uint256(keccak256(abi.encode(operators[idx], i)))
+                );
             }
         }
 
@@ -392,12 +431,14 @@ contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTable is ECDSATableC
         ECDSAOperatorInfo[] memory infos = calculator.calculateOperatorTable(defaultOperatorSet);
 
         // Count actual registered operators
-        uint actualRegistered = 0;
-        for (uint i = 0; i < numOperators; i++) {
+        uint256 actualRegistered = 0;
+        for (uint256 i = 0; i < numOperators; i++) {
             if (keyRegistrar.isRegistered(defaultOperatorSet, operators[i])) actualRegistered++;
         }
 
-        assertEq(infos.length, actualRegistered, "Should have correct number of registered operators");
+        assertEq(
+            infos.length, actualRegistered, "Should have correct number of registered operators"
+        );
     }
 }
 
@@ -405,7 +446,9 @@ contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTable is ECDSATableC
  * @title ECDSATableCalculatorBaseUnitTests_calculateOperatorTableBytes
  * @notice Unit tests for ECDSATableCalculatorBase.calculateOperatorTableBytes
  */
-contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTableBytes is ECDSATableCalculatorBaseUnitTests {
+contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTableBytes is
+    ECDSATableCalculatorBaseUnitTests
+{
     function test_encodesCorrectly() public {
         // Register operator
         _registerOperatorKey(operator1, defaultOperatorSet, ecdsaAddress1, ECDSA_PRIV_KEY_1);
@@ -413,7 +456,7 @@ contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTableBytes is ECDSAT
         // Set operators and weights
         address[] memory operators = new address[](1);
         operators[0] = operator1;
-        uint[][] memory weights = _createSingleWeightArray(100);
+        uint256[][] memory weights = _createSingleWeightArray(100);
 
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
@@ -439,7 +482,7 @@ contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTableBytes is ECDSAT
         operators[1] = operator2;
         operators[2] = operator3;
 
-        uint[][] memory weights = new uint[][](3);
+        uint256[][] memory weights = new uint256[][](3);
         weights[0] = _createSingleWeightArray(100)[0];
         weights[1] = _createSingleWeightArray(200)[0];
         weights[2] = _createSingleWeightArray(300)[0];
@@ -463,7 +506,7 @@ contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTableBytes is ECDSAT
     function test_emptyOperatorSetEncodesEmptyArray() public {
         // Don't register any operators
         address[] memory operators = new address[](0);
-        uint[][] memory weights = new uint[][](0);
+        uint256[][] memory weights = new uint256[][](0);
 
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
@@ -475,7 +518,7 @@ contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTableBytes is ECDSAT
         assertEq(decodedInfos.length, 0, "Should encode empty array");
     }
 
-    function testFuzz_encodesCorrectly(Randomness r, uint weight) public rand(r) {
+    function testFuzz_encodesCorrectly(Randomness r, uint256 weight) public rand(r) {
         weight = r.Uint256() % 1e18 + 1; // 1 to 1e18
 
         // Register operator
@@ -484,7 +527,7 @@ contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTableBytes is ECDSAT
         // Set operators and weights
         address[] memory operators = new address[](1);
         operators[0] = operator1;
-        uint[][] memory weights = _createSingleWeightArray(weight);
+        uint256[][] memory weights = _createSingleWeightArray(weight);
 
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
@@ -496,21 +539,24 @@ contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTableBytes is ECDSAT
         assertEq(decodedInfos[0].weights[0], weight, "Weight mismatch");
     }
 
-    function testFuzz_multipleWeightTypesEncoded(Randomness r, uint8 numWeightTypes) public rand(r) {
+    function testFuzz_multipleWeightTypesEncoded(
+        Randomness r,
+        uint8 numWeightTypes
+    ) public rand(r) {
         numWeightTypes = uint8(r.Uint256() % 5 + 1); // 1-5 weight types
 
         // Register operator
         _registerOperatorKey(operator1, defaultOperatorSet, ecdsaAddress1, ECDSA_PRIV_KEY_1);
 
         // Create random weights
-        uint[] memory weightValues = new uint[](numWeightTypes);
-        for (uint i = 0; i < numWeightTypes; i++) {
+        uint256[] memory weightValues = new uint256[](numWeightTypes);
+        for (uint256 i = 0; i < numWeightTypes; i++) {
             weightValues[i] = r.Uint256() % 1000 + 1;
         }
 
         address[] memory operators = new address[](1);
         operators[0] = operator1;
-        uint[][] memory weights = new uint[][](1);
+        uint256[][] memory weights = new uint256[][](1);
         weights[0] = weightValues;
 
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
@@ -523,7 +569,7 @@ contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTableBytes is ECDSAT
         assertEq(decodedInfos.length, 1, "Should have 1 operator");
         assertEq(decodedInfos[0].weights.length, numWeightTypes, "Weight types mismatch");
 
-        for (uint i = 0; i < numWeightTypes; i++) {
+        for (uint256 i = 0; i < numWeightTypes; i++) {
             assertEq(decodedInfos[0].weights[i], weightValues[i], "Weight value mismatch");
         }
     }
@@ -533,25 +579,28 @@ contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTableBytes is ECDSAT
  * @title ECDSATableCalculatorBaseUnitTests_getOperatorWeights
  * @notice Unit tests for ECDSATableCalculatorBase.getOperatorWeights
  */
-contract ECDSATableCalculatorBaseUnitTests_getOperatorWeights is ECDSATableCalculatorBaseUnitTests {
+contract ECDSATableCalculatorBaseUnitTests_getOperatorWeights is
+    ECDSATableCalculatorBaseUnitTests
+{
     function test_returnsImplementationResult() public {
         // Set mock weights
         address[] memory expectedOperators = new address[](2);
         expectedOperators[0] = operator1;
         expectedOperators[1] = operator2;
 
-        uint[][] memory expectedWeights = new uint[][](2);
+        uint256[][] memory expectedWeights = new uint256[][](2);
         expectedWeights[0] = _createSingleWeightArray(100)[0];
         expectedWeights[1] = _createSingleWeightArray(200)[0];
 
         calculator.setMockOperatorWeights(defaultOperatorSet, expectedOperators, expectedWeights);
 
-        (address[] memory operators, uint[][] memory weights) = calculator.getOperatorWeights(defaultOperatorSet);
+        (address[] memory operators, uint256[][] memory weights) =
+            calculator.getOperatorWeights(defaultOperatorSet);
 
         assertEq(operators.length, expectedOperators.length, "Operators length mismatch");
         assertEq(weights.length, expectedWeights.length, "Weights length mismatch");
 
-        for (uint i = 0; i < operators.length; i++) {
+        for (uint256 i = 0; i < operators.length; i++) {
             assertEq(operators[i], expectedOperators[i], "Operator address mismatch");
             assertEq(weights[i][0], expectedWeights[i][0], "Weight value mismatch");
         }
@@ -560,11 +609,12 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeights is ECDSATableCalcu
     function test_emptyOperatorSet() public {
         // Set empty operators and weights
         address[] memory expectedOperators = new address[](0);
-        uint[][] memory expectedWeights = new uint[][](0);
+        uint256[][] memory expectedWeights = new uint256[][](0);
 
         calculator.setMockOperatorWeights(defaultOperatorSet, expectedOperators, expectedWeights);
 
-        (address[] memory operators, uint[][] memory weights) = calculator.getOperatorWeights(defaultOperatorSet);
+        (address[] memory operators, uint256[][] memory weights) =
+            calculator.getOperatorWeights(defaultOperatorSet);
 
         assertEq(operators.length, 0, "Should return empty operators array");
         assertEq(weights.length, 0, "Should return empty weights array");
@@ -575,37 +625,44 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeights is ECDSATableCalcu
         address[] memory expectedOperators = new address[](1);
         expectedOperators[0] = operator3;
 
-        uint[][] memory expectedWeights = new uint[][](1);
+        uint256[][] memory expectedWeights = new uint256[][](1);
         expectedWeights[0] = _createSingleWeightArray(500)[0];
 
-        calculator.setMockOperatorWeights(alternativeOperatorSet, expectedOperators, expectedWeights);
+        calculator.setMockOperatorWeights(
+            alternativeOperatorSet, expectedOperators, expectedWeights
+        );
 
-        (address[] memory operators, uint[][] memory weights) = calculator.getOperatorWeights(alternativeOperatorSet);
+        (address[] memory operators, uint256[][] memory weights) =
+            calculator.getOperatorWeights(alternativeOperatorSet);
 
         assertEq(operators.length, 1, "Operators length mismatch");
         assertEq(operators[0], operator3, "Operator address mismatch");
         assertEq(weights[0][0], 500, "Weight value mismatch");
     }
 
-    function testFuzz_returnsImplementationResult(Randomness r, uint8 numOperators) public rand(r) {
+    function testFuzz_returnsImplementationResult(
+        Randomness r,
+        uint8 numOperators
+    ) public rand(r) {
         numOperators = uint8(r.Uint256() % 20); // 0-19 operators
 
         address[] memory expectedOperators = new address[](numOperators);
-        uint[][] memory expectedWeights = new uint[][](numOperators);
+        uint256[][] memory expectedWeights = new uint256[][](numOperators);
 
-        for (uint i = 0; i < numOperators; i++) {
+        for (uint256 i = 0; i < numOperators; i++) {
             expectedOperators[i] = address(uint160(r.Uint256()));
             expectedWeights[i] = _createSingleWeightArray(r.Uint256() % 1000 + 1)[0];
         }
 
         calculator.setMockOperatorWeights(defaultOperatorSet, expectedOperators, expectedWeights);
 
-        (address[] memory operators, uint[][] memory weights) = calculator.getOperatorWeights(defaultOperatorSet);
+        (address[] memory operators, uint256[][] memory weights) =
+            calculator.getOperatorWeights(defaultOperatorSet);
 
         assertEq(operators.length, numOperators, "Operators length mismatch");
         assertEq(weights.length, numOperators, "Weights length mismatch");
 
-        for (uint i = 0; i < numOperators; i++) {
+        for (uint256 i = 0; i < numOperators; i++) {
             assertEq(operators[i], expectedOperators[i], "Operator address mismatch");
             assertEq(weights[i][0], expectedWeights[i][0], "Weight value mismatch");
         }
@@ -616,7 +673,9 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeights is ECDSATableCalcu
  * @title ECDSATableCalculatorBaseUnitTests_getOperatorWeight
  * @notice Unit tests for ECDSATableCalculatorBase.getOperatorWeight
  */
-contract ECDSATableCalculatorBaseUnitTests_getOperatorWeight is ECDSATableCalculatorBaseUnitTests {
+contract ECDSATableCalculatorBaseUnitTests_getOperatorWeight is
+    ECDSATableCalculatorBaseUnitTests
+{
     function test_operatorExists() public {
         // Set operators and weights
         address[] memory operators = new address[](3);
@@ -624,16 +683,28 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeight is ECDSATableCalcul
         operators[1] = operator2;
         operators[2] = operator3;
 
-        uint[][] memory weights = new uint[][](3);
+        uint256[][] memory weights = new uint256[][](3);
         weights[0] = _createSingleWeightArray(100)[0];
         weights[1] = _createSingleWeightArray(200)[0];
         weights[2] = _createSingleWeightArray(300)[0];
 
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
-        assertEq(calculator.getOperatorWeight(defaultOperatorSet, operator1), 100, "Operator1 weight mismatch");
-        assertEq(calculator.getOperatorWeight(defaultOperatorSet, operator2), 200, "Operator2 weight mismatch");
-        assertEq(calculator.getOperatorWeight(defaultOperatorSet, operator3), 300, "Operator3 weight mismatch");
+        assertEq(
+            calculator.getOperatorWeight(defaultOperatorSet, operator1),
+            100,
+            "Operator1 weight mismatch"
+        );
+        assertEq(
+            calculator.getOperatorWeight(defaultOperatorSet, operator2),
+            200,
+            "Operator2 weight mismatch"
+        );
+        assertEq(
+            calculator.getOperatorWeight(defaultOperatorSet, operator3),
+            300,
+            "Operator3 weight mismatch"
+        );
     }
 
     function test_operatorDoesNotExist() public {
@@ -642,24 +713,36 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeight is ECDSATableCalcul
         operators[0] = operator1;
         operators[1] = operator2;
 
-        uint[][] memory weights = new uint[][](2);
+        uint256[][] memory weights = new uint256[][](2);
         weights[0] = _createSingleWeightArray(100)[0];
         weights[1] = _createSingleWeightArray(200)[0];
 
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
-        assertEq(calculator.getOperatorWeight(defaultOperatorSet, operator3), 0, "Non-existent operator should return 0");
-        assertEq(calculator.getOperatorWeight(defaultOperatorSet, address(0xdead)), 0, "Random address should return 0");
+        assertEq(
+            calculator.getOperatorWeight(defaultOperatorSet, operator3),
+            0,
+            "Non-existent operator should return 0"
+        );
+        assertEq(
+            calculator.getOperatorWeight(defaultOperatorSet, address(0xdead)),
+            0,
+            "Random address should return 0"
+        );
     }
 
     function test_emptyOperatorSet() public {
         // Set empty operators and weights
         address[] memory operators = new address[](0);
-        uint[][] memory weights = new uint[][](0);
+        uint256[][] memory weights = new uint256[][](0);
 
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
-        assertEq(calculator.getOperatorWeight(defaultOperatorSet, operator1), 0, "Should return 0 for empty set");
+        assertEq(
+            calculator.getOperatorWeight(defaultOperatorSet, operator1),
+            0,
+            "Should return 0 for empty set"
+        );
     }
 
     function test_zeroWeight() public {
@@ -667,12 +750,16 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeight is ECDSATableCalcul
         address[] memory operators = new address[](1);
         operators[0] = operator1;
 
-        uint[][] memory weights = new uint[][](1);
+        uint256[][] memory weights = new uint256[][](1);
         weights[0] = _createSingleWeightArray(0)[0];
 
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
-        assertEq(calculator.getOperatorWeight(defaultOperatorSet, operator1), 0, "Should return 0 for zero weight");
+        assertEq(
+            calculator.getOperatorWeight(defaultOperatorSet, operator1),
+            0,
+            "Should return 0 for zero weight"
+        );
     }
 
     function test_multipleWeightTypes() public {
@@ -680,8 +767,8 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeight is ECDSATableCalcul
         address[] memory operators = new address[](1);
         operators[0] = operator1;
 
-        uint[][] memory weights = new uint[][](1);
-        uint[] memory multiWeights = new uint[](3);
+        uint256[][] memory weights = new uint256[][](1);
+        uint256[] memory multiWeights = new uint256[](3);
         multiWeights[0] = 100;
         multiWeights[1] = 200;
         multiWeights[2] = 300;
@@ -690,35 +777,49 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeight is ECDSATableCalcul
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
         // getOperatorWeight returns first weight type
-        assertEq(calculator.getOperatorWeight(defaultOperatorSet, operator1), 100, "Should return first weight type");
+        assertEq(
+            calculator.getOperatorWeight(defaultOperatorSet, operator1),
+            100,
+            "Should return first weight type"
+        );
     }
 
-    function testFuzz_getOperatorWeight(Randomness r, address operator, uint weight) public rand(r) {
+    function testFuzz_getOperatorWeight(
+        Randomness r,
+        address operator,
+        uint256 weight
+    ) public rand(r) {
         weight = r.Uint256() % 1e18; // 0 to 1e18
 
         // Set single operator
         address[] memory operators = new address[](1);
         operators[0] = operator;
 
-        uint[][] memory weights = _createSingleWeightArray(weight);
+        uint256[][] memory weights = _createSingleWeightArray(weight);
 
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
-        assertEq(calculator.getOperatorWeight(defaultOperatorSet, operator), weight, "Weight mismatch");
+        assertEq(
+            calculator.getOperatorWeight(defaultOperatorSet, operator), weight, "Weight mismatch"
+        );
 
         // Different operator should return 0
-        address differentOperator = address(uint160(uint(uint160(operator)) + 1));
-        assertEq(calculator.getOperatorWeight(defaultOperatorSet, differentOperator), 0, "Different operator should return 0");
+        address differentOperator = address(uint160(uint256(uint160(operator)) + 1));
+        assertEq(
+            calculator.getOperatorWeight(defaultOperatorSet, differentOperator),
+            0,
+            "Different operator should return 0"
+        );
     }
 
     function testFuzz_multipleOperators(Randomness r, uint8 numOperators) public rand(r) {
         numOperators = uint8(r.Uint256() % 10 + 1); // 1-10 operators
 
         address[] memory operators = new address[](numOperators);
-        uint[][] memory weights = new uint[][](numOperators);
-        uint[] memory expectedWeights = new uint[](numOperators);
+        uint256[][] memory weights = new uint256[][](numOperators);
+        uint256[] memory expectedWeights = new uint256[](numOperators);
 
-        for (uint i = 0; i < numOperators; i++) {
+        for (uint256 i = 0; i < numOperators; i++) {
             operators[i] = address(uint160(r.Uint256()));
             expectedWeights[i] = r.Uint256() % 1000 + 1;
             weights[i] = _createSingleWeightArray(expectedWeights[i])[0];
@@ -727,19 +828,29 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeight is ECDSATableCalcul
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
         // Verify each operator's weight
-        for (uint i = 0; i < numOperators; i++) {
-            assertEq(calculator.getOperatorWeight(defaultOperatorSet, operators[i]), expectedWeights[i], "Weight mismatch");
+        for (uint256 i = 0; i < numOperators; i++) {
+            assertEq(
+                calculator.getOperatorWeight(defaultOperatorSet, operators[i]),
+                expectedWeights[i],
+                "Weight mismatch"
+            );
         }
 
         // Non-existent operator should return 0
         address nonExistent = address(uint160(r.Uint256()));
         bool exists = false;
-        for (uint i = 0; i < numOperators; i++) {
+        for (uint256 i = 0; i < numOperators; i++) {
             if (operators[i] == nonExistent) {
                 exists = true;
                 break;
             }
         }
-        if (!exists) assertEq(calculator.getOperatorWeight(defaultOperatorSet, nonExistent), 0, "Non-existent operator should return 0");
+        if (!exists) {
+            assertEq(
+                calculator.getOperatorWeight(defaultOperatorSet, nonExistent),
+                0,
+                "Non-existent operator should return 0"
+            );
+        }
     }
 }

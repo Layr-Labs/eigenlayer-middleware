@@ -4,8 +4,10 @@ pragma solidity ^0.8.27;
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {KeyRegistrar} from "eigenlayer-contracts/src/contracts/permissions/KeyRegistrar.sol";
-import {PermissionController} from "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
-import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {PermissionController} from
+    "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
+import {IAllocationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {AllocationManagerMock} from "eigenlayer-contracts/src/test/mocks/AllocationManagerMock.sol";
 
 import "test/mocks/KeyRegistrarMock.sol";
@@ -59,9 +61,23 @@ abstract contract MockEigenLayerDeployer is Test {
 
         // Deploy the actual PermissionController & KeyRegistrar implementations
         permissionControllerImplementation = new PermissionController("9.9.9");
-        permissionController = PermissionController(address(new TransparentUpgradeableProxy(address(permissionControllerImplementation), address(proxyAdmin), "")));
+        permissionController = PermissionController(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(permissionControllerImplementation), address(proxyAdmin), ""
+                )
+            )
+        );
 
-        keyRegistrarImplementation = new KeyRegistrar(permissionController, IAllocationManager(address(allocationManagerMock)),"9.9.9");
-        keyRegistrar = KeyRegistrar(address(new TransparentUpgradeableProxy(address(keyRegistrarImplementation), address(proxyAdmin), "")));
+        keyRegistrarImplementation = new KeyRegistrar(
+            permissionController, IAllocationManager(address(allocationManagerMock)), "9.9.9"
+        );
+        keyRegistrar = KeyRegistrar(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(keyRegistrarImplementation), address(proxyAdmin), ""
+                )
+            )
+        );
     }
 }
