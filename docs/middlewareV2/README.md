@@ -173,25 +173,20 @@ See full documentation in [`/operatorTableCalculator.md`](./OperatorTableCalcula
 ### Core Contract Integrations
 
 #### Key Registrar
-The KeyRegistrar manages cryptographic keys for operators across different operator sets. It supports both ECDSA and BN254 key types and ensures global uniqueness of keys across all operator sets.
+The `KeyRegistrar` manages cryptographic keys for operators across different operator sets. It supports both ECDSA and BN254 key types and ensures global uniqueness of keys across all operator sets.
 
-When an operator registers to an operatorSet, the `AVSRegistrar` checks membership
-
-Key features:
-- Per-OperatorSet Configuration: Each operator set must be configured with a specific curve type before keys can be registered
-- Global Key Registry: Keys are globally unique - once registered, a key cannot be reused across operatorSets or operators
-- Keys are stored in a 2-way mapping:
-  - (operator, operatorSet) to key
-  - keyHash to operator address
+When an operator registers to an operatorSet, the [`AVSRegistrar`](./AVSRegistrar.md) checks membership of the key in the operatorSet. 
 
 #### Allocation Manager
+The [`AllocationManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/main/docs/core/AllocationManager.md) is the entrypoint for all operator<>avs interactions. It:
+
+- Manages operator registration and deregistration
+- Enables an AVS to configure its metadataURI and `AVSRegistrar`
+- Enables an AVS to configure strategy composition in an operatorSet
+- Manages allocation and deallocation of slashable stake
+- Enables an AVS to slash an operator
+
+See the [`AVSRegistrar`](./AVSRegistrar.md#system-diagrams) for how an AVS is initialized to the core protocol. 
 
 #### Certificate Verifier
-
----
-
-### Roles and Actors
-
----
-
-### Migration
+The [`CertificateVerifier`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/main/docs/multichain/destination/CertificateVerifier.md) is responsible for verifying certificates from an offchain task, on-chain. The stakes in the certificate verifier are defined by the AVS-deployed `OperatorTableCalculator` and transported via an off-chain process run by Eigen labs. The `CertificateVerifier` contracts support two signature schemes: ECDSA for individual signatures and BN254 for aggregated signatures. See [multichain docs](core-multichain-docs) for more information.
