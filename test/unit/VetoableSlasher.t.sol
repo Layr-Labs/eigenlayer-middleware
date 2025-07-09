@@ -108,14 +108,12 @@ contract VetoableSlasherTest is Test {
         configData.strategyManager.initialStrategyWhitelister = proxyAdminOwner;
         configData.strategyManager.initPausedStatus = 0;
 
-        configData.delegationManager.initialOwner = proxyAdminOwner;
         configData.delegationManager.minWithdrawalDelayBlocks = 50400;
         configData.delegationManager.initPausedStatus = 0;
 
         configData.eigenPodManager.initialOwner = proxyAdminOwner;
         configData.eigenPodManager.initPausedStatus = 0;
 
-        configData.allocationManager.initialOwner = proxyAdminOwner;
         configData.allocationManager.deallocationDelay = DEALLOCATION_DELAY;
         configData.allocationManager.allocationConfigurationDelay = ALLOCATION_CONFIGURATION_DELAY;
         configData.allocationManager.initPausedStatus = 0;
@@ -188,6 +186,7 @@ contract VetoableSlasherTest is Test {
             .deployMiddleware(
             address(proxyAdmin),
             coreDeployment.allocationManager,
+            coreDeployment.strategyManager,
             address(pauserRegistry),
             middlewareConfig
         );
@@ -203,6 +202,7 @@ contract VetoableSlasherTest is Test {
 
         vetoableSlasherImplementation = new VetoableSlasher(
             IAllocationManager(coreDeployment.allocationManager),
+            IStrategyManager(coreDeployment.strategyManager),
             ISlashingRegistryCoordinator(slashingRegistryCoordinator),
             slasher,
             vetoCommittee,

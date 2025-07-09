@@ -128,9 +128,9 @@ contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
     function increaseBurnableShares(IStrategy strategy, uint256 addedSharesToBurn) external {}
 
     function increaseBurnOrRedistributableShares(
-        OperatorSet calldata operatorSet,
-        uint256 slashId,
-        IStrategy strategy,
+        OperatorSet calldata,
+        uint256,
+        IStrategy,
         uint256 addedSharesToBurn
     ) external {}
 

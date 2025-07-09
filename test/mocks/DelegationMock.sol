@@ -4,10 +4,11 @@ pragma solidity ^0.8.27;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {console2 as console} from "forge-std/Test.sol";
 
-import {IDelegationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
-import {IDelegationManagerTypes} from
-    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {
+    OperatorSet,
+    IDelegationManager,
+    IDelegationManagerTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {StrategyManager} from "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
@@ -21,7 +22,9 @@ import {SlashingLib} from "eigenlayer-contracts/src/contracts/libraries/Slashing
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
 contract DelegationIntermediate is IDelegationManager {
-    function initialize(address initialOwner, uint256 initialPausedStatus) external virtual {}
+    function initialize(
+        uint256 initialPausedStatus
+    ) external virtual {}
 
     function initialize(
         uint256 initialPausedStatus
@@ -301,6 +304,15 @@ contract DelegationIntermediate is IDelegationManager {
         IStrategy[] memory strategies,
         uint256[] memory withdrawableShares
     ) external view override returns (uint256[] memory) {}
+
+    function slashOperatorShares(
+        address operator,
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
+        IStrategy strategy,
+        uint64 prevMaxMagnitude,
+        uint64 newMaxMagnitude
+    ) external virtual returns (uint256 totalDepositSharesToSlash) {}
 
     /**
      * @notice Returns the domain separator used for EIP-712 signatures

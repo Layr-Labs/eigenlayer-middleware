@@ -58,7 +58,6 @@ library CoreDeployLib {
 
     struct DelegationManagerConfig {
         uint256 initPausedStatus;
-        address initialOwner;
         uint32 minWithdrawalDelayBlocks;
     }
 
@@ -69,7 +68,6 @@ library CoreDeployLib {
 
     struct AllocationManagerConfig {
         uint256 initPausedStatus;
-        address initialOwner;
         uint32 deallocationDelay;
         uint32 allocationConfigurationDelay;
     }

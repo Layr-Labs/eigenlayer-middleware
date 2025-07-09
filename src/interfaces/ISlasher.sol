@@ -20,7 +20,7 @@ interface ISlasherTypes {
 interface ISlasherEvents is ISlasherTypes {
     /// @notice Emitted when an operator is successfully slashed
     event OperatorSlashed(
-        uint256 indexed slashingRequestId,
+        uint256 indexed slashId,
         address indexed operator,
         uint32 indexed operatorSetId,
         uint256[] wadsToSlash,
@@ -33,7 +33,4 @@ interface ISlasherEvents is ISlasherTypes {
 interface ISlasher is ISlasherErrors, ISlasherEvents {
     /// @notice Returns the address authorized to create and fulfill slashing requests
     function slasher() external view returns (address);
-
-    /// @notice Returns the next slashing request ID
-    function nextRequestId() external view returns (uint256);
 }

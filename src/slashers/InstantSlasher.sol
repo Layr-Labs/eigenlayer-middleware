@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {SlasherBase} from "./base/SlasherBase.sol";
 import {ISlashingRegistryCoordinator} from "../interfaces/ISlashingRegistryCoordinator.sol";
 import {IInstantSlasher} from "../interfaces/IInstantSlasher.sol";
@@ -14,16 +15,16 @@ import {IInstantSlasher} from "../interfaces/IInstantSlasher.sol";
 contract InstantSlasher is IInstantSlasher, SlasherBase {
     constructor(
         IAllocationManager _allocationManager,
+        IStrategyManager _strategyManager,
         ISlashingRegistryCoordinator _slashingRegistryCoordinator,
         address _slasher
-    ) SlasherBase(_allocationManager, _slashingRegistryCoordinator, _slasher) {}
+    ) SlasherBase(_allocationManager, _strategyManager, _slashingRegistryCoordinator, _slasher) {}
 
     /// @inheritdoc IInstantSlasher
     function fulfillSlashingRequest(
         IAllocationManager.SlashingParams calldata _slashingParams
     ) external virtual override(IInstantSlasher) onlySlasher {
-        uint256 requestId = nextRequestId++;
-        _fulfillSlashingRequest(requestId, _slashingParams);
+        _fulfillSlashingRequest(_slashingParams);
 
         address[] memory operators = new address[](1);
         operators[0] = _slashingParams.operator;

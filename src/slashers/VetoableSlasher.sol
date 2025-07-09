@@ -2,8 +2,11 @@
 pragma solidity ^0.8.27;
 
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IAllocationManager,
+    OperatorSet
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {SlasherBase} from "./base/SlasherBase.sol";
 import {ISlashingRegistryCoordinator} from "../interfaces/ISlashingRegistryCoordinator.sol";
 import {IVetoableSlasher, IVetoableSlasherTypes} from "../interfaces/IVetoableSlasher.sol";
@@ -29,11 +32,12 @@ contract VetoableSlasher is IVetoableSlasher, SlasherBase {
 
     constructor(
         IAllocationManager _allocationManager,
+        IStrategyManager _strategyManager,
         ISlashingRegistryCoordinator _slashingRegistryCoordinator,
         address _slasher,
         address _vetoCommittee,
         uint32 _vetoWindowBlocks
-    ) SlasherBase(_allocationManager, _slashingRegistryCoordinator, _slasher) {
+    ) SlasherBase(_allocationManager, _strategyManager, _slashingRegistryCoordinator, _slasher) {
         vetoWindowBlocks = _vetoWindowBlocks;
         vetoCommittee = _vetoCommittee;
     }
@@ -47,16 +51,16 @@ contract VetoableSlasher is IVetoableSlasher, SlasherBase {
 
     /// @inheritdoc IVetoableSlasher
     function cancelSlashingRequest(
-        uint256 requestId
+        uint256 slashId
     ) external virtual override onlyVetoCommittee {
-        _cancelSlashingRequest(requestId);
+        _cancelSlashingRequest(slashId);
     }
 
     /// @inheritdoc IVetoableSlasher
     function fulfillSlashingRequest(
-        uint256 requestId
+        uint256 slashId
     ) external virtual override onlySlasher {
-        _fulfillSlashingRequestAndMarkAsCompleted(requestId);
+        _fulfillSlashingRequestAndMarkAsCompleted(slashId);
     }
 
     /// @notice Internal function to create and store a new slashing request
@@ -64,42 +68,48 @@ contract VetoableSlasher is IVetoableSlasher, SlasherBase {
     function _queueSlashingRequest(
         IAllocationManager.SlashingParams memory params
     ) internal virtual {
-        uint256 requestId = nextRequestId++;
-        slashingRequests[requestId] = IVetoableSlasherTypes.VetoableSlashingRequest({
+        uint256 nextSlashId = allocationManager.getSlashCount(
+            OperatorSet({avs: slashingRegistryCoordinator.avs(), id: params.operatorSetId})
+        );
+        slashingRequests[nextSlashId] = IVetoableSlasherTypes.VetoableSlashingRequest({
             params: params,
             requestBlock: block.number,
             status: IVetoableSlasherTypes.SlashingStatus.Requested
         });
 
         emit SlashingRequested(
-            requestId, params.operator, params.operatorSetId, params.wadsToSlash, params.description
+            nextSlashId,
+            params.operator,
+            params.operatorSetId,
+            params.wadsToSlash,
+            params.description
         );
     }
 
     /// @notice Internal function to mark a slashing request as cancelled
-    /// @param requestId The ID of the slashing request to cancel
+    /// @param slashId The ID of the slashing request to cancel
     function _cancelSlashingRequest(
-        uint256 requestId
+        uint256 slashId
     ) internal virtual {
         require(
-            block.number < slashingRequests[requestId].requestBlock + vetoWindowBlocks,
+            block.number < slashingRequests[slashId].requestBlock + vetoWindowBlocks,
             VetoPeriodPassed()
         );
         require(
-            slashingRequests[requestId].status == IVetoableSlasherTypes.SlashingStatus.Requested,
+            slashingRequests[slashId].status == IVetoableSlasherTypes.SlashingStatus.Requested,
             SlashingRequestNotRequested()
         );
 
-        slashingRequests[requestId].status = IVetoableSlasherTypes.SlashingStatus.Cancelled;
-        emit SlashingRequestCancelled(requestId);
+        slashingRequests[slashId].status = IVetoableSlasherTypes.SlashingStatus.Cancelled;
+        emit SlashingRequestCancelled(slashId);
     }
 
     /// @notice Internal function to fulfill a slashing request and mark it as completed
-    /// @param requestId The ID of the slashing request to fulfill
+    /// @param slashId The ID of the slashing request to fulfill
     function _fulfillSlashingRequestAndMarkAsCompleted(
-        uint256 requestId
+        uint256 slashId
     ) internal virtual {
-        IVetoableSlasherTypes.VetoableSlashingRequest storage request = slashingRequests[requestId];
+        IVetoableSlasherTypes.VetoableSlashingRequest storage request = slashingRequests[slashId];
         require(block.number >= request.requestBlock + vetoWindowBlocks, VetoPeriodNotPassed());
         require(
             request.status == IVetoableSlasherTypes.SlashingStatus.Requested,
@@ -108,7 +118,7 @@ contract VetoableSlasher is IVetoableSlasher, SlasherBase {
 
         request.status = IVetoableSlasherTypes.SlashingStatus.Completed;
 
-        _fulfillSlashingRequest(requestId, request.params);
+        _fulfillSlashingRequest(request.params);
 
         address[] memory operators = new address[](1);
         operators[0] = request.params.operator;

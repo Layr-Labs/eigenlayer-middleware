@@ -11,14 +11,14 @@ import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPa
 import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
 
 contract AllocationManagerIntermediate is IAllocationManager {
-    mapping(address avs => address avsRegistrar) internal _avsRegistrar;
-
-    function initialize(address initialOwner, uint256 initialPausedStatus) external virtual {}
+    function initialize(
+        uint256 initialPausedStatus
+    ) external virtual {}
 
     function slashOperator(
         address avs,
         SlashingParams calldata params
-    ) external virtual returns (uint256 slashId, uint256[] memory shares) {}
+    ) external virtual returns (uint256, uint256[] memory) {}
 
     function modifyAllocations(
         address operator,
@@ -55,6 +55,12 @@ contract AllocationManagerIntermediate is IAllocationManager {
     function updateAVSMetadataURI(address avs, string calldata metadataURI) external virtual {}
 
     function createOperatorSets(address avs, CreateSetParams[] calldata params) external virtual {}
+
+    function createRedistributingOperatorSets(
+        address avs,
+        CreateSetParams[] calldata params,
+        address[] calldata redistributionRecipients
+    ) external virtual {}
 
     function addStrategiesToOperatorSet(
         address avs,

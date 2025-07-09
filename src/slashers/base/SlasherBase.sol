@@ -3,9 +3,11 @@ pragma solidity ^0.8.27;
 
 import {SlasherStorage, ISlashingRegistryCoordinator} from "./SlasherStorage.sol";
 import {
+    OperatorSet,
     IAllocationManagerTypes,
     IAllocationManager
 } from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 /// @title SlasherBase
@@ -24,26 +26,44 @@ abstract contract SlasherBase is SlasherStorage {
     /// @param _slasher The address of the slasher
     constructor(
         IAllocationManager _allocationManager,
+        IStrategyManager _strategyManager,
         ISlashingRegistryCoordinator _registryCoordinator,
         address _slasher
-    ) SlasherStorage(_allocationManager, _registryCoordinator, _slasher) {}
+    ) SlasherStorage(_allocationManager, _strategyManager, _registryCoordinator, _slasher) {}
 
     /// @notice Internal function to execute a slashing request
-    /// @param _requestId The ID of the slashing request to fulfill
     /// @param _params Parameters defining the slashing request including operator, strategies, and amounts
     /// @dev Calls AllocationManager.slashOperator to perform the actual slashing
     function _fulfillSlashingRequest(
-        uint256 _requestId,
         IAllocationManager.SlashingParams memory _params
-    ) internal virtual {
-        allocationManager.slashOperator({avs: slashingRegistryCoordinator.avs(), params: _params});
+    ) internal virtual returns (uint256 slashId) {
+        (slashId,) = allocationManager.slashOperator({
+            avs: slashingRegistryCoordinator.avs(),
+            params: _params
+        });
         emit OperatorSlashed(
-            _requestId,
+            slashId,
             _params.operator,
             _params.operatorSetId,
             _params.wadsToSlash,
             _params.description
         );
+    }
+
+    /// @notice Internal function to optionally fulfill burn or redistribution instead of waiting for cron job
+    function _fulfillBurnOrRedistribution(uint32 operatorSetId, uint256 slashId) internal virtual {
+        strategyManager.clearBurnOrRedistributableShares({
+            operatorSet: OperatorSet({avs: slashingRegistryCoordinator.avs(), id: operatorSetId}),
+            slashId: slashId
+        });
+    }
+
+    /// @notice Internal function to fulfill a slashing request and burn or redistribute shares
+    function _fulfillSlashingRequestAndBurnOrRedistribute(
+        IAllocationManager.SlashingParams memory _params
+    ) internal virtual returns (uint256 slashId) {
+        slashId = _fulfillSlashingRequest(_params);
+        _fulfillBurnOrRedistribution(_params.operatorSetId, slashId);
     }
 
     /// @notice Internal function to verify if an account is the authorized slasher
