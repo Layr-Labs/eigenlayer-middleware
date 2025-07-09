@@ -127,6 +127,23 @@ contract KeyRegistrarMock is IKeyRegistrar {
         return abi.encode(g1Point, g2Point);
     }
 
+    function getOperatorFromSigningKey(
+        OperatorSet memory,
+        /**
+         * operatorSet
+         */
+        bytes calldata
+    )
+        /**
+         * keyData
+         */
+        external
+        pure
+        returns (address, bool)
+    {
+        return (address(0), false);
+    }
+
     receive() external payable {}
     fallback() external payable {}
 }
