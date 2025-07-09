@@ -127,6 +127,7 @@ library CoreDeployLib {
         address strategyBeacon;
         address rewardsCoordinator;
         address permissionController;
+        address eigenStrategy;
     }
 
     function deployContracts(
@@ -178,7 +179,7 @@ library CoreDeployLib {
         address allocationManagerImpl = address(
             new AllocationManager(
                 IDelegationManager(deployments.delegationManager),
-                IStrategy(address(0)), // TODO: update this to the eigenStrategy,
+                IStrategy(deployments.eigenStrategy),
                 IPauserRegistry(deployments.pauserRegistry),
                 IPermissionController(deployments.permissionController),
                 config.allocationManager.deallocationDelay,
