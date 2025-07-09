@@ -25,9 +25,6 @@ contract InstantSlasher is IInstantSlasher, SlasherBase {
         IAllocationManager.SlashingParams calldata _slashingParams
     ) external virtual override(IInstantSlasher) onlySlasher {
         _fulfillSlashingRequest(_slashingParams);
-
-        address[] memory operators = new address[](1);
-        operators[0] = _slashingParams.operator;
-        slashingRegistryCoordinator.updateOperators(operators);
+        _updateOperatorStakeWeights(_slashingParams.operator);
     }
 }

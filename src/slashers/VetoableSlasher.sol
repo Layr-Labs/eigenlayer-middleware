@@ -119,10 +119,7 @@ contract VetoableSlasher is IVetoableSlasher, SlasherBase {
         request.status = IVetoableSlasherTypes.SlashingStatus.Completed;
 
         _fulfillSlashingRequest(request.params);
-
-        address[] memory operators = new address[](1);
-        operators[0] = request.params.operator;
-        slashingRegistryCoordinator.updateOperators(operators);
+        _updateOperatorStakeWeights(request.params.operator);
     }
 
     /// @notice Internal function to verify if an account is the veto committee

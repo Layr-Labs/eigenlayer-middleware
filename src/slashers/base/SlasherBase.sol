@@ -74,4 +74,14 @@ abstract contract SlasherBase is SlasherStorage {
     ) internal view virtual {
         require(account == slasher, OnlySlasher());
     }
+
+    /// @notice Internal function to update stake weights for the given operator
+    /// @param operator The operator to update
+    function _updateOperatorStakeWeights(
+        address operator
+    ) internal virtual {
+        address[] memory operators = new address[](1);
+        operators[0] = operator;
+        slashingRegistryCoordinator.updateOperators(operators);
+    }
 }

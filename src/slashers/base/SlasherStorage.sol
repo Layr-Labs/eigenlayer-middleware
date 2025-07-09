@@ -27,6 +27,7 @@ abstract contract SlasherStorage is ISlasher {
     /// @notice the address of the slasher
     address public immutable slasher;
 
+    /// @dev DEPRECATED -- `AllocationManager` now tracks monotonically increasing `slashId`.
     uint256 private __deprecated_nextRequestId;
 
     constructor(

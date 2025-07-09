@@ -127,7 +127,7 @@ library CoreDeployLib {
         address strategyBeacon;
         address rewardsCoordinator;
         address permissionController;
-        address eigenStrategy;
+        address eigenStrategy; // TODO: initialize
     }
 
     function deployContracts(
