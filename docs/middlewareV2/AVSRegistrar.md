@@ -20,20 +20,63 @@ Interfaces:
 
 ## Overview
 
-The AVSRegistrar is the primary interface between AVSs and the EigenLayer core protocol for managing operator registration. It enforces that operators have valid keys registered in the `KeyRegistrar` before allowing them to join operator sets. The registrar integrates with the `AllocationManager` to ensure proper stake allocation and operator set membership.
+The AVSRegistrar is the interface between AVSs and the EigenLayer core protocol for managing operator registration. It enforces that operators have valid keys registered in the `KeyRegistrar` for a given `operatorSet` before allowing them to register. The `AVSRegistrar` manages multiple operatorSets for a single AVS. 
 
 ### Key Features
 
 - **Access Control**: All registration/deregistration calls must originate from the `AllocationManager`
-- **Key Validation**: Ensures operators have registered appropriate keys (ECDSA or BN254) for their operator sets
-- **Extensibility**: Provides hooks for custom registration logic
-- **Modular Design**: Presets demonstrate common patterns like socket management and access control
+- **Key Validation**: Ensures operators have registered appropriate keys (ECDSA or BN254) for their operator sets with the [Core `KeyRegistrar`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/main/docs/permissions/KeyRegistrar.md)
+- **Extensibility**: Hooks: `_before/afterRegisterOperator` and `_before/AfterDeregisterOperator` enable custom logic to gate operator registration
+
+### System Diagrams
+The below system diagrams assume the *basic* interaction with the AVSRegistrar. Note that AVSs can enact more complex actions such as:
+
+1. Ejecting operators from an operatorSet on the AllocationManager using the [Permission Controller]()
+2. Propagating registration and deregistrations to external, AVS-controlled contracts
+3. Gating operator registration based on custom stake-weighted parameters
+
+#### Initialization
+```mermaid
+sequenceDiagram
+    participant AVSAdmin as AVS Admin
+    participant AllocationManager
+    participant AVSRegistrar
+
+    AVSAdmin->>AllocationManager: Tx1: set metadataURI
+    AVSAdmin->>AVSRegistrar: Tx2: deploy AVSRegistrar
+    AVSAdmin->>AllocationManager: Tx3: set AVSRegistrar
+    AllocationManager->>AVSRegistrar: Tx3: check supportsAVS()
+```
+
+The `AVSAdmin` is the entity that conducts on-chain operations on behalf of the AVS. It can be a multisig, eoa, or governance contract. In Tx1, when the `metadataURI` is set, the identifier for the AVS in the core protocol is the address of the `AVSAdmin`. For ergonomic purposes, it is possible to have the identifier be the [`AVSRegistrar`](#avsregistrarasidentifier). See the [Core `PermissionController`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/main/docs/permissions/PermissionController.md) for more information on how the admin can be changed. 
+
+#### Registration
+```mermaid
+sequenceDiagram
+    participant Operator
+    participant AllocationManager
+    participant AVSRegistrar
+
+    Operator->>AllocationManager: Tx1: Register for opSet
+    AllocationManager->>AVSRegistrar: Tx1: Send opSets, Data
+```
+
+#### Deregistration
+```mermaid
+sequenceDiagram
+    participant Operator
+    participant AllocationManager
+    participant AVSRegistrar
+
+    Operator->>AllocationManager: Tx1: Deregister
+    AllocationManager->>AVSRegistrar: Tx1: Send Deregistration
+```
 
 ---
 
 ## AVSRegistrar (Base Contract)
 
-The base `AVSRegistrar` contract provides core registration functionality with a flexible hooks paradigm for extensibility.
+The base `AVSRegistrar` contract validates operator key registration. It should be inherited from to build additional logic gating registration, such as [`AVSRegistrarWithSocket`](#avsregistrarwithsocket) and [`AVSRegistrarWithAllowlist](#avsregistrarwithallowlist). 
 
 ### Core Functions
 
@@ -59,30 +102,39 @@ function registerOperator(
 
 Registers an operator to one or more operator sets after validating their keys.
 
-*Access Control*:
-* Only callable by the `AllocationManager` (enforced by modifier)
+*Effects:*
+- Emits `OperatorRegistered` event
 
-*Process*:
-1. Calls `_beforeRegisterOperator` hook
-2. Validates operator keys via `_validateOperatorKeys`
-3. Calls `_afterRegisterOperator` hook
-4. Emits `OperatorRegistered` event
+*Requirements:*
+- Caller MUST be the `AllocationManager`
+- Operator MUST have registered a key for the operatorSet in the `KeyRegistrar`
 
-*Reverts*:
-* `NotAllocationManager` - If caller is not the AllocationManager
-* `KeyNotRegistered` - If operator lacks valid keys for any operator set
-* Any custom errors from hook implementations
+##### `_validateOperatorKeys`
+
+```solidity
+/**
+ * @notice Validates that the operator has registered a key for the given operator sets
+ * @param operator The operator to validate
+ * @param operatorSetIds The operator sets to validate
+ * @dev This function assumes the operator has already registered a key in the Key Registrar
+ */
+function _validateOperatorKeys(
+    address operator,
+    uint32[] calldata operatorSetIds
+) internal view;
+```
+
+Ensures the operator has registered appropriate keys for all specified operator sets.
 
 #### `deregisterOperator`
 
 ```solidity
 /**
  * @notice Called by the AllocationManager when an operator is deregistered from
- * one or more operator sets
- * @param operator The deregistering operator
- * @param avs The AVS the operator is deregistering from (must match this.avs())
- * @param operatorSetIds The list of operator set ids being deregistered from
- * @dev If this method reverts, it is ignored by the AllocationManager
+ * one or more operator sets. If this method reverts, it is ignored.
+ * @param operator the deregistering operator
+ * @param avs the AVS the operator is deregistering from. This should be the same as IAVSRegistrar.avs()
+ * @param operatorSetIds the list of operator set ids being deregistered from
  */
 function deregisterOperator(
     address operator,
@@ -91,17 +143,13 @@ function deregisterOperator(
 ) external virtual onlyAllocationManager;
 ```
 
-Deregisters an operator from one or more operator sets.
+Deregisters an operator from one or more operator sets. This function can be called by an operator OR by the AVSs ejector if it has configured permissions in the [Core `Permission Controller`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/main/docs/permissions/PermissionController.md).
 
-*Access Control*:
-* Only callable by the `AllocationManager`
+*Effects:*
+- Emits `OperatorDeregistered` event
 
-*Process*:
-1. Calls `_beforeDeregisterOperator` hook
-2. Calls `_afterDeregisterOperator` hook
-3. Emits `OperatorDeregistered` event
-
-*Note*: Unlike registration, deregistration failures are ignored by the AllocationManager
+*Requirements:*
+- Caller MUST be the `AllocationManager`
 
 #### `supportsAVS`
 
@@ -116,15 +164,17 @@ function supportsAVS(
 ) public view virtual returns (bool);
 ```
 
-Checks if this registrar supports a given AVS address.
+This function is called by the `AllocationManager` to ensure that a malicious entity cannot set the AVSRegistrar that is not theirs. See [`AllocationManager.setAVSRegistrar`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/main/docs/core/AllocationManager.md#setavsregistrar) for more information. 
+
+Within the core protocol, the
 
 *Returns*:
 * `true` if `_avs` matches the configured AVS address
 * `false` otherwise
 
-### The Hooks Paradigm
+### Hooks
 
-The AVSRegistrar implements a hooks paradigm that enables flexible customization without modifying core logic. This design pattern provides four extension points:
+The AVSRegistrar implements a hooks to add further logic to gate registration or deregistration. 
 
 #### Hook Functions
 
@@ -188,58 +238,23 @@ function _afterDeregisterOperator(
 - Triggering external notifications
 - Recording additional information
 
-#### Benefits of the Hooks Paradigm
-
-1. **Composability**: Multiple behaviors can be combined by chaining hook implementations
-2. **Reusability**: Common patterns can be extracted into modules
-3. **Upgradability**: New functionality can be added without modifying core logic
-4. **Separation of Concerns**: Core registration logic remains simple and focused
-
-### Internal Functions
-
-#### `_validateOperatorKeys`
-
-```solidity
-/**
- * @notice Validates that the operator has registered a key for the given operator sets
- * @param operator The operator to validate
- * @param operatorSetIds The operator sets to validate
- * @dev This function assumes the operator has already registered a key in the Key Registrar
- */
-function _validateOperatorKeys(
-    address operator,
-    uint32[] calldata operatorSetIds
-) internal view;
-```
-
-Ensures the operator has registered appropriate keys for all specified operator sets.
-
-*Process*:
-* For each operator set ID:
-  * Constructs the `OperatorSet` struct
-  * Calls `keyRegistrar.checkKey()` to verify key registration
-  * Reverts with `KeyNotRegistered` if check fails
 
 ---
 
 ## AVSRegistrarWithSocket
 
-Extends the base registrar to capture and store operator socket URLs for off-chain communication.
+Extends the base registrar to store a socket URL for each operator. 
 
-### Additional Functionality
-
+The `AVSRegistrarWithSocket`: 
 - Inherits from `SocketRegistry` module
 - Stores socket URLs in the `_afterRegisterOperator` hook
 - Allows operators to update their socket URLs post-registration
 
-### Registration Data Format
-
-```solidity
-// Socket URL must be ABI-encoded as a string
-bytes memory data = abi.encode("https://operator.example.com:8080");
-```
+**Note: Sockets are global for the AVS and cannot be set on a per-operatorSet basis.** The socket is updated on every registration call, regardless if the operator has already registered to a different operatorSet. Sockets are *not* cleared upon deregistration. 
 
 ### Key Methods (from SocketRegistry)
+
+#### `getOperatorSocket`
 
 ```solidity
 /**
@@ -247,8 +262,17 @@ bytes memory data = abi.encode("https://operator.example.com:8080");
  * @param operator The operator address
  * @return The operator's socket URL
  */
-function getOperatorSocket(address operator) external view returns (string memory);
+function getOperatorSocket(
+    address operator
+) external view returns (string memory);
+```
 
+*Returns:*
+- The operator's socket URL (empty string if not set)
+
+#### `updateSocket`
+
+```solidity
 /**
  * @notice Update the socket URL for the calling operator
  * @param operator The operator address (must be msg.sender)
@@ -257,17 +281,26 @@ function getOperatorSocket(address operator) external view returns (string memor
 function updateSocket(address operator, string memory socket) external;
 ```
 
+Allows an operator to update their socket URL after registration. The operator does NOT need to be registered to update socket
+
+
+*Effects:*
+- Updates the stored socket URL for the operator
+- Emits `OperatorSocketSet` event
+
+*Requirements:*
+- `msg.sender` MUST be the `operator`
+
 ---
 
 ## AVSRegistrarWithAllowlist
 
-Adds permissioned registration by maintaining per-operator-set allowlists.
+Gates registration by maintaining per-operatorSet allowlists.
 
-### Additional Functionality
-
-- Inherits from `Allowlist` module with `OwnableUpgradeable`
+The `AVSRegistrarWithAllowlist`:
+- Inherits from `Allowlist` module
 - Checks allowlist in the `_beforeRegisterOperator` hook
-- Admin can manage allowlists via standard functions
+- Gates registration on allowlist membership. Deregistration can be completed regardless of allowlist membership
 
 ### Initialization
 
@@ -279,7 +312,11 @@ Adds permissioned registration by maintaining per-operator-set allowlists.
 function initialize(address admin) public override initializer;
 ```
 
+The admin set in this function is the owner of the contract, which gates the below `Allowlist` methods.
+
 ### Key Methods (from Allowlist)
+
+#### `addOperatorToAllowlist`
 
 ```solidity
 /**
@@ -292,7 +329,21 @@ function addOperatorToAllowlist(
     OperatorSet memory operatorSet,
     address operator
 ) external onlyOwner;
+```
 
+Adds an operator to the allowlist for a specific operator set, enabling them to register.
+
+*Effects:*
+- Adds operator to the allowlist for the specified operator set
+- Emits `OperatorAddedToAllowlist` event
+
+*Requirements:*
+- Caller MUST be the contract owner
+- Operator MUST NOT already be in the allowlist for this operator set
+
+#### `removeOperatorFromAllowlist`
+
+```solidity
 /**
  * @notice Remove an operator from the allowlist
  * @param operatorSet The operator set to update
@@ -303,7 +354,21 @@ function removeOperatorFromAllowlist(
     OperatorSet memory operatorSet,
     address operator
 ) external onlyOwner;
+```
 
+Removes an operator from the allowlist for a specific operator set.
+
+*Effects:*
+- Removes operator from the allowlist for the specified operator set
+- Emits `OperatorRemovedFromAllowlist` event
+
+*Requirements:*
+- Caller MUST be the contract owner
+- Operator MUST be in the allowlist for this operator set
+
+#### `isOperatorAllowed`
+
+```solidity
 /**
  * @notice Check if an operator is allowed for a specific operator set
  * @param operatorSet The operator set to check
@@ -316,19 +381,32 @@ function isOperatorAllowed(
 ) public view returns (bool);
 ```
 
+Checks whether an operator is on the allowlist for a specific operator set.
+
+*Returns:*
+- `true` if the operator is allowed for the operator set
+- `false` otherwise
+
+#### `getAllowedOperators`
+
+```solidity
+/**
+ * @notice Get all operators on the allowlist for a specific operator set
+ * @param operatorSet The operator set to query
+ * @return Array of allowed operator addresses
+ */
+function getAllowedOperators(
+    OperatorSet memory operatorSet
+) external view returns (address[] memory);
+```
+
+Returns all operators currently on the allowlist for a specific operator set.
+
 ---
 
 ## AVSRegistrarAsIdentifier
 
-A specialized registrar that serves as both the registrar and the AVS identifier in the EigenLayer protocol.
-
-### Key Differences
-
-- The registrar contract address becomes the AVS address
-- Manages AVS metadata and permissions during initialization
-- Integrates with `PermissionController` for admin management
-
-### Initialization
+A specialized registrar that makes the identifier of the AVS in the core protocol the AVSRegistrar. 
 
 ```solidity
 /**
@@ -343,16 +421,3 @@ function initialize(address admin, string memory metadataURI) public initializer
 1. Updates AVS metadata URI in the AllocationManager
 2. Sets itself as the AVS registrar
 3. Initiates admin transfer via PermissionController
-
-### Use Cases
-
-This preset is ideal when:
-- You want a single contract to represent your AVS
-- You need simplified deployment and management
-- You want the registrar to be the primary AVS identity
-
-### Benefits
-
-1. **Simplified Architecture**: One less contract to deploy and manage
-2. **Clear Identity**: The registrar IS the AVS
-3. **Integrated Permissions**: Admin control is built into initialization

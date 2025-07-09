@@ -1,11 +1,11 @@
-[elip-008]: https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-008.md
-[core-multichain-docs]: https://github.com/Layr-Labs/eigenlayer-contracts/tree/release-dev/multichain/docs/multichain
+[elip-008]: https://github.com/eigenfoundation/ELIPs/blob/elip-008v1/ELIPs/ELIP-008.md
+[core-multichain-docs]: https://github.com/Layr-Labs/eigenlayer-contracts/tree/main/docs/multichain
 
 ## MiddlewareV2
 
 The middlewareV2 architecture simplifies AVS development by:
 1. Utilizing core protocol contracts for operator key storage (`KeyRegistrar`) and task verification (`BN254CertificateVerifier` and `ECDSACertificateVerifier`)
-2. Utilizing core contracts for OperatorSet (eg. quorum) membership and strategy composition in the `AllocationManager`
+2. Utilizing core contracts for OperatorSet (ie. quorum) membership and strategy composition in the `AllocationManager`
 3. Utilizing the EigenLabs-run offchain services to update stakes instead of [`avs-sync](https://github.com/Layr-Labs/avs-sync)
 
 ---
@@ -153,8 +153,6 @@ The `AVSRegistrar` provides base functionality for AVSs to register and deregist
 
 See full documentation in [`./AVSRegistrar.md`](./AVSRegistrar.md).
 
-
-
 ---
 
 ### Operator Table Calculator
@@ -175,6 +173,16 @@ See full documentation in [`/operatorTableCalculator.md`](./OperatorTableCalcula
 ### Core Contract Integrations
 
 #### Key Registrar
+The KeyRegistrar manages cryptographic keys for operators across different operator sets. It supports both ECDSA and BN254 key types and ensures global uniqueness of keys across all operator sets.
+
+When an operator registers to an operatorSet, the `AVSRegistrar` checks membership
+
+Key features:
+- Per-OperatorSet Configuration: Each operator set must be configured with a specific curve type before keys can be registered
+- Global Key Registry: Keys are globally unique - once registered, a key cannot be reused across operatorSets or operators
+- Keys are stored in a 2-way mapping:
+  - (operator, operatorSet) to key
+  - keyHash to operator address
 
 #### Allocation Manager
 

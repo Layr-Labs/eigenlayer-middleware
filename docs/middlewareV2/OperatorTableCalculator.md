@@ -17,7 +17,7 @@ Interfaces:
 
 ## Overview
 
-The OperatorTableCalculator contracts are responsible for calculating stake weights of operator. These stake weights are aggregated and transported using the [Eigenlayer Multichain Protocol](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-008.md). In order to utilize the multichain protocol, an AVS *MUST* deploy an `OperatorTableCalculator` and register it in the `CrossChainRegistry` in EigenLayer core. See our [core documentation](https://github.com/Layr-Labs/eigenlayer-contracts/tree/release-dev/multichain/docs/multichain#common-user-flows) for this process. 
+The OperatorTableCalculator contracts are responsible for calculating stake weights of operator. These stake weights are aggregated and transported using the [Eigenlayer Multichain Protocol](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-008.md). In order to utilize the multichain protocol, an AVS *MUST* deploy an `OperatorTableCalculator` and register it in the `CrossChainRegistry` in EigenLayer core. See our [core documentation](https://github.com/Layr-Labs/eigenlayer-contracts/tree/main/docs/multichain#common-user-flows) for this process. 
 
 The base contracts (`ECDSATableCalculatorBase` and `BN254TableCalculatorBase`) provide the core logic for table calculation to be consumed by EigenLayer core, while leaving weight calculation as an unimplemented method to be implemented by derived contracts.
 
@@ -196,7 +196,7 @@ Calculates and returns a `BN254OperatorSetInfo` struct containing:
 * Constructs a merkle tree from all operator info leaves
 * Returns the complete operator set information
 
-BN254 tables take advantage of signature aggregation. As such, we add operator's weights to the total weights. We generate a merkle root that contains individual operator stakes (`BN254OperatorInfo`) to lower transport costs. See the core [`BN254CertificateVerifier`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/release-dev/multichain/docs/multichain/destination/CertificateVerifier.md) for more information on the caching and verification scheme. 
+BN254 tables take advantage of signature aggregation. As such, we add operator's weights to the total weights. We generate a merkle root that contains individual operator stakes (`BN254OperatorInfo`) to lower transport costs. See the core [`BN254CertificateVerifier`](https://github.com/Layr-Labs/eigenlayer-contracts/tree/main/docs/multichain/destination/CertificateVerifier.md) for more information on the caching and verification scheme. 
 
 #### `calculateOperatorTableBytes`
 
