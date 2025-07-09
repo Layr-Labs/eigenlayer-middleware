@@ -301,3 +301,56 @@ contract AVSRegistrarWithAllowlistUnitTests_deregisterOperator is
         avsRegistrarWithAllowlist.deregisterOperator(defaultOperator, AVS, operatorSetIds);
     }
 }
+
+contract AVSRegistrarWithAllowlistUnitTests_ViewFunctions is AVSRegistrarWithAllowlistUnitTests {
+    function test_supportsAVS_true() public {
+        // Should return true when checking against the configured AVS
+        assertTrue(
+            avsRegistrarWithAllowlist.supportsAVS(AVS),
+            "supportsAVS: should return true for configured AVS"
+        );
+    }
+
+    function test_supportsAVS_false() public {
+        // Should return false for any other address
+        assertFalse(
+            avsRegistrarWithAllowlist.supportsAVS(address(0)),
+            "supportsAVS: should return false for zero address"
+        );
+        assertFalse(
+            avsRegistrarWithAllowlist.supportsAVS(address(1)),
+            "supportsAVS: should return false for random address"
+        );
+        assertFalse(
+            avsRegistrarWithAllowlist.supportsAVS(address(avsRegistrarWithAllowlist)),
+            "supportsAVS: should return false for registrar address"
+        );
+        assertFalse(
+            avsRegistrarWithAllowlist.supportsAVS(defaultOperator),
+            "supportsAVS: should return false for operator"
+        );
+    }
+
+    function testFuzz_supportsAVS(
+        address randomAddress
+    ) public {
+        if (randomAddress == AVS) {
+            assertTrue(
+                avsRegistrarWithAllowlist.supportsAVS(randomAddress),
+                "supportsAVS: should return true for configured AVS"
+            );
+        } else {
+            assertFalse(
+                avsRegistrarWithAllowlist.supportsAVS(randomAddress),
+                "supportsAVS: should return false for non-AVS address"
+            );
+        }
+    }
+
+    function test_getAVS() public {
+        // Should return the configured AVS address
+        assertEq(
+            avsRegistrarWithAllowlist.getAVS(), AVS, "getAVS: should return configured AVS address"
+        );
+    }
+}
