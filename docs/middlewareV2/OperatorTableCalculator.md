@@ -17,7 +17,7 @@ Interfaces:
 
 ## Overview
 
-The OperatorTableCalculator contracts are responsible for calculating stake weights of operator. These stake weights are aggregated and transported using the [Eigenlayer Multichain Protocol](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-008.md). In order to utilize the multichain protocol, an AVS *MUST* deploy an `OperatorTableCalculator` and register it in the `CrossChainRegistry` in EigenLayer core. See our [core documentation](https://github.com/Layr-Labs/eigenlayer-contracts/tree/main/docs/multichain#common-user-flows) for this process. 
+The OperatorTableCalculator contracts are responsible for calculating stake weights of operator. These stake weights are aggregated and transported using the [Eigenlayer Multichain Protocol](https://github.com/eigenfoundation/ELIPs/blob/elip-008v1/ELIPs/ELIP-008.md). In order to utilize the multichain protocol, an AVS *MUST* deploy an `OperatorTableCalculator` and register it in the `CrossChainRegistry` in EigenLayer core. See our [core documentation](https://github.com/Layr-Labs/eigenlayer-contracts/tree/main/docs/multichain#common-user-flows) for this process. 
 
 The base contracts (`ECDSATableCalculatorBase` and `BN254TableCalculatorBase`) provide the core logic for table calculation to be consumed by EigenLayer core, while leaving weight calculation as an unimplemented method to be implemented by derived contracts.
 
