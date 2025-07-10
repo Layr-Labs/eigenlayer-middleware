@@ -27,6 +27,12 @@ contract AVSRegistrarAsIdentifier is AVSRegistrar {
         permissionController = _permissionController;
     }
 
+    /**
+     * @notice Initializes the AVSRegistrarAsIdentifier
+     * @param admin The admin for the AVS
+     * @param metadataURI The metadataURI for the AVS
+     * @dev This function enables the address of the AVS in the core protocol to be the proxy AVSRegistrarAsIdentifier contract
+     */
     function initialize(address admin, string memory metadataURI) public initializer {
         // Set the metadataURI and the registrar for the AVS to this registrar contract
         allocationManager.updateAVSMetadataURI(address(this), metadataURI);

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import {IAVSRegistrarWithAllowlist} from "../../../interfaces/IAVSRegistrarWithAllowlist.sol";
 import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
@@ -9,7 +10,7 @@ import {AVSRegistrar} from "../AVSRegistrar.sol";
 import {Allowlist} from "../modules/Allowlist.sol";
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
-contract AVSRegistrarWithAllowlist is AVSRegistrar, Allowlist {
+contract AVSRegistrarWithAllowlist is AVSRegistrar, Allowlist, IAVSRegistrarWithAllowlist {
     constructor(
         address _avs,
         IAllocationManager _allocationManager,
