@@ -12,10 +12,14 @@ import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyR
 import {IOperatorTableCalculatorTypes} from
     "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {OperatorSet, OperatorSetLib} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
+import {
+    OperatorSet,
+    OperatorSetLib
+} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 import {BN254} from "eigenlayer-contracts/src/contracts/libraries/BN254.sol";
 
-import {BN254TableCalculator} from "../../../src/middlewareV2/tableCalculator/BN254TableCalculator.sol";
+import {BN254TableCalculator} from
+    "../../../src/middlewareV2/tableCalculator/BN254TableCalculator.sol";
 import {MockEigenLayerDeployer} from "./MockDeployer.sol";
 import "test/utils/Random.sol";
 
@@ -100,14 +104,13 @@ contract BN254TableCalculatorUnitTests is MockEigenLayerDeployer, IOperatorTable
         allocationManagerMock.setMembersInOperatorSet(operatorSet, operators);
         allocationManagerMock.setStrategiesInOperatorSet(operatorSet, strategies);
         allocationManagerMock.setMinimumSlashableStake(
-            operatorSet,
-            operators,
-            strategies,
-            minSlashableStake
+            operatorSet, operators, strategies, minSlashableStake
         );
     }
 
-    function _createSingleWeightArray(uint256 weight) internal pure returns (uint256[][] memory) {
+    function _createSingleWeightArray(
+        uint256 weight
+    ) internal pure returns (uint256[][] memory) {
         uint256[][] memory weights = new uint256[][](1);
         weights[0] = new uint256[](1);
         weights[0][0] = weight;
@@ -121,7 +124,6 @@ contract BN254TableCalculatorUnitTests is MockEigenLayerDeployer, IOperatorTable
         weights[0] = weightValues;
         return weights;
     }
-
 }
 
 /**
@@ -219,7 +221,7 @@ contract BN254TableCalculatorUnitTests_getOperatorWeights is BN254TableCalculato
         assertEq(resultOperators[0], operator1, "Operator1 mismatch");
         assertEq(resultOperators[1], operator2, "Operator2 mismatch");
         assertEq(resultOperators[2], operator3, "Operator3 mismatch");
-        
+
         assertEq(resultWeights[0][0], 800, "Operator1 weight mismatch (500 + 300)");
         assertEq(resultWeights[1][0], 600, "Operator2 weight mismatch (200 + 400)");
         assertEq(resultWeights[2][0], 250, "Operator3 weight mismatch (100 + 150)");
@@ -276,10 +278,7 @@ contract BN254TableCalculatorUnitTests_getOperatorWeights is BN254TableCalculato
         assertEq(resultWeights[0][0], 1000, "Weight should match");
     }
 
-    function testFuzz_getOperatorWeights(
-        uint8 numOperators,
-        uint256 baseWeight
-    ) public {
+    function testFuzz_getOperatorWeights(uint8 numOperators, uint256 baseWeight) public {
         numOperators = uint8(bound(numOperators, 1, 10));
         baseWeight = bound(baseWeight, 1, 1e18);
 
@@ -308,4 +307,3 @@ contract BN254TableCalculatorUnitTests_getOperatorWeights is BN254TableCalculato
         assertEq(resultWeights.length, expectedNonZeroOperators, "Weight count mismatch");
     }
 }
-

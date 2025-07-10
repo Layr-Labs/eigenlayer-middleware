@@ -12,9 +12,13 @@ import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyR
 import {IOperatorTableCalculatorTypes} from
     "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {OperatorSet, OperatorSetLib} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
+import {
+    OperatorSet,
+    OperatorSetLib
+} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
-import {ECDSATableCalculator} from "../../../src/middlewareV2/tableCalculator/ECDSATableCalculator.sol";
+import {ECDSATableCalculator} from
+    "../../../src/middlewareV2/tableCalculator/ECDSATableCalculator.sol";
 import {MockEigenLayerDeployer} from "./MockDeployer.sol";
 import "test/utils/Random.sol";
 
@@ -99,14 +103,13 @@ contract ECDSATableCalculatorUnitTests is MockEigenLayerDeployer, IOperatorTable
         allocationManagerMock.setMembersInOperatorSet(operatorSet, operators);
         allocationManagerMock.setStrategiesInOperatorSet(operatorSet, strategies);
         allocationManagerMock.setMinimumSlashableStake(
-            operatorSet,
-            operators,
-            strategies,
-            minSlashableStake
+            operatorSet, operators, strategies, minSlashableStake
         );
     }
 
-    function _createSingleWeightArray(uint256 weight) internal pure returns (uint256[][] memory) {
+    function _createSingleWeightArray(
+        uint256 weight
+    ) internal pure returns (uint256[][] memory) {
         uint256[][] memory weights = new uint256[][](1);
         weights[0] = new uint256[](1);
         weights[0][0] = weight;
@@ -229,7 +232,7 @@ contract ECDSATableCalculatorUnitTests_getOperatorWeights is ECDSATableCalculato
         assertEq(resultOperators[0], operator1, "Operator1 mismatch");
         assertEq(resultOperators[1], operator2, "Operator2 mismatch");
         assertEq(resultOperators[2], operator3, "Operator3 mismatch");
-        
+
         assertEq(resultWeights[0][0], 800, "Operator1 weight mismatch (500 + 300)");
         assertEq(resultWeights[1][0], 600, "Operator2 weight mismatch (200 + 400)");
         assertEq(resultWeights[2][0], 250, "Operator3 weight mismatch (100 + 150)");
@@ -281,7 +284,7 @@ contract ECDSATableCalculatorUnitTests_getOperatorWeights is ECDSATableCalculato
 
         // Verify that the correct futureBlock is used
         uint32 expectedFutureBlock = uint32(block.number + TEST_LOOKAHEAD_BLOCKS);
-        
+
         (address[] memory resultOperators, uint256[][] memory resultWeights) =
             calculator.exposed_getOperatorWeights(defaultOperatorSet);
 
@@ -289,10 +292,7 @@ contract ECDSATableCalculatorUnitTests_getOperatorWeights is ECDSATableCalculato
         assertEq(resultWeights[0][0], 1000, "Weight should match");
     }
 
-    function testFuzz_getOperatorWeights(
-        uint8 numOperators,
-        uint256 baseWeight
-    ) public {
+    function testFuzz_getOperatorWeights(uint8 numOperators, uint256 baseWeight) public {
         numOperators = uint8(bound(numOperators, 1, 10));
         baseWeight = bound(baseWeight, 1, 1e18);
 
