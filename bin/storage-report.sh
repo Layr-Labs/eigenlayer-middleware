@@ -36,10 +36,14 @@ for file in $(find src/ -name "*.sol" ! -path "*/interfaces/*" ! -path "*/librar
     
     log "Processing contract: $contract_name"
 
-    # Run forge inspect and capture errors
-    if ! forge inspect "$contract_name" storage > "$OUTPUT_DIR/$contract_name.md"; then
-        error "Failed to generate storage report for contract: $contract_name"
+    # Create a unique output filename based on the full path to handle duplicate contract names
+    # Replace slashes with underscores and remove the src/ prefix
+    unique_name=$(echo "$file" | sed 's|^src/||' | sed 's|/|_|g' | sed 's|\.sol$||')
+    
+    # Run forge inspect using the full path to handle duplicate contract names
+    if ! forge inspect "$file:$contract_name" storage > "$OUTPUT_DIR/$unique_name.md"; then
+        error "Failed to generate storage report for contract: $contract_name at $file"
     else
-        log "Storage report generated for contract: $contract_name"
+        log "Storage report generated for contract: $contract_name at $file"
     fi
 done
