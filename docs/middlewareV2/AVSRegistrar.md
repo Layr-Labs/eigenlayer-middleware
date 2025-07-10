@@ -166,8 +166,6 @@ function supportsAVS(
 
 This function is called by the `AllocationManager` to ensure that a malicious entity cannot set the AVSRegistrar that is not theirs. See [`AllocationManager.setAVSRegistrar`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/main/docs/core/AllocationManager.md#setavsregistrar) for more information. 
 
-Within the core protocol, the
-
 *Returns*:
 * `true` if `_avs` matches the configured AVS address
 * `false` otherwise
