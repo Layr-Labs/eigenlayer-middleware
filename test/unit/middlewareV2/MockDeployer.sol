@@ -8,8 +8,8 @@ import {PermissionController} from
     "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
 import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {AllocationManagerMock} from "eigenlayer-contracts/src/test/mocks/AllocationManagerMock.sol";
 
+import {AllocationManagerMock} from "test/mocks/AllocationManagerMock.sol";
 import "test/mocks/KeyRegistrarMock.sol";
 import "test/utils/Random.sol";
 

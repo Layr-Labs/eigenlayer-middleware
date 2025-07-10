@@ -5,6 +5,7 @@ import {
     KeyRegistrar,
     IKeyRegistrarTypes
 } from "eigenlayer-contracts/src/contracts/permissions/KeyRegistrar.sol";
+import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 import {IOperatorTableCalculatorTypes} from
     "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
@@ -113,8 +114,8 @@ contract ECDSATableCalculatorBaseUnitTests is
         ecdsaKey3 = abi.encodePacked(ecdsaAddress3);
 
         // Configure operator sets in AllocationManager
-        allocationManagerMock.setAVSRegistrar(avs1, avs1);
-        allocationManagerMock.setAVSRegistrar(avs2, avs2);
+        allocationManagerMock.setAVSRegistrar(avs1, IAVSRegistrar(avs1));
+        allocationManagerMock.setAVSRegistrar(avs2, IAVSRegistrar(avs2));
 
         // Configure operator sets for ECDSA
         vm.prank(avs1);
