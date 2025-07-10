@@ -79,5 +79,8 @@ abstract contract MockEigenLayerDeployer is Test {
                 )
             )
         );
+
+        // Filter our proxyAdmin from fuzzing
+        isExcludedFuzzAddress[address(proxyAdmin)] = true;
     }
 }
