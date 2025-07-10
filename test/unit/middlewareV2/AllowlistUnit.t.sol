@@ -2,12 +2,16 @@
 pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
-import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {TransparentUpgradeableProxy} from
+    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {Allowlist} from "src/middlewareV2/registrar/modules/Allowlist.sol";
 import {IAllowlist, IAllowlistErrors, IAllowlistEvents} from "src/interfaces/IAllowlist.sol";
-import {OperatorSet, OperatorSetLib} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
+import {
+    OperatorSet,
+    OperatorSetLib
+} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 import {Random, Randomness} from "test/utils/Random.sol";
 
 // Concrete implementation for testing
@@ -42,7 +46,9 @@ contract AllowlistUnitTests is Test, IAllowlistErrors, IAllowlistEvents {
     uint32 public defaultOperatorSetId = 0;
 
     /// @dev set the random seed for the current test
-    modifier rand(Randomness r) {
+    modifier rand(
+        Randomness r
+    ) {
         r.set();
         _;
     }
@@ -64,9 +70,7 @@ contract AllowlistUnitTests is Test, IAllowlistErrors, IAllowlistEvents {
                 new TransparentUpgradeableProxy(
                     address(allowlistImplementation),
                     address(proxyAdmin),
-                    abi.encodeWithSelector(
-                        Allowlist.initialize.selector, allowlistOwner
-                    )
+                    abi.encodeWithSelector(Allowlist.initialize.selector, allowlistOwner)
                 )
             )
         );
@@ -81,7 +85,10 @@ contract AllowlistUnitTests is Test, IAllowlistErrors, IAllowlistEvents {
         allowlist.addOperatorToAllowlist(operatorSet, operator);
     }
 
-    function _addOperatorsToAllowlist(address[] memory operators, OperatorSet memory operatorSet) internal {
+    function _addOperatorsToAllowlist(
+        address[] memory operators,
+        OperatorSet memory operatorSet
+    ) internal {
         for (uint256 i = 0; i < operators.length; i++) {
             _addOperatorToAllowlist(operators[i], operatorSet);
         }
@@ -91,9 +98,7 @@ contract AllowlistUnitTests is Test, IAllowlistErrors, IAllowlistEvents {
 contract AllowlistUnitTests_initialize is AllowlistUnitTests {
     function test_initialization() public view {
         // Check the owner is set correctly
-        assertEq(
-            allowlist.owner(), allowlistOwner, "Initialization: owner incorrect"
-        );
+        assertEq(allowlist.owner(), allowlistOwner, "Initialization: owner incorrect");
     }
 
     function test_revert_alreadyInitialized() public {
@@ -101,16 +106,16 @@ contract AllowlistUnitTests_initialize is AllowlistUnitTests {
         allowlist.initialize(allowlistOwner);
     }
 
-    function testFuzz_initialization(address randomOwner) public {
+    function testFuzz_initialization(
+        address randomOwner
+    ) public {
         // Deploy new instance with random owner
         AllowlistImplementation newAllowlist = AllowlistImplementation(
             address(
                 new TransparentUpgradeableProxy(
                     address(allowlistImplementation),
                     address(proxyAdmin),
-                    abi.encodeWithSelector(
-                        Allowlist.initialize.selector, randomOwner
-                    )
+                    abi.encodeWithSelector(Allowlist.initialize.selector, randomOwner)
                 )
             )
         );
@@ -120,7 +125,9 @@ contract AllowlistUnitTests_initialize is AllowlistUnitTests {
 }
 
 contract AllowlistUnitTests_addOperatorToAllowlist is AllowlistUnitTests {
-    function testFuzz_revert_notOwner(address notOwner) public {
+    function testFuzz_revert_notOwner(
+        address notOwner
+    ) public {
         cheats.assume(notOwner != allowlistOwner);
 
         cheats.expectRevert("Ownable: caller is not the owner");
@@ -152,7 +159,9 @@ contract AllowlistUnitTests_addOperatorToAllowlist is AllowlistUnitTests {
         );
     }
 
-    function testFuzz_correctness_multipleOperatorSets(Randomness r) public rand(r) {
+    function testFuzz_correctness_multipleOperatorSets(
+        Randomness r
+    ) public rand(r) {
         // Generate random operator set ids
         uint32 numOperatorSets = r.Uint32(1, 50);
         uint32[] memory operatorSetIds = r.Uint32Array(numOperatorSets, 0, type(uint32).max);
@@ -160,7 +169,7 @@ contract AllowlistUnitTests_addOperatorToAllowlist is AllowlistUnitTests {
         // Add operator to multiple operator sets
         for (uint32 i = 0; i < operatorSetIds.length; i++) {
             OperatorSet memory operatorSet = OperatorSet({avs: avs1, id: operatorSetIds[i]});
-            
+
             cheats.expectEmit(true, true, true, true);
             emit OperatorAddedToAllowlist(operatorSet, defaultOperator);
             cheats.prank(allowlistOwner);
@@ -177,7 +186,9 @@ contract AllowlistUnitTests_addOperatorToAllowlist is AllowlistUnitTests {
         }
     }
 
-    function testFuzz_correctness_multipleOperators(Randomness r) public rand(r) {
+    function testFuzz_correctness_multipleOperators(
+        Randomness r
+    ) public rand(r) {
         // Generate random operators
         uint32 numOperators = r.Uint32(1, 50);
         address[] memory operators = new address[](numOperators);
@@ -204,7 +215,9 @@ contract AllowlistUnitTests_addOperatorToAllowlist is AllowlistUnitTests {
 }
 
 contract AllowlistUnitTests_removeOperatorFromAllowlist is AllowlistUnitTests {
-    function testFuzz_revert_notOwner(address notOwner) public {
+    function testFuzz_revert_notOwner(
+        address notOwner
+    ) public {
         cheats.assume(notOwner != allowlistOwner);
 
         cheats.expectRevert("Ownable: caller is not the owner");
@@ -235,7 +248,9 @@ contract AllowlistUnitTests_removeOperatorFromAllowlist is AllowlistUnitTests {
         );
     }
 
-    function testFuzz_correctness_multipleOperatorSets(Randomness r) public rand(r) {
+    function testFuzz_correctness_multipleOperatorSets(
+        Randomness r
+    ) public rand(r) {
         // Generate random operator set ids
         uint32 numOperatorSets = r.Uint32(1, 50);
         uint32[] memory operatorSetIds = r.Uint32Array(numOperatorSets, 0, type(uint32).max);
@@ -249,7 +264,7 @@ contract AllowlistUnitTests_removeOperatorFromAllowlist is AllowlistUnitTests {
         // Remove operator from all operator sets
         for (uint32 i = 0; i < operatorSetIds.length; i++) {
             OperatorSet memory operatorSet = OperatorSet({avs: avs1, id: operatorSetIds[i]});
-            
+
             cheats.expectEmit(true, true, true, true);
             emit OperatorRemovedFromAllowlist(operatorSet, defaultOperator);
             cheats.prank(allowlistOwner);
@@ -297,18 +312,20 @@ contract AllowlistUnitTests_isOperatorAllowed is AllowlistUnitTests {
 
     function test_returnsTrue_whenAdded() public {
         _addOperatorToAllowlist(defaultOperator, defaultOperatorSet);
-        
+
         assertTrue(
             allowlist.isOperatorAllowed(defaultOperatorSet, defaultOperator),
             "Should return true for operator in allowlist"
         );
     }
 
-    function testFuzz_correctness(Randomness r) public rand(r) {
+    function testFuzz_correctness(
+        Randomness r
+    ) public rand(r) {
         // Generate random operators and operator sets
         uint32 numOperators = r.Uint32(5, 20);
         uint32 numOperatorSets = r.Uint32(5, 20);
-        
+
         address[] memory operators = new address[](numOperators);
         for (uint32 i = 0; i < numOperators; i++) {
             operators[i] = r.Address();
@@ -322,7 +339,8 @@ contract AllowlistUnitTests_isOperatorAllowed is AllowlistUnitTests {
         // Randomly add some operators to some operator sets
         for (uint32 i = 0; i < operators.length; i++) {
             for (uint32 j = 0; j < operatorSets.length; j++) {
-                if (r.Boolean()) { // 50% chance
+                if (r.Boolean()) {
+                    // 50% chance
                     _addOperatorToAllowlist(operators[i], operatorSets[j]);
                 }
             }
@@ -333,7 +351,7 @@ contract AllowlistUnitTests_isOperatorAllowed is AllowlistUnitTests {
             for (uint32 j = 0; j < operatorSets.length; j++) {
                 // The state should be consistent with what we set
                 bool shouldBeAllowed = allowlist.isOperatorAllowed(operatorSets[j], operators[i]);
-                
+
                 // If allowed, removing should work
                 if (shouldBeAllowed) {
                     cheats.prank(allowlistOwner);
@@ -356,7 +374,7 @@ contract AllowlistUnitTests_getAllowedOperators is AllowlistUnitTests {
 
     function test_returnsSingleOperator() public {
         _addOperatorToAllowlist(defaultOperator, defaultOperatorSet);
-        
+
         address[] memory allowedOperators = allowlist.getAllowedOperators(defaultOperatorSet);
         assertEq(allowedOperators.length, 1, "Should return array with one operator");
         assertEq(allowedOperators[0], defaultOperator, "Should return the correct operator");
@@ -373,22 +391,24 @@ contract AllowlistUnitTests_getAllowedOperators is AllowlistUnitTests {
 
         address[] memory allowedOperators = allowlist.getAllowedOperators(defaultOperatorSet);
         assertEq(allowedOperators.length, 3, "Should return all operators");
-        
+
         // Note: Order may not be preserved, so we check membership
         bool found1 = false;
         bool found2 = false;
         bool found3 = false;
-        
+
         for (uint256 i = 0; i < allowedOperators.length; i++) {
             if (allowedOperators[i] == operator1) found1 = true;
             if (allowedOperators[i] == operator2) found2 = true;
             if (allowedOperators[i] == operator3) found3 = true;
         }
-        
+
         assertTrue(found1 && found2 && found3, "All operators should be in the returned array");
     }
 
-    function testFuzz_correctness(Randomness r) public rand(r) {
+    function testFuzz_correctness(
+        Randomness r
+    ) public rand(r) {
         // Generate random operators
         uint32 numOperators = r.Uint32(1, 50);
         address[] memory operators = new address[](numOperators);
@@ -401,9 +421,9 @@ contract AllowlistUnitTests_getAllowedOperators is AllowlistUnitTests {
 
         // Get allowed operators
         address[] memory allowedOperators = allowlist.getAllowedOperators(defaultOperatorSet);
-        
+
         assertEq(allowedOperators.length, operators.length, "Should return all added operators");
-        
+
         // Check all operators are in the returned array
         for (uint32 i = 0; i < operators.length; i++) {
             bool found = false;
@@ -430,7 +450,9 @@ contract AllowlistUnitTests_getAllowedOperators is AllowlistUnitTests {
         // Check alternative operator set
         address[] memory alternativeAllowed = allowlist.getAllowedOperators(alternativeOperatorSet);
         assertEq(alternativeAllowed.length, 1, "Alternative operator set should have 1 operator");
-        assertEq(alternativeAllowed[0], operator3, "Alternative operator set should contain operator3");
+        assertEq(
+            alternativeAllowed[0], operator3, "Alternative operator set should contain operator3"
+        );
     }
 
     function test_afterRemoval() public {
@@ -446,13 +468,12 @@ contract AllowlistUnitTests_getAllowedOperators is AllowlistUnitTests {
         // Check the result
         address[] memory allowedOperators = allowlist.getAllowedOperators(defaultOperatorSet);
         assertEq(allowedOperators.length, 2, "Should have 2 operators after removal");
-        
+
         // Verify operator2 is not in the array
         for (uint256 i = 0; i < allowedOperators.length; i++) {
             assertTrue(
-                allowedOperators[i] != operator2,
-                "Removed operator should not be in the array"
+                allowedOperators[i] != operator2, "Removed operator should not be in the array"
             );
         }
     }
-} 
+}
