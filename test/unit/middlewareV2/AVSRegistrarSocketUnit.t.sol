@@ -52,7 +52,7 @@ contract AVSRegistrarSocketUnitTests_registerOperator is AVSRegistrarSocketUnitT
 
     function testFuzz_revert_notAllocationManager(
         address notAllocationManager
-    ) public {
+    ) public filterFuzzedAddressInputs(notAllocationManager) {
         cheats.assume(notAllocationManager != address(allocationManagerMock));
 
         cheats.prank(notAllocationManager);
@@ -98,7 +98,7 @@ contract AVSRegistrarSocketUnitTests_DeregisterOperator is AVSRegistrarSocketUni
 
     function testFuzz_revert_notAllocationManager(
         address notAllocationManager
-    ) public {
+    ) public filterFuzzedAddressInputs(notAllocationManager) {
         cheats.assume(notAllocationManager != address(allocationManagerMock));
 
         cheats.prank(notAllocationManager);
@@ -156,5 +156,58 @@ contract AVSRegistrarSocketUnitTests_updateSocket is AVSRegistrarSocketUnitTests
         // Check that the socket is updated
         string memory socket = avsRegistrarWithSocket.getOperatorSocket(defaultOperator);
         assertEq(socket, newSocket, "Socket mismatch");
+    }
+}
+
+contract AVSRegistrarSocketUnitTests_ViewFunctions is AVSRegistrarSocketUnitTests {
+    function test_supportsAVS_true() public {
+        // Should return true when checking against the configured AVS
+        assertTrue(
+            avsRegistrarWithSocket.supportsAVS(AVS),
+            "supportsAVS: should return true for configured AVS"
+        );
+    }
+
+    function test_supportsAVS_false() public {
+        // Should return false for any other address
+        assertFalse(
+            avsRegistrarWithSocket.supportsAVS(address(0)),
+            "supportsAVS: should return false for zero address"
+        );
+        assertFalse(
+            avsRegistrarWithSocket.supportsAVS(address(1)),
+            "supportsAVS: should return false for random address"
+        );
+        assertFalse(
+            avsRegistrarWithSocket.supportsAVS(address(avsRegistrarWithSocket)),
+            "supportsAVS: should return false for registrar address"
+        );
+        assertFalse(
+            avsRegistrarWithSocket.supportsAVS(defaultOperator),
+            "supportsAVS: should return false for operator"
+        );
+    }
+
+    function testFuzz_supportsAVS(
+        address randomAddress
+    ) public {
+        if (randomAddress == AVS) {
+            assertTrue(
+                avsRegistrarWithSocket.supportsAVS(randomAddress),
+                "supportsAVS: should return true for configured AVS"
+            );
+        } else {
+            assertFalse(
+                avsRegistrarWithSocket.supportsAVS(randomAddress),
+                "supportsAVS: should return false for non-AVS address"
+            );
+        }
+    }
+
+    function test_getAVS() public {
+        // Should return the configured AVS address
+        assertEq(
+            avsRegistrarWithSocket.getAVS(), AVS, "getAVS: should return configured AVS address"
+        );
     }
 }
