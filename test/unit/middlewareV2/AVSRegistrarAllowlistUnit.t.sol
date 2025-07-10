@@ -219,7 +219,7 @@ contract AVSRegistrarWithAllowlistUnitTests_registerOperator is
 
     function testFuzz_revert_notAllocationManager(
         address notAllocationManager
-    ) public {
+    ) public filterFuzzedAddressInputs(notAllocationManager) {
         cheats.assume(notAllocationManager != address(allocationManagerMock));
 
         cheats.prank(notAllocationManager);

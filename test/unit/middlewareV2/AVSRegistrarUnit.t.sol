@@ -29,9 +29,8 @@ contract AVSRegistrarUnitTests_RegisterOperator is AVSRegistrarUnitTests {
 
     function testFuzz_revert_notAllocationManager(
         address notAllocationManager
-    ) public {
+    ) public filterFuzzedAddressInputs(notAllocationManager) {
         cheats.assume(notAllocationManager != address(allocationManagerMock));
-        cheats.assume(notAllocationManager != address(proxyAdmin));
 
         cheats.prank(notAllocationManager);
         cheats.expectRevert(NotAllocationManager.selector);
@@ -65,9 +64,8 @@ contract AVSRegistrarUnitTests_DeregisterOperator is AVSRegistrarUnitTests {
 
     function testFuzz_revert_notAllocationManager(
         address notAllocationManager
-    ) public {
+    ) public filterFuzzedAddressInputs(notAllocationManager) {
         cheats.assume(notAllocationManager != address(allocationManagerMock));
-        cheats.assume(notAllocationManager != address(proxyAdmin));
 
         cheats.prank(notAllocationManager);
         cheats.expectRevert(NotAllocationManager.selector);

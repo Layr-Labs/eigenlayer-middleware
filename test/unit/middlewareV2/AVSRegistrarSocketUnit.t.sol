@@ -52,7 +52,7 @@ contract AVSRegistrarSocketUnitTests_registerOperator is AVSRegistrarSocketUnitT
 
     function testFuzz_revert_notAllocationManager(
         address notAllocationManager
-    ) public {
+    ) public filterFuzzedAddressInputs(notAllocationManager) {
         cheats.assume(notAllocationManager != address(allocationManagerMock));
 
         cheats.prank(notAllocationManager);
@@ -98,7 +98,7 @@ contract AVSRegistrarSocketUnitTests_DeregisterOperator is AVSRegistrarSocketUni
 
     function testFuzz_revert_notAllocationManager(
         address notAllocationManager
-    ) public {
+    ) public filterFuzzedAddressInputs(notAllocationManager) {
         cheats.assume(notAllocationManager != address(allocationManagerMock));
 
         cheats.prank(notAllocationManager);
