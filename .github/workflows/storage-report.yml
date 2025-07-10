@@ -39,9 +39,44 @@ jobs:
         run: |
           bash ./bin/storage-report.sh target
 
+      - name: Normalize file names for comparison
+        run: |
+          # Create normalized copies of both directories
+          mkdir -p pr_normalized target_normalized
+          
+          # Normalize PR files (convert new naming convention to old)
+          for file in pr/*.md; do
+            if [ -f "$file" ]; then
+              # Extract the actual contract name from the new naming convention
+              # Convert something like "middlewareV2_registrar_AVSRegistrar.md" to "AVSRegistrar.md"
+              basename_file=$(basename "$file")
+              # Get the last part after the last underscore (the actual contract name)
+              contract_name=$(echo "$basename_file" | sed 's/.*_\([^_]*\)\.md$/\1.md/')
+              # If no underscores found, use the original name
+              if [ "$contract_name" = "$basename_file" ]; then
+                contract_name="$basename_file"
+              fi
+              cp "$file" "pr_normalized/$contract_name"
+            fi
+          done
+          
+          # Normalize target files (handle both old and new naming conventions)
+          for file in target/*.md; do
+            if [ -f "$file" ]; then
+              basename_file=$(basename "$file")
+              # Get the last part after the last underscore (the actual contract name)
+              contract_name=$(echo "$basename_file" | sed 's/.*_\([^_]*\)\.md$/\1.md/')
+              # If no underscores found, use the original name
+              if [ "$contract_name" = "$basename_file" ]; then
+                contract_name="$basename_file"
+              fi
+              cp "$file" "target_normalized/$contract_name"
+            fi
+          done
+
       - name: Compare outputs
         run: |
-          if diff --unified pr target; then
+          if diff --unified pr_normalized target_normalized; then
             echo "No differences found"
           else
             echo "::error::Differences found between PR and target branch storage layouts"
