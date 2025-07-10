@@ -12,7 +12,7 @@ import "./BN254TableCalculatorBase.sol";
 /**
  * @title BN254TableCalculator
  * @notice Implementation that calculates BN254 operator tables using the sum of the minimum slashable stake weights
- * @dev This contract assumes that slashable stake is values the **same** across all strategies.
+ * @dev This contract assumes that slashable stake is valued the **same** across all strategies.
  */
 contract BN254TableCalculator is BN254TableCalculatorBase {
     // Immutables
