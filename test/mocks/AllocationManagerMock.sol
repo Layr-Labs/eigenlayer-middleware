@@ -11,6 +11,8 @@ import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPa
 import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
 
 contract AllocationManagerIntermediate is IAllocationManager {
+    mapping(address avs => address avsRegistrar) internal _avsRegistrar;
+
     function initialize(address initialOwner, uint256 initialPausedStatus) external virtual {}
 
     function slashOperator(
@@ -40,7 +42,13 @@ contract AllocationManagerIntermediate is IAllocationManager {
 
     function setAllocationDelay(address operator, uint32 delay) external virtual {}
 
-    function setAVSRegistrar(address avs, IAVSRegistrar registrar) external virtual {}
+    function setAVSRegistrar(address avs, IAVSRegistrar avsRegistrar) external {
+        _avsRegistrar[avs] = address(avsRegistrar);
+    }
+
+    function getAVSRegistrar(address avs) external view override returns (IAVSRegistrar) {
+        return IAVSRegistrar(_avsRegistrar[avs]);
+    }
 
     function updateAVSMetadataURI(address avs, string calldata metadataURI) external virtual {}
 
@@ -134,9 +142,6 @@ contract AllocationManagerIntermediate is IAllocationManager {
         OperatorSet memory operatorSet
     ) external view virtual returns (uint256) {}
 
-    function getAVSRegistrar(
-        address avs
-    ) external view virtual returns (IAVSRegistrar) {}
 
     function getStrategiesInOperatorSet(
         OperatorSet memory operatorSet
@@ -219,6 +224,11 @@ contract AllocationManagerIntermediate is IAllocationManager {
 contract AllocationManagerMock is AllocationManagerIntermediate {
     uint32 internal constant _DEALLOCATION_DELAY = 86400;
 
+    mapping(bytes32 operatorSetKey => address[] members) internal _members;
+    mapping(bytes32 operatorSetKey => IStrategy[] strategies) internal _strategies;
+    mapping(bytes32 operatorSetKey => mapping(address operator => mapping(IStrategy strategy => uint minimumSlashableStake))) internal
+        _minimumSlashableStake;
+
     function DEALLOCATION_DELAY() external pure override returns (uint32) {
         return _DEALLOCATION_DELAY;
     }
@@ -262,5 +272,56 @@ contract AllocationManagerMock is AllocationManagerIntermediate {
         IStrategy /* strategy */
     ) external pure returns (uint256) {
         return 0;
+    }
+
+    function getMembers(OperatorSet memory operatorSet) external view override returns (address[] memory) {
+        return _members[operatorSet.key()];
+    }
+
+    function setMembersInOperatorSet(OperatorSet memory operatorSet, address[] memory members) external {
+        _members[operatorSet.key()] = members;
+    }
+
+    function setStrategiesInOperatorSet(OperatorSet memory operatorSet, IStrategy[] memory strategies) external {
+        _strategies[operatorSet.key()] = strategies;
+    }
+
+    function getStrategiesInOperatorSet(OperatorSet memory operatorSet) external view override returns (IStrategy[] memory) {
+        return _strategies[operatorSet.key()];
+    }
+
+    function setMinimumSlashableStake(
+        OperatorSet memory operatorSet,
+        address[] memory operators,
+        IStrategy[] memory strategies,
+        uint[][] memory minimumSlashableStake
+    ) external {
+        for (uint i = 0; i < operators.length; ++i) {
+            for (uint j = 0; j < strategies.length; ++j) {
+                _minimumSlashableStake[operatorSet.key()][operators[i]][strategies[j]] = minimumSlashableStake[i][j];
+            }
+        }
+    }
+
+    function getMinimumSlashableStake(
+        OperatorSet memory operatorSet,
+        address[] memory operators,
+        IStrategy[] memory strategies,
+        uint32 /* futureBlock */
+    ) external view override returns (uint[][] memory) {
+
+        uint[][] memory minimumSlashableStake = new uint[][](operators.length);
+
+        for (uint i = 0; i < operators.length; ++i) {
+            minimumSlashableStake[i] = new uint[](strategies.length);
+        }
+
+        for (uint i = 0; i < operators.length; ++i) {
+            for (uint j = 0; j < strategies.length; ++j) {
+                minimumSlashableStake[i][j] = _minimumSlashableStake[operatorSet.key()][operators[i]][strategies[j]];
+            }
+        }
+
+        return minimumSlashableStake;
     }
 }

@@ -5,6 +5,7 @@ import {
     KeyRegistrar,
     IKeyRegistrarTypes
 } from "eigenlayer-contracts/src/contracts/permissions/KeyRegistrar.sol";
+import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 import {IOperatorTableCalculatorTypes} from
     "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
@@ -121,8 +122,8 @@ contract BN254TableCalculatorBaseUnitTests is
             10109651107942685361120988628892759706059655669161016107907096760613704453218;
 
         // Configure operator sets in AllocationManager
-        allocationManagerMock.setAVSRegistrar(avs1, avs1);
-        allocationManagerMock.setAVSRegistrar(avs2, avs2);
+        allocationManagerMock.setAVSRegistrar(avs1, IAVSRegistrar(avs1));
+        allocationManagerMock.setAVSRegistrar(avs2, IAVSRegistrar(avs2));
 
         // Configure operator sets for BN254
         vm.prank(avs1);
