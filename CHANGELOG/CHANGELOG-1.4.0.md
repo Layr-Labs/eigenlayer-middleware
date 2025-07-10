@@ -30,6 +30,7 @@ This multichain release only introduces new standards and contracts. As a result
 
 ## Changelog
 
+- fix: avs registrar as identifier [PR #494](https://github.com/layr-labs/eigenlayer-middleware/pull/494)
 - fix: table calc interface [PR #493](https://github.com/layr-labs/eigenlayer-middleware/pull/493)
 - docs: middlewareV2/multichain [PR #489](https://github.com/layr-labs/eigenlayer-middleware/pull/489)
 - chore: add avs registrar interfaces [PR #491](https://github.com/layr-labs/eigenlayer-middleware/pull/491)
