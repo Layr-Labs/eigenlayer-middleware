@@ -576,10 +576,10 @@ contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTableBytes is
 }
 
 /**
- * @title ECDSATableCalculatorBaseUnitTests_getOperatorWeights
- * @notice Unit tests for ECDSATableCalculatorBase.getOperatorWeights
+ * @title ECDSATableCalculatorBaseUnitTests_getOperatorSetWeights
+ * @notice Unit tests for ECDSATableCalculatorBase.getOperatorSetWeights
  */
-contract ECDSATableCalculatorBaseUnitTests_getOperatorWeights is
+contract ECDSATableCalculatorBaseUnitTests_getOperatorSetWeights is
     ECDSATableCalculatorBaseUnitTests
 {
     function test_returnsImplementationResult() public {
@@ -595,7 +595,7 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeights is
         calculator.setMockOperatorWeights(defaultOperatorSet, expectedOperators, expectedWeights);
 
         (address[] memory operators, uint256[][] memory weights) =
-            calculator.getOperatorWeights(defaultOperatorSet);
+            calculator.getOperatorSetWeights(defaultOperatorSet);
 
         assertEq(operators.length, expectedOperators.length, "Operators length mismatch");
         assertEq(weights.length, expectedWeights.length, "Weights length mismatch");
@@ -614,7 +614,7 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeights is
         calculator.setMockOperatorWeights(defaultOperatorSet, expectedOperators, expectedWeights);
 
         (address[] memory operators, uint256[][] memory weights) =
-            calculator.getOperatorWeights(defaultOperatorSet);
+            calculator.getOperatorSetWeights(defaultOperatorSet);
 
         assertEq(operators.length, 0, "Should return empty operators array");
         assertEq(weights.length, 0, "Should return empty weights array");
@@ -633,7 +633,7 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeights is
         );
 
         (address[] memory operators, uint256[][] memory weights) =
-            calculator.getOperatorWeights(alternativeOperatorSet);
+            calculator.getOperatorSetWeights(alternativeOperatorSet);
 
         assertEq(operators.length, 1, "Operators length mismatch");
         assertEq(operators[0], operator3, "Operator address mismatch");
@@ -657,7 +657,7 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeights is
         calculator.setMockOperatorWeights(defaultOperatorSet, expectedOperators, expectedWeights);
 
         (address[] memory operators, uint256[][] memory weights) =
-            calculator.getOperatorWeights(defaultOperatorSet);
+            calculator.getOperatorSetWeights(defaultOperatorSet);
 
         assertEq(operators.length, numOperators, "Operators length mismatch");
         assertEq(weights.length, numOperators, "Weights length mismatch");
@@ -670,10 +670,10 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeights is
 }
 
 /**
- * @title ECDSATableCalculatorBaseUnitTests_getOperatorWeight
- * @notice Unit tests for ECDSATableCalculatorBase.getOperatorWeight
+ * @title ECDSATableCalculatorBaseUnitTests_getOperatorWeights
+ * @notice Unit tests for ECDSATableCalculatorBase.getOperatorWeights
  */
-contract ECDSATableCalculatorBaseUnitTests_getOperatorWeight is
+contract ECDSATableCalculatorBaseUnitTests_getOperatorWeights is
     ECDSATableCalculatorBaseUnitTests
 {
     function test_operatorExists() public {
@@ -690,21 +690,17 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeight is
 
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
-        assertEq(
-            calculator.getOperatorWeight(defaultOperatorSet, operator1),
-            100,
-            "Operator1 weight mismatch"
-        );
-        assertEq(
-            calculator.getOperatorWeight(defaultOperatorSet, operator2),
-            200,
-            "Operator2 weight mismatch"
-        );
-        assertEq(
-            calculator.getOperatorWeight(defaultOperatorSet, operator3),
-            300,
-            "Operator3 weight mismatch"
-        );
+        uint256[] memory op1Weights = calculator.getOperatorWeights(defaultOperatorSet, operator1);
+        assertEq(op1Weights.length, 1, "Operator1 should have 1 weight type");
+        assertEq(op1Weights[0], 100, "Operator1 weight mismatch");
+
+        uint256[] memory op2Weights = calculator.getOperatorWeights(defaultOperatorSet, operator2);
+        assertEq(op2Weights.length, 1, "Operator2 should have 1 weight type");
+        assertEq(op2Weights[0], 200, "Operator2 weight mismatch");
+
+        uint256[] memory op3Weights = calculator.getOperatorWeights(defaultOperatorSet, operator3);
+        assertEq(op3Weights.length, 1, "Operator3 should have 1 weight type");
+        assertEq(op3Weights[0], 300, "Operator3 weight mismatch");
     }
 
     function test_operatorDoesNotExist() public {
@@ -719,16 +715,12 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeight is
 
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
-        assertEq(
-            calculator.getOperatorWeight(defaultOperatorSet, operator3),
-            0,
-            "Non-existent operator should return 0"
-        );
-        assertEq(
-            calculator.getOperatorWeight(defaultOperatorSet, address(0xdead)),
-            0,
-            "Random address should return 0"
-        );
+        uint256[] memory op3Weights = calculator.getOperatorWeights(defaultOperatorSet, operator3);
+        assertEq(op3Weights.length, 0, "Non-existent operator should return empty array");
+
+        uint256[] memory deadWeights =
+            calculator.getOperatorWeights(defaultOperatorSet, address(0xdead));
+        assertEq(deadWeights.length, 0, "Random address should return empty array");
     }
 
     function test_emptyOperatorSet() public {
@@ -738,11 +730,8 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeight is
 
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
-        assertEq(
-            calculator.getOperatorWeight(defaultOperatorSet, operator1),
-            0,
-            "Should return 0 for empty set"
-        );
+        uint256[] memory op1Weights = calculator.getOperatorWeights(defaultOperatorSet, operator1);
+        assertEq(op1Weights.length, 0, "Should return empty array for empty set");
     }
 
     function test_zeroWeight() public {
@@ -755,11 +744,9 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeight is
 
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
-        assertEq(
-            calculator.getOperatorWeight(defaultOperatorSet, operator1),
-            0,
-            "Should return 0 for zero weight"
-        );
+        uint256[] memory op1Weights = calculator.getOperatorWeights(defaultOperatorSet, operator1);
+        assertEq(op1Weights.length, 1, "Should have 1 weight type");
+        assertEq(op1Weights[0], 0, "Should return 0 for zero weight");
     }
 
     function test_multipleWeightTypes() public {
@@ -776,15 +763,15 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeight is
 
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
-        // getOperatorWeight returns first weight type
-        assertEq(
-            calculator.getOperatorWeight(defaultOperatorSet, operator1),
-            100,
-            "Should return first weight type"
-        );
+        // getOperatorWeights returns all weight types
+        uint256[] memory op1Weights = calculator.getOperatorWeights(defaultOperatorSet, operator1);
+        assertEq(op1Weights.length, 3, "Should have 3 weight types");
+        assertEq(op1Weights[0], 100, "First weight type mismatch");
+        assertEq(op1Weights[1], 200, "Second weight type mismatch");
+        assertEq(op1Weights[2], 300, "Third weight type mismatch");
     }
 
-    function testFuzz_getOperatorWeight(
+    function testFuzz_getOperatorWeights(
         Randomness r,
         address operator,
         uint256 weight
@@ -799,17 +786,15 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeight is
 
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
-        assertEq(
-            calculator.getOperatorWeight(defaultOperatorSet, operator), weight, "Weight mismatch"
-        );
+        uint256[] memory opWeights = calculator.getOperatorWeights(defaultOperatorSet, operator);
+        assertEq(opWeights.length, 1, "Should have 1 weight type");
+        assertEq(opWeights[0], weight, "Weight mismatch");
 
-        // Different operator should return 0
+        // Different operator should return empty array
         address differentOperator = address(uint160(uint256(uint160(operator)) + 1));
-        assertEq(
-            calculator.getOperatorWeight(defaultOperatorSet, differentOperator),
-            0,
-            "Different operator should return 0"
-        );
+        uint256[] memory diffWeights =
+            calculator.getOperatorWeights(defaultOperatorSet, differentOperator);
+        assertEq(diffWeights.length, 0, "Different operator should return empty array");
     }
 
     function testFuzz_multipleOperators(Randomness r, uint8 numOperators) public rand(r) {
@@ -829,14 +814,13 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeight is
 
         // Verify each operator's weight
         for (uint256 i = 0; i < numOperators; i++) {
-            assertEq(
-                calculator.getOperatorWeight(defaultOperatorSet, operators[i]),
-                expectedWeights[i],
-                "Weight mismatch"
-            );
+            uint256[] memory opWeights =
+                calculator.getOperatorWeights(defaultOperatorSet, operators[i]);
+            assertEq(opWeights.length, 1, "Should have 1 weight type");
+            assertEq(opWeights[0], expectedWeights[i], "Weight mismatch");
         }
 
-        // Non-existent operator should return 0
+        // Non-existent operator should return empty array
         address nonExistent = address(uint160(r.Uint256()));
         bool exists = false;
         for (uint256 i = 0; i < numOperators; i++) {
@@ -846,10 +830,10 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeight is
             }
         }
         if (!exists) {
+            uint256[] memory nonExistentWeights =
+                calculator.getOperatorWeights(defaultOperatorSet, nonExistent);
             assertEq(
-                calculator.getOperatorWeight(defaultOperatorSet, nonExistent),
-                0,
-                "Non-existent operator should return 0"
+                nonExistentWeights.length, 0, "Non-existent operator should return empty array"
             );
         }
     }

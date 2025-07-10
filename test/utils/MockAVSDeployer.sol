@@ -275,6 +275,7 @@ contract MockAVSDeployer is Test {
 
         allocationManagerImplementation = new AllocationManager(
             delegationMock,
+            IStrategy(address(0)), // TODO: update this to the eigenStrategy
             pauserRegistry,
             permissionControllerMock,
             uint32(7 days), // DEALLOCATION_DELAY

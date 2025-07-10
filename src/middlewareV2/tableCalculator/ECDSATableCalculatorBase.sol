@@ -42,27 +42,27 @@ abstract contract ECDSATableCalculatorBase is IECDSATableCalculator {
     }
 
     /// @inheritdoc IOperatorTableCalculator
-    function getOperatorWeights(
+    function getOperatorSetWeights(
         OperatorSet calldata operatorSet
     ) external view virtual returns (address[] memory operators, uint256[][] memory weights) {
         return _getOperatorWeights(operatorSet);
     }
 
     /// @inheritdoc IOperatorTableCalculator
-    function getOperatorWeight(
+    function getOperatorWeights(
         OperatorSet calldata operatorSet,
         address operator
-    ) external view virtual returns (uint256 weight) {
+    ) external view virtual returns (uint256[] memory) {
         (address[] memory operators, uint256[][] memory weights) = _getOperatorWeights(operatorSet);
 
         // Find the index of the operator in the operators array
         for (uint256 i = 0; i < operators.length; i++) {
             if (operators[i] == operator) {
-                return weights[i][0];
+                return weights[i];
             }
         }
 
-        return 0;
+        return new uint256[](0);
     }
 
     /**

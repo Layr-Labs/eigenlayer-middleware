@@ -6,7 +6,7 @@
 The middlewareV2 architecture simplifies AVS development by:
 1. Utilizing core protocol contracts for operator key storage (`KeyRegistrar`) and task verification (`BN254CertificateVerifier` and `ECDSACertificateVerifier`)
 2. Utilizing core contracts for OperatorSet (ie. quorum) membership and strategy composition in the `AllocationManager`
-3. Utilizing the EigenLabs-run offchain services to update stakes instead of [`avs-sync](https://github.com/Layr-Labs/avs-sync)
+3. Utilizing the EigenLabs-run offchain services to update stakes instead of [`avs-sync`](https://github.com/Layr-Labs/avs-sync)
 
 ---
 

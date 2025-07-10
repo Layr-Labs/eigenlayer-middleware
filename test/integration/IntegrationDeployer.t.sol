@@ -24,8 +24,6 @@ import "eigenlayer-contracts/src/contracts/pods/EigenPodManager.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPod.sol";
 import "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
-import "eigenlayer-contracts/src/contracts/core/SlashEscrowFactory.sol";
-import "eigenlayer-contracts/src/contracts/core/SlashEscrow.sol";
 import "eigenlayer-contracts/src/test/mocks/ETHDepositMock.sol";
 
 // Middleware contracts
@@ -64,7 +62,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     ETHPOSDepositMock ethPOSDeposit;
     AllocationManager public allocationManager;
     PermissionController permissionController;
-    SlashEscrowFactory slashEscrowFactory;
 
     // Base strategy implementation in case we want to create more strategies later
     StrategyBase baseStrategyImplementation;
@@ -191,12 +188,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             )
         );
 
-        slashEscrowFactory = SlashEscrowFactory(
-            address(
-                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
-            )
-        );
-
         // Deploy EigenPod Contracts
         pod = new EigenPod(ethPOSDeposit, eigenPodManager, "v0.0.1");
 
@@ -215,7 +206,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             "v0.0.1"
         );
         StrategyManager strategyManagerImplementation =
-            new StrategyManager(delegationManager, slashEscrowFactory, pauserRegistry, "v0.0.1");
+            new StrategyManager(allocationManager, delegationManager, pauserRegistry, "v0.0.1");
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit, eigenPodBeacon, delegationManager, pauserRegistry, "v0.0.1"
         );
@@ -240,19 +231,12 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
         AllocationManager allocationManagerImplementation = new AllocationManager(
             delegationManager,
+            IStrategy(address(0)), // TODO: update this to the eigenStrategy,
             pauserRegistry,
             permissionController,
             uint32(7 days), // DEALLOCATION_DELAY
             uint32(1 days), // ALLOCATION_CONFIGURATION_DELAY
             "v0.0.1" // Added config parameter
-        );
-
-        // Deploy SlashEscrow implementation
-        SlashEscrow slashEscrowImpl = new SlashEscrow();
-
-        // Deploy SlashEscrowFactory implementation
-        SlashEscrowFactory slashEscrowFactoryImplementation = new SlashEscrowFactory(
-            allocationManager, strategyManager, pauserRegistry, slashEscrowImpl, "v0.0.1"
         );
 
         // Third, upgrade the proxy contracts to point to the implementations
@@ -324,18 +308,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             abi.encodeWithSelector(
                 AllocationManager.initialize.selector,
                 0 // initialPausedStatus
-            )
-        );
-
-        // SlashEscrowFactory
-        proxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(payable(address(slashEscrowFactory))),
-            address(slashEscrowFactoryImplementation),
-            abi.encodeWithSelector(
-                SlashEscrowFactory.initialize.selector,
-                eigenLayerReputedMultisig, // initialOwner
-                0, // initialPausedStatus
-                7 days / 12 // initialGlobalDelayBlocks (7 days worth of blocks)
             )
         );
 
