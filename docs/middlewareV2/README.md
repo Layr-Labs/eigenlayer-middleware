@@ -1,6 +1,3 @@
-[elip-008]: https://github.com/eigenfoundation/ELIPs/blob/elip-008v1/ELIPs/ELIP-008.md
-[core-multichain-docs]: https://github.com/Layr-Labs/eigenlayer-contracts/tree/main/docs/multichain
-
 ## MiddlewareV2
 
 The middlewareV2 architecture simplifies AVS development by:
@@ -132,7 +129,7 @@ AVS developers only have to manage deployments of the the following contracts on
 
 MiddlewareV2 architecture defines standards for the `AVSRegistrar` and `OperatorTableCalculator`. 
 
-See the [`multichain-ELIP`](elip-008) and [`core contracts documentation`](core-multichain-docs) for more information. 
+See the [`multichain-ELIP`](https://github.com/eigenfoundation/ELIPs/blob/elip-008v1/ELIPs/ELIP-008.md) and [`core contracts documentation`](https://github.com/Layr-Labs/eigenlayer-contracts/tree/main/docs/multichain) for more information. 
 
 ---
 
@@ -189,4 +186,4 @@ The [`AllocationManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob
 See the [`AVSRegistrar`](./AVSRegistrar.md#system-diagrams) for how an AVS is initialized to the core protocol. 
 
 #### Certificate Verifier
-The [`CertificateVerifier`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/main/docs/multichain/destination/CertificateVerifier.md) is responsible for verifying certificates from an offchain task, on-chain. The stakes in the certificate verifier are defined by the AVS-deployed `OperatorTableCalculator` and transported via an off-chain process run by Eigen labs. The `CertificateVerifier` contracts support two signature schemes: ECDSA for individual signatures and BN254 for aggregated signatures. See [multichain docs](core-multichain-docs) for more information.
+The [`CertificateVerifier`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/main/docs/multichain/destination/CertificateVerifier.md) is responsible for verifying certificates from an offchain task, on-chain. The stakes in the certificate verifier are defined by the AVS-deployed `OperatorTableCalculator` and transported via an off-chain process run by Eigen labs. The `CertificateVerifier` contracts support two signature schemes: ECDSA for individual signatures and BN254 for aggregated signatures. See [multichain docs](https://github.com/Layr-Labs/eigenlayer-contracts/tree/main/docs/multichain) for more information.
