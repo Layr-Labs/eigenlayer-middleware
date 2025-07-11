@@ -26,11 +26,11 @@ contract BLSSigCheckUtilsHarness {
     using Arrays for string[];
 
     // Storage arrays for testing storage-related functions
-    uint256[] public testUint256Array;
-    address[] public testAddressArray;
-    bytes32[] public testBytes32Array;
-    bytes[] public testBytesArray;
-    string[] public testStringArray;
+    uint256[] public uint256Array;
+    address[] public addressArray;
+    bytes32[] public bytes32Array;
+    bytes[] public bytesArray;
+    string[] public stringArray;
 
     /**
      *
@@ -136,19 +136,19 @@ contract BLSSigCheckUtilsHarness {
     function findUpperBound(
         uint256 element
     ) public view returns (uint256) {
-        return testUint256Array.findUpperBound(element);
+        return uint256Array.findUpperBound(element);
     }
 
     function lowerBound(
         uint256 element
     ) public view returns (uint256) {
-        return testUint256Array.lowerBound(element);
+        return uint256Array.lowerBound(element);
     }
 
     function upperBound(
         uint256 element
     ) public view returns (uint256) {
-        return testUint256Array.upperBound(element);
+        return uint256Array.upperBound(element);
     }
 
     function lowerBoundMemory(
@@ -173,31 +173,31 @@ contract BLSSigCheckUtilsHarness {
     function unsafeAccessAddress(
         uint256 pos
     ) public view returns (address) {
-        return testAddressArray.unsafeAccess(pos).value;
+        return addressArray.unsafeAccess(pos).value;
     }
 
     function unsafeAccessBytes32(
         uint256 pos
     ) public view returns (bytes32) {
-        return testBytes32Array.unsafeAccess(pos).value;
+        return bytes32Array.unsafeAccess(pos).value;
     }
 
     function unsafeAccessUint256(
         uint256 pos
     ) public view returns (uint256) {
-        return testUint256Array.unsafeAccess(pos).value;
+        return uint256Array.unsafeAccess(pos).value;
     }
 
     function unsafeAccessBytes(
         uint256 pos
     ) public view returns (bytes memory) {
-        return testBytesArray.unsafeAccess(pos).value;
+        return bytesArray.unsafeAccess(pos).value;
     }
 
     function unsafeAccessString(
         uint256 pos
     ) public view returns (string memory) {
-        return testStringArray.unsafeAccess(pos).value;
+        return stringArray.unsafeAccess(pos).value;
     }
 
     function unsafeMemoryAccessAddress(
@@ -243,31 +243,31 @@ contract BLSSigCheckUtilsHarness {
     function unsafeSetLengthAddress(
         uint256 len
     ) public {
-        testAddressArray.unsafeSetLength(len);
+        addressArray.unsafeSetLength(len);
     }
 
     function unsafeSetLengthBytes32(
         uint256 len
     ) public {
-        testBytes32Array.unsafeSetLength(len);
+        bytes32Array.unsafeSetLength(len);
     }
 
     function unsafeSetLengthUint256(
         uint256 len
     ) public {
-        testUint256Array.unsafeSetLength(len);
+        uint256Array.unsafeSetLength(len);
     }
 
     function unsafeSetLengthBytes(
         uint256 len
     ) public {
-        testBytesArray.unsafeSetLength(len);
+        bytesArray.unsafeSetLength(len);
     }
 
     function unsafeSetLengthString(
         uint256 len
     ) public {
-        testStringArray.unsafeSetLength(len);
+        stringArray.unsafeSetLength(len);
     }
 
     /**
@@ -280,79 +280,79 @@ contract BLSSigCheckUtilsHarness {
     function initializeUint256Array(
         uint256[] memory values
     ) public {
-        delete testUint256Array;
+        delete uint256Array;
         for (uint256 i = 0; i < values.length; i++) {
-            testUint256Array.push(values[i]);
+            uint256Array.push(values[i]);
         }
     }
 
     function initializeAddressArray(
         address[] memory values
     ) public {
-        delete testAddressArray;
+        delete addressArray;
         for (uint256 i = 0; i < values.length; i++) {
-            testAddressArray.push(values[i]);
+            addressArray.push(values[i]);
         }
     }
 
     function initializeBytes32Array(
         bytes32[] memory values
     ) public {
-        delete testBytes32Array;
+        delete bytes32Array;
         for (uint256 i = 0; i < values.length; i++) {
-            testBytes32Array.push(values[i]);
+            bytes32Array.push(values[i]);
         }
     }
 
     function initializeBytesArray(
         bytes[] memory values
     ) public {
-        delete testBytesArray;
+        delete bytesArray;
         for (uint256 i = 0; i < values.length; i++) {
-            testBytesArray.push(values[i]);
+            bytesArray.push(values[i]);
         }
     }
 
     function initializeStringArray(
         string[] memory values
     ) public {
-        delete testStringArray;
+        delete stringArray;
         for (uint256 i = 0; i < values.length; i++) {
-            testStringArray.push(values[i]);
+            stringArray.push(values[i]);
         }
     }
 
     // Getters for array lengths
     function getUint256ArrayLength() public view returns (uint256) {
-        return testUint256Array.length;
+        return uint256Array.length;
     }
 
     function getAddressArrayLength() public view returns (uint256) {
-        return testAddressArray.length;
+        return addressArray.length;
     }
 
     function getBytes32ArrayLength() public view returns (uint256) {
-        return testBytes32Array.length;
+        return bytes32Array.length;
     }
 
     function getBytesArrayLength() public view returns (uint256) {
-        return testBytesArray.length;
+        return bytesArray.length;
     }
 
     function getStringArrayLength() public view returns (uint256) {
-        return testStringArray.length;
+        return stringArray.length;
     }
 
     // Getters for full arrays
     function getUint256Array() public view returns (uint256[] memory) {
-        return testUint256Array;
+        return uint256Array;
     }
 
     function getAddressArray() public view returns (address[] memory) {
-        return testAddressArray;
+        return addressArray;
     }
 
     function getBytes32Array() public view returns (bytes32[] memory) {
-        return testBytes32Array;
+        return bytes32Array;
     }
 }
