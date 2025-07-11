@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import "forge-std/Test.sol";
 import {BN254} from "../../src/libraries/BN254.sol";
 import {BLSSigCheckUtils} from "../../src/unaudited/BLSSigCheckUtils.sol";
+import {BLSSigCheckUtilsHarness} from "../harnesses/BLSSigCheckUtilsHarness.sol";
 
 contract BLSSigCheckUtilsUnitTests is Test {
     using BN254 for BN254.G1Point;
@@ -12,10 +13,16 @@ contract BLSSigCheckUtilsUnitTests is Test {
     uint256 constant FP_MODULUS =
         21888242871839275222246405745257275088696311157297823662689037894645226208583;
 
+    BLSSigCheckUtilsHarness harness;
+
     struct TestPoint {
         uint256 x;
         uint256 y;
         bool shouldBeOnCurve;
+    }
+
+    function setUp() public {
+        harness = new BLSSigCheckUtilsHarness();
     }
 
     /**
@@ -273,5 +280,322 @@ contract BLSSigCheckUtilsUnitTests is Test {
                 string(abi.encodePacked("Point ", vm.toString(i), " on-curve check failed"))
             );
         }
+    }
+
+    /**
+     *
+     * Tests for Comparators library
+     *
+     */
+    function test_comparators_lt() public {
+        assertTrue(harness.lt(1, 2), "1 < 2 should be true");
+        assertFalse(harness.lt(2, 1), "2 < 1 should be false");
+        assertFalse(harness.lt(1, 1), "1 < 1 should be false");
+    }
+
+    function test_comparators_gt() public {
+        assertTrue(harness.gt(2, 1), "2 > 1 should be true");
+        assertFalse(harness.gt(1, 2), "1 > 2 should be false");
+        assertFalse(harness.gt(1, 1), "1 > 1 should be false");
+    }
+
+    function testFuzz_comparators(uint256 a, uint256 b) public {
+        bool ltResult = harness.lt(a, b);
+        bool gtResult = harness.gt(a, b);
+
+        if (a < b) {
+            assertTrue(ltResult, "lt should return true when a < b");
+            assertFalse(gtResult, "gt should return false when a < b");
+        } else if (a > b) {
+            assertFalse(ltResult, "lt should return false when a > b");
+            assertTrue(gtResult, "gt should return true when a > b");
+        } else {
+            assertFalse(ltResult, "lt should return false when a == b");
+            assertFalse(gtResult, "gt should return false when a == b");
+        }
+    }
+
+    /**
+     *
+     * Tests for SlotDerivation library
+     *
+     */
+    function test_erc7201Slot() public {
+        string memory namespace = "example.namespace";
+        bytes32 slot = harness.erc7201Slot(namespace);
+
+        // ERC-7201 formula: keccak256(keccak256(namespace) - 1) & ~bytes32(uint256(0xff))
+        bytes32 expectedSlot = keccak256(abi.encode(uint256(keccak256(bytes(namespace))) - 1))
+            & ~bytes32(uint256(0xff));
+        assertEq(slot, expectedSlot, "ERC-7201 slot calculation mismatch");
+    }
+
+    function test_offset() public {
+        bytes32 baseSlot = bytes32(uint256(100));
+        uint256 offset = 5;
+        bytes32 resultSlot = harness.offset(baseSlot, offset);
+
+        assertEq(uint256(resultSlot), 105, "Offset calculation incorrect");
+    }
+
+    function test_deriveArray() public {
+        bytes32 slot = bytes32(uint256(123));
+        bytes32 derivedSlot = harness.deriveArray(slot);
+
+        // Array elements start at keccak256(slot)
+        bytes32 expectedSlot = keccak256(abi.encode(slot));
+        assertEq(derivedSlot, expectedSlot, "Array slot derivation incorrect");
+    }
+
+    function test_deriveMapping() public {
+        bytes32 slot = bytes32(uint256(456));
+
+        // Test with different key types
+        address addrKey = address(0x1234);
+        bytes32 mappingSlotAddr = harness.deriveMappingAddress(slot, addrKey);
+        assertEq(
+            mappingSlotAddr, keccak256(abi.encode(addrKey, slot)), "Address mapping slot incorrect"
+        );
+
+        uint256 uintKey = 789;
+        bytes32 mappingSlotUint = harness.deriveMappingUint256(slot, uintKey);
+        assertEq(
+            mappingSlotUint, keccak256(abi.encode(uintKey, slot)), "Uint256 mapping slot incorrect"
+        );
+
+        bool boolKey = true;
+        bytes32 mappingSlotBool = harness.deriveMappingBool(slot, boolKey);
+        assertEq(
+            mappingSlotBool, keccak256(abi.encode(boolKey, slot)), "Bool mapping slot incorrect"
+        );
+    }
+
+    /**
+     *
+     * Tests for Arrays library - Sorting
+     *
+     */
+    function test_sortUint256() public {
+        uint256[] memory unsorted = new uint256[](5);
+        unsorted[0] = 5;
+        unsorted[1] = 2;
+        unsorted[2] = 8;
+        unsorted[3] = 1;
+        unsorted[4] = 3;
+
+        uint256[] memory sorted = harness.sortUint256(unsorted);
+
+        assertEq(sorted.length, 5, "Sorted array length should be 5");
+        assertEq(sorted[0], 1, "First element should be 1");
+        assertEq(sorted[1], 2, "Second element should be 2");
+        assertEq(sorted[2], 3, "Third element should be 3");
+        assertEq(sorted[3], 5, "Fourth element should be 5");
+        assertEq(sorted[4], 8, "Fifth element should be 8");
+    }
+
+    function test_sortAddress() public {
+        address[] memory unsorted = new address[](3);
+        unsorted[0] = address(0x3000);
+        unsorted[1] = address(0x1000);
+        unsorted[2] = address(0x2000);
+
+        address[] memory sorted = harness.sortAddress(unsorted);
+
+        assertEq(sorted[0], address(0x1000), "First address should be 0x1000");
+        assertEq(sorted[1], address(0x2000), "Second address should be 0x2000");
+        assertEq(sorted[2], address(0x3000), "Third address should be 0x3000");
+    }
+
+    function test_sortBytes32() public {
+        bytes32[] memory unsorted = new bytes32[](3);
+        unsorted[0] = bytes32(uint256(300));
+        unsorted[1] = bytes32(uint256(100));
+        unsorted[2] = bytes32(uint256(200));
+
+        bytes32[] memory sorted = harness.sortBytes32(unsorted);
+
+        assertEq(uint256(sorted[0]), 100, "First element should be 100");
+        assertEq(uint256(sorted[1]), 200, "Second element should be 200");
+        assertEq(uint256(sorted[2]), 300, "Third element should be 300");
+    }
+
+    /**
+     *
+     * Tests for Arrays library - Binary Search
+     *
+     */
+    function test_binarySearch() public {
+        // Initialize a sorted array
+        uint256[] memory sortedArray = new uint256[](5);
+        sortedArray[0] = 10;
+        sortedArray[1] = 20;
+        sortedArray[2] = 30;
+        sortedArray[3] = 40;
+        sortedArray[4] = 50;
+
+        harness.initializeUint256Array(sortedArray);
+
+        // Test findUpperBound
+        assertEq(harness.findUpperBound(25), 2, "findUpperBound(25) should return 2");
+        assertEq(harness.findUpperBound(30), 2, "findUpperBound(30) should return 2");
+        assertEq(harness.findUpperBound(5), 0, "findUpperBound(5) should return 0");
+        assertEq(harness.findUpperBound(55), 5, "findUpperBound(55) should return 5");
+
+        // Test lowerBound
+        assertEq(harness.lowerBound(25), 2, "lowerBound(25) should return 2");
+        assertEq(harness.lowerBound(30), 2, "lowerBound(30) should return 2");
+        assertEq(harness.lowerBound(5), 0, "lowerBound(5) should return 0");
+
+        // Test upperBound
+        assertEq(harness.upperBound(25), 2, "upperBound(25) should return 2");
+        assertEq(harness.upperBound(30), 3, "upperBound(30) should return 3");
+        assertEq(harness.upperBound(5), 0, "upperBound(5) should return 0");
+    }
+
+    function test_binarySearchMemory() public {
+        uint256[] memory sortedArray = new uint256[](4);
+        sortedArray[0] = 5;
+        sortedArray[1] = 15;
+        sortedArray[2] = 25;
+        sortedArray[3] = 35;
+
+        assertEq(
+            harness.lowerBoundMemory(sortedArray, 20), 2, "lowerBoundMemory(20) should return 2"
+        );
+        assertEq(
+            harness.upperBoundMemory(sortedArray, 20), 2, "upperBoundMemory(20) should return 2"
+        );
+        assertEq(
+            harness.lowerBoundMemory(sortedArray, 15), 1, "lowerBoundMemory(15) should return 1"
+        );
+        assertEq(
+            harness.upperBoundMemory(sortedArray, 15), 2, "upperBoundMemory(15) should return 2"
+        );
+    }
+
+    /**
+     *
+     * Tests for Arrays library - Unsafe Access
+     *
+     */
+    function test_unsafeAccess() public {
+        // Test uint256 array
+        uint256[] memory uintArray = new uint256[](3);
+        uintArray[0] = 100;
+        uintArray[1] = 200;
+        uintArray[2] = 300;
+        harness.initializeUint256Array(uintArray);
+
+        assertEq(harness.unsafeAccessUint256(0), 100, "Unsafe access at index 0 should return 100");
+        assertEq(harness.unsafeAccessUint256(1), 200, "Unsafe access at index 1 should return 200");
+        assertEq(harness.unsafeAccessUint256(2), 300, "Unsafe access at index 2 should return 300");
+
+        // Test address array
+        address[] memory addrArray = new address[](2);
+        addrArray[0] = address(0x1234);
+        addrArray[1] = address(0x5678);
+        harness.initializeAddressArray(addrArray);
+
+        assertEq(
+            harness.unsafeAccessAddress(0),
+            address(0x1234),
+            "Unsafe access should return correct address"
+        );
+
+        // Test bytes32 array
+        bytes32[] memory bytes32Array = new bytes32[](2);
+        bytes32Array[0] = bytes32(uint256(111));
+        bytes32Array[1] = bytes32(uint256(222));
+        harness.initializeBytes32Array(bytes32Array);
+
+        assertEq(
+            uint256(harness.unsafeAccessBytes32(0)),
+            111,
+            "Unsafe access should return correct bytes32"
+        );
+    }
+
+    function test_unsafeMemoryAccess() public {
+        // Test uint256 memory array
+        uint256[] memory array = new uint256[](3);
+        array[0] = 10;
+        array[1] = 20;
+        array[2] = 30;
+
+        assertEq(
+            harness.unsafeMemoryAccessUint256(array, 0), 10, "Memory access at 0 should return 10"
+        );
+        assertEq(
+            harness.unsafeMemoryAccessUint256(array, 1), 20, "Memory access at 1 should return 20"
+        );
+        assertEq(
+            harness.unsafeMemoryAccessUint256(array, 2), 30, "Memory access at 2 should return 30"
+        );
+
+        // Test address memory array
+        address[] memory addrArray = new address[](2);
+        addrArray[0] = address(0xABCD);
+        addrArray[1] = address(0xDEAD);
+
+        assertEq(
+            harness.unsafeMemoryAccessAddress(addrArray, 0),
+            address(0xABCD),
+            "Should return first address"
+        );
+        assertEq(
+            harness.unsafeMemoryAccessAddress(addrArray, 1),
+            address(0xDEAD),
+            "Should return second address"
+        );
+    }
+
+    /**
+     *
+     * Tests for Arrays library - Unsafe Set Length
+     *
+     */
+    function test_unsafeSetLength() public {
+        // Initialize array with some values
+        uint256[] memory initialArray = new uint256[](3);
+        initialArray[0] = 10;
+        initialArray[1] = 20;
+        initialArray[2] = 30;
+        harness.initializeUint256Array(initialArray);
+
+        assertEq(harness.getUint256ArrayLength(), 3, "Initial length should be 3");
+
+        // Increase length
+        harness.unsafeSetLengthUint256(5);
+        assertEq(harness.getUint256ArrayLength(), 5, "Length should be 5 after increase");
+
+        // Values should still be accessible
+        assertEq(harness.unsafeAccessUint256(0), 10, "First value should still be 10");
+        assertEq(harness.unsafeAccessUint256(1), 20, "Second value should still be 20");
+
+        // Decrease length
+        harness.unsafeSetLengthUint256(2);
+        assertEq(harness.getUint256ArrayLength(), 2, "Length should be 2 after decrease");
+
+        // Note: The third element is not cleared, just length is changed
+        // This is the "unsafe" aspect - data may still exist beyond the new length
+    }
+
+    function test_unsafeSetLength_allTypes() public {
+        // Test with address array
+        address[] memory addrArray = new address[](2);
+        addrArray[0] = address(0x1);
+        addrArray[1] = address(0x2);
+        harness.initializeAddressArray(addrArray);
+
+        harness.unsafeSetLengthAddress(4);
+        assertEq(harness.getAddressArrayLength(), 4, "Address array length should be 4");
+
+        // Test with bytes32 array
+        bytes32[] memory b32Array = new bytes32[](1);
+        b32Array[0] = bytes32(uint256(123));
+        harness.initializeBytes32Array(b32Array);
+
+        harness.unsafeSetLengthBytes32(3);
+        assertEq(harness.getBytes32ArrayLength(), 3, "Bytes32 array length should be 3");
     }
 }
