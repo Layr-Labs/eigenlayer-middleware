@@ -170,6 +170,7 @@ library CoreDeployLib {
 
         address strategyManagerImpl = address(
             new StrategyManager(
+                IAllocationManager(deployments.allocationManager),
                 IDelegationManager(deployments.delegationManager),
                 IPauserRegistry(deployments.pauserRegistry),
                 "1.0.0"
@@ -179,6 +180,7 @@ library CoreDeployLib {
         address allocationManagerImpl = address(
             new AllocationManager(
                 IDelegationManager(deployments.delegationManager),
+                IStrategy(address(0)), // TODO: update this to the eigenStrategy,
                 IPauserRegistry(deployments.pauserRegistry),
                 IPermissionController(deployments.permissionController),
                 config.allocationManager.deallocationDelay,
@@ -223,16 +225,14 @@ library CoreDeployLib {
         );
 
         upgradeCall = abi.encodeCall(
-            DelegationManager.initialize,
-            (config.delegationManager.initialOwner, config.delegationManager.initPausedStatus)
+            DelegationManager.initialize, (config.delegationManager.initPausedStatus)
         );
         UpgradeableProxyLib.upgradeAndCall(
             deployments.delegationManager, delegationManagerImpl, upgradeCall
         );
 
         upgradeCall = abi.encodeCall(
-            AllocationManager.initialize,
-            (config.allocationManager.initialOwner, config.allocationManager.initPausedStatus)
+            AllocationManager.initialize, (config.allocationManager.initPausedStatus)
         );
         UpgradeableProxyLib.upgradeAndCall(
             deployments.allocationManager, allocationManagerImpl, upgradeCall
@@ -262,9 +262,6 @@ library CoreDeployLib {
             new EigenPod(
                 IETHPOSDeposit(ethPOSDeposit),
                 IEigenPodManager(deployments.eigenPodManager),
-                config.eigenPod.genesisTimestamp == 0
-                    ? uint64(block.timestamp)
-                    : config.eigenPod.genesisTimestamp,
                 "1.0.0"
             )
         );

@@ -1117,3 +1117,293 @@ contract ECDSAStakeRegistryEventsTest is ECDSAStakeRegistrySetup {
         assertEq(registry.getLastCheckpointTotalWeight(), expectedNewTotal);
     }
 }
+
+contract ECDSAStakeRegistryAdditionalTests is ECDSAStakeRegistrySetup {
+    function test_GetOperatorWeight_BelowMinimumWeight() public {
+        // Set minimum weight
+        uint256 minWeight = 2000;
+        address[] memory operators = new address[](2);
+        operators[0] = operator1;
+        operators[1] = operator2;
+
+        registry.updateMinimumWeight(minWeight, operators);
+
+        // Mock operator to have weight below minimum
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = registry.quorum().strategies[0].strategy;
+        uint256[] memory shares = new uint256[](1);
+        shares[0] = 1500; // Below minimum weight
+
+        vm.mockCall(
+            address(mockDelegationManager),
+            abi.encodeWithSelector(
+                MockDelegationManager.getOperatorShares.selector, operator1, strategies
+            ),
+            abi.encode(shares)
+        );
+
+        uint256 weight = registry.getOperatorWeight(operator1);
+        assertEq(weight, 0, "Weight should be 0 when below minimum");
+    }
+
+    function test_UpdateOperatorsForQuorum_RevertWhenNotAllOperators() public {
+        address[] memory operators = new address[](1); // Only 1 operator when 2 are registered
+        operators[0] = operator1;
+
+        address[][] memory operatorsPerQuorum = new address[][](1);
+        operatorsPerQuorum[0] = operators;
+
+        vm.expectRevert(IECDSAStakeRegistryErrors.MustUpdateAllOperators.selector);
+        registry.updateOperatorsForQuorum(operatorsPerQuorum, "");
+    }
+
+    function test_UpdateOperatorsForQuorum_Success() public {
+        address[] memory operators = new address[](2);
+        operators[0] = operator1;
+        operators[1] = operator2;
+
+        address[][] memory operatorsPerQuorum = new address[][](1);
+        operatorsPerQuorum[0] = operators;
+
+        registry.updateOperatorsForQuorum(operatorsPerQuorum, "");
+    }
+
+    function test_GetOperatorWeightAtBlock_HistoricalLookup() public {
+        uint32 checkpointBlock = uint32(block.number);
+
+        // Update operator weight
+        address[] memory operators = new address[](1);
+        operators[0] = operator1;
+        registry.updateOperators(operators);
+
+        vm.roll(block.number + 10);
+
+        // Get weight at historical block
+        uint256 historicalWeight = registry.getOperatorWeightAtBlock(operator1, checkpointBlock);
+        assertEq(historicalWeight, 1000, "Historical weight should match");
+    }
+
+    function test_GetLastCheckpointTotalWeightAtBlock() public {
+        uint32 checkpointBlock = uint32(block.number);
+        uint256 totalWeight = registry.getLastCheckpointTotalWeight();
+
+        vm.roll(block.number + 10);
+
+        // Register new operator
+        address operator3 = address(0x789);
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory sig;
+        vm.prank(operator3);
+        registry.registerOperatorWithSignature(sig, operator3);
+
+        // Check historical total weight
+        uint256 historicalTotal = registry.getLastCheckpointTotalWeightAtBlock(checkpointBlock);
+        assertEq(historicalTotal, totalWeight, "Historical total weight should match");
+
+        // Current total should be different
+        uint256 currentTotal = registry.getLastCheckpointTotalWeight();
+        assertTrue(currentTotal > historicalTotal, "Current total should be greater");
+    }
+
+    function test_GetLastCheckpointThresholdWeightAtBlock() public {
+        uint256 initialThreshold = registry.getLastCheckpointThresholdWeight();
+        uint32 checkpointBlock = uint32(block.number);
+
+        vm.roll(block.number + 5);
+
+        // Update threshold
+        uint256 newThreshold = 200;
+        vm.prank(registry.owner());
+        registry.updateStakeThreshold(newThreshold);
+
+        vm.roll(block.number + 5);
+
+        // Check historical threshold
+        uint256 historicalThreshold =
+            registry.getLastCheckpointThresholdWeightAtBlock(checkpointBlock);
+        assertEq(historicalThreshold, initialThreshold, "Historical threshold should match initial");
+
+        // Current threshold should be different
+        uint256 currentThreshold = registry.getLastCheckpointThresholdWeight();
+        assertEq(currentThreshold, newThreshold, "Current threshold should be updated");
+    }
+
+    function test_UpdateOperatorSigningKey_SameKey() public {
+        address currentKey = registry.getLatestOperatorSigningKey(operator1);
+
+        // Update to same key - should not emit event
+        vm.prank(operator1);
+        registry.updateOperatorSigningKey(currentKey);
+
+        // Key should remain the same
+        assertEq(
+            registry.getLatestOperatorSigningKey(operator1), currentKey, "Key should not change"
+        );
+    }
+
+    function test_UpdateOperatorSigningKey_NotRegistered() public {
+        address unregisteredOperator = address(0xBEEF);
+
+        vm.prank(unregisteredOperator);
+        vm.expectRevert(IECDSAStakeRegistryErrors.OperatorNotRegistered.selector);
+        registry.updateOperatorSigningKey(address(0x123));
+    }
+
+    function test_GetOperatorSigningKeyAtBlock_InvalidBlock() public {
+        // The error is from the Checkpoints library, not InvalidReferenceBlock
+        vm.expectRevert("Checkpoints: block not yet mined");
+        registry.getOperatorSigningKeyAtBlock(operator1, block.number);
+    }
+
+    function test_UpdateOperators_WithDeregisteredOperator() public {
+        // Deregister operator1
+        vm.prank(operator1);
+        registry.deregisterOperator();
+
+        // Update operators including deregistered one
+        address[] memory operators = new address[](2);
+        operators[0] = operator1;
+        operators[1] = operator2;
+
+        registry.updateOperators(operators);
+
+        // Deregistered operator should have 0 weight
+        assertEq(
+            registry.getLastCheckpointOperatorWeight(operator1),
+            0,
+            "Deregistered operator should have 0 weight"
+        );
+    }
+
+    function test_MultipleStrategyWeightCalculation() public {
+        // Setup multiple strategies with different multipliers
+        IStrategy mockStrategy1 = IStrategy(address(0x1001));
+        IStrategy mockStrategy2 = IStrategy(address(0x1002));
+        IStrategy mockStrategy3 = IStrategy(address(0x1003));
+
+        IECDSAStakeRegistryTypes.Quorum memory newQuorum = IECDSAStakeRegistryTypes.Quorum({
+            strategies: new IECDSAStakeRegistryTypes.StrategyParams[](3)
+        });
+        newQuorum.strategies[0] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: mockStrategy1,
+            multiplier: 5000 // 50%
+        });
+        newQuorum.strategies[1] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: mockStrategy2,
+            multiplier: 3000 // 30%
+        });
+        newQuorum.strategies[2] = IECDSAStakeRegistryTypes.StrategyParams({
+            strategy: mockStrategy3,
+            multiplier: 2000 // 20%
+        });
+
+        address[] memory operators = new address[](2);
+        operators[0] = operator1;
+        operators[1] = operator2;
+
+        registry.updateQuorumConfig(newQuorum, operators);
+
+        // Mock different shares for each strategy
+        IStrategy[] memory strategies = new IStrategy[](3);
+        strategies[0] = mockStrategy1;
+        strategies[1] = mockStrategy2;
+        strategies[2] = mockStrategy3;
+
+        uint256[] memory shares = new uint256[](3);
+        shares[0] = 1000; // 1000 shares in strategy 1
+        shares[1] = 2000; // 2000 shares in strategy 2
+        shares[2] = 3000; // 3000 shares in strategy 3
+
+        vm.mockCall(
+            address(mockDelegationManager),
+            abi.encodeWithSelector(
+                MockDelegationManager.getOperatorShares.selector, operator1, strategies
+            ),
+            abi.encode(shares)
+        );
+
+        // Calculate expected weight: (1000 * 5000 + 2000 * 3000 + 3000 * 2000) / 10000 = 1700
+        uint256 weight = registry.getOperatorWeight(operator1);
+        assertEq(weight, 1700, "Weight calculation with multiple strategies incorrect");
+    }
+
+    function test_IERC1271_isValidSignature_ReturnsCorrectSelector() public {
+        msgHash = keccak256("data");
+        signers = new address[](1);
+        signers[0] = operator1;
+        signatures = new bytes[](1);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(operator1Pk, msgHash);
+        signatures[0] = abi.encodePacked(r, s, v);
+
+        bytes4 result =
+            registry.isValidSignature(msgHash, abi.encode(signers, signatures, block.number - 1));
+        assertEq(result, bytes4(0x1626ba7e), "Should return EIP-1271 magic value");
+    }
+}
+
+contract ECDSAStakeRegistryFuzzTests is ECDSAStakeRegistrySetup {
+    function testFuzz_UpdateMinimumWeight(
+        uint256 newMinWeight
+    ) public {
+        newMinWeight = bound(newMinWeight, 0, 1e18);
+
+        address[] memory operators = new address[](2);
+        operators[0] = operator1;
+        operators[1] = operator2;
+
+        uint256 oldMinWeight = registry.minimumWeight();
+
+        vm.expectEmit(true, true, true, true);
+        emit MinimumWeightUpdated(oldMinWeight, newMinWeight);
+
+        registry.updateMinimumWeight(newMinWeight, operators);
+        assertEq(registry.minimumWeight(), newMinWeight, "Minimum weight not updated correctly");
+    }
+
+    function testFuzz_UpdateStakeThreshold(
+        uint256 threshold
+    ) public {
+        threshold = bound(threshold, 1, 1e18);
+
+        vm.expectEmit(true, true, true, true);
+        emit ThresholdWeightUpdated(threshold);
+
+        vm.prank(registry.owner());
+        registry.updateStakeThreshold(threshold);
+
+        assertEq(
+            registry.getLastCheckpointThresholdWeight(),
+            threshold,
+            "Threshold not updated correctly"
+        );
+    }
+
+    function testFuzz_RegisterDeregisterOperator(address operator, uint256 operatorPk) public {
+        vm.assume(operator != address(0));
+        vm.assume(operatorPk != 0);
+        vm.assume(!registry.operatorRegistered(operator));
+
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory sig;
+
+        // Register
+        vm.prank(operator);
+        registry.registerOperatorWithSignature(sig, operator);
+        assertTrue(registry.operatorRegistered(operator), "Operator should be registered");
+
+        // Deregister
+        vm.prank(operator);
+        registry.deregisterOperator();
+        assertFalse(registry.operatorRegistered(operator), "Operator should be deregistered");
+    }
+
+    function testFuzz_UpdateOperatorSigningKey(
+        address newKey
+    ) public {
+        vm.assume(newKey != address(0));
+        vm.assume(newKey != registry.getLatestOperatorSigningKey(operator1));
+
+        vm.prank(operator1);
+        registry.updateOperatorSigningKey(newKey);
+
+        assertEq(registry.getLatestOperatorSigningKey(operator1), newKey, "Signing key not updated");
+    }
+}

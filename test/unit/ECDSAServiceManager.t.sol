@@ -18,6 +18,8 @@ import {ECDSAServiceManagerMock} from "../mocks/ECDSAServiceManagerMock.sol";
 import {ECDSAStakeRegistryMock} from "../mocks/ECDSAStakeRegistryMock.sol";
 import {IECDSAStakeRegistryTypes} from "../../src/interfaces/IECDSAStakeRegistry.sol";
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 contract MockDelegationManager {
     function operatorShares(address, address) external pure returns (uint256) {
         return 1000; // Return a dummy value for simplicity
@@ -216,5 +218,255 @@ contract ECDSAServiceManagerSetup is Test {
 
         vm.prank(mockStakeRegistry.owner());
         serviceManager.setAVSRegistrar(IAVSRegistrar(registrar));
+    }
+}
+
+contract ECDSAServiceManagerAccessControlTests is ECDSAServiceManagerSetup {
+    function test_RevertWhen_NotOwner_UpdateAVSMetadataURI() public {
+        address notOwner = address(0x456);
+        string memory newURI = "https://new-metadata-uri.com";
+
+        vm.prank(notOwner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        serviceManager.updateAVSMetadataURI(newURI);
+    }
+
+    function test_RevertWhen_NotStakeRegistry_RegisterOperatorToAVS() public {
+        address notStakeRegistry = address(0x456);
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory signature;
+
+        vm.prank(notStakeRegistry);
+        vm.expectRevert(abi.encodeWithSignature("OnlyStakeRegistry()"));
+        serviceManager.registerOperatorToAVS(operator1, signature);
+    }
+
+    function test_RevertWhen_NotStakeRegistry_DeregisterOperatorFromAVS() public {
+        address notStakeRegistry = address(0x456);
+
+        vm.prank(notStakeRegistry);
+        vm.expectRevert(abi.encodeWithSignature("OnlyStakeRegistry()"));
+        serviceManager.deregisterOperatorFromAVS(operator1);
+    }
+
+    function test_RevertWhen_NotRewardsInitiator_CreateAVSRewardsSubmission() public {
+        address notRewardsInitiator = address(0x456);
+        IRewardsCoordinator.RewardsSubmission[] memory submissions;
+
+        vm.prank(notRewardsInitiator);
+        vm.expectRevert(abi.encodeWithSignature("OnlyRewardsInitiator()"));
+        serviceManager.createAVSRewardsSubmission(submissions);
+    }
+
+    function test_RevertWhen_NotRewardsInitiator_CreateOperatorDirectedAVSRewardsSubmission()
+        public
+    {
+        address notRewardsInitiator = address(0x456);
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[] memory submissions;
+
+        vm.prank(notRewardsInitiator);
+        vm.expectRevert(abi.encodeWithSignature("OnlyRewardsInitiator()"));
+        serviceManager.createOperatorDirectedAVSRewardsSubmission(submissions);
+    }
+
+    function test_RevertWhen_NotOwner_SetClaimerFor() public {
+        address notOwner = address(0x456);
+        address claimer = address(0x789);
+
+        vm.prank(notOwner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        serviceManager.setClaimerFor(claimer);
+    }
+
+    function test_RevertWhen_NotOwner_SetRewardsInitiator() public {
+        address notOwner = address(0x456);
+        address newInitiator = address(0x789);
+
+        vm.prank(notOwner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        serviceManager.setRewardsInitiator(newInitiator);
+    }
+
+    function test_RevertWhen_NotOwner_SetAVSRegistrar() public {
+        address notOwner = address(0x456);
+        address registrar = address(0x789);
+
+        vm.prank(notOwner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        serviceManager.setAVSRegistrar(IAVSRegistrar(registrar));
+    }
+}
+
+contract ECDSAServiceManagerEventsTests is ECDSAServiceManagerSetup {
+    event RewardsInitiatorUpdated(address prevRewardsInitiator, address newRewardsInitiator);
+
+    function test_SetRewardsInitiator_EmitsEvent() public {
+        address currentInitiator = serviceManager.rewardsInitiator();
+        address newInitiator = address(0x888);
+
+        vm.expectEmit(true, true, false, true);
+        emit RewardsInitiatorUpdated(currentInitiator, newInitiator);
+
+        vm.prank(serviceManager.owner());
+        serviceManager.setRewardsInitiator(newInitiator);
+
+        assertEq(serviceManager.rewardsInitiator(), newInitiator, "Rewards initiator not updated");
+    }
+}
+
+contract ECDSAServiceManagerIntegrationTests is ECDSAServiceManagerSetup {
+    function test_GetRestakeableStrategies_AfterQuorumUpdate() public {
+        // Update quorum with new strategies
+        IStrategy newStrategy1 = IStrategy(address(0x1111));
+        IStrategy newStrategy2 = IStrategy(address(0x2222));
+
+        IECDSAStakeRegistryTypes.Quorum memory newQuorum = IECDSAStakeRegistryTypes.Quorum({
+            strategies: new IECDSAStakeRegistryTypes.StrategyParams[](2)
+        });
+        newQuorum.strategies[0] =
+            IECDSAStakeRegistryTypes.StrategyParams({strategy: newStrategy1, multiplier: 6000});
+        newQuorum.strategies[1] =
+            IECDSAStakeRegistryTypes.StrategyParams({strategy: newStrategy2, multiplier: 4000});
+
+        address[] memory operators = new address[](0);
+        vm.prank(mockStakeRegistry.owner());
+        mockStakeRegistry.updateQuorumConfig(newQuorum, operators);
+
+        // Check restakeable strategies
+        address[] memory strategies = serviceManager.getRestakeableStrategies();
+        assertEq(strategies.length, 2, "Should have 2 strategies");
+        assertEq(strategies[0], address(newStrategy1), "First strategy mismatch");
+        assertEq(strategies[1], address(newStrategy2), "Second strategy mismatch");
+    }
+
+    function test_GetOperatorRestakedStrategies_AllStrategiesWithShares() public {
+        // Mock all strategies to have shares
+        IStrategy[] memory strategies = new IStrategy[](2);
+        strategies[0] = IStrategy(address(420));
+        strategies[1] = IStrategy(address(421));
+
+        uint256[] memory shares = new uint256[](2);
+        shares[0] = 1000;
+        shares[1] = 2000;
+
+        vm.mockCall(
+            address(mockDelegationManager),
+            abi.encodeCall(IDelegationManager.getOperatorShares, (operator1, strategies)),
+            abi.encode(shares)
+        );
+
+        address[] memory restakedStrategies =
+            serviceManager.getOperatorRestakedStrategies(operator1);
+        assertEq(restakedStrategies.length, 2, "Should have 2 restaked strategies");
+        assertEq(restakedStrategies[0], address(strategies[0]), "First strategy mismatch");
+        assertEq(restakedStrategies[1], address(strategies[1]), "Second strategy mismatch");
+    }
+
+    function test_GetOperatorRestakedStrategies_NoStrategiesWithShares() public {
+        // Mock all strategies to have zero shares
+        IStrategy[] memory strategies = new IStrategy[](2);
+        strategies[0] = IStrategy(address(420));
+        strategies[1] = IStrategy(address(421));
+
+        uint256[] memory shares = new uint256[](2);
+        shares[0] = 0;
+        shares[1] = 0;
+
+        vm.mockCall(
+            address(mockDelegationManager),
+            abi.encodeCall(IDelegationManager.getOperatorShares, (operator1, strategies)),
+            abi.encode(shares)
+        );
+
+        address[] memory restakedStrategies =
+            serviceManager.getOperatorRestakedStrategies(operator1);
+        assertEq(restakedStrategies.length, 0, "Should have no restaked strategies");
+    }
+
+    function test_SetAVSRegistrar_CallsAllocationManager() public {
+        address newRegistrar = address(0xABC);
+
+        // Expect call to allocation manager
+        vm.expectCall(
+            address(mockAllocationManager),
+            abi.encodeCall(
+                MockAllocationManager.setAVSRegistrar, (address(serviceManager), newRegistrar)
+            )
+        );
+
+        vm.prank(serviceManager.owner());
+        serviceManager.setAVSRegistrar(IAVSRegistrar(newRegistrar));
+    }
+
+    function test_UpdateAVSMetadataURI_CallsAVSDirectory() public {
+        string memory newURI = "https://new-metadata-uri.com";
+
+        // Expect call to AVS directory
+        vm.expectCall(
+            address(mockAVSDirectory),
+            abi.encodeCall(MockAVSDirectory.updateAVSMetadataURI, (newURI))
+        );
+
+        vm.prank(serviceManager.owner());
+        serviceManager.updateAVSMetadataURI(newURI);
+    }
+
+    function test_RegisterOperatorToAVS_CallsAVSDirectory() public {
+        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory signature;
+
+        // Expect call to AVS directory
+        vm.expectCall(
+            address(mockAVSDirectory),
+            abi.encodeCall(MockAVSDirectory.registerOperatorToAVS, (operator1, signature))
+        );
+
+        vm.prank(address(mockStakeRegistry));
+        serviceManager.registerOperatorToAVS(operator1, signature);
+    }
+
+    function test_DeregisterOperatorFromAVS_CallsAVSDirectory() public {
+        // Expect call to AVS directory
+        vm.expectCall(
+            address(mockAVSDirectory),
+            abi.encodeCall(MockAVSDirectory.deregisterOperatorFromAVS, (operator1))
+        );
+
+        vm.prank(address(mockStakeRegistry));
+        serviceManager.deregisterOperatorFromAVS(operator1);
+    }
+
+    function test_SetClaimerFor_CallsRewardsCoordinator() public {
+        address claimer = address(0x123);
+
+        // Expect call to rewards coordinator
+        vm.expectCall(
+            address(mockRewardsCoordinator),
+            abi.encodeCall(MockRewardsCoordinator.setClaimerFor, (claimer))
+        );
+
+        vm.prank(serviceManager.owner());
+        serviceManager.setClaimerFor(claimer);
+    }
+}
+
+contract ECDSAServiceManagerFuzzTests is ECDSAServiceManagerSetup {
+    function testFuzz_SetRewardsInitiator(
+        address newInitiator
+    ) public {
+        vm.assume(newInitiator != address(0));
+
+        vm.prank(serviceManager.owner());
+        serviceManager.setRewardsInitiator(newInitiator);
+
+        assertEq(
+            serviceManager.rewardsInitiator(), newInitiator, "Rewards initiator not set correctly"
+        );
+    }
+
+    function testFuzz_UpdateAVSMetadataURI(
+        string memory newURI
+    ) public {
+        vm.prank(serviceManager.owner());
+        serviceManager.updateAVSMetadataURI(newURI);
+        // Test passes if no revert
     }
 }

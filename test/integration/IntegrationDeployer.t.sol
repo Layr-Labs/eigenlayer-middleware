@@ -189,7 +189,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
 
         // Deploy EigenPod Contracts
-        pod = new EigenPod(ethPOSDeposit, eigenPodManager, GENESIS_TIME_LOCAL, "v0.0.1");
+        pod = new EigenPod(ethPOSDeposit, eigenPodManager, "v0.0.1");
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
@@ -206,7 +206,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             "v0.0.1"
         );
         StrategyManager strategyManagerImplementation =
-            new StrategyManager(delegationManager, pauserRegistry, "v0.0.1");
+            new StrategyManager(allocationManager, delegationManager, pauserRegistry, "v0.0.1");
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit, eigenPodBeacon, delegationManager, pauserRegistry, "v0.0.1"
         );
@@ -231,6 +231,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
         AllocationManager allocationManagerImplementation = new AllocationManager(
             delegationManager,
+            IStrategy(address(0)), // TODO: update this to the eigenStrategy,
             pauserRegistry,
             permissionController,
             uint32(7 days), // DEALLOCATION_DELAY
@@ -247,9 +248,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             ITransparentUpgradeableProxy(payable(address(delegationManager))),
             address(delegationImplementation),
             abi.encodeWithSelector(
-                DelegationManager.initialize.selector,
-                eigenLayerReputedMultisig, // initialOwner
-                0 /* initialPausedStatus */
+                DelegationManager.initialize.selector, 0 /* initialPausedStatus */
             )
         );
         // StrategyManager
@@ -308,7 +307,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             address(allocationManagerImplementation),
             abi.encodeWithSelector(
                 AllocationManager.initialize.selector,
-                eigenLayerReputedMultisig, // initialOwner
                 0 // initialPausedStatus
             )
         );
