@@ -11,6 +11,8 @@ import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPa
 import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
 
 contract AllocationManagerIntermediate is IAllocationManager {
+    mapping(address avs => address avsRegistrar) internal _avsRegistrar;
+
     function initialize(
         uint256 initialPausedStatus
     ) external virtual {}
@@ -201,12 +203,6 @@ contract AllocationManagerIntermediate is IAllocationManager {
 
     function DEALLOCATION_DELAY() external pure virtual returns (uint32) {}
 
-    function createRedistributingOperatorSets(
-        address avs,
-        CreateSetParams[] calldata params,
-        address[] calldata redistributionRecipients
-    ) external virtual {}
-
     function getRedistributionRecipient(
         OperatorSet memory operatorSet
     ) external pure virtual returns (address) {}
@@ -214,10 +210,6 @@ contract AllocationManagerIntermediate is IAllocationManager {
     function getSlashCount(
         OperatorSet memory operatorSet
     ) external pure virtual returns (uint256) {}
-
-    function initialize(
-        uint256 initialPausedStatus
-    ) external virtual {}
 
     function isOperatorRedistributable(
         address operator
@@ -243,12 +235,6 @@ contract AllocationManagerMock is AllocationManagerIntermediate {
     function DEALLOCATION_DELAY() external pure override returns (uint32) {
         return _DEALLOCATION_DELAY;
     }
-
-    function createRedistributingOperatorSets(
-        address avs,
-        CreateSetParams[] calldata params,
-        address[] calldata redistributionRecipients
-    ) external override {}
 
     function getRedistributionRecipient(
         OperatorSet memory /* operatorSet */

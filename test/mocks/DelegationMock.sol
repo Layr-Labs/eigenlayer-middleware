@@ -26,10 +26,6 @@ contract DelegationIntermediate is IDelegationManager {
         uint256 initialPausedStatus
     ) external virtual {}
 
-    function initialize(
-        uint256 initialPausedStatus
-    ) external virtual {}
-
     function registerAsOperator(
         OperatorDetails calldata registeringOperatorDetails,
         uint32 allocationDelay,
@@ -243,13 +239,6 @@ contract DelegationIntermediate is IDelegationManager {
 
     function slashOperatorShares(
         address operator,
-        IStrategy strategy,
-        uint64 prevMaxMagnitude,
-        uint64 newMaxMagnitude
-    ) external {}
-
-    function slashOperatorShares(
-        address operator,
         OperatorSet calldata operatorSet,
         uint256 slashId,
         IStrategy strategy,
@@ -304,15 +293,6 @@ contract DelegationIntermediate is IDelegationManager {
         IStrategy[] memory strategies,
         uint256[] memory withdrawableShares
     ) external view override returns (uint256[] memory) {}
-
-    function slashOperatorShares(
-        address operator,
-        OperatorSet calldata operatorSet,
-        uint256 slashId,
-        IStrategy strategy,
-        uint64 prevMaxMagnitude,
-        uint64 newMaxMagnitude
-    ) external virtual returns (uint256 totalDepositSharesToSlash) {}
 
     /**
      * @notice Returns the domain separator used for EIP-712 signatures
