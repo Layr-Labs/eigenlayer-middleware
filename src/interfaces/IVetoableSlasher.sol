@@ -83,4 +83,11 @@ interface IVetoableSlasher is
     function fulfillSlashingRequest(
         uint256 slashId
     ) external;
+
+    /// @notice Executes a slashing request after the veto period has passed and burns or redistributes shares
+    /// @param slashId The ID of the slashing request to fulfill
+    /// @dev Can only be called by the authorized slasher after the veto period
+    function fulfillSlashingRequestAndBurnOrRedistribute(
+        uint256 slashId
+    ) external;
 }

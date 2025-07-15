@@ -10,9 +10,16 @@ import {ISlasher} from "./ISlasher.sol";
 /// @dev Extends base interfaces to provide access controlled slashing functionality
 interface IInstantSlasher is ISlasher {
     /// @notice Immediately executes a slashing request
-    /// @param _slashingParams Parameters defining the slashing request including operator and amount
+    /// @param params Parameters defining the slashing request including operator and amount
     /// @dev Can only be called by the authorized slasher
     function fulfillSlashingRequest(
-        IAllocationManager.SlashingParams memory _slashingParams
+        IAllocationManager.SlashingParams memory params
+    ) external;
+
+    /// @notice Immediately executes a slashing request and burns or redistributes shares
+    /// @param params Parameters defining the slashing request including operator and amount
+    /// @dev Can only be called by the authorized slasher
+    function fulfillSlashingRequestAndBurnOrRedistribute(
+        IAllocationManager.SlashingParams memory params
     ) external;
 }

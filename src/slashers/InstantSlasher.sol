@@ -22,9 +22,15 @@ contract InstantSlasher is IInstantSlasher, SlasherBase {
 
     /// @inheritdoc IInstantSlasher
     function fulfillSlashingRequest(
-        IAllocationManager.SlashingParams calldata _slashingParams
+        IAllocationManager.SlashingParams calldata params
     ) external virtual override(IInstantSlasher) onlySlasher {
-        _fulfillSlashingRequest(_slashingParams);
-        _updateOperatorStakeWeights(_slashingParams.operator);
+        _fulfillSlashingRequest(params);
+    }
+
+    /// @inheritdoc IInstantSlasher
+    function fulfillSlashingRequestAndBurnOrRedistribute(
+        IAllocationManager.SlashingParams calldata params
+    ) external virtual override onlySlasher {
+        _fulfillSlashingRequestAndBurnOrRedistribute(params);
     }
 }

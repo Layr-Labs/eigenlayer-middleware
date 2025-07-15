@@ -60,7 +60,18 @@ contract VetoableSlasher is IVetoableSlasher, SlasherBase {
     function fulfillSlashingRequest(
         uint256 slashId
     ) external virtual override onlySlasher {
-        _fulfillSlashingRequestAndMarkAsCompleted(slashId);
+        IVetoableSlasherTypes.VetoableSlashingRequest storage request = slashingRequests[slashId];
+        _markAsCompleted(request);
+        _fulfillSlashingRequest(request.params);
+    }
+
+    /// @inheritdoc IVetoableSlasher
+    function fulfillSlashingRequestAndBurnOrRedistribute(
+        uint256 slashId
+    ) external virtual override onlySlasher {
+        IVetoableSlasherTypes.VetoableSlashingRequest storage request = slashingRequests[slashId];
+        _markAsCompleted(request);
+        _fulfillSlashingRequestAndBurnOrRedistribute(request.params);
     }
 
     /// @notice Internal function to create and store a new slashing request
@@ -104,12 +115,11 @@ contract VetoableSlasher is IVetoableSlasher, SlasherBase {
         emit SlashingRequestCancelled(slashId);
     }
 
-    /// @notice Internal function to fulfill a slashing request and mark it as completed
-    /// @param slashId The ID of the slashing request to fulfill
-    function _fulfillSlashingRequestAndMarkAsCompleted(
-        uint256 slashId
+    /// @notice Internal function to mark a slashing request as completed
+    /// @param request The request to mark as completed
+    function _markAsCompleted(
+        IVetoableSlasherTypes.VetoableSlashingRequest storage request
     ) internal virtual {
-        IVetoableSlasherTypes.VetoableSlashingRequest storage request = slashingRequests[slashId];
         require(block.number >= request.requestBlock + vetoWindowBlocks, VetoPeriodNotPassed());
         require(
             request.status == IVetoableSlasherTypes.SlashingStatus.Requested,
@@ -117,9 +127,6 @@ contract VetoableSlasher is IVetoableSlasher, SlasherBase {
         );
 
         request.status = IVetoableSlasherTypes.SlashingStatus.Completed;
-
-        _fulfillSlashingRequest(request.params);
-        _updateOperatorStakeWeights(request.params.operator);
     }
 
     /// @notice Internal function to verify if an account is the veto committee
