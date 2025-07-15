@@ -12,14 +12,16 @@ interface IInstantSlasher is ISlasher {
     /// @notice Immediately executes a slashing request
     /// @param params Parameters defining the slashing request including operator and amount
     /// @dev Can only be called by the authorized slasher
+    /// @return slashId The ID of the slashing request
     function fulfillSlashingRequest(
         IAllocationManager.SlashingParams memory params
-    ) external;
+    ) external returns (uint256 slashId);
 
     /// @notice Immediately executes a slashing request and burns or redistributes shares
     /// @param params Parameters defining the slashing request including operator and amount
     /// @dev Can only be called by the authorized slasher
+    /// @return slashId The ID of the slashing request
     function fulfillSlashingRequestAndBurnOrRedistribute(
         IAllocationManager.SlashingParams memory params
-    ) external;
+    ) external returns (uint256 slashId);
 }
