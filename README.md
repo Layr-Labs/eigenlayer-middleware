@@ -69,7 +69,7 @@ forge test
 The contracts in this repo are meant to be deployed by each AVS that wants to use them. The addresses listed below refer to EigenDA's deployment, and are included as an example.
 
 ### Current MiddlewareV2 Testnet Deployment
-The following testnet deployment is for our MiddlewareV2 release. The below table calculators calculate slashable stake for an operatorSet and value all strategies equally. For example, or example, if an operator allocates 100 stETH, 100 wETH, and 100 DAI the calculator would return 300 for the stake weight of the operator.  See our [docs](./docs/middlewareV2/README.md) for more information. 
+The following testnet deployment is for our MiddlewareV2 release, deployed on Sepolia. The below table calculators calculate slashable stake for an operatorSet and value all strategies equally. For example, or example, if an operator allocates 100 stETH, 100 wETH, and 100 DAI the calculator would return 300 for the stake weight of the operator.  See our [docs](./docs/middlewareV2/README.md) for more information. 
 
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- |
