@@ -26,13 +26,6 @@ contract KeyRegistrarMock is IKeyRegistrar {
         _operatorRegistered[operatorSetKey][operator] = _isRegistered;
     }
 
-    function checkKey(
-        OperatorSet calldata operatorSet,
-        address operator
-    ) external view returns (bool) {
-        return _operatorRegistered[operatorSet.key()][operator];
-    }
-
     function initialize(
         address initialOwner
     ) external {}
@@ -51,7 +44,9 @@ contract KeyRegistrarMock is IKeyRegistrar {
     function isRegistered(
         OperatorSet memory operatorSet,
         address operator
-    ) external pure returns (bool) {}
+    ) external view returns (bool) {
+        return _operatorRegistered[operatorSet.key()][operator];
+    }
 
     function getOperatorSetCurveType(
         OperatorSet memory operatorSet

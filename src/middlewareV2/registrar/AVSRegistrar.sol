@@ -95,7 +95,7 @@ contract AVSRegistrar is Initializable, AVSRegistrarStorage {
     ) internal view {
         for (uint32 i = 0; i < operatorSetIds.length; i++) {
             OperatorSet memory operatorSet = OperatorSet({avs: avs, id: operatorSetIds[i]});
-            require(keyRegistrar.checkKey(operatorSet, operator), KeyNotRegistered());
+            require(keyRegistrar.isRegistered(operatorSet, operator), KeyNotRegistered());
         }
     }
 

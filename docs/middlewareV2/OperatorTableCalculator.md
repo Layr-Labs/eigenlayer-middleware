@@ -33,7 +33,7 @@ In addition, an AVS can build custom calculation methodologies that include:
 - Capping the stake of an operator
 - Using oracles to price stake
 
-The [`ECDSATableCalculator`](../../src/middlewareV2/tableCalculator/ECDSATableCalculator.sol) and [`BN254TableCalculator`](../../src/middlewareV2/tableCalculator/BN254TableCalculator.sol) value slashable stake equally across all strategies. For example, if an operator allocates 100 stETH, 100 wETH, and 100 USDC the calculator would return 300 for the stake weight of the operator. 
+The [`ECDSATableCalculator`](../../src/middlewareV2/tableCalculator/ECDSATableCalculator.sol) and [`BN254TableCalculator`](../../src/middlewareV2/tableCalculator/BN254TableCalculator.sol) value slashable stake equally across all strategies. For example, if an operator allocates 100 stETH, 100 wETH, and 100 DAI the calculator would return 300 for the stake weight of the operator. 
 
 
 ---

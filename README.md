@@ -68,7 +68,16 @@ forge test
 
 The contracts in this repo are meant to be deployed by each AVS that wants to use them. The addresses listed below refer to EigenDA's deployment, and are included as an example.
 
-### Current Mainnet Deployment
+### Current MiddlewareV2 Testnet Deployment
+The following testnet deployment is for our MiddlewareV2 release, deployed on Sepolia. The below table calculators calculate slashable stake for an operatorSet and value all strategies equally. For example, or example, if an operator allocates 100 stETH, 100 wETH, and 100 DAI the calculator would return 300 for the stake weight of the operator.  See our [docs](./docs/middlewareV2/README.md) for more information. 
+
+| Name | Proxy | Implementation | Notes |
+| -------- | -------- | -------- | -------- |
+[`BN254TableCalculator`](./src/middlewareV2/tableCalculator/BN254TableCalculator.sol)| N/A | [`0xc2c0bc13571aC5115709C332dc7AE666606b08E8`](https://sepolia.etherscan.io/address/0xc2c0bc13571aC5115709C332dc7AE666606b08E8#code) | Singleton non-upgradeable |
+[`ECDSATableCalculator`](./src/middlewareV2/tableCalculator/ECDSATableCalculator.sol)| N/A | [`0x5612Fd146C2d40f1269E0e73945A534ec706dCDc`](https://sepolia.etherscan.io/address/0x5612Fd146C2d40f1269E0e73945A534ec706dCDc#code) | Singleton non-upgradeable |
+
+
+### Current AVS Mainnet Deployment
 
 The current mainnet deployment is from our M2 mainnet release. You can view the deployed contract addresses below, or check out the code itself on the [`mainnet`](https://github.com/Layr-Labs/eigenlayer-middleware/tree/mainnet) branch.
 
@@ -83,7 +92,7 @@ The current mainnet deployment is from our M2 mainnet release. You can view the 
 [`ProxyAdmin`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0x8247...2E99`](https://etherscan.io/address/0x8247ef5705d3345516286b72bfe6d690197c2e99#code) | |
 [`eigenda/EigenDAServiceManager`](https://github.com/Layr-Labs/eigenda/blob/08d8781a2165c159ac9bb502dd61ed6ed340601c/contracts/src/core/EigenDAServiceManager.sol) | [`0x870679e138bcdf293b7ff14dd44b70fc97e12fc0`](https://etherscan.io/address/0x870679e138bcdf293b7ff14dd44b70fc97e12fc0#readProxyContract) | [`0xF5fD...899e`](https://etherscan.io/address/0xf5fd25a90902c27068cf5ebe53be8da693ac899e#code) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 
-### Current Testnet Deployment
+### Current AVS Testnet Deployment
 
 The current testnet deployment is on holesky, is from our M2 beta release. You can view the deployed contract addresses below, or check out the code itself on the [`testnet-holesky`](https://github.com/Layr-Labs/eigenlayer-middleware/tree/testnet-holesky) branch.
 
