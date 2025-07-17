@@ -20,7 +20,7 @@ Interfaces:
 
 ## Overview
 
-The AVSRegistrar is the interface between AVSs and the EigenLayer core protocol for managing operator registration. It enforces that operators have valid keys registered in the `KeyRegistrar` for a given `operatorSet` before allowing them to register. The `AVSRegistrar` manages multiple operatorSets for a single AVS. 
+The AVSRegistrar is the interface between AVSs and the EigenLayer core protocol for managing operator registration. It enforces that operators have valid keys registered in the `KeyRegistrar` for a given `operatorSet` before allowing them to register. The `AVSRegistrar` manages multiple operatorSets for a single AVS.  
 
 ### Key Features
 
@@ -36,32 +36,45 @@ The below system diagrams assume the *basic* interaction with the AVSRegistrar. 
 3. Gating operator registration based on custom stake-weighted parameters
 
 #### Initialization
+
 ```mermaid
 sequenceDiagram
     participant AVSAdmin as AVS Admin
-    participant AllocationManager
     participant AVSRegistrar
+    participant OperatorTableCalculator
+    participant AllocationManager
+    participant KeyRegistrar
+    participant CrossChainRegistry
 
-    AVSAdmin->>AllocationManager: Tx1: set metadataURI
-    AVSAdmin->>AVSRegistrar: Tx2: deploy AVSRegistrar
-    AVSAdmin->>AllocationManager: Tx3: set AVSRegistrar
-    AllocationManager->>AVSRegistrar: Tx3: check supportsAVS()
+    AVS->>AVSRegistrar: Tx1: Deploy AVSRegistrar
+    AVS->>AllocationManager: Tx2: updateMetadataURI()
+    AVS->>AllocationManager: Tx3: setAVSRegistrar(AVSRegistrar)
+    AllocationManager-->>: check supportsAVS()
+    AVS->>KeyRegistrar: Tx4: configureOperatorSet(operatorSet, keyMaterial)
 ```
 
 The `AVSAdmin` is the entity that conducts on-chain operations on behalf of the AVS. It can be a multisig, eoa, or governance contract. In Tx1, when the `metadataURI` is set, the identifier for the AVS in the core protocol is the address of the `AVSAdmin`. For ergonomic purposes, it is possible to have the identifier be the [`AVSRegistrar`](#avsregistrarasidentifier). See the [Core `PermissionController`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/main/docs/permissions/PermissionController.md) for more information on how the admin can be changed. 
 
-#### Registration
+#### Registration 
+
+All registration/deregistration will flow from the `AllocationManager`. The `middlewareV2` architecture no longer requires an AVS to deploy a `KeyRegistrar`. Instead, the `AVSRegistrar` checks key membership in the core `KeyRegistrar` contract.
+
 ```mermaid
 sequenceDiagram
-    participant Operator
-    participant AllocationManager
-    participant AVSRegistrar
+    participant OP as Operator
+    participant KR as KeyRegistrar
+    participant AM as AllocationManager
+    participant AVR as AVSRegistrar
 
-    Operator->>AllocationManager: Tx1: Register for opSet
-    AllocationManager->>AVSRegistrar: Tx1: Send opSets, Data
+    OP->>KR: Tx1: registerKey
+    OP->>AM: Tx2: registerForOperatorSets
+    AM-->>AVR: registerForOperatorSets
+    AVR-->>KR: isRegistered
 ```
 
 #### Deregistration
+
+
 ```mermaid
 sequenceDiagram
     participant Operator
@@ -69,7 +82,25 @@ sequenceDiagram
     participant AVSRegistrar
 
     Operator->>AllocationManager: Tx1: Deregister
-    AllocationManager->>AVSRegistrar: Tx1: Send Deregistration
+    AllocationManager-->>AVSRegistrar: Tx1: Send Deregistration
+```
+
+#### Operator Key Rotation
+
+Rotation takes a dependency on the `AllocationManager`. In particular, operators are only allowed to deregister their key from an operatorSet if they are not slashable by said operatorSet. 
+
+To rotate a key, an operator must deregister from the operatorSet, wait until it is not slashable, deregister its key, and then register a new key. If the operator was not slashable, it can rotate its key without a delay. 
+
+```mermaid
+sequenceDiagram
+    participant OP as Operator
+    participant AM as AllocationManager
+    participant KR as KeyRegistrar
+
+    OP->>AM: Tx1: deregisterFromOperatorSets
+    Note over OP: Wait 14 days<br>(if previously allocated)
+    OP->>KR: Tx2: deregisterKey
+    OP->>AM: Tx3: register new key to operatorSet
 ```
 
 ---
@@ -143,7 +174,7 @@ function deregisterOperator(
 ) external virtual onlyAllocationManager;
 ```
 
-Deregisters an operator from one or more operator sets. This function can be called by an operator OR by the AVSs ejector if it has configured permissions in the [Core `Permission Controller`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/main/docs/permissions/PermissionController.md).
+Deregisters an operator from one or more operator sets. This function can be called by on the `AllocationManager` by either the operator OR  the AVSs ejector if the AVS has configured permissions in the [Core `Permission Controller`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/main/docs/permissions/PermissionController.md).
 
 *Effects:*
 - Emits `OperatorDeregistered` event
@@ -235,7 +266,6 @@ function _afterDeregisterOperator(
 - Updating internal state
 - Triggering external notifications
 - Recording additional information
-
 
 ---
 
@@ -419,3 +449,5 @@ function initialize(address admin, string memory metadataURI) public initializer
 1. Updates AVS metadata URI in the AllocationManager
 2. Sets itself as the AVS registrar
 3. Initiates admin transfer via PermissionController
+
+---
