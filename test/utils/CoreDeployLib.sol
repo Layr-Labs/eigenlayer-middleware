@@ -58,7 +58,6 @@ library CoreDeployLib {
 
     struct DelegationManagerConfig {
         uint256 initPausedStatus;
-        address initialOwner;
         uint32 minWithdrawalDelayBlocks;
     }
 
@@ -69,7 +68,6 @@ library CoreDeployLib {
 
     struct AllocationManagerConfig {
         uint256 initPausedStatus;
-        address initialOwner;
         uint32 deallocationDelay;
         uint32 allocationConfigurationDelay;
     }
@@ -129,6 +127,7 @@ library CoreDeployLib {
         address strategyBeacon;
         address rewardsCoordinator;
         address permissionController;
+        address eigenStrategy; // TODO: initialize
     }
 
     function deployContracts(
@@ -180,7 +179,7 @@ library CoreDeployLib {
         address allocationManagerImpl = address(
             new AllocationManager(
                 IDelegationManager(deployments.delegationManager),
-                IStrategy(address(0)), // TODO: update this to the eigenStrategy,
+                IStrategy(deployments.eigenStrategy),
                 IPauserRegistry(deployments.pauserRegistry),
                 IPermissionController(deployments.permissionController),
                 config.allocationManager.deallocationDelay,

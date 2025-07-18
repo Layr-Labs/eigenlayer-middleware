@@ -44,7 +44,7 @@ Creates and queues a new slashing request that will be executable after the veto
 #### `cancelSlashingRequest`
 ```solidity
 function cancelSlashingRequest(
-    uint256 requestId
+    uint256 slashId
 ) 
     external 
     virtual 
@@ -68,7 +68,7 @@ Allows the veto committee to cancel a pending slashing request within the veto w
 #### `fulfillSlashingRequest`
 ```solidity
 function fulfillSlashingRequest(
-    uint256 requestId
+    uint256 slashId
 ) 
     external 
     virtual 

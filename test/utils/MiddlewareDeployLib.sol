@@ -7,6 +7,7 @@ import {TransparentUpgradeableProxy} from
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
@@ -109,6 +110,7 @@ library MiddlewareDeployLib {
     function deployMiddleware(
         address proxyAdmin,
         address allocationManager,
+        address strategyManager,
         address pauserRegistry,
         MiddlewareDeployConfig memory config
     ) internal returns (MiddlewareDeployData memory result) {
@@ -118,7 +120,7 @@ library MiddlewareDeployLib {
         upgradeCoordinator(
             result, allocationManager, pauserRegistry, config.slashingRegistryCoordinator
         );
-        upgradeInstantSlasher(result, allocationManager, config.instantSlasher);
+        upgradeInstantSlasher(result, allocationManager, strategyManager, config.instantSlasher);
 
         return result;
     }
@@ -319,11 +321,13 @@ library MiddlewareDeployLib {
     function upgradeInstantSlasher(
         MiddlewareDeployData memory deployments,
         address allocationManager,
+        address strategyManager,
         InstantSlasherConfig memory slasherConfig
     ) internal {
         address instantSlasherImpl = address(
             new InstantSlasher(
                 IAllocationManager(allocationManager),
+                IStrategyManager(strategyManager),
                 ISlashingRegistryCoordinator(deployments.slashingRegistryCoordinator),
                 slasherConfig.slasher
             )

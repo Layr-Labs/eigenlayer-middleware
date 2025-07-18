@@ -37,7 +37,7 @@ interface IVetoableSlasherTypes {
 interface IVetoableSlasherEvents {
     /// @notice Emitted when a new slashing request is created
     event SlashingRequested(
-        uint256 indexed requestId,
+        uint256 indexed slashId,
         address indexed operator,
         uint32 operatorSetId,
         uint256[] wadsToSlash,
@@ -45,7 +45,7 @@ interface IVetoableSlasherEvents {
     );
 
     /// @notice Emitted when a slashing request is cancelled by the veto committee
-    event SlashingRequestCancelled(uint256 indexed requestId);
+    event SlashingRequestCancelled(uint256 indexed slashId);
 }
 
 /// @title IVetoableSlasher
@@ -71,16 +71,23 @@ interface IVetoableSlasher is
     ) external;
 
     /// @notice Cancels a pending slashing request
-    /// @param requestId The ID of the slashing request to cancel
+    /// @param slashId The ID of the slashing request to cancel
     /// @dev Can only be called by the veto committee during the veto period
     function cancelSlashingRequest(
-        uint256 requestId
+        uint256 slashId
     ) external;
 
     /// @notice Executes a slashing request after the veto period has passed
-    /// @param requestId The ID of the slashing request to fulfill
+    /// @param slashId The ID of the slashing request to fulfill
     /// @dev Can only be called by the authorized slasher after the veto period
     function fulfillSlashingRequest(
-        uint256 requestId
+        uint256 slashId
+    ) external;
+
+    /// @notice Executes a slashing request after the veto period has passed and burns or redistributes shares
+    /// @param slashId The ID of the slashing request to fulfill
+    /// @dev Can only be called by the authorized slasher after the veto period
+    function fulfillSlashingRequestAndBurnOrRedistribute(
+        uint256 slashId
     ) external;
 }

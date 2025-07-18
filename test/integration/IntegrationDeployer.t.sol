@@ -22,6 +22,7 @@ import "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 import "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPodManager.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPod.sol";
+import "eigenlayer-contracts/src/contracts/strategies/EigenStrategy.sol";
 import "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
 import "eigenlayer-contracts/src/test/mocks/ETHDepositMock.sol";
@@ -229,9 +230,12 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             })
         );
 
+        IStrategy eigenStrategy =
+            IStrategy(new EigenStrategy(strategyManager, pauserRegistry, "v0.0.1"));
+
         AllocationManager allocationManagerImplementation = new AllocationManager(
             delegationManager,
-            IStrategy(address(0)), // TODO: update this to the eigenStrategy,
+            eigenStrategy,
             pauserRegistry,
             permissionController,
             uint32(7 days), // DEALLOCATION_DELAY

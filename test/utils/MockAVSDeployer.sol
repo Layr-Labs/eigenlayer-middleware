@@ -6,6 +6,8 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import {ITransparentUpgradeableProxy} from
     "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
+import {EigenStrategy} from "eigenlayer-contracts/src/contracts/strategies/EigenStrategy.sol";
+import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {
@@ -273,9 +275,15 @@ contract MockAVSDeployer is Test {
             address(serviceManagerImplementation)
         );
 
+        IStrategy eigenStrategy = IStrategy(
+            new EigenStrategy(
+                IStrategyManager(address(strategyManagerMock)), pauserRegistry, "v0.0.1"
+            )
+        );
+
         allocationManagerImplementation = new AllocationManager(
             delegationMock,
-            IStrategy(address(0)), // TODO: update this to the eigenStrategy
+            eigenStrategy,
             pauserRegistry,
             permissionControllerMock,
             uint32(7 days), // DEALLOCATION_DELAY
