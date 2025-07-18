@@ -1,7 +1,7 @@
 ## OperatorTableCalculator
 
 | File | Type | Notes |
-| -------- | -------- | 
+| -------- | -------- | -------- | 
 | [`ECDSATableCalculatorBase.sol`](../../src/middlewareV2/tableCalculator/ECDSATableCalculatorBase.sol) | Abstract | Base functionality for ECDSA operator tables |
 | [`BN254TableCalculatorBase.sol`](../../src/middlewareV2/tableCalculator/BN254TableCalculatorBase.sol) | Abstract | Base functionality for BN254 operator tables |
 
