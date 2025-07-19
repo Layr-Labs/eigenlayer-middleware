@@ -7,8 +7,10 @@ import {
 } from "eigenlayer-contracts/src/contracts/permissions/KeyRegistrar.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
-import {BN254, IOperatorTableCalculatorTypes} from
-    "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
+import {
+    BN254,
+    IOperatorTableCalculatorTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
 import {IBN254TableCalculator} from "../../../src/interfaces/IBN254TableCalculator.sol";
 import {
     OperatorSet,
@@ -214,7 +216,11 @@ contract BN254TableCalculatorBaseUnitTests is
         BN254.G1Point memory pubkey,
         uint256[] memory weights
     ) internal pure returns (bytes32) {
-        return keccak256(abi.encode(IOperatorTableCalculatorTypes.BN254OperatorInfo({pubkey: pubkey, weights: weights})));
+        return keccak256(
+            abi.encode(
+                IOperatorTableCalculatorTypes.BN254OperatorInfo({pubkey: pubkey, weights: weights})
+            )
+        );
     }
 }
 
