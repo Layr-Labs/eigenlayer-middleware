@@ -3,7 +3,8 @@ pragma solidity ^0.8.27;
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IAllocationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 import {AVSRegistrarWithSocket} from
     "../../middlewareV2/registrar/presets/AVSRegistrarWithSocket.sol";
@@ -40,7 +41,10 @@ abstract contract TaskAVSRegistrarBase is
      * @param _owner The owner of the contract
      * @param _initialConfig The initial AVS configuration
      */
-    function __TaskAVSRegistrarBase_init(address _owner, AvsConfig memory _initialConfig) internal onlyInitializing {
+    function __TaskAVSRegistrarBase_init(
+        address _owner,
+        AvsConfig memory _initialConfig
+    ) internal onlyInitializing {
         __Ownable_init();
         _transferOwnership(_owner);
         _setAvsConfig(_initialConfig);
@@ -70,12 +74,16 @@ abstract contract TaskAVSRegistrarBase is
         require(config.executorOperatorSetIds.length > 0, ExecutorOperatorSetIdsEmpty());
 
         // Check that first element is not the aggregator
-        require(config.aggregatorOperatorSetId != config.executorOperatorSetIds[0], InvalidAggregatorOperatorSetId());
+        require(
+            config.aggregatorOperatorSetId != config.executorOperatorSetIds[0],
+            InvalidAggregatorOperatorSetId()
+        );
 
         // Check monotonically increasing order and no aggregator overlap in one pass
         for (uint256 i = 1; i < config.executorOperatorSetIds.length; i++) {
             require(
-                config.aggregatorOperatorSetId != config.executorOperatorSetIds[i], InvalidAggregatorOperatorSetId()
+                config.aggregatorOperatorSetId != config.executorOperatorSetIds[i],
+                InvalidAggregatorOperatorSetId()
             );
             require(
                 config.executorOperatorSetIds[i] > config.executorOperatorSetIds[i - 1],
