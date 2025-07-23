@@ -22,7 +22,10 @@ abstract contract SocketRegistry is SocketRegistryStorage {
 
     /// @inheritdoc ISocketRegistry
     function updateSocket(address operator, string memory socket) external {
-        require(msg.sender == operator, CallerNotOperator());
+        require(
+            slashingRegistryCoordinator.getOperatorStatus(operator) == OperatorStatus.REGISTERED,
+            CallerNotOperator()
+        );
         _setOperatorSocket(operator, socket);
     }
 
