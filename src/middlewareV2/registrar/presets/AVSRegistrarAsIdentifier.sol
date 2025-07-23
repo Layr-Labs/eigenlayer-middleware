@@ -17,8 +17,6 @@ contract AVSRegistrarAsIdentifier is AVSRegistrar {
     /// @notice The permission controller for the AVS
     IPermissionController public immutable permissionController;
 
-    /// @dev The immutable avs address `AVSRegistrar` is NOT the address of the AVS in EigenLayer core.
-    /// @dev The address of the AVS in EigenLayer core is the proxy contract, and it is set via the `initialize` function below.
     constructor(
         address _avs,
         IAllocationManager _allocationManager,
