@@ -73,9 +73,8 @@ The following testnet deployment is for our MiddlewareV2 release, deployed on Se
 
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- |
-[`BN254TableCalculator`](./src/middlewareV2/tableCalculator/BN254TableCalculator.sol)| N/A | [`0xc2c0bc13571aC5115709C332dc7AE666606b08E8`](https://sepolia.etherscan.io/address/0xc2c0bc13571aC5115709C332dc7AE666606b08E8#code) | Singleton non-upgradeable |
-[`ECDSATableCalculator`](./src/middlewareV2/tableCalculator/ECDSATableCalculator.sol)| N/A | [`0x5612Fd146C2d40f1269E0e73945A534ec706dCDc`](https://sepolia.etherscan.io/address/0x5612Fd146C2d40f1269E0e73945A534ec706dCDc#code) | Singleton non-upgradeable |
-
+[`BN254TableCalculator`](./src/middlewareV2/tableCalculator/BN254TableCalculator.sol)| N/A | [`0xa19E3B00cf4aC46B5e6dc0Bbb0Fb0c86D0D65603`](https://sepolia.etherscan.io/address/0xa19E3B00cf4aC46B5e6dc0Bbb0Fb0c86D0D65603#code) | Singleton non-upgradeable |
+[`ECDSATableCalculator`](./src/middlewareV2/tableCalculator/ECDSATableCalculator.sol)| N/A | [`0xaCB5DE6aa94a1908E6FA577C2ade65065333B450`](https://sepolia.etherscan.io/address/0xaCB5DE6aa94a1908E6FA577C2ade65065333B450#code) | Singleton non-upgradeable |
 
 ### Current AVS Mainnet Deployment
 
