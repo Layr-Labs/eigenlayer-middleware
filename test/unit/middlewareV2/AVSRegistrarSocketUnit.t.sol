@@ -5,6 +5,7 @@ import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyR
 import "./AVSRegistrarBase.t.sol";
 import {AVSRegistrarWithSocket} from "src/middlewareV2/registrar/presets/AVSRegistrarWithSocket.sol";
 import {ISocketRegistryEvents, ISocketRegistryErrors} from "src/interfaces/ISocketRegistryV2.sol";
+import {ISlashingRegistryCoordinator} from "src/interfaces/ISlashingRegistryCoordinator.sol";
 
 contract AVSRegistrarSocketUnitTests is
     AVSRegistrarBase,
@@ -22,7 +23,8 @@ contract AVSRegistrarSocketUnitTests is
         avsRegistrarImplementation = new AVSRegistrarWithSocket(
             AVS,
             IAllocationManager(address(allocationManagerMock)),
-            IKeyRegistrar(address(keyRegistrarMock))
+            IKeyRegistrar(address(keyRegistrarMock)),
+            ISlashingRegistryCoordinator(address(0)) // todo
         );
 
         avsRegistrarWithSocket = AVSRegistrarWithSocket(

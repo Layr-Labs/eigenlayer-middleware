@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
-
+import {ISlashingRegistryCoordinator} from "../../../interfaces/ISlashingRegistryCoordinator.sol";
 import {IAVSRegistrarWithSocket} from "../../../interfaces/IAVSRegistrarWithSocket.sol";
 import {AVSRegistrar} from "../AVSRegistrar.sol";
 import {SocketRegistry} from "../modules/SocketRegistry.sol";
@@ -17,8 +17,12 @@ contract AVSRegistrarWithSocket is AVSRegistrar, SocketRegistry, IAVSRegistrarWi
     constructor(
         address _avs,
         IAllocationManager _allocationManager,
-        IKeyRegistrar _keyRegistrar
-    ) AVSRegistrar(_avs, _allocationManager, _keyRegistrar) {}
+        IKeyRegistrar _keyRegistrar,
+        ISlashingRegistryCoordinator _slashingRegistryCoordinator
+    )
+        AVSRegistrar(_avs, _allocationManager, _keyRegistrar)
+        SocketRegistry(_slashingRegistryCoordinator)
+    {}
 
     /// @notice Set the socket for the operator
     /// @dev This function sets the socket even if the operator is already registered

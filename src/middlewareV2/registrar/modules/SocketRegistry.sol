@@ -4,6 +4,10 @@ pragma solidity ^0.8.27;
 import {ISocketRegistry} from "../../../interfaces/ISocketRegistryV2.sol";
 import {SocketRegistryStorage} from "./SocketRegistryStorage.sol";
 import {
+    ISlashingRegistryCoordinator,
+    ISlashingRegistryCoordinatorTypes
+} from "../../../interfaces/ISlashingRegistryCoordinator.sol";
+import {
     OperatorSetLib,
     OperatorSet
 } from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
@@ -12,6 +16,10 @@ import {
 /// @dev This contract assumes a single socket per operator
 abstract contract SocketRegistry is SocketRegistryStorage {
     using OperatorSetLib for OperatorSet;
+
+    constructor(
+        ISlashingRegistryCoordinator _slashingRegistryCoordinator
+    ) SocketRegistryStorage(_slashingRegistryCoordinator) {}
 
     /// @inheritdoc ISocketRegistry
     function getOperatorSocket(
@@ -23,7 +31,8 @@ abstract contract SocketRegistry is SocketRegistryStorage {
     /// @inheritdoc ISocketRegistry
     function updateSocket(address operator, string memory socket) external {
         require(
-            slashingRegistryCoordinator.getOperatorStatus(operator) == OperatorStatus.REGISTERED,
+            slashingRegistryCoordinator.getOperatorStatus(operator)
+                == ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED,
             CallerNotOperator()
         );
         _setOperatorSocket(operator, socket);
