@@ -8,10 +8,6 @@ import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyR
 import {IAVSRegistrarWithSocket} from "../../../interfaces/IAVSRegistrarWithSocket.sol";
 import {AVSRegistrar} from "../AVSRegistrar.sol";
 import {SocketRegistry} from "../modules/SocketRegistry.sol";
-import {
-    OperatorSetLib,
-    OperatorSet
-} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
 contract AVSRegistrarWithSocket is AVSRegistrar, SocketRegistry, IAVSRegistrarWithSocket {
     constructor(

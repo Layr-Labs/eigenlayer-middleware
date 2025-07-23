@@ -11,8 +11,6 @@ import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyR
 
 import {AVSRegistrar} from "../AVSRegistrar.sol";
 
-import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-
 /// @notice An AVSRegistrar that is the identifier for the AVS in EigenLayer core.
 /// @dev Once deployed, the `admin` will control other parameters of the AVS, such as creating operatorSets, slashing, etc.
 contract AVSRegistrarAsIdentifier is AVSRegistrar {

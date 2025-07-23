@@ -3,7 +3,6 @@ pragma solidity ^0.8.27;
 
 import {IBLSApkRegistry} from "../interfaces/IBLSApkRegistry.sol";
 import {IBLSSignatureCheckerTypes} from "../interfaces/IBLSSignatureChecker.sol";
-import {IStakeRegistry} from "../interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "../interfaces/IIndexRegistry.sol";
 import {ISlashingRegistryCoordinator} from "../interfaces/ISlashingRegistryCoordinator.sol";
 import {BitmapUtils} from "../libraries/BitmapUtils.sol";
