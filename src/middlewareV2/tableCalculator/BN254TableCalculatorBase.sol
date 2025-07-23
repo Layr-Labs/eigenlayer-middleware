@@ -14,6 +14,10 @@ import {IBN254TableCalculator} from "../../interfaces/IBN254TableCalculator.sol"
  * @notice Abstract contract that provides base functionality for calculating BN254 operator tables
  * @dev This contract contains all the core logic for operator table calculations,
  *      with weight calculation left to be implemented by derived contracts
+ * @dev A table calculator contract must be utilized by an AVS in order to participate in the multichain protocol.
+ *      Specifically, the table calculator defines the stake weights for each operator in an operatorSet, which are
+ *      transported to destination chains supported by the multichain protocol. After stake weights are transported,
+ *      AVSs and their consumers can verify certificates - see the core EigenLayer documentation for more details.
  */
 abstract contract BN254TableCalculatorBase is IBN254TableCalculator {
     using Merkle for bytes32[];

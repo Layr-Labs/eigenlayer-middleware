@@ -19,6 +19,18 @@ import {AVSRegistrarStorage} from "./AVSRegistrarStorage.sol";
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
 /// @notice A minimal AVSRegistrar contract that is used to register/deregister operators for an AVS
+/// @notice In order to begin receiving registration/deregistrations, an AVS should complete the following steps:
+///         1. Set the metadataURI for the AVS and initialize the AVS in the core protocol via `AllocationManager.updateAVSMetadataURI`
+///            - The address of the AVS in the core protocol will be the address that calls `updateAVSMetadataURI`
+///         2. Deploy the `AVSRegistrar` contract
+///         3. Set the `AVSRegistrar` via `AllocationManager.setAVSRegistrar`
+///         4. Create operatorSets via `AllocationManager.createOperatorSets`
+///         5. Configure the `KeyType` for all operatorSets via `KeyRegistrar.configureOperatorSet`
+/// @dev To participate in the multichain protocol, the AVS should also call `CrossChainRegistry.createGenerationReservation`
+/// @dev This contract supports multiples operatorSets for a given AVS
+/// @dev Each operatorSet this registrar supports can have different key types
+/// @dev Assumes that all registration/deregistration calls come from the core `AllocationManager` contract
+/// @dev Assumes that an operator has registered its key in the core `KeyRegistrar` contract prior to calling `registerOperator` on the `AllocationManager`
 contract AVSRegistrar is Initializable, AVSRegistrarStorage {
     using OperatorSetLib for OperatorSet;
 
@@ -88,6 +100,7 @@ contract AVSRegistrar is Initializable, AVSRegistrarStorage {
      * @param operator The operator to validate
      * @param operatorSetIds The operator sets to validate
      * @dev This function assumes the operator has already registered a key in the Key Registrar
+     * @dev The `KeyType` of the operatorSet is configured in the core `KeyRegistrar` contract
      */
     function _validateOperatorKeys(
         address operator,

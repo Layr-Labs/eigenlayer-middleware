@@ -13,6 +13,8 @@ import {
     OperatorSet
 } from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
+/// @notice A minimal AVSRegistrar that supports setting the socket for an operator
+/// @dev This contract assumes that the socket for an operator will be the same for *ALL* operatorSets of an AVS
 contract AVSRegistrarWithSocket is AVSRegistrar, SocketRegistry, IAVSRegistrarWithSocket {
     constructor(
         address _avs,

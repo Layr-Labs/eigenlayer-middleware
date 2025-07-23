@@ -12,7 +12,13 @@ import "./BN254TableCalculatorBase.sol";
 /**
  * @title BN254TableCalculator
  * @notice Implementation that calculates BN254 operator tables using the sum of the minimum slashable stake weights
- * @dev This contract assumes that slashable stake is valued the **same** across all strategies.
+ * @dev This contract assumes that stake weights are valued the **same** across all strategies. That is, 1 share of DAI would be valued the same
+ *      as 1 share of stETH, even though their actual nominal value is different. In addition, the shares are decimal dependent:
+ *      assets with non-standard decimals (E.G. USDC, USDT, WBTC) will return significantly lower numbers of shares. For example
+ *      1 DAI = 10^18 shares, 1 USDC = 10^6 shares
+ * @dev Given the above restrictions, it is recommended that operatorSets that utilize this table calculator either:
+ *      - have a single strategy
+ *      - have strategies with like-asset types and decimals (ie. stablecoins with 18 decimals)
  */
 contract BN254TableCalculator is BN254TableCalculatorBase {
     // Immutables
@@ -35,7 +41,7 @@ contract BN254TableCalculator is BN254TableCalculatorBase {
      * @param operatorSet The operatorSet to get the weights for
      * @return operators The addresses of the operators in the operatorSet
      * @return weights The weights for each operator in the operatorSet, this is a 2D array where the first index is the operator
-     * and the second index is the type of weight. In this case its of length 1 and returns the slashable stake for the operatorSet.
+     * and the second index is the type of weight. In this case it's of length 1 and returns the slashable stake for the operatorSet.
      */
     function _getOperatorWeights(
         OperatorSet calldata operatorSet

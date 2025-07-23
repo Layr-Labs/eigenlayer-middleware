@@ -10,6 +10,8 @@ import {AVSRegistrar} from "../AVSRegistrar.sol";
 import {Allowlist} from "../modules/Allowlist.sol";
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
+/// @notice A minimal AVSRegistrar that supports an allowlist for operators
+/// @dev The allowlist is maintained by an `admin`, which is set at initialization
 contract AVSRegistrarWithAllowlist is AVSRegistrar, Allowlist, IAVSRegistrarWithAllowlist {
     constructor(
         address _avs,
