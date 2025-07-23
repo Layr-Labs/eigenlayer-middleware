@@ -48,13 +48,16 @@ The `ECDSATableCalculatorBase` provides base functionality for calculating ECDSA
 
 ```solidity
 /**
- * @notice A struct that contains information about a single operator
+ * @notice A struct that contains information about a single operator for an ECDSA signing key
  * @param pubkey The address of the signing ECDSA key of the operator and not the operator address itself.
- * This is read from the KeyRegistrar contract.
  * @param weights The weights of the operator for a single operatorSet
- * @dev The `weights` array can be defined as a list of arbitrary groupings. For example,
- * it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]
- * @dev The `weights` array should be the same length for each operator in the operatorSet.
+ *
+ * @dev The `weights` array can be defined as a list of arbitrary stake types. For example,
+ *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an index in the array
+ *
+ * @dev It is up to the AVS to define the `weights` array, which is used by the `IECDSACertificateVerifier` to verify Certificates
+ * 
+ * @dev For each operator, the `weights` array should be the same length and composition, otherwise verification issues can arise
  */
 struct ECDSAOperatorInfo {
     address pubkey;
@@ -88,9 +91,10 @@ Calculates and returns an array of `ECDSAOperatorInfo` structs containing public
 
 ```solidity
 /**
- * @notice Calculates the operator table bytes for a given operatorSet
- * @param operatorSet The operatorSet to calculate the operator table for
- * @return operatorTableBytes The encoded operator table bytes
+ * @notice Calculates the operator table, in bytes, for a given operatorSet
+ * @param operatorSet the operatorSet to calculate the operator table for
+ * @return operatorTableBytes the operatorTableBytes for the given operatorSet
+ * @dev The `operatorTableBytes` is used by the offchain multichain protocol to calculate and merkleize the operator table
  */
 function calculateOperatorTableBytes(
     OperatorSet calldata operatorSet
@@ -111,14 +115,21 @@ Returns the ABI-encoded bytes representation of the operator table, which is use
  * @notice Abstract function to get the operator weights for a given operatorSet
  * @param operatorSet The operatorSet to get the weights for
  * @return operators The addresses of the operators in the operatorSet
- * @return weights The weights for each operator in the operatorSet
+ * @return weights The weights for each operator in the operatorSet, this is a 2D array where the first index is the operator
+ * and the second index is the type of weight
+ * @dev Each single `weights` array is as a list of arbitrary stake types. For example,
+ *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an index in the array
+ * @dev Must be implemented by derived contracts to define specific weight calculation logic
+ * @dev The certificate verification assumes the composition weights array for each operator is the same.
+ *      If the length of the array is different or the stake types are different, then verification issues can arise, including
+ *      verification failing silently for multiple operators with different weights structures
  */
 function _getOperatorWeights(
     OperatorSet calldata operatorSet
 ) internal view virtual returns (address[] memory operators, uint256[][] memory weights);
 ```
 
-Must be implemented by derived contracts to define the weight calculation strategy. See [stakeWeighting](#stake-weighting) for more information. 
+Must be implemented by derived contracts to define the weight calculation strategy. See [stakeWeighting](#stake-weighting) for more information. When implementing this function, AVSs must ensure that all operators have an identical weights structure and length types. Failure to do so can result in certificates being verified with silent failures. 
 
 An example integration is in [`ECDSATableCalculator`](../../src/middlewareV2/tableCalculator/ECDSATableCalculator.sol)
 
@@ -134,11 +145,16 @@ The `BN254TableCalculatorBase` provides base functionality for calculating BN254
 
 ```solidity
 /**
- * @notice A struct that contains information about a single operator
- * @param pubkey The G1 public key of the operator.
- * @param weights The weights of the operator for a single operatorSet.
- * @dev The `weights` array can be defined as a list of arbitrary groupings. For example,
- * it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]
+ * @notice A struct that contains information about a single operator for a given BN254 operatorSet
+ * @param pubkey The G1 public key of the operator
+ * @param weights The weights of the operator for a single operatorSet
+ *
+ * @dev The `weights` array is as a list of arbitrary stake types. For example,
+ *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an index in the array
+ *
+ * @dev It is up to the AVS to define the `weights` array, which is used by the `IBN254CertificateVerifier` to verify Certificates
+ * 
+ * @dev For each operator, the `weights` array should be the same length and composition, otherwise verification issues can arise
  */
 struct BN254OperatorInfo {
     BN254.G1Point pubkey;
@@ -146,18 +162,18 @@ struct BN254OperatorInfo {
 }
 
 /**
- * @notice A struct that contains information about all operators for a given operatorSet
- * @param operatorInfoTreeRoot The root of the operatorInfo tree. Each leaf is a `BN254OperatorInfo` struct
- * @param numOperators The number of operators in the operatorSet.
- * @param aggregatePubkey The aggregate G1 public key of the operators in the operatorSet.
- * @param totalWeights The total weights of the operators in the operatorSet.
+ * @notice A struct that contains information about all operators for a given BN254operatorSet
+ * @param operatorInfoTreeRoot The root of the operatorInfo tree
+ * @param numOperators The number of operators in the operatorSet
+ * @param aggregatePubkey The aggregate G1 public key of the operators in the operatorSet
+ * @param totalWeights The total stake weights of the operators in the operatorSet
  *
  * @dev The operatorInfoTreeRoot is the root of a merkle tree that contains the operatorInfos for each operator in the operatorSet.
- * It is calculated in this function and used by the `IBN254CertificateVerifier` to verify stakes against the non-signing operators
+ *      It is calculated on-chain by the `BN254TableCalculator` and used by the `IBN254CertificateVerifier` to verify stakes against the non-signing operators
  *
- * @dev Retrieval of the `aggregatePubKey` depends on maintaining a key registry contract, see `BN254TableCalculatorBase` for an example implementation.
+ * @dev Retrieval of the `aggregatePubKey` depends on maintaining a key registry contract, see `KeyRegistrar` for an example implementation
  *
- * @dev The `totalWeights` array should be the same length as each individual `weights` array in `operatorInfos`.
+ * @dev The `totalWeights` array should be the same length and composition as each individual `weights` array in `BN254OperatorInfo`
  */
 struct BN254OperatorSetInfo {
     bytes32 operatorInfoTreeRoot;
@@ -243,13 +259,20 @@ Returns an array of `BN254OperatorInfo` structs for all operators in the operato
  * @notice Abstract function to get the operator weights for a given operatorSet
  * @param operatorSet The operatorSet to get the weights for
  * @return operators The addresses of the operators in the operatorSet
- * @return weights The weights for each operator in the operatorSet
+ * @return weights The weights for each operator in the operatorSet, this is a 2D array where the first index is the operator
+ * and the second index is the type of weight
+ * @dev Each single `weights` array is as a list of arbitrary stake types. For example,
+ *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an index in the array
+ * @dev Must be implemented by derived contracts to define specific weight calculation logic
+ * @dev The certificate verification assumes the composition weights array for each operator is the same.
+ *      If the length of the array is different or the stake types are different, then verification issues can arise, including
+ *      verification failing silently for multiple operators with different weights structures
  */
 function _getOperatorWeights(
     OperatorSet calldata operatorSet
 ) internal view virtual returns (address[] memory operators, uint256[][] memory weights);
 ```
 
-Must be implemented by derived contracts to define the weight calculation strategy. Similar to ECDSA, weights are a 2D array supporting multiple weight types per operator.
+Must be implemented by derived contracts to define the weight calculation strategy. Similar to ECDSA, weights are a 2D array supporting multiple weight types per operator. When implementing this function, AVSs must ensure that all operators have an identical weights structure and length types. Failure to do so can result in certificates being verified with silent failures. 
 
 An example integration is defined in [`BN254TableCalculator`](../../src/middlewareV2/tableCalculator/BN254TableCalculator.sol). 
