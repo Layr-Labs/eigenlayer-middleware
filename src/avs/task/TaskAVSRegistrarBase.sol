@@ -73,20 +73,14 @@ abstract contract TaskAVSRegistrarBase is
         // Require at least one executor operator set
         require(config.executorOperatorSetIds.length > 0, ExecutorOperatorSetIdsEmpty());
 
-        // Check that first element is not the aggregator
-        require(
-            config.aggregatorOperatorSetId != config.executorOperatorSetIds[0],
-            InvalidAggregatorOperatorSetId()
-        );
-
         // Check monotonically increasing order and no aggregator overlap in one pass
-        for (uint256 i = 1; i < config.executorOperatorSetIds.length; i++) {
+        for (uint256 i = 0; i < config.executorOperatorSetIds.length; i++) {
             require(
                 config.aggregatorOperatorSetId != config.executorOperatorSetIds[i],
                 InvalidAggregatorOperatorSetId()
             );
             require(
-                config.executorOperatorSetIds[i] > config.executorOperatorSetIds[i - 1],
+                i == 0 || config.executorOperatorSetIds[i] > config.executorOperatorSetIds[i - 1],
                 DuplicateExecutorOperatorSetId()
             );
         }
