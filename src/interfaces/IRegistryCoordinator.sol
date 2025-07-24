@@ -7,10 +7,8 @@ import {
     ISlashingRegistryCoordinatorEvents,
     ISlashingRegistryCoordinatorTypes
 } from "./ISlashingRegistryCoordinator.sol";
-import {
-    ISignatureUtilsMixin,
-    ISignatureUtilsMixinTypes
-} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
+import {ISignatureUtilsMixinTypes} from
+    "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {IBLSApkRegistry, IBLSApkRegistryTypes} from "./IBLSApkRegistry.sol";
 import {IServiceManager} from "./IServiceManager.sol";
 import {IStakeRegistry} from "./IStakeRegistry.sol";

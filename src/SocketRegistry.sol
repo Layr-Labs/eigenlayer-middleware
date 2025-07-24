@@ -4,7 +4,6 @@ pragma solidity ^0.8.12;
 import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
 import {ISocketRegistry} from "./interfaces/ISocketRegistry.sol";
 import {SocketRegistryStorage} from "./SocketRegistryStorage.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title A `Registry` that keeps track of operator sockets (arbitrary strings).
