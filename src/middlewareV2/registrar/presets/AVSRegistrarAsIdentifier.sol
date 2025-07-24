@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
-import {IAVSRegistrarInternal} from "../../../interfaces/IAVSRegistrarInternal.sol";
 import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IPermissionController} from
     "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 
+import {IAVSRegistrarInternal} from "../../../interfaces/IAVSRegistrarInternal.sol";
 import {AVSRegistrar} from "../AVSRegistrar.sol";
 
 /// @notice An AVSRegistrar that is the identifier for the AVS in EigenLayer core.
@@ -18,11 +20,10 @@ contract AVSRegistrarAsIdentifier is AVSRegistrar {
     IPermissionController public immutable permissionController;
 
     constructor(
-        address _avs,
         IAllocationManager _allocationManager,
         IPermissionController _permissionController,
         IKeyRegistrar _keyRegistrar
-    ) AVSRegistrar(_avs, _allocationManager, _keyRegistrar) {
+    ) AVSRegistrar(_allocationManager, _keyRegistrar) {
         // Set the permission controller for future interactions
         permissionController = _permissionController;
     }
@@ -34,6 +35,8 @@ contract AVSRegistrarAsIdentifier is AVSRegistrar {
      * @dev This function enables the address of the AVS in the core protocol to be the proxy AVSRegistrarAsIdentifier contract
      */
     function initialize(address admin, string memory metadataURI) public initializer {
+        __AVSRegistrar_init(address(this));
+
         // Set the metadataURI and the registrar for the AVS to this registrar contract
         allocationManager.updateAVSMetadataURI(address(this), metadataURI);
         allocationManager.setAVSRegistrar(address(this), this);
@@ -47,10 +50,5 @@ contract AVSRegistrarAsIdentifier is AVSRegistrar {
         address _avs
     ) public view override returns (bool) {
         return _avs == address(this);
-    }
-
-    /// @inheritdoc IAVSRegistrarInternal
-    function getAVS() external view override returns (address) {
-        return address(this);
     }
 }

@@ -20,7 +20,6 @@ contract AVSRegistrarSocketUnitTests is
         super.setUp();
 
         avsRegistrarImplementation = new AVSRegistrarWithSocket(
-            AVS,
             IAllocationManager(address(allocationManagerMock)),
             IKeyRegistrar(address(keyRegistrarMock))
         );
@@ -202,12 +201,5 @@ contract AVSRegistrarSocketUnitTests_ViewFunctions is AVSRegistrarSocketUnitTest
                 "supportsAVS: should return false for non-AVS address"
             );
         }
-    }
-
-    function test_getAVS() public {
-        // Should return the configured AVS address
-        assertEq(
-            avsRegistrarWithSocket.getAVS(), AVS, "getAVS: should return configured AVS address"
-        );
     }
 }

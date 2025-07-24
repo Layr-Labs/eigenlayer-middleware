@@ -25,11 +25,17 @@ contract AVSRegistrar is Initializable, AVSRegistrarStorage {
     }
 
     constructor(
-        address _avs,
         IAllocationManager _allocationManager,
         IKeyRegistrar _keyRegistrar
-    ) AVSRegistrarStorage(_avs, _allocationManager, _keyRegistrar) {
+    ) AVSRegistrarStorage(_allocationManager, _keyRegistrar) {
         _disableInitializers();
+    }
+
+    // @dev This MUST be added to an `initialize` function in child contracts.
+    function __AVSRegistrar_init(
+        address _avs
+    ) internal virtual {
+        avs = _avs;
     }
 
     /// @inheritdoc IAVSRegistrar
@@ -67,11 +73,6 @@ contract AVSRegistrar is Initializable, AVSRegistrarStorage {
         address _avs
     ) public view virtual returns (bool) {
         return _avs == avs;
-    }
-
-    /// @inheritdoc IAVSRegistrarInternal
-    function getAVS() external view virtual returns (address) {
-        return avs;
     }
 
     /*

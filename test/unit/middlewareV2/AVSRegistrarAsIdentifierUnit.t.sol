@@ -24,7 +24,6 @@ contract AVSRegistrarAsIdentifierUnitTests is AVSRegistrarBase {
 
         // Deploy the implementation
         avsRegistrarImplementation = new AVSRegistrarAsIdentifier(
-            AVS,
             IAllocationManager(address(allocationManagerMock)),
             permissionController,
             IKeyRegistrar(address(keyRegistrarMock))
@@ -45,7 +44,6 @@ contract AVSRegistrarAsIdentifierUnitTests_constructor is AVSRegistrarAsIdentifi
     function test_constructor() public {
         // Deploy a new implementation to test constructor
         AVSRegistrarAsIdentifier impl = new AVSRegistrarAsIdentifier(
-            AVS,
             IAllocationManager(address(allocationManagerMock)),
             permissionController,
             IKeyRegistrar(address(keyRegistrarMock))
@@ -202,17 +200,6 @@ contract AVSRegistrarAsIdentifierUnitTests_supportsAVS is AVSRegistrarAsIdentifi
                 "supportsAVS: should return false for non-self"
             );
         }
-    }
-}
-
-contract AVSRegistrarAsIdentifierUnitTests_getAVS is AVSRegistrarAsIdentifierUnitTests {
-    function test_getAVS() public {
-        // Should return the proxy address (self) since AVSRegistrarAsIdentifier overrides getAVS
-        assertEq(
-            avsRegistrarAsIdentifier.getAVS(),
-            address(avsRegistrarAsIdentifier),
-            "getAVS: should return self (proxy) address"
-        );
     }
 }
 

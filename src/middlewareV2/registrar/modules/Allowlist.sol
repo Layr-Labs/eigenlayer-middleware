@@ -18,13 +18,7 @@ abstract contract Allowlist is OwnableUpgradeable, AllowlistStorage {
     using OperatorSetLib for OperatorSet;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
-    function initialize(
-        address _owner
-    ) public virtual initializer {
-        _initializeAllowlist(_owner);
-    }
-
-    function _initializeAllowlist(
+    function __Allowlist_init(
         address _owner
     ) internal onlyInitializing {
         __Ownable_init();
