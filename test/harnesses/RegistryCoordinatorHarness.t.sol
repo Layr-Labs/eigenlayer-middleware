@@ -1,10 +1,18 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "../../src/RegistryCoordinator.sol";
-import {ISocketRegistry} from "../../src/interfaces/ISocketRegistry.sol";
+import {IAllocationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
+import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
+
+import {IBLSApkRegistry, IBLSApkRegistryTypes} from "../../src/interfaces/IBLSApkRegistry.sol";
+import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
+import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
+import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
+import {ISocketRegistry} from "../../src/interfaces/ISocketRegistry.sol";
 import {IRegistryCoordinatorTypes} from "../../src/interfaces/IRegistryCoordinator.sol";
+import "../../src/RegistryCoordinator.sol";
 
 import "forge-std/Test.sol";
 
