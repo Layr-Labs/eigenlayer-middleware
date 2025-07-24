@@ -147,7 +147,7 @@ abstract contract BN254TableCalculatorBase is IBN254TableCalculator {
                 totalWeights[j] += weights[i][j];
             }
             (BN254.G1Point memory g1Point,) = keyRegistrar.getBN254Key(operatorSet, operators[i]);
-            operatorInfoLeaves[i] =
+            operatorInfoLeaves[operatorCount] =
                 keccak256(abi.encode(BN254OperatorInfo({pubkey: g1Point, weights: weights[i]})));
 
             // Add the operator's G1 point to the aggregate pubkey
