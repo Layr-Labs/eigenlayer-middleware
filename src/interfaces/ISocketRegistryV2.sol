@@ -14,7 +14,7 @@ interface ISocketRegistryEvents {
     event OperatorSocketSet(address indexed operator, string socket);
 }
 
-interface ISocketRegistry is ISocketRegistryErrors, ISocketRegistryEvents {
+interface ISocketRegistryV2 is ISocketRegistryErrors, ISocketRegistryEvents {
     /**
      * @notice Gets the socket for an operator.
      * @param operator The operator to get the socket for.
