@@ -1,28 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
-import {
-    IAllocationManager,
-    OperatorSet
-} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {ISignatureUtilsMixin} from
-    "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
 import {SemVerMixin} from "eigenlayer-contracts/src/contracts/mixins/SemVerMixin.sol";
-import {IBLSApkRegistry, IBLSApkRegistryTypes} from "./interfaces/IBLSApkRegistry.sol";
-import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
-import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
-import {IServiceManager} from "./interfaces/IServiceManager.sol";
+import {IBLSApkRegistryTypes} from "./interfaces/IBLSApkRegistry.sol";
 import {
     IRegistryCoordinator, IRegistryCoordinatorTypes
 } from "./interfaces/IRegistryCoordinator.sol";
-import {ISocketRegistry} from "./interfaces/ISocketRegistry.sol";
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {SlashingRegistryCoordinator} from "./SlashingRegistryCoordinator.sol";
-import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
-import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {RegistryCoordinatorStorage} from "./RegistryCoordinatorStorage.sol";
 
 /**
