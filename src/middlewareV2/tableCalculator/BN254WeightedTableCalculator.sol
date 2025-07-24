@@ -6,8 +6,10 @@ import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
-import {IPermissionController} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
-import {PermissionControllerMixin} from "eigenlayer-contracts/src/contracts/mixins/PermissionControllerMixin.sol";
+import {IPermissionController} from
+    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {PermissionControllerMixin} from
+    "eigenlayer-contracts/src/contracts/mixins/PermissionControllerMixin.sol";
 
 import "./BN254TableCalculatorBase.sol";
 
@@ -30,9 +32,7 @@ contract BN254WeightedTableCalculator is BN254TableCalculatorBase, PermissionCon
     // Events
     /// @notice Emitted when strategy multipliers are updated for an operator set
     event StrategyMultipliersUpdated(
-        OperatorSet indexed operatorSet,
-        IStrategy[] strategies,
-        uint256[] multipliers
+        OperatorSet indexed operatorSet, IStrategy[] strategies, uint256[] multipliers
     );
 
     // Errors
@@ -97,8 +97,6 @@ contract BN254WeightedTableCalculator is BN254TableCalculatorBase, PermissionCon
         }
     }
 
-
-
     /**
      * @notice Get the operator weights for a given operatorSet based on weighted slashable stake.
      * @param operatorSet The operatorSet to get the weights for
@@ -131,7 +129,7 @@ contract BN254WeightedTableCalculator is BN254TableCalculatorBase, PermissionCon
             uint256 totalWeight;
             for (uint256 stratIndex = 0; stratIndex < strategies.length; ++stratIndex) {
                 uint256 stakeAmount = minSlashableStake[i][stratIndex];
-                
+
                 // Get the multiplier for this strategy (default to 10000 if not set)
                 uint256 multiplier;
                 if (strategyMultipliersSet[operatorSetHash][strategies[stratIndex]]) {
@@ -139,7 +137,7 @@ contract BN254WeightedTableCalculator is BN254TableCalculatorBase, PermissionCon
                 } else {
                     multiplier = 10000; // Default 1x multiplier
                 }
-                
+
                 // Apply multiplier (divide by 10000 to convert from basis points)
                 totalWeight += (stakeAmount * multiplier) / 10000;
             }
@@ -164,4 +162,4 @@ contract BN254WeightedTableCalculator is BN254TableCalculatorBase, PermissionCon
 
         return (operators, weights);
     }
-} 
+}

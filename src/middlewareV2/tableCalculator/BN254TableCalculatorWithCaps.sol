@@ -6,8 +6,10 @@ import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
-import {IPermissionController} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
-import {PermissionControllerMixin} from "eigenlayer-contracts/src/contracts/mixins/PermissionControllerMixin.sol";
+import {IPermissionController} from
+    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {PermissionControllerMixin} from
+    "eigenlayer-contracts/src/contracts/mixins/PermissionControllerMixin.sol";
 
 import "./BN254TableCalculatorBase.sol";
 import {WeightCapUtils} from "../../libraries/WeightCapUtils.sol";
@@ -48,10 +50,13 @@ contract BN254TableCalculatorWithCaps is BN254TableCalculatorBase, PermissionCon
      * @param maxWeight Maximum allowed total weight per operator (0 = no cap)
      * @dev Only the AVS can set caps for their operator sets
      */
-    function setWeightCap(OperatorSet calldata operatorSet, uint256 maxWeight) external checkCanCall(operatorSet.avs) {
+    function setWeightCap(
+        OperatorSet calldata operatorSet,
+        uint256 maxWeight
+    ) external checkCanCall(operatorSet.avs) {
         bytes32 operatorSetHash = keccak256(abi.encode(operatorSet.avs, operatorSet.id));
         weightCaps[operatorSetHash] = maxWeight;
-        
+
         emit WeightCapSet(operatorSet, maxWeight);
     }
 
@@ -60,7 +65,9 @@ contract BN254TableCalculatorWithCaps is BN254TableCalculatorBase, PermissionCon
      * @param operatorSet The operator set to get the cap for
      * @return maxWeight The maximum weight cap (0 = no cap)
      */
-    function getWeightCap(OperatorSet calldata operatorSet) external view returns (uint256 maxWeight) {
+    function getWeightCap(
+        OperatorSet calldata operatorSet
+    ) external view returns (uint256 maxWeight) {
         bytes32 operatorSetHash = keccak256(abi.encode(operatorSet.avs, operatorSet.id));
         return weightCaps[operatorSetHash];
     }
@@ -111,11 +118,11 @@ contract BN254TableCalculatorWithCaps is BN254TableCalculatorBase, PermissionCon
         // Apply weight caps if configured
         bytes32 operatorSetHash = keccak256(abi.encode(operatorSet.avs, operatorSet.id));
         uint256 maxWeight = weightCaps[operatorSetHash];
-        
+
         if (maxWeight > 0) {
             (operators, weights) = WeightCapUtils.applyWeightCap(operators, weights, maxWeight);
         }
 
         return (operators, weights);
     }
-} 
+}
