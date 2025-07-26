@@ -129,7 +129,7 @@ function _getOperatorWeights(
 ) internal view virtual returns (address[] memory operators, uint256[][] memory weights);
 ```
 
-Must be implemented by derived contracts to define the weight calculation strategy. See [stakeWeighting](#stake-weighting) for more information. When implementing this function, AVSs must ensure that all operators have an identical weights structure and length types. Failure to do so can result in certificates being verified with silent failures. 
+Must be implemented by derived contracts to define the weight calculation strategy. See [stakeWeighting](#stake-weighting) for more information. **When implementing this function, AVSs must ensure that all operators have an identical weights structure and length types. Failure to do so can result in certificates being verified with silent failures.**
 
 An example integration is in [`ECDSATableCalculator`](../../src/middlewareV2/tableCalculator/ECDSATableCalculator.sol)
 
