@@ -17,7 +17,4 @@ interface IAVSRegistrarEvents {
 }
 
 /// @notice Since we have already defined a public interface, we add the events and errors here
-interface IAVSRegistrarInternal is IAVSRegistrarErrors, IAVSRegistrarEvents {
-    /// @notice Returns the address of the AVS in EigenLayer core
-    function getAVS() external view returns (address);
-}
+interface IAVSRegistrarInternal is IAVSRegistrarErrors, IAVSRegistrarEvents {}

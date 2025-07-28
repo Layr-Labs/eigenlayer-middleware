@@ -16,7 +16,7 @@ import {AVSRegistrarStorage} from "./AVSRegistrarStorage.sol";
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
 /// @notice A minimal AVSRegistrar contract that is used to register/deregister operators for an AVS
-contract AVSRegistrar is Initializable, AVSRegistrarStorage {
+abstract contract AVSRegistrar is Initializable, AVSRegistrarStorage {
     using OperatorSetLib for OperatorSet;
 
     modifier onlyAllocationManager() {
@@ -25,11 +25,17 @@ contract AVSRegistrar is Initializable, AVSRegistrarStorage {
     }
 
     constructor(
-        address _avs,
         IAllocationManager _allocationManager,
         IKeyRegistrar _keyRegistrar
-    ) AVSRegistrarStorage(_avs, _allocationManager, _keyRegistrar) {
+    ) AVSRegistrarStorage(_allocationManager, _keyRegistrar) {
         _disableInitializers();
+    }
+
+    /// @dev This initialization function MUST be added to a child's `initialize` function to avoid uninitialized storage.
+    function __AVSRegistrar_init(
+        address _avs
+    ) internal virtual {
+        avs = _avs;
     }
 
     /// @inheritdoc IAVSRegistrar
@@ -67,11 +73,6 @@ contract AVSRegistrar is Initializable, AVSRegistrarStorage {
         address _avs
     ) public view virtual returns (bool) {
         return _avs == avs;
-    }
-
-    /// @inheritdoc IAVSRegistrarInternal
-    function getAVS() external view virtual returns (address) {
-        return avs;
     }
 
     /*
