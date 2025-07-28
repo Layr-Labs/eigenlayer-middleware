@@ -45,11 +45,6 @@ jobs:
             echo "::error::Invalid SHA format: $TARGET"
             exit 1
           fi
-          # Verify the SHA exists in the repository
-          if ! git cat-file -e "$TARGET" 2>/dev/null; then
-            echo "::error::SHA does not exist in repository: $TARGET"
-            exit 1
-          fi
           git fetch origin "$TARGET"
           git checkout "$TARGET"
 
