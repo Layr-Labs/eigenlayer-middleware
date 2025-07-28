@@ -10,17 +10,21 @@ on:
       - dev
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   check_storage:
     name: CI
     runs-on: "ubuntu-latest"
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           submodules: recursive
 
       - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
+        uses: foundry-rs/foundry-toolchain@82dee4ba654bd2146511f85f0d013af94670c4de # v1.4.0
         with:
           version: nightly
 
@@ -32,8 +36,13 @@ jobs:
         env:
           TARGET: ${{ github.event.pull_request.base.sha }}
         run: |
-          git fetch origin $TARGET
-          git checkout $TARGET
+          # Validate TARGET is a valid SHA (basic validation)
+          if ! echo "$TARGET" | grep -qE '^[a-f0-9]{40}$'; then
+            echo "::error::Invalid SHA format: $TARGET"
+            exit 1
+          fi
+          git fetch origin "$TARGET"
+          git checkout "$TARGET"
 
       - name: "Generate and prepare the storage reports for target branch"
         run: |
