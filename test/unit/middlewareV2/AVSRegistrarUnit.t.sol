@@ -8,15 +8,19 @@ contract AVSRegistrarUnitTests is AVSRegistrarBase {
     function setUp() public override {
         super.setUp();
 
-        avsRegistrarImplementation = new AVSRegistrar(
-            IAllocationManager(address(allocationManagerMock)),
-            IKeyRegistrar(address(keyRegistrarMock))
+        avsRegistrarImplementation = AVSRegistrar(
+            new AVSRegistrarImplementation(
+                IAllocationManager(address(allocationManagerMock)),
+                IKeyRegistrar(address(keyRegistrarMock))
+            )
         );
 
         avsRegistrar = AVSRegistrar(
             address(
                 new TransparentUpgradeableProxy(
-                    address(avsRegistrarImplementation), address(proxyAdmin), ""
+                    address(avsRegistrarImplementation),
+                    address(proxyAdmin),
+                    abi.encodeWithSelector(AVSRegistrarImplementation.initialize.selector, AVS)
                 )
             )
         );

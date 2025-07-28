@@ -16,6 +16,21 @@ import {
 import {ArrayLib} from "eigenlayer-contracts/src/test/utils/ArrayLib.sol";
 import "test/utils/Random.sol";
 
+contract AVSRegistrarImplementation is AVSRegistrar {
+    constructor(
+        IAllocationManager _allocationManager,
+        IKeyRegistrar _keyRegistrar
+    ) AVSRegistrar(_allocationManager, _keyRegistrar) {
+        _disableInitializers();
+    }
+
+    function initialize(
+        address _owner
+    ) external initializer {
+        __AVSRegistrar_init(_owner);
+    }
+}
+
 abstract contract AVSRegistrarBase is
     MockEigenLayerDeployer,
     IAVSRegistrarErrors,

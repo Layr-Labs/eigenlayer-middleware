@@ -16,7 +16,7 @@ import {AVSRegistrarStorage} from "./AVSRegistrarStorage.sol";
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
 /// @notice A minimal AVSRegistrar contract that is used to register/deregister operators for an AVS
-contract AVSRegistrar is Initializable, AVSRegistrarStorage {
+abstract contract AVSRegistrar is Initializable, AVSRegistrarStorage {
     using OperatorSetLib for OperatorSet;
 
     modifier onlyAllocationManager() {
