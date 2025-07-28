@@ -44,11 +44,4 @@ contract AVSRegistrarAsIdentifier is AVSRegistrar {
         // Set the admin for the AVS
         permissionController.addPendingAdmin(address(this), admin);
     }
-
-    /// @inheritdoc IAVSRegistrar
-    function supportsAVS(
-        address _avs
-    ) public view override returns (bool) {
-        return _avs == address(this);
-    }
 }
