@@ -35,7 +35,7 @@ contract ECDSATableCalculator is ECDSATableCalculatorBase {
      * @param operatorSet The operatorSet to get the weights for
      * @return operators The addresses of the operators in the operatorSet
      * @return weights The weights for each operator in the operatorSet, this is a 2D array where the first index is the operator
-     * and the second index is the type of weight. In this case its of length 1 and returns the slashable stake for the operatorSet.
+     * and the second index is the type of weight. In this case it's of length 1 and returns the slashable stake for the operatorSet.
      */
     function _getOperatorWeights(
         OperatorSet calldata operatorSet
