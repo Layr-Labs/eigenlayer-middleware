@@ -48,7 +48,7 @@ contract BN254TableCalculatorWithCapsUnitTests is MockEigenLayerDeployer {
     // Test constants
     uint256 public constant TEST_LOOKAHEAD_BLOCKS = 100;
 
-    event WeightCapSet(OperatorSet indexed operatorSet, uint256 maxWeight);
+    event WeightCapsSet(OperatorSet indexed operatorSet, uint256[] maxWeights);
 
     function setUp() public virtual {
         _deployMockEigenLayer();
@@ -85,8 +85,11 @@ contract BN254TableCalculatorWithCapsUnitTests is MockEigenLayerDeployer {
     function test_setWeightCap_success() public {
         uint256 maxWeight = 100 ether;
 
+        uint256[] memory expectedWeights = new uint256[](1);
+        expectedWeights[0] = maxWeight;
+
         vm.expectEmit(true, false, false, true);
-        emit WeightCapSet(operatorSet, maxWeight);
+        emit WeightCapsSet(operatorSet, expectedWeights);
 
         vm.prank(avs1);
         calculator.setWeightCap(operatorSet, maxWeight);
@@ -106,8 +109,11 @@ contract BN254TableCalculatorWithCapsUnitTests is MockEigenLayerDeployer {
         assertEq(calculator.getWeightCap(operatorSet), 100 ether);
 
         // Remove the cap by setting to 0
+        uint256[] memory expectedZeroWeights = new uint256[](1);
+        expectedZeroWeights[0] = 0;
+
         vm.expectEmit(true, false, false, true);
-        emit WeightCapSet(operatorSet, 0);
+        emit WeightCapsSet(operatorSet, expectedZeroWeights);
 
         vm.prank(avs1);
         calculator.setWeightCap(operatorSet, 0);

@@ -27,12 +27,13 @@ contract BN254TableCalculatorWithCaps is BN254TableCalculatorBase, PermissionCon
     uint256 public immutable LOOKAHEAD_BLOCKS;
 
     // Storage
-    /// @notice Mapping from operatorSet hash to weight cap (0 = no cap)
-    mapping(bytes32 => uint256) public weightCaps;
+    /// @notice Mapping from operatorSet key to weight caps per stake type (0 = no cap)
+    /// @dev Index 0 represents the total weight cap for backwards compatibility
+    mapping(bytes32 => uint256[]) public weightCaps;
 
     // Events
-    /// @notice Emitted when a weight cap is set for an operator set
-    event WeightCapSet(OperatorSet indexed operatorSet, uint256 maxWeight);
+    /// @notice Emitted when weight caps are set for an operator set
+    event WeightCapsSet(OperatorSet indexed operatorSet, uint256[] maxWeights);
 
     constructor(
         IKeyRegistrar _keyRegistrar,
@@ -45,7 +46,26 @@ contract BN254TableCalculatorWithCaps is BN254TableCalculatorBase, PermissionCon
     }
 
     /**
-     * @notice Set the weight cap for a given operator set
+     * @notice Set weight caps for a given operator set
+     * @param operatorSet The operator set to set caps for
+     * @param maxWeights Array of maximum allowed weights per stake type (0 = no cap)
+     *                   Index 0 is the total weight cap for backwards compatibility
+     * @dev Only the AVS can set caps for their operator sets
+     */
+    function setWeightCaps(
+        OperatorSet calldata operatorSet,
+        uint256[] calldata maxWeights
+    ) external checkCanCall(operatorSet.avs) {
+        require(maxWeights.length > 0, "BN254TableCalculatorWithCaps: empty weight caps array");
+        
+        bytes32 operatorSetKey = operatorSet.key();
+        weightCaps[operatorSetKey] = maxWeights;
+
+        emit WeightCapsSet(operatorSet, maxWeights);
+    }
+
+    /**
+     * @notice Set the total weight cap for a given operator set (backwards compatibility)
      * @param operatorSet The operator set to set the cap for
      * @param maxWeight Maximum allowed total weight per operator (0 = no cap)
      * @dev Only the AVS can set caps for their operator sets
@@ -54,22 +74,37 @@ contract BN254TableCalculatorWithCaps is BN254TableCalculatorBase, PermissionCon
         OperatorSet calldata operatorSet,
         uint256 maxWeight
     ) external checkCanCall(operatorSet.avs) {
-        bytes32 operatorSetHash = keccak256(abi.encode(operatorSet.avs, operatorSet.id));
-        weightCaps[operatorSetHash] = maxWeight;
+        bytes32 operatorSetKey = operatorSet.key();
+        uint256[] memory caps = new uint256[](1);
+        caps[0] = maxWeight;
+        weightCaps[operatorSetKey] = caps;
 
-        emit WeightCapSet(operatorSet, maxWeight);
+        emit WeightCapsSet(operatorSet, caps);
     }
 
     /**
-     * @notice Get the weight cap for a given operator set
+     * @notice Get weight caps for a given operator set
+     * @param operatorSet The operator set to get caps for
+     * @return maxWeights Array of maximum weight caps per stake type (0 = no cap)
+     */
+    function getWeightCaps(
+        OperatorSet calldata operatorSet
+    ) external view returns (uint256[] memory maxWeights) {
+        bytes32 operatorSetKey = operatorSet.key();
+        return weightCaps[operatorSetKey];
+    }
+
+    /**
+     * @notice Get the total weight cap for a given operator set (backwards compatibility)
      * @param operatorSet The operator set to get the cap for
      * @return maxWeight The maximum weight cap (0 = no cap)
      */
     function getWeightCap(
         OperatorSet calldata operatorSet
     ) external view returns (uint256 maxWeight) {
-        bytes32 operatorSetHash = keccak256(abi.encode(operatorSet.avs, operatorSet.id));
-        return weightCaps[operatorSetHash];
+        bytes32 operatorSetKey = operatorSet.key();
+        uint256[] storage caps = weightCaps[operatorSetKey];
+        return caps.length > 0 ? caps[0] : 0;
     }
 
     /**
@@ -116,11 +151,11 @@ contract BN254TableCalculatorWithCaps is BN254TableCalculatorBase, PermissionCon
         }
 
         // Apply weight caps if configured
-        bytes32 operatorSetHash = keccak256(abi.encode(operatorSet.avs, operatorSet.id));
-        uint256 maxWeight = weightCaps[operatorSetHash];
+        bytes32 operatorSetKey = operatorSet.key();
+        uint256[] storage maxWeights = weightCaps[operatorSetKey];
 
-        if (maxWeight > 0) {
-            (operators, weights) = WeightCapUtils.applyWeightCap(operators, weights, maxWeight);
+        if (maxWeights.length > 0) {
+            (operators, weights) = WeightCapUtils.applyWeightCaps(operators, weights, maxWeights);
         }
 
         return (operators, weights);

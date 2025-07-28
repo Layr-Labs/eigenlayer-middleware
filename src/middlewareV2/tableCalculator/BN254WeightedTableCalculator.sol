@@ -19,6 +19,10 @@ import "./BN254TableCalculatorBase.sol";
  * @dev This contract allows AVSs to set custom multipliers for each strategy instead of weighting all strategies equally.
  */
 contract BN254WeightedTableCalculator is BN254TableCalculatorBase, PermissionControllerMixin {
+    // Constants
+    /// @notice Default multiplier in basis points (10000 = 1x)
+    uint256 public constant DEFAULT_STRATEGY_MULTIPLIER = 10000;
+
     // Immutables
     /// @notice AllocationManager contract for managing operator allocations
     IAllocationManager public immutable allocationManager;
@@ -65,12 +69,12 @@ contract BN254WeightedTableCalculator is BN254TableCalculatorBase, PermissionCon
             revert ArrayLengthMismatch();
         }
 
-        bytes32 operatorSetHash = keccak256(abi.encode(operatorSet.avs, operatorSet.id));
+        bytes32 operatorSetKey = operatorSet.key();
 
         // Set multipliers for each strategy
         for (uint256 i = 0; i < strategies.length; i++) {
-            strategyMultipliers[operatorSetHash][strategies[i]] = multipliers[i];
-            strategyMultipliersSet[operatorSetHash][strategies[i]] = true;
+            strategyMultipliers[operatorSetKey][strategies[i]] = multipliers[i];
+            strategyMultipliersSet[operatorSetKey][strategies[i]] = true;
         }
 
         emit StrategyMultipliersUpdated(operatorSet, strategies, multipliers);
@@ -89,11 +93,11 @@ contract BN254WeightedTableCalculator is BN254TableCalculatorBase, PermissionCon
         OperatorSet calldata operatorSet,
         IStrategy strategy
     ) external view returns (uint256 multiplier) {
-        bytes32 operatorSetHash = keccak256(abi.encode(operatorSet.avs, operatorSet.id));
-        if (strategyMultipliersSet[operatorSetHash][strategy]) {
-            multiplier = strategyMultipliers[operatorSetHash][strategy];
+        bytes32 operatorSetKey = operatorSet.key();
+        if (strategyMultipliersSet[operatorSetKey][strategy]) {
+            multiplier = strategyMultipliers[operatorSetKey][strategy];
         } else {
-            multiplier = 10000; // Default 1x multiplier
+            multiplier = DEFAULT_STRATEGY_MULTIPLIER; // Default 1x multiplier
         }
     }
 
@@ -119,7 +123,7 @@ contract BN254WeightedTableCalculator is BN254TableCalculatorBase, PermissionCon
             futureBlock: uint32(block.number + LOOKAHEAD_BLOCKS)
         });
 
-        bytes32 operatorSetHash = keccak256(abi.encode(operatorSet.avs, operatorSet.id));
+        bytes32 operatorSetKey = operatorSet.key();
 
         operators = new address[](registeredOperators.length);
         weights = new uint256[][](registeredOperators.length);
@@ -130,16 +134,16 @@ contract BN254WeightedTableCalculator is BN254TableCalculatorBase, PermissionCon
             for (uint256 stratIndex = 0; stratIndex < strategies.length; ++stratIndex) {
                 uint256 stakeAmount = minSlashableStake[i][stratIndex];
 
-                // Get the multiplier for this strategy (default to 10000 if not set)
+                // Get the multiplier for this strategy (default to DEFAULT_STRATEGY_MULTIPLIER if not set)
                 uint256 multiplier;
-                if (strategyMultipliersSet[operatorSetHash][strategies[stratIndex]]) {
-                    multiplier = strategyMultipliers[operatorSetHash][strategies[stratIndex]];
+                if (strategyMultipliersSet[operatorSetKey][strategies[stratIndex]]) {
+                    multiplier = strategyMultipliers[operatorSetKey][strategies[stratIndex]];
                 } else {
-                    multiplier = 10000; // Default 1x multiplier
+                    multiplier = DEFAULT_STRATEGY_MULTIPLIER; // Default 1x multiplier
                 }
 
-                // Apply multiplier (divide by 10000 to convert from basis points)
-                totalWeight += (stakeAmount * multiplier) / 10000;
+                // Apply multiplier (divide by DEFAULT_STRATEGY_MULTIPLIER to convert from basis points)
+                totalWeight += (stakeAmount * multiplier) / DEFAULT_STRATEGY_MULTIPLIER;
             }
 
             // If the operator has nonzero weighted stake, add them to the operators array
