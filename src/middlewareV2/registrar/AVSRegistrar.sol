@@ -41,7 +41,7 @@ contract AVSRegistrar is Initializable, AVSRegistrarStorage {
     ) external virtual onlyAllocationManager {
         _beforeRegisterOperator(operator, operatorSetIds, data);
 
-        // Check that the operator has a valid key and update key if needed
+        // Check that the operator has a valid key
         _validateOperatorKeys(operator, operatorSetIds);
 
         _afterRegisterOperator(operator, operatorSetIds, data);
@@ -81,10 +81,9 @@ contract AVSRegistrar is Initializable, AVSRegistrarStorage {
      */
 
     /**
-     * @notice Validates that the operator has registered a key for the given operator sets
+     * @notice Validates that the operator has registered a key for the given operator sets in the `KeyRegistrar`
      * @param operator The operator to validate
      * @param operatorSetIds The operator sets to validate
-     * @dev This function assumes the operator has already registered a key in the Key Registrar
      */
     function _validateOperatorKeys(
         address operator,
