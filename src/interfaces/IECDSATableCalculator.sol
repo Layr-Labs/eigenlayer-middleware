@@ -12,7 +12,7 @@ interface IECDSATableCalculator is IOperatorTableCalculator, IOperatorTableCalcu
      * @notice calculates the operatorInfos for a given operatorSet
      * @param operatorSet the operatorSet to calculate the operator table for
      * @return operatorInfos the list of operatorInfos for the given operatorSet
-     * @dev The output of this function is converted to bytes via the `calculateOperatorTableBytes` function
+     * @dev The output of this function is used by the multichain protocol to transport operator stake weights to destination chains
      */
     function calculateOperatorTable(
         OperatorSet calldata operatorSet
