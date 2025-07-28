@@ -36,9 +36,18 @@ jobs:
         env:
           TARGET: ${{ github.event.pull_request.base.sha }}
         run: |
-          # Validate TARGET is a valid SHA (basic validation)
+          # Validate TARGET is a valid SHA (enhanced validation)
+          if [ -z "$TARGET" ]; then
+            echo "::error::TARGET SHA is empty"
+            exit 1
+          fi
           if ! echo "$TARGET" | grep -qE '^[a-f0-9]{40}$'; then
             echo "::error::Invalid SHA format: $TARGET"
+            exit 1
+          fi
+          # Verify the SHA exists in the repository
+          if ! git cat-file -e "$TARGET" 2>/dev/null; then
+            echo "::error::SHA does not exist in repository: $TARGET"
             exit 1
           fi
           git fetch origin "$TARGET"

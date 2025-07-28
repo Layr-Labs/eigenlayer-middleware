@@ -106,6 +106,7 @@ jobs:
         with:
           name: code-coverage-report
           path: report/*
+          retention-days: 30
 
       # Check coverage threshold after uploading report
       - name: Check Coverage Threshold for >=90%

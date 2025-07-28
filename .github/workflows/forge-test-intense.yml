@@ -22,7 +22,7 @@ jobs:
   forge-test-intense:
     name: Test (Intense)
     runs-on: ubuntu-latest
-    timeout-minutes: 480  # 8 hours for intense testing
+    timeout-minutes: 240  # 4 hours for intense testing
     steps:
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
