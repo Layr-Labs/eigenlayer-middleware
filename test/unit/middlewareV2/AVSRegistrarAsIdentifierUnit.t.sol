@@ -33,7 +33,11 @@ contract AVSRegistrarAsIdentifierUnitTests is AVSRegistrarBase {
         avsRegistrarAsIdentifier = AVSRegistrarAsIdentifier(
             address(
                 new TransparentUpgradeableProxy(
-                    address(avsRegistrarImplementation), address(proxyAdmin), ""
+                    address(avsRegistrarImplementation),
+                    address(proxyAdmin),
+                    abi.encodeWithSelector(
+                        AVSRegistrarAsIdentifier.initialize.selector, address(this), METADATA_URI
+                    )
                 )
             )
         );
@@ -127,8 +131,8 @@ contract AVSRegistrarAsIdentifierUnitTests_initialize is AVSRegistrarAsIdentifie
             )
         );
 
-        // Initialize
-        avsRegistrarAsIdentifier.initialize(admin, METADATA_URI);
+        // // Initialize
+        // avsRegistrarAsIdentifier.initialize(admin, METADATA_URI);
     }
 
     function test_revert_alreadyInitialized() public {
@@ -149,7 +153,7 @@ contract AVSRegistrarAsIdentifierUnitTests_initialize is AVSRegistrarAsIdentifie
             ""
         );
 
-        avsRegistrarAsIdentifier.initialize(admin, METADATA_URI);
+        // avsRegistrarAsIdentifier.initialize(admin, METADATA_URI);
 
         // Try to initialize again
         vm.expectRevert("Initializable: contract is already initialized");
@@ -226,7 +230,7 @@ contract AVSRegistrarAsIdentifierUnitTests_registerOperator is AVSRegistrarAsIde
             ""
         );
 
-        avsRegistrarAsIdentifier.initialize(admin, METADATA_URI);
+        // avsRegistrarAsIdentifier.initialize(admin, METADATA_URI);
     }
 
     function testFuzz_revert_notAllocationManager(
@@ -305,7 +309,7 @@ contract AVSRegistrarAsIdentifierUnitTests_deregisterOperator is
             ""
         );
 
-        avsRegistrarAsIdentifier.initialize(admin, METADATA_URI);
+        // avsRegistrarAsIdentifier.initialize(admin, METADATA_URI);
     }
 
     function testFuzz_revert_notAllocationManager(

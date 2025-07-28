@@ -27,7 +27,9 @@ contract AVSRegistrarSocketUnitTests is
         avsRegistrarWithSocket = AVSRegistrarWithSocket(
             address(
                 new TransparentUpgradeableProxy(
-                    address(avsRegistrarImplementation), address(proxyAdmin), ""
+                    address(avsRegistrarImplementation),
+                    address(proxyAdmin),
+                    abi.encodeWithSelector(AVSRegistrarWithSocket.initialize.selector, AVS)
                 )
             )
         );

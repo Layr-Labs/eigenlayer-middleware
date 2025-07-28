@@ -29,7 +29,7 @@ contract AVSRegistrarWithAllowlistUnitTests is
                     address(avsRegistrarImplementation),
                     address(proxyAdmin),
                     abi.encodeWithSelector(
-                        AVSRegistrarWithAllowlist.initialize.selector, address(this)
+                        AVSRegistrarWithAllowlist.initialize.selector, AVS, address(this)
                     )
                 )
             )
