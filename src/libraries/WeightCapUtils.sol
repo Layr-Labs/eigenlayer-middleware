@@ -33,12 +33,15 @@ library WeightCapUtils {
      * @return cappedWeights Array of weights after applying caps
      * @dev For single cap: truncates to cap (first weight = cap, rest = 0) and filters zero-weight operators. For multi-cap: applies per-stake-type caps.
      */
+
     function applyWeightCaps(
         address[] memory operators,
         uint256[][] memory weights,
         uint256[] memory maxWeights
     ) internal pure returns (address[] memory cappedOperators, uint256[][] memory cappedWeights) {
-        require(operators.length == weights.length, "WeightCapUtils: operators/weights length mismatch");
+        require(
+            operators.length == weights.length, "WeightCapUtils: operators/weights length mismatch"
+        );
 
         if (maxWeights.length == 0 || operators.length == 0) {
             return (operators, weights);
@@ -98,7 +101,8 @@ library WeightCapUtils {
                 // Per-stake-type caps
                 for (uint256 j = 0; j < weights[i].length; j++) {
                     if (j < maxWeights.length && maxWeights[j] > 0) {
-                        cappedWeights[resultIndex][j] = weights[i][j] > maxWeights[j] ? maxWeights[j] : weights[i][j];
+                        cappedWeights[resultIndex][j] =
+                            weights[i][j] > maxWeights[j] ? maxWeights[j] : weights[i][j];
                     } else {
                         cappedWeights[resultIndex][j] = weights[i][j];
                     }

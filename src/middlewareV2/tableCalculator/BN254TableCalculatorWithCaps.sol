@@ -57,7 +57,7 @@ contract BN254TableCalculatorWithCaps is BN254TableCalculatorBase, PermissionCon
         uint256[] calldata maxWeights
     ) external checkCanCall(operatorSet.avs) {
         require(maxWeights.length > 0, "BN254TableCalculatorWithCaps: empty weight caps array");
-        
+
         bytes32 operatorSetKey = operatorSet.key();
         weightCaps[operatorSetKey] = maxWeights;
 
