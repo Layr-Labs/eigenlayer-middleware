@@ -1,0 +1,26 @@
+{
+  "description": "Allowlist AVS configuration for permissioned operator registration with basic calculator",
+  
+  "_comment_core_addresses": "Core EigenLayer protocol addresses - update these for your network",
+  "allocationManager": "0x75dfE5B44C2E530568001400D3f704bC8AE350CC",
+  "keyRegistrar": "0x...",
+  "avsDirectory": "0x141d6995556135D4997b2ff72EB443Be300353bC", 
+  "permissionController": "0xa2348c77802238Db39f0CefAa500B62D3FDD682b",
+  "proxyAdmin": "",
+  
+  "_comment_avs_config": "Your AVS specific configuration",
+  "avsOwner": "0x...",
+  "metadataURI": "https://your-avs.com/metadata.json",
+  
+  "_comment_registrar": "Using WITH_ALLOWLIST for permissioned registration",
+  "registrarType": 1,
+  "useProxy": true,
+  
+  "_comment_calculator": "Basic BN254 calculator",
+  "calculatorType": 0,
+  "lookaheadBlocks": 100,
+  
+  "_comment_post_deployment": "After deployment, use allowlist functions to manage operator permissions",
+  "strategies": [],
+  "multipliers": []
+} 
