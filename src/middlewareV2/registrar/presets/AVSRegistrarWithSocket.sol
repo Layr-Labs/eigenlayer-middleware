@@ -11,10 +11,15 @@ import {SocketRegistry} from "../modules/SocketRegistry.sol";
 
 contract AVSRegistrarWithSocket is AVSRegistrar, SocketRegistry, IAVSRegistrarWithSocket {
     constructor(
-        address _avs,
         IAllocationManager _allocationManager,
         IKeyRegistrar _keyRegistrar
-    ) AVSRegistrar(_avs, _allocationManager, _keyRegistrar) {}
+    ) AVSRegistrar(_allocationManager, _keyRegistrar) {}
+
+    function initialize(
+        address avs
+    ) external initializer {
+        __AVSRegistrar_init(avs);
+    }
 
     /// @notice Set the socket for the operator
     /// @dev This function sets the socket even if the operator is already registered

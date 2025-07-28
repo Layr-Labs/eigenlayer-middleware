@@ -12,15 +12,16 @@ import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/Operator
 
 contract AVSRegistrarWithAllowlist is AVSRegistrar, Allowlist, IAVSRegistrarWithAllowlist {
     constructor(
-        address _avs,
         IAllocationManager _allocationManager,
         IKeyRegistrar _keyRegistrar
-    ) AVSRegistrar(_avs, _allocationManager, _keyRegistrar) {}
+    ) AVSRegistrar(_allocationManager, _keyRegistrar) {}
 
-    function initialize(
-        address admin
-    ) public override initializer {
-        _initializeAllowlist(admin);
+    function initialize(address avs, address admin) external initializer {
+        // Initialize the AVSRegistrar
+        __AVSRegistrar_init(avs);
+
+        // Initialize the allowlist
+        __Allowlist_init(admin);
     }
 
     /// @notice Before registering operator, check if the operator is in the allowlist
