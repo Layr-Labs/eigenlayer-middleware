@@ -42,9 +42,6 @@ abstract contract ECDSATableCalculatorBase is IECDSATableCalculator {
     }
 
     /// @inheritdoc IOperatorTableCalculator
-    /**
-     * @dev Returns ABI-encoded ECDSAOperatorInfo array for cross-chain compatibility
-     */
     function calculateOperatorTableBytes(
         OperatorSet calldata operatorSet
     ) external view virtual returns (bytes memory operatorTableBytes) {
@@ -52,9 +49,6 @@ abstract contract ECDSATableCalculatorBase is IECDSATableCalculator {
     }
 
     /// @inheritdoc IOperatorTableCalculator
-    /**
-     * @dev Returns operator addresses and their corresponding weight arrays for the operatorSet
-     */
     function getOperatorSetWeights(
         OperatorSet calldata operatorSet
     ) external view virtual returns (address[] memory operators, uint256[][] memory weights) {
@@ -62,9 +56,6 @@ abstract contract ECDSATableCalculatorBase is IECDSATableCalculator {
     }
 
     /// @inheritdoc IOperatorTableCalculator
-    /**
-     * @dev Returns the weight array for a specific operator in the operatorSet, or empty array if not found
-     */
     function getOperatorWeights(
         OperatorSet calldata operatorSet,
         address operator
