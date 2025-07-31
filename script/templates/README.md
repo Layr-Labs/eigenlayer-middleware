@@ -73,26 +73,12 @@ Unified deployment script with options for:
 
 
 
-## Table Calculator Integration
+## Customization
 
-Table calculators are separate components. You can:
-
-1. **Use an existing table calculator** - Just use its deployed address in your AVS logic
-2. **Deploy a custom table calculator** - Extend the base contracts and deploy separately
-3. **Skip table calculators** - Not all AVSs need them
-
-### Custom Table Calculator Example
+For custom table calculator logic, extend the base contracts:
 
 ```solidity
 contract MyCustomTableCalculator is BN254TableCalculatorBase {
-    constructor(
-        IKeyRegistrar _keyRegistrar,
-        IAllocationManager _allocationManager,
-        uint256 _lookaheadBlocks
-    ) BN254TableCalculatorBase(_keyRegistrar) {
-        // Custom initialization
-    }
-
     function _getOperatorWeights(
         OperatorSet calldata operatorSet
     ) internal view override returns (address[] memory, uint256[][] memory) {
@@ -101,20 +87,22 @@ contract MyCustomTableCalculator is BN254TableCalculatorBase {
 }
 ```
 
-Deploy this separately, then use the address as needed in your AVS.
+Deploy separately, then reference the address in your configuration.
 
-## Configuration Parameters
+## Advanced Configuration
 
-**REGISTRAR_TYPE**: Determines which registrar to deploy  
-**AVS_ADDRESS**: The address representing your AVS
-**Allowlist Admin**: Address that can manage operator permissions (for type 2)
-**Metadata URI**: AVS metadata for EigenLayer core (for type 3)
+### Configuration Parameters
 
-## Deployment Output
+**REGISTRAR_TYPE**: Which registrar to deploy (1-4, or 0 to skip)  
+**DEPLOY_TABLE_CALCULATOR**: Whether to deploy a new table calculator  
+**TABLE_CALCULATOR_TYPE**: Which calculator to deploy (1-4, if enabled)  
+**AVS_ADDRESS**: The address representing your AVS  
+**LOOKAHEAD_BLOCKS**: Blocks to look ahead for stake calculations  
 
-The deployment script outputs all deployment information to the console, including:
-- Registrar type and deployed address
-- All configuration parameters used
-- Type-specific next steps and instructions
+### Result
 
-Simply copy the console output if you need to save the deployment details. 
+You'll get:
+- ✅ Components deployed and configured for your AVS
+- ✅ Complete deployment info displayed in console
+- ✅ Type-specific next steps and instructions
+- ✅ Ready to integrate and use 
