@@ -29,6 +29,8 @@ interface ISocketRegistryV2 is ISocketRegistryErrors, ISocketRegistryEvents {
      * @param operator The operator to set the socket for.
      * @param socket The socket to set for the operator.
      * @dev This function can only be called by the operator themselves.
+     * @dev Reverts for:
+     *      - CallerNotOperator: The caller is not the operator
      */
     function updateSocket(address operator, string memory socket) external;
 }
