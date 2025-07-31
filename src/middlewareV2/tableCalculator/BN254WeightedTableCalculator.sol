@@ -65,7 +65,7 @@ contract BN254WeightedTableCalculator is BN254TableCalculatorBase, PermissionCon
         uint256[] calldata multipliers
     ) external checkCanCall(operatorSet.avs) {
         // Validate input arrays
-        require(strategies.length == multipliers.length, "ArrayLengthMismatch");
+        require(strategies.length == multipliers.length, ArrayLengthMismatch());
 
         bytes32 operatorSetKey = operatorSet.key();
 
