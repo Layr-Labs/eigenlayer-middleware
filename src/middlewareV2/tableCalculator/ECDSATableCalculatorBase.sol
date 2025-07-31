@@ -21,6 +21,10 @@ abstract contract ECDSATableCalculatorBase is IECDSATableCalculator {
     /// @notice KeyRegistrar contract for managing operator keys
     IKeyRegistrar public immutable keyRegistrar;
 
+    /**
+     * @notice Constructor to initialize the ECDSATableCalculatorBase
+     * @param _keyRegistrar The KeyRegistrar contract for managing operator ECDSA public keys
+     */
     constructor(
         IKeyRegistrar _keyRegistrar
     ) {
@@ -28,6 +32,9 @@ abstract contract ECDSATableCalculatorBase is IECDSATableCalculator {
     }
 
     /// @inheritdoc IECDSATableCalculator
+    /**
+     * @dev Only returns operators that have registered their ECDSA keys with the KeyRegistrar and have non-zero stake
+     */
     function calculateOperatorTable(
         OperatorSet calldata operatorSet
     ) external view virtual returns (ECDSAOperatorInfo[] memory operatorInfos) {
@@ -35,6 +42,9 @@ abstract contract ECDSATableCalculatorBase is IECDSATableCalculator {
     }
 
     /// @inheritdoc IOperatorTableCalculator
+    /**
+     * @dev Returns ABI-encoded ECDSAOperatorInfo array for cross-chain compatibility
+     */
     function calculateOperatorTableBytes(
         OperatorSet calldata operatorSet
     ) external view virtual returns (bytes memory operatorTableBytes) {
@@ -42,6 +52,9 @@ abstract contract ECDSATableCalculatorBase is IECDSATableCalculator {
     }
 
     /// @inheritdoc IOperatorTableCalculator
+    /**
+     * @dev Returns operator addresses and their corresponding weight arrays for the operatorSet
+     */
     function getOperatorSetWeights(
         OperatorSet calldata operatorSet
     ) external view virtual returns (address[] memory operators, uint256[][] memory weights) {
@@ -49,6 +62,9 @@ abstract contract ECDSATableCalculatorBase is IECDSATableCalculator {
     }
 
     /// @inheritdoc IOperatorTableCalculator
+    /**
+     * @dev Returns the weight array for a specific operator in the operatorSet, or empty array if not found
+     */
     function getOperatorWeights(
         OperatorSet calldata operatorSet,
         address operator
@@ -84,10 +100,11 @@ abstract contract ECDSATableCalculatorBase is IECDSATableCalculator {
     /**
      * @notice Calculates the operator table for a given operatorSet
      * @param operatorSet The operatorSet to calculate the operator table for
-     * @return operatorInfos The operator table for the given operatorSet
+     * @return operatorInfos The array of ECDSAOperatorInfo structs for operators with registered ECDSA keys
      * @dev This function:
      * 1. Gets operator weights from the weight calculator
      * 2. Creates ECDSAOperatorInfo structs for each operator with registered ECDSA keys
+     * @dev Returns empty array if no operators have registered keys or non-zero weights
      */
     function _calculateOperatorTable(
         OperatorSet calldata operatorSet
