@@ -19,7 +19,7 @@ import {PermissionControllerMixin} from
     "eigenlayer-contracts/src/contracts/mixins/PermissionControllerMixin.sol";
 
 import {BN254TableCalculatorWithCaps} from
-    "../../../src/middlewareV2/tableCalculator/BN254TableCalculatorWithCaps.sol";
+    "../../../src/middlewareV2/tableCalculator/unaudited/BN254TableCalculatorWithCaps.sol";
 import {BN254TableCalculatorBase} from
     "../../../src/middlewareV2/tableCalculator/BN254TableCalculatorBase.sol";
 import {MockEigenLayerDeployer} from "./MockDeployer.sol";
