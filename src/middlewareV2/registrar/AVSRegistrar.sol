@@ -39,6 +39,9 @@ abstract contract AVSRegistrar is Initializable, AVSRegistrarStorage {
     }
 
     /// @inheritdoc IAVSRegistrar
+    /// @dev Reverts for:
+    ///      - NotAllocationManager: The caller is not the allocation manager
+    ///      - KeyNotRegistered: The operator has not registered a key for the given operator sets in the `KeyRegistrar`
     function registerOperator(
         address operator,
         address, /* avs */
@@ -56,6 +59,8 @@ abstract contract AVSRegistrar is Initializable, AVSRegistrarStorage {
     }
 
     /// @inheritdoc IAVSRegistrar
+    /// @dev Reverts for:
+    ///      - NotAllocationManager: The caller is not the allocation manager
     function deregisterOperator(
         address operator,
         address, /* avs */
@@ -85,6 +90,8 @@ abstract contract AVSRegistrar is Initializable, AVSRegistrarStorage {
      * @notice Validates that the operator has registered a key for the given operator sets in the `KeyRegistrar`
      * @param operator The operator to validate
      * @param operatorSetIds The operator sets to validate
+     * @dev Reverts for:
+     *      - KeyNotRegistered: The operator has not registered a key for the given operator sets in the `KeyRegistrar`    
      */
     function _validateOperatorKeys(
         address operator,
