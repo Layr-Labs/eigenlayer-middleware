@@ -91,7 +91,7 @@ abstract contract AVSRegistrar is Initializable, AVSRegistrarStorage {
      * @param operator The operator to validate
      * @param operatorSetIds The operator sets to validate
      * @dev Reverts for:
-     *      - KeyNotRegistered: The operator has not registered a key for the given operator sets in the `KeyRegistrar`    
+     *      - KeyNotRegistered: The operator has not registered a key for the given operator sets in the `KeyRegistrar`
      */
     function _validateOperatorKeys(
         address operator,
