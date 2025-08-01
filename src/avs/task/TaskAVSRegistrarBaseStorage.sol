@@ -11,7 +11,7 @@ import {ITaskAVSRegistrarBase} from "../../interfaces/ITaskAVSRegistrarBase.sol"
  */
 abstract contract TaskAVSRegistrarBaseStorage is ITaskAVSRegistrarBase {
     /// @notice Configuration for this AVS
-    AvsConfig public avsConfig;
+    AvsConfig internal avsConfig;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
