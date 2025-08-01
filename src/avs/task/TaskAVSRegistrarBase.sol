@@ -24,27 +24,28 @@ abstract contract TaskAVSRegistrarBase is
 {
     /**
      * @dev Constructor that passes parameters to parent
-     * @param _avs The address of the AVS
      * @param _allocationManager The AllocationManager contract address
      * @param _keyRegistrar The KeyRegistrar contract address
      */
     constructor(
-        address _avs,
         IAllocationManager _allocationManager,
         IKeyRegistrar _keyRegistrar
-    ) AVSRegistrarWithSocket(_avs, _allocationManager, _keyRegistrar) {
+    ) AVSRegistrarWithSocket(_allocationManager, _keyRegistrar) {
         _disableInitializers();
     }
 
     /**
      * @dev Initializer for the upgradeable contract
+     * @param _avs The address of the AVS
      * @param _owner The owner of the contract
      * @param _initialConfig The initial AVS configuration
      */
     function __TaskAVSRegistrarBase_init(
+        address _avs,
         address _owner,
         AvsConfig memory _initialConfig
     ) internal onlyInitializing {
+        __AVSRegistrar_init(_avs);
         __Ownable_init();
         _transferOwnership(_owner);
         _setAvsConfig(_initialConfig);

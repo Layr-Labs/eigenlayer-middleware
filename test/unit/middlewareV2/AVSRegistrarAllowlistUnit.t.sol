@@ -19,7 +19,6 @@ contract AVSRegistrarWithAllowlistUnitTests is
         super.setUp();
 
         avsRegistrarImplementation = new AVSRegistrarWithAllowlist(
-            AVS,
             IAllocationManager(address(allocationManagerMock)),
             IKeyRegistrar(address(keyRegistrarMock))
         );
@@ -30,7 +29,7 @@ contract AVSRegistrarWithAllowlistUnitTests is
                     address(avsRegistrarImplementation),
                     address(proxyAdmin),
                     abi.encodeWithSelector(
-                        AVSRegistrarWithAllowlist.initialize.selector, address(this)
+                        AVSRegistrarWithAllowlist.initialize.selector, AVS, address(this)
                     )
                 )
             )
@@ -57,7 +56,7 @@ contract AVSRegistrarWithAllowlistUnitTests_initialize is AVSRegistrarWithAllowl
 
     function test_revert_alreadyInitialized() public {
         cheats.expectRevert("Initializable: contract is already initialized");
-        avsRegistrarWithAllowlist.initialize(allowlistAdmin);
+        avsRegistrarWithAllowlist.initialize(AVS, allowlistAdmin);
     }
 }
 
@@ -345,12 +344,5 @@ contract AVSRegistrarWithAllowlistUnitTests_ViewFunctions is AVSRegistrarWithAll
                 "supportsAVS: should return false for non-AVS address"
             );
         }
-    }
-
-    function test_getAVS() public {
-        // Should return the configured AVS address
-        assertEq(
-            avsRegistrarWithAllowlist.getAVS(), AVS, "getAVS: should return configured AVS address"
-        );
     }
 }

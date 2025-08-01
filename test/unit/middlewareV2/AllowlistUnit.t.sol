@@ -16,6 +16,12 @@ import {Random, Randomness} from "test/utils/Random.sol";
 
 // Concrete implementation for testing
 contract AllowlistImplementation is Allowlist {
+    function initialize(
+        address _owner
+    ) external initializer {
+        __Allowlist_init(_owner);
+    }
+
     function version() external pure returns (string memory) {
         return "1.0.0";
     }
@@ -70,7 +76,9 @@ contract AllowlistUnitTests is Test, IAllowlistErrors, IAllowlistEvents {
                 new TransparentUpgradeableProxy(
                     address(allowlistImplementation),
                     address(proxyAdmin),
-                    abi.encodeWithSelector(Allowlist.initialize.selector, allowlistOwner)
+                    abi.encodeWithSelector(
+                        AllowlistImplementation.initialize.selector, allowlistOwner
+                    )
                 )
             )
         );
@@ -115,7 +123,7 @@ contract AllowlistUnitTests_initialize is AllowlistUnitTests {
                 new TransparentUpgradeableProxy(
                     address(allowlistImplementation),
                     address(proxyAdmin),
-                    abi.encodeWithSelector(Allowlist.initialize.selector, randomOwner)
+                    abi.encodeWithSelector(AllowlistImplementation.initialize.selector, randomOwner)
                 )
             )
         );

@@ -71,7 +71,11 @@ abstract contract ECDSATableCalculatorBase is IECDSATableCalculator {
      * @return operators The addresses of the operators in the operatorSet
      * @return weights The weights for each operator in the operatorSet, this is a 2D array where the first index is the operator
      * and the second index is the type of weight
+     * @dev Each single `weights` array is as a list of arbitrary stake types. For example,
+     *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an index in the array
      * @dev Must be implemented by derived contracts to define specific weight calculation logic
+     * @dev The certificate verification assumes the composition weights array for each operator is the same.
+     *      If the length of the array is different or the stake types are different, then verification issues can arise
      */
     function _getOperatorWeights(
         OperatorSet calldata operatorSet

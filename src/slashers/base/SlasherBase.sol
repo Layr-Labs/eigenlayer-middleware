@@ -4,11 +4,9 @@ pragma solidity ^0.8.27;
 import {SlasherStorage, ISlashingRegistryCoordinator} from "./SlasherStorage.sol";
 import {
     OperatorSet,
-    IAllocationManagerTypes,
     IAllocationManager
 } from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
-import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 /// @title SlasherBase
 /// @notice Base contract for implementing slashing functionality in EigenLayer middleware
