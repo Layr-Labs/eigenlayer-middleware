@@ -34,7 +34,7 @@ abstract contract AVSRegistrar is Initializable, AVSRegistrarStorage {
     /// @dev This initialization function MUST be added to a child's `initialize` function to avoid uninitialized storage.
     function __AVSRegistrar_init(
         address _avs
-    ) internal virtual {
+    ) internal virtual onlyInitializing {
         avs = _avs;
     }
 
