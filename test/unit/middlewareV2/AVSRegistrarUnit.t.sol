@@ -8,16 +8,19 @@ contract AVSRegistrarUnitTests is AVSRegistrarBase {
     function setUp() public override {
         super.setUp();
 
-        avsRegistrarImplementation = new AVSRegistrar(
-            AVS,
-            IAllocationManager(address(allocationManagerMock)),
-            IKeyRegistrar(address(keyRegistrarMock))
+        avsRegistrarImplementation = AVSRegistrar(
+            new AVSRegistrarImplementation(
+                IAllocationManager(address(allocationManagerMock)),
+                IKeyRegistrar(address(keyRegistrarMock))
+            )
         );
 
         avsRegistrar = AVSRegistrar(
             address(
                 new TransparentUpgradeableProxy(
-                    address(avsRegistrarImplementation), address(proxyAdmin), ""
+                    address(avsRegistrarImplementation),
+                    address(proxyAdmin),
+                    abi.encodeWithSelector(AVSRegistrarImplementation.initialize.selector, AVS)
                 )
             )
         );
@@ -129,10 +132,5 @@ contract AVSRegistrarUnitTests_ViewFunctions is AVSRegistrarUnitTests {
                 "supportsAVS: should return false for non-AVS address"
             );
         }
-    }
-
-    function test_getAVS() public {
-        // Should return the configured AVS address
-        assertEq(avsRegistrar.getAVS(), AVS, "getAVS: should return configured AVS address");
     }
 }

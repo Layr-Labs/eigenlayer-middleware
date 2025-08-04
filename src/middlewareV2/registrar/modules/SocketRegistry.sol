@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {ISocketRegistry} from "../../../interfaces/ISocketRegistryV2.sol";
+import {ISocketRegistryV2} from "../../../interfaces/ISocketRegistryV2.sol";
 import {SocketRegistryStorage} from "./SocketRegistryStorage.sol";
 import {
     OperatorSetLib,
@@ -13,14 +13,14 @@ import {
 abstract contract SocketRegistry is SocketRegistryStorage {
     using OperatorSetLib for OperatorSet;
 
-    /// @inheritdoc ISocketRegistry
+    /// @inheritdoc ISocketRegistryV2
     function getOperatorSocket(
         address operator
     ) external view returns (string memory) {
         return _operatorToSocket[operator];
     }
 
-    /// @inheritdoc ISocketRegistry
+    /// @inheritdoc ISocketRegistryV2
     function updateSocket(address operator, string memory socket) external {
         require(msg.sender == operator, CallerNotOperator());
         _setOperatorSocket(operator, socket);
