@@ -12,7 +12,7 @@ import {PermissionControllerMixin} from
     "eigenlayer-contracts/src/contracts/mixins/PermissionControllerMixin.sol";
 
 import "../BN254TableCalculatorBase.sol";
-import {WeightCapUtils} from "../../../libraries/WeightCapUtils.sol";
+import {WeightCapUtils} from "../../../unaudited/libraries/WeightCapUtils.sol";
 
 /**
  * @title BN254TableCalculatorWithCaps

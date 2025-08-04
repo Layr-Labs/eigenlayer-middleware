@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
-import {WeightCapUtils} from "../../../src/libraries/WeightCapUtils.sol";
+import {WeightCapUtils} from "../../../src/unaudited/libraries/WeightCapUtils.sol";
 
 /**
  * @title WeightCapUtilsUnitTests

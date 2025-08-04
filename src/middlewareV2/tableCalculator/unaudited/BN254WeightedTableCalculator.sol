@@ -11,7 +11,7 @@ import {IPermissionController} from
 import {PermissionControllerMixin} from
     "eigenlayer-contracts/src/contracts/mixins/PermissionControllerMixin.sol";
 
-import "./BN254TableCalculatorBase.sol";
+import "../BN254TableCalculatorBase.sol";
 
 /**
  * @title BN254WeightedTableCalculator
