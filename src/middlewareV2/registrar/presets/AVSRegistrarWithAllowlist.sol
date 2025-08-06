@@ -25,6 +25,8 @@ contract AVSRegistrarWithAllowlist is AVSRegistrar, Allowlist, IAVSRegistrarWith
     }
 
     /// @notice Before registering operator, check if the operator is in the allowlist
+    /// @dev Reverts for:
+    ///      - OperatorNotInAllowlist: The operator is not in the allowlist
     function _beforeRegisterOperator(
         address operator,
         uint32[] calldata operatorSetIds,

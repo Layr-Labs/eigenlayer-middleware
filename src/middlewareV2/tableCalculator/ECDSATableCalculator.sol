@@ -21,6 +21,13 @@ contract ECDSATableCalculator is ECDSATableCalculatorBase {
     /// @notice The default lookahead blocks for the slashable stake lookup
     uint256 public immutable LOOKAHEAD_BLOCKS;
 
+    /**
+     * @notice Constructor to initialize the ECDSATableCalculator
+     * @param _keyRegistrar The KeyRegistrar contract for managing operator ECDSA keys
+     * @param _allocationManager The AllocationManager contract for operator allocations and slashable stake
+     * @param _LOOKAHEAD_BLOCKS The number of blocks to look ahead when calculating minimum slashable stake
+     * @dev The lookahead blocks parameter helps ensure stake calculations account for future slashing events
+     */
     constructor(
         IKeyRegistrar _keyRegistrar,
         IAllocationManager _allocationManager,
@@ -31,11 +38,14 @@ contract ECDSATableCalculator is ECDSATableCalculatorBase {
     }
 
     /**
-     * @notice Get the operator weights for a given operatorSet based on the slashable stake.
+     * @notice Get the operator weights for a given operatorSet based on the minimum slashable stake.
      * @param operatorSet The operatorSet to get the weights for
-     * @return operators The addresses of the operators in the operatorSet
+     * @return operators The addresses of the operators in the operatorSet with non-zero slashable stake
      * @return weights The weights for each operator in the operatorSet, this is a 2D array where the first index is the operator
      * and the second index is the type of weight. In this case it's of length 1 and returns the slashable stake for the operatorSet.
+     * @dev This implementation sums the minimum slashable stake across all strategies for each operator
+     * @dev Only includes operators with non-zero total slashable stake to optimize gas usage
+     * @dev The weights array contains only one element per operator representing their total slashable stake
      */
     function _getOperatorWeights(
         OperatorSet calldata operatorSet
