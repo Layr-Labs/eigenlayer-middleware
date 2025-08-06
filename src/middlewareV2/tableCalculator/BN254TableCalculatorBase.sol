@@ -7,6 +7,8 @@ import {IOperatorTableCalculator} from
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 import {Merkle} from "eigenlayer-contracts/src/contracts/libraries/Merkle.sol";
 import {BN254} from "eigenlayer-contracts/src/contracts/libraries/BN254.sol";
+import {LeafCalculatorMixin} from
+    "eigenlayer-contracts/src/contracts/mixins/LeafCalculatorMixin.sol";
 import {IBN254TableCalculator} from "../../interfaces/IBN254TableCalculator.sol";
 
 /**
@@ -15,7 +17,7 @@ import {IBN254TableCalculator} from "../../interfaces/IBN254TableCalculator.sol"
  * @dev This contract contains all the core logic for operator table calculations,
  *      with weight calculation left to be implemented by derived contracts
  */
-abstract contract BN254TableCalculatorBase is IBN254TableCalculator {
+abstract contract BN254TableCalculatorBase is IBN254TableCalculator, LeafCalculatorMixin {
     using Merkle for bytes32[];
     using BN254 for BN254.G1Point;
 
@@ -160,8 +162,10 @@ abstract contract BN254TableCalculatorBase is IBN254TableCalculator {
                 totalWeights[j] += weights[i][j];
             }
             (BN254.G1Point memory g1Point,) = keyRegistrar.getBN254Key(operatorSet, operators[i]);
+
+            // Use `LeafCalculatorMixin` to calculate the leaf hash for the operator info
             operatorInfoLeaves[operatorCount] =
-                keccak256(abi.encode(BN254OperatorInfo({pubkey: g1Point, weights: weights[i]})));
+                calculateOperatorInfoLeaf(BN254OperatorInfo({pubkey: g1Point, weights: weights[i]}));
 
             // Add the operator's G1 point to the aggregate pubkey
             aggregatePubkey = aggregatePubkey.plus(g1Point);
