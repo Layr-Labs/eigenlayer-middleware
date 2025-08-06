@@ -22,7 +22,8 @@ import {BN254TableCalculatorBase} from
 import {MockEigenLayerDeployer} from "./MockDeployer.sol";
 import {Random} from "test/utils/Random.sol";
 import {Merkle} from "eigenlayer-contracts/src/contracts/libraries/Merkle.sol";
-import {LeafCalculatorMixin} from "eigenlayer-contracts/src/contracts/mixins/LeafCalculatorMixin.sol";
+import {LeafCalculatorMixin} from
+    "eigenlayer-contracts/src/contracts/mixins/LeafCalculatorMixin.sol";
 
 // Mock implementation for testing abstract contract
 contract BN254TableCalculatorBaseHarness is BN254TableCalculatorBase {
