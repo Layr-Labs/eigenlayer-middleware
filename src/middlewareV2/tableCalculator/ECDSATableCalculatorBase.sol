@@ -5,7 +5,6 @@ import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/Operator
 import {IOperatorTableCalculator} from
     "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
-import {Merkle} from "eigenlayer-contracts/src/contracts/libraries/Merkle.sol";
 import {IECDSATableCalculator} from "../../interfaces/IECDSATableCalculator.sol";
 
 /**
@@ -15,8 +14,6 @@ import {IECDSATableCalculator} from "../../interfaces/IECDSATableCalculator.sol"
  *      with weight calculation left to be implemented by derived contracts
  */
 abstract contract ECDSATableCalculatorBase is IECDSATableCalculator {
-    using Merkle for bytes32[];
-
     // Immutables
     /// @notice KeyRegistrar contract for managing operator keys
     IKeyRegistrar public immutable keyRegistrar;
