@@ -22,6 +22,8 @@ import {BN254TableCalculatorBase} from
 import {MockEigenLayerDeployer} from "./MockDeployer.sol";
 import {Random} from "test/utils/Random.sol";
 import {Merkle} from "eigenlayer-contracts/src/contracts/libraries/Merkle.sol";
+import {LeafCalculatorMixin} from
+    "eigenlayer-contracts/src/contracts/mixins/LeafCalculatorMixin.sol";
 
 // Mock implementation for testing abstract contract
 contract BN254TableCalculatorBaseHarness is BN254TableCalculatorBase {
@@ -61,7 +63,8 @@ contract BN254TableCalculatorBaseHarness is BN254TableCalculatorBase {
 contract BN254TableCalculatorBaseUnitTests is
     MockEigenLayerDeployer,
     IOperatorTableCalculatorTypes,
-    IKeyRegistrarTypes
+    IKeyRegistrarTypes,
+    LeafCalculatorMixin
 {
     using BN254 for BN254.G1Point;
     using OperatorSetLib for OperatorSet;
@@ -216,10 +219,8 @@ contract BN254TableCalculatorBaseUnitTests is
         BN254.G1Point memory pubkey,
         uint256[] memory weights
     ) internal pure returns (bytes32) {
-        return keccak256(
-            abi.encode(
-                IOperatorTableCalculatorTypes.BN254OperatorInfo({pubkey: pubkey, weights: weights})
-            )
+        return calculateOperatorInfoLeaf(
+            IOperatorTableCalculatorTypes.BN254OperatorInfo({pubkey: pubkey, weights: weights})
         );
     }
 }
