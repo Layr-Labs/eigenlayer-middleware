@@ -7,11 +7,19 @@ import {
     OperatorSetLib,
     OperatorSet
 } from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
+import {IPermissionController} from
+    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {PermissionControllerMixin} from
+    "eigenlayer-contracts/src/contracts/mixins/PermissionControllerMixin.sol";
 
 /// @notice A module that allows for the setting and removal of operator sockets
 /// @dev This contract assumes a single socket per operator
-abstract contract SocketRegistry is SocketRegistryStorage {
+abstract contract SocketRegistry is SocketRegistryStorage, PermissionControllerMixin {
     using OperatorSetLib for OperatorSet;
+
+    constructor(
+        IPermissionController _permissionController
+    ) PermissionControllerMixin(_permissionController) {}
 
     /// @inheritdoc ISocketRegistryV2
     function getOperatorSocket(
@@ -21,8 +29,7 @@ abstract contract SocketRegistry is SocketRegistryStorage {
     }
 
     /// @inheritdoc ISocketRegistryV2
-    function updateSocket(address operator, string memory socket) external {
-        require(msg.sender == operator, CallerNotOperator());
+    function updateSocket(address operator, string memory socket) external checkCanCall(operator) {
         _setOperatorSocket(operator, socket);
     }
 

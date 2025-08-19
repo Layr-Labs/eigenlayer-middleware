@@ -5,6 +5,8 @@ import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/Ownabl
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IPermissionController} from
+    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 import {AVSRegistrarWithSocket} from
     "../../middlewareV2/registrar/presets/AVSRegistrarWithSocket.sol";
@@ -26,11 +28,13 @@ abstract contract TaskAVSRegistrarBase is
      * @dev Constructor that passes parameters to parent
      * @param _allocationManager The AllocationManager contract address
      * @param _keyRegistrar The KeyRegistrar contract address
+     * @param _permissionController The PermissionController contract address
      */
     constructor(
         IAllocationManager _allocationManager,
-        IKeyRegistrar _keyRegistrar
-    ) AVSRegistrarWithSocket(_allocationManager, _keyRegistrar) {
+        IKeyRegistrar _keyRegistrar,
+        IPermissionController _permissionController
+    ) AVSRegistrarWithSocket(_allocationManager, _keyRegistrar, _permissionController) {
         _disableInitializers();
     }
 

@@ -2,6 +2,8 @@
 pragma solidity ^0.8.12;
 
 import {ISocketRegistryV2} from "../../../interfaces/ISocketRegistryV2.sol";
+import {IPermissionController} from
+    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 
 /**
  * @title Storage variables for the `SocketRegistry` contract.

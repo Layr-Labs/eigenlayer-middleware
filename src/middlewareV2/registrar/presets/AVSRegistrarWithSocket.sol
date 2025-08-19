@@ -3,6 +3,8 @@ pragma solidity ^0.8.27;
 
 import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IPermissionController} from
+    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 
 import {IAVSRegistrarWithSocket} from "../../../interfaces/IAVSRegistrarWithSocket.sol";
@@ -12,8 +14,9 @@ import {SocketRegistry} from "../modules/SocketRegistry.sol";
 contract AVSRegistrarWithSocket is AVSRegistrar, SocketRegistry, IAVSRegistrarWithSocket {
     constructor(
         IAllocationManager _allocationManager,
-        IKeyRegistrar _keyRegistrar
-    ) AVSRegistrar(_allocationManager, _keyRegistrar) {}
+        IKeyRegistrar _keyRegistrar,
+        IPermissionController _permissionController
+    ) AVSRegistrar(_allocationManager, _keyRegistrar) SocketRegistry(_permissionController) {}
 
     function initialize(
         address avs
