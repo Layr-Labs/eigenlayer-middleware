@@ -1,20 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-interface ISocketRegistryErrors {
-    /// @notice Thrown when the caller is not the operator
-    error CallerNotOperator();
-
-    /// @notice Thrown when the data length mismatch
-    error DataLengthMismatch();
-}
-
 interface ISocketRegistryEvents {
     /// @notice Emitted when an operator socket is set
     event OperatorSocketSet(address indexed operator, string socket);
 }
 
-interface ISocketRegistryV2 is ISocketRegistryErrors, ISocketRegistryEvents {
+interface ISocketRegistryV2 is ISocketRegistryEvents {
     /**
      * @notice Gets the socket for an operator.
      * @param operator The operator to get the socket for.

@@ -2,6 +2,8 @@
 pragma solidity ^0.8.27;
 
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
+import {PermissionControllerMixin} from
+    "eigenlayer-contracts/src/contracts/mixins/PermissionControllerMixin.sol";
 import "./AVSRegistrarBase.t.sol";
 import {AVSRegistrarWithSocket} from "src/middlewareV2/registrar/presets/AVSRegistrarWithSocket.sol";
 import {
@@ -137,7 +139,7 @@ contract AVSRegistrarSocketUnitTests_DeregisterOperator is AVSRegistrarSocketUni
 contract AVSRegistrarSocketUnitTests_updateSocket is AVSRegistrarSocketUnitTests {
     using ArrayLib for *;
 
-    function testFuzz_revert_notOperator(
+    function testFuzz_revert_InvalidPermission(
         address notOperator
     ) public {
         _registerOperator(defaultOperatorSetId.toArrayU32());
@@ -145,7 +147,7 @@ contract AVSRegistrarSocketUnitTests_updateSocket is AVSRegistrarSocketUnitTests
         cheats.assume(notOperator != address(proxyAdmin));
 
         cheats.prank(notOperator);
-        cheats.expectRevert(CallerNotOperator.selector);
+        cheats.expectRevert(PermissionControllerMixin.InvalidPermissions.selector);
         avsRegistrarWithSocket.updateSocket(defaultOperator, defaultSocket);
     }
 
