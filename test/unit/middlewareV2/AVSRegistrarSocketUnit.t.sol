@@ -6,17 +6,9 @@ import {PermissionControllerMixin} from
     "eigenlayer-contracts/src/contracts/mixins/PermissionControllerMixin.sol";
 import "./AVSRegistrarBase.t.sol";
 import {AVSRegistrarWithSocket} from "src/middlewareV2/registrar/presets/AVSRegistrarWithSocket.sol";
-import {
-    ISocketRegistryEvents,
-    ISocketRegistryErrors,
-    ISocketRegistryV2
-} from "src/interfaces/ISocketRegistryV2.sol";
+import {ISocketRegistryEvents, ISocketRegistryV2} from "src/interfaces/ISocketRegistryV2.sol";
 
-contract AVSRegistrarSocketUnitTests is
-    AVSRegistrarBase,
-    ISocketRegistryEvents,
-    ISocketRegistryErrors
-{
+contract AVSRegistrarSocketUnitTests is AVSRegistrarBase, ISocketRegistryEvents {
     AVSRegistrarWithSocket public avsRegistrarWithSocket;
 
     string defaultSocket = "Socket";
