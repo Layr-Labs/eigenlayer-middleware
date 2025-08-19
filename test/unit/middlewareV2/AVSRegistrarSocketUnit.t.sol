@@ -4,7 +4,11 @@ pragma solidity ^0.8.27;
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 import "./AVSRegistrarBase.t.sol";
 import {AVSRegistrarWithSocket} from "src/middlewareV2/registrar/presets/AVSRegistrarWithSocket.sol";
-import {ISocketRegistryEvents, ISocketRegistryErrors, ISocketRegistryV2} from "src/interfaces/ISocketRegistryV2.sol";
+import {
+    ISocketRegistryEvents,
+    ISocketRegistryErrors,
+    ISocketRegistryV2
+} from "src/interfaces/ISocketRegistryV2.sol";
 
 contract AVSRegistrarSocketUnitTests is
     AVSRegistrarBase,
@@ -167,7 +171,12 @@ contract AVSRegistrarSocketUnitTests_updateSocket is AVSRegistrarSocketUnitTests
 
         address appointee = address(0x789);
         cheats.prank(defaultOperator);
-        permissionController.setAppointee(defaultOperator, appointee, address(avsRegistrarWithSocket), ISocketRegistryV2.updateSocket.selector);
+        permissionController.setAppointee(
+            defaultOperator,
+            appointee,
+            address(avsRegistrarWithSocket),
+            ISocketRegistryV2.updateSocket.selector
+        );
 
         cheats.expectEmit(true, true, true, true);
         emit OperatorSocketSet(defaultOperator, newSocket);

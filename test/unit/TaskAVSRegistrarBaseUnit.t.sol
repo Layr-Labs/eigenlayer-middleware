@@ -48,7 +48,7 @@ contract TaskAVSRegistrarBaseUnitTests is
 
         // Deploy the registrar with proxy pattern
         MockTaskAVSRegistrar registrarImpl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManagerMock)), 
+            IAllocationManager(address(allocationManagerMock)),
             IKeyRegistrar(address(keyRegistrarMock)),
             permissionController
         );
@@ -132,7 +132,7 @@ contract TaskAVSRegistrarBaseUnitTests_Constructor is TaskAVSRegistrarBaseUnitTe
         // Deploy new registrar with proxy pattern
         ProxyAdmin newProxyAdmin = new ProxyAdmin();
         MockTaskAVSRegistrar newRegistrarImpl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManagerMock)), 
+            IAllocationManager(address(allocationManagerMock)),
             IKeyRegistrar(address(keyRegistrarMock)),
             permissionController
         );
@@ -164,7 +164,7 @@ contract TaskAVSRegistrarBaseUnitTests_Constructor is TaskAVSRegistrarBaseUnitTe
         // Deploy implementation
         ProxyAdmin newProxyAdmin = new ProxyAdmin();
         MockTaskAVSRegistrar newRegistrarImpl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManagerMock)), 
+            IAllocationManager(address(allocationManagerMock)),
             IKeyRegistrar(address(keyRegistrarMock)),
             permissionController
         );
@@ -187,7 +187,7 @@ contract TaskAVSRegistrarBaseUnitTests_Constructor is TaskAVSRegistrarBaseUnitTe
         // Deploy implementation
         ProxyAdmin newProxyAdmin = new ProxyAdmin();
         MockTaskAVSRegistrar newRegistrarImpl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManagerMock)), 
+            IAllocationManager(address(allocationManagerMock)),
             IKeyRegistrar(address(keyRegistrarMock)),
             permissionController
         );
@@ -207,7 +207,7 @@ contract TaskAVSRegistrarBaseUnitTests_Constructor is TaskAVSRegistrarBaseUnitTe
         // Deploy implementation
         ProxyAdmin newProxyAdmin = new ProxyAdmin();
         MockTaskAVSRegistrar newRegistrarImpl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManagerMock)), 
+            IAllocationManager(address(allocationManagerMock)),
             IKeyRegistrar(address(keyRegistrarMock)),
             permissionController
         );
@@ -227,7 +227,7 @@ contract TaskAVSRegistrarBaseUnitTests_Constructor is TaskAVSRegistrarBaseUnitTe
         // Deploy implementation
         ProxyAdmin newProxyAdmin = new ProxyAdmin();
         MockTaskAVSRegistrar newRegistrarImpl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManagerMock)), 
+            IAllocationManager(address(allocationManagerMock)),
             IKeyRegistrar(address(keyRegistrarMock)),
             permissionController
         );
@@ -247,7 +247,7 @@ contract TaskAVSRegistrarBaseUnitTests_Constructor is TaskAVSRegistrarBaseUnitTe
         // Deploy implementation
         ProxyAdmin newProxyAdmin = new ProxyAdmin();
         MockTaskAVSRegistrar newRegistrarImpl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManagerMock)), 
+            IAllocationManager(address(allocationManagerMock)),
             IKeyRegistrar(address(keyRegistrarMock)),
             permissionController
         );
@@ -421,7 +421,7 @@ contract TaskAVSRegistrarBaseUnitTests_Upgradeable is TaskAVSRegistrarBaseUnitTe
     function test_Implementation_CannotBeInitialized() public {
         // Deploy a new implementation
         MockTaskAVSRegistrar newImpl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManagerMock)), 
+            IAllocationManager(address(allocationManagerMock)),
             IKeyRegistrar(address(keyRegistrarMock)),
             permissionController
         );
@@ -445,7 +445,7 @@ contract TaskAVSRegistrarBaseUnitTests_Upgradeable is TaskAVSRegistrarBaseUnitTe
 
         // Deploy new implementation (could have new functions/logic)
         MockTaskAVSRegistrar newImpl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManagerMock)), 
+            IAllocationManager(address(allocationManagerMock)),
             IKeyRegistrar(address(keyRegistrarMock)),
             permissionController
         );
@@ -472,7 +472,7 @@ contract TaskAVSRegistrarBaseUnitTests_Upgradeable is TaskAVSRegistrarBaseUnitTe
 
         // Deploy new implementation
         MockTaskAVSRegistrar newImpl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManagerMock)), 
+            IAllocationManager(address(allocationManagerMock)),
             IKeyRegistrar(address(keyRegistrarMock)),
             permissionController
         );
@@ -522,7 +522,7 @@ contract TaskAVSRegistrarBaseUnitTests_Upgradeable is TaskAVSRegistrarBaseUnitTe
 
         // Deploy new implementation
         MockTaskAVSRegistrar newImpl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManagerMock)), 
+            IAllocationManager(address(allocationManagerMock)),
             IKeyRegistrar(address(keyRegistrarMock)),
             permissionController
         );
@@ -578,7 +578,7 @@ contract TaskAVSRegistrarBaseUnitTests_Upgradeable is TaskAVSRegistrarBaseUnitTe
     function test_DisableInitializers_InImplementation() public {
         // This test verifies that the implementation contract has initializers disabled
         MockTaskAVSRegistrar impl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManagerMock)), 
+            IAllocationManager(address(allocationManagerMock)),
             IKeyRegistrar(address(keyRegistrarMock)),
             permissionController
         );
