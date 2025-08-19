@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {Test} from "forge-std/Test.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from
     "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -17,12 +16,11 @@ import {ITaskAVSRegistrarBaseTypes} from "../../src/interfaces/ITaskAVSRegistrar
 import {ITaskAVSRegistrarBaseErrors} from "../../src/interfaces/ITaskAVSRegistrarBase.sol";
 import {ITaskAVSRegistrarBaseEvents} from "../../src/interfaces/ITaskAVSRegistrarBase.sol";
 import {MockTaskAVSRegistrar} from "../mocks/MockTaskAVSRegistrar.sol";
-import {AllocationManagerMock} from "../mocks/AllocationManagerMock.sol";
-import {KeyRegistrarMock} from "../mocks/KeyRegistrarMock.sol";
+import {MockEigenLayerDeployer} from "./middlewareV2/MockDeployer.sol";
 
 // Base test contract with common setup
 contract TaskAVSRegistrarBaseUnitTests is
-    Test,
+    MockEigenLayerDeployer,
     ITaskAVSRegistrarBaseTypes,
     ITaskAVSRegistrarBaseErrors,
     ITaskAVSRegistrarBaseEvents
@@ -32,10 +30,6 @@ contract TaskAVSRegistrarBaseUnitTests is
     address public owner = address(0x4);
     address public nonOwner = address(0x5);
 
-    // Mock contracts
-    AllocationManagerMock public allocationManager;
-    KeyRegistrarMock public keyRegistrar;
-
     // Test operator set IDs
     uint32 public constant AGGREGATOR_OPERATOR_SET_ID = 1;
     uint32 public constant EXECUTOR_OPERATOR_SET_ID_1 = 2;
@@ -44,20 +38,19 @@ contract TaskAVSRegistrarBaseUnitTests is
 
     // Contract under test
     MockTaskAVSRegistrar public registrar;
-    ProxyAdmin public proxyAdmin;
 
     function setUp() public virtual {
-        // Deploy mock contracts
-        allocationManager = new AllocationManagerMock();
-        keyRegistrar = new KeyRegistrarMock();
+        // Deploy mock EigenLayer contracts
+        _deployMockEigenLayer();
 
         // Create initial valid config
         AvsConfig memory initialConfig = _createValidAvsConfig();
 
         // Deploy the registrar with proxy pattern
-        proxyAdmin = new ProxyAdmin();
         MockTaskAVSRegistrar registrarImpl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManager)), IKeyRegistrar(address(keyRegistrar))
+            IAllocationManager(address(allocationManagerMock)), 
+            IKeyRegistrar(address(keyRegistrarMock)),
+            permissionController
         );
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
             address(registrarImpl),
@@ -139,7 +132,9 @@ contract TaskAVSRegistrarBaseUnitTests_Constructor is TaskAVSRegistrarBaseUnitTe
         // Deploy new registrar with proxy pattern
         ProxyAdmin newProxyAdmin = new ProxyAdmin();
         MockTaskAVSRegistrar newRegistrarImpl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManager)), IKeyRegistrar(address(keyRegistrar))
+            IAllocationManager(address(allocationManagerMock)), 
+            IKeyRegistrar(address(keyRegistrarMock)),
+            permissionController
         );
         TransparentUpgradeableProxy newProxy = new TransparentUpgradeableProxy(
             address(newRegistrarImpl),
@@ -169,7 +164,9 @@ contract TaskAVSRegistrarBaseUnitTests_Constructor is TaskAVSRegistrarBaseUnitTe
         // Deploy implementation
         ProxyAdmin newProxyAdmin = new ProxyAdmin();
         MockTaskAVSRegistrar newRegistrarImpl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManager)), IKeyRegistrar(address(keyRegistrar))
+            IAllocationManager(address(allocationManagerMock)), 
+            IKeyRegistrar(address(keyRegistrarMock)),
+            permissionController
         );
 
         // Expect event during initialization
@@ -190,7 +187,9 @@ contract TaskAVSRegistrarBaseUnitTests_Constructor is TaskAVSRegistrarBaseUnitTe
         // Deploy implementation
         ProxyAdmin newProxyAdmin = new ProxyAdmin();
         MockTaskAVSRegistrar newRegistrarImpl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManager)), IKeyRegistrar(address(keyRegistrar))
+            IAllocationManager(address(allocationManagerMock)), 
+            IKeyRegistrar(address(keyRegistrarMock)),
+            permissionController
         );
 
         // Expect revert during initialization
@@ -208,7 +207,9 @@ contract TaskAVSRegistrarBaseUnitTests_Constructor is TaskAVSRegistrarBaseUnitTe
         // Deploy implementation
         ProxyAdmin newProxyAdmin = new ProxyAdmin();
         MockTaskAVSRegistrar newRegistrarImpl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManager)), IKeyRegistrar(address(keyRegistrar))
+            IAllocationManager(address(allocationManagerMock)), 
+            IKeyRegistrar(address(keyRegistrarMock)),
+            permissionController
         );
 
         // Expect revert during initialization
@@ -226,7 +227,9 @@ contract TaskAVSRegistrarBaseUnitTests_Constructor is TaskAVSRegistrarBaseUnitTe
         // Deploy implementation
         ProxyAdmin newProxyAdmin = new ProxyAdmin();
         MockTaskAVSRegistrar newRegistrarImpl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManager)), IKeyRegistrar(address(keyRegistrar))
+            IAllocationManager(address(allocationManagerMock)), 
+            IKeyRegistrar(address(keyRegistrarMock)),
+            permissionController
         );
 
         // Expect revert during initialization
@@ -244,7 +247,9 @@ contract TaskAVSRegistrarBaseUnitTests_Constructor is TaskAVSRegistrarBaseUnitTe
         // Deploy implementation
         ProxyAdmin newProxyAdmin = new ProxyAdmin();
         MockTaskAVSRegistrar newRegistrarImpl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManager)), IKeyRegistrar(address(keyRegistrar))
+            IAllocationManager(address(allocationManagerMock)), 
+            IKeyRegistrar(address(keyRegistrarMock)),
+            permissionController
         );
 
         // Expect revert during initialization
@@ -416,7 +421,9 @@ contract TaskAVSRegistrarBaseUnitTests_Upgradeable is TaskAVSRegistrarBaseUnitTe
     function test_Implementation_CannotBeInitialized() public {
         // Deploy a new implementation
         MockTaskAVSRegistrar newImpl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManager)), IKeyRegistrar(address(keyRegistrar))
+            IAllocationManager(address(allocationManagerMock)), 
+            IKeyRegistrar(address(keyRegistrarMock)),
+            permissionController
         );
 
         // Try to initialize the implementation directly, should revert
@@ -438,7 +445,9 @@ contract TaskAVSRegistrarBaseUnitTests_Upgradeable is TaskAVSRegistrarBaseUnitTe
 
         // Deploy new implementation (could have new functions/logic)
         MockTaskAVSRegistrar newImpl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManager)), IKeyRegistrar(address(keyRegistrar))
+            IAllocationManager(address(allocationManagerMock)), 
+            IKeyRegistrar(address(keyRegistrarMock)),
+            permissionController
         );
 
         // Upgrade proxy to new implementation
@@ -463,7 +472,9 @@ contract TaskAVSRegistrarBaseUnitTests_Upgradeable is TaskAVSRegistrarBaseUnitTe
 
         // Deploy new implementation
         MockTaskAVSRegistrar newImpl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManager)), IKeyRegistrar(address(keyRegistrar))
+            IAllocationManager(address(allocationManagerMock)), 
+            IKeyRegistrar(address(keyRegistrarMock)),
+            permissionController
         );
 
         // Try to upgrade from non-owner, should revert
@@ -511,7 +522,9 @@ contract TaskAVSRegistrarBaseUnitTests_Upgradeable is TaskAVSRegistrarBaseUnitTe
 
         // Deploy new implementation
         MockTaskAVSRegistrar newImpl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManager)), IKeyRegistrar(address(keyRegistrar))
+            IAllocationManager(address(allocationManagerMock)), 
+            IKeyRegistrar(address(keyRegistrarMock)),
+            permissionController
         );
 
         // Upgrade
@@ -540,8 +553,9 @@ contract TaskAVSRegistrarBaseUnitTests_Upgradeable is TaskAVSRegistrarBaseUnitTe
         TransparentUpgradeableProxy uninitializedProxy = new TransparentUpgradeableProxy(
             address(
                 new MockTaskAVSRegistrar(
-                    IAllocationManager(address(allocationManager)),
-                    IKeyRegistrar(address(keyRegistrar))
+                    IAllocationManager(address(allocationManagerMock)),
+                    IKeyRegistrar(address(keyRegistrarMock)),
+                    permissionController
                 )
             ),
             address(new ProxyAdmin()),
@@ -564,7 +578,9 @@ contract TaskAVSRegistrarBaseUnitTests_Upgradeable is TaskAVSRegistrarBaseUnitTe
     function test_DisableInitializers_InImplementation() public {
         // This test verifies that the implementation contract has initializers disabled
         MockTaskAVSRegistrar impl = new MockTaskAVSRegistrar(
-            IAllocationManager(address(allocationManager)), IKeyRegistrar(address(keyRegistrar))
+            IAllocationManager(address(allocationManagerMock)), 
+            IKeyRegistrar(address(keyRegistrarMock)),
+            permissionController
         );
 
         // Try to initialize the implementation, should revert

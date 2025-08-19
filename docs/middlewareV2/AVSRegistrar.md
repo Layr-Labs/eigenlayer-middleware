@@ -302,9 +302,12 @@ function getOperatorSocket(
 
 ```solidity
 /**
- * @notice Update the socket URL for the calling operator
- * @param operator The operator address (must be msg.sender)
- * @param socket The new socket URL
+ * @notice Updates the socket for an operator.
+ * @param operator The operator to set the socket for.
+ * @param socket The socket to set for the operator.
+ * @dev This function can only be called by the operator themselves.
+ * @dev Reverts for:
+ *      - InvalidPermissions: The caller does not have permission to call this function (via core `PermissionController`)
  */
 function updateSocket(address operator, string memory socket) external;
 ```
@@ -317,7 +320,7 @@ Allows an operator to update their socket URL after registration. The operator d
 - Emits `OperatorSocketSet` event
 
 *Requirements:*
-- `msg.sender` MUST be the `operator`
+- Caller MUST be authorized, either as the operator themselves or an admin/appointee (see the Core[`PermissionController.md`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/main/docs/permissions/PermissionController.md))
 
 ---
 

@@ -30,7 +30,7 @@ interface ISocketRegistryV2 is ISocketRegistryErrors, ISocketRegistryEvents {
      * @param socket The socket to set for the operator.
      * @dev This function can only be called by the operator themselves.
      * @dev Reverts for:
-     *      - CallerNotOperator: The caller is not the operator
+     *      - InvalidPermissions: The caller does not have permission to call this function (via core `PermissionController`)
      */
     function updateSocket(address operator, string memory socket) external;
 }

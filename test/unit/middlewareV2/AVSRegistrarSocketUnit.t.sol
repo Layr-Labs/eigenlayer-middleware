@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 import "./AVSRegistrarBase.t.sol";
 import {AVSRegistrarWithSocket} from "src/middlewareV2/registrar/presets/AVSRegistrarWithSocket.sol";
-import {ISocketRegistryEvents, ISocketRegistryErrors} from "src/interfaces/ISocketRegistryV2.sol";
+import {ISocketRegistryEvents, ISocketRegistryErrors, ISocketRegistryV2} from "src/interfaces/ISocketRegistryV2.sol";
 
 contract AVSRegistrarSocketUnitTests is
     AVSRegistrarBase,
@@ -21,7 +21,8 @@ contract AVSRegistrarSocketUnitTests is
 
         avsRegistrarImplementation = new AVSRegistrarWithSocket(
             IAllocationManager(address(allocationManagerMock)),
-            IKeyRegistrar(address(keyRegistrarMock))
+            IKeyRegistrar(address(keyRegistrarMock)),
+            permissionController
         );
 
         avsRegistrarWithSocket = AVSRegistrarWithSocket(
@@ -152,6 +153,25 @@ contract AVSRegistrarSocketUnitTests_updateSocket is AVSRegistrarSocketUnitTests
         cheats.expectEmit(true, true, true, true);
         emit OperatorSocketSet(defaultOperator, newSocket);
         cheats.prank(defaultOperator);
+        avsRegistrarWithSocket.updateSocket(defaultOperator, newSocket);
+
+        // Check that the socket is updated
+        string memory socket = avsRegistrarWithSocket.getOperatorSocket(defaultOperator);
+        assertEq(socket, newSocket, "Socket mismatch");
+    }
+
+    function test_updateSocket_UAM() public {
+        _registerOperator(defaultOperatorSetId.toArrayU32());
+
+        string memory newSocket = "NewSocket";
+
+        address appointee = address(0x789);
+        cheats.prank(defaultOperator);
+        permissionController.setAppointee(defaultOperator, appointee, address(avsRegistrarWithSocket), ISocketRegistryV2.updateSocket.selector);
+
+        cheats.expectEmit(true, true, true, true);
+        emit OperatorSocketSet(defaultOperator, newSocket);
+        cheats.prank(appointee);
         avsRegistrarWithSocket.updateSocket(defaultOperator, newSocket);
 
         // Check that the socket is updated
