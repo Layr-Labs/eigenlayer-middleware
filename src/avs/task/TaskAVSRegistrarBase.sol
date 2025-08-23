@@ -12,6 +12,8 @@ import {AVSRegistrarWithSocket} from
     "../../middlewareV2/registrar/presets/AVSRegistrarWithSocket.sol";
 import {ITaskAVSRegistrarBase} from "../../interfaces/ITaskAVSRegistrarBase.sol";
 import {TaskAVSRegistrarBaseStorage} from "./TaskAVSRegistrarBaseStorage.sol";
+import {Allowlist} from "../../middlewareV2/registrar/modules/Allowlist.sol";
+import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
 /**
  * @title TaskAVSRegistrarBase
@@ -22,6 +24,7 @@ abstract contract TaskAVSRegistrarBase is
     Initializable,
     OwnableUpgradeable,
     AVSRegistrarWithSocket,
+    Allowlist,
     TaskAVSRegistrarBaseStorage
 {
     /**
@@ -53,6 +56,7 @@ abstract contract TaskAVSRegistrarBase is
         __Ownable_init();
         _transferOwnership(_owner);
         _setAvsConfig(_initialConfig);
+        __Allowlist_init(_owner);
     }
 
     /// @inheritdoc ITaskAVSRegistrarBase
@@ -92,5 +96,23 @@ abstract contract TaskAVSRegistrarBase is
 
         avsConfig = config;
         emit AvsConfigSet(config.aggregatorOperatorSetId, config.executorOperatorSetIds);
+    }
+
+    /// @notice Before registering operator, check if the operator is in the allowlist
+    /// @dev Reverts for:
+    ///      - OperatorNotInAllowlist: The operator is not in the allowlist
+    function _beforeRegisterOperator(
+        address operator,
+        uint32[] calldata operatorSetIds,
+        bytes calldata data
+    ) internal override {
+        super._beforeRegisterOperator(operator, operatorSetIds, data);
+
+        for (uint32 i; i < operatorSetIds.length; ++i) {
+            require(
+                isOperatorAllowed(OperatorSet({avs: avs, id: operatorSetIds[i]}), operator),
+                OperatorNotInAllowlist()
+            );
+        }
     }
 }
