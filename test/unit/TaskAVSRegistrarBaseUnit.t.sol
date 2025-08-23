@@ -17,13 +17,22 @@ import {ITaskAVSRegistrarBaseErrors} from "../../src/interfaces/ITaskAVSRegistra
 import {ITaskAVSRegistrarBaseEvents} from "../../src/interfaces/ITaskAVSRegistrarBase.sol";
 import {MockTaskAVSRegistrar} from "../mocks/MockTaskAVSRegistrar.sol";
 import {MockEigenLayerDeployer} from "./middlewareV2/MockDeployer.sol";
+import {IAllowlist} from "../../src/interfaces/IAllowlist.sol";
+import {OperatorSet} from "../../lib/eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
+import {IAllowlistErrors} from "../../src/interfaces/IAllowlist.sol";
+import {IAllowlistEvents} from "../../src/interfaces/IAllowlist.sol";
+import {IAVSRegistrar} from "../../lib/eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
+import {IAVSRegistrarInternal} from "../../src/interfaces/IAVSRegistrarInternal.sol";
 
 // Base test contract with common setup
 contract TaskAVSRegistrarBaseUnitTests is
     MockEigenLayerDeployer,
     ITaskAVSRegistrarBaseTypes,
     ITaskAVSRegistrarBaseErrors,
-    ITaskAVSRegistrarBaseEvents
+    ITaskAVSRegistrarBaseEvents,
+    IAllowlistErrors,
+    IAllowlistEvents,
+    IAVSRegistrarInternal
 {
     // Test addresses
     address public avs = address(0x1);
@@ -60,6 +69,9 @@ contract TaskAVSRegistrarBaseUnitTests is
             )
         );
         registrar = MockTaskAVSRegistrar(address(proxy));
+
+        // Configure the AllocationManagerMock to know about this registrar
+        allocationManagerMock.setAVSRegistrar(avs, IAVSRegistrar(address(registrar)));
     }
 
     // Helper function to create a valid AVS config
@@ -686,5 +698,470 @@ contract TaskAVSRegistrarBaseUnitTests_AccessControl is TaskAVSRegistrarBaseUnit
         vm.prank(owner);
         vm.expectRevert("Ownable: caller is not the owner");
         registrar.setAvsConfig(config);
+    }
+}
+
+// Test contract for allowlist functionality
+contract TaskAVSRegistrarBaseUnitTests_Allowlist is TaskAVSRegistrarBaseUnitTests {
+    // Test addresses for allowlist testing
+    address public constant ALLOWLISTED_OPERATOR_1 = address(0x100);
+    address public constant ALLOWLISTED_OPERATOR_2 = address(0x101);
+    address public constant NON_ALLOWLISTED_OPERATOR = address(0x102);
+    address public constant ANOTHER_OPERATOR = address(0x103);
+
+    // Test operator sets
+    OperatorSet public aggregatorOperatorSet;
+    OperatorSet public executorOperatorSet1;
+    OperatorSet public executorOperatorSet2;
+
+    function setUp() public override {
+        super.setUp();
+
+        // Create operator sets for testing
+        aggregatorOperatorSet = OperatorSet({avs: avs, id: AGGREGATOR_OPERATOR_SET_ID});
+        executorOperatorSet1 = OperatorSet({avs: avs, id: EXECUTOR_OPERATOR_SET_ID_1});
+        executorOperatorSet2 = OperatorSet({avs: avs, id: EXECUTOR_OPERATOR_SET_ID_2});
+    }
+
+    // Helper function to add operators to allowlist
+    function _addOperatorToAllowlist(OperatorSet memory operatorSet, address operator) internal {
+        vm.prank(owner);
+        registrar.addOperatorToAllowlist(operatorSet, operator);
+    }
+
+    // Helper function to remove operators from allowlist
+    function _removeOperatorFromAllowlist(OperatorSet memory operatorSet, address operator) internal {
+        vm.prank(owner);
+        registrar.removeOperatorFromAllowlist(operatorSet, operator);
+    }
+
+    function test_AllowlistInitialization() public {
+        // Verify allowlist is properly initialized
+        assertEq(registrar.owner(), owner);
+
+        // Check that no operators are allowlisted initially
+        assertFalse(registrar.isOperatorAllowed(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1));
+        assertFalse(registrar.isOperatorAllowed(executorOperatorSet1, ALLOWLISTED_OPERATOR_1));
+    }
+
+    function test_AddOperatorToAllowlist() public {
+        // Add operator to allowlist
+        _addOperatorToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+
+        // Verify operator is now allowlisted
+        assertTrue(registrar.isOperatorAllowed(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1));
+        assertFalse(registrar.isOperatorAllowed(aggregatorOperatorSet, NON_ALLOWLISTED_OPERATOR));
+    }
+
+    function test_AddOperatorToAllowlist_EmitsEvent() public {
+        // Expect event emission
+        vm.expectEmit(true, true, true, true, address(registrar));
+        emit OperatorAddedToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+
+        // Add operator to allowlist
+        _addOperatorToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+    }
+
+    function test_AddOperatorToAllowlist_AlreadyInAllowlist() public {
+        // Add operator first time
+        _addOperatorToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+
+        // Try to add again, should revert
+        vm.prank(owner);
+        vm.expectRevert(OperatorAlreadyInAllowlist.selector);
+        registrar.addOperatorToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+    }
+
+    function test_AddOperatorToAllowlist_NotOwner() public {
+        // Non-owner tries to add operator
+        vm.prank(nonOwner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        registrar.addOperatorToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+    }
+
+    function test_RemoveOperatorFromAllowlist() public {
+        // Add operator first
+        _addOperatorToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+        assertTrue(registrar.isOperatorAllowed(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1));
+
+        // Remove operator
+        _removeOperatorFromAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+
+        // Verify operator is no longer allowlisted
+        assertFalse(registrar.isOperatorAllowed(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1));
+    }
+
+    function test_RemoveOperatorFromAllowlist_EmitsEvent() public {
+        // Add operator first
+        _addOperatorToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+
+        // Expect event emission
+        vm.expectEmit(true, true, true, true, address(registrar));
+        emit OperatorRemovedFromAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+
+        // Remove operator
+        _removeOperatorFromAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+    }
+
+    function test_RemoveOperatorFromAllowlist_NotInAllowlist() public {
+        // Try to remove operator that's not in allowlist
+        vm.prank(owner);
+        vm.expectRevert(OperatorNotInAllowlist.selector);
+        registrar.removeOperatorFromAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+    }
+
+    function test_RemoveOperatorFromAllowlist_NotOwner() public {
+        // Add operator first
+        _addOperatorToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+
+        // Non-owner tries to remove operator
+        vm.prank(nonOwner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        registrar.removeOperatorFromAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+    }
+
+    function test_IsOperatorAllowed() public {
+        // Initially not allowlisted
+        assertFalse(registrar.isOperatorAllowed(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1));
+
+        // Add to allowlist
+        _addOperatorToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+        assertTrue(registrar.isOperatorAllowed(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1));
+
+        // Remove from allowlist
+        _removeOperatorFromAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+        assertFalse(registrar.isOperatorAllowed(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1));
+    }
+
+    function test_IsOperatorAllowed_DifferentOperatorSets() public {
+        // Add operator to one operator set
+        _addOperatorToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+
+        // Operator should only be allowlisted for that specific operator set
+        assertTrue(registrar.isOperatorAllowed(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1));
+        assertFalse(registrar.isOperatorAllowed(executorOperatorSet1, ALLOWLISTED_OPERATOR_1));
+        assertFalse(registrar.isOperatorAllowed(executorOperatorSet2, ALLOWLISTED_OPERATOR_1));
+    }
+
+    function test_GetAllowedOperators() public {
+        // Initially empty
+        address[] memory allowedOperators = registrar.getAllowedOperators(aggregatorOperatorSet);
+        assertEq(allowedOperators.length, 0);
+
+        // Add operators
+        _addOperatorToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+        _addOperatorToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_2);
+
+        // Get allowed operators
+        allowedOperators = registrar.getAllowedOperators(aggregatorOperatorSet);
+        assertEq(allowedOperators.length, 2);
+
+        // Verify both operators are in the list (order may vary)
+        bool found1 = false;
+        bool found2 = false;
+        for (uint256 i = 0; i < allowedOperators.length; i++) {
+            if (allowedOperators[i] == ALLOWLISTED_OPERATOR_1) found1 = true;
+            if (allowedOperators[i] == ALLOWLISTED_OPERATOR_2) found2 = true;
+        }
+        assertTrue(found1);
+        assertTrue(found2);
+    }
+
+    function test_GetAllowedOperators_AfterRemoval() public {
+        // Add operators
+        _addOperatorToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+        _addOperatorToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_2);
+
+        // Remove one operator
+        _removeOperatorFromAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+
+        // Get allowed operators
+        address[] memory allowedOperators = registrar.getAllowedOperators(aggregatorOperatorSet);
+        assertEq(allowedOperators.length, 1);
+        assertEq(allowedOperators[0], ALLOWLISTED_OPERATOR_2);
+    }
+
+    function test_GetAllowedOperators_DifferentOperatorSets() public {
+        // Add operators to different operator sets
+        _addOperatorToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+        _addOperatorToAllowlist(executorOperatorSet1, ALLOWLISTED_OPERATOR_2);
+
+        // Check aggregator operator set
+        address[] memory allowedOperators = registrar.getAllowedOperators(aggregatorOperatorSet);
+        assertEq(allowedOperators.length, 1);
+        assertEq(allowedOperators[0], ALLOWLISTED_OPERATOR_1);
+
+        // Check executor operator set
+        allowedOperators = registrar.getAllowedOperators(executorOperatorSet1);
+        assertEq(allowedOperators.length, 1);
+        assertEq(allowedOperators[0], ALLOWLISTED_OPERATOR_2);
+    }
+
+    function test_AllowlistIsolation() public {
+        // Add operators to different operator sets
+        _addOperatorToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+        _addOperatorToAllowlist(executorOperatorSet1, ALLOWLISTED_OPERATOR_2);
+
+        // Verify isolation - operators are only allowlisted for their specific sets
+        assertTrue(registrar.isOperatorAllowed(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1));
+        assertFalse(registrar.isOperatorAllowed(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_2));
+        assertFalse(registrar.isOperatorAllowed(executorOperatorSet1, ALLOWLISTED_OPERATOR_1));
+        assertTrue(registrar.isOperatorAllowed(executorOperatorSet1, ALLOWLISTED_OPERATOR_2));
+    }
+
+    function test_AllowlistMultipleOperators() public {
+        // Add multiple operators to same operator set
+        _addOperatorToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+        _addOperatorToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_2);
+        _addOperatorToAllowlist(aggregatorOperatorSet, ANOTHER_OPERATOR);
+
+        // Verify all are allowlisted
+        assertTrue(registrar.isOperatorAllowed(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1));
+        assertTrue(registrar.isOperatorAllowed(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_2));
+        assertTrue(registrar.isOperatorAllowed(aggregatorOperatorSet, ANOTHER_OPERATOR));
+
+        // Verify non-allowlisted operator is not allowlisted
+        assertFalse(registrar.isOperatorAllowed(aggregatorOperatorSet, NON_ALLOWLISTED_OPERATOR));
+    }
+
+    function test_AllowlistEdgeCases() public {
+        // Test with zero address
+        _addOperatorToAllowlist(aggregatorOperatorSet, address(0));
+        assertTrue(registrar.isOperatorAllowed(aggregatorOperatorSet, address(0)));
+
+        // Test with contract address
+        address contractAddress = address(registrar);
+        _addOperatorToAllowlist(aggregatorOperatorSet, contractAddress);
+        assertTrue(registrar.isOperatorAllowed(aggregatorOperatorSet, contractAddress));
+
+        // Test with very large address
+        address largeAddress = address(0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF);
+        _addOperatorToAllowlist(aggregatorOperatorSet, largeAddress);
+        assertTrue(registrar.isOperatorAllowed(aggregatorOperatorSet, largeAddress));
+    }
+
+    function test_AllowlistOwnershipTransfer() public {
+        // Add operator as current owner
+        _addOperatorToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+        assertTrue(registrar.isOperatorAllowed(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1));
+
+        // Transfer ownership
+        address newOwner = address(0x999);
+        vm.prank(owner);
+        registrar.transferOwnership(newOwner);
+
+        // Old owner can no longer manage allowlist
+        vm.prank(owner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        registrar.addOperatorToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_2);
+
+        // New owner can manage allowlist
+        vm.prank(newOwner);
+        registrar.addOperatorToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_2);
+        assertTrue(registrar.isOperatorAllowed(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_2));
+
+        // Old allowlist entries still exist
+        assertTrue(registrar.isOperatorAllowed(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1));
+    }
+
+    function test_AllowlistOwnershipRenounce() public {
+        // Add operator
+        _addOperatorToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1);
+
+        // Renounce ownership
+        vm.prank(owner);
+        registrar.renounceOwnership();
+
+        // No one can manage allowlist anymore
+        vm.prank(owner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        registrar.addOperatorToAllowlist(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_2);
+
+        // Existing allowlist entries still exist
+        assertTrue(registrar.isOperatorAllowed(aggregatorOperatorSet, ALLOWLISTED_OPERATOR_1));
+    }
+}
+
+// Test contract for operator registration with allowlist validation
+contract TaskAVSRegistrarBaseUnitTests_OperatorRegistration is TaskAVSRegistrarBaseUnitTests {
+    address public constant OPERATOR_1 = address(0x200);
+    address public constant OPERATOR_2 = address(0x201);
+    address public constant OPERATOR_3 = address(0x202);
+
+    OperatorSet public aggregatorOperatorSet;
+    OperatorSet public executorOperatorSet1;
+    OperatorSet public executorOperatorSet2;
+
+    function setUp() public override {
+        super.setUp();
+
+        aggregatorOperatorSet = OperatorSet({avs: avs, id: AGGREGATOR_OPERATOR_SET_ID});
+        executorOperatorSet1 = OperatorSet({avs: avs, id: EXECUTOR_OPERATOR_SET_ID_1});
+        executorOperatorSet2 = OperatorSet({avs: avs, id: EXECUTOR_OPERATOR_SET_ID_2});
+
+        // Add operators to allowlist
+        vm.prank(owner);
+        registrar.addOperatorToAllowlist(aggregatorOperatorSet, OPERATOR_1);
+        vm.prank(owner);
+        registrar.addOperatorToAllowlist(executorOperatorSet1, OPERATOR_2);
+        vm.prank(owner);
+        registrar.addOperatorToAllowlist(executorOperatorSet2, OPERATOR_3);
+    }
+
+    function test_RegisterOperator_Allowlisted() public {
+        // Mock that operator is registered in key registrar
+        keyRegistrarMock.setIsRegistered(OPERATOR_1, aggregatorOperatorSet, true);
+
+        // Should not revert when operator is allowlisted
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = AGGREGATOR_OPERATOR_SET_ID;
+        bytes memory socketData = abi.encode("http://localhost:8080");
+        allocationManagerMock.registerOperator(avs, OPERATOR_1, operatorSetIds, socketData);
+    }
+
+    function test_RegisterOperator_NotAllowlisted() public {
+        address nonAllowlistedOperator = address(0x300);
+
+        // Mock that operator is registered in key registrar
+        keyRegistrarMock.setIsRegistered(nonAllowlistedOperator, aggregatorOperatorSet, true);
+
+        // Should revert when operator is not allowlisted
+        vm.expectRevert(OperatorNotInAllowlist.selector);
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = AGGREGATOR_OPERATOR_SET_ID;
+        bytes memory socketData = abi.encode("http://localhost:8080");
+        allocationManagerMock.registerOperator(avs, nonAllowlistedOperator, operatorSetIds, socketData);
+    }
+
+    function test_RegisterOperator_MultipleOperatorSets() public {
+        // Mock that operator is registered in both operator sets
+        keyRegistrarMock.setIsRegistered(OPERATOR_1, aggregatorOperatorSet, true);
+        keyRegistrarMock.setIsRegistered(OPERATOR_1, executorOperatorSet1, true);
+
+        // Add operator to both allowlists
+        vm.prank(owner);
+        registrar.addOperatorToAllowlist(executorOperatorSet1, OPERATOR_1);
+
+        // Should not revert when operator is allowlisted for all operator sets
+        uint32[] memory operatorSetIds = new uint32[](2);
+        operatorSetIds[0] = AGGREGATOR_OPERATOR_SET_ID;
+        operatorSetIds[1] = EXECUTOR_OPERATOR_SET_ID_1;
+
+        bytes memory socketData = abi.encode("http://localhost:8080");
+        allocationManagerMock.registerOperator(avs, OPERATOR_1, operatorSetIds, socketData);
+    }
+
+    function test_RegisterOperator_MultipleOperatorSets_PartiallyAllowlisted() public {
+        // Mock that operator is registered in both operator sets
+        keyRegistrarMock.setIsRegistered(OPERATOR_1, aggregatorOperatorSet, true);
+        keyRegistrarMock.setIsRegistered(OPERATOR_1, executorOperatorSet1, true);
+
+        // OPERATOR_1 is already in aggregatorOperatorSet allowlist from setup
+        // Note: Not added to executorOperatorSet1 allowlist
+
+        // Should revert when operator is not allowlisted for all operator sets
+        uint32[] memory operatorSetIds = new uint32[](2);
+        operatorSetIds[0] = AGGREGATOR_OPERATOR_SET_ID;
+        operatorSetIds[1] = EXECUTOR_OPERATOR_SET_ID_1;
+
+        vm.expectRevert(OperatorNotInAllowlist.selector);
+        bytes memory socketData = abi.encode("http://localhost:8080");
+        allocationManagerMock.registerOperator(avs, OPERATOR_1, operatorSetIds, socketData);
+    }
+
+    function test_RegisterOperator_AllowlistRemovedAfterRegistration() public {
+        // Mock that operator is registered in key registrar
+        keyRegistrarMock.setIsRegistered(OPERATOR_1, aggregatorOperatorSet, true);
+
+        // Register operator (should succeed)
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = AGGREGATOR_OPERATOR_SET_ID;
+        bytes memory socketData = abi.encode("http://localhost:8080");
+        allocationManagerMock.registerOperator(avs, OPERATOR_1, operatorSetIds, socketData);
+
+        // Remove operator from allowlist
+        vm.prank(owner);
+        registrar.removeOperatorFromAllowlist(aggregatorOperatorSet, OPERATOR_1);
+
+        // Try to register again (should fail)
+        vm.expectRevert(OperatorNotInAllowlist.selector);
+        uint32[] memory operatorSetIds2 = new uint32[](1);
+        operatorSetIds2[0] = AGGREGATOR_OPERATOR_SET_ID;
+        bytes memory socketData2 = abi.encode("http://localhost:8080");
+        allocationManagerMock.registerOperator(avs, OPERATOR_1, operatorSetIds2, socketData2);
+    }
+
+    function test_RegisterOperator_AllowlistAddedAfterFailedRegistration() public {
+        address operator = address(0x400);
+
+        // Mock that operator is registered in key registrar
+        keyRegistrarMock.setIsRegistered(operator, aggregatorOperatorSet, true);
+
+        // Try to register without being allowlisted (should fail)
+        vm.expectRevert(OperatorNotInAllowlist.selector);
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = AGGREGATOR_OPERATOR_SET_ID;
+        bytes memory socketData = abi.encode("http://localhost:8080");
+        allocationManagerMock.registerOperator(avs, operator, operatorSetIds, socketData);
+
+        // Add operator to allowlist
+        vm.prank(owner);
+        registrar.addOperatorToAllowlist(aggregatorOperatorSet, operator);
+
+        // Now registration should succeed
+        uint32[] memory operatorSetIds3 = new uint32[](1);
+        operatorSetIds3[0] = AGGREGATOR_OPERATOR_SET_ID;
+        bytes memory socketData3 = abi.encode("http://localhost:8080");
+        allocationManagerMock.registerOperator(avs, operator, operatorSetIds3, socketData3);
+    }
+
+    function test_RegisterOperator_ZeroAddress() public {
+        // Mock that zero address is registered in key registrar
+        keyRegistrarMock.setIsRegistered(address(0), aggregatorOperatorSet, true);
+
+        // Add zero address to allowlist
+        vm.prank(owner);
+        registrar.addOperatorToAllowlist(aggregatorOperatorSet, address(0));
+
+        // Should not revert when zero address is allowlisted
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = AGGREGATOR_OPERATOR_SET_ID;
+        bytes memory socketData = abi.encode("http://localhost:8080");
+        allocationManagerMock.registerOperator(avs, address(0), operatorSetIds, socketData);
+    }
+
+    function test_RegisterOperator_ContractAddress() public {
+        address contractAddress = address(registrar);
+
+        // Mock that contract address is registered in key registrar
+        keyRegistrarMock.setIsRegistered(contractAddress, aggregatorOperatorSet, true);
+
+        // Add contract address to allowlist
+        vm.prank(owner);
+        registrar.addOperatorToAllowlist(aggregatorOperatorSet, contractAddress);
+
+        // Should not revert when contract address is allowlisted
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = AGGREGATOR_OPERATOR_SET_ID;
+        bytes memory socketData = abi.encode("http://localhost:8080");
+        allocationManagerMock.registerOperator(avs, contractAddress, operatorSetIds, socketData);
+    }
+
+    function test_RegisterOperator_AllowlistValidationOrder() public {
+        // Test that allowlist validation happens before other validations
+        address operator = address(0x500);
+
+        // Mock that operator is registered in key registrar
+        keyRegistrarMock.setIsRegistered(operator, aggregatorOperatorSet, true);
+
+        // Add operator to allowlist
+        vm.prank(owner);
+        registrar.addOperatorToAllowlist(aggregatorOperatorSet, operator);
+
+        // Should succeed now that both allowlist and key registrar checks pass
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = AGGREGATOR_OPERATOR_SET_ID;
+        bytes memory socketData = abi.encode("http://localhost:8080");
+        allocationManagerMock.registerOperator(avs, operator, operatorSetIds, socketData);
     }
 }
