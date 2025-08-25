@@ -24,8 +24,8 @@ abstract contract TaskAVSRegistrarBase is
     Initializable,
     OwnableUpgradeable,
     AVSRegistrarWithSocket,
-    Allowlist,
-    TaskAVSRegistrarBaseStorage
+    TaskAVSRegistrarBaseStorage,
+    Allowlist
 {
     /**
      * @dev Constructor that passes parameters to parent
@@ -98,9 +98,13 @@ abstract contract TaskAVSRegistrarBase is
         emit AvsConfigSet(config.aggregatorOperatorSetId, config.executorOperatorSetIds);
     }
 
-    /// @notice Before registering operator, check if the operator is in the allowlist
-    /// @dev Reverts for:
-    ///      - OperatorNotInAllowlist: The operator is not in the allowlist
+    /**
+     * @notice Before registering operator, check if the operator is in the allowlist for the aggregator operator set
+     * @dev Only the aggregator operator set requires allowlist validation. Executor operator sets do not require allowlist checks.
+     * @param operator The address of the operator
+     * @param operatorSetIds The IDs of the operator sets
+     * @param data The data passed to the operator
+     */
     function _beforeRegisterOperator(
         address operator,
         uint32[] calldata operatorSetIds,
@@ -108,11 +112,13 @@ abstract contract TaskAVSRegistrarBase is
     ) internal override {
         super._beforeRegisterOperator(operator, operatorSetIds, data);
 
-        for (uint32 i; i < operatorSetIds.length; ++i) {
-            require(
-                isOperatorAllowed(OperatorSet({avs: avs, id: operatorSetIds[i]}), operator),
-                OperatorNotInAllowlist()
-            );
+        for (uint32 i = 0; i < operatorSetIds.length; i++) {
+            if (operatorSetIds[i] == avsConfig.aggregatorOperatorSetId) {
+                require(
+                    isOperatorAllowed(OperatorSet({avs: avs, id: operatorSetIds[i]}), operator),
+                    OperatorNotInAllowlist()
+                );
+            }
         }
     }
 }

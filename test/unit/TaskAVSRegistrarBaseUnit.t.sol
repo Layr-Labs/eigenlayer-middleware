@@ -1025,7 +1025,7 @@ contract TaskAVSRegistrarBaseUnitTests_OperatorRegistration is TaskAVSRegistrarB
         // Mock that operator is registered in key registrar
         keyRegistrarMock.setIsRegistered(nonAllowlistedOperator, aggregatorOperatorSet, true);
 
-        // Should revert when operator is not allowlisted
+        // Should revert when operator is not allowlisted for aggregator operator set
         vm.expectRevert(OperatorNotInAllowlist.selector);
         uint32[] memory operatorSetIds = new uint32[](1);
         operatorSetIds[0] = AGGREGATOR_OPERATOR_SET_ID;
@@ -1038,11 +1038,10 @@ contract TaskAVSRegistrarBaseUnitTests_OperatorRegistration is TaskAVSRegistrarB
         keyRegistrarMock.setIsRegistered(OPERATOR_1, aggregatorOperatorSet, true);
         keyRegistrarMock.setIsRegistered(OPERATOR_1, executorOperatorSet1, true);
 
-        // Add operator to both allowlists
-        vm.prank(owner);
-        registrar.addOperatorToAllowlist(executorOperatorSet1, OPERATOR_1);
+        // Only need to add operator to aggregator allowlist (executor sets don't require allowlist)
+        // OPERATOR_1 is already in aggregatorOperatorSet allowlist from setup
 
-        // Should not revert when operator is allowlisted for all operator sets
+        // Should not revert when operator is allowlisted for aggregator operator set
         uint32[] memory operatorSetIds = new uint32[](2);
         operatorSetIds[0] = AGGREGATOR_OPERATOR_SET_ID;
         operatorSetIds[1] = EXECUTOR_OPERATOR_SET_ID_1;
@@ -1057,14 +1056,13 @@ contract TaskAVSRegistrarBaseUnitTests_OperatorRegistration is TaskAVSRegistrarB
         keyRegistrarMock.setIsRegistered(OPERATOR_1, executorOperatorSet1, true);
 
         // OPERATOR_1 is already in aggregatorOperatorSet allowlist from setup
-        // Note: Not added to executorOperatorSet1 allowlist
+        // Note: Executor operator sets don't require allowlist checks
 
-        // Should revert when operator is not allowlisted for all operator sets
+        // Should succeed since aggregator operator set is allowlisted and executor sets don't need allowlist
         uint32[] memory operatorSetIds = new uint32[](2);
         operatorSetIds[0] = AGGREGATOR_OPERATOR_SET_ID;
         operatorSetIds[1] = EXECUTOR_OPERATOR_SET_ID_1;
 
-        vm.expectRevert(OperatorNotInAllowlist.selector);
         bytes memory socketData = abi.encode("http://localhost:8080");
         allocationManagerMock.registerOperator(avs, OPERATOR_1, operatorSetIds, socketData);
     }
@@ -1161,6 +1159,64 @@ contract TaskAVSRegistrarBaseUnitTests_OperatorRegistration is TaskAVSRegistrarB
         // Should succeed now that both allowlist and key registrar checks pass
         uint32[] memory operatorSetIds = new uint32[](1);
         operatorSetIds[0] = AGGREGATOR_OPERATOR_SET_ID;
+        bytes memory socketData = abi.encode("http://localhost:8080");
+        allocationManagerMock.registerOperator(avs, operator, operatorSetIds, socketData);
+    }
+
+    function test_RegisterOperator_ExecutorOperatorSet_NoAllowlistRequired() public {
+        // Test that executor operator sets don't require allowlist checks
+        address operator = address(0x600);
+
+        // Mock that operator is registered in key registrar for executor operator set
+        keyRegistrarMock.setIsRegistered(operator, executorOperatorSet1, true);
+
+        // Operator is NOT in allowlist for executor operator set (and shouldn't need to be)
+        // This should succeed since executor operator sets don't require allowlist
+
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = EXECUTOR_OPERATOR_SET_ID_1;
+        bytes memory socketData = abi.encode("http://localhost:8080");
+        allocationManagerMock.registerOperator(avs, operator, operatorSetIds, socketData);
+    }
+
+    function test_RegisterOperator_MixedOperatorSets_OnlyAggregatorRequiresAllowlist() public {
+        // Test mixed operator sets where only aggregator requires allowlist
+        address operator = address(0x700);
+
+        // Mock that operator is registered in key registrar for both operator sets
+        keyRegistrarMock.setIsRegistered(operator, aggregatorOperatorSet, true);
+        keyRegistrarMock.setIsRegistered(operator, executorOperatorSet1, true);
+
+        // Add operator to aggregator allowlist (required for aggregator operator set)
+        vm.prank(owner);
+        registrar.addOperatorToAllowlist(aggregatorOperatorSet, operator);
+
+        // Operator is NOT in allowlist for executor operator set (not required)
+        // But IS in allowlist for aggregator operator set (required and satisfied)
+        // This should succeed since only aggregator requires allowlist
+
+        uint32[] memory operatorSetIds = new uint32[](2);
+        operatorSetIds[0] = EXECUTOR_OPERATOR_SET_ID_1;  // No allowlist required
+        operatorSetIds[1] = AGGREGATOR_OPERATOR_SET_ID;   // Allowlist required (and satisfied)
+
+        bytes memory socketData = abi.encode("http://localhost:8080");
+        allocationManagerMock.registerOperator(avs, operator, operatorSetIds, socketData);
+    }
+
+    function test_RegisterOperator_ExecutorOnly_NoAllowlistCheck() public {
+        // Test registration with only executor operator sets (no aggregator)
+        address operator = address(0x800);
+
+        // Mock that operator is registered in key registrar for executor operator sets
+        keyRegistrarMock.setIsRegistered(operator, executorOperatorSet1, true);
+        keyRegistrarMock.setIsRegistered(operator, executorOperatorSet2, true);
+
+        // Operator is NOT in any allowlist (and shouldn't need to be for executor sets)
+        // This should succeed since executor operator sets don't require allowlist
+
+        uint32[] memory operatorSetIds = new uint32[](2);
+        operatorSetIds[0] = EXECUTOR_OPERATOR_SET_ID_1;
+        operatorSetIds[1] = EXECUTOR_OPERATOR_SET_ID_2;
         bytes memory socketData = abi.encode("http://localhost:8080");
         allocationManagerMock.registerOperator(avs, operator, operatorSetIds, socketData);
     }
