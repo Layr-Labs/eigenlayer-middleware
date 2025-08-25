@@ -24,8 +24,8 @@ abstract contract TaskAVSRegistrarBase is
     Initializable,
     OwnableUpgradeable,
     AVSRegistrarWithSocket,
-    TaskAVSRegistrarBaseStorage,
-    Allowlist
+    Allowlist,
+    TaskAVSRegistrarBaseStorage
 {
     /**
      * @dev Constructor that passes parameters to parent

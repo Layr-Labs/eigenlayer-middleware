@@ -18,10 +18,12 @@ import {ITaskAVSRegistrarBaseEvents} from "../../src/interfaces/ITaskAVSRegistra
 import {MockTaskAVSRegistrar} from "../mocks/MockTaskAVSRegistrar.sol";
 import {MockEigenLayerDeployer} from "./middlewareV2/MockDeployer.sol";
 import {IAllowlist} from "../../src/interfaces/IAllowlist.sol";
-import {OperatorSet} from "../../lib/eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
+import {OperatorSet} from
+    "../../lib/eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 import {IAllowlistErrors} from "../../src/interfaces/IAllowlist.sol";
 import {IAllowlistEvents} from "../../src/interfaces/IAllowlist.sol";
-import {IAVSRegistrar} from "../../lib/eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
+import {IAVSRegistrar} from
+    "../../lib/eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IAVSRegistrarInternal} from "../../src/interfaces/IAVSRegistrarInternal.sol";
 
 // Base test contract with common setup
@@ -730,7 +732,10 @@ contract TaskAVSRegistrarBaseUnitTests_Allowlist is TaskAVSRegistrarBaseUnitTest
     }
 
     // Helper function to remove operators from allowlist
-    function _removeOperatorFromAllowlist(OperatorSet memory operatorSet, address operator) internal {
+    function _removeOperatorFromAllowlist(
+        OperatorSet memory operatorSet,
+        address operator
+    ) internal {
         vm.prank(owner);
         registrar.removeOperatorFromAllowlist(operatorSet, operator);
     }
@@ -1030,7 +1035,9 @@ contract TaskAVSRegistrarBaseUnitTests_OperatorRegistration is TaskAVSRegistrarB
         uint32[] memory operatorSetIds = new uint32[](1);
         operatorSetIds[0] = AGGREGATOR_OPERATOR_SET_ID;
         bytes memory socketData = abi.encode("http://localhost:8080");
-        allocationManagerMock.registerOperator(avs, nonAllowlistedOperator, operatorSetIds, socketData);
+        allocationManagerMock.registerOperator(
+            avs, nonAllowlistedOperator, operatorSetIds, socketData
+        );
     }
 
     function test_RegisterOperator_MultipleOperatorSets() public {
@@ -1196,8 +1203,8 @@ contract TaskAVSRegistrarBaseUnitTests_OperatorRegistration is TaskAVSRegistrarB
         // This should succeed since only aggregator requires allowlist
 
         uint32[] memory operatorSetIds = new uint32[](2);
-        operatorSetIds[0] = EXECUTOR_OPERATOR_SET_ID_1;  // No allowlist required
-        operatorSetIds[1] = AGGREGATOR_OPERATOR_SET_ID;   // Allowlist required (and satisfied)
+        operatorSetIds[0] = EXECUTOR_OPERATOR_SET_ID_1; // No allowlist required
+        operatorSetIds[1] = AGGREGATOR_OPERATOR_SET_ID; // Allowlist required (and satisfied)
 
         bytes memory socketData = abi.encode("http://localhost:8080");
         allocationManagerMock.registerOperator(avs, operator, operatorSetIds, socketData);
