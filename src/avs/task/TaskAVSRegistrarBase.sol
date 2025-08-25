@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
@@ -22,7 +21,6 @@ import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/Operator
  */
 abstract contract TaskAVSRegistrarBase is
     Initializable,
-    OwnableUpgradeable,
     AVSRegistrarWithSocket,
     Allowlist,
     TaskAVSRegistrarBaseStorage
@@ -53,8 +51,6 @@ abstract contract TaskAVSRegistrarBase is
         AvsConfig memory _initialConfig
     ) internal onlyInitializing {
         __AVSRegistrar_init(_avs);
-        __Ownable_init();
-        _transferOwnership(_owner);
         _setAvsConfig(_initialConfig);
         __Allowlist_init(_owner);
     }
