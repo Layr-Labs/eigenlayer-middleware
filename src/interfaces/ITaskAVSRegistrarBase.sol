@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IAVSRegistrarInternal} from "./IAVSRegistrarInternal.sol";
 import {ISocketRegistryV2} from "./ISocketRegistryV2.sol";
+import {IAllowlist} from "./IAllowlist.sol";
 
 /**
  * @title ITaskAVSRegistrarBaseTypes
@@ -59,7 +60,8 @@ interface ITaskAVSRegistrarBase is
     ITaskAVSRegistrarBaseEvents,
     IAVSRegistrar,
     IAVSRegistrarInternal,
-    ISocketRegistryV2
+    ISocketRegistryV2,
+    IAllowlist
 {
     /**
      * @notice Sets the configuration for this AVS

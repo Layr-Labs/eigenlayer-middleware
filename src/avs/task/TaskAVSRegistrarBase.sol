@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IPermissionController} from
     "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
-import {AVSRegistrarWithSocket} from
-    "../../middlewareV2/registrar/presets/AVSRegistrarWithSocket.sol";
+import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
+
+import {AVSRegistrar} from "../../middlewareV2/registrar/AVSRegistrar.sol";
+import {SocketRegistry} from "../../middlewareV2/registrar/modules/SocketRegistry.sol";
+import {Allowlist} from "../../middlewareV2/registrar/modules/Allowlist.sol";
 import {ITaskAVSRegistrarBase} from "../../interfaces/ITaskAVSRegistrarBase.sol";
 import {TaskAVSRegistrarBaseStorage} from "./TaskAVSRegistrarBaseStorage.sol";
 
@@ -19,9 +20,9 @@ import {TaskAVSRegistrarBaseStorage} from "./TaskAVSRegistrarBaseStorage.sol";
  * @notice Abstract AVS Registrar for task-based AVSs
  */
 abstract contract TaskAVSRegistrarBase is
-    Initializable,
-    OwnableUpgradeable,
-    AVSRegistrarWithSocket,
+    AVSRegistrar,
+    SocketRegistry,
+    Allowlist,
     TaskAVSRegistrarBaseStorage
 {
     /**
@@ -34,7 +35,7 @@ abstract contract TaskAVSRegistrarBase is
         IAllocationManager _allocationManager,
         IKeyRegistrar _keyRegistrar,
         IPermissionController _permissionController
-    ) AVSRegistrarWithSocket(_allocationManager, _keyRegistrar, _permissionController) {
+    ) AVSRegistrar(_allocationManager, _keyRegistrar) SocketRegistry(_permissionController) {
         _disableInitializers();
     }
 
@@ -49,9 +50,9 @@ abstract contract TaskAVSRegistrarBase is
         address _owner,
         AvsConfig memory _initialConfig
     ) internal onlyInitializing {
+        __Allowlist_init(_owner); // initializes Ownable
         __AVSRegistrar_init(_avs);
-        __Ownable_init();
-        _transferOwnership(_owner);
+
         _setAvsConfig(_initialConfig);
     }
 
@@ -92,5 +93,49 @@ abstract contract TaskAVSRegistrarBase is
 
         avsConfig = config;
         emit AvsConfigSet(config.aggregatorOperatorSetId, config.executorOperatorSetIds);
+    }
+
+    /**
+     * @notice Before registering operator, check if the operator is in the allowlist for the aggregator operator set
+     * @dev Only the aggregator operator set requires allowlist validation. Executor operator sets do not require allowlist checks.
+     * @param operator The address of the operator
+     * @param operatorSetIds The IDs of the operator sets
+     * @param data The data passed to the operator
+     */
+    function _beforeRegisterOperator(
+        address operator,
+        uint32[] calldata operatorSetIds,
+        bytes calldata data
+    ) internal override {
+        super._beforeRegisterOperator(operator, operatorSetIds, data);
+
+        for (uint32 i = 0; i < operatorSetIds.length; i++) {
+            if (operatorSetIds[i] == avsConfig.aggregatorOperatorSetId) {
+                require(
+                    isOperatorAllowed(OperatorSet({avs: avs, id: operatorSetIds[i]}), operator),
+                    OperatorNotInAllowlist()
+                );
+            }
+        }
+    }
+
+    /**
+     * @notice Set the socket for the operator
+     * @dev This function sets the socket even if the operator is already registered
+     * @dev Operators should make sure to always provide the socket when registering
+     * @param operator The address of the operator
+     * @param operatorSetIds The IDs of the operator sets
+     * @param data The data passed to the operator
+     */
+    function _afterRegisterOperator(
+        address operator,
+        uint32[] calldata operatorSetIds,
+        bytes calldata data
+    ) internal override {
+        super._afterRegisterOperator(operator, operatorSetIds, data);
+
+        // Set operator socket
+        string memory socket = abi.decode(data, (string));
+        _setOperatorSocket(operator, socket);
     }
 }
