@@ -38,18 +38,16 @@ contract OperatorStateRetriever {
      *         2) 2d array of Operator structs. For each quorum the provided operator
      *            was a part of at `blockNumber`, an ordered list of operators.
      */
-    function getOperatorState(
-        IRegistryCoordinator registryCoordinator,
-        bytes32 operatorId,
-        uint32 blockNumber
-    ) external view returns (uint256, Operator[][] memory) {
+    function getOperatorState(IRegistryCoordinator registryCoordinator, bytes32 operatorId, uint32 blockNumber)
+        external
+        view
+        returns (uint256, Operator[][] memory)
+    {
         bytes32[] memory operatorIds = new bytes32[](1);
         operatorIds[0] = operatorId;
-        uint256 index =
-            registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds)[0];
+        uint256 index = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds)[0];
 
-        uint256 quorumBitmap =
-            registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
+        uint256 quorumBitmap = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
 
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
@@ -64,11 +62,11 @@ contract OperatorStateRetriever {
      * @param blockNumber is the block number to get the operator state for
      * @return 2d array of Operators. For each quorum, an ordered list of Operators
      */
-    function getOperatorState(
-        IRegistryCoordinator registryCoordinator,
-        bytes memory quorumNumbers,
-        uint32 blockNumber
-    ) public view returns (Operator[][] memory) {
+    function getOperatorState(IRegistryCoordinator registryCoordinator, bytes memory quorumNumbers, uint32 blockNumber)
+        public
+        view
+        returns (Operator[][] memory)
+    {
         IStakeRegistry stakeRegistry = registryCoordinator.stakeRegistry();
         IIndexRegistry indexRegistry = registryCoordinator.indexRegistry();
         IBLSApkRegistry blsApkRegistry = registryCoordinator.blsApkRegistry();
@@ -76,16 +74,13 @@ contract OperatorStateRetriever {
         Operator[][] memory operators = new Operator[][](quorumNumbers.length);
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            bytes32[] memory operatorIds =
-                indexRegistry.getOperatorListAtBlockNumber(quorumNumber, blockNumber);
+            bytes32[] memory operatorIds = indexRegistry.getOperatorListAtBlockNumber(quorumNumber, blockNumber);
             operators[i] = new Operator[](operatorIds.length);
             for (uint256 j = 0; j < operatorIds.length; j++) {
                 operators[i][j] = Operator({
                     operator: blsApkRegistry.getOperatorFromPubkeyHash(operatorIds[j]),
                     operatorId: bytes32(operatorIds[j]),
-                    stake: stakeRegistry.getStakeAtBlockNumber(
-                        bytes32(operatorIds[j]), quorumNumber, blockNumber
-                    )
+                    stake: stakeRegistry.getStakeAtBlockNumber(bytes32(operatorIds[j]), quorumNumber, blockNumber)
                 });
             }
         }
@@ -108,23 +103,16 @@ contract OperatorStateRetriever {
         IRegistryCoordinator registryCoordinator,
         bytes32 operatorId,
         uint32 blockNumber
-    )
-        external
-        view
-        returns (uint256 quorumBitmap, Operator[][] memory operators, string[][] memory sockets)
-    {
+    ) external view returns (uint256 quorumBitmap, Operator[][] memory operators, string[][] memory sockets) {
         bytes32[] memory operatorIds = new bytes32[](1);
         operatorIds[0] = operatorId;
-        uint256 index =
-            registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds)[0];
+        uint256 index = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds)[0];
 
-        quorumBitmap =
-            registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
+        quorumBitmap = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
 
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
-        (operators, sockets) =
-            getOperatorStateWithSocket(registryCoordinator, quorumNumbers, blockNumber);
+        (operators, sockets) = getOperatorStateWithSocket(registryCoordinator, quorumNumbers, blockNumber);
     }
 
     /// @dev Used below to avoid stack too deep.
@@ -201,28 +189,22 @@ contract OperatorStateRetriever {
         CheckSignaturesIndices memory checkSignaturesIndices;
 
         // get the indices of the quorumBitmap updates for each of the operators in the nonSignerOperatorIds array
-        checkSignaturesIndices.nonSignerQuorumBitmapIndices = registryCoordinator
-            .getQuorumBitmapIndicesAtBlockNumber(referenceBlockNumber, nonSignerOperatorIds);
+        checkSignaturesIndices.nonSignerQuorumBitmapIndices =
+            registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(referenceBlockNumber, nonSignerOperatorIds);
 
         // get the indices of the totalStake updates for each of the quorums in the quorumNumbers array
         checkSignaturesIndices.totalStakeIndices =
             stakeRegistry.getTotalStakeIndicesAtBlockNumber(referenceBlockNumber, quorumNumbers);
 
         checkSignaturesIndices.nonSignerStakeIndices = new uint32[][](quorumNumbers.length);
-        for (
-            uint8 quorumNumberIndex = 0;
-            quorumNumberIndex < quorumNumbers.length;
-            quorumNumberIndex++
-        ) {
+        for (uint8 quorumNumberIndex = 0; quorumNumberIndex < quorumNumbers.length; quorumNumberIndex++) {
             uint256 numNonSignersForQuorum = 0;
             // this array's length will be at most the number of nonSignerOperatorIds, this will be trimmed after it is filled
-            checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex] =
-                new uint32[](nonSignerOperatorIds.length);
+            checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex] = new uint32[](nonSignerOperatorIds.length);
 
             for (uint256 i = 0; i < nonSignerOperatorIds.length; i++) {
                 // get the quorumBitmap for the operator at the given blocknumber and index
-                uint192 nonSignerQuorumBitmap = registryCoordinator
-                    .getQuorumBitmapAtBlockNumberByIndex(
+                uint192 nonSignerQuorumBitmap = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(
                     nonSignerOperatorIds[i],
                     referenceBlockNumber,
                     checkSignaturesIndices.nonSignerQuorumBitmapIndices[i]
@@ -236,11 +218,9 @@ contract OperatorStateRetriever {
                 // if the operator was a part of the quorum and the quorum is a part of the provided quorumNumbers
                 if ((nonSignerQuorumBitmap >> uint8(quorumNumbers[quorumNumberIndex])) & 1 == 1) {
                     // get the index of the stake update for the operator at the given blocknumber and quorum number
-                    checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex][numNonSignersForQuorum]
-                    = stakeRegistry.getStakeUpdateIndexAtBlockNumber(
-                        nonSignerOperatorIds[i],
-                        uint8(quorumNumbers[quorumNumberIndex]),
-                        referenceBlockNumber
+                    checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex][numNonSignersForQuorum] =
+                    stakeRegistry.getStakeUpdateIndexAtBlockNumber(
+                        nonSignerOperatorIds[i], uint8(quorumNumbers[quorumNumberIndex]), referenceBlockNumber
                     );
                     numNonSignersForQuorum++;
                 }
@@ -249,11 +229,9 @@ contract OperatorStateRetriever {
             // resize the array to the number of nonSigners for this quorum
             uint32[] memory nonSignerStakeIndicesForQuorum = new uint32[](numNonSignersForQuorum);
             for (uint256 i = 0; i < numNonSignersForQuorum; i++) {
-                nonSignerStakeIndicesForQuorum[i] =
-                    checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex][i];
+                nonSignerStakeIndicesForQuorum[i] = checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex][i];
             }
-            checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex] =
-                nonSignerStakeIndicesForQuorum;
+            checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex] = nonSignerStakeIndicesForQuorum;
         }
 
         IBLSApkRegistry blsApkRegistry = registryCoordinator.blsApkRegistry();
@@ -292,10 +270,11 @@ contract OperatorStateRetriever {
      * @param operators is the array of operator address to get corresponding operatorIds for
      * @dev if an operator is not registered, the operatorId will be 0
      */
-    function getBatchOperatorId(
-        IRegistryCoordinator registryCoordinator,
-        address[] memory operators
-    ) external view returns (bytes32[] memory operatorIds) {
+    function getBatchOperatorId(IRegistryCoordinator registryCoordinator, address[] memory operators)
+        external
+        view
+        returns (bytes32[] memory operatorIds)
+    {
         operatorIds = new bytes32[](operators.length);
         for (uint256 i = 0; i < operators.length; ++i) {
             operatorIds[i] = registryCoordinator.getOperatorId(operators[i]);
@@ -308,10 +287,11 @@ contract OperatorStateRetriever {
      * @param operators is the array of operatorIds to get corresponding operator addresses for
      * @dev if an operator is not registered, the operator address will be 0
      */
-    function getBatchOperatorFromId(
-        IRegistryCoordinator registryCoordinator,
-        bytes32[] memory operatorIds
-    ) external view returns (address[] memory operators) {
+    function getBatchOperatorFromId(IRegistryCoordinator registryCoordinator, bytes32[] memory operatorIds)
+        external
+        view
+        returns (address[] memory operators)
+    {
         operators = new address[](operatorIds.length);
         for (uint256 i = 0; i < operatorIds.length; ++i) {
             operators[i] = registryCoordinator.getOperatorFromId(operatorIds[i]);

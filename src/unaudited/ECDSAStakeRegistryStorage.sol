@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-import {IDelegationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
-import {CheckpointsUpgradeable} from
-    "@openzeppelin-upgrades/contracts/utils/CheckpointsUpgradeable.sol";
+import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {CheckpointsUpgradeable} from "@openzeppelin-upgrades/contracts/utils/CheckpointsUpgradeable.sol";
 import {
     ECDSAStakeRegistryEventsAndErrors,
     Quorum,
@@ -49,9 +47,7 @@ abstract contract ECDSAStakeRegistryStorage is ECDSAStakeRegistryEventsAndErrors
     mapping(address => bool) internal _operatorRegistered;
 
     /// @param _delegationManager Connects this registry with the DelegationManager
-    constructor(
-        IDelegationManager _delegationManager
-    ) {
+    constructor(IDelegationManager _delegationManager) {
         DELEGATION_MANAGER = _delegationManager;
     }
 

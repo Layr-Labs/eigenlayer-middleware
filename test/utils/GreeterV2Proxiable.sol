@@ -6,9 +6,7 @@ import {Proxiable} from "./GreeterProxiable.sol";
 contract GreeterV2Proxiable is Proxiable {
     string public greeting;
 
-    function initialize(
-        string memory _greeting
-    ) public {
+    function initialize(string memory _greeting) public {
         greeting = _greeting;
     }
 

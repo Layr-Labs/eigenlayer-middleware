@@ -29,9 +29,7 @@ abstract contract IndexRegistryStorage is Initializable, IIndexRegistry {
     /// @notice maps quorumNumber => historical number of unique registered operators
     mapping(uint8 => QuorumUpdate[]) internal _operatorCountHistory;
 
-    constructor(
-        IRegistryCoordinator _registryCoordinator
-    ) {
+    constructor(IRegistryCoordinator _registryCoordinator) {
         registryCoordinator = address(_registryCoordinator);
         // disable initializers so that the implementation contract cannot be initialized
         _disableInitializers();

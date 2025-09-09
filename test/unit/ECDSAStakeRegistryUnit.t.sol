@@ -4,8 +4,7 @@ pragma solidity ^0.8.12;
 import {Test, console} from "forge-std/Test.sol";
 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {IDelegationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 import {ECDSAStakeRegistry} from "../../src/unaudited/ECDSAStakeRegistry.sol";
@@ -17,9 +16,7 @@ import {
 
 contract MockServiceManager {
     // solhint-disable-next-line
-    function deregisterOperatorFromAVS(
-        address
-    ) external {}
+    function deregisterOperatorFromAVS(address) external {}
 
     function registerOperatorToAVS(
         address,
@@ -32,10 +29,7 @@ contract MockDelegationManager {
         return 1000; // Return a dummy value for simplicity
     }
 
-    function getOperatorShares(
-        address,
-        address[] memory strategies
-    ) external pure returns (uint256[] memory) {
+    function getOperatorShares(address, address[] memory strategies) external pure returns (uint256[] memory) {
         uint256[] memory response = new uint256[](strategies.length);
         for (uint256 i; i < strategies.length; i++) {
             response[i] = 1000;
@@ -111,8 +105,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
     function test_RevertsWhen_NotOwner_UpdateQuorumConfig() public {
         Quorum memory validQuorum = Quorum({strategies: new StrategyParams[](1)});
-        validQuorum.strategies[0] =
-            StrategyParams({strategy: IStrategy(address(420)), multiplier: 10_000});
+        validQuorum.strategies[0] = StrategyParams({strategy: IStrategy(address(420)), multiplier: 10_000});
 
         address[] memory operators = new address[](2);
         operators[0] = operator1;
@@ -137,36 +130,31 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
     function test_RevertSWhen_Duplicate_UpdateQuorumConfig() public {
         Quorum memory invalidQuorum = Quorum({strategies: new StrategyParams[](2)});
-        invalidQuorum.strategies[0] =
-            StrategyParams({strategy: IStrategy(address(420)), multiplier: 5000});
+        invalidQuorum.strategies[0] = StrategyParams({strategy: IStrategy(address(420)), multiplier: 5000});
         address[] memory operators = new address[](2);
         operators[0] = operator1;
         operators[1] = operator2;
 
-        invalidQuorum.strategies[1] =
-            StrategyParams({strategy: IStrategy(address(420)), multiplier: 5000});
+        invalidQuorum.strategies[1] = StrategyParams({strategy: IStrategy(address(420)), multiplier: 5000});
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
         registry.updateQuorumConfig(invalidQuorum, operators);
     }
 
     function test_RevertSWhen_NotSorted_UpdateQuorumConfig() public {
         Quorum memory invalidQuorum = Quorum({strategies: new StrategyParams[](2)});
-        invalidQuorum.strategies[0] =
-            StrategyParams({strategy: IStrategy(address(420)), multiplier: 5000});
+        invalidQuorum.strategies[0] = StrategyParams({strategy: IStrategy(address(420)), multiplier: 5000});
         address[] memory operators = new address[](2);
         operators[0] = operator1;
         operators[1] = operator2;
 
-        invalidQuorum.strategies[1] =
-            StrategyParams({strategy: IStrategy(address(419)), multiplier: 5000});
+        invalidQuorum.strategies[1] = StrategyParams({strategy: IStrategy(address(419)), multiplier: 5000});
         vm.expectRevert(ECDSAStakeRegistryEventsAndErrors.NotSorted.selector);
         registry.updateQuorumConfig(invalidQuorum, operators);
     }
 
     function test_RevertSWhen_OverMultiplierTotal_UpdateQuorumConfig() public {
         Quorum memory invalidQuorum = Quorum({strategies: new StrategyParams[](1)});
-        invalidQuorum.strategies[0] =
-            StrategyParams({strategy: IStrategy(address(420)), multiplier: 10_001});
+        invalidQuorum.strategies[0] = StrategyParams({strategy: IStrategy(address(420)), multiplier: 10_001});
         address[] memory operators = new address[](2);
         operators[0] = operator1;
         operators[1] = operator2;
@@ -320,9 +308,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         shares[1] = 1000;
         vm.mockCall(
             address(mockDelegationManager),
-            abi.encodeWithSelector(
-                MockDelegationManager.getOperatorShares.selector, operator1, strategies
-            ),
+            abi.encodeWithSelector(MockDelegationManager.getOperatorShares.selector, operator1, strategies),
             abi.encode(shares)
         );
 
@@ -496,9 +482,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
         vm.mockCall(
             address(registry),
-            abi.encodeWithSelector(
-                ECDSAStakeRegistry.getLastCheckpointOperatorWeight.selector, operator1
-            ),
+            abi.encodeWithSelector(ECDSAStakeRegistry.getLastCheckpointOperatorWeight.selector, operator1),
             abi.encode(50)
         );
 
@@ -564,9 +548,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
         vm.mockCall(
             address(registry),
-            abi.encodeWithSelector(
-                ECDSAStakeRegistry.getOperatorWeightAtBlock.selector, operator1, referenceBlock
-            ),
+            abi.encodeWithSelector(ECDSAStakeRegistry.getOperatorWeightAtBlock.selector, operator1, referenceBlock),
             abi.encode(50)
         );
 
@@ -644,11 +626,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
 
         // Verify that the signing key has been successfully registered for the operator
         address registeredSigningKey = registry.getLastestOperatorSigningKey(operator);
-        assertEq(
-            registeredSigningKey,
-            signer,
-            "The registered signing key does not match the provided signing key"
-        );
+        assertEq(registeredSigningKey, signer, "The registered signing key does not match the provided signing key");
     }
 
     function test_Twice_RegierOperatorWithSignature() public {
@@ -668,12 +646,9 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         address registeredSigningKey = registry.getLastestOperatorSigningKey(operator);
 
         vm.roll(block.number + 1);
-        registeredSigningKey =
-            registry.getOperatorSigningKeyAtBlock(operator, uint32(block.number - 1));
+        registeredSigningKey = registry.getOperatorSigningKeyAtBlock(operator, uint32(block.number - 1));
         assertEq(
-            registeredSigningKey,
-            address(420),
-            "The registered signing key does not match the provided signing key"
+            registeredSigningKey, address(420), "The registered signing key does not match the provided signing key"
         );
     }
 
@@ -816,10 +791,11 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         registry.isValidSignature(dataHash, abi.encode(operators, signatures, referenceBlock));
     }
 
-    function _sort(
-        address[] memory operators,
-        bytes[] memory signatures
-    ) internal pure returns (address[] memory, bytes[] memory) {
+    function _sort(address[] memory operators, bytes[] memory signatures)
+        internal
+        pure
+        returns (address[] memory, bytes[] memory)
+    {
         require(operators.length == signatures.length, "Operators and signatures length mismatch");
 
         uint256 length = operators.length;

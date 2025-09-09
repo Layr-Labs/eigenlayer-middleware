@@ -5,11 +5,9 @@ import "../utils/MockAVSDeployer.sol";
 import {AVSDirectory} from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {DelegationManager} from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
-import {IDelegationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {RewardsCoordinator} from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
-import {IRewardsCoordinator} from
-    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 contract Test_CoreRegistration is MockAVSDeployer {
     // Contracts
@@ -71,13 +69,11 @@ contract Test_CoreRegistration is MockAVSDeployer {
         rewardsCoordinatorMock = new RewardsCoordinatorMock();
 
         // Deploy New ServiceManager & RegistryCoordinator implementations
-        serviceManagerImplementation = new ServiceManagerMock(
-            avsDirectory, rewardsCoordinatorMock, registryCoordinator, stakeRegistry
-        );
+        serviceManagerImplementation =
+            new ServiceManagerMock(avsDirectory, rewardsCoordinatorMock, registryCoordinator, stakeRegistry);
 
-        registryCoordinatorImplementation = new RegistryCoordinatorHarness(
-            serviceManager, stakeRegistry, blsApkRegistry, indexRegistry, socketRegistry
-        );
+        registryCoordinatorImplementation =
+            new RegistryCoordinatorHarness(serviceManager, stakeRegistry, blsApkRegistry, indexRegistry, socketRegistry);
 
         // Upgrade Registry Coordinator & ServiceManager
         cheats.startPrank(proxyAdminOwner);
@@ -86,8 +82,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
             address(registryCoordinatorImplementation)
         );
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(serviceManager))),
-            address(serviceManagerImplementation)
+            TransparentUpgradeableProxy(payable(address(serviceManager))), address(serviceManagerImplementation)
         );
         cheats.stopPrank();
 
@@ -117,25 +112,20 @@ contract Test_CoreRegistration is MockAVSDeployer {
         bytes memory quorumNumbers = new bytes(1);
 
         // Get operator signature
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
-            operatorPrivateKey, operator, address(serviceManager), emptySalt, maxExpiry
-        );
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature =
+            _getOperatorSignature(operatorPrivateKey, operator, address(serviceManager), emptySalt, maxExpiry);
 
         // set operator as registered in Eigenlayer
         delegationMock.setIsOperator(operator, true);
 
         // Register operator
         cheats.prank(operator);
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, operatorSignature
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, operatorSignature);
 
         // Check operator is registered
         IAVSDirectory.OperatorAVSRegistrationStatus operatorStatus =
             avsDirectory.avsOperatorStatus(address(serviceManager), operator);
-        assertEq(
-            uint8(operatorStatus), uint8(IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED)
-        );
+        assertEq(uint8(operatorStatus), uint8(IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED));
     }
 
     function test_deregisterOperator_coreStateChanges() public {
@@ -150,9 +140,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         // Check operator is deregistered
         IAVSDirectory.OperatorAVSRegistrationStatus operatorStatus =
             avsDirectory.avsOperatorStatus(address(serviceManager), operator);
-        assertEq(
-            uint8(operatorStatus), uint8(IAVSDirectory.OperatorAVSRegistrationStatus.UNREGISTERED)
-        );
+        assertEq(uint8(operatorStatus), uint8(IAVSDirectory.OperatorAVSRegistrationStatus.UNREGISTERED));
     }
 
     function test_deregisterOperator_notGloballyDeregistered() public {
@@ -169,9 +157,7 @@ contract Test_CoreRegistration is MockAVSDeployer {
         // Check operator is still registered
         IAVSDirectory.OperatorAVSRegistrationStatus operatorStatus =
             avsDirectory.avsOperatorStatus(address(serviceManager), operator);
-        assertEq(
-            uint8(operatorStatus), uint8(IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED)
-        );
+        assertEq(uint8(operatorStatus), uint8(IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED));
     }
 
     function test_setMetadataURI_fail_notServiceManagerOwner() public {
@@ -192,22 +178,17 @@ contract Test_CoreRegistration is MockAVSDeployer {
     }
 
     // Utils
-    function _registerOperator(
-        bytes memory quorumNumbers
-    ) internal {
+    function _registerOperator(bytes memory quorumNumbers) internal {
         // Get operator signature
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
-            operatorPrivateKey, operator, address(serviceManager), emptySalt, maxExpiry
-        );
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature =
+            _getOperatorSignature(operatorPrivateKey, operator, address(serviceManager), emptySalt, maxExpiry);
 
         // set operator as registered in Eigenlayer
         delegationMock.setIsOperator(operator, true);
 
         // Register operator
         cheats.prank(operator);
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, operatorSignature
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, operatorSignature);
     }
 
     function _getOperatorSignature(
@@ -220,9 +201,8 @@ contract Test_CoreRegistration is MockAVSDeployer {
         operatorSignature.salt = salt;
         operatorSignature.expiry = expiry;
         {
-            bytes32 digestHash = avsDirectory.calculateOperatorAVSRegistrationDigestHash(
-                operatorToSign, avs, salt, expiry
-            );
+            bytes32 digestHash =
+                avsDirectory.calculateOperatorAVSRegistrationDigestHash(operatorToSign, avs, salt, expiry);
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(_operatorPrivateKey, digestHash);
             operatorSignature.signature = abi.encodePacked(r, s, v);
         }

@@ -28,9 +28,7 @@ contract BLSSignatureCheckerFFITests is MockAVSDeployer, G2Operations {
     // this test checks that a valid signature from maxOperatorsToRegister with a random number of nonsigners is checked
     // correctly on the BLSSignatureChecker contract when all operators are only regsitered for a single quorum and
     // the signature is only checked for stakes on that quorum
-    function testBLSSignatureChecker_SingleQuorum_Valid(
-        uint256 pseudoRandomNumber
-    ) public {
+    function testBLSSignatureChecker_SingleQuorum_Valid(uint256 pseudoRandomNumber) public {
         uint256 numNonSigners = pseudoRandomNumber % (maxOperatorsToRegister - 1);
 
         uint256 quorumBitmap = 1;
@@ -39,9 +37,7 @@ contract BLSSignatureCheckerFFITests is MockAVSDeployer, G2Operations {
         (
             uint32 referenceBlockNumber,
             BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
-        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(
-            pseudoRandomNumber, numNonSigners, quorumBitmap
-        );
+        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(pseudoRandomNumber, numNonSigners, quorumBitmap);
 
         uint256 gasBefore = gasleft();
         (
@@ -62,9 +58,7 @@ contract BLSSignatureCheckerFFITests is MockAVSDeployer, G2Operations {
     // this test checks that a valid signature from maxOperatorsToRegister with a random number of nonsigners is checked
     // correctly on the BLSSignatureChecker contract when all operators are registered for the first 100 quorums
     // and the signature is only checked for stakes on those quorums
-    function testBLSSignatureChecker_100Quorums_Valid(
-        uint256 pseudoRandomNumber
-    ) public {
+    function testBLSSignatureChecker_100Quorums_Valid(uint256 pseudoRandomNumber) public {
         uint256 numNonSigners = pseudoRandomNumber % (maxOperatorsToRegister - 1);
 
         // 100 set bits
@@ -74,24 +68,18 @@ contract BLSSignatureCheckerFFITests is MockAVSDeployer, G2Operations {
         (
             uint32 referenceBlockNumber,
             BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
-        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(
-            pseudoRandomNumber, numNonSigners, quorumBitmap
-        );
+        ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(pseudoRandomNumber, numNonSigners, quorumBitmap);
 
         nonSignerStakesAndSignature.sigma = sigma.scalar_mul(quorumNumbers.length);
         nonSignerStakesAndSignature.apkG2 = oneHundredQuorumApkG2;
 
         uint256 gasBefore = gasleft();
-        blsSignatureChecker.checkSignatures(
-            msgHash, quorumNumbers, referenceBlockNumber, nonSignerStakesAndSignature
-        );
+        blsSignatureChecker.checkSignatures(msgHash, quorumNumbers, referenceBlockNumber, nonSignerStakesAndSignature);
         uint256 gasAfter = gasleft();
         emit log_named_uint("gasUsed", gasBefore - gasAfter);
     }
 
-    function _setAggregatePublicKeysAndSignature(
-        uint256 pseudoRandomNumber
-    ) internal {
+    function _setAggregatePublicKeysAndSignature(uint256 pseudoRandomNumber) internal {
         if (pseudoRandomNumber > type(uint256).max / 100) {
             pseudoRandomNumber = type(uint256).max / 100;
         }
@@ -112,9 +100,8 @@ contract BLSSignatureCheckerFFITests is MockAVSDeployer, G2Operations {
         // generate numSigners numbers that add up to aggSignerPrivKey mod BN254.FR_MODULUS
         uint256 sum = 0;
         for (uint256 i = 0; i < numSigners - 1; i++) {
-            signerPrivateKeys[i] = uint256(
-                keccak256(abi.encodePacked("signerPrivateKey", pseudoRandomNumber, i))
-            ) % BN254.FR_MODULUS;
+            signerPrivateKeys[i] =
+                uint256(keccak256(abi.encodePacked("signerPrivateKey", pseudoRandomNumber, i))) % BN254.FR_MODULUS;
             sum = addmod(sum, signerPrivateKeys[i], BN254.FR_MODULUS);
         }
         // signer private keys need to add to aggSignerPrivKey
@@ -123,9 +110,8 @@ contract BLSSignatureCheckerFFITests is MockAVSDeployer, G2Operations {
 
         uint256[] memory nonSignerPrivateKeys = new uint256[](numNonSigners);
         for (uint256 i = 0; i < numNonSigners; i++) {
-            nonSignerPrivateKeys[i] = uint256(
-                keccak256(abi.encodePacked("nonSignerPrivateKey", pseudoRandomNumber, i))
-            ) % BN254.FR_MODULUS;
+            nonSignerPrivateKeys[i] =
+                uint256(keccak256(abi.encodePacked("nonSignerPrivateKey", pseudoRandomNumber, i))) % BN254.FR_MODULUS;
         }
 
         return (signerPrivateKeys, nonSignerPrivateKeys);
@@ -188,23 +174,19 @@ contract BLSSignatureCheckerFFITests is MockAVSDeployer, G2Operations {
             _registerOperatorWithCoordinator(operators[i], quorumBitmap, pubkeys[i], defaultStake);
         }
 
-        uint32 referenceBlockNumber = registrationBlockNumber
-            + blocksBetweenRegistrations * uint32(maxOperatorsToRegister) + 1;
+        uint32 referenceBlockNumber =
+            registrationBlockNumber + blocksBetweenRegistrations * uint32(maxOperatorsToRegister) + 1;
         cheats.roll(referenceBlockNumber + 100);
 
-        OperatorStateRetriever.CheckSignaturesIndices memory checkSignaturesIndices =
-        operatorStateRetriever.getCheckSignaturesIndices(
-            registryCoordinator, referenceBlockNumber, quorumNumbers, nonSignerOperatorIds
-        );
+        OperatorStateRetriever.CheckSignaturesIndices memory checkSignaturesIndices = operatorStateRetriever
+            .getCheckSignaturesIndices(registryCoordinator, referenceBlockNumber, quorumNumbers, nonSignerOperatorIds);
 
-        nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices =
-            checkSignaturesIndices.nonSignerQuorumBitmapIndices;
+        nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices = checkSignaturesIndices.nonSignerQuorumBitmapIndices;
         nonSignerStakesAndSignature.apkG2 = aggSignerApkG2;
         nonSignerStakesAndSignature.sigma = sigma;
         nonSignerStakesAndSignature.quorumApkIndices = checkSignaturesIndices.quorumApkIndices;
         nonSignerStakesAndSignature.totalStakeIndices = checkSignaturesIndices.totalStakeIndices;
-        nonSignerStakesAndSignature.nonSignerStakeIndices =
-            checkSignaturesIndices.nonSignerStakeIndices;
+        nonSignerStakesAndSignature.nonSignerStakeIndices = checkSignaturesIndices.nonSignerStakeIndices;
 
         return (referenceBlockNumber, nonSignerStakesAndSignature);
     }

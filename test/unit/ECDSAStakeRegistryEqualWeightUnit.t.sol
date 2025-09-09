@@ -2,8 +2,7 @@
 pragma solidity ^0.8.12;
 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {IDelegationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 import {
@@ -12,16 +11,14 @@ import {
     StrategyParams
 } from "../../src/interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
 import {ECDSAStakeRegistrySetup} from "./ECDSAStakeRegistryUnit.t.sol";
-import {ECDSAStakeRegistryEqualWeight} from
-    "../../src/unaudited/examples/ECDSAStakeRegistryEqualWeight.sol";
+import {ECDSAStakeRegistryEqualWeight} from "../../src/unaudited/examples/ECDSAStakeRegistryEqualWeight.sol";
 
 contract EqualWeightECDSARegistry is ECDSAStakeRegistrySetup {
     ECDSAStakeRegistryEqualWeight internal fixedWeightRegistry;
 
     function setUp() public virtual override {
         super.setUp();
-        fixedWeightRegistry =
-            new ECDSAStakeRegistryEqualWeight(IDelegationManager(address(mockDelegationManager)));
+        fixedWeightRegistry = new ECDSAStakeRegistryEqualWeight(IDelegationManager(address(mockDelegationManager)));
         IStrategy mockStrategy = IStrategy(address(0x1234));
         Quorum memory quorum = Quorum({strategies: new StrategyParams[](1)});
         quorum.strategies[0] = StrategyParams({strategy: mockStrategy, multiplier: 10_000});

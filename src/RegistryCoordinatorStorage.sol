@@ -11,7 +11,7 @@ import {ISocketRegistry} from "./interfaces/ISocketRegistry.sol";
 abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
     /**
      *
-     *                            CONSTANTS AND IMMUTABLES 
+     *                            CONSTANTS AND IMMUTABLES
      *
      */
 
@@ -20,8 +20,7 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
         "OperatorChurnApproval(address registeringOperator,bytes32 registeringOperatorId,OperatorKickParam[] operatorKickParams,bytes32 salt,uint256 expiry)OperatorKickParam(uint8 quorumNumber,address operator)"
     );
     /// @notice The EIP-712 typehash used for registering BLS public keys
-    bytes32 public constant PUBKEY_REGISTRATION_TYPEHASH =
-        keccak256("BN254PubkeyRegistration(address operator)");
+    bytes32 public constant PUBKEY_REGISTRATION_TYPEHASH = keccak256("BN254PubkeyRegistration(address operator)");
     /// @notice The maximum value of a quorum bitmap
     uint256 internal constant MAX_QUORUM_BITMAP = type(uint192).max;
     /// @notice The basis point denominator
@@ -48,7 +47,7 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
 
     /**
      *
-     *                                    STATE 
+     *                                    STATE
      *
      */
 

@@ -71,11 +71,7 @@ contract User is Test {
     mapping(bytes32 => bool) digests;
     uint256 salt = 0;
 
-    constructor(
-        string memory name,
-        uint256 _privKey,
-        IBLSApkRegistry.PubkeyRegistrationParams memory _pubkeyParams
-    ) {
+    constructor(string memory name, uint256 _privKey, IBLSApkRegistry.PubkeyRegistrationParams memory _pubkeyParams) {
         IUserDeployer deployer = IUserDeployer(msg.sender);
 
         registryCoordinator = deployer.registryCoordinator();
@@ -101,8 +97,7 @@ contract User is Test {
         privKey = _privKey;
         pubkeyParams = _pubkeyParams;
 
-        BN254.G1Point memory registrationMessageHash =
-            registryCoordinator.pubkeyRegistrationMessageHash(address(this));
+        BN254.G1Point memory registrationMessageHash = registryCoordinator.pubkeyRegistrationMessageHash(address(this));
         pubkeyParams.pubkeyRegistrationSignature = registrationMessageHash.scalar_mul(privKey);
 
         operatorId = pubkeyParams.pubkeyG1.hashG1Point();
@@ -116,9 +111,7 @@ contract User is Test {
     /**
      * Middleware contracts:
      */
-    function registerOperator(
-        bytes calldata quorums
-    ) public virtual createSnapshot returns (bytes32) {
+    function registerOperator(bytes calldata quorums) public virtual createSnapshot returns (bytes32) {
         _log("registerOperator", quorums);
 
         vm.warp(block.timestamp + 1);
@@ -147,14 +140,9 @@ contract User is Test {
         // - churnQuorums and standardQuorums should not have any bits in common
         uint192 churnBitmap = uint192(churnQuorums.orderedBytesArrayToBitmap());
         uint192 standardBitmap = uint192(standardQuorums.orderedBytesArrayToBitmap());
-        assertEq(
-            churnQuorums.length,
-            churnTargets.length,
-            "User.registerOperatorWithChurn: input length mismatch"
-        );
+        assertEq(churnQuorums.length, churnTargets.length, "User.registerOperatorWithChurn: input length mismatch");
         assertTrue(
-            churnBitmap.noBitsInCommon(standardBitmap),
-            "User.registerOperatorWithChurn: input quorums have common bits"
+            churnBitmap.noBitsInCommon(standardBitmap), "User.registerOperatorWithChurn: input quorums have common bits"
         );
 
         bytes memory allQuorums = churnBitmap.plus(standardBitmap).bitmapToBytesArray();
@@ -171,9 +159,7 @@ contract User is Test {
                 kickParams[churnIdx + stdIdx] =
                     IRegistryCoordinator.OperatorKickParam({quorumNumber: 0, operator: address(0)});
                 stdIdx++;
-            } else if (
-                stdIdx == standardQuorums.length || churnQuorums[churnIdx] < standardQuorums[stdIdx]
-            ) {
+            } else if (stdIdx == standardQuorums.length || churnQuorums[churnIdx] < standardQuorums[stdIdx]) {
                 kickParams[churnIdx + stdIdx] = IRegistryCoordinator.OperatorKickParam({
                     quorumNumber: uint8(churnQuorums[churnIdx]),
                     operator: address(churnTargets[churnIdx])
@@ -208,8 +194,8 @@ contract User is Test {
         }
         signature[signature.length - 1] = bytes1(v);
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature = ISignatureUtils
-            .SignatureWithSaltAndExpiry({signature: signature, salt: _salt, expiry: expiry});
+        ISignatureUtils.SignatureWithSaltAndExpiry memory churnApproverSignature =
+            ISignatureUtils.SignatureWithSaltAndExpiry({signature: signature, salt: _salt, expiry: expiry});
 
         vm.warp(block.timestamp + 1);
         registryCoordinator.registerOperatorWithChurn({
@@ -222,9 +208,7 @@ contract User is Test {
         });
     }
 
-    function deregisterOperator(
-        bytes calldata quorums
-    ) public virtual createSnapshot {
+    function deregisterOperator(bytes calldata quorums) public virtual createSnapshot {
         _log("deregisterOperator", quorums);
 
         registryCoordinator.deregisterOperator(quorums);
@@ -256,10 +240,11 @@ contract User is Test {
     }
 
     // Deposit LSTs into the StrategyManager. This setup does not use the EPMgr or native ETH.
-    function depositIntoEigenlayer(
-        IStrategy[] memory strategies,
-        uint256[] memory tokenBalances
-    ) public virtual createSnapshot {
+    function depositIntoEigenlayer(IStrategy[] memory strategies, uint256[] memory tokenBalances)
+        public
+        virtual
+        createSnapshot
+    {
         _log("depositIntoEigenLayer (core)");
 
         for (uint256 i = 0; i < strategies.length; i++) {
@@ -272,19 +257,12 @@ contract User is Test {
         }
     }
 
-    function exitEigenlayer()
-        public
-        virtual
-        createSnapshot
-        returns (IStrategy[] memory, uint256[] memory)
-    {
+    function exitEigenlayer() public virtual createSnapshot returns (IStrategy[] memory, uint256[] memory) {
         _log("exitEigenlayer (core)");
 
-        (IStrategy[] memory strategies, uint256[] memory shares) =
-            delegationManager.getDelegatableShares(address(this));
+        (IStrategy[] memory strategies, uint256[] memory shares) = delegationManager.getDelegatableShares(address(this));
 
-        IDelegationManager.QueuedWithdrawalParams[] memory params =
-            new IDelegationManager.QueuedWithdrawalParams[](1);
+        IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
         params[0] = IDelegationManager.QueuedWithdrawalParams({
             strategies: strategies,
             shares: shares,
@@ -313,12 +291,8 @@ contract User is Test {
         return pubkeyParams.pubkeyG1;
     }
 
-    function _genAVSRegistrationSig()
-        internal
-        returns (ISignatureUtils.SignatureWithSaltAndExpiry memory)
-    {
-        ISignatureUtils.SignatureWithSaltAndExpiry memory signature = ISignatureUtils
-            .SignatureWithSaltAndExpiry({
+    function _genAVSRegistrationSig() internal returns (ISignatureUtils.SignatureWithSaltAndExpiry memory) {
+        ISignatureUtils.SignatureWithSaltAndExpiry memory signature = ISignatureUtils.SignatureWithSaltAndExpiry({
             signature: new bytes(0),
             salt: bytes32(salt++),
             expiry: type(uint256).max
@@ -336,9 +310,7 @@ contract User is Test {
     }
 
     // Operator0.registerOperator
-    function _log(
-        string memory s
-    ) internal virtual {
+    function _log(string memory s) internal virtual {
         emit log(string.concat(NAME, ".", s));
     }
 
@@ -385,17 +357,13 @@ contract User_AltMethods is User {
         _;
     }
 
-    constructor(
-        string memory name,
-        uint256 _privKey,
-        IBLSApkRegistry.PubkeyRegistrationParams memory _pubkeyParams
-    ) User(name, _privKey, _pubkeyParams) {}
+    constructor(string memory name, uint256 _privKey, IBLSApkRegistry.PubkeyRegistrationParams memory _pubkeyParams)
+        User(name, _privKey, _pubkeyParams)
+    {}
 
     /// @dev Rather than calling deregisterOperator, this pranks the ejector and calls
     /// ejectOperator
-    function deregisterOperator(
-        bytes calldata quorums
-    ) public virtual override createSnapshot {
+    function deregisterOperator(bytes calldata quorums) public virtual override createSnapshot {
         _log("deregisterOperator (eject)", quorums);
 
         address ejector = registryCoordinator.ejector();
@@ -408,14 +376,12 @@ contract User_AltMethods is User {
     function updateStakes() public virtual override createSnapshot {
         _log("updateStakes (updateOperatorsForQuorum)");
 
-        bytes memory allQuorums =
-            ((1 << registryCoordinator.quorumCount()) - 1).bitmapToBytesArray();
+        bytes memory allQuorums = ((1 << registryCoordinator.quorumCount()) - 1).bitmapToBytesArray();
         address[][] memory operatorsPerQuorum = new address[][](allQuorums.length);
 
         for (uint256 i = 0; i < allQuorums.length; i++) {
             uint8 quorum = uint8(allQuorums[i]);
-            bytes32[] memory operatorIds =
-                indexRegistry.getOperatorListAtBlockNumber(quorum, uint32(block.number));
+            bytes32[] memory operatorIds = indexRegistry.getOperatorListAtBlockNumber(quorum, uint32(block.number));
 
             operatorsPerQuorum[i] = new address[](operatorIds.length);
 

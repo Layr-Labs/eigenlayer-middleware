@@ -13,9 +13,7 @@ contract Utils {
         address admin
     ) public returns (StrategyBase) {
         StrategyBase newStrategy = new StrategyBase(strategyManager);
-        newStrategy = StrategyBase(
-            address(new TransparentUpgradeableProxy(address(newStrategy), address(admin), ""))
-        );
+        newStrategy = StrategyBase(address(new TransparentUpgradeableProxy(address(newStrategy), address(admin), "")));
         newStrategy.initialize(token, pauserRegistry);
         return newStrategy;
     }

@@ -35,9 +35,7 @@ contract UpgradeableProxyUtilsTest is Test {
         assertFalse(adminAddress == address(0));
         assertEq(instance.greeting(), "hello");
 
-        UpgradeableProxyUtils.upgradeProxy(
-            proxy, "GreeterV2.sol", abi.encodeCall(GreeterV2.resetGreeting, ())
-        );
+        UpgradeableProxyUtils.upgradeProxy(proxy, "GreeterV2.sol", abi.encodeCall(GreeterV2.resetGreeting, ()));
 
         address implAddressV2 = UpgradeableProxyUtils.getImplementationAddress(proxy);
 
@@ -47,13 +45,10 @@ contract UpgradeableProxyUtilsTest is Test {
     }
 
     function testBeacon() public {
-        address beacon =
-            UpgradeableProxyUtils.deployBeacon("Greeter.sol", address(admin), abi.encode());
+        address beacon = UpgradeableProxyUtils.deployBeacon("Greeter.sol", address(admin), abi.encode());
         address implAddressV1 = IBeacon(beacon).implementation();
 
-        address proxy = UpgradeableProxyUtils.deployBeaconProxy(
-            beacon, abi.encodeCall(Greeter.initialize, ("hello"))
-        );
+        address proxy = UpgradeableProxyUtils.deployBeaconProxy(beacon, abi.encodeCall(Greeter.initialize, ("hello")));
         Greeter instance = Greeter(proxy);
 
         assertEq(UpgradeableProxyUtils.getBeaconAddress(proxy), beacon);
@@ -69,18 +64,14 @@ contract UpgradeableProxyUtilsTest is Test {
     }
 
     function testUpgradeBeaconWithoutCaller() public {
-        address beacon =
-            UpgradeableProxyUtils.deployBeacon("Greeter.sol", address(admin), abi.encode());
+        address beacon = UpgradeableProxyUtils.deployBeacon("Greeter.sol", address(admin), abi.encode());
         UpgradeableProxyUtils.upgradeBeacon(beacon, "GreeterV2.sol", abi.encode());
     }
 
     function testWithConstructor() public {
         bytes memory constructorData = abi.encode(123);
         address proxy = UpgradeableProxyUtils.deployTransparentProxy(
-            "WithConstructor.sol",
-            msg.sender,
-            abi.encodeCall(WithConstructor.initialize, (456)),
-            constructorData
+            "WithConstructor.sol", msg.sender, abi.encodeCall(WithConstructor.initialize, (456)), constructorData
         );
 
         assertEq(WithConstructor(proxy).a(), 123);
@@ -90,9 +81,8 @@ contract UpgradeableProxyUtilsTest is Test {
     function testNoInitializer() public {
         /// Can access getCode by File:Contract
         bytes memory constructorData = abi.encode(123);
-        address proxy = UpgradeableProxyUtils.deployTransparentProxy(
-            "NoInitializer.sol", msg.sender, "", constructorData
-        );
+        address proxy =
+            UpgradeableProxyUtils.deployTransparentProxy("NoInitializer.sol", msg.sender, "", constructorData);
 
         assertEq(WithConstructor(proxy).a(), 123);
     }

@@ -17,9 +17,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     }
 
     /// @notice Sets the (immutable) `registryCoordinator` address
-    constructor(
-        IRegistryCoordinator _registryCoordinator
-    ) BLSApkRegistryStorage(_registryCoordinator) {}
+    constructor(IRegistryCoordinator _registryCoordinator) BLSApkRegistryStorage(_registryCoordinator) {}
 
     /**
      *
@@ -38,10 +36,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
      *         3) `quorumNumbers` is ordered in ascending order
      *         4) the operator is not already registered
      */
-    function registerOperator(
-        address operator,
-        bytes memory quorumNumbers
-    ) public virtual onlyRegistryCoordinator {
+    function registerOperator(address operator, bytes memory quorumNumbers) public virtual onlyRegistryCoordinator {
         // Get the operator's pubkey. Reverts if they have not registered a key
         (BN254.G1Point memory pubkey,) = getRegisteredPubkey(operator);
 
@@ -64,10 +59,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
      *         4) the operator is not already deregistered
      *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
      */
-    function deregisterOperator(
-        address operator,
-        bytes memory quorumNumbers
-    ) public virtual onlyRegistryCoordinator {
+    function deregisterOperator(address operator, bytes memory quorumNumbers) public virtual onlyRegistryCoordinator {
         // Get the operator's pubkey. Reverts if they have not registered a key
         (BN254.G1Point memory pubkey,) = getRegisteredPubkey(operator);
 
@@ -80,20 +72,11 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
      * @notice Initializes a new quorum by pushing its first apk update
      * @param quorumNumber The number of the new quorum
      */
-    function initializeQuorum(
-        uint8 quorumNumber
-    ) public virtual onlyRegistryCoordinator {
-        require(
-            apkHistory[quorumNumber].length == 0,
-            "BLSApkRegistry.initializeQuorum: quorum already exists"
-        );
+    function initializeQuorum(uint8 quorumNumber) public virtual onlyRegistryCoordinator {
+        require(apkHistory[quorumNumber].length == 0, "BLSApkRegistry.initializeQuorum: quorum already exists");
 
         apkHistory[quorumNumber].push(
-            ApkUpdate({
-                apkHash: bytes24(0),
-                updateBlockNumber: uint32(block.number),
-                nextUpdateBlockNumber: 0
-            })
+            ApkUpdate({apkHash: bytes24(0), updateBlockNumber: uint32(block.number), nextUpdateBlockNumber: 0})
         );
     }
 
@@ -109,10 +92,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
         BN254.G1Point calldata pubkeyRegistrationMessageHash
     ) external onlyRegistryCoordinator returns (bytes32 operatorId) {
         bytes32 pubkeyHash = BN254.hashG1Point(params.pubkeyG1);
-        require(
-            pubkeyHash != ZERO_PK_HASH,
-            "BLSApkRegistry.registerBLSPublicKey: cannot register zero pubkey"
-        );
+        require(pubkeyHash != ZERO_PK_HASH, "BLSApkRegistry.registerBLSPublicKey: cannot register zero pubkey");
         require(
             operatorToPubkeyHash[operator] == bytes32(0),
             "BLSApkRegistry.registerBLSPublicKey: operator already registered pubkey"
@@ -162,19 +142,14 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
      *                         INTERNAL FUNCTIONS
      *
      */
-    function _processQuorumApkUpdate(
-        bytes memory quorumNumbers,
-        BN254.G1Point memory point
-    ) internal {
+    function _processQuorumApkUpdate(bytes memory quorumNumbers, BN254.G1Point memory point) internal {
         BN254.G1Point memory newApk;
 
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             // Validate quorum exists and get history length
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             uint256 historyLength = apkHistory[quorumNumber].length;
-            require(
-                historyLength != 0, "BLSApkRegistry._processQuorumApkUpdate: quorum does not exist"
-            );
+            require(historyLength != 0, "BLSApkRegistry._processQuorumApkUpdate: quorum does not exist");
 
             // Update aggregate public key for this quorum
             newApk = currentApk[quorumNumber].plus(point);
@@ -189,11 +164,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
             } else {
                 lastUpdate.nextUpdateBlockNumber = uint32(block.number);
                 apkHistory[quorumNumber].push(
-                    ApkUpdate({
-                        apkHash: newApkHash,
-                        updateBlockNumber: uint32(block.number),
-                        nextUpdateBlockNumber: 0
-                    })
+                    ApkUpdate({apkHash: newApkHash, updateBlockNumber: uint32(block.number), nextUpdateBlockNumber: 0})
                 );
             }
         }
@@ -208,16 +179,11 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
      * @notice Returns the pubkey and pubkey hash of an operator
      * @dev Reverts if the operator has not registered a valid pubkey
      */
-    function getRegisteredPubkey(
-        address operator
-    ) public view returns (BN254.G1Point memory, bytes32) {
+    function getRegisteredPubkey(address operator) public view returns (BN254.G1Point memory, bytes32) {
         BN254.G1Point memory pubkey = operatorToPubkey[operator];
         bytes32 pubkeyHash = operatorToPubkeyHash[operator];
 
-        require(
-            pubkeyHash != bytes32(0),
-            "BLSApkRegistry.getRegisteredPubkey: operator is not registered"
-        );
+        require(pubkeyHash != bytes32(0), "BLSApkRegistry.getRegisteredPubkey: operator is not registered");
 
         return (pubkey, pubkeyHash);
     }
@@ -226,23 +192,19 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
      * @notice Returns the indices of the quorumApks index at `blockNumber` for the provided `quorumNumbers`
      * @dev Returns the current indices if `blockNumber >= block.number`
      */
-    function getApkIndicesAtBlockNumber(
-        bytes calldata quorumNumbers,
-        uint256 blockNumber
-    ) external view returns (uint32[] memory) {
+    function getApkIndicesAtBlockNumber(bytes calldata quorumNumbers, uint256 blockNumber)
+        external
+        view
+        returns (uint32[] memory)
+    {
         uint32[] memory indices = new uint32[](quorumNumbers.length);
 
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
 
             uint256 quorumApkUpdatesLength = apkHistory[quorumNumber].length;
-            if (
-                quorumApkUpdatesLength == 0
-                    || blockNumber < apkHistory[quorumNumber][0].updateBlockNumber
-            ) {
-                revert(
-                    "BLSApkRegistry.getApkIndicesAtBlockNumber: blockNumber is before the first update"
-                );
+            if (quorumApkUpdatesLength == 0 || blockNumber < apkHistory[quorumNumber][0].updateBlockNumber) {
+                revert("BLSApkRegistry.getApkIndicesAtBlockNumber: blockNumber is before the first update");
             }
 
             // Loop backward through apkHistory until we find an entry that preceeds `blockNumber`
@@ -257,17 +219,12 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     }
 
     /// @notice Returns the current APK for the provided `quorumNumber `
-    function getApk(
-        uint8 quorumNumber
-    ) external view returns (BN254.G1Point memory) {
+    function getApk(uint8 quorumNumber) external view returns (BN254.G1Point memory) {
         return currentApk[quorumNumber];
     }
 
     /// @notice Returns the `ApkUpdate` struct at `index` in the list of APK updates for the `quorumNumber`
-    function getApkUpdateAtIndex(
-        uint8 quorumNumber,
-        uint256 index
-    ) external view returns (ApkUpdate memory) {
+    function getApkUpdateAtIndex(uint8 quorumNumber, uint256 index) external view returns (ApkUpdate memory) {
         return apkHistory[quorumNumber][index];
     }
 
@@ -278,11 +235,11 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
      * @param blockNumber is the number of the block for which the latest ApkHash will be retrieved
      * @param index is the index of the apkUpdate being retrieved from the list of quorum apkUpdates in storage
      */
-    function getApkHashAtBlockNumberAndIndex(
-        uint8 quorumNumber,
-        uint32 blockNumber,
-        uint256 index
-    ) external view returns (bytes24) {
+    function getApkHashAtBlockNumberAndIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index)
+        external
+        view
+        returns (bytes24)
+    {
         ApkUpdate memory quorumApkUpdate = apkHistory[quorumNumber][index];
 
         /**
@@ -295,8 +252,7 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
             "BLSApkRegistry._validateApkHashAtBlockNumber: index too recent"
         );
         require(
-            quorumApkUpdate.nextUpdateBlockNumber == 0
-                || blockNumber < quorumApkUpdate.nextUpdateBlockNumber,
+            quorumApkUpdate.nextUpdateBlockNumber == 0 || blockNumber < quorumApkUpdate.nextUpdateBlockNumber,
             "BLSApkRegistry._validateApkHashAtBlockNumber: not latest apk update"
         );
 
@@ -304,24 +260,18 @@ contract BLSApkRegistry is BLSApkRegistryStorage {
     }
 
     /// @notice Returns the length of ApkUpdates for the provided `quorumNumber`
-    function getApkHistoryLength(
-        uint8 quorumNumber
-    ) external view returns (uint32) {
+    function getApkHistoryLength(uint8 quorumNumber) external view returns (uint32) {
         return uint32(apkHistory[quorumNumber].length);
     }
 
     /// @notice Returns the operator address for the given `pubkeyHash`
-    function getOperatorFromPubkeyHash(
-        bytes32 pubkeyHash
-    ) public view returns (address) {
+    function getOperatorFromPubkeyHash(bytes32 pubkeyHash) public view returns (address) {
         return pubkeyHashToOperator[pubkeyHash];
     }
 
     /// @notice returns the ID used to identify the `operator` within this AVS
     /// @dev Returns zero in the event that the `operator` has never registered for the AVS
-    function getOperatorId(
-        address operator
-    ) public view returns (bytes32) {
+    function getOperatorId(address operator) public view returns (bytes32) {
         return operatorToPubkeyHash[operator];
     }
 

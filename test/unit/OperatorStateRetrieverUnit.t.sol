@@ -15,9 +15,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         cheats.expectRevert(
             "RegCoord.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operator at blockNumber"
         );
-        operatorStateRetriever.getOperatorState(
-            registryCoordinator, defaultOperatorId, uint32(block.number)
-        );
+        operatorStateRetriever.getOperatorState(registryCoordinator, defaultOperatorId, uint32(block.number));
     }
 
     function test_getOperatorState_revert_registeredFirstAfterReferenceBlockNumber() public {
@@ -28,9 +26,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         cheats.expectRevert(
             "RegCoord.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operator at blockNumber"
         );
-        operatorStateRetriever.getOperatorState(
-            registryCoordinator, defaultOperatorId, registrationBlockNumber - 1
-        );
+        operatorStateRetriever.getOperatorState(registryCoordinator, defaultOperatorId, registrationBlockNumber - 1);
     }
 
     function test_getOperatorState_deregisteredBeforeReferenceBlockNumber() public {
@@ -43,9 +39,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         registryCoordinator.deregisterOperator(BitmapUtils.bitmapToBytesArray(quorumBitmap));
 
         (uint256 fetchedQuorumBitmap, OperatorStateRetriever.Operator[][] memory operators) =
-        operatorStateRetriever.getOperatorState(
-            registryCoordinator, defaultOperatorId, uint32(block.number)
-        );
+            operatorStateRetriever.getOperatorState(registryCoordinator, defaultOperatorId, uint32(block.number));
         assertEq(fetchedQuorumBitmap, 0);
         assertEq(operators.length, 0);
     }
@@ -56,9 +50,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         _registerOperatorWithCoordinator(defaultOperator, quorumBitmap, defaultPubKey);
 
         (uint256 fetchedQuorumBitmap, OperatorStateRetriever.Operator[][] memory operators) =
-        operatorStateRetriever.getOperatorState(
-            registryCoordinator, defaultOperatorId, uint32(block.number)
-        );
+            operatorStateRetriever.getOperatorState(registryCoordinator, defaultOperatorId, uint32(block.number));
         assertEq(fetchedQuorumBitmap, 1);
         assertEq(operators.length, 1);
         assertEq(operators[0].length, 1);
@@ -68,40 +60,29 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
     }
 
     function test_getOperatorState_revert_quorumNotCreatedAtCallTime() public {
-        cheats.expectRevert(
-            "IndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number"
-        );
+        cheats.expectRevert("IndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number");
         operatorStateRetriever.getOperatorState(
-            registryCoordinator,
-            BitmapUtils.bitmapToBytesArray(1 << numQuorums),
-            uint32(block.number)
+            registryCoordinator, BitmapUtils.bitmapToBytesArray(1 << numQuorums), uint32(block.number)
         );
     }
 
     function test_getOperatorState_revert_quorumNotCreatedAtReferenceBlockNumber() public {
         cheats.roll(registrationBlockNumber);
-        IRegistryCoordinator.OperatorSetParam memory operatorSetParams = IRegistryCoordinator
-            .OperatorSetParam({
+        IRegistryCoordinator.OperatorSetParam memory operatorSetParams = IRegistryCoordinator.OperatorSetParam({
             maxOperatorCount: defaultMaxOperatorCount,
             kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
             kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
         });
         uint96 minimumStake = 1;
-        IStakeRegistry.StrategyParams[] memory strategyParams =
-            new IStakeRegistry.StrategyParams[](1);
-        strategyParams[0] =
-            IStakeRegistry.StrategyParams({strategy: IStrategy(address(1000)), multiplier: 1e16});
+        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistry.StrategyParams({strategy: IStrategy(address(1000)), multiplier: 1e16});
 
         cheats.prank(registryCoordinator.owner());
         registryCoordinator.createQuorum(operatorSetParams, minimumStake, strategyParams);
 
-        cheats.expectRevert(
-            "IndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number"
-        );
+        cheats.expectRevert("IndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number");
         operatorStateRetriever.getOperatorState(
-            registryCoordinator,
-            BitmapUtils.bitmapToBytesArray(1 << numQuorums),
-            uint32(registrationBlockNumber - 1)
+            registryCoordinator, BitmapUtils.bitmapToBytesArray(1 << numQuorums), uint32(registrationBlockNumber - 1)
         );
     }
 
@@ -114,15 +95,10 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         address otherOperator = _incrementAddress(defaultOperator, 1);
         BN254.G1Point memory otherPubKey = BN254.G1Point(1, 2);
         bytes32 otherOperatorId = BN254.hashG1Point(otherPubKey);
-        _registerOperatorWithCoordinator(
-            otherOperator, quorumBitmapThree, otherPubKey, defaultStake - 1
-        );
+        _registerOperatorWithCoordinator(otherOperator, quorumBitmapThree, otherPubKey, defaultStake - 1);
 
-        OperatorStateRetriever.Operator[][] memory operators = operatorStateRetriever
-            .getOperatorState(
-            registryCoordinator,
-            BitmapUtils.bitmapToBytesArray(quorumBitmapThree),
-            uint32(block.number)
+        OperatorStateRetriever.Operator[][] memory operators = operatorStateRetriever.getOperatorState(
+            registryCoordinator, BitmapUtils.bitmapToBytesArray(quorumBitmapThree), uint32(block.number)
         );
         assertEq(operators.length, 2);
         assertEq(operators[0].length, 2);
@@ -142,14 +118,10 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         cheats.expectRevert(
             "RegCoord.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operator at blockNumber"
         );
-        operatorStateRetriever.getOperatorStateWithSocket(
-            registryCoordinator, defaultOperatorId, uint32(block.number)
-        );
+        operatorStateRetriever.getOperatorStateWithSocket(registryCoordinator, defaultOperatorId, uint32(block.number));
     }
 
-    function test_getOperatorStateWithSocket_revert_registeredFirstAfterReferenceBlockNumber()
-        public
-    {
+    function test_getOperatorStateWithSocket_revert_registeredFirstAfterReferenceBlockNumber() public {
         cheats.roll(registrationBlockNumber);
         _registerOperatorWithCoordinator(defaultOperator, 1, defaultPubKey);
 
@@ -171,10 +143,8 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         cheats.prank(defaultOperator);
         registryCoordinator.deregisterOperator(BitmapUtils.bitmapToBytesArray(quorumBitmap));
 
-        (uint256 fetchedQuorumBitmap, OperatorStateRetriever.Operator[][] memory operators,) =
-        operatorStateRetriever.getOperatorStateWithSocket(
-            registryCoordinator, defaultOperatorId, uint32(block.number)
-        );
+        (uint256 fetchedQuorumBitmap, OperatorStateRetriever.Operator[][] memory operators,) = operatorStateRetriever
+            .getOperatorStateWithSocket(registryCoordinator, defaultOperatorId, uint32(block.number));
         assertEq(fetchedQuorumBitmap, 0);
         assertEq(operators.length, 0);
     }
@@ -184,10 +154,8 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         cheats.roll(registrationBlockNumber);
         _registerOperatorWithCoordinator(defaultOperator, quorumBitmap, defaultPubKey);
 
-        (uint256 fetchedQuorumBitmap, OperatorStateRetriever.Operator[][] memory operators,) =
-        operatorStateRetriever.getOperatorStateWithSocket(
-            registryCoordinator, defaultOperatorId, uint32(block.number)
-        );
+        (uint256 fetchedQuorumBitmap, OperatorStateRetriever.Operator[][] memory operators,) = operatorStateRetriever
+            .getOperatorStateWithSocket(registryCoordinator, defaultOperatorId, uint32(block.number));
         assertEq(fetchedQuorumBitmap, 1);
         assertEq(operators.length, 1);
         assertEq(operators[0].length, 1);
@@ -197,42 +165,29 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
     }
 
     function test_getOperatorStateWithSocket_revert_quorumNotCreatedAtCallTime() public {
-        cheats.expectRevert(
-            "IndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number"
-        );
+        cheats.expectRevert("IndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number");
         operatorStateRetriever.getOperatorStateWithSocket(
-            registryCoordinator,
-            BitmapUtils.bitmapToBytesArray(1 << numQuorums),
-            uint32(block.number)
+            registryCoordinator, BitmapUtils.bitmapToBytesArray(1 << numQuorums), uint32(block.number)
         );
     }
 
-    function test_getOperatorStateWithSocket_revert_quorumNotCreatedAtReferenceBlockNumber()
-        public
-    {
+    function test_getOperatorStateWithSocket_revert_quorumNotCreatedAtReferenceBlockNumber() public {
         cheats.roll(registrationBlockNumber);
-        IRegistryCoordinator.OperatorSetParam memory operatorSetParams = IRegistryCoordinator
-            .OperatorSetParam({
+        IRegistryCoordinator.OperatorSetParam memory operatorSetParams = IRegistryCoordinator.OperatorSetParam({
             maxOperatorCount: defaultMaxOperatorCount,
             kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
             kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
         });
         uint96 minimumStake = 1;
-        IStakeRegistry.StrategyParams[] memory strategyParams =
-            new IStakeRegistry.StrategyParams[](1);
-        strategyParams[0] =
-            IStakeRegistry.StrategyParams({strategy: IStrategy(address(1000)), multiplier: 1e16});
+        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistry.StrategyParams({strategy: IStrategy(address(1000)), multiplier: 1e16});
 
         cheats.prank(registryCoordinator.owner());
         registryCoordinator.createQuorum(operatorSetParams, minimumStake, strategyParams);
 
-        cheats.expectRevert(
-            "IndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number"
-        );
+        cheats.expectRevert("IndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number");
         operatorStateRetriever.getOperatorStateWithSocket(
-            registryCoordinator,
-            BitmapUtils.bitmapToBytesArray(1 << numQuorums),
-            uint32(registrationBlockNumber - 1)
+            registryCoordinator, BitmapUtils.bitmapToBytesArray(1 << numQuorums), uint32(registrationBlockNumber - 1)
         );
     }
 
@@ -245,15 +200,10 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         address otherOperator = _incrementAddress(defaultOperator, 1);
         BN254.G1Point memory otherPubKey = BN254.G1Point(1, 2);
         bytes32 otherOperatorId = BN254.hashG1Point(otherPubKey);
-        _registerOperatorWithCoordinator(
-            otherOperator, quorumBitmapThree, otherPubKey, defaultStake - 1
-        );
+        _registerOperatorWithCoordinator(otherOperator, quorumBitmapThree, otherPubKey, defaultStake - 1);
 
-        (OperatorStateRetriever.Operator[][] memory operators,) = operatorStateRetriever
-            .getOperatorStateWithSocket(
-            registryCoordinator,
-            BitmapUtils.bitmapToBytesArray(quorumBitmapThree),
-            uint32(block.number)
+        (OperatorStateRetriever.Operator[][] memory operators,) = operatorStateRetriever.getOperatorStateWithSocket(
+            registryCoordinator, BitmapUtils.bitmapToBytesArray(quorumBitmapThree), uint32(block.number)
         );
         assertEq(operators.length, 2);
         assertEq(operators[0].length, 2);
@@ -277,16 +227,11 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
             "RegCoord.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operator at blockNumber"
         );
         operatorStateRetriever.getCheckSignaturesIndices(
-            registryCoordinator,
-            uint32(block.number),
-            BitmapUtils.bitmapToBytesArray(1),
-            nonSignerOperatorIds
+            registryCoordinator, uint32(block.number), BitmapUtils.bitmapToBytesArray(1), nonSignerOperatorIds
         );
     }
 
-    function test_getCheckSignaturesIndices_revert_registeredFirstAfterReferenceBlockNumber()
-        public
-    {
+    function test_getCheckSignaturesIndices_revert_registeredFirstAfterReferenceBlockNumber() public {
         bytes32[] memory nonSignerOperatorIds = new bytes32[](1);
         nonSignerOperatorIds[0] = defaultOperatorId;
 
@@ -298,10 +243,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
             "RegCoord.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operator at blockNumber"
         );
         operatorStateRetriever.getCheckSignaturesIndices(
-            registryCoordinator,
-            registrationBlockNumber - 1,
-            BitmapUtils.bitmapToBytesArray(1),
-            nonSignerOperatorIds
+            registryCoordinator, registrationBlockNumber - 1, BitmapUtils.bitmapToBytesArray(1), nonSignerOperatorIds
         );
     }
 
@@ -321,10 +263,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
             "OperatorStateRetriever.getCheckSignaturesIndices: operator must be registered at blocknumber"
         );
         operatorStateRetriever.getCheckSignaturesIndices(
-            registryCoordinator,
-            uint32(block.number),
-            BitmapUtils.bitmapToBytesArray(1),
-            nonSignerOperatorIds
+            registryCoordinator, uint32(block.number), BitmapUtils.bitmapToBytesArray(1), nonSignerOperatorIds
         );
     }
 
@@ -343,9 +282,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         );
     }
 
-    function test_getCheckSignaturesIndices_revert_quorumNotCreatedAtReferenceBlockNumber()
-        public
-    {
+    function test_getCheckSignaturesIndices_revert_quorumNotCreatedAtReferenceBlockNumber() public {
         cheats.roll(registrationBlockNumber);
         _registerOperatorWithCoordinator(defaultOperator, 1, defaultPubKey);
 
@@ -353,17 +290,14 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         bytes32[] memory nonSignerOperatorIds = new bytes32[](1);
         nonSignerOperatorIds[0] = defaultOperatorId;
 
-        IRegistryCoordinator.OperatorSetParam memory operatorSetParams = IRegistryCoordinator
-            .OperatorSetParam({
+        IRegistryCoordinator.OperatorSetParam memory operatorSetParams = IRegistryCoordinator.OperatorSetParam({
             maxOperatorCount: defaultMaxOperatorCount,
             kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
             kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
         });
         uint96 minimumStake = 1;
-        IStakeRegistry.StrategyParams[] memory strategyParams =
-            new IStakeRegistry.StrategyParams[](1);
-        strategyParams[0] =
-            IStakeRegistry.StrategyParams({strategy: IStrategy(address(1000)), multiplier: 1e16});
+        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistry.StrategyParams({strategy: IStrategy(address(1000)), multiplier: 1e16});
 
         cheats.prank(registryCoordinator.owner());
         registryCoordinator.createQuorum(operatorSetParams, minimumStake, strategyParams);
@@ -391,9 +325,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         address otherOperator = _incrementAddress(defaultOperator, 1);
         BN254.G1Point memory otherPubKey = BN254.G1Point(1, 2);
         bytes32 otherOperatorId = BN254.hashG1Point(otherPubKey);
-        _registerOperatorWithCoordinator(
-            otherOperator, quorumBitmapThree, otherPubKey, defaultStake - 1
-        );
+        _registerOperatorWithCoordinator(otherOperator, quorumBitmapThree, otherPubKey, defaultStake - 1);
 
         cheats.roll(registrationBlockNumber + 15);
         cheats.prank(defaultOperator);
@@ -407,16 +339,14 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         registryCoordinator.deregisterOperator(BitmapUtils.bitmapToBytesArray(quorumBitmapTwo));
 
         cheats.roll(registrationBlockNumber + 30);
-        _registerOperatorWithCoordinator(
-            otherOperator, quorumBitmapTwo, otherPubKey, defaultStake - 2
-        );
+        _registerOperatorWithCoordinator(otherOperator, quorumBitmapTwo, otherPubKey, defaultStake - 2);
 
         bytes32[] memory nonSignerOperatorIds = new bytes32[](2);
         nonSignerOperatorIds[0] = defaultOperatorId;
         nonSignerOperatorIds[1] = otherOperatorId;
 
-        OperatorStateRetriever.CheckSignaturesIndices memory checkSignaturesIndices =
-        operatorStateRetriever.getCheckSignaturesIndices(
+        OperatorStateRetriever.CheckSignaturesIndices memory checkSignaturesIndices = operatorStateRetriever
+            .getCheckSignaturesIndices(
             registryCoordinator,
             uint32(block.number),
             BitmapUtils.bitmapToBytesArray(quorumBitmapThree),
@@ -490,24 +420,18 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         assertEq(checkSignaturesIndices.nonSignerStakeIndices[1][0], 0);
     }
 
-    function testGetOperatorState_Valid(
-        uint256 pseudoRandomNumber
-    ) public {
+    function testGetOperatorState_Valid(uint256 pseudoRandomNumber) public {
         // register random operators and get the expected indices within the quorums and the metadata for the operators
-        (
-            OperatorMetadata[] memory operatorMetadatas,
-            uint256[][] memory expectedOperatorOverallIndices
-        ) = _registerRandomOperators(pseudoRandomNumber);
+        (OperatorMetadata[] memory operatorMetadatas, uint256[][] memory expectedOperatorOverallIndices) =
+            _registerRandomOperators(pseudoRandomNumber);
 
         for (uint256 i = 0; i < operatorMetadatas.length; i++) {
             uint32 blockNumber = uint32(registrationBlockNumber + blocksBetweenRegistrations * i);
 
             uint256 gasBefore = gasleft();
             // retrieve the ordered list of operators for each quorum along with their id and stake
-            (uint256 quorumBitmap, OperatorStateRetriever.Operator[][] memory operators) =
-            operatorStateRetriever.getOperatorState(
-                registryCoordinator, operatorMetadatas[i].operatorId, blockNumber
-            );
+            (uint256 quorumBitmap, OperatorStateRetriever.Operator[][] memory operators) = operatorStateRetriever
+                .getOperatorState(registryCoordinator, operatorMetadatas[i].operatorId, blockNumber);
             uint256 gasAfter = gasleft();
             emit log_named_uint("gasUsed", gasBefore - gasAfter);
 
@@ -515,19 +439,16 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
             bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
             // assert that the operators returned are the expected ones
-            _assertExpectedOperators(
-                quorumNumbers, operators, expectedOperatorOverallIndices, operatorMetadatas
-            );
+            _assertExpectedOperators(quorumNumbers, operators, expectedOperatorOverallIndices, operatorMetadatas);
         }
 
         // choose a random operator to deregister
         uint256 operatorIndexToDeregister = pseudoRandomNumber % maxOperatorsToRegister;
-        bytes memory quorumNumbersToDeregister = BitmapUtils.bitmapToBytesArray(
-            operatorMetadatas[operatorIndexToDeregister].quorumBitmap
-        );
+        bytes memory quorumNumbersToDeregister =
+            BitmapUtils.bitmapToBytesArray(operatorMetadatas[operatorIndexToDeregister].quorumBitmap);
 
-        uint32 deregistrationBlockNumber = registrationBlockNumber
-            + blocksBetweenRegistrations * (uint32(operatorMetadatas.length) + 1);
+        uint32 deregistrationBlockNumber =
+            registrationBlockNumber + blocksBetweenRegistrations * (uint32(operatorMetadatas.length) + 1);
         cheats.roll(deregistrationBlockNumber);
 
         cheats.prank(_incrementAddress(defaultOperator, operatorIndexToDeregister));
@@ -553,21 +474,15 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
 
         _assertExpectedOperators(
             allQuorumNumbers,
-            operatorStateRetriever.getOperatorState(
-                registryCoordinator, allQuorumNumbers, deregistrationBlockNumber
-            ),
+            operatorStateRetriever.getOperatorState(registryCoordinator, allQuorumNumbers, deregistrationBlockNumber),
             expectedOperatorOverallIndices,
             operatorMetadatas
         );
     }
 
-    function testCheckSignaturesIndices_NoNonSigners_Valid(
-        uint256 pseudoRandomNumber
-    ) public {
-        (
-            OperatorMetadata[] memory operatorMetadatas,
-            uint256[][] memory expectedOperatorOverallIndices
-        ) = _registerRandomOperators(pseudoRandomNumber);
+    function testCheckSignaturesIndices_NoNonSigners_Valid(uint256 pseudoRandomNumber) public {
+        (OperatorMetadata[] memory operatorMetadatas, uint256[][] memory expectedOperatorOverallIndices) =
+            _registerRandomOperators(pseudoRandomNumber);
 
         uint32 cumulativeBlockNumber =
             registrationBlockNumber + blocksBetweenRegistrations * uint32(operatorMetadatas.length);
@@ -578,17 +493,13 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
             allInclusiveQuorumBitmap |= operatorMetadatas[i].quorumBitmap;
         }
 
-        bytes memory allInclusiveQuorumNumbers =
-            BitmapUtils.bitmapToBytesArray(allInclusiveQuorumBitmap);
+        bytes memory allInclusiveQuorumNumbers = BitmapUtils.bitmapToBytesArray(allInclusiveQuorumBitmap);
 
         bytes32[] memory nonSignerOperatorIds = new bytes32[](0);
 
-        OperatorStateRetriever.CheckSignaturesIndices memory checkSignaturesIndices =
-        operatorStateRetriever.getCheckSignaturesIndices(
-            registryCoordinator,
-            cumulativeBlockNumber,
-            allInclusiveQuorumNumbers,
-            nonSignerOperatorIds
+        OperatorStateRetriever.CheckSignaturesIndices memory checkSignaturesIndices = operatorStateRetriever
+            .getCheckSignaturesIndices(
+            registryCoordinator, cumulativeBlockNumber, allInclusiveQuorumNumbers, nonSignerOperatorIds
         );
 
         assertEq(
@@ -628,13 +539,9 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         }
     }
 
-    function testCheckSignaturesIndices_FewNonSigners_Valid(
-        uint256 pseudoRandomNumber
-    ) public {
-        (
-            OperatorMetadata[] memory operatorMetadatas,
-            uint256[][] memory expectedOperatorOverallIndices
-        ) = _registerRandomOperators(pseudoRandomNumber);
+    function testCheckSignaturesIndices_FewNonSigners_Valid(uint256 pseudoRandomNumber) public {
+        (OperatorMetadata[] memory operatorMetadatas, uint256[][] memory expectedOperatorOverallIndices) =
+            _registerRandomOperators(pseudoRandomNumber);
 
         uint32 cumulativeBlockNumber =
             registrationBlockNumber + blocksBetweenRegistrations * uint32(operatorMetadatas.length);
@@ -645,25 +552,18 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
             allInclusiveQuorumBitmap |= operatorMetadatas[i].quorumBitmap;
         }
 
-        bytes memory allInclusiveQuorumNumbers =
-            BitmapUtils.bitmapToBytesArray(allInclusiveQuorumBitmap);
+        bytes memory allInclusiveQuorumNumbers = BitmapUtils.bitmapToBytesArray(allInclusiveQuorumBitmap);
 
-        bytes32[] memory nonSignerOperatorIds =
-            new bytes32[](pseudoRandomNumber % (operatorMetadatas.length - 1) + 1);
-        uint256 randomIndex = uint256(
-            keccak256(abi.encodePacked("nonSignerOperatorIds", pseudoRandomNumber))
-        ) % operatorMetadatas.length;
+        bytes32[] memory nonSignerOperatorIds = new bytes32[](pseudoRandomNumber % (operatorMetadatas.length - 1) + 1);
+        uint256 randomIndex =
+            uint256(keccak256(abi.encodePacked("nonSignerOperatorIds", pseudoRandomNumber))) % operatorMetadatas.length;
         for (uint256 i = 0; i < nonSignerOperatorIds.length; i++) {
-            nonSignerOperatorIds[i] =
-                operatorMetadatas[(randomIndex + i) % operatorMetadatas.length].operatorId;
+            nonSignerOperatorIds[i] = operatorMetadatas[(randomIndex + i) % operatorMetadatas.length].operatorId;
         }
 
-        OperatorStateRetriever.CheckSignaturesIndices memory checkSignaturesIndices =
-        operatorStateRetriever.getCheckSignaturesIndices(
-            registryCoordinator,
-            cumulativeBlockNumber,
-            allInclusiveQuorumNumbers,
-            nonSignerOperatorIds
+        OperatorStateRetriever.CheckSignaturesIndices memory checkSignaturesIndices = operatorStateRetriever
+            .getCheckSignaturesIndices(
+            registryCoordinator, cumulativeBlockNumber, allInclusiveQuorumNumbers, nonSignerOperatorIds
         );
 
         assertEq(
@@ -730,16 +630,13 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         address otherOperator = _incrementAddress(defaultOperator, 1);
         BN254.G1Point memory otherPubKey = BN254.G1Point(1, 2);
         bytes32 otherOperatorId = BN254.hashG1Point(otherPubKey);
-        _registerOperatorWithCoordinator(
-            otherOperator, quorumBitmapThree, otherPubKey, defaultStake - 1
-        );
+        _registerOperatorWithCoordinator(otherOperator, quorumBitmapThree, otherPubKey, defaultStake - 1);
 
         bytes32[] memory operatorIds = new bytes32[](2);
         operatorIds[0] = defaultOperatorId;
         operatorIds[1] = otherOperatorId;
-        uint256[] memory quorumBitmaps = operatorStateRetriever.getQuorumBitmapsAtBlockNumber(
-            registryCoordinator, operatorIds, uint32(block.number)
-        );
+        uint256[] memory quorumBitmaps =
+            operatorStateRetriever.getQuorumBitmapsAtBlockNumber(registryCoordinator, operatorIds, uint32(block.number));
 
         assertEq(quorumBitmaps.length, 2);
         assertEq(quorumBitmaps[0], quorumBitmapOne);

@@ -6,8 +6,7 @@ interface IERC1822Proxiable {
 }
 
 contract Proxiable {
-    bytes32 internal constant _IMPLEMENTATION_SLOT =
-        0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+    bytes32 internal constant _IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
 
     string public constant UPGRADE_INTERFACE_VERSION = "5.0.0";
 
@@ -45,9 +44,7 @@ contract Proxiable {
         }
     }
 
-    function _setImplementation(
-        address newImplementation
-    ) private {
+    function _setImplementation(address newImplementation) private {
         bytes32 slot = _IMPLEMENTATION_SLOT;
         // solhint-disable-next-line no-inline-assembly
         assembly {
@@ -59,9 +56,7 @@ contract Proxiable {
 contract GreeterProxiable is Proxiable {
     string public greeting;
 
-    function initialize(
-        string memory _greeting
-    ) public {
+    function initialize(string memory _greeting) public {
         greeting = _greeting;
     }
 }

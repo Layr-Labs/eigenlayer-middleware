@@ -2,8 +2,7 @@
 pragma solidity ^0.8.12;
 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {IDelegationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 import {
@@ -12,16 +11,14 @@ import {
     StrategyParams
 } from "../../src/interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
 import {ECDSAStakeRegistrySetup} from "./ECDSAStakeRegistryUnit.t.sol";
-import {ECDSAStakeRegistryPermissioned} from
-    "../../src/unaudited/examples/ECDSAStakeRegistryPermissioned.sol";
+import {ECDSAStakeRegistryPermissioned} from "../../src/unaudited/examples/ECDSAStakeRegistryPermissioned.sol";
 
 contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     ECDSAStakeRegistryPermissioned internal permissionedRegistry;
 
     function setUp() public virtual override {
         super.setUp();
-        permissionedRegistry =
-            new ECDSAStakeRegistryPermissioned(IDelegationManager(address(mockDelegationManager)));
+        permissionedRegistry = new ECDSAStakeRegistryPermissioned(IDelegationManager(address(mockDelegationManager)));
         IStrategy mockStrategy = IStrategy(address(0x1234));
         Quorum memory quorum = Quorum({strategies: new StrategyParams[](1)});
         quorum.strategies[0] = StrategyParams({strategy: mockStrategy, multiplier: 10_000});
@@ -87,9 +84,7 @@ contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
         address operator3 = address(0xBEEF);
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
-        vm.expectRevert(
-            abi.encodeWithSelector(ECDSAStakeRegistryPermissioned.OperatorNotAllowlisted.selector)
-        );
+        vm.expectRevert(abi.encodeWithSelector(ECDSAStakeRegistryPermissioned.OperatorNotAllowlisted.selector));
         vm.prank(operator3);
         permissionedRegistry.registerOperatorWithSignature(operatorSignature, operator3);
     }

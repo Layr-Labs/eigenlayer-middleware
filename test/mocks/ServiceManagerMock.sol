@@ -9,14 +9,9 @@ contract ServiceManagerMock is ServiceManagerBase {
         IRewardsCoordinator _rewardsCoordinator,
         IRegistryCoordinator _registryCoordinator,
         IStakeRegistry _stakeRegistry
-    )
-        ServiceManagerBase(_avsDirectory, _rewardsCoordinator, _registryCoordinator, _stakeRegistry)
-    {}
+    ) ServiceManagerBase(_avsDirectory, _rewardsCoordinator, _registryCoordinator, _stakeRegistry) {}
 
-    function initialize(
-        address initialOwner,
-        address rewardsInitiator
-    ) public virtual initializer {
+    function initialize(address initialOwner, address rewardsInitiator) public virtual initializer {
         __ServiceManagerBase_init(initialOwner, rewardsInitiator);
     }
 }

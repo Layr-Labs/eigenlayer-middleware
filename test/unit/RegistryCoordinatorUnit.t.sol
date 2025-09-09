@@ -30,9 +30,7 @@ contract RegistryCoordinatorUnitTests is MockAVSDeployer {
     // emitted when an operator's index in the orderd operator list for the quorum with number `quorumNumber` is updated
     event QuorumIndexUpdate(bytes32 indexed operatorId, uint8 quorumNumber, uint32 newIndex);
 
-    event OperatorSetParamsUpdated(
-        uint8 indexed quorumNumber, IRegistryCoordinator.OperatorSetParam operatorSetParams
-    );
+    event OperatorSetParamsUpdated(uint8 indexed quorumNumber, IRegistryCoordinator.OperatorSetParam operatorSetParams);
 
     event ChurnApproverUpdated(address prevChurnApprover, address newChurnApprover);
 
@@ -63,8 +61,7 @@ contract RegistryCoordinatorUnitTests is MockAVSDeployer {
         cheats.roll(kickRegistrationBlockNumber);
 
         for (uint256 i = 0; i < defaultMaxOperatorCount - 1; i++) {
-            BN254.G1Point memory pubKey =
-                BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
+            BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
             address operator = _incrementAddress(defaultOperator, i);
 
             _registerOperatorWithCoordinator(operator, quorumBitmap, pubKey);
@@ -80,16 +77,13 @@ contract RegistryCoordinatorUnitTests is MockAVSDeployer {
         // register last operator before kick
         operatorKickParams = new IRegistryCoordinator.OperatorKickParam[](1);
         {
-            BN254.G1Point memory pubKey = BN254.hashToG1(
-                keccak256(abi.encodePacked(pseudoRandomNumber, defaultMaxOperatorCount - 1))
-            );
+            BN254.G1Point memory pubKey =
+                BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, defaultMaxOperatorCount - 1)));
             operatorToKickId = BN254.hashG1Point(pubKey);
             operatorToKick = _incrementAddress(defaultOperator, defaultMaxOperatorCount - 1);
 
             // register last operator with much more than the kickBIPsOfTotalStake stake
-            _registerOperatorWithCoordinator(
-                operatorToKick, quorumBitmap, pubKey, operatorToKickStake
-            );
+            _registerOperatorWithCoordinator(operatorToKick, quorumBitmap, pubKey, operatorToKickStake);
 
             bytes32[] memory operatorIdsToSwap = new bytes32[](1);
             // operatorIdsToSwap[0] = operatorToRegisterId
@@ -218,17 +212,14 @@ contract RegistryCoordinatorUnitTests_Initialization_Setters is RegistryCoordina
         // this is necessary since the default setup already configures the max number of quorums, preventing adding more
         _deployMockEigenLayerAndAVS(0);
 
-        IRegistryCoordinator.OperatorSetParam memory operatorSetParams = IRegistryCoordinator
-            .OperatorSetParam({
+        IRegistryCoordinator.OperatorSetParam memory operatorSetParams = IRegistryCoordinator.OperatorSetParam({
             maxOperatorCount: defaultMaxOperatorCount,
             kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
             kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
         });
         uint96 minimumStake = 1;
-        IStakeRegistry.StrategyParams[] memory strategyParams =
-            new IStakeRegistry.StrategyParams[](1);
-        strategyParams[0] =
-            IStakeRegistry.StrategyParams({strategy: IStrategy(address(1000)), multiplier: 1e16});
+        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistry.StrategyParams({strategy: IStrategy(address(1000)), multiplier: 1e16});
 
         uint8 quorumCountBefore = registryCoordinator.quorumCount();
 
@@ -260,9 +251,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
 
         cheats.startPrank(defaultOperator);
         cheats.expectRevert(bytes("Pausable: index is paused"));
-        registryCoordinator.registerOperator(
-            emptyQuorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(emptyQuorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
     }
 
     function test_registerOperator_revert_emptyQuorumNumbers() public {
@@ -271,9 +260,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
 
         cheats.expectRevert("RegCoord._registerOperator: bitmap cannot be 0");
         cheats.prank(defaultOperator);
-        registryCoordinator.registerOperator(
-            emptyQuorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(emptyQuorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
     }
 
     function test_registerOperator_revert_invalidQuorum() public {
@@ -284,9 +271,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
 
         cheats.expectRevert("BitmapUtils.orderedBytesArrayToBitmap: bitmap exceeds max value");
         cheats.prank(defaultOperator);
-        registryCoordinator.registerOperator(
-            quorumNumbersTooLarge, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbersTooLarge, defaultSocket, pubkeyRegistrationParams, emptySig);
     }
 
     function test_registerOperator_revert_nonexistentQuorum() public {
@@ -298,9 +283,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
 
         cheats.prank(defaultOperator);
         cheats.expectRevert("BitmapUtils.orderedBytesArrayToBitmap: bitmap exceeds max value");
-        registryCoordinator.registerOperator(
-            quorumNumbersNotCreated, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbersNotCreated, defaultSocket, pubkeyRegistrationParams, emptySig);
     }
 
     function test_registerOperator_singleQuorum() public {
@@ -321,9 +304,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
 
         uint256 gasBefore = gasleft();
         cheats.prank(defaultOperator);
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
         uint256 gasAfter = gasleft();
         emit log_named_uint("gasUsed, register for single quorum", gasBefore - gasAfter);
 
@@ -343,9 +324,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         );
         assertEq(registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), quorumBitmap);
         assertEq(
-            keccak256(
-                abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))
-            ),
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))),
             keccak256(
                 abi.encode(
                     IRegistryCoordinator.QuorumBitmapUpdate({
@@ -359,9 +338,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
     }
 
     // @notice tests registering an operator for a fuzzed assortment of quorums
-    function testFuzz_registerOperator(
-        uint256 quorumBitmap
-    ) public {
+    function testFuzz_registerOperator(uint256 quorumBitmap) public {
         // filter the fuzzed input down to only valid quorums
         quorumBitmap = quorumBitmap & MAX_QUORUM_BITMAP;
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
@@ -393,9 +370,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
 
         uint256 gasBefore = gasleft();
         cheats.prank(defaultOperator);
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
         uint256 gasAfter = gasleft();
         emit log_named_uint("gasUsed", gasBefore - gasAfter);
         emit log_named_uint("numQuorums", quorumNumbers.length);
@@ -414,9 +389,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         );
         assertEq(registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), quorumBitmap);
         assertEq(
-            keccak256(
-                abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))
-            ),
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))),
             keccak256(
                 abi.encode(
                     IRegistryCoordinator.QuorumBitmapUpdate({
@@ -441,15 +414,12 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         _setOperatorWeight(defaultOperator, uint8(quorumNumbers[0]), defaultStake);
         cheats.prank(defaultOperator);
         cheats.roll(registrationBlockNumber);
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
 
         bytes memory newQuorumNumbers = new bytes(1);
         newQuorumNumbers[0] = bytes1(defaultQuorumNumber + 1);
 
-        uint96 actualStake =
-            _setOperatorWeight(defaultOperator, uint8(newQuorumNumbers[0]), defaultStake);
+        uint96 actualStake = _setOperatorWeight(defaultOperator, uint8(newQuorumNumbers[0]), defaultStake);
         //cheats.expectEmit(true, true, true, true, address(registryCoordinator));
         //emit OperatorSocketUpdate(defaultOperatorId, defaultSocket);
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
@@ -460,9 +430,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         emit QuorumIndexUpdate(defaultOperatorId, uint8(newQuorumNumbers[0]), 0);
         cheats.roll(nextRegistrationBlockNumber);
         cheats.prank(defaultOperator);
-        registryCoordinator.registerOperator(
-            newQuorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(newQuorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
 
         uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers)
             | BitmapUtils.orderedBytesArrayToBitmap(newQuorumNumbers);
@@ -481,9 +449,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         );
         assertEq(registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), quorumBitmap);
         assertEq(
-            keccak256(
-                abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))
-            ),
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))),
             keccak256(
                 abi.encode(
                     IRegistryCoordinator.QuorumBitmapUpdate({
@@ -495,9 +461,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
             )
         );
         assertEq(
-            keccak256(
-                abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 1))
-            ),
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 1))),
             keccak256(
                 abi.encode(
                     IRegistryCoordinator.QuorumBitmapUpdate({
@@ -510,9 +474,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         );
     }
 
-    function test_registerOperator_revert_overFilledQuorum(
-        uint256 pseudoRandomNumber
-    ) public {
+    function test_registerOperator_revert_overFilledQuorum(uint256 pseudoRandomNumber) public {
         uint32 numOperators = defaultMaxOperatorCount;
         uint32 registrationBlockNumber = 200;
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
@@ -525,8 +487,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         cheats.roll(registrationBlockNumber);
 
         for (uint256 i = 0; i < numOperators; i++) {
-            BN254.G1Point memory pubKey =
-                BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
+            BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
             address operator = _incrementAddress(defaultOperator, i);
 
             _registerOperatorWithCoordinator(operator, quorumBitmap, pubKey);
@@ -542,9 +503,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
 
         cheats.prank(operatorToRegister);
         cheats.expectRevert("RegCoord.registerOperator: operator count exceeds maximum");
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
     }
 
     function test_registerOperator_revert_operatorAlreadyRegisteredForQuorum() public {
@@ -559,19 +518,13 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         cheats.prank(defaultOperator);
         cheats.roll(registrationBlockNumber);
 
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
 
         cheats.prank(defaultOperator);
         cheats.roll(nextRegistrationBlockNumber);
-        cheats.expectRevert(
-            "RegCoord._registerOperator: operator already registered for some quorums"
-        );
+        cheats.expectRevert("RegCoord._registerOperator: operator already registered for some quorums");
 
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
     }
 
     // tests for the internal `_registerOperator` function:
@@ -607,9 +560,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
             defaultOperator, defaultOperatorId, quorumNumbers, defaultSocket, emptySig
         );
 
-        cheats.expectRevert(
-            "RegCoord._registerOperator: operator already registered for some quorums"
-        );
+        cheats.expectRevert("RegCoord._registerOperator: operator already registered for some quorums");
         registryCoordinator._registerOperatorExternal(
             defaultOperator, defaultOperatorId, quorumNumbers, defaultSocket, emptySig
         );
@@ -651,9 +602,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
         );
         assertEq(registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), quorumBitmap);
         assertEq(
-            keccak256(
-                abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))
-            ),
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))),
             keccak256(
                 abi.encode(
                     IRegistryCoordinator.QuorumBitmapUpdate({
@@ -668,9 +617,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperator is RegistryCoordinatorUni
 }
 
 // @dev note that this contract also contains tests for the `getQuorumBitmapIndicesAtBlockNumber` and `getQuorumBitmapAtBlockNumberByIndex` view fncs
-contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
-    RegistryCoordinatorUnitTests
-{
+contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is RegistryCoordinatorUnitTests {
     function test_deregisterOperator_revert_paused() public {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
@@ -727,9 +674,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
 
         cheats.roll(registrationBlockNumber);
 
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
 
         uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
 
@@ -758,9 +703,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         );
         assertEq(registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), 0);
         assertEq(
-            keccak256(
-                abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))
-            ),
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))),
             keccak256(
                 abi.encode(
                     IRegistryCoordinator.QuorumBitmapUpdate({
@@ -775,9 +718,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
 
     // @notice verifies that an operator who was registered for a fuzzed set of quorums can be deregistered
     // @dev deregisters the operator from *all* quorums for which they we registered.
-    function testFuzz_deregisterOperator_fuzzedQuorumAndSingleOperator(
-        uint256 quorumBitmap
-    ) public {
+    function testFuzz_deregisterOperator_fuzzedQuorumAndSingleOperator(uint256 quorumBitmap) public {
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
         uint32 registrationBlockNumber = 100;
         uint32 deregistrationBlockNumber = 200;
@@ -795,9 +736,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
 
         cheats.roll(registrationBlockNumber);
 
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
 
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
         emit OperatorRemovedFromQuorums(defaultOperator, defaultOperatorId, quorumNumbers);
@@ -827,9 +766,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         );
         assertEq(registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), 0);
         assertEq(
-            keccak256(
-                abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))
-            ),
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))),
             keccak256(
                 abi.encode(
                     IRegistryCoordinator.QuorumBitmapUpdate({
@@ -858,8 +795,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         // filter the other fuzzed input to a subset of the first fuzzed input
         deregistrationQuorumBitmap = deregistrationQuorumBitmap & registrationQuorumBitmap;
         cheats.assume(deregistrationQuorumBitmap != 0);
-        bytes memory registrationquorumNumbers =
-            BitmapUtils.bitmapToBytesArray(registrationQuorumBitmap);
+        bytes memory registrationquorumNumbers = BitmapUtils.bitmapToBytesArray(registrationQuorumBitmap);
 
         for (uint256 i = 0; i < registrationquorumNumbers.length; i++) {
             _setOperatorWeight(defaultOperator, uint8(registrationquorumNumbers[i]), defaultStake);
@@ -873,13 +809,10 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
             registrationquorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
         );
 
-        bytes memory deregistrationquorumNumbers =
-            BitmapUtils.bitmapToBytesArray(deregistrationQuorumBitmap);
+        bytes memory deregistrationquorumNumbers = BitmapUtils.bitmapToBytesArray(deregistrationQuorumBitmap);
 
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit OperatorRemovedFromQuorums(
-            defaultOperator, defaultOperatorId, deregistrationquorumNumbers
-        );
+        emit OperatorRemovedFromQuorums(defaultOperator, defaultOperatorId, deregistrationquorumNumbers);
         for (uint256 i = 0; i < deregistrationquorumNumbers.length; i++) {
             cheats.expectEmit(true, true, true, true, address(stakeRegistry));
             emit OperatorStakeUpdate(defaultOperatorId, uint8(deregistrationquorumNumbers[i]), 0);
@@ -920,16 +853,11 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
             );
         }
         // ensure that the operator's current quorum bitmap matches the expectation
-        uint256 expectedQuorumBitmap =
-            BitmapUtils.minus(registrationQuorumBitmap, deregistrationQuorumBitmap);
-        assertEq(
-            registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), expectedQuorumBitmap
-        );
+        uint256 expectedQuorumBitmap = BitmapUtils.minus(registrationQuorumBitmap, deregistrationQuorumBitmap);
+        assertEq(registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), expectedQuorumBitmap);
         // check that the quorum bitmap history is as expected
         assertEq(
-            keccak256(
-                abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))
-            ),
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))),
             keccak256(
                 abi.encode(
                     IRegistryCoordinator.QuorumBitmapUpdate({
@@ -943,11 +871,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         // note: there will be no second entry in the operator's bitmap history in the event that the operator has totally deregistered
         if (deregistrationQuorumBitmap != registrationQuorumBitmap) {
             assertEq(
-                keccak256(
-                    abi.encode(
-                        registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 1)
-                    )
-                ),
+                keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 1))),
                 keccak256(
                     abi.encode(
                         IRegistryCoordinator.QuorumBitmapUpdate({
@@ -962,9 +886,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
     }
 
     // @notice registers the max number of operators with fuzzed bitmaps and then deregisters a pseudorandom operator (from all of their quorums)
-    function testFuzz_deregisterOperator_manyOperators(
-        uint256 pseudoRandomNumber
-    ) public {
+    function testFuzz_deregisterOperator_manyOperators(uint256 pseudoRandomNumber) public {
         uint32 numOperators = defaultMaxOperatorCount;
 
         uint32 registrationBlockNumber = 100;
@@ -974,9 +896,8 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         uint256[] memory quorumBitmaps = new uint256[](numOperators);
         for (uint256 i = 0; i < numOperators; i++) {
             // limit to maxQuorumsToRegisterFor quorums via mask so we don't run out of gas, make them all register for quorum 0 as well
-            quorumBitmaps[i] = uint256(
-                keccak256(abi.encodePacked("quorumBitmap", pseudoRandomNumber, i))
-            ) & (1 << maxQuorumsToRegisterFor - 1) | 1;
+            quorumBitmaps[i] = uint256(keccak256(abi.encodePacked("quorumBitmap", pseudoRandomNumber, i)))
+                & (1 << maxQuorumsToRegisterFor - 1) | 1;
         }
 
         cheats.roll(registrationBlockNumber);
@@ -984,8 +905,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         bytes32[] memory lastOperatorInQuorum = new bytes32[](numQuorums);
         for (uint256 i = 0; i < numOperators; i++) {
             emit log_named_uint("i", i);
-            BN254.G1Point memory pubKey =
-                BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
+            BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
             bytes32 operatorId = BN254.hashG1Point(pubKey);
             address operator = _incrementAddress(defaultOperator, i);
 
@@ -999,11 +919,9 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         }
 
         uint256 indexOfOperatorToDeregister = pseudoRandomNumber % numOperators;
-        address operatorToDeregister =
-            _incrementAddress(defaultOperator, indexOfOperatorToDeregister);
-        BN254.G1Point memory operatorToDeregisterPubKey = BN254.hashToG1(
-            keccak256(abi.encodePacked(pseudoRandomNumber, indexOfOperatorToDeregister))
-        );
+        address operatorToDeregister = _incrementAddress(defaultOperator, indexOfOperatorToDeregister);
+        BN254.G1Point memory operatorToDeregisterPubKey =
+            BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, indexOfOperatorToDeregister)));
         bytes32 operatorToDeregisterId = BN254.hashG1Point(operatorToDeregisterPubKey);
         uint256 operatorToDeregisterQuorumBitmap = quorumBitmaps[indexOfOperatorToDeregister];
         bytes memory operatorToDeregisterQuorumNumbers =
@@ -1015,15 +933,11 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         }
 
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit OperatorRemovedFromQuorums(
-            operatorToDeregister, operatorToDeregisterId, operatorToDeregisterQuorumNumbers
-        );
+        emit OperatorRemovedFromQuorums(operatorToDeregister, operatorToDeregisterId, operatorToDeregisterQuorumNumbers);
 
         for (uint256 i = 0; i < operatorToDeregisterQuorumNumbers.length; i++) {
             cheats.expectEmit(true, true, true, true, address(stakeRegistry));
-            emit OperatorStakeUpdate(
-                operatorToDeregisterId, uint8(operatorToDeregisterQuorumNumbers[i]), 0
-            );
+            emit OperatorStakeUpdate(operatorToDeregisterId, uint8(operatorToDeregisterQuorumNumbers[i]), 0);
         }
 
         cheats.roll(deregistrationBlockNumber);
@@ -1044,11 +958,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         );
         assertEq(registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), 0);
         assertEq(
-            keccak256(
-                abi.encode(
-                    registryCoordinator.getQuorumBitmapUpdateByIndex(operatorToDeregisterId, 0)
-                )
-            ),
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(operatorToDeregisterId, 0))),
             keccak256(
                 abi.encode(
                     IRegistryCoordinator.QuorumBitmapUpdate({
@@ -1080,9 +990,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
             registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0);
 
         // re-register the operator
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
         // check success of registration
         uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
         assertEq(registryCoordinator.getOperatorId(defaultOperator), defaultOperatorId, "1");
@@ -1101,9 +1009,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         assertEq(registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), quorumBitmap, "3");
         // check that previous entry in bitmap history was not changed
         assertEq(
-            keccak256(
-                abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))
-            ),
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))),
             keccak256(abi.encode(previousQuorumBitmapUpdate)),
             "4"
         );
@@ -1111,11 +1017,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         uint256 historyLength = registryCoordinator.getQuorumBitmapHistoryLength(defaultOperatorId);
         assertEq(
             keccak256(
-                abi.encode(
-                    registryCoordinator.getQuorumBitmapUpdateByIndex(
-                        defaultOperatorId, historyLength - 1
-                    )
-                )
+                abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, historyLength - 1))
             ),
             keccak256(
                 abi.encode(
@@ -1143,9 +1045,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
 
         cheats.roll(registrationBlockNumber);
         cheats.startPrank(defaultOperator);
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
 
         bytes memory emptyQuorumNumbers = new bytes(0);
 
@@ -1172,9 +1072,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
 
         cheats.roll(registrationBlockNumber);
         cheats.startPrank(defaultOperator);
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
 
         bytes memory incorrectQuorum = new bytes(1);
         incorrectQuorum[0] = bytes1(defaultQuorumNumber + 1);
@@ -1201,9 +1099,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
 
         cheats.prank(defaultOperator);
         cheats.roll(registrationBlockNumber);
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
 
         cheats.prank(ejector);
         registryCoordinator.ejectOperator(defaultOperator, quorumNumbers);
@@ -1211,9 +1107,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         cheats.prank(defaultOperator);
         cheats.roll(reregistrationBlockNumber);
         cheats.expectRevert("RegCoord._registerOperator: operator cannot reregister yet");
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
     }
 
     function test_reregisterOperator_reregistrationDelay() public {
@@ -1233,9 +1127,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
 
         cheats.prank(defaultOperator);
         cheats.roll(registrationBlockNumber);
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
 
         cheats.prank(ejector);
         registryCoordinator.ejectOperator(defaultOperator, quorumNumbers);
@@ -1243,9 +1135,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         cheats.prank(defaultOperator);
         cheats.roll(reregistrationBlockNumber);
         cheats.warp(block.timestamp + reregistrationDelay + 1);
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
     }
 
     // note: this is not possible to test, because there is no route to getting the operator registered for nonexistent quorums
@@ -1265,8 +1155,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         // filter the other fuzzed input to a subset of the first fuzzed input
         deregistrationQuorumBitmap = deregistrationQuorumBitmap & registrationQuorumBitmap;
         cheats.assume(deregistrationQuorumBitmap != 0);
-        bytes memory registrationquorumNumbers =
-            BitmapUtils.bitmapToBytesArray(registrationQuorumBitmap);
+        bytes memory registrationquorumNumbers = BitmapUtils.bitmapToBytesArray(registrationQuorumBitmap);
 
         for (uint256 i = 0; i < registrationquorumNumbers.length; i++) {
             _setOperatorWeight(defaultOperator, uint8(registrationquorumNumbers[i]), defaultStake);
@@ -1278,13 +1167,10 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
             registrationquorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
         );
 
-        bytes memory deregistrationquorumNumbers =
-            BitmapUtils.bitmapToBytesArray(deregistrationQuorumBitmap);
+        bytes memory deregistrationquorumNumbers = BitmapUtils.bitmapToBytesArray(deregistrationQuorumBitmap);
 
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit OperatorRemovedFromQuorums(
-            defaultOperator, defaultOperatorId, deregistrationquorumNumbers
-        );
+        emit OperatorRemovedFromQuorums(defaultOperator, defaultOperatorId, deregistrationquorumNumbers);
         for (uint256 i = 0; i < deregistrationquorumNumbers.length; i++) {
             cheats.expectEmit(true, true, true, true, address(stakeRegistry));
             emit OperatorStakeUpdate(defaultOperatorId, uint8(deregistrationquorumNumbers[i]), 0);
@@ -1292,9 +1178,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
 
         cheats.roll(deregistrationBlockNumber);
 
-        registryCoordinator._deregisterOperatorExternal(
-            defaultOperator, deregistrationquorumNumbers
-        );
+        registryCoordinator._deregisterOperatorExternal(defaultOperator, deregistrationquorumNumbers);
 
         // check that the operator is marked as 'degregistered' only if deregistered from *all* quorums
         if (deregistrationQuorumBitmap == registrationQuorumBitmap) {
@@ -1323,16 +1207,11 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
             );
         }
         // ensure that the operator's current quorum bitmap matches the expectation
-        uint256 expectedQuorumBitmap =
-            BitmapUtils.minus(registrationQuorumBitmap, deregistrationQuorumBitmap);
-        assertEq(
-            registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), expectedQuorumBitmap
-        );
+        uint256 expectedQuorumBitmap = BitmapUtils.minus(registrationQuorumBitmap, deregistrationQuorumBitmap);
+        assertEq(registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), expectedQuorumBitmap);
         // check that the quorum bitmap history is as expected
         assertEq(
-            keccak256(
-                abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))
-            ),
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))),
             keccak256(
                 abi.encode(
                     IRegistryCoordinator.QuorumBitmapUpdate({
@@ -1346,11 +1225,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         // note: there will be no second entry in the operator's bitmap history in the event that the operator has totally deregistered
         if (deregistrationQuorumBitmap != registrationQuorumBitmap) {
             assertEq(
-                keccak256(
-                    abi.encode(
-                        registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 1)
-                    )
-                ),
+                keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 1))),
                 keccak256(
                     abi.encode(
                         IRegistryCoordinator.QuorumBitmapUpdate({
@@ -1373,9 +1248,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         _setOperatorWeight(defaultOperator, uint8(quorumNumbers[0]), defaultStake);
 
         cheats.prank(defaultOperator);
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
 
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
         emit OperatorRemovedFromQuorums(defaultOperator, defaultOperatorId, quorumNumbers);
@@ -1415,9 +1288,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         }
 
         cheats.prank(defaultOperator);
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
 
         // eject from only first quorum
         bytes memory quorumNumbersToEject = new bytes(1);
@@ -1461,9 +1332,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         _setOperatorWeight(defaultOperator, uint8(quorumNumbers[0]), defaultStake);
 
         cheats.prank(defaultOperator);
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
 
         cheats.expectRevert("RegCoord.onlyEjector: caller is not the ejector");
         cheats.prank(defaultOperator);
@@ -1489,9 +1358,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         _setOperatorWeight(defaultOperator, uint8(quorumNumbers[0]), defaultStake);
         cheats.roll(registrationBlockNumber);
         cheats.startPrank(defaultOperator);
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
 
         uint32 blockNumber = 0;
         bytes32[] memory operatorIds = new bytes32[](1);
@@ -1504,22 +1371,12 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
 
         blockNumber = registrationBlockNumber;
-        returnArray =
-            registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
-        assertEq(
-            returnArray[0],
-            0,
-            "defaultOperator bitmap index at blockNumber registrationBlockNumber was not 0"
-        );
+        returnArray = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
+        assertEq(returnArray[0], 0, "defaultOperator bitmap index at blockNumber registrationBlockNumber was not 0");
 
         blockNumber = registrationBlockNumber + 1;
-        returnArray =
-            registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
-        assertEq(
-            returnArray[0],
-            0,
-            "defaultOperator bitmap index at blockNumber registrationBlockNumber + 1 was not 0"
-        );
+        returnArray = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
+        assertEq(returnArray[0], 0, "defaultOperator bitmap index at blockNumber registrationBlockNumber + 1 was not 0");
     }
 
     // @notice tests for correct reversion and return values in the event that an operator registers and later deregisters
@@ -1538,39 +1395,21 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
 
         blockNumber = registrationBlockNumber;
-        returnArray =
-            registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
-        assertEq(
-            returnArray[0],
-            0,
-            "defaultOperator bitmap index at blockNumber registrationBlockNumber was not 0"
-        );
+        returnArray = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
+        assertEq(returnArray[0], 0, "defaultOperator bitmap index at blockNumber registrationBlockNumber was not 0");
 
         blockNumber = registrationBlockNumber + 1;
-        returnArray =
-            registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
-        assertEq(
-            returnArray[0],
-            0,
-            "defaultOperator bitmap index at blockNumber registrationBlockNumber + 1 was not 0"
-        );
+        returnArray = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
+        assertEq(returnArray[0], 0, "defaultOperator bitmap index at blockNumber registrationBlockNumber + 1 was not 0");
 
         blockNumber = deregistrationBlockNumber;
-        returnArray =
-            registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
-        assertEq(
-            returnArray[0],
-            1,
-            "defaultOperator bitmap index at blockNumber deregistrationBlockNumber was not 1"
-        );
+        returnArray = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
+        assertEq(returnArray[0], 1, "defaultOperator bitmap index at blockNumber deregistrationBlockNumber was not 1");
 
         blockNumber = deregistrationBlockNumber + 1;
-        returnArray =
-            registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
+        returnArray = registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds);
         assertEq(
-            returnArray[0],
-            1,
-            "defaultOperator bitmap index at blockNumber deregistrationBlockNumber + 1 was not 1"
+            returnArray[0], 1, "defaultOperator bitmap index at blockNumber deregistrationBlockNumber + 1 was not 1"
         );
     }
 
@@ -1590,12 +1429,10 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         cheats.expectRevert(
             "RegCoord.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber"
         );
-        uint192 returnVal =
-            registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
+        uint192 returnVal = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
 
         blockNumber = registrationBlockNumber;
-        returnVal =
-            registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
+        returnVal = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
         assertEq(
             returnVal,
             defaultQuorumBitmap,
@@ -1603,8 +1440,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         );
 
         blockNumber = registrationBlockNumber + 1;
-        returnVal =
-            registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
+        returnVal = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
         assertEq(
             returnVal,
             defaultQuorumBitmap,
@@ -1616,12 +1452,10 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         cheats.expectRevert(
             "RegCoord.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber"
         );
-        returnVal =
-            registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
+        returnVal = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
 
         blockNumber = deregistrationBlockNumber;
-        returnVal =
-            registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
+        returnVal = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
         assertEq(
             returnVal,
             emptyBitmap,
@@ -1629,8 +1463,7 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         );
 
         blockNumber = deregistrationBlockNumber + 1;
-        returnVal =
-            registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
+        returnVal = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
         assertEq(
             returnVal,
             emptyBitmap,
@@ -1642,16 +1475,13 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         cheats.expectRevert(
             "RegCoord.getQuorumBitmapAtBlockNumberByIndex: quorumBitmapUpdate is from before blockNumber"
         );
-        returnVal =
-            registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
+        returnVal = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
     }
 }
 
 contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoordinatorUnitTests {
     // @notice registers an operator for a single quorum, with a fuzzed pubkey, churning out another operator from the quorum
-    function testFuzz_registerOperatorWithChurn(
-        uint256 pseudoRandomNumber
-    ) public {
+    function testFuzz_registerOperatorWithChurn(uint256 pseudoRandomNumber) public {
         uint32 numOperators = defaultMaxOperatorCount;
         uint32 kickRegistrationBlockNumber = 100;
         uint32 registrationBlockNumber = 200;
@@ -1664,8 +1494,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         cheats.roll(kickRegistrationBlockNumber);
 
         for (uint256 i = 0; i < numOperators - 1; i++) {
-            BN254.G1Point memory pubKey =
-                BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
+            BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
             address operator = _incrementAddress(defaultOperator, i);
 
             _registerOperatorWithCoordinator(operator, quorumBitmap, pubKey);
@@ -1693,10 +1522,8 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
             // operatorIdsToSwap[0] = operatorToRegisterId
             operatorIdsToSwap[0] = operatorToRegisterId;
 
-            operatorKickParams[0] = IRegistryCoordinator.OperatorKickParam({
-                quorumNumber: defaultQuorumNumber,
-                operator: operatorToKick
-            });
+            operatorKickParams[0] =
+                IRegistryCoordinator.OperatorKickParam({quorumNumber: defaultQuorumNumber, operator: operatorToKick});
         }
 
         blsApkRegistry.setBLSPublicKey(operatorToRegister, operatorToRegisterPubKey);
@@ -1720,9 +1547,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
         emit OperatorDeregistered(operatorKickParams[0].operator, operatorToKickId);
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
-        emit OperatorRemovedFromQuorums(
-            operatorKickParams[0].operator, operatorToKickId, quorumNumbers
-        );
+        emit OperatorRemovedFromQuorums(operatorKickParams[0].operator, operatorToKickId, quorumNumbers);
         cheats.expectEmit(true, true, true, true, address(stakeRegistry));
         emit OperatorStakeUpdate(operatorToKickId, defaultQuorumNumber, 0);
         cheats.expectEmit(true, true, true, true, address(indexRegistry));
@@ -1730,13 +1555,8 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
 
         {
             ISignatureUtils.SignatureWithSaltAndExpiry memory emptyAVSRegSig;
-            ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry =
-            _signOperatorChurnApproval(
-                operatorToRegister,
-                operatorToRegisterId,
-                operatorKickParams,
-                defaultSalt,
-                block.timestamp + 10
+            ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry = _signOperatorChurnApproval(
+                operatorToRegister, operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp + 10
             );
             cheats.prank(operatorToRegister);
             uint256 gasBefore = gasleft();
@@ -1775,9 +1595,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
             )
         );
         assertEq(
-            keccak256(
-                abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(operatorToKickId, 0))
-            ),
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(operatorToKickId, 0))),
             keccak256(
                 abi.encode(
                     IRegistryCoordinator.QuorumBitmapUpdate({
@@ -1790,9 +1608,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         );
     }
 
-    function test_registerOperatorWithChurn_revert_lessThanKickBIPsOfOperatorStake(
-        uint256 pseudoRandomNumber
-    ) public {
+    function test_registerOperatorWithChurn_revert_lessThanKickBIPsOfOperatorStake(uint256 pseudoRandomNumber) public {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptyAVSRegSig;
@@ -1807,18 +1623,11 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         _setOperatorWeight(operatorToRegister, defaultQuorumNumber, defaultStake);
 
         cheats.roll(registrationBlockNumber);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry =
-        _signOperatorChurnApproval(
-            operatorToRegister,
-            operatorToRegisterId,
-            operatorKickParams,
-            defaultSalt,
-            block.timestamp + 10
+        ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry = _signOperatorChurnApproval(
+            operatorToRegister, operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp + 10
         );
         cheats.prank(operatorToRegister);
-        cheats.expectRevert(
-            "RegCoord._validateChurn: incoming operator has insufficient stake for churn"
-        );
+        cheats.expectRevert("RegCoord._validateChurn: incoming operator has insufficient stake for churn");
         registryCoordinator.registerOperatorWithChurn(
             quorumNumbers,
             defaultSocket,
@@ -1829,9 +1638,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         );
     }
 
-    function test_registerOperatorWithChurn_revert_lessThanKickBIPsOfTotalStake(
-        uint256 pseudoRandomNumber
-    ) public {
+    function test_registerOperatorWithChurn_revert_lessThanKickBIPsOfTotalStake(uint256 pseudoRandomNumber) public {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptyAVSRegSig;
@@ -1841,31 +1648,20 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
             address operatorToRegister,
             BN254.G1Point memory operatorToRegisterPubKey,
             IRegistryCoordinator.OperatorKickParam[] memory operatorKickParams
-        ) = _test_registerOperatorWithChurn_SetUp(
-            pseudoRandomNumber, quorumNumbers, operatorToKickStake
-        );
+        ) = _test_registerOperatorWithChurn_SetUp(pseudoRandomNumber, quorumNumbers, operatorToKickStake);
         bytes32 operatorToRegisterId = BN254.hashG1Point(operatorToRegisterPubKey);
 
         // set the stake of the operator to register to the defaultKickBIPsOfOperatorStake multiple of the operatorToKickStake
         _setOperatorWeight(
-            operatorToRegister,
-            defaultQuorumNumber,
-            operatorToKickStake * defaultKickBIPsOfOperatorStake / 10_000 + 1
+            operatorToRegister, defaultQuorumNumber, operatorToKickStake * defaultKickBIPsOfOperatorStake / 10_000 + 1
         );
 
         cheats.roll(registrationBlockNumber);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry =
-        _signOperatorChurnApproval(
-            operatorToRegister,
-            operatorToRegisterId,
-            operatorKickParams,
-            defaultSalt,
-            block.timestamp + 10
+        ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry = _signOperatorChurnApproval(
+            operatorToRegister, operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp + 10
         );
         cheats.prank(operatorToRegister);
-        cheats.expectRevert(
-            "RegCoord._validateChurn: cannot kick operator with more than kickBIPsOfTotalStake"
-        );
+        cheats.expectRevert("RegCoord._validateChurn: cannot kick operator with more than kickBIPsOfTotalStake");
         registryCoordinator.registerOperatorWithChurn(
             quorumNumbers,
             defaultSocket,
@@ -1876,18 +1672,13 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         );
     }
 
-    function test_registerOperatorWithChurn_revert_invalidChurnApproverSignature(
-        uint256 pseudoRandomNumber
-    ) public {
+    function test_registerOperatorWithChurn_revert_invalidChurnApproverSignature(uint256 pseudoRandomNumber) public {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptyAVSRegSig;
 
-        (
-            address operatorToRegister,
-            ,
-            IRegistryCoordinator.OperatorKickParam[] memory operatorKickParams
-        ) = _test_registerOperatorWithChurn_SetUp(pseudoRandomNumber, quorumNumbers, defaultStake);
+        (address operatorToRegister,, IRegistryCoordinator.OperatorKickParam[] memory operatorKickParams) =
+            _test_registerOperatorWithChurn_SetUp(pseudoRandomNumber, quorumNumbers, defaultStake);
 
         uint96 registeringStake = defaultKickBIPsOfOperatorStake * defaultStake;
         _setOperatorWeight(operatorToRegister, defaultQuorumNumber, registeringStake);
@@ -1910,9 +1701,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         );
     }
 
-    function test_registerOperatorWithChurn_revert_expiredChurnApproverSignature(
-        uint256 pseudoRandomNumber
-    ) public {
+    function test_registerOperatorWithChurn_revert_expiredChurnApproverSignature(uint256 pseudoRandomNumber) public {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptyAVSRegSig;
@@ -1928,18 +1717,11 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         _setOperatorWeight(operatorToRegister, defaultQuorumNumber, registeringStake);
 
         cheats.roll(registrationBlockNumber);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry =
-        _signOperatorChurnApproval(
-            operatorToRegister,
-            operatorToRegisterId,
-            operatorKickParams,
-            defaultSalt,
-            block.timestamp - 1
+        ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry = _signOperatorChurnApproval(
+            operatorToRegister, operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp - 1
         );
         cheats.prank(operatorToRegister);
-        cheats.expectRevert(
-            "RegCoord._verifyChurnApproverSignature: churnApprover signature expired"
-        );
+        cheats.expectRevert("RegCoord._verifyChurnApproverSignature: churnApprover signature expired");
         registryCoordinator.registerOperatorWithChurn(
             quorumNumbers,
             defaultSocket,
@@ -1973,9 +1755,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         _setOperatorWeight(defaultOperator, uint8(quorumNumbers[0]), defaultStake);
         cheats.startPrank(defaultOperator);
         cheats.roll(registrationBlockNumber);
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
 
         address[] memory operatorsToUpdate = new address[](1);
         operatorsToUpdate[0] = defaultOperator;
@@ -1985,10 +1765,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
 
     // @notice tests the `updateOperators` function with a single registered operator as input
     // @dev also sets up return data from the StakeRegistry
-    function testFuzz_updateOperators_singleOperator(
-        uint192 registrationBitmap,
-        uint192 mockReturnData
-    ) public {
+    function testFuzz_updateOperators_singleOperator(uint192 registrationBitmap, uint192 mockReturnData) public {
         // filter fuzzed inputs to only valid inputs
         cheats.assume(registrationBitmap != 0);
         mockReturnData = (mockReturnData & registrationBitmap);
@@ -2003,9 +1780,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         }
         cheats.startPrank(defaultOperator);
         cheats.roll(registrationBlockNumber);
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
 
         address[] memory operatorsToUpdate = new address[](1);
         operatorsToUpdate[0] = defaultOperator;
@@ -2082,9 +1857,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
         cheats.expectRevert(
-            bytes(
-                "RegCoord.updateOperatorsForQuorum: number of updated operators does not match quorum total"
-            )
+            bytes("RegCoord.updateOperatorsForQuorum: number of updated operators does not match quorum total")
         );
         registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
     }
@@ -2098,9 +1871,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         _setOperatorWeight(defaultOperator, uint8(quorumNumbers[0]), defaultStake);
         cheats.startPrank(defaultOperator);
         cheats.roll(registrationBlockNumber);
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
 
         address[][] memory operatorsToUpdate = new address[][](1);
         address[] memory operatorArray = new address[](1);
@@ -2113,9 +1884,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
     }
 
     // note: there is not an explicit check for duplicates, as checking for explicit ordering covers this
-    function test_updateOperatorsForQuorum_revert_duplicateOperator(
-        uint256 pseudoRandomNumber
-    ) public {
+    function test_updateOperatorsForQuorum_revert_duplicateOperator(uint256 pseudoRandomNumber) public {
         // register 2 operators
         uint32 numOperators = 2;
         uint32 registrationBlockNumber = 200;
@@ -2124,8 +1893,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
         cheats.roll(registrationBlockNumber);
         for (uint256 i = 0; i < numOperators; i++) {
-            BN254.G1Point memory pubKey =
-                BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
+            BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
             address operator = _incrementAddress(defaultOperator, i);
 
             _registerOperatorWithCoordinator(operator, quorumBitmap, pubKey);
@@ -2140,16 +1908,12 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
 
         // note: there is not an explicit check for duplicates, as checking for explicit ordering covers this
         cheats.expectRevert(
-            bytes(
-                "RegCoord.updateOperatorsForQuorum: operators array must be sorted in ascending address order"
-            )
+            bytes("RegCoord.updateOperatorsForQuorum: operators array must be sorted in ascending address order")
         );
         registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
     }
 
-    function test_updateOperatorsForQuorum_revert_incorrectListOrder(
-        uint256 pseudoRandomNumber
-    ) public {
+    function test_updateOperatorsForQuorum_revert_incorrectListOrder(uint256 pseudoRandomNumber) public {
         // register 2 operators
         uint32 numOperators = 2;
         uint32 registrationBlockNumber = 200;
@@ -2158,8 +1922,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
         cheats.roll(registrationBlockNumber);
         for (uint256 i = 0; i < numOperators; i++) {
-            BN254.G1Point memory pubKey =
-                BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
+            BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
             address operator = _incrementAddress(defaultOperator, i);
 
             _registerOperatorWithCoordinator(operator, quorumBitmap, pubKey);
@@ -2173,9 +1936,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         operatorsToUpdate[0] = operatorArray;
 
         cheats.expectRevert(
-            bytes(
-                "RegCoord.updateOperatorsForQuorum: operators array must be sorted in ascending address order"
-            )
+            bytes("RegCoord.updateOperatorsForQuorum: operators array must be sorted in ascending address order")
         );
         registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
     }
@@ -2189,33 +1950,25 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         _setOperatorWeight(defaultOperator, uint8(quorumNumbers[0]), defaultStake);
         cheats.startPrank(defaultOperator);
         cheats.roll(registrationBlockNumber);
-        registryCoordinator.registerOperator(
-            quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig
-        );
+        registryCoordinator.registerOperator(quorumNumbers, defaultSocket, pubkeyRegistrationParams, emptySig);
 
         address[][] memory operatorsToUpdate = new address[][](1);
         address[] memory operatorArray = new address[](1);
         operatorArray[0] = defaultOperator;
         operatorsToUpdate[0] = operatorArray;
 
-        uint256 quorumUpdateBlockNumberBefore =
-            registryCoordinator.quorumUpdateBlockNumber(defaultQuorumNumber);
+        uint256 quorumUpdateBlockNumberBefore = registryCoordinator.quorumUpdateBlockNumber(defaultQuorumNumber);
         require(quorumUpdateBlockNumberBefore != block.number, "bad test setup!");
 
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
         emit QuorumBlockNumberUpdated(defaultQuorumNumber, block.number);
         registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
 
-        uint256 quorumUpdateBlockNumberAfter =
-            registryCoordinator.quorumUpdateBlockNumber(defaultQuorumNumber);
-        assertEq(
-            quorumUpdateBlockNumberAfter, block.number, "quorumUpdateBlockNumber not set correctly"
-        );
+        uint256 quorumUpdateBlockNumberAfter = registryCoordinator.quorumUpdateBlockNumber(defaultQuorumNumber);
+        assertEq(quorumUpdateBlockNumberAfter, block.number, "quorumUpdateBlockNumber not set correctly");
     }
 
-    function test_updateOperatorsForQuorum_twoOperators(
-        uint256 pseudoRandomNumber
-    ) public {
+    function test_updateOperatorsForQuorum_twoOperators(uint256 pseudoRandomNumber) public {
         // register 2 operators
         uint32 numOperators = 2;
         uint32 registrationBlockNumber = 200;
@@ -2224,8 +1977,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
         cheats.roll(registrationBlockNumber);
         for (uint256 i = 0; i < numOperators; i++) {
-            BN254.G1Point memory pubKey =
-                BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
+            BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
             address operator = _incrementAddress(defaultOperator, i);
 
             _registerOperatorWithCoordinator(operator, quorumBitmap, pubKey);
@@ -2238,30 +1990,22 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         operatorArray[1] = _incrementAddress(defaultOperator, 1);
         operatorsToUpdate[0] = operatorArray;
 
-        uint256 quorumUpdateBlockNumberBefore =
-            registryCoordinator.quorumUpdateBlockNumber(defaultQuorumNumber);
+        uint256 quorumUpdateBlockNumberBefore = registryCoordinator.quorumUpdateBlockNumber(defaultQuorumNumber);
         require(quorumUpdateBlockNumberBefore != block.number, "bad test setup!");
 
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
         emit QuorumBlockNumberUpdated(defaultQuorumNumber, block.number);
         registryCoordinator.updateOperatorsForQuorum(operatorsToUpdate, quorumNumbers);
 
-        uint256 quorumUpdateBlockNumberAfter =
-            registryCoordinator.quorumUpdateBlockNumber(defaultQuorumNumber);
-        assertEq(
-            quorumUpdateBlockNumberAfter, block.number, "quorumUpdateBlockNumber not set correctly"
-        );
+        uint256 quorumUpdateBlockNumberAfter = registryCoordinator.quorumUpdateBlockNumber(defaultQuorumNumber);
+        assertEq(quorumUpdateBlockNumberAfter, block.number, "quorumUpdateBlockNumber not set correctly");
     }
 
     // @notice tests that the internal `_updateOperatorBitmap` function works as expected, for fuzzed inputs
-    function testFuzz_updateOperatorBitmapInternal_noPreviousEntries(
-        uint192 newBitmap
-    ) public {
+    function testFuzz_updateOperatorBitmapInternal_noPreviousEntries(uint192 newBitmap) public {
         registryCoordinator._updateOperatorBitmapExternal(defaultOperatorId, newBitmap);
         assertEq(
-            keccak256(
-                abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))
-            ),
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))),
             keccak256(
                 abi.encode(
                     IRegistryCoordinator.QuorumBitmapUpdate({
@@ -2275,17 +2019,13 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
     }
 
     // @notice tests that the internal `_updateOperatorBitmap` function works as expected, for fuzzed inputs
-    function testFuzz_updateOperatorBitmapInternal_previousEntryInCurrentBlock(
-        uint192 newBitmap
-    ) public {
+    function testFuzz_updateOperatorBitmapInternal_previousEntryInCurrentBlock(uint192 newBitmap) public {
         uint192 pastBitmap = 1;
         testFuzz_updateOperatorBitmapInternal_noPreviousEntries(pastBitmap);
 
         registryCoordinator._updateOperatorBitmapExternal(defaultOperatorId, newBitmap);
         assertEq(
-            keccak256(
-                abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))
-            ),
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))),
             keccak256(
                 abi.encode(
                     IRegistryCoordinator.QuorumBitmapUpdate({
@@ -2299,9 +2039,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
     }
 
     // @notice tests that the internal `_updateOperatorBitmap` function works as expected, for fuzzed inputs
-    function testFuzz_updateOperatorBitmapInternal_previousEntryInPastBlock(
-        uint192 newBitmap
-    ) public {
+    function testFuzz_updateOperatorBitmapInternal_previousEntryInPastBlock(uint192 newBitmap) public {
         uint192 pastBitmap = 1;
         testFuzz_updateOperatorBitmapInternal_noPreviousEntries(pastBitmap);
 
@@ -2311,9 +2049,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
 
         registryCoordinator._updateOperatorBitmapExternal(defaultOperatorId, newBitmap);
         assertEq(
-            keccak256(
-                abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))
-            ),
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))),
             keccak256(
                 abi.encode(
                     IRegistryCoordinator.QuorumBitmapUpdate({
@@ -2325,9 +2061,7 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
             )
         );
         assertEq(
-            keccak256(
-                abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 1))
-            ),
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 1))),
             keccak256(
                 abi.encode(
                     IRegistryCoordinator.QuorumBitmapUpdate({

@@ -13,21 +13,11 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         IBLSApkRegistry _blsApkRegistry,
         IIndexRegistry _indexRegistry,
         ISocketRegistry _socketRegistry
-    )
-        RegistryCoordinator(
-            _serviceManager,
-            _stakeRegistry,
-            _blsApkRegistry,
-            _indexRegistry,
-            _socketRegistry
-        )
-    {
+    ) RegistryCoordinator(_serviceManager, _stakeRegistry, _blsApkRegistry, _indexRegistry, _socketRegistry) {
         _transferOwnership(msg.sender);
     }
 
-    function setQuorumCount(
-        uint8 count
-    ) external {
+    function setQuorumCount(uint8 count) external {
         quorumCount = count;
     }
 
@@ -52,11 +42,9 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
     }
 
     // @notice exposes the internal `_updateOperator` function, overriding all access controls
-    function _updateOperatorExternal(
-        address operator,
-        OperatorInfo memory operatorInfo,
-        bytes memory quorumsToUpdate
-    ) external {
+    function _updateOperatorExternal(address operator, OperatorInfo memory operatorInfo, bytes memory quorumsToUpdate)
+        external
+    {
         _updateOperator(operator, operatorInfo, quorumsToUpdate);
     }
 

@@ -15,7 +15,5 @@ interface IStakeRegistryEvents {
     /// @notice emitted when `strategy` has removed from the array at `strategyParams[quorumNumber]`
     event StrategyRemovedFromQuorum(uint8 indexed quorumNumber, IStrategy strategy);
     /// @notice emitted when `strategy` has its `multiplier` updated in the array at `strategyParams[quorumNumber]`
-    event StrategyMultiplierUpdated(
-        uint8 indexed quorumNumber, IStrategy strategy, uint256 multiplier
-    );
+    event StrategyMultiplierUpdated(uint8 indexed quorumNumber, IStrategy strategy, uint256 multiplier);
 }

@@ -10,9 +10,7 @@ contract Integration_NonFull_Register_Deregister is IntegrationChecks {
 
     // 1. Register for all quorums
     // 2. Deregister from all quorums
-    function testFuzz_registerAll_deregisterAll(
-        uint24 _random
-    ) public {
+    function testFuzz_registerAll_deregisterAll(uint24 _random) public {
         _configRand({
             _randomSeed: _random,
             _userTypes: DEFAULT | ALT_METHODS,
@@ -42,9 +40,7 @@ contract Integration_NonFull_Register_Deregister is IntegrationChecks {
     // 1. Register for some quorums
     // 2. Deregister from some quorums
     // 3. Deregister from any remaining quorums
-    function testFuzz_registerSome_deregisterSome_deregisterRemaining(
-        uint24 _random
-    ) public {
+    function testFuzz_registerSome_deregisterSome_deregisterRemaining(uint24 _random) public {
         _configRand({
             _randomSeed: _random,
             _userTypes: DEFAULT | ALT_METHODS,
@@ -83,9 +79,7 @@ contract Integration_NonFull_Register_Deregister is IntegrationChecks {
     // 1. Register for some quorums
     // 2. Deregister from some quorums
     // 3. Reregister for some quorums
-    function testFuzz_registerSome_deregisterSome_reregisterSome(
-        uint24 _random
-    ) public {
+    function testFuzz_registerSome_deregisterSome_reregisterSome(uint24 _random) public {
         _configRand({
             _randomSeed: _random,
             _userTypes: DEFAULT | ALT_METHODS,

@@ -4,10 +4,8 @@ pragma solidity ^0.8.12;
 import {Test, console} from "forge-std/Test.sol";
 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {IDelegationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
-import {IRewardsCoordinator} from
-    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 import {ECDSAServiceManagerMock} from "../mocks/ECDSAServiceManagerMock.sol";
@@ -19,10 +17,7 @@ contract MockDelegationManager {
         return 1000; // Return a dummy value for simplicity
     }
 
-    function getOperatorShares(
-        address,
-        IStrategy[] memory strategies
-    ) external pure returns (uint256[] memory) {
+    function getOperatorShares(address, IStrategy[] memory strategies) external pure returns (uint256[] memory) {
         uint256[] memory response = new uint256[](strategies.length);
         for (uint256 i; i < strategies.length; i++) {
             response[i] = 1000;
@@ -32,24 +27,15 @@ contract MockDelegationManager {
 }
 
 contract MockAVSDirectory {
-    function registerOperatorToAVS(
-        address,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory
-    ) external pure {}
+    function registerOperatorToAVS(address, ISignatureUtils.SignatureWithSaltAndExpiry memory) external pure {}
 
-    function deregisterOperatorFromAVS(
-        address
-    ) external pure {}
+    function deregisterOperatorFromAVS(address) external pure {}
 
-    function updateAVSMetadataURI(
-        string memory
-    ) external pure {}
+    function updateAVSMetadataURI(string memory) external pure {}
 }
 
 contract MockRewardsCoordinator {
-    function createAVSRewardsSubmission(
-        IRewardsCoordinator.RewardsSubmission[] calldata
-    ) external pure {}
+    function createAVSRewardsSubmission(IRewardsCoordinator.RewardsSubmission[] calldata) external pure {}
 }
 
 contract ECDSAServiceManagerSetup is Test {
@@ -66,8 +52,7 @@ contract ECDSAServiceManagerSetup is Test {
     function setUp() public {
         mockDelegationManager = new MockDelegationManager();
         mockAVSDirectory = new MockAVSDirectory();
-        mockStakeRegistry =
-            new ECDSAStakeRegistryMock(IDelegationManager(address(mockDelegationManager)));
+        mockStakeRegistry = new ECDSAStakeRegistryMock(IDelegationManager(address(mockDelegationManager)));
         mockRewardsCoordinator = new MockRewardsCoordinator();
 
         serviceManager = new ECDSAServiceManagerMock(

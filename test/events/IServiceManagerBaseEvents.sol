@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import {
-    IRewardsCoordinator,
-    IERC20
-} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IRewardsCoordinator, IERC20} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 interface IServiceManagerBaseEvents {
     /// RewardsCoordinator EVENTS ///
@@ -29,12 +26,8 @@ interface IServiceManagerBaseEvents {
         address indexed rewardsForAllSubmitter, bool indexed oldValue, bool indexed newValue
     );
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
-    event DefaultOperatorSplitBipsSet(
-        uint16 oldDefaultOperatorSplitBips, uint16 newDefaultOperatorSplitBips
-    );
-    event ClaimerForSet(
-        address indexed earner, address indexed oldClaimer, address indexed claimer
-    );
+    event DefaultOperatorSplitBipsSet(uint16 oldDefaultOperatorSplitBips, uint16 newDefaultOperatorSplitBips);
+    event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
     /// @notice rootIndex is the specific array index of the newly created root in the storage array
     event DistributionRootSubmitted(
         uint32 indexed rootIndex,

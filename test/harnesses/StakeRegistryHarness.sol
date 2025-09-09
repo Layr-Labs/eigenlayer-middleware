@@ -5,16 +5,14 @@ import "../../src/StakeRegistry.sol";
 
 // wrapper around the StakeRegistry contract that exposes the internal functions for unit testing.
 contract StakeRegistryHarness is StakeRegistry {
-    constructor(
-        IRegistryCoordinator _registryCoordinator,
-        IDelegationManager _delegationManager
-    ) StakeRegistry(_registryCoordinator, _delegationManager) {}
+    constructor(IRegistryCoordinator _registryCoordinator, IDelegationManager _delegationManager)
+        StakeRegistry(_registryCoordinator, _delegationManager)
+    {}
 
-    function recordOperatorStakeUpdate(
-        bytes32 operatorId,
-        uint8 quorumNumber,
-        uint96 newStake
-    ) external returns (int256) {
+    function recordOperatorStakeUpdate(bytes32 operatorId, uint8 quorumNumber, uint96 newStake)
+        external
+        returns (int256)
+    {
         return _recordOperatorStakeUpdate(operatorId, quorumNumber, newStake);
     }
 

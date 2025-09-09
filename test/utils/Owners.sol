@@ -13,9 +13,7 @@ contract Owners is Test {
         ownersConfigJson = vm.readFile("./src/test/test-data/owners.json");
     }
 
-    function ownerPrefix(
-        uint256 index
-    ) public pure returns (string memory) {
+    function ownerPrefix(uint256 index) public pure returns (string memory) {
         return string.concat(".owners[", string.concat(vm.toString(index), "]."));
     }
 
@@ -23,9 +21,7 @@ contract Owners is Test {
         return stdJson.readUint(ownersConfigJson, ".numOwners");
     }
 
-    function getOwnerAddress(
-        uint256 index
-    ) public view returns (address) {
+    function getOwnerAddress(uint256 index) public view returns (address) {
         return stdJson.readAddress(ownersConfigJson, string.concat(ownerPrefix(index), "Address"));
     }
 
@@ -44,9 +40,7 @@ contract Owners is Test {
         return addresses;
     }
 
-    function resetOwnersConfigJson(
-        string memory newConfig
-    ) public {
+    function resetOwnersConfigJson(string memory newConfig) public {
         ownersConfigJson = vm.readFile(newConfig);
     }
 }

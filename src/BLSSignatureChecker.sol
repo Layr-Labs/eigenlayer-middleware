@@ -38,9 +38,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         _;
     }
 
-    constructor(
-        IRegistryCoordinator _registryCoordinator
-    ) {
+    constructor(IRegistryCoordinator _registryCoordinator) {
         registryCoordinator = _registryCoordinator;
         stakeRegistry = _registryCoordinator.stakeRegistry();
         blsApkRegistry = _registryCoordinator.blsApkRegistry();
@@ -53,9 +51,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
      * than the delegation.minWithdrawalDelayBlocks() window.
      * @param value to toggle staleStakesForbidden
      */
-    function setStaleStakesForbidden(
-        bool value
-    ) external onlyCoordinatorOwner {
+    function setStaleStakesForbidden(bool value) external onlyCoordinatorOwner {
         _setStaleStakesForbidden(value);
     }
 
@@ -95,9 +91,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         uint32 referenceBlockNumber,
         NonSignerStakesAndSignature memory params
     ) public view returns (QuorumStakeTotals memory, bytes32) {
-        require(
-            quorumNumbers.length != 0, "BLSSignatureChecker.checkSignatures: empty quorum input"
-        );
+        require(quorumNumbers.length != 0, "BLSSignatureChecker.checkSignatures: empty quorum input");
 
         require(
             (quorumNumbers.length == params.quorumApks.length)
@@ -113,8 +107,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         );
 
         require(
-            referenceBlockNumber < uint32(block.number),
-            "BLSSignatureChecker.checkSignatures: invalid reference block"
+            referenceBlockNumber < uint32(block.number), "BLSSignatureChecker.checkSignatures: invalid reference block"
         );
 
         // This method needs to calculate the aggregate pubkey for all signing operators across
@@ -139,9 +132,8 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         {
             // Get a bitmap of the quorums signing the message, and validate that
             // quorumNumbers contains only unique, valid quorum numbers
-            uint256 signingQuorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(
-                quorumNumbers, registryCoordinator.quorumCount()
-            );
+            uint256 signingQuorumBitmap =
+                BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers, registryCoordinator.quorumCount());
 
             for (uint256 j = 0; j < params.nonSignerPubkeys.length; j++) {
                 // The nonsigner's pubkey hash doubles as their operatorId
@@ -150,15 +142,13 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                 nonSigners.pubkeyHashes[j] = params.nonSignerPubkeys[j].hashG1Point();
                 if (j != 0) {
                     require(
-                        uint256(nonSigners.pubkeyHashes[j])
-                            > uint256(nonSigners.pubkeyHashes[j - 1]),
+                        uint256(nonSigners.pubkeyHashes[j]) > uint256(nonSigners.pubkeyHashes[j - 1]),
                         "BLSSignatureChecker.checkSignatures: nonSignerPubkeys not sorted"
                     );
                 }
 
                 // Get the quorums the nonsigner was registered for at referenceBlockNumber
-                nonSigners.quorumBitmaps[j] = registryCoordinator
-                    .getQuorumBitmapAtBlockNumberByIndex({
+                nonSigners.quorumBitmaps[j] = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex({
                     operatorId: nonSigners.pubkeyHashes[j],
                     blockNumber: referenceBlockNumber,
                     index: params.nonSignerQuorumBitmapIndices[j]
@@ -188,16 +178,15 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
          */
         {
             bool _staleStakesForbidden = staleStakesForbidden;
-            uint256 withdrawalDelayBlocks =
-                _staleStakesForbidden ? delegation.minWithdrawalDelayBlocks() : 0;
+            uint256 withdrawalDelayBlocks = _staleStakesForbidden ? delegation.minWithdrawalDelayBlocks() : 0;
 
             for (uint256 i = 0; i < quorumNumbers.length; i++) {
                 // If we're disallowing stale stake updates, check that each quorum's last update block
                 // is within withdrawalDelayBlocks
                 if (_staleStakesForbidden) {
                     require(
-                        registryCoordinator.quorumUpdateBlockNumber(uint8(quorumNumbers[i]))
-                            + withdrawalDelayBlocks > referenceBlockNumber,
+                        registryCoordinator.quorumUpdateBlockNumber(uint8(quorumNumbers[i])) + withdrawalDelayBlocks
+                            > referenceBlockNumber,
                         "BLSSignatureChecker.checkSignatures: StakeRegistry updates must be within withdrawalDelayBlocks window"
                     );
                 }
@@ -216,8 +205,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                 apk = apk.plus(params.quorumApks[i]);
 
                 // Get the total and starting signed stake for the quorum at referenceBlockNumber
-                stakeTotals.totalStakeForQuorum[i] = stakeRegistry
-                    .getTotalStakeAtBlockNumberFromIndex({
+                stakeTotals.totalStakeForQuorum[i] = stakeRegistry.getTotalStakeAtBlockNumberFromIndex({
                     quorumNumber: uint8(quorumNumbers[i]),
                     blockNumber: referenceBlockNumber,
                     index: params.totalStakeIndices[i]
@@ -232,8 +220,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                 for (uint256 j = 0; j < params.nonSignerPubkeys.length; j++) {
                     // if the nonSigner is a part of the quorum, subtract their stake from the running total
                     if (BitmapUtils.isSet(nonSigners.quorumBitmaps[j], uint8(quorumNumbers[i]))) {
-                        stakeTotals.signedStakeForQuorum[i] -= stakeRegistry
-                            .getStakeAtBlockNumberAndIndex({
+                        stakeTotals.signedStakeForQuorum[i] -= stakeRegistry.getStakeAtBlockNumberAndIndex({
                             quorumNumber: uint8(quorumNumbers[i]),
                             blockNumber: referenceBlockNumber,
                             operatorId: nonSigners.pubkeyHashes[j],
@@ -250,15 +237,11 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
             // verify the signature
             (bool pairingSuccessful, bool signatureIsValid) =
                 trySignatureAndApkVerification(msgHash, apk, params.apkG2, params.sigma);
-            require(
-                pairingSuccessful,
-                "BLSSignatureChecker.checkSignatures: pairing precompile call failed"
-            );
+            require(pairingSuccessful, "BLSSignatureChecker.checkSignatures: pairing precompile call failed");
             require(signatureIsValid, "BLSSignatureChecker.checkSignatures: signature is invalid");
         }
         // set signatoryRecordHash variable used for fraudproofs
-        bytes32 signatoryRecordHash =
-            keccak256(abi.encodePacked(referenceBlockNumber, nonSigners.pubkeyHashes));
+        bytes32 signatoryRecordHash = keccak256(abi.encodePacked(referenceBlockNumber, nonSigners.pubkeyHashes));
 
         // return the total stakes that signed for each quorum, and a hash of the information required to prove the exact signers and stake
         return (stakeTotals, signatoryRecordHash);
@@ -283,15 +266,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         uint256 gamma = uint256(
             keccak256(
                 abi.encodePacked(
-                    msgHash,
-                    apk.X,
-                    apk.Y,
-                    apkG2.X[0],
-                    apkG2.X[1],
-                    apkG2.Y[0],
-                    apkG2.Y[1],
-                    sigma.X,
-                    sigma.Y
+                    msgHash, apk.X, apk.Y, apkG2.X[0], apkG2.X[1], apkG2.Y[0], apkG2.Y[1], sigma.X, sigma.Y
                 )
             )
         ) % BN254.FR_MODULUS;
@@ -305,9 +280,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         );
     }
 
-    function _setStaleStakesForbidden(
-        bool value
-    ) internal {
+    function _setStaleStakesForbidden(bool value) internal {
         staleStakesForbidden = value;
         emit StaleStakesForbiddenUpdate(value);
     }

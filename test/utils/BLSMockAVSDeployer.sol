@@ -21,9 +21,7 @@ contract BLSMockAVSDeployer is MockAVSDeployer {
         _setAggregatePublicKeysAndSignature();
     }
 
-    function _setUpBLSMockAVSDeployer(
-        uint8 numQuorumsToAdd
-    ) public virtual {
+    function _setUpBLSMockAVSDeployer(uint8 numQuorumsToAdd) public virtual {
         _deployMockEigenLayerAndAVS(numQuorumsToAdd);
         _setAggregatePublicKeysAndSignature();
     }
@@ -61,9 +59,8 @@ contract BLSMockAVSDeployer is MockAVSDeployer {
         // generate numSigners numbers that add up to aggSignerPrivKey mod BN254.FR_MODULUS
         uint256 sum = 0;
         for (uint256 i = 0; i < numSigners - 1; i++) {
-            signerPrivateKeys[i] = uint256(
-                keccak256(abi.encodePacked("signerPrivateKey", pseudoRandomNumber, i))
-            ) % BN254.FR_MODULUS;
+            signerPrivateKeys[i] =
+                uint256(keccak256(abi.encodePacked("signerPrivateKey", pseudoRandomNumber, i))) % BN254.FR_MODULUS;
             sum = addmod(sum, signerPrivateKeys[i], BN254.FR_MODULUS);
         }
         // signer private keys need to add to aggSignerPrivKey
@@ -72,9 +69,8 @@ contract BLSMockAVSDeployer is MockAVSDeployer {
 
         uint256[] memory nonSignerPrivateKeys = new uint256[](numNonSigners);
         for (uint256 i = 0; i < numNonSigners; i++) {
-            nonSignerPrivateKeys[i] = uint256(
-                keccak256(abi.encodePacked("nonSignerPrivateKey", pseudoRandomNumber, i))
-            ) % BN254.FR_MODULUS;
+            nonSignerPrivateKeys[i] =
+                uint256(keccak256(abi.encodePacked("nonSignerPrivateKey", pseudoRandomNumber, i))) % BN254.FR_MODULUS;
         }
 
         // Sort nonSignerPrivateKeys in order of ascending pubkeyHash
@@ -153,30 +149,24 @@ contract BLSMockAVSDeployer is MockAVSDeployer {
             _registerOperatorWithCoordinator(operators[i], quorumBitmap, pubkeys[i], defaultStake);
         }
 
-        uint32 referenceBlockNumber = registrationBlockNumber
-            + blocksBetweenRegistrations * uint32(maxOperatorsToRegister) + 1;
+        uint32 referenceBlockNumber =
+            registrationBlockNumber + blocksBetweenRegistrations * uint32(maxOperatorsToRegister) + 1;
         cheats.roll(referenceBlockNumber + 100);
 
-        OperatorStateRetriever.CheckSignaturesIndices memory checkSignaturesIndices =
-        operatorStateRetriever.getCheckSignaturesIndices(
-            registryCoordinator, referenceBlockNumber, quorumNumbers, nonSignerOperatorIds
-        );
+        OperatorStateRetriever.CheckSignaturesIndices memory checkSignaturesIndices = operatorStateRetriever
+            .getCheckSignaturesIndices(registryCoordinator, referenceBlockNumber, quorumNumbers, nonSignerOperatorIds);
 
-        nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices =
-            checkSignaturesIndices.nonSignerQuorumBitmapIndices;
+        nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices = checkSignaturesIndices.nonSignerQuorumBitmapIndices;
         nonSignerStakesAndSignature.apkG2 = aggSignerApkG2;
         nonSignerStakesAndSignature.sigma = sigma;
         nonSignerStakesAndSignature.quorumApkIndices = checkSignaturesIndices.quorumApkIndices;
         nonSignerStakesAndSignature.totalStakeIndices = checkSignaturesIndices.totalStakeIndices;
-        nonSignerStakesAndSignature.nonSignerStakeIndices =
-            checkSignaturesIndices.nonSignerStakeIndices;
+        nonSignerStakesAndSignature.nonSignerStakeIndices = checkSignaturesIndices.nonSignerStakeIndices;
 
         return (referenceBlockNumber, nonSignerStakesAndSignature);
     }
 
-    function _toPubkeyHash(
-        uint256 privKey
-    ) internal view returns (bytes32) {
+    function _toPubkeyHash(uint256 privKey) internal view returns (bytes32) {
         return BN254.generatorG1().scalar_mul(privKey).hashG1Point();
     }
 }

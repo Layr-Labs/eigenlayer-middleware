@@ -10,9 +10,7 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
     // 2. (core) Deposit additional tokens
     // 3. Update stakes
     // 4. Deregister from all quorums
-    function testFuzz_registerAll_increaseCoreBalance_update_deregisterAll(
-        uint24 _random
-    ) public {
+    function testFuzz_registerAll_increaseCoreBalance_update_deregisterAll(uint24 _random) public {
         _configRand({
             _randomSeed: _random,
             _userTypes: DEFAULT | ALT_METHODS,
@@ -54,9 +52,7 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
     // 1. Register for all quorums
     // 2. (core) Deposit additional tokens
     // 3. Deregister from all quorums
-    function testFuzz_registerAll_increaseCoreBalance_deregisterAll(
-        uint24 _random
-    ) public {
+    function testFuzz_registerAll_increaseCoreBalance_deregisterAll(uint24 _random) public {
         _configRand({
             _randomSeed: _random,
             _userTypes: DEFAULT | ALT_METHODS,
@@ -93,9 +89,7 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
     // 1. Register for all quorums
     // 2. (core) Queue full withdrawal
     // 3. updateOperators/updateOperatorsForQuorum
-    function testFuzz_registerAll_decreaseCoreBalance_update(
-        uint24 _random
-    ) public {
+    function testFuzz_registerAll_decreaseCoreBalance_update(uint24 _random) public {
         _configRand({
             _randomSeed: _random,
             _userTypes: DEFAULT | ALT_METHODS,
@@ -128,9 +122,7 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
     // 1. Register for all quorums
     // 2. (core) Queue full withdrawal
     // 3. Deregister from all quorums
-    function testFuzz_registerAll_decreaseCoreBalance_deregisterAll(
-        uint24 _random
-    ) public {
+    function testFuzz_registerAll_decreaseCoreBalance_deregisterAll(uint24 _random) public {
         _configRand({
             _randomSeed: _random,
             _userTypes: DEFAULT | ALT_METHODS,
@@ -164,9 +156,7 @@ contract Integration_NonFull_Register_CoreBalanceChange_Update is IntegrationChe
     // 1. Register for all quorums
     // 2. updateOperators/updateOperatorsForQuorum
     // 3. Deregister from all quorums
-    function testFuzz_registerAll_update_deregisterAll(
-        uint24 _random
-    ) public {
+    function testFuzz_registerAll_update_deregisterAll(uint24 _random) public {
         _configRand({
             _randomSeed: _random,
             _userTypes: DEFAULT | ALT_METHODS,

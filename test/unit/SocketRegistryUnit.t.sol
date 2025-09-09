@@ -19,9 +19,7 @@ contract SocketRegistryUnitTests is MockAVSDeployer {
 
     function test_setOperatorSocket_revert_notRegistryCoordinator() public {
         vm.startPrank(address(0));
-        vm.expectRevert(
-            "SocketRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator"
-        );
+        vm.expectRevert("SocketRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator");
         socketRegistry.setOperatorSocket(defaultOperatorId, "testSocket");
     }
 }

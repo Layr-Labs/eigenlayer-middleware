@@ -1030,19 +1030,13 @@ contract Integration_AVS_Sync_GasCosts_FFI is IntegrationChecks {
             IBLSApkRegistry.PubkeyRegistrationParams memory pubkey;
             uint256 privateKey = privateKeys[i];
             // G1
-            pubkey.pubkeyG1.X =
-                stdJson.readUint(config_data, string.concat(".G1x[", vm.toString(i), "]"));
-            pubkey.pubkeyG1.Y =
-                stdJson.readUint(config_data, string.concat(".G1y[", vm.toString(i), "]"));
+            pubkey.pubkeyG1.X = stdJson.readUint(config_data, string.concat(".G1x[", vm.toString(i), "]"));
+            pubkey.pubkeyG1.Y = stdJson.readUint(config_data, string.concat(".G1y[", vm.toString(i), "]"));
             // G2
-            pubkey.pubkeyG2.X[1] =
-                stdJson.readUint(config_data, string.concat(".G2x1[", vm.toString(i), "]"));
-            pubkey.pubkeyG2.Y[1] =
-                stdJson.readUint(config_data, string.concat(".G2y1[", vm.toString(i), "]"));
-            pubkey.pubkeyG2.X[0] =
-                stdJson.readUint(config_data, string.concat(".G2x0[", vm.toString(i), "]"));
-            pubkey.pubkeyG2.Y[0] =
-                stdJson.readUint(config_data, string.concat(".G2y0[", vm.toString(i), "]"));
+            pubkey.pubkeyG2.X[1] = stdJson.readUint(config_data, string.concat(".G2x1[", vm.toString(i), "]"));
+            pubkey.pubkeyG2.Y[1] = stdJson.readUint(config_data, string.concat(".G2y1[", vm.toString(i), "]"));
+            pubkey.pubkeyG2.X[0] = stdJson.readUint(config_data, string.concat(".G2x0[", vm.toString(i), "]"));
+            pubkey.pubkeyG2.Y[0] = stdJson.readUint(config_data, string.concat(".G2y0[", vm.toString(i), "]"));
             privKeys.push(privateKey);
             pubkeys.push(pubkey);
         }
@@ -1089,12 +1083,7 @@ contract Integration_AVS_Sync_GasCosts_FFI is IntegrationChecks {
         _configRand({
             _randomSeed: 1,
             _userTypes: DEFAULT,
-            _quorumConfig: QuorumConfig({
-                numQuorums: ONE,
-                numStrategies: TWENTY,
-                minimumStake: NO_MINIMUM,
-                fillTypes: FULL
-            })
+            _quorumConfig: QuorumConfig({numQuorums: ONE, numStrategies: TWENTY, minimumStake: NO_MINIMUM, fillTypes: FULL})
         });
 
         _updateOperators_SingleQuorum();
@@ -1105,12 +1094,7 @@ contract Integration_AVS_Sync_GasCosts_FFI is IntegrationChecks {
         _configRand({
             _randomSeed: 1,
             _userTypes: DEFAULT,
-            _quorumConfig: QuorumConfig({
-                numQuorums: ONE,
-                numStrategies: FIFTEEN,
-                minimumStake: NO_MINIMUM,
-                fillTypes: FULL
-            })
+            _quorumConfig: QuorumConfig({numQuorums: ONE, numStrategies: FIFTEEN, minimumStake: NO_MINIMUM, fillTypes: FULL})
         });
         _updateOperators_SingleQuorum();
     }
@@ -1135,9 +1119,7 @@ contract Integration_AVS_Sync_GasCosts_FFI is IntegrationChecks {
         console.log("Gas used for updateOperatorsForQuorum: ", gasBefore - gasAfter);
     }
 
-    function _sortArray(
-        address[] memory arr
-    ) internal pure returns (address[] memory) {
+    function _sortArray(address[] memory arr) internal pure returns (address[] memory) {
         uint256 l = arr.length;
         for (uint256 i = 0; i < l; i++) {
             for (uint256 j = i + 1; j < l; j++) {

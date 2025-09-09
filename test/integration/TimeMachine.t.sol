@@ -26,9 +26,7 @@ contract TimeMachine is Test {
         return curState;
     }
 
-    function warpToPresent(
-        uint256 curState
-    ) public {
+    function warpToPresent(uint256 curState) public {
         cheats.revertTo(curState);
     }
 }

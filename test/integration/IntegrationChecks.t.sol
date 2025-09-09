@@ -13,15 +13,11 @@ contract IntegrationChecks is IntegrationBase {
      *                             PRE-REGISTER CHECKS
      *
      */
-    function check_Never_Registered(
-        User operator
-    ) internal {
+    function check_Never_Registered(User operator) internal {
         _log("check_Never_Registered", operator);
 
         // RegistryCoordinator
-        assert_HasNoOperatorInfo(
-            operator, "operator should have empty id and NEVER_REGISTERED status"
-        );
+        assert_HasNoOperatorInfo(operator, "operator should have empty id and NEVER_REGISTERED status");
         assert_EmptyQuorumBitmap(operator, "operator already has bits in quorum bitmap");
 
         // BLSApkRegistry
@@ -42,36 +38,24 @@ contract IntegrationChecks is IntegrationBase {
         // RegistryCoordinator
         assert_HasOperatorInfoWithId(operator, "operatorInfo should have operatorId");
         assert_HasRegisteredStatus(operator, "operatorInfo status should be REGISTERED");
-        assert_IsRegisteredForQuorums(
-            operator, quorums, "current operator bitmap should include quorums"
-        );
-        assert_Snap_Registered_ForQuorums(
-            operator, quorums, "operator did not register for all quorums"
-        );
+        assert_IsRegisteredForQuorums(operator, quorums, "current operator bitmap should include quorums");
+        assert_Snap_Registered_ForQuorums(operator, quorums, "operator did not register for all quorums");
 
         // BLSApkRegistry
         assert_HasRegisteredPubkey(operator, "operator should have registered a pubkey");
-        assert_Snap_Added_QuorumApk(
-            operator, quorums, "operator pubkey should have been added to each quorum apk"
-        );
+        assert_Snap_Added_QuorumApk(operator, quorums, "operator pubkey should have been added to each quorum apk");
 
         // StakeRegistry
         assert_HasAtLeastMinimumStake(
             operator, quorums, "operator should have at least the minimum stake in each quorum"
         );
         assert_Snap_Added_OperatorWeight(
-            operator,
-            quorums,
-            "failed to add operator weight to operator and total stake in each quorum"
+            operator, quorums, "failed to add operator weight to operator and total stake in each quorum"
         );
 
         // IndexRegistry
-        assert_Snap_Added_OperatorCount(
-            quorums, "total operator count should have increased for each quorum"
-        );
-        assert_Snap_Added_OperatorListEntry(
-            operator, quorums, "operator list should have one more entry"
-        );
+        assert_Snap_Added_OperatorCount(quorums, "total operator count should have increased for each quorum");
+        assert_Snap_Added_OperatorListEntry(operator, quorums, "operator list should have one more entry");
 
         // AVSDirectory
         assert_IsRegisteredToAVS(operator, "operator should be registered to AVS");
@@ -104,9 +88,7 @@ contract IntegrationChecks is IntegrationBase {
         // BLSApkRegistry
         assert_HasRegisteredPubkey(incomingOperator, "operator should have registered a pubkey");
         assert_Snap_Added_QuorumApk(
-            incomingOperator,
-            standardQuorums,
-            "operator pubkey should have been added to standardQuorums apks"
+            incomingOperator, standardQuorums, "operator pubkey should have been added to standardQuorums apks"
         );
         assert_Snap_Churned_QuorumApk(
             incomingOperator,
@@ -117,9 +99,7 @@ contract IntegrationChecks is IntegrationBase {
 
         // StakeRegistry
         assert_HasAtLeastMinimumStake(
-            incomingOperator,
-            combinedQuorums,
-            "operator should have at least the minimum stake in each quorum"
+            incomingOperator, combinedQuorums, "operator should have at least the minimum stake in each quorum"
         );
         assert_Snap_Added_OperatorWeight(
             incomingOperator,
@@ -141,9 +121,7 @@ contract IntegrationChecks is IntegrationBase {
             churnedQuorums, "total operator count should be the same for churnedQuorums"
         );
         assert_Snap_Added_OperatorListEntry(
-            incomingOperator,
-            standardQuorums,
-            "operator list should have one more entry in standardQuorums"
+            incomingOperator, standardQuorums, "operator list should have one more entry in standardQuorums"
         );
         assert_Snap_Replaced_OperatorListEntries(
             incomingOperator,
@@ -163,30 +141,20 @@ contract IntegrationChecks is IntegrationBase {
             churnedQuorum[0] = churnedQuorums[i];
 
             // RegistryCoordinator
-            assert_HasOperatorInfoWithId(
-                churnedOperator, "churned operatorInfo should still have operatorId"
-            );
+            assert_HasOperatorInfoWithId(churnedOperator, "churned operatorInfo should still have operatorId");
             assert_NotRegisteredForQuorums(
-                churnedOperator,
-                churnedQuorum,
-                "churned operator bitmap should not include churned quorums"
+                churnedOperator, churnedQuorum, "churned operator bitmap should not include churned quorums"
             );
             assert_Snap_Deregistered_FromQuorums(
-                churnedOperator,
-                churnedQuorum,
-                "churned operator did not deregister from churned quorum"
+                churnedOperator, churnedQuorum, "churned operator did not deregister from churned quorum"
             );
 
             // BLSApkRegistry
-            assert_HasRegisteredPubkey(
-                churnedOperator, "churned operator should still have a registered pubkey"
-            );
+            assert_HasRegisteredPubkey(churnedOperator, "churned operator should still have a registered pubkey");
 
             // StakeRegistry
             assert_NoExistingStake(
-                churnedOperator,
-                churnedQuorum,
-                "operator should no longer have stake in any quorums"
+                churnedOperator, churnedQuorum, "operator should no longer have stake in any quorums"
             );
         }
     }
@@ -210,9 +178,7 @@ contract IntegrationChecks is IntegrationBase {
 
         // RegistryCoordinator
         assert_Snap_Unchanged_OperatorInfo(operator, "operator info should not have changed");
-        assert_Snap_Unchanged_QuorumBitmap(
-            operator, "operators quorum bitmap should not have changed"
-        );
+        assert_Snap_Unchanged_QuorumBitmap(operator, "operators quorum bitmap should not have changed");
 
         // BLSApkRegistry
         assert_Snap_Unchanged_QuorumApk(quorums, "quorum apks should not have changed");
@@ -229,26 +195,18 @@ contract IntegrationChecks is IntegrationBase {
         assert_Snap_Unchanged_OperatorListEntry(quorums, "operator list should not have changed");
 
         // Core
-        assert_Snap_Added_OperatorShares(
-            operator, strategies, tokenBalances, "operator should have additional stake"
-        );
+        assert_Snap_Added_OperatorShares(operator, strategies, tokenBalances, "operator should have additional stake");
     }
 
     /// @dev Checks that an operator's stake was successfully increased
     /// NOTE: This method assumes (and checks) that the operator already
     ///       met the minimum stake before stake was added.
-    function check_DepositUpdate_State(
-        User operator,
-        bytes memory quorums,
-        uint96[] memory addedWeights
-    ) internal {
+    function check_DepositUpdate_State(User operator, bytes memory quorums, uint96[] memory addedWeights) internal {
         _log("check_DepositUpdate_State", operator);
 
         // RegistryCoordinator
         assert_Snap_Unchanged_OperatorInfo(operator, "operator info should not have changed");
-        assert_Snap_Unchanged_QuorumBitmap(
-            operator, "operators quorum bitmap should not have changed"
-        );
+        assert_Snap_Unchanged_QuorumBitmap(operator, "operators quorum bitmap should not have changed");
 
         // BLSApkRegistry
         assert_Snap_Unchanged_QuorumApk(quorums, "quorum apks should not have changed");
@@ -261,19 +219,12 @@ contract IntegrationChecks is IntegrationBase {
             operator, quorums, "updateOperators should not effect operator weight calculation"
         );
         assert_Snap_AddedWeightToStakes(
-            operator,
-            quorums,
-            addedWeights,
-            "weights should have been added to operator and total stakes"
+            operator, quorums, addedWeights, "weights should have been added to operator and total stakes"
         );
 
         // IndexRegistry
-        assert_Snap_Unchanged_OperatorCount(
-            quorums, "total operator count should be unchanged for each quorum"
-        );
-        assert_Snap_Unchanged_OperatorListEntry(
-            quorums, "operator list should be unchanged for each quorum"
-        );
+        assert_Snap_Unchanged_OperatorCount(quorums, "total operator count should be unchanged for each quorum");
+        assert_Snap_Unchanged_OperatorListEntry(quorums, "operator list should be unchanged for each quorum");
 
         // AVSDirectory
         assert_IsRegisteredToAVS(operator, "operator should be registered to AVS");
@@ -290,9 +241,7 @@ contract IntegrationChecks is IntegrationBase {
 
         // RegistryCoordinator
         assert_Snap_Unchanged_OperatorInfo(operator, "operator info should not have changed");
-        assert_Snap_Unchanged_QuorumBitmap(
-            operator, "operators quorum bitmap should not have changed"
-        );
+        assert_Snap_Unchanged_QuorumBitmap(operator, "operators quorum bitmap should not have changed");
 
         // BLSApkRegistry
         assert_Snap_Unchanged_QuorumApk(quorums, "quorum apks should not have changed");
@@ -309,9 +258,7 @@ contract IntegrationChecks is IntegrationBase {
         assert_Snap_Unchanged_OperatorListEntry(quorums, "operator list should not have changed");
 
         // Core
-        assert_Snap_Removed_OperatorShares(
-            operator, strategies, shares, "operator should have reduced stake"
-        );
+        assert_Snap_Removed_OperatorShares(operator, strategies, shares, "operator should have reduced stake");
     }
 
     /// @dev Validate state when, after exiting from the core contracts, updateOperators is called
@@ -324,9 +271,7 @@ contract IntegrationChecks is IntegrationBase {
         assert_HasOperatorInfoWithId(operator, "operatorInfo should still have operatorId");
         assert_EmptyQuorumBitmap(operator, "operator should not have any bits in bitmap");
         assert_HasDeregisteredStatus(operator, "operatorInfo status should be DEREGISTERED");
-        assert_Snap_Deregistered_FromQuorums(
-            operator, quorums, "operator did not deregister from all quorums"
-        );
+        assert_Snap_Deregistered_FromQuorums(operator, quorums, "operator did not deregister from all quorums");
 
         // BLSApkRegistry
         assert_HasRegisteredPubkey(operator, "operator should still have a registered pubkey");
@@ -335,20 +280,14 @@ contract IntegrationChecks is IntegrationBase {
         );
 
         // StakeRegistry
-        assert_NoExistingStake(
-            operator, quorums, "operator should no longer have stake in any quorums"
-        );
+        assert_NoExistingStake(operator, quorums, "operator should no longer have stake in any quorums");
         assert_Snap_Removed_TotalStake(
             operator, quorums, "failed to remove operator weight from total stake for each quorum"
         );
 
         // IndexRegistry
-        assert_Snap_Reduced_OperatorCount(
-            quorums, "total operator count should have decreased for each quorum"
-        );
-        assert_Snap_Removed_OperatorListEntry(
-            operator, quorums, "operator list should have one fewer entry"
-        );
+        assert_Snap_Reduced_OperatorCount(quorums, "total operator count should have decreased for each quorum");
+        assert_Snap_Removed_OperatorListEntry(operator, quorums, "operator list should have one fewer entry");
 
         // AVSDirectory
         assert_NotRegisteredToAVS(operator, "operator should not be registered to the AVS");
@@ -360,27 +299,19 @@ contract IntegrationChecks is IntegrationBase {
 
         // RegistryCoordinator
         assert_Snap_Unchanged_OperatorInfo(operator, "operator info should not have changed");
-        assert_Snap_Unchanged_QuorumBitmap(
-            operator, "operators quorum bitmap should not have changed"
-        );
+        assert_Snap_Unchanged_QuorumBitmap(operator, "operators quorum bitmap should not have changed");
 
         // BLSApkRegistry
         assert_Snap_Unchanged_QuorumApk(quorums, "quorum apks should not have changed");
 
         // StakeRegistry
-        assert_Snap_Unchanged_OperatorWeight(
-            operator, quorums, "operator weight should be unchanged"
-        );
+        assert_Snap_Unchanged_OperatorWeight(operator, quorums, "operator weight should be unchanged");
         assert_Snap_Unchanged_OperatorStake(operator, quorums, "operator stake should be unchanged");
         assert_Snap_Unchanged_TotalStake(quorums, "total stake should be unchanged");
 
         // IndexRegistry
-        assert_Snap_Unchanged_OperatorCount(
-            quorums, "total operator count should be unchanged for each quorum"
-        );
-        assert_Snap_Unchanged_OperatorListEntry(
-            quorums, "operator list should be unchanged for each quorum"
-        );
+        assert_Snap_Unchanged_OperatorCount(quorums, "total operator count should be unchanged for each quorum");
+        assert_Snap_Unchanged_OperatorListEntry(quorums, "operator list should be unchanged for each quorum");
     }
 
     /**
@@ -395,12 +326,8 @@ contract IntegrationChecks is IntegrationBase {
 
         // RegistryCoordinator
         assert_HasOperatorInfoWithId(operator, "operatorInfo should still have operatorId");
-        assert_NotRegisteredForQuorums(
-            operator, quorums, "current operator bitmap should not include quorums"
-        );
-        assert_Snap_Deregistered_FromQuorums(
-            operator, quorums, "operator did not deregister from all quorums"
-        );
+        assert_NotRegisteredForQuorums(operator, quorums, "current operator bitmap should not include quorums");
+        assert_Snap_Deregistered_FromQuorums(operator, quorums, "operator did not deregister from all quorums");
 
         // BLSApkRegistry
         assert_HasRegisteredPubkey(operator, "operator should still have a registered pubkey");
@@ -409,26 +336,18 @@ contract IntegrationChecks is IntegrationBase {
         );
 
         // StakeRegistry
-        assert_NoExistingStake(
-            operator, quorums, "operator should no longer have stake in any quorums"
-        );
+        assert_NoExistingStake(operator, quorums, "operator should no longer have stake in any quorums");
         assert_Snap_Removed_TotalStake(
             operator, quorums, "failed to remove operator weight from total stake for each quorum"
         );
 
         // IndexRegistry
-        assert_Snap_Reduced_OperatorCount(
-            quorums, "total operator count should have decreased for each quorum"
-        );
-        assert_Snap_Removed_OperatorListEntry(
-            operator, quorums, "operator list should have one fewer entry"
-        );
+        assert_Snap_Reduced_OperatorCount(quorums, "total operator count should have decreased for each quorum");
+        assert_Snap_Removed_OperatorListEntry(operator, quorums, "operator list should have one fewer entry");
     }
 
     /// @dev Check that the operator correctly deregistered from ALL their quorums
-    function check_CompleteDeregister_State(
-        User operator
-    ) internal {
+    function check_CompleteDeregister_State(User operator) internal {
         _log("check_CompleteDeregister_State", operator);
 
         // RegistryCoordinator

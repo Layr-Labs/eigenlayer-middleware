@@ -8,9 +8,7 @@ import "../../../src/libraries/BN254.sol";
 contract G2Operations is Test {
     using Strings for uint256;
 
-    function mul(
-        uint256 x
-    ) public returns (BN254.G2Point memory g2Point) {
+    function mul(uint256 x) public returns (BN254.G2Point memory g2Point) {
         string[] memory inputs = new string[](5);
         inputs[0] = "go";
         inputs[1] = "run";

@@ -21,9 +21,7 @@ interface IEjectionManager {
     ///@notice Emitted when the ejector address is set
     event EjectorUpdated(address ejector, bool status);
     ///@notice Emitted when the ratelimit parameters for a quorum are set
-    event QuorumEjectionParamsSet(
-        uint8 quorumNumber, uint32 rateLimitWindow, uint16 ejectableStakePercent
-    );
+    event QuorumEjectionParamsSet(uint8 quorumNumber, uint32 rateLimitWindow, uint16 ejectableStakePercent);
     ///@notice Emitted when an operator is ejected
     event OperatorEjected(bytes32 operatorId, uint8 quorumNumber);
     ///@notice Emitted when operators are ejected for a quroum
@@ -33,19 +31,14 @@ interface IEjectionManager {
      * @notice Ejects operators from the AVSs registryCoordinator under a ratelimit
      * @param _operatorIds The ids of the operators to eject for each quorum
      */
-    function ejectOperators(
-        bytes32[][] memory _operatorIds
-    ) external;
+    function ejectOperators(bytes32[][] memory _operatorIds) external;
 
     /**
      * @notice Sets the ratelimit parameters for a quorum
      * @param _quorumNumber The quorum number to set the ratelimit parameters for
      * @param _quorumEjectionParams The quorum ratelimit parameters to set for the given quorum
      */
-    function setQuorumEjectionParams(
-        uint8 _quorumNumber,
-        QuorumEjectionParams memory _quorumEjectionParams
-    ) external;
+    function setQuorumEjectionParams(uint8 _quorumNumber, QuorumEjectionParams memory _quorumEjectionParams) external;
 
     /**
      * @notice Sets the address permissioned to eject operators under a ratelimit
@@ -57,7 +50,5 @@ interface IEjectionManager {
      * @notice Returns the amount of stake that can be ejected for a quorum at the current block.timestamp
      * @param _quorumNumber The quorum number to view ejectable stake for
      */
-    function amountEjectableForQuorum(
-        uint8 _quorumNumber
-    ) external view returns (uint256);
+    function amountEjectableForQuorum(uint8 _quorumNumber) external view returns (uint256);
 }

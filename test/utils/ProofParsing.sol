@@ -21,9 +21,7 @@ contract ProofParsing is Test {
     bytes32 slotRoot;
     bytes32 executionPayloadRoot;
 
-    function setJSON(
-        string memory path
-    ) public {
+    function setJSON(string memory path) public {
         proofConfigJson = vm.readFile(path);
     }
 
@@ -114,9 +112,7 @@ contract ProofParsing is Test {
     function getStateRootProof() public returns (bytes32[] memory) {
         bytes32[] memory stateRootProof = new bytes32[](3);
         for (uint256 i = 0; i < 3; i++) {
-            prefix = string.concat(
-                ".StateRootAgainstLatestBlockHeaderProof[", string.concat(vm.toString(i), "]")
-            );
+            prefix = string.concat(".StateRootAgainstLatestBlockHeaderProof[", string.concat(vm.toString(i), "]"));
             stateRootProof[i] = (stdJson.readBytes32(proofConfigJson, prefix));
         }
         return stateRootProof;
@@ -185,8 +181,7 @@ contract ProofParsing is Test {
     function getWithdrawalCredentialProof() public returns (bytes32[] memory) {
         bytes32[] memory withdrawalCredenitalProof = new bytes32[](46);
         for (uint256 i = 0; i < 46; i++) {
-            prefix =
-                string.concat(".WithdrawalCredentialProof[", string.concat(vm.toString(i), "]"));
+            prefix = string.concat(".WithdrawalCredentialProof[", string.concat(vm.toString(i), "]"));
             withdrawalCredenitalProof[i] = (stdJson.readBytes32(proofConfigJson, prefix));
         }
         return withdrawalCredenitalProof;

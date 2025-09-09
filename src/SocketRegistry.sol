@@ -33,24 +33,17 @@ contract SocketRegistry is ISocketRegistry {
         _;
     }
 
-    constructor(
-        IRegistryCoordinator _registryCoordinator
-    ) {
+    constructor(IRegistryCoordinator _registryCoordinator) {
         registryCoordinator = address(_registryCoordinator);
     }
 
     /// @notice sets the socket for an operator only callable by the RegistryCoordinator
-    function setOperatorSocket(
-        bytes32 _operatorId,
-        string memory _socket
-    ) external onlyRegistryCoordinator {
+    function setOperatorSocket(bytes32 _operatorId, string memory _socket) external onlyRegistryCoordinator {
         operatorIdToSocket[_operatorId] = _socket;
     }
 
     /// @notice gets the stored socket for an operator
-    function getOperatorSocket(
-        bytes32 _operatorId
-    ) external view returns (string memory) {
+    function getOperatorSocket(bytes32 _operatorId) external view returns (string memory) {
         return operatorIdToSocket[_operatorId];
     }
 }

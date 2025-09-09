@@ -9,9 +9,7 @@ library BitmapStrings {
     /// @dev Given an input quorum array, returns a nice, readable string:
     /// e.g. [0, 1, 2, ...]
     /// (This is way more readable than logging with log_named_bytes)
-    function toString(
-        bytes memory bitmapArr
-    ) internal pure returns (string memory) {
+    function toString(bytes memory bitmapArr) internal pure returns (string memory) {
         string memory result = "[";
 
         for (uint256 i = 0; i < bitmapArr.length; i++) {
