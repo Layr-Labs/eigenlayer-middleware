@@ -32,8 +32,7 @@ interface IRegistryCoordinator {
     event QuorumBlockNumberUpdated(uint8 indexed quorumNumber, uint256 blocknumber);
 
     // DATA STRUCTURES
-    enum OperatorStatus
-    {
+    enum OperatorStatus {
         // default is NEVER_REGISTERED
         NEVER_REGISTERED,
         REGISTERED,
@@ -53,7 +52,7 @@ interface IRegistryCoordinator {
     }
 
     /**
-     * @notice Data structure for storing info on quorum bitmap updates where the `quorumBitmap` is the bitmap of the 
+     * @notice Data structure for storing info on quorum bitmap updates where the `quorumBitmap` is the bitmap of the
      * quorums the operator is registered for starting at (inclusive)`updateBlockNumber` and ending at (exclusive) `nextUpdateBlockNumber`
      * @dev nextUpdateBlockNumber is initialized to 0 for the latest update
      */
@@ -64,12 +63,12 @@ interface IRegistryCoordinator {
     }
 
     /**
-     * @notice Data structure for storing operator set params for a given quorum. Specifically the 
+     * @notice Data structure for storing operator set params for a given quorum. Specifically the
      * `maxOperatorCount` is the maximum number of operators that can be registered for the quorum,
      * `kickBIPsOfOperatorStake` is the basis points of a new operator needs to have of an operator they are trying to kick from the quorum,
      * and `kickBIPsOfTotalStake` is the basis points of the total stake of the quorum that an operator needs to be below to be kicked.
-     */ 
-     struct OperatorSetParam {
+     */
+    struct OperatorSetParam {
         uint32 maxOperatorCount;
         uint16 kickBIPsOfOperatorStake;
         uint16 kickBIPsOfTotalStake;
@@ -85,7 +84,9 @@ interface IRegistryCoordinator {
     }
 
     /// @notice Returns the operator set params for the given `quorumNumber`
-    function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory);
+    function getOperatorSetParams(
+        uint8 quorumNumber
+    ) external view returns (OperatorSetParam memory);
     /// @notice the Stake registry contract that will keep track of operators' stakes
     function stakeRegistry() external view returns (IStakeRegistry);
     /// @notice the BLS Aggregate Pubkey Registry contract that will keep track of operators' BLS aggregate pubkeys per quorum
@@ -100,46 +101,67 @@ interface IRegistryCoordinator {
      * @param operator is the operator to eject
      * @param quorumNumbers are the quorum numbers to eject the operator from
      */
-    function ejectOperator(
-        address operator, 
-        bytes calldata quorumNumbers
-    ) external;
+    function ejectOperator(address operator, bytes calldata quorumNumbers) external;
 
     /// @notice Returns the number of quorums the registry coordinator has created
     function quorumCount() external view returns (uint8);
 
     /// @notice Returns the operator struct for the given `operator`
-    function getOperator(address operator) external view returns (OperatorInfo memory);
+    function getOperator(
+        address operator
+    ) external view returns (OperatorInfo memory);
 
     /// @notice Returns the operatorId for the given `operator`
-    function getOperatorId(address operator) external view returns (bytes32);
+    function getOperatorId(
+        address operator
+    ) external view returns (bytes32);
 
     /// @notice Returns the operator address for the given `operatorId`
-    function getOperatorFromId(bytes32 operatorId) external view returns (address operator);
+    function getOperatorFromId(
+        bytes32 operatorId
+    ) external view returns (address operator);
 
     /// @notice Returns the status for the given `operator`
-    function getOperatorStatus(address operator) external view returns (IRegistryCoordinator.OperatorStatus);
+    function getOperatorStatus(
+        address operator
+    ) external view returns (IRegistryCoordinator.OperatorStatus);
 
     /// @notice Returns the indices of the quorumBitmaps for the provided `operatorIds` at the given `blockNumber`
-    function getQuorumBitmapIndicesAtBlockNumber(uint32 blockNumber, bytes32[] memory operatorIds) external view returns (uint32[] memory);
+    function getQuorumBitmapIndicesAtBlockNumber(
+        uint32 blockNumber,
+        bytes32[] memory operatorIds
+    ) external view returns (uint32[] memory);
 
     /**
      * @notice Returns the quorum bitmap for the given `operatorId` at the given `blockNumber` via the `index`
-     * @dev reverts if `index` is incorrect 
-     */ 
-    function getQuorumBitmapAtBlockNumberByIndex(bytes32 operatorId, uint32 blockNumber, uint256 index) external view returns (uint192);
+     * @dev reverts if `index` is incorrect
+     */
+    function getQuorumBitmapAtBlockNumberByIndex(
+        bytes32 operatorId,
+        uint32 blockNumber,
+        uint256 index
+    ) external view returns (uint192);
 
     /// @notice Returns the `index`th entry in the operator with `operatorId`'s bitmap history
-    function getQuorumBitmapUpdateByIndex(bytes32 operatorId, uint256 index) external view returns (QuorumBitmapUpdate memory);
+    function getQuorumBitmapUpdateByIndex(
+        bytes32 operatorId,
+        uint256 index
+    ) external view returns (QuorumBitmapUpdate memory);
 
     /// @notice Returns the current quorum bitmap for the given `operatorId`
-    function getCurrentQuorumBitmap(bytes32 operatorId) external view returns (uint192);
+    function getCurrentQuorumBitmap(
+        bytes32 operatorId
+    ) external view returns (uint192);
 
     /// @notice Returns the length of the quorum bitmap history for the given `operatorId`
-    function getQuorumBitmapHistoryLength(bytes32 operatorId) external view returns (uint256);
+    function getQuorumBitmapHistoryLength(
+        bytes32 operatorId
+    ) external view returns (uint256);
 
     /// @notice Returns the registry at the desired index
-    function registries(uint256) external view returns (address);
+    function registries(
+        uint256
+    ) external view returns (address);
 
     /// @notice Returns the number of registries
     function numRegistries() external view returns (uint256);
@@ -148,10 +170,14 @@ interface IRegistryCoordinator {
      * @notice Returns the message hash that an operator must sign to register their BLS public key.
      * @param operator is the address of the operator registering their BLS public key
      */
-    function pubkeyRegistrationMessageHash(address operator) external view returns (BN254.G1Point memory);
+    function pubkeyRegistrationMessageHash(
+        address operator
+    ) external view returns (BN254.G1Point memory);
 
     /// @notice returns the blocknumber the quorum was last updated all at once for all operators
-    function quorumUpdateBlockNumber(uint8 quorumNumber) external view returns (uint256);
+    function quorumUpdateBlockNumber(
+        uint8 quorumNumber
+    ) external view returns (uint256);
 
     /// @notice The owner of the registry coordinator
     function owner() external view returns (address);
@@ -160,5 +186,7 @@ interface IRegistryCoordinator {
      * @notice Updates the socket of the msg.sender given they are a registered operator
      * @param socket is the new socket of the operator
      */
-    function updateSocket(string memory socket) external;
+    function updateSocket(
+        string memory socket
+    ) external;
 }

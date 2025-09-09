@@ -153,11 +153,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         // );
 
         // Deploy EigenPod Contracts
-        pod = new EigenPod(
-            ethPOSDeposit,
-            eigenPodManager,
-            GENESIS_TIME_LOCAL
-        );
+        pod = new EigenPod(ethPOSDeposit, eigenPodManager, GENESIS_TIME_LOCAL);
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
@@ -322,9 +318,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             IRegistryCoordinator(registryCoordinator),
             stakeRegistry
         );
-        SocketRegistry socketRegistryImplementation = new SocketRegistry(
-            IRegistryCoordinator(registryCoordinator)
-        );
+        SocketRegistry socketRegistryImplementation =
+            new SocketRegistry(IRegistryCoordinator(registryCoordinator));
 
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(stakeRegistry))),
@@ -356,8 +351,9 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             rewardsInitiator: address(msg.sender)
         });
 
-        RegistryCoordinator registryCoordinatorImplementation =
-            new RegistryCoordinator(serviceManager, stakeRegistry, blsApkRegistry, indexRegistry, socketRegistry);
+        RegistryCoordinator registryCoordinatorImplementation = new RegistryCoordinator(
+            serviceManager, stakeRegistry, blsApkRegistry, indexRegistry, socketRegistry
+        );
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(registryCoordinator))),
             address(registryCoordinatorImplementation),

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
-import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IRewardsCoordinator} from
+    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {IServiceManagerUI} from "./IServiceManagerUI.sol";
 
 /**
@@ -37,8 +38,8 @@ interface IServiceManager is IServiceManagerUI {
      * @dev This function will revert if the `operatorDirectedRewardsSubmissions` is malformed.
      */
     function createOperatorDirectedAVSRewardsSubmission(
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            calldata operatorDirectedRewardsSubmissions
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[] calldata
+            operatorDirectedRewardsSubmissions
     ) external;
 
     /**
@@ -46,11 +47,10 @@ interface IServiceManager is IServiceManagerUI {
      * @param claimer The address of the entity that can call `processClaim` on behalf of the earner
      * @dev Only callable by the owner.
      */
-    function setClaimerFor(address claimer) external;
+    function setClaimerFor(
+        address claimer
+    ) external;
 
     // EVENTS
-    event RewardsInitiatorUpdated(
-        address prevRewardsInitiator,
-        address newRewardsInitiator
-    );
+    event RewardsInitiatorUpdated(address prevRewardsInitiator, address newRewardsInitiator);
 }

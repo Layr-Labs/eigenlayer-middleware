@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import {IRewardsCoordinator, IERC20} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {
+    IRewardsCoordinator,
+    IERC20
+} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 interface IServiceManagerBaseEvents {
     /// RewardsCoordinator EVENTS ///
@@ -21,27 +24,16 @@ interface IServiceManagerBaseEvents {
         IRewardsCoordinator.RewardsSubmission rewardsSubmission
     );
     /// @notice rewardsUpdater is responsible for submiting DistributionRoots, only owner can set rewardsUpdater
-    event RewardsUpdaterSet(
-        address indexed oldRewardsUpdater,
-        address indexed newRewardsUpdater
-    );
+    event RewardsUpdaterSet(address indexed oldRewardsUpdater, address indexed newRewardsUpdater);
     event RewardsForAllSubmitterSet(
-        address indexed rewardsForAllSubmitter,
-        bool indexed oldValue,
-        bool indexed newValue
+        address indexed rewardsForAllSubmitter, bool indexed oldValue, bool indexed newValue
     );
-    event ActivationDelaySet(
-        uint32 oldActivationDelay,
-        uint32 newActivationDelay
-    );
+    event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
     event DefaultOperatorSplitBipsSet(
-        uint16 oldDefaultOperatorSplitBips,
-        uint16 newDefaultOperatorSplitBips
+        uint16 oldDefaultOperatorSplitBips, uint16 newDefaultOperatorSplitBips
     );
     event ClaimerForSet(
-        address indexed earner,
-        address indexed oldClaimer,
-        address indexed claimer
+        address indexed earner, address indexed oldClaimer, address indexed claimer
     );
     /// @notice rootIndex is the specific array index of the newly created root in the storage array
     event DistributionRootSubmitted(
@@ -120,9 +112,5 @@ interface IServiceManagerBaseEvents {
      * @dev Emitted when the allowance of a `spender` for an `owner` is set by
      * a call to {approve}. `value` is the new allowance.
      */
-    event Approval(
-        address indexed owner,
-        address indexed spender,
-        uint256 value
-    );
+    event Approval(address indexed owner, address indexed spender, uint256 value);
 }

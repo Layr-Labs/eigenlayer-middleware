@@ -8,12 +8,15 @@ contract WithConstructor {
     uint256 public b;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(uint256 _a) {
+    constructor(
+        uint256 _a
+    ) {
         a = _a;
     }
 
-    function initialize(uint256 _b) public {
+    function initialize(
+        uint256 _b
+    ) public {
         b = _b;
     }
 }
-

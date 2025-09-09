@@ -6,8 +6,9 @@ contract NoInitializer {
     uint256 public immutable a;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(uint256 _a) {
+    constructor(
+        uint256 _a
+    ) {
         a = _a;
     }
 }
-

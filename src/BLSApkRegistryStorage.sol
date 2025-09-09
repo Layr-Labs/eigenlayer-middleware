@@ -10,7 +10,8 @@ import {BN254} from "./libraries/BN254.sol";
 
 abstract contract BLSApkRegistryStorage is Initializable, IBLSApkRegistry {
     /// @notice the hash of the zero pubkey aka BN254.G1Point(0,0)
-    bytes32 internal constant ZERO_PK_HASH = hex"ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5";
+    bytes32 internal constant ZERO_PK_HASH =
+        hex"ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5";
 
     /// @notice the registry coordinator contract
     address public immutable registryCoordinator;
@@ -29,7 +30,9 @@ abstract contract BLSApkRegistryStorage is Initializable, IBLSApkRegistry {
     /// @notice maps quorumNumber => current aggregate pubkey of quorum
     mapping(uint8 => BN254.G1Point) public currentApk;
 
-    constructor(IRegistryCoordinator _registryCoordinator) {
+    constructor(
+        IRegistryCoordinator _registryCoordinator
+    ) {
         registryCoordinator = address(_registryCoordinator);
         // disable initializers so that the implementation contract cannot be initialized
         _disableInitializers();

@@ -8,17 +8,16 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISi
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IServiceManager} from "../interfaces/IServiceManager.sol";
 import {IServiceManagerUI} from "../interfaces/IServiceManagerUI.sol";
-import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IDelegationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IStakeRegistry} from "../interfaces/IStakeRegistry.sol";
-import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IRewardsCoordinator} from
+    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {Quorum} from "../interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
 import {ECDSAStakeRegistry} from "../unaudited/ECDSAStakeRegistry.sol";
 
-abstract contract ECDSAServiceManagerBase is
-    IServiceManager,
-    OwnableUpgradeable
-{
+abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable {
     using SafeERC20 for IERC20;
 
     /// @notice Address of the stake registry contract, which manages registration and stake recording.
@@ -112,16 +111,16 @@ abstract contract ECDSAServiceManagerBase is
 
     /// @inheritdoc IServiceManager
     function createOperatorDirectedAVSRewardsSubmission(
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            calldata operatorDirectedRewardsSubmissions
-    ) external virtual onlyRewardsInitiator {
-        _createOperatorDirectedAVSRewardsSubmission(
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[] calldata
             operatorDirectedRewardsSubmissions
-        );
+    ) external virtual onlyRewardsInitiator {
+        _createOperatorDirectedAVSRewardsSubmission(operatorDirectedRewardsSubmissions);
     }
 
     /// @inheritdoc IServiceManager
-    function setClaimerFor(address claimer) external virtual onlyOwner {
+    function setClaimerFor(
+        address claimer
+    ) external virtual onlyOwner {
         _setClaimerFor(claimer);
     }
 
@@ -141,12 +140,7 @@ abstract contract ECDSAServiceManagerBase is
     }
 
     /// @inheritdoc IServiceManagerUI
-    function getRestakeableStrategies()
-        external
-        view
-        virtual
-        returns (address[] memory)
-    {
+    function getRestakeableStrategies() external view virtual returns (address[] memory) {
         return _getRestakeableStrategies();
     }
 
@@ -178,10 +172,7 @@ abstract contract ECDSAServiceManagerBase is
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) internal virtual {
-        IAVSDirectory(avsDirectory).registerOperatorToAVS(
-            operator,
-            operatorSignature
-        );
+        IAVSDirectory(avsDirectory).registerOperatorToAVS(operator, operatorSignature);
     }
 
     /**
@@ -189,7 +180,9 @@ abstract contract ECDSAServiceManagerBase is
      * @dev This internal function is a proxy to the `deregisterOperatorFromAVS` function of the AVSDirectory contract.
      * @param operator The address of the operator to deregister.
      */
-    function _deregisterOperatorFromAVS(address operator) internal virtual {
+    function _deregisterOperatorFromAVS(
+        address operator
+    ) internal virtual {
         IAVSDirectory(avsDirectory).deregisterOperatorFromAVS(operator);
     }
 
@@ -203,19 +196,14 @@ abstract contract ECDSAServiceManagerBase is
     ) internal virtual {
         for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
             rewardsSubmissions[i].token.safeTransferFrom(
-                msg.sender,
-                address(this),
-                rewardsSubmissions[i].amount
+                msg.sender, address(this), rewardsSubmissions[i].amount
             );
             rewardsSubmissions[i].token.safeIncreaseAllowance(
-                rewardsCoordinator,
-                rewardsSubmissions[i].amount
+                rewardsCoordinator, rewardsSubmissions[i].amount
             );
         }
 
-        IRewardsCoordinator(rewardsCoordinator).createAVSRewardsSubmission(
-            rewardsSubmissions
-        );
+        IRewardsCoordinator(rewardsCoordinator).createAVSRewardsSubmission(rewardsSubmissions);
     }
 
     /**
@@ -224,52 +212,40 @@ abstract contract ECDSAServiceManagerBase is
      * @param operatorDirectedRewardsSubmissions The operator-directed rewards submissions being created.
      */
     function _createOperatorDirectedAVSRewardsSubmission(
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            calldata operatorDirectedRewardsSubmissions
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[] calldata
+            operatorDirectedRewardsSubmissions
     ) internal virtual {
-        for (
-            uint256 i = 0;
-            i < operatorDirectedRewardsSubmissions.length;
-            ++i
-        ) {
+        for (uint256 i = 0; i < operatorDirectedRewardsSubmissions.length; ++i) {
             // Calculate total amount of token to transfer
             uint256 totalAmount = 0;
             for (
-                uint256 j = 0;
-                j <
-                operatorDirectedRewardsSubmissions[i].operatorRewards.length;
-                ++j
+                uint256 j = 0; j < operatorDirectedRewardsSubmissions[i].operatorRewards.length; ++j
             ) {
-                totalAmount += operatorDirectedRewardsSubmissions[i]
-                    .operatorRewards[j]
-                    .amount;
+                totalAmount += operatorDirectedRewardsSubmissions[i].operatorRewards[j].amount;
             }
 
             // Transfer token to ServiceManager and approve RewardsCoordinator to transfer again
             // in createOperatorDirectedAVSRewardsSubmission() call
             operatorDirectedRewardsSubmissions[i].token.safeTransferFrom(
-                msg.sender,
-                address(this),
-                totalAmount
+                msg.sender, address(this), totalAmount
             );
             operatorDirectedRewardsSubmissions[i].token.safeIncreaseAllowance(
-                rewardsCoordinator,
-                totalAmount
+                rewardsCoordinator, totalAmount
             );
         }
 
-        IRewardsCoordinator(rewardsCoordinator)
-            .createOperatorDirectedAVSRewardsSubmission(
-                address(this),
-                operatorDirectedRewardsSubmissions
-            );
+        IRewardsCoordinator(rewardsCoordinator).createOperatorDirectedAVSRewardsSubmission(
+            address(this), operatorDirectedRewardsSubmissions
+        );
     }
 
     /**
      * @notice Forwards a call to Eigenlayer's RewardsCoordinator contract to set the address of the entity that can call `processClaim` on behalf of this contract.
      * @param claimer The address of the entity that can call `processClaim` on behalf of the earner.
      */
-    function _setClaimerFor(address claimer) internal virtual {
+    function _setClaimerFor(
+        address claimer
+    ) internal virtual {
         IRewardsCoordinator(rewardsCoordinator).setClaimerFor(claimer);
     }
 
@@ -278,12 +254,7 @@ abstract contract ECDSAServiceManagerBase is
      * @dev Fetches the quorum configuration from the ECDSAStakeRegistry and extracts the strategy addresses.
      * @return strategies An array of addresses representing the strategies in the current quorum.
      */
-    function _getRestakeableStrategies()
-        internal
-        view
-        virtual
-        returns (address[] memory)
-    {
+    function _getRestakeableStrategies() internal view virtual returns (address[] memory) {
         Quorum memory quorum = ECDSAStakeRegistry(stakeRegistry).quorum();
         address[] memory strategies = new address[](quorum.strategies.length);
         for (uint256 i = 0; i < quorum.strategies.length; i++) {
@@ -308,8 +279,8 @@ abstract contract ECDSAServiceManagerBase is
         for (uint256 i; i < count; i++) {
             strategies[i] = quorum.strategies[i].strategy;
         }
-        uint256[] memory shares = IDelegationManager(delegationManager)
-            .getOperatorShares(_operator, strategies);
+        uint256[] memory shares =
+            IDelegationManager(delegationManager).getOperatorShares(_operator, strategies);
 
         uint256 activeCount;
         for (uint256 i; i < count; i++) {
@@ -342,7 +313,9 @@ abstract contract ECDSAServiceManagerBase is
         _setRewardsInitiator(newRewardsInitiator);
     }
 
-    function _setRewardsInitiator(address newRewardsInitiator) internal {
+    function _setRewardsInitiator(
+        address newRewardsInitiator
+    ) internal {
         emit RewardsInitiatorUpdated(rewardsInitiator, newRewardsInitiator);
         rewardsInitiator = newRewardsInitiator;
     }

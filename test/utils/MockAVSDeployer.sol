@@ -35,8 +35,9 @@ import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSD
 
 import {RewardsCoordinatorMock} from "../mocks/RewardsCoordinatorMock.sol";
 
-import { RewardsCoordinator } from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
-import { IRewardsCoordinator } from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {RewardsCoordinator} from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
+import {IRewardsCoordinator} from
+    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 import {BLSApkRegistryHarness} from "../harnesses/BLSApkRegistryHarness.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
@@ -136,7 +137,9 @@ contract MockAVSDeployer is Test {
         _deployMockEigenLayerAndAVS(numQuorums);
     }
 
-    function _deployMockEigenLayerAndAVS(uint8 numQuorumsToAdd) internal {
+    function _deployMockEigenLayerAndAVS(
+        uint8 numQuorumsToAdd
+    ) internal {
         emptyContract = new EmptyContract();
 
         defaultOperatorId = defaultPubKey.hashG1Point();
@@ -395,10 +398,9 @@ contract MockAVSDeployer is Test {
         );
     }
 
-    function _registerRandomOperators(uint256 pseudoRandomNumber)
-        internal
-        returns (OperatorMetadata[] memory, uint256[][] memory)
-    {
+    function _registerRandomOperators(
+        uint256 pseudoRandomNumber
+    ) internal returns (OperatorMetadata[] memory, uint256[][] memory) {
         OperatorMetadata[] memory operatorMetadatas = new OperatorMetadata[](maxOperatorsToRegister);
         for (uint256 i = 0; i < operatorMetadatas.length; i++) {
             // limit to 16 quorums so we don't run out of gas, make them all register for quorum 0 as well

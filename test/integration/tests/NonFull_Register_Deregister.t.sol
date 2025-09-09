@@ -6,12 +6,13 @@ import "test/integration/User.t.sol";
 import "test/integration/IntegrationChecks.t.sol";
 
 contract Integration_NonFull_Register_Deregister is IntegrationChecks {
-
     using BitmapUtils for *;
 
     // 1. Register for all quorums
     // 2. Deregister from all quorums
-    function testFuzz_registerAll_deregisterAll(uint24 _random) public {
+    function testFuzz_registerAll_deregisterAll(
+        uint24 _random
+    ) public {
         _configRand({
             _randomSeed: _random,
             _userTypes: DEFAULT | ALT_METHODS,
@@ -41,7 +42,9 @@ contract Integration_NonFull_Register_Deregister is IntegrationChecks {
     // 1. Register for some quorums
     // 2. Deregister from some quorums
     // 3. Deregister from any remaining quorums
-    function testFuzz_registerSome_deregisterSome_deregisterRemaining(uint24 _random) public {
+    function testFuzz_registerSome_deregisterSome_deregisterRemaining(
+        uint24 _random
+    ) public {
         _configRand({
             _randomSeed: _random,
             _userTypes: DEFAULT | ALT_METHODS,
@@ -69,7 +72,7 @@ contract Integration_NonFull_Register_Deregister is IntegrationChecks {
         check_Deregister_State(operator, quorumsToRemove);
 
         // 3. Deregister from any remaining quorums
-        bytes memory quorumsRemaining = _calcRemaining({ start: quorums, removed: quorumsToRemove });
+        bytes memory quorumsRemaining = _calcRemaining({start: quorums, removed: quorumsToRemove});
         if (quorumsRemaining.length != 0) {
             operator.deregisterOperator(quorumsRemaining);
             check_Deregister_State(operator, quorumsRemaining);
@@ -80,7 +83,9 @@ contract Integration_NonFull_Register_Deregister is IntegrationChecks {
     // 1. Register for some quorums
     // 2. Deregister from some quorums
     // 3. Reregister for some quorums
-    function testFuzz_registerSome_deregisterSome_reregisterSome(uint24 _random) public {
+    function testFuzz_registerSome_deregisterSome_reregisterSome(
+        uint24 _random
+    ) public {
         _configRand({
             _randomSeed: _random,
             _userTypes: DEFAULT | ALT_METHODS,

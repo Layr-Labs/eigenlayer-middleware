@@ -5,19 +5,27 @@ import "../../src/libraries/BitmapUtils.sol";
 
 // wrapper around the BitmapUtils library that exposes the internal functions
 contract BitmapUtilsWrapper {
-    function orderedBytesArrayToBitmap(bytes calldata orderedBytesArray) external pure returns (uint256) {
+    function orderedBytesArrayToBitmap(
+        bytes calldata orderedBytesArray
+    ) external pure returns (uint256) {
         return BitmapUtils.orderedBytesArrayToBitmap(orderedBytesArray);
     }
 
-    function isArrayStrictlyAscendingOrdered(bytes calldata bytesArray) external pure returns (bool) {
+    function isArrayStrictlyAscendingOrdered(
+        bytes calldata bytesArray
+    ) external pure returns (bool) {
         return BitmapUtils.isArrayStrictlyAscendingOrdered(bytesArray);
     }
 
-    function bitmapToBytesArray(uint256 bitmap) external pure returns (bytes memory bytesArray) {
+    function bitmapToBytesArray(
+        uint256 bitmap
+    ) external pure returns (bytes memory bytesArray) {
         return BitmapUtils.bitmapToBytesArray(bitmap);
     }
 
-    function countNumOnes(uint256 n) external pure returns (uint16) {
+    function countNumOnes(
+        uint256 n
+    ) external pure returns (uint16) {
         return BitmapUtils.countNumOnes(n);
     }
 
@@ -29,7 +37,9 @@ contract BitmapUtilsWrapper {
         return BitmapUtils.setBit(bitmap, bit);
     }
 
-    function isEmpty(uint256 bitmap) external pure returns (bool) {
+    function isEmpty(
+        uint256 bitmap
+    ) external pure returns (bool) {
         return BitmapUtils.isEmpty(bitmap);
     }
 

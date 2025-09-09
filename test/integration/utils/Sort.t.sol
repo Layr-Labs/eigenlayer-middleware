@@ -8,7 +8,9 @@ library Sort {
      * @param addresses The array of addresses to be sorted.
      * @return sortedAddresses The array of addresses sorted in ascending order.
      */
-    function sortAddresses(address[] memory addresses) internal pure returns (address[] memory) {
+    function sortAddresses(
+        address[] memory addresses
+    ) internal pure returns (address[] memory) {
         uint256 n = addresses.length;
         for (uint256 i = 0; i < n; i++) {
             for (uint256 j = 0; j < n - 1; j++) {

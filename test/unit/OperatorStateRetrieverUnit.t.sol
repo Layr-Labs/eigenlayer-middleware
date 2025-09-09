@@ -147,9 +147,9 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         );
     }
 
-    
-
-    function test_getOperatorStateWithSocket_revert_registeredFirstAfterReferenceBlockNumber() public {
+    function test_getOperatorStateWithSocket_revert_registeredFirstAfterReferenceBlockNumber()
+        public
+    {
         cheats.roll(registrationBlockNumber);
         _registerOperatorWithCoordinator(defaultOperator, 1, defaultPubKey);
 
@@ -207,7 +207,9 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         );
     }
 
-    function test_getOperatorStateWithSocket_revert_quorumNotCreatedAtReferenceBlockNumber() public {
+    function test_getOperatorStateWithSocket_revert_quorumNotCreatedAtReferenceBlockNumber()
+        public
+    {
         cheats.roll(registrationBlockNumber);
         IRegistryCoordinator.OperatorSetParam memory operatorSetParams = IRegistryCoordinator
             .OperatorSetParam({
@@ -234,7 +236,6 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         );
     }
 
-    
     function test_getOperatorStateWithSocket_returnsCorrect() public {
         uint256 quorumBitmapOne = 1;
         uint256 quorumBitmapThree = 3;
@@ -489,7 +490,9 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         assertEq(checkSignaturesIndices.nonSignerStakeIndices[1][0], 0);
     }
 
-    function testGetOperatorState_Valid(uint256 pseudoRandomNumber) public {
+    function testGetOperatorState_Valid(
+        uint256 pseudoRandomNumber
+    ) public {
         // register random operators and get the expected indices within the quorums and the metadata for the operators
         (
             OperatorMetadata[] memory operatorMetadatas,
@@ -558,7 +561,9 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         );
     }
 
-    function testCheckSignaturesIndices_NoNonSigners_Valid(uint256 pseudoRandomNumber) public {
+    function testCheckSignaturesIndices_NoNonSigners_Valid(
+        uint256 pseudoRandomNumber
+    ) public {
         (
             OperatorMetadata[] memory operatorMetadatas,
             uint256[][] memory expectedOperatorOverallIndices
@@ -623,7 +628,9 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         }
     }
 
-    function testCheckSignaturesIndices_FewNonSigners_Valid(uint256 pseudoRandomNumber) public {
+    function testCheckSignaturesIndices_FewNonSigners_Valid(
+        uint256 pseudoRandomNumber
+    ) public {
         (
             OperatorMetadata[] memory operatorMetadatas,
             uint256[][] memory expectedOperatorOverallIndices

@@ -8,7 +8,14 @@ import {UpgradeableProxyUtils} from "./UpgradeableProxyUtils.sol";
 import {Proxy} from "@openzeppelin/contracts/proxy/Proxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
-import {Greeter, GreeterV2, NoInitializer, WithConstructor, GreeterProxiable, GreeterV2Proxiable} from "./ProxyTestContracts.sol";
+import {
+    Greeter,
+    GreeterV2,
+    NoInitializer,
+    WithConstructor,
+    GreeterProxiable,
+    GreeterV2Proxiable
+} from "./ProxyTestContracts.sol";
 
 contract UpgradeableProxyUtilsTest is Test {
     ProxyAdmin internal admin;
@@ -19,9 +26,7 @@ contract UpgradeableProxyUtilsTest is Test {
 
     function testTransparent() public {
         address proxy = UpgradeableProxyUtils.deployTransparentProxy(
-            "Greeter.sol",
-            address(admin),
-            abi.encodeCall(Greeter.initialize, ("hello"))
+            "Greeter.sol", address(admin), abi.encodeCall(Greeter.initialize, ("hello"))
         );
         Greeter instance = Greeter(proxy);
         address implAddressV1 = UpgradeableProxyUtils.getImplementationAddress(proxy);
@@ -30,7 +35,9 @@ contract UpgradeableProxyUtilsTest is Test {
         assertFalse(adminAddress == address(0));
         assertEq(instance.greeting(), "hello");
 
-        UpgradeableProxyUtils.upgradeProxy(proxy, "GreeterV2.sol", abi.encodeCall(GreeterV2.resetGreeting, ()));
+        UpgradeableProxyUtils.upgradeProxy(
+            proxy, "GreeterV2.sol", abi.encodeCall(GreeterV2.resetGreeting, ())
+        );
 
         address implAddressV2 = UpgradeableProxyUtils.getImplementationAddress(proxy);
 
@@ -40,10 +47,13 @@ contract UpgradeableProxyUtilsTest is Test {
     }
 
     function testBeacon() public {
-        address beacon = UpgradeableProxyUtils.deployBeacon("Greeter.sol", address(admin), abi.encode());
+        address beacon =
+            UpgradeableProxyUtils.deployBeacon("Greeter.sol", address(admin), abi.encode());
         address implAddressV1 = IBeacon(beacon).implementation();
 
-        address proxy = UpgradeableProxyUtils.deployBeaconProxy(beacon, abi.encodeCall(Greeter.initialize, ("hello")));
+        address proxy = UpgradeableProxyUtils.deployBeaconProxy(
+            beacon, abi.encodeCall(Greeter.initialize, ("hello"))
+        );
         Greeter instance = Greeter(proxy);
 
         assertEq(UpgradeableProxyUtils.getBeaconAddress(proxy), beacon);
@@ -59,7 +69,8 @@ contract UpgradeableProxyUtilsTest is Test {
     }
 
     function testUpgradeBeaconWithoutCaller() public {
-        address beacon = UpgradeableProxyUtils.deployBeacon("Greeter.sol", address(admin), abi.encode());
+        address beacon =
+            UpgradeableProxyUtils.deployBeacon("Greeter.sol", address(admin), abi.encode());
         UpgradeableProxyUtils.upgradeBeacon(beacon, "GreeterV2.sol", abi.encode());
     }
 
@@ -79,9 +90,10 @@ contract UpgradeableProxyUtilsTest is Test {
     function testNoInitializer() public {
         /// Can access getCode by File:Contract
         bytes memory constructorData = abi.encode(123);
-        address proxy = UpgradeableProxyUtils.deployTransparentProxy("NoInitializer.sol", msg.sender, "", constructorData);
+        address proxy = UpgradeableProxyUtils.deployTransparentProxy(
+            "NoInitializer.sol", msg.sender, "", constructorData
+        );
 
         assertEq(WithConstructor(proxy).a(), 123);
     }
-
 }

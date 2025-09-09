@@ -4,8 +4,10 @@ pragma solidity ^0.8.12;
 import {Test, console} from "forge-std/Test.sol";
 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
-import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IDelegationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IRewardsCoordinator} from
+    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 import {ECDSAServiceManagerMock} from "../mocks/ECDSAServiceManagerMock.sol";
@@ -35,9 +37,13 @@ contract MockAVSDirectory {
         ISignatureUtils.SignatureWithSaltAndExpiry memory
     ) external pure {}
 
-    function deregisterOperatorFromAVS(address) external pure {}
+    function deregisterOperatorFromAVS(
+        address
+    ) external pure {}
 
-    function updateAVSMetadataURI(string memory) external pure {}
+    function updateAVSMetadataURI(
+        string memory
+    ) external pure {}
 }
 
 contract MockRewardsCoordinator {
@@ -60,9 +66,8 @@ contract ECDSAServiceManagerSetup is Test {
     function setUp() public {
         mockDelegationManager = new MockDelegationManager();
         mockAVSDirectory = new MockAVSDirectory();
-        mockStakeRegistry = new ECDSAStakeRegistryMock(
-            IDelegationManager(address(mockDelegationManager))
-        );
+        mockStakeRegistry =
+            new ECDSAStakeRegistryMock(IDelegationManager(address(mockDelegationManager)));
         mockRewardsCoordinator = new MockRewardsCoordinator();
 
         serviceManager = new ECDSAServiceManagerMock(
@@ -79,14 +84,8 @@ contract ECDSAServiceManagerSetup is Test {
 
         // Create a quorum
         Quorum memory quorum = Quorum({strategies: new StrategyParams[](2)});
-        quorum.strategies[0] = StrategyParams({
-            strategy: IStrategy(address(420)),
-            multiplier: 5000
-        });
-        quorum.strategies[1] = StrategyParams({
-            strategy: IStrategy(address(421)),
-            multiplier: 5000
-        });
+        quorum.strategies[0] = StrategyParams({strategy: IStrategy(address(420)), multiplier: 5000});
+        quorum.strategies[1] = StrategyParams({strategy: IStrategy(address(421)), multiplier: 5000});
         address[] memory operators = new address[](0);
 
         vm.prank(mockStakeRegistry.owner());
@@ -98,16 +97,10 @@ contract ECDSAServiceManagerSetup is Test {
         ISignatureUtils.SignatureWithSaltAndExpiry memory dummySignature;
 
         vm.prank(operator1);
-        mockStakeRegistry.registerOperatorWithSignature(
-            dummySignature,
-            operator1
-        );
+        mockStakeRegistry.registerOperatorWithSignature(dummySignature, operator1);
 
         vm.prank(operator2);
-        mockStakeRegistry.registerOperatorWithSignature(
-            dummySignature,
-            operator2
-        );
+        mockStakeRegistry.registerOperatorWithSignature(dummySignature, operator2);
     }
 
     function testRegisterOperatorToAVS() public {
@@ -131,8 +124,7 @@ contract ECDSAServiceManagerSetup is Test {
 
     function testGetOperatorRestakedStrategies() public {
         address operator = operator1;
-        address[] memory strategies = serviceManager
-            .getOperatorRestakedStrategies(operator);
+        address[] memory strategies = serviceManager.getOperatorRestakedStrategies(operator);
     }
 
     function test_Regression_GetOperatorRestakedStrategies_NoShares() public {
@@ -147,20 +139,12 @@ contract ECDSAServiceManagerSetup is Test {
 
         vm.mockCall(
             address(mockDelegationManager),
-            abi.encodeCall(
-                IDelegationManager.getOperatorShares,
-                (operator, strategies)
-            ),
+            abi.encodeCall(IDelegationManager.getOperatorShares, (operator, strategies)),
             abi.encode(shares)
         );
 
-        address[] memory restakedStrategies = serviceManager
-            .getOperatorRestakedStrategies(operator);
-        assertEq(
-            restakedStrategies.length,
-            1,
-            "Expected no restaked strategies"
-        );
+        address[] memory restakedStrategies = serviceManager.getOperatorRestakedStrategies(operator);
+        assertEq(restakedStrategies.length, 1, "Expected no restaked strategies");
     }
 
     function testUpdateAVSMetadataURI() public {

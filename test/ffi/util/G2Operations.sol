@@ -8,12 +8,14 @@ import "../../../src/libraries/BN254.sol";
 contract G2Operations is Test {
     using Strings for uint256;
 
-    function mul(uint256 x) public returns (BN254.G2Point memory g2Point) {
+    function mul(
+        uint256 x
+    ) public returns (BN254.G2Point memory g2Point) {
         string[] memory inputs = new string[](5);
         inputs[0] = "go";
         inputs[1] = "run";
         inputs[2] = "test/ffi/go/g2mul.go";
-        inputs[3] = x.toString(); 
+        inputs[3] = x.toString();
 
         inputs[4] = "1";
         bytes memory res = vm.ffi(inputs);
@@ -31,5 +33,4 @@ contract G2Operations is Test {
         res = vm.ffi(inputs);
         g2Point.Y[0] = abi.decode(res, (uint256));
     }
-
 }

@@ -6,7 +6,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IRewardsCoordinator} from
+    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
@@ -101,13 +102,10 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
             // transfer token to ServiceManager and approve RewardsCoordinator to transfer again
             // in createAVSRewardsSubmission() call
             rewardsSubmissions[i].token.safeTransferFrom(
-                msg.sender,
-                address(this),
-                rewardsSubmissions[i].amount
+                msg.sender, address(this), rewardsSubmissions[i].amount
             );
             rewardsSubmissions[i].token.safeIncreaseAllowance(
-                address(_rewardsCoordinator),
-                rewardsSubmissions[i].amount
+                address(_rewardsCoordinator), rewardsSubmissions[i].amount
             );
         }
 
@@ -129,43 +127,30 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      * smaller array of submissions if necessary.
      */
     function createOperatorDirectedAVSRewardsSubmission(
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            calldata operatorDirectedRewardsSubmissions
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[] calldata
+            operatorDirectedRewardsSubmissions
     ) public virtual onlyRewardsInitiator {
-        for (
-            uint256 i = 0;
-            i < operatorDirectedRewardsSubmissions.length;
-            ++i
-        ) {
+        for (uint256 i = 0; i < operatorDirectedRewardsSubmissions.length; ++i) {
             // Calculate total amount of token to transfer
             uint256 totalAmount = 0;
             for (
-                uint256 j = 0;
-                j <
-                operatorDirectedRewardsSubmissions[i].operatorRewards.length;
-                ++j
+                uint256 j = 0; j < operatorDirectedRewardsSubmissions[i].operatorRewards.length; ++j
             ) {
-                totalAmount += operatorDirectedRewardsSubmissions[i]
-                    .operatorRewards[j]
-                    .amount;
+                totalAmount += operatorDirectedRewardsSubmissions[i].operatorRewards[j].amount;
             }
 
             // Transfer token to ServiceManager and approve RewardsCoordinator to transfer again
             // in createOperatorDirectedAVSRewardsSubmission() call
             operatorDirectedRewardsSubmissions[i].token.safeTransferFrom(
-                msg.sender,
-                address(this),
-                totalAmount
+                msg.sender, address(this), totalAmount
             );
             operatorDirectedRewardsSubmissions[i].token.safeIncreaseAllowance(
-                address(_rewardsCoordinator),
-                totalAmount
+                address(_rewardsCoordinator), totalAmount
             );
         }
 
         _rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(
-            address(this),
-            operatorDirectedRewardsSubmissions
+            address(this), operatorDirectedRewardsSubmissions
         );
     }
 
@@ -174,7 +159,9 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      * @param claimer The address of the entity that can call `processClaim` on behalf of the earner
      * @dev Only callable by the owner.
      */
-    function setClaimerFor(address claimer) public virtual onlyOwner {
+    function setClaimerFor(
+        address claimer
+    ) public virtual onlyOwner {
         _rewardsCoordinator.setClaimerFor(claimer);
     }
 
@@ -211,7 +198,9 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _setRewardsInitiator(newRewardsInitiator);
     }
 
-    function _setRewardsInitiator(address newRewardsInitiator) internal {
+    function _setRewardsInitiator(
+        address newRewardsInitiator
+    ) internal {
         emit RewardsInitiatorUpdated(rewardsInitiator, newRewardsInitiator);
         rewardsInitiator = newRewardsInitiator;
     }
@@ -222,12 +211,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      * @dev No guarantee is made on uniqueness of each element in the returned array.
      *      The off-chain service should do that validation separately
      */
-    function getRestakeableStrategies()
-        external
-        view
-        virtual
-        returns (address[] memory)
-    {
+    function getRestakeableStrategies() external view virtual returns (address[] memory) {
         uint256 quorumCount = _registryCoordinator.quorumCount();
 
         if (quorumCount == 0) {
@@ -242,13 +226,10 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         address[] memory restakedStrategies = new address[](strategyCount);
         uint256 index = 0;
         for (uint256 i = 0; i < _registryCoordinator.quorumCount(); i++) {
-            uint256 strategyParamsLength = _stakeRegistry.strategyParamsLength(
-                uint8(i)
-            );
+            uint256 strategyParamsLength = _stakeRegistry.strategyParamsLength(uint8(i));
             for (uint256 j = 0; j < strategyParamsLength; j++) {
-                restakedStrategies[index] = address(
-                    _stakeRegistry.strategyParamsByIndex(uint8(i), j).strategy
-                );
+                restakedStrategies[index] =
+                    address(_stakeRegistry.strategyParamsByIndex(uint8(i), j).strategy);
                 index++;
             }
         }
@@ -266,23 +247,17 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         address operator
     ) external view virtual returns (address[] memory) {
         bytes32 operatorId = _registryCoordinator.getOperatorId(operator);
-        uint192 operatorBitmap = _registryCoordinator.getCurrentQuorumBitmap(
-            operatorId
-        );
+        uint192 operatorBitmap = _registryCoordinator.getCurrentQuorumBitmap(operatorId);
 
         if (operatorBitmap == 0 || _registryCoordinator.quorumCount() == 0) {
             return new address[](0);
         }
 
         // Get number of strategies for each quorum in operator bitmap
-        bytes memory operatorRestakedQuorums = BitmapUtils.bitmapToBytesArray(
-            operatorBitmap
-        );
+        bytes memory operatorRestakedQuorums = BitmapUtils.bitmapToBytesArray(operatorBitmap);
         uint256 strategyCount;
         for (uint256 i = 0; i < operatorRestakedQuorums.length; i++) {
-            strategyCount += _stakeRegistry.strategyParamsLength(
-                uint8(operatorRestakedQuorums[i])
-            );
+            strategyCount += _stakeRegistry.strategyParamsLength(uint8(operatorRestakedQuorums[i]));
         }
 
         // Get strategies for each quorum in operator bitmap
@@ -290,13 +265,10 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         uint256 index = 0;
         for (uint256 i = 0; i < operatorRestakedQuorums.length; i++) {
             uint8 quorum = uint8(operatorRestakedQuorums[i]);
-            uint256 strategyParamsLength = _stakeRegistry.strategyParamsLength(
-                quorum
-            );
+            uint256 strategyParamsLength = _stakeRegistry.strategyParamsLength(quorum);
             for (uint256 j = 0; j < strategyParamsLength; j++) {
-                restakedStrategies[index] = address(
-                    _stakeRegistry.strategyParamsByIndex(quorum, j).strategy
-                );
+                restakedStrategies[index] =
+                    address(_stakeRegistry.strategyParamsByIndex(quorum, j).strategy);
                 index++;
             }
         }
