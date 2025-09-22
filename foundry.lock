@@ -1,0 +1,14 @@
+{
+  "lib/eigenlayer-contracts": {
+    "rev": "73644e201541dc350a52b0f7a70fa125295a4128"
+  },
+  "lib/forge-std": {
+    "rev": "77041d2ce690e692d6e03cc812b57d1ddaa4d505"
+  },
+  "lib/openzeppelin-contracts": {
+    "rev": "54b3f14346da01ba0d159114b399197fea8b7cda"
+  },
+  "lib/openzeppelin-contracts-upgradeable": {
+    "rev": "f6febd79e2a3a17e26969dd0d450c6ebd64bf459"
+  }
+}
