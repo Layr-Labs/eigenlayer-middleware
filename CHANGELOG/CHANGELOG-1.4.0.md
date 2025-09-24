@@ -6,7 +6,7 @@ The multichain/middlewareV2 release enables AVSs to launch their services and ma
 2. AVS Contracts
 3. Offchain Infrastructure
 
-The below release notes cover AVS Contracts. For more information on the end to end protocol, see our [docs](../docs/middlewareV2/README.md), [core contract docs](https://github.com/Layr-Labs/eigenlayer-contracts/tree/main/docs/multichain), and [ELIP-008](https://github.com/eigenfoundation/ELIPs/blob/elip-008v1/ELIPs/ELIP-008.md).
+The below release notes cover AVS Contracts. For more information on the end to end protocol, see our [docs](../docs/middlewareV2/README.md), [core contract docs](https://github.com/Layr-Labs/eigenlayer-contracts/tree/main/docs/multichain), and [ELIP-008](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-008.md).
 
 ## Release Manager
 
@@ -19,7 +19,7 @@ This multichain release only introduces new standards and contracts. As a result
 🚀 New Features – Highlight major new functionality
 
 - `AVSRegistrar`: The primary interface for managing operator registration and deregistration within an AVS. It integrates with core EigenLayer contracts to ensure operators have valid keys and are properly registered in operator sets
-- `OperatorTableCalculator`: Responsible for calculating stake weights of operator. These stake weights are aggregated and transported using the [Eigenlayer Multichain Protocol](https://github.com/eigenfoundation/ELIPs/blob/elip-008v1/ELIPs/ELIP-008.md). In order to utilize the multichain protocol, an AVS *MUST* deploy an `OperatorTableCalculator` and register it in the `CrossChainRegistry` in EigenLayer core. See our [core documentation](https://github.com/Layr-Labs/eigenlayer-contracts/tree/main/docs/multichain#common-user-flows) for this process. 
+- `OperatorTableCalculator`: Responsible for calculating stake weights of operator. These stake weights are aggregated and transported using the [Eigenlayer Multichain Protocol](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-008.md). In order to utilize the multichain protocol, an AVS *MUST* deploy an `OperatorTableCalculator` and register it in the `CrossChainRegistry` in EigenLayer core. See our [core documentation](https://github.com/Layr-Labs/eigenlayer-contracts/tree/main/docs/multichain#common-user-flows) for this process. 
 
 🔧 Improvements – Enhancements to existing features.
 
