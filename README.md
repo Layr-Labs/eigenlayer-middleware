@@ -68,13 +68,22 @@ forge test
 
 The contracts in this repo are meant to be deployed by each AVS that wants to use them. The addresses listed below refer to EigenDA's deployment, and are included as an example.
 
+### Current MiddlewareV2 Mainnet Deployment
+The following is for our MiddlewareV2/Multichain release, deployed on Mainnet. The below table calculators calculate slashable stake for an operatorSet and value all strategies equally. For example, or example, if an operator allocates 100 stETH, 100 wETH, and 100 DAI the calculator would return 300 for the stake weight of the operator.  See our [docs](./docs/middlewareV2/README.md) for more information. 
+
+| Name | Proxy | Implementation | Notes |
+| -------- | -------- | -------- | -------- |
+[`BN254TableCalculator`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/v1.5.0/src/middlewareV2/tableCalculator/BN254TableCalculator.sol)| N/A | [`0x55F4b21681977F412B318eCB204cB933bD1dF57c`](https://etherscan.io/address/0x55F4b21681977F412B318eCB204cB933bD1dF57c) | Singleton non-upgradeable |
+[`ECDSATableCalculator`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/v1.5.0/src/middlewareV2/tableCalculator/ECDSATableCalculator.sol)| N/A | [`0xA933CB4cbD0C4C208305917f56e0C3f51ad713Fa`](https://etherscan.io/address/0xA933CB4cbD0C4C208305917f56e0C3f51ad713Fa) | Singleton non-upgradeable |
+
+
 ### Current MiddlewareV2 Testnet Deployment
 The following testnet deployment is for our MiddlewareV2 release, deployed on Sepolia. The below table calculators calculate slashable stake for an operatorSet and value all strategies equally. For example, or example, if an operator allocates 100 stETH, 100 wETH, and 100 DAI the calculator would return 300 for the stake weight of the operator.  See our [docs](./docs/middlewareV2/README.md) for more information. 
 
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- |
-[`BN254TableCalculator`](./src/middlewareV2/tableCalculator/BN254TableCalculator.sol)| N/A | [`0x797d076aB96a5d4104062C15c727447fD8b71eB0`](https://sepolia.etherscan.io/address/0x797d076aB96a5d4104062C15c727447fD8b71eB0#code) | Singleton non-upgradeable |
-[`ECDSATableCalculator`](./src/middlewareV2/tableCalculator/ECDSATableCalculator.sol)| N/A | [`0xbcff2Cb40eD4A80e3A9EB095840986F9c8395a38`](https://sepolia.etherscan.io/address/0xbcff2Cb40eD4A80e3A9EB095840986F9c8395a38#code) | Singleton non-upgradeable |
+[`BN254TableCalculator`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/v1.5.0/src/middlewareV2/tableCalculator/BN254TableCalculator.sol)| N/A | [`0x797d076aB96a5d4104062C15c727447fD8b71eB0`](https://sepolia.etherscan.io/address/0x797d076aB96a5d4104062C15c727447fD8b71eB0#code) | Singleton non-upgradeable |
+[`ECDSATableCalculator`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/v1.5.0/src/middlewareV2/tableCalculator/ECDSATableCalculator.sol)| N/A | [`0xbcff2Cb40eD4A80e3A9EB095840986F9c8395a38`](https://sepolia.etherscan.io/address/0xbcff2Cb40eD4A80e3A9EB095840986F9c8395a38#code) | Singleton non-upgradeable |
 
 ### Current AVS Mainnet Deployment
 
