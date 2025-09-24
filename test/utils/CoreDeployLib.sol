@@ -6,6 +6,8 @@ import {stdJson} from "forge-std/StdJson.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from
     "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {AllocationManagerView} from
+    "eigenlayer-contracts/src/contracts/core/AllocationManagerView.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {DelegationManager} from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import {StrategyManager} from "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
@@ -27,6 +29,8 @@ import {
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
+import {IAllocationManagerView} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IEigenPodManager} from "eigenlayer-contracts/src/contracts/interfaces/IEigenPodManager.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
@@ -176,8 +180,18 @@ library CoreDeployLib {
             )
         );
 
+        address allocationManagerView = address(
+            new AllocationManagerView(
+                IDelegationManager(deployments.delegationManager),
+                IStrategy(deployments.eigenStrategy),
+                config.allocationManager.deallocationDelay,
+                config.allocationManager.allocationConfigurationDelay
+            )
+        );
+
         address allocationManagerImpl = address(
             new AllocationManager(
+                IAllocationManagerView(allocationManagerView),
                 IDelegationManager(deployments.delegationManager),
                 IStrategy(deployments.eigenStrategy),
                 IPauserRegistry(deployments.pauserRegistry),

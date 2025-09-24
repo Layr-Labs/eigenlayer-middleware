@@ -18,7 +18,8 @@ import {IServiceManagerErrors} from "../../src/interfaces/IServiceManager.sol";
 
 import {
     IAllocationManagerTypes,
-    IAllocationManager
+    IAllocationManager,
+    IAllocationManagerActions
 } from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
 import "../utils/MockAVSDeployer.sol";
@@ -935,7 +936,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
 
         cheats.expectCall(
             address(allocationManagerMock),
-            abi.encodeCall(IAllocationManager.deregisterFromOperatorSets, (expectedParams))
+            abi.encodeCall(AllocationManager.deregisterFromOperatorSets, (expectedParams))
         );
 
         // Call should only work from registryCoordinator

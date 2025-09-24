@@ -55,6 +55,8 @@ import {PermissionController} from
 import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {AllocationManagerView} from
+    "eigenlayer-contracts/src/contracts/core/AllocationManagerView.sol";
 
 import {BLSApkRegistryHarness} from "../harnesses/BLSApkRegistryHarness.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
@@ -96,6 +98,7 @@ contract MockAVSDeployer is Test {
     AVSDirectory public avsDirectoryImplementation;
     AVSDirectoryMock public avsDirectoryMock;
     AllocationManagerMock public allocationManagerMock;
+    AllocationManagerView public allocationManagerView;
     AllocationManager public allocationManager;
     AllocationManager public allocationManagerImplementation;
     RewardsCoordinator public rewardsCoordinator;
@@ -281,7 +284,11 @@ contract MockAVSDeployer is Test {
             )
         );
 
+        allocationManagerView =
+            new AllocationManagerView(delegationMock, eigenStrategy, uint32(7 days), uint32(1 days));
+
         allocationManagerImplementation = new AllocationManager(
+            allocationManagerView,
             delegationMock,
             eigenStrategy,
             pauserRegistry,
