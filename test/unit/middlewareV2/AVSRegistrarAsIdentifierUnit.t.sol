@@ -24,7 +24,6 @@ contract AVSRegistrarAsIdentifierUnitTests is AVSRegistrarBase {
 
         // Deploy the implementation
         avsRegistrarImplementation = new AVSRegistrarAsIdentifier(
-            AVS,
             IAllocationManager(address(allocationManagerMock)),
             permissionController,
             IKeyRegistrar(address(keyRegistrarMock))
@@ -34,7 +33,11 @@ contract AVSRegistrarAsIdentifierUnitTests is AVSRegistrarBase {
         avsRegistrarAsIdentifier = AVSRegistrarAsIdentifier(
             address(
                 new TransparentUpgradeableProxy(
-                    address(avsRegistrarImplementation), address(proxyAdmin), ""
+                    address(avsRegistrarImplementation),
+                    address(proxyAdmin),
+                    abi.encodeWithSelector(
+                        AVSRegistrarAsIdentifier.initialize.selector, AVS, METADATA_URI
+                    )
                 )
             )
         );
@@ -45,7 +48,6 @@ contract AVSRegistrarAsIdentifierUnitTests_constructor is AVSRegistrarAsIdentifi
     function test_constructor() public {
         // Deploy a new implementation to test constructor
         AVSRegistrarAsIdentifier impl = new AVSRegistrarAsIdentifier(
-            AVS,
             IAllocationManager(address(allocationManagerMock)),
             permissionController,
             IKeyRegistrar(address(keyRegistrarMock))
@@ -72,6 +74,14 @@ contract AVSRegistrarAsIdentifierUnitTests_constructor is AVSRegistrarAsIdentifi
 
 contract AVSRegistrarAsIdentifierUnitTests_initialize is AVSRegistrarAsIdentifierUnitTests {
     function test_initialize() public {
+        avsRegistrarAsIdentifier = AVSRegistrarAsIdentifier(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(avsRegistrarImplementation), address(proxyAdmin), ""
+                )
+            )
+        );
+
         // Mock the allocationManager calls
         vm.mockCall(
             address(allocationManagerMock),
@@ -151,7 +161,7 @@ contract AVSRegistrarAsIdentifierUnitTests_initialize is AVSRegistrarAsIdentifie
             ""
         );
 
-        avsRegistrarAsIdentifier.initialize(admin, METADATA_URI);
+        // avsRegistrarAsIdentifier.initialize(admin, METADATA_URI);
 
         // Try to initialize again
         vm.expectRevert("Initializable: contract is already initialized");
@@ -205,42 +215,8 @@ contract AVSRegistrarAsIdentifierUnitTests_supportsAVS is AVSRegistrarAsIdentifi
     }
 }
 
-contract AVSRegistrarAsIdentifierUnitTests_getAVS is AVSRegistrarAsIdentifierUnitTests {
-    function test_getAVS() public {
-        // Should return the proxy address (self) since AVSRegistrarAsIdentifier overrides getAVS
-        assertEq(
-            avsRegistrarAsIdentifier.getAVS(),
-            address(avsRegistrarAsIdentifier),
-            "getAVS: should return self (proxy) address"
-        );
-    }
-}
-
 contract AVSRegistrarAsIdentifierUnitTests_registerOperator is AVSRegistrarAsIdentifierUnitTests {
     using ArrayLib for *;
-
-    function setUp() public virtual override {
-        super.setUp();
-
-        // Initialize the contract
-        vm.mockCall(
-            address(allocationManagerMock),
-            abi.encodeWithSelector(IAllocationManager.updateAVSMetadataURI.selector),
-            ""
-        );
-        vm.mockCall(
-            address(allocationManagerMock),
-            abi.encodeWithSelector(IAllocationManager.setAVSRegistrar.selector),
-            ""
-        );
-        vm.mockCall(
-            address(permissionController),
-            abi.encodeWithSelector(IPermissionController.addPendingAdmin.selector),
-            ""
-        );
-
-        avsRegistrarAsIdentifier.initialize(admin, METADATA_URI);
-    }
 
     function testFuzz_revert_notAllocationManager(
         address notAllocationManager
@@ -279,14 +255,16 @@ contract AVSRegistrarAsIdentifierUnitTests_registerOperator is AVSRegistrarAsIde
         // Register keys for the operator - Note: using AVS as the avs address in the OperatorSet
         for (uint32 i; i < operatorSetIds.length; ++i) {
             keyRegistrarMock.setIsRegistered(
-                defaultOperator, OperatorSet({avs: AVS, id: operatorSetIds[i]}), true
+                defaultOperator,
+                OperatorSet({avs: address(avsRegistrarAsIdentifier), id: operatorSetIds[i]}),
+                true
             );
         }
 
         // Register operator
+        vm.prank(address(allocationManagerMock));
         vm.expectEmit(true, true, true, true);
         emit OperatorRegistered(defaultOperator, operatorSetIds);
-        vm.prank(address(allocationManagerMock));
         avsRegistrarAsIdentifier.registerOperator(
             defaultOperator, address(avsRegistrarAsIdentifier), operatorSetIds, "0x"
         );
@@ -297,29 +275,6 @@ contract AVSRegistrarAsIdentifierUnitTests_deregisterOperator is
     AVSRegistrarAsIdentifierUnitTests
 {
     using ArrayLib for *;
-
-    function setUp() public virtual override {
-        super.setUp();
-
-        // Initialize the contract
-        vm.mockCall(
-            address(allocationManagerMock),
-            abi.encodeWithSelector(IAllocationManager.updateAVSMetadataURI.selector),
-            ""
-        );
-        vm.mockCall(
-            address(allocationManagerMock),
-            abi.encodeWithSelector(IAllocationManager.setAVSRegistrar.selector),
-            ""
-        );
-        vm.mockCall(
-            address(permissionController),
-            abi.encodeWithSelector(IPermissionController.addPendingAdmin.selector),
-            ""
-        );
-
-        avsRegistrarAsIdentifier.initialize(admin, METADATA_URI);
-    }
 
     function testFuzz_revert_notAllocationManager(
         address notAllocationManager

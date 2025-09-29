@@ -2,15 +2,13 @@
 pragma solidity ^0.8.27;
 
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
+import {PermissionControllerMixin} from
+    "eigenlayer-contracts/src/contracts/mixins/PermissionControllerMixin.sol";
 import "./AVSRegistrarBase.t.sol";
 import {AVSRegistrarWithSocket} from "src/middlewareV2/registrar/presets/AVSRegistrarWithSocket.sol";
-import {ISocketRegistryEvents, ISocketRegistryErrors} from "src/interfaces/ISocketRegistryV2.sol";
+import {ISocketRegistryEvents, ISocketRegistryV2} from "src/interfaces/ISocketRegistryV2.sol";
 
-contract AVSRegistrarSocketUnitTests is
-    AVSRegistrarBase,
-    ISocketRegistryEvents,
-    ISocketRegistryErrors
-{
+contract AVSRegistrarSocketUnitTests is AVSRegistrarBase, ISocketRegistryEvents {
     AVSRegistrarWithSocket public avsRegistrarWithSocket;
 
     string defaultSocket = "Socket";
@@ -20,15 +18,17 @@ contract AVSRegistrarSocketUnitTests is
         super.setUp();
 
         avsRegistrarImplementation = new AVSRegistrarWithSocket(
-            AVS,
             IAllocationManager(address(allocationManagerMock)),
-            IKeyRegistrar(address(keyRegistrarMock))
+            IKeyRegistrar(address(keyRegistrarMock)),
+            permissionController
         );
 
         avsRegistrarWithSocket = AVSRegistrarWithSocket(
             address(
                 new TransparentUpgradeableProxy(
-                    address(avsRegistrarImplementation), address(proxyAdmin), ""
+                    address(avsRegistrarImplementation),
+                    address(proxyAdmin),
+                    abi.encodeWithSelector(AVSRegistrarWithSocket.initialize.selector, AVS)
                 )
             )
         );
@@ -131,7 +131,7 @@ contract AVSRegistrarSocketUnitTests_DeregisterOperator is AVSRegistrarSocketUni
 contract AVSRegistrarSocketUnitTests_updateSocket is AVSRegistrarSocketUnitTests {
     using ArrayLib for *;
 
-    function testFuzz_revert_notOperator(
+    function testFuzz_revert_InvalidPermission(
         address notOperator
     ) public {
         _registerOperator(defaultOperatorSetId.toArrayU32());
@@ -139,7 +139,7 @@ contract AVSRegistrarSocketUnitTests_updateSocket is AVSRegistrarSocketUnitTests
         cheats.assume(notOperator != address(proxyAdmin));
 
         cheats.prank(notOperator);
-        cheats.expectRevert(CallerNotOperator.selector);
+        cheats.expectRevert(PermissionControllerMixin.InvalidPermissions.selector);
         avsRegistrarWithSocket.updateSocket(defaultOperator, defaultSocket);
     }
 
@@ -151,6 +151,30 @@ contract AVSRegistrarSocketUnitTests_updateSocket is AVSRegistrarSocketUnitTests
         cheats.expectEmit(true, true, true, true);
         emit OperatorSocketSet(defaultOperator, newSocket);
         cheats.prank(defaultOperator);
+        avsRegistrarWithSocket.updateSocket(defaultOperator, newSocket);
+
+        // Check that the socket is updated
+        string memory socket = avsRegistrarWithSocket.getOperatorSocket(defaultOperator);
+        assertEq(socket, newSocket, "Socket mismatch");
+    }
+
+    function test_updateSocket_UAM() public {
+        _registerOperator(defaultOperatorSetId.toArrayU32());
+
+        string memory newSocket = "NewSocket";
+
+        address appointee = address(0x789);
+        cheats.prank(defaultOperator);
+        permissionController.setAppointee(
+            defaultOperator,
+            appointee,
+            address(avsRegistrarWithSocket),
+            ISocketRegistryV2.updateSocket.selector
+        );
+
+        cheats.expectEmit(true, true, true, true);
+        emit OperatorSocketSet(defaultOperator, newSocket);
+        cheats.prank(appointee);
         avsRegistrarWithSocket.updateSocket(defaultOperator, newSocket);
 
         // Check that the socket is updated
@@ -202,12 +226,5 @@ contract AVSRegistrarSocketUnitTests_ViewFunctions is AVSRegistrarSocketUnitTest
                 "supportsAVS: should return false for non-AVS address"
             );
         }
-    }
-
-    function test_getAVS() public {
-        // Should return the configured AVS address
-        assertEq(
-            avsRegistrarWithSocket.getAVS(), AVS, "getAVS: should return configured AVS address"
-        );
     }
 }

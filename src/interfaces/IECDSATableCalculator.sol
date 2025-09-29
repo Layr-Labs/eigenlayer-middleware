@@ -9,10 +9,11 @@ import {
 
 interface IECDSATableCalculator is IOperatorTableCalculator, IOperatorTableCalculatorTypes {
     /**
-     * @notice calculates the operatorInfos for a given operatorSet
-     * @param operatorSet the operatorSet to calculate the operator table for
-     * @return operatorInfos the list of operatorInfos for the given operatorSet
-     * @dev The output of this function is converted to bytes via the `calculateOperatorTableBytes` function
+     * @notice Calculates the ECDSA operator infos for a given operatorSet
+     * @param operatorSet The operatorSet to calculate the operator table for
+     * @return operatorInfos The array of ECDSAOperatorInfo structs containing ECDSA addresses and weights for registered operators
+     * @dev The output of this function is used by the multichain protocol to transport operator stake weights to destination chains
+     * @dev Only returns operators that have registered their ECDSA keys with the KeyRegistrar and have non-zero stake
      */
     function calculateOperatorTable(
         OperatorSet calldata operatorSet

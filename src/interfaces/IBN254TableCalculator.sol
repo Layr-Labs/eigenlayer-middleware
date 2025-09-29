@@ -9,19 +9,21 @@ import {
 
 interface IBN254TableCalculator is IOperatorTableCalculator, IOperatorTableCalculatorTypes {
     /**
-     * @notice calculates the operatorInfos for a given operatorSet
-     * @param operatorSet the operatorSet to calculate the operator table for
-     * @return operatorSetInfo the operatorSetInfo for the given operatorSet
-     * @dev The output of this function is converted to bytes via the `calculateOperatorTableBytes` function
+     * @notice Calculates the BN254 operator table info for a given operatorSet
+     * @param operatorSet The operatorSet to calculate the operator table for
+     * @return operatorSetInfo The BN254OperatorSetInfo containing merkle root, aggregate pubkey, and total weights
+     * @dev The output of this function is used by the multichain protocol to transport operator stake weights to destination chains
+     * @dev This function aggregates operator weights, creates a merkle tree of operator info, and calculates the aggregate BN254 public key
      */
     function calculateOperatorTable(
         OperatorSet calldata operatorSet
     ) external view returns (BN254OperatorSetInfo memory operatorSetInfo);
 
     /**
-     * @notice Get the operatorInfos for a given operatorSet
-     * @param operatorSet the operatorSet to get the operatorInfos for
-     * @return operatorInfos the operatorInfos for the given operatorSet
+     * @notice Get the individual operator infos for a given operatorSet
+     * @param operatorSet The operatorSet to get the operatorInfos for
+     * @return operatorInfos The array of BN254OperatorInfo structs containing pubkeys and weights for registered operators
+     * @dev Only returns operators that have registered their BN254 keys with the KeyRegistrar
      */
     function getOperatorInfos(
         OperatorSet calldata operatorSet

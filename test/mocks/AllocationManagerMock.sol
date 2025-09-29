@@ -332,4 +332,18 @@ contract AllocationManagerMock is AllocationManagerIntermediate {
 
         return minimumSlashableStake;
     }
+
+    /**
+     * @notice Register an operator to an AVS through the AVS registrar
+     * @dev This function delegates to the appropriate AVS registrar
+     */
+    function registerOperator(
+        address avs,
+        address operator,
+        uint32[] calldata operatorSetIds,
+        bytes calldata data
+    ) external {
+        IAVSRegistrar avsRegistrar = IAVSRegistrar(_avsRegistrar[avs]);
+        avsRegistrar.registerOperator(operator, avs, operatorSetIds, data);
+    }
 }

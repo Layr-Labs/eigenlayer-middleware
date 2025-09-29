@@ -7,6 +7,8 @@ import {IOperatorTableCalculator} from
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 import {Merkle} from "eigenlayer-contracts/src/contracts/libraries/Merkle.sol";
 import {BN254} from "eigenlayer-contracts/src/contracts/libraries/BN254.sol";
+import {LeafCalculatorMixin} from
+    "eigenlayer-contracts/src/contracts/mixins/LeafCalculatorMixin.sol";
 import {IBN254TableCalculator} from "../../interfaces/IBN254TableCalculator.sol";
 
 /**
@@ -15,7 +17,7 @@ import {IBN254TableCalculator} from "../../interfaces/IBN254TableCalculator.sol"
  * @dev This contract contains all the core logic for operator table calculations,
  *      with weight calculation left to be implemented by derived contracts
  */
-abstract contract BN254TableCalculatorBase is IBN254TableCalculator {
+abstract contract BN254TableCalculatorBase is IBN254TableCalculator, LeafCalculatorMixin {
     using Merkle for bytes32[];
     using BN254 for BN254.G1Point;
 
@@ -23,6 +25,10 @@ abstract contract BN254TableCalculatorBase is IBN254TableCalculator {
     /// @notice KeyRegistrar contract for managing operator keys
     IKeyRegistrar public immutable keyRegistrar;
 
+    /**
+     * @notice Constructor to initialize the BN254TableCalculatorBase
+     * @param _keyRegistrar The KeyRegistrar contract for managing operator BN254 public keys
+     */
     constructor(
         IKeyRegistrar _keyRegistrar
     ) {
@@ -68,6 +74,9 @@ abstract contract BN254TableCalculatorBase is IBN254TableCalculator {
     }
 
     /// @inheritdoc IBN254TableCalculator
+    /**
+     * @dev Only returns operators that have registered their BN254 keys with the KeyRegistrar
+     */
     function getOperatorInfos(
         OperatorSet calldata operatorSet
     ) external view virtual returns (BN254OperatorInfo[] memory) {
@@ -95,7 +104,12 @@ abstract contract BN254TableCalculatorBase is IBN254TableCalculator {
      * @return operators The addresses of the operators in the operatorSet
      * @return weights The weights for each operator in the operatorSet, this is a 2D array where the first index is the operator
      * and the second index is the type of weight
+     * @dev Each single `weights` array is as a list of arbitrary stake types. For example,
+     *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an index in the array
      * @dev Must be implemented by derived contracts to define specific weight calculation logic
+     * @dev The certificate verification assumes the composition weights array for each operator is the same.
+     *      If the length of the array is different or the stake types are different, then verification issues can arise, including
+     *      verification failing silently for multiple operators with different weights structures
      */
     function _getOperatorWeights(
         OperatorSet calldata operatorSet
@@ -104,13 +118,14 @@ abstract contract BN254TableCalculatorBase is IBN254TableCalculator {
     /**
      * @notice Calculates the operator table for a given operatorSet, also calculates the aggregate pubkey for the operatorSet
      * @param operatorSet The operatorSet to calculate the operator table for
-     * @return operatorSetInfo The operator table for the given operatorSet
+     * @return operatorSetInfo The BN254OperatorSetInfo containing merkle root, operator count, aggregate pubkey, and total weights
      * @dev This function:
      * 1. Gets operator weights from the weight calculator
      * 2. Collates weights into total weights
      * 3. Creates a merkle tree of operator info
      *    - assumes that the operator has a registered BN254 key
      * 4. Calculates the aggregate public key
+     * @dev Returns empty operator set info if no operators have registered keys or non-zero weights
      */
     function _calculateOperatorTable(
         OperatorSet calldata operatorSet
@@ -147,8 +162,10 @@ abstract contract BN254TableCalculatorBase is IBN254TableCalculator {
                 totalWeights[j] += weights[i][j];
             }
             (BN254.G1Point memory g1Point,) = keyRegistrar.getBN254Key(operatorSet, operators[i]);
+
+            // Use `LeafCalculatorMixin` to calculate the leaf hash for the operator info
             operatorInfoLeaves[operatorCount] =
-                keccak256(abi.encode(BN254OperatorInfo({pubkey: g1Point, weights: weights[i]})));
+                calculateOperatorInfoLeaf(BN254OperatorInfo({pubkey: g1Point, weights: weights[i]}));
 
             // Add the operator's G1 point to the aggregate pubkey
             aggregatePubkey = aggregatePubkey.plus(g1Point);

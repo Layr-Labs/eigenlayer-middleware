@@ -5,7 +5,6 @@ import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/Operator
 import {IOperatorTableCalculator} from
     "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
-import {Merkle} from "eigenlayer-contracts/src/contracts/libraries/Merkle.sol";
 import {IECDSATableCalculator} from "../../interfaces/IECDSATableCalculator.sol";
 
 /**
@@ -15,12 +14,14 @@ import {IECDSATableCalculator} from "../../interfaces/IECDSATableCalculator.sol"
  *      with weight calculation left to be implemented by derived contracts
  */
 abstract contract ECDSATableCalculatorBase is IECDSATableCalculator {
-    using Merkle for bytes32[];
-
     // Immutables
     /// @notice KeyRegistrar contract for managing operator keys
     IKeyRegistrar public immutable keyRegistrar;
 
+    /**
+     * @notice Constructor to initialize the ECDSATableCalculatorBase
+     * @param _keyRegistrar The KeyRegistrar contract for managing operator ECDSA public keys
+     */
     constructor(
         IKeyRegistrar _keyRegistrar
     ) {
@@ -28,6 +29,9 @@ abstract contract ECDSATableCalculatorBase is IECDSATableCalculator {
     }
 
     /// @inheritdoc IECDSATableCalculator
+    /**
+     * @dev Only returns operators that have registered their ECDSA keys with the KeyRegistrar and have non-zero stake
+     */
     function calculateOperatorTable(
         OperatorSet calldata operatorSet
     ) external view virtual returns (ECDSAOperatorInfo[] memory operatorInfos) {
@@ -71,7 +75,11 @@ abstract contract ECDSATableCalculatorBase is IECDSATableCalculator {
      * @return operators The addresses of the operators in the operatorSet
      * @return weights The weights for each operator in the operatorSet, this is a 2D array where the first index is the operator
      * and the second index is the type of weight
+     * @dev Each single `weights` array is as a list of arbitrary stake types. For example,
+     *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an index in the array
      * @dev Must be implemented by derived contracts to define specific weight calculation logic
+     * @dev The certificate verification assumes the composition weights array for each operator is the same.
+     *      If the length of the array is different or the stake types are different, then verification issues can arise
      */
     function _getOperatorWeights(
         OperatorSet calldata operatorSet
@@ -80,10 +88,11 @@ abstract contract ECDSATableCalculatorBase is IECDSATableCalculator {
     /**
      * @notice Calculates the operator table for a given operatorSet
      * @param operatorSet The operatorSet to calculate the operator table for
-     * @return operatorInfos The operator table for the given operatorSet
+     * @return operatorInfos The array of ECDSAOperatorInfo structs for operators with registered ECDSA keys
      * @dev This function:
      * 1. Gets operator weights from the weight calculator
      * 2. Creates ECDSAOperatorInfo structs for each operator with registered ECDSA keys
+     * @dev Returns empty array if no operators have registered keys or non-zero weights
      */
     function _calculateOperatorTable(
         OperatorSet calldata operatorSet

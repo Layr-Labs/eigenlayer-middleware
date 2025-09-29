@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
-import {WeightCapUtils} from "../../../src/libraries/WeightCapUtils.sol";
+import {WeightCapUtils} from "../../../src/unaudited/libraries/WeightCapUtils.sol";
 
 /**
  * @title WeightCapUtilsUnitTests
@@ -46,7 +46,7 @@ contract WeightCapUtilsUnitTests is Test {
         weights[0] = 100 ether;
         weights[1] = 200 ether;
 
-        (address[] memory resultOperators, uint256[][] memory resultWeights) = 
+        (address[] memory resultOperators, uint256[][] memory resultWeights) =
             WeightCapUtils.applyWeightCap(operators, _createSingleWeights(weights), 0);
 
         // Should be unchanged with no cap
@@ -66,11 +66,11 @@ contract WeightCapUtilsUnitTests is Test {
         operators[2] = operator3;
 
         uint256[] memory weights = new uint256[](3);
-        weights[0] = 50 ether;   // Under cap
-        weights[1] = 150 ether;  // Over cap
-        weights[2] = 200 ether;  // Over cap
+        weights[0] = 50 ether; // Under cap
+        weights[1] = 150 ether; // Over cap
+        weights[2] = 200 ether; // Over cap
 
-        (address[] memory resultOperators, uint256[][] memory resultWeights) = 
+        (address[] memory resultOperators, uint256[][] memory resultWeights) =
             WeightCapUtils.applyWeightCap(operators, _createSingleWeights(weights), 100 ether);
 
         assertEq(resultOperators.length, 3);
@@ -78,9 +78,9 @@ contract WeightCapUtilsUnitTests is Test {
         assertEq(resultOperators[1], operator2);
         assertEq(resultOperators[2], operator3);
         uint256[] memory resultTotals = _extractTotalWeights(resultWeights);
-        assertEq(resultTotals[0], 50 ether);   // Unchanged (under cap)
-        assertEq(resultTotals[1], 100 ether);  // Capped from 150
-        assertEq(resultTotals[2], 100 ether);  // Capped from 200
+        assertEq(resultTotals[0], 50 ether); // Unchanged (under cap)
+        assertEq(resultTotals[1], 100 ether); // Capped from 150
+        assertEq(resultTotals[2], 100 ether); // Capped from 200
     }
 
     function test_applyWeightCap_allOperatorsUnderCap() public {
@@ -94,11 +94,11 @@ contract WeightCapUtilsUnitTests is Test {
         weights[1] = 75 ether;
         weights[2] = 90 ether;
 
-        (address[] memory resultOperators, uint256[][] memory resultWeights) = 
+        (address[] memory resultOperators, uint256[][] memory resultWeights) =
             WeightCapUtils.applyWeightCap(operators, _createSingleWeights(weights), 100 ether);
 
         assertEq(resultOperators.length, 3);
-        
+
         uint256[] memory resultTotals = _extractTotalWeights(resultWeights);
         assertEq(resultTotals[0], 50 ether);
         assertEq(resultTotals[1], 75 ether);
@@ -114,11 +114,11 @@ contract WeightCapUtilsUnitTests is Test {
 
         uint256[] memory weights = new uint256[](4);
         weights[0] = 100 ether;
-        weights[1] = 0;         // Zero weight
+        weights[1] = 0; // Zero weight
         weights[2] = 150 ether;
-        weights[3] = 0;         // Zero weight
+        weights[3] = 0; // Zero weight
 
-        (address[] memory resultOperators, uint256[][] memory resultWeights) = 
+        (address[] memory resultOperators, uint256[][] memory resultWeights) =
             WeightCapUtils.applyWeightCap(operators, _createSingleWeights(weights), 120 ether);
 
         // Only non-zero weight operators should remain
@@ -127,15 +127,15 @@ contract WeightCapUtilsUnitTests is Test {
         assertEq(resultOperators[1], operator3);
 
         uint256[] memory resultTotals = _extractTotalWeights(resultWeights);
-        assertEq(resultTotals[0], 100 ether);  // Under cap
-        assertEq(resultTotals[1], 120 ether);  // Capped from 150
+        assertEq(resultTotals[0], 100 ether); // Under cap
+        assertEq(resultTotals[1], 120 ether); // Capped from 150
     }
 
     function test_applyWeightCap_emptyOperators() public {
         address[] memory operators = new address[](0);
         uint256[][] memory weights = new uint256[][](0);
 
-        (address[] memory resultOperators, uint256[][] memory resultWeights) = 
+        (address[] memory resultOperators, uint256[][] memory resultWeights) =
             WeightCapUtils.applyWeightCap(operators, weights, 100 ether);
 
         assertEq(resultOperators.length, 0);
@@ -150,13 +150,13 @@ contract WeightCapUtilsUnitTests is Test {
         // Create 2D weights where each operator has 2 weight types
         uint256[][] memory weights = new uint256[][](2);
         weights[0] = new uint256[](2);
-        weights[0][0] = 60 ether;   // operator1: 60 + 40 = 100 total (at cap)
+        weights[0][0] = 60 ether; // operator1: 60 + 40 = 100 total (at cap)
         weights[0][1] = 40 ether;
         weights[1] = new uint256[](2);
-        weights[1][0] = 120 ether;  // operator2: 120 + 80 = 200 total (over cap)
+        weights[1][0] = 120 ether; // operator2: 120 + 80 = 200 total (over cap)
         weights[1][1] = 80 ether;
 
-        (address[] memory resultOperators, uint256[][] memory resultWeights) = 
+        (address[] memory resultOperators, uint256[][] memory resultWeights) =
             WeightCapUtils.applyWeightCap(operators, weights, 100 ether);
 
         assertEq(resultOperators.length, 2);
@@ -166,8 +166,8 @@ contract WeightCapUtilsUnitTests is Test {
         assertEq(resultWeights[0][1], 40 ether);
 
         // operator2 should be capped: primary weight = 100, secondary = 0
-        assertEq(resultWeights[1][0], 100 ether);  // Capped to maxWeight
-        assertEq(resultWeights[1][1], 0);          // Zeroed out
+        assertEq(resultWeights[1][0], 100 ether); // Capped to maxWeight
+        assertEq(resultWeights[1][1], 0); // Zeroed out
 
         // Verify total weights
         uint256[] memory resultTotals = _extractTotalWeights(resultWeights);
@@ -182,23 +182,23 @@ contract WeightCapUtilsUnitTests is Test {
         // Create weights that exceed the cap
         uint256[][] memory weights = new uint256[][](1);
         weights[0] = new uint256[](3);
-        weights[0][0] = 300 ether;  // Primary weight
-        weights[0][1] = 200 ether;  // Secondary weight
-        weights[0][2] = 100 ether;  // Tertiary weight
+        weights[0][0] = 300 ether; // Primary weight
+        weights[0][1] = 200 ether; // Secondary weight
+        weights[0][2] = 100 ether; // Tertiary weight
         // Total: 600 ether, should be capped to 150 ether
 
-        (address[] memory resultOperators, uint256[][] memory resultWeights) = 
+        (address[] memory resultOperators, uint256[][] memory resultWeights) =
             WeightCapUtils.applyWeightCap(operators, weights, 150 ether);
 
         assertEq(resultOperators.length, 1);
 
         // Check simple truncation: primary weight = cap, others = 0
-        assertEq(resultWeights[0][0], 150 ether);  // Capped to maxWeight
-        assertEq(resultWeights[0][1], 0);          // Zeroed out
-        assertEq(resultWeights[0][2], 0);          // Zeroed out
+        assertEq(resultWeights[0][0], 150 ether); // Capped to maxWeight
+        assertEq(resultWeights[0][1], 0); // Zeroed out
+        assertEq(resultWeights[0][2], 0); // Zeroed out
 
         // Verify total
         uint256 total = resultWeights[0][0] + resultWeights[0][1] + resultWeights[0][2];
         assertEq(total, 150 ether);
     }
-} 
+}

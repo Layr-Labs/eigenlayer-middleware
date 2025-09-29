@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import {ISocketRegistry} from "../../../interfaces/ISocketRegistryV2.sol";
+import {ISocketRegistryV2} from "../../../interfaces/ISocketRegistryV2.sol";
+import {IPermissionController} from
+    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 
 /**
  * @title Storage variables for the `SocketRegistry` contract.
  * @author Layr Labs, Inc.
  */
-abstract contract SocketRegistryStorage is ISocketRegistry {
+abstract contract SocketRegistryStorage is ISocketRegistryV2 {
     /**
      *
      *                                    STATE

@@ -7,25 +7,31 @@ import {
 } from "eigenlayer-contracts/src/contracts/permissions/KeyRegistrar.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
-import {IOperatorTableCalculatorTypes} from
-    "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
+import {
+    BN254,
+    IOperatorTableCalculatorTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
 import {IBN254TableCalculator} from "../../../src/interfaces/IBN254TableCalculator.sol";
 import {
     OperatorSet,
     OperatorSetLib
 } from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
-import {BN254} from "eigenlayer-contracts/src/contracts/libraries/BN254.sol";
-
+import {BLSWallet, OperatorWalletLib} from "test/utils/OperatorWalletLib.sol";
 import {BN254TableCalculatorBase} from
     "../../../src/middlewareV2/tableCalculator/BN254TableCalculatorBase.sol";
 import {MockEigenLayerDeployer} from "./MockDeployer.sol";
-import "test/utils/Random.sol";
+import {Random} from "test/utils/Random.sol";
+import {Merkle} from "eigenlayer-contracts/src/contracts/libraries/Merkle.sol";
+import {LeafCalculatorMixin} from
+    "eigenlayer-contracts/src/contracts/mixins/LeafCalculatorMixin.sol";
 
 // Mock implementation for testing abstract contract
 contract BN254TableCalculatorBaseHarness is BN254TableCalculatorBase {
     // Storage for mock weights
     mapping(bytes32 => address[]) internal _mockOperators;
     mapping(bytes32 => uint256[][]) internal _mockWeights;
+
+    using Merkle for bytes32[];
 
     constructor(
         IKeyRegistrar _keyRegistrar
@@ -57,7 +63,8 @@ contract BN254TableCalculatorBaseHarness is BN254TableCalculatorBase {
 contract BN254TableCalculatorBaseUnitTests is
     MockEigenLayerDeployer,
     IOperatorTableCalculatorTypes,
-    IKeyRegistrarTypes
+    IKeyRegistrarTypes,
+    LeafCalculatorMixin
 {
     using BN254 for BN254.G1Point;
     using OperatorSetLib for OperatorSet;
@@ -77,9 +84,9 @@ contract BN254TableCalculatorBaseUnitTests is
     OperatorSet alternativeOperatorSet;
 
     // BN254 test keys
-    uint256 constant BN254_PRIV_KEY_1 = 69;
-    uint256 constant BN254_PRIV_KEY_2 = 123;
-    uint256 constant BN254_PRIV_KEY_3 = 456;
+    uint256 BN254_PRIV_KEY_1;
+    uint256 BN254_PRIV_KEY_2;
+    uint256 BN254_PRIV_KEY_3;
 
     BN254.G1Point bn254G1Key1;
     BN254.G1Point bn254G1Key2;
@@ -99,27 +106,35 @@ contract BN254TableCalculatorBaseUnitTests is
         alternativeOperatorSet = OperatorSet({avs: avs2, id: 1});
 
         // Set up BN254 keys
+        BLSWallet memory blsWallet = OperatorWalletLib.createBLSWallet(69);
+        BN254_PRIV_KEY_1 = blsWallet.privateKey;
+
+        bn254G2Key1.X[1] = blsWallet.publicKeyG2.X[1];
+        bn254G2Key1.X[0] = blsWallet.publicKeyG2.X[0];
+        bn254G2Key1.Y[1] = blsWallet.publicKeyG2.Y[1];
+        bn254G2Key1.Y[0] = blsWallet.publicKeyG2.Y[0];
+
         bn254G1Key1 = BN254.generatorG1().scalar_mul(BN254_PRIV_KEY_1);
+
+        blsWallet = OperatorWalletLib.createBLSWallet(123);
+        BN254_PRIV_KEY_2 = blsWallet.privateKey;
+
+        bn254G2Key2.X[1] = blsWallet.publicKeyG2.X[1];
+        bn254G2Key2.X[0] = blsWallet.publicKeyG2.X[0];
+        bn254G2Key2.Y[1] = blsWallet.publicKeyG2.Y[1];
+        bn254G2Key2.Y[0] = blsWallet.publicKeyG2.Y[0];
+
         bn254G1Key2 = BN254.generatorG1().scalar_mul(BN254_PRIV_KEY_2);
 
-        // Valid G2 points that correspond to the private keys
-        bn254G2Key1.X[1] =
-            19101821850089705274637533855249918363070101489527618151493230256975900223847;
-        bn254G2Key1.X[0] =
-            5334410886741819556325359147377682006012228123419628681352847439302316235957;
-        bn254G2Key1.Y[1] =
-            354176189041917478648604979334478067325821134838555150300539079146482658331;
-        bn254G2Key1.Y[0] =
-            4185483097059047421902184823581361466320657066600218863748375739772335928910;
+        blsWallet = OperatorWalletLib.createBLSWallet(456);
+        BN254_PRIV_KEY_3 = blsWallet.privateKey;
 
-        bn254G2Key2.X[1] =
-            19276105129625393659655050515259006463014579919681138299520812914148935621072;
-        bn254G2Key2.X[0] =
-            14066454060412929535985836631817650877381034334390275410072431082437297539867;
-        bn254G2Key2.Y[1] =
-            12642665914920339463975152321804664028480770144655934937445922690262428344269;
-        bn254G2Key2.Y[0] =
-            10109651107942685361120988628892759706059655669161016107907096760613704453218;
+        bn254G2Key3.X[1] = blsWallet.publicKeyG2.X[1];
+        bn254G2Key3.X[0] = blsWallet.publicKeyG2.X[0];
+        bn254G2Key3.Y[1] = blsWallet.publicKeyG2.Y[1];
+        bn254G2Key3.Y[0] = blsWallet.publicKeyG2.Y[0];
+
+        bn254G1Key3 = BN254.generatorG1().scalar_mul(BN254_PRIV_KEY_3);
 
         // Configure operator sets in AllocationManager
         allocationManagerMock.setAVSRegistrar(avs1, IAVSRegistrar(avs1));
@@ -198,6 +213,15 @@ contract BN254TableCalculatorBaseUnitTests is
         if (p1.X == 0 && p1.Y == 0) return p2;
         if (p2.X == 0 && p2.Y == 0) return p1;
         return BN254.plus(p1, p2);
+    }
+
+    function _returnEncodedLeaf(
+        BN254.G1Point memory pubkey,
+        uint256[] memory weights
+    ) internal pure returns (bytes32) {
+        return calculateOperatorInfoLeaf(
+            IOperatorTableCalculatorTypes.BN254OperatorInfo({pubkey: pubkey, weights: weights})
+        );
     }
 }
 
@@ -371,29 +395,39 @@ contract BN254TableCalculatorBaseUnitTests_calculateOperatorTable is
             operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1
         );
 
+        _registerOperatorKey(
+            operator3, defaultOperatorSet, bn254G1Key3, bn254G2Key3, BN254_PRIV_KEY_3
+        );
+
         // Set operators and weights
         address[] memory operators = new address[](3);
         operators[0] = operator1; // registered
         operators[1] = operator2; // not registered
+        operators[2] = operator3; // registered
 
         uint256[][] memory weights = new uint256[][](3);
         weights[0] = _createSingleWeightArray(100)[0];
         weights[1] = _createSingleWeightArray(200)[0]; // This weight won't be included
+        weights[2] = _createSingleWeightArray(300)[0];
 
         calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
 
         BN254OperatorSetInfo memory info = calculator.calculateOperatorTable(defaultOperatorSet);
 
-        assertEq(info.numOperators, 1, "Should have 1 operator (only registered ones)");
-        assertEq(info.totalWeights[0], 100, "Total weight should be 100 (100 + 300)");
+        assertEq(info.numOperators, 2, "Should have 2 operators (only registered ones)");
+        assertEq(info.totalWeights[0], 400, "Total weight should be 400 (100 + 300)");
 
         // Verify aggregate pubkey is sum of registered operators' keys
-        BN254.G1Point memory expectedAggregate = bn254G1Key1;
+        BN254.G1Point memory expectedAggregate = _addG1Points(bn254G1Key1, bn254G1Key3);
         assertEq(info.aggregatePubkey.X, expectedAggregate.X, "Aggregate pubkey X mismatch");
         assertEq(info.aggregatePubkey.Y, expectedAggregate.Y, "Aggregate pubkey Y mismatch");
 
-        // Verify merkle root is non-zero
-        assertTrue(info.operatorInfoTreeRoot != bytes32(0), "Merkle root should be non-zero");
+        // Verify merkle root matches
+        bytes32[] memory operatorInfoLeaves = new bytes32[](2);
+        operatorInfoLeaves[0] = _returnEncodedLeaf(bn254G1Key1, weights[0]);
+        operatorInfoLeaves[1] = _returnEncodedLeaf(bn254G1Key3, weights[2]);
+        bytes32 operatorInfoTreeRoot = Merkle.merkleizeKeccak(operatorInfoLeaves);
+        assertEq(operatorInfoTreeRoot, info.operatorInfoTreeRoot, "Merkle root mismatch");
     }
 
     function test_emptyOperatorSetReturnsZeroValues() public {

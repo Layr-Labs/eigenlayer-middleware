@@ -9,17 +9,14 @@ import {
     OperatorSetLib,
     OperatorSet
 } from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
-import {
-    IKeyRegistrarTypes,
-    IKeyRegistrar
-} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
+import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 
 import {AVSRegistrarStorage} from "./AVSRegistrarStorage.sol";
 
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
 /// @notice A minimal AVSRegistrar contract that is used to register/deregister operators for an AVS
-contract AVSRegistrar is Initializable, AVSRegistrarStorage {
+abstract contract AVSRegistrar is Initializable, AVSRegistrarStorage {
     using OperatorSetLib for OperatorSet;
 
     modifier onlyAllocationManager() {
@@ -28,14 +25,23 @@ contract AVSRegistrar is Initializable, AVSRegistrarStorage {
     }
 
     constructor(
-        address _avs,
         IAllocationManager _allocationManager,
         IKeyRegistrar _keyRegistrar
-    ) AVSRegistrarStorage(_avs, _allocationManager, _keyRegistrar) {
+    ) AVSRegistrarStorage(_allocationManager, _keyRegistrar) {
         _disableInitializers();
     }
 
+    /// @dev This initialization function MUST be added to a child's `initialize` function to avoid uninitialized storage.
+    function __AVSRegistrar_init(
+        address _avs
+    ) internal virtual onlyInitializing {
+        avs = _avs;
+    }
+
     /// @inheritdoc IAVSRegistrar
+    /// @dev Reverts for:
+    ///      - NotAllocationManager: The caller is not the allocation manager
+    ///      - KeyNotRegistered: The operator has not registered a key for the given operator sets in the `KeyRegistrar`
     function registerOperator(
         address operator,
         address, /* avs */
@@ -44,7 +50,7 @@ contract AVSRegistrar is Initializable, AVSRegistrarStorage {
     ) external virtual onlyAllocationManager {
         _beforeRegisterOperator(operator, operatorSetIds, data);
 
-        // Check that the operator has a valid key and update key if needed
+        // Check that the operator has a valid key
         _validateOperatorKeys(operator, operatorSetIds);
 
         _afterRegisterOperator(operator, operatorSetIds, data);
@@ -53,6 +59,8 @@ contract AVSRegistrar is Initializable, AVSRegistrarStorage {
     }
 
     /// @inheritdoc IAVSRegistrar
+    /// @dev Reverts for:
+    ///      - NotAllocationManager: The caller is not the allocation manager
     function deregisterOperator(
         address operator,
         address, /* avs */
@@ -72,11 +80,6 @@ contract AVSRegistrar is Initializable, AVSRegistrarStorage {
         return _avs == avs;
     }
 
-    /// @inheritdoc IAVSRegistrarInternal
-    function getAVS() external view virtual returns (address) {
-        return avs;
-    }
-
     /*
      *
      *                            INTERNAL FUNCTIONS
@@ -84,10 +87,11 @@ contract AVSRegistrar is Initializable, AVSRegistrarStorage {
      */
 
     /**
-     * @notice Validates that the operator has registered a key for the given operator sets
+     * @notice Validates that the operator has registered a key for the given operator sets in the `KeyRegistrar`
      * @param operator The operator to validate
      * @param operatorSetIds The operator sets to validate
-     * @dev This function assumes the operator has already registered a key in the Key Registrar
+     * @dev Reverts for:
+     *      - KeyNotRegistered: The operator has not registered a key for the given operator sets in the `KeyRegistrar`
      */
     function _validateOperatorKeys(
         address operator,
