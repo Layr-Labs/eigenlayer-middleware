@@ -27,7 +27,10 @@ contract BN254PriceWeightedTableCalculatorHarness is BN254PriceWeightedTableCalc
         uint256 _LOOKAHEAD_BLOCKS
     )
         BN254PriceWeightedTableCalculator(
-            _keyRegistrar, _allocationManager, _permissionController, _LOOKAHEAD_BLOCKS
+            _keyRegistrar,
+            _allocationManager,
+            _permissionController,
+            _LOOKAHEAD_BLOCKS
         )
     {}
 
@@ -74,7 +77,9 @@ contract BN254PriceWeightedTableCalculatorUnitTests is MockEigenLayerDeployer {
     ) internal {
         allocationManagerMock.setMembersInOperatorSet(opSet, operators);
         allocationManagerMock.setStrategiesInOperatorSet(opSet, strategies);
-        allocationManagerMock.setMinimumSlashableStake(opSet, operators, strategies, minSlashableStake);
+        allocationManagerMock.setMinimumSlashableStake(
+            opSet, operators, strategies, minSlashableStake
+        );
     }
 
     function test_getOperatorWeights_priceWeighted_basic() public {
@@ -93,19 +98,19 @@ contract BN254PriceWeightedTableCalculatorUnitTests is MockEigenLayerDeployer {
 
         // operator1: 10 units on s1, 2,000,000 units on s2 (to simulate 6 decimals scale)
         stakes[0][0] = 10 ether; // assume already in 1e18 for simplicity
-        stakes[0][1] = 2_000_000; // raw amount with 6 decimals
+        stakes[0][1] = 2000000; // raw amount with 6 decimals
 
         // operator2: 5 units on s1, 3,000,000 units on s2
         stakes[1][0] = 5 ether;
-        stakes[1][1] = 3_000_000;
+        stakes[1][1] = 3000000;
 
         _setupOperatorSet(operatorSet, operators, strategies, stakes);
 
         // Configure feeds and decimals
         // price1 = 2e8 with 8 decimals => 2.0 -> scaled to 1e18 becomes 2e18
-        ChainlinkAggregatorMock feed1 = new ChainlinkAggregatorMock(8, 200_000_000);
+        ChainlinkAggregatorMock feed1 = new ChainlinkAggregatorMock(8, 200000000);
         // price2 = 3e8 with 8 decimals => 3.0 -> scaled to 1e18 becomes 3e18
-        ChainlinkAggregatorMock feed2 = new ChainlinkAggregatorMock(8, 300_000_000);
+        ChainlinkAggregatorMock feed2 = new ChainlinkAggregatorMock(8, 300000000);
 
         IStrategy[] memory feedStrats = new IStrategy[](2);
         feedStrats[0] = strategy1;
@@ -161,7 +166,7 @@ contract BN254PriceWeightedTableCalculatorUnitTests is MockEigenLayerDeployer {
         _setupOperatorSet(operatorSet, operators, strategies, stakes);
 
         // Only set price feed, not stake decimals -> skipped
-        ChainlinkAggregatorMock feed1 = new ChainlinkAggregatorMock(8, 200_000_000);
+        ChainlinkAggregatorMock feed1 = new ChainlinkAggregatorMock(8, 200000000);
         IStrategy[] memory feedStrats = new IStrategy[](1);
         feedStrats[0] = strategy1;
         address[] memory feeds = new address[](1);
@@ -210,5 +215,3 @@ contract BN254PriceWeightedTableCalculatorUnitTests is MockEigenLayerDeployer {
         assertEq(resultWeights.length, 0);
     }
 }
-
-

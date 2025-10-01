@@ -19,7 +19,13 @@ interface AggregatorV3Interface {
     function latestRoundData()
         external
         view
-        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound);
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        );
 }
 
 /**
@@ -29,7 +35,10 @@ interface AggregatorV3Interface {
  *      Stake amounts and oracle prices are both normalized to 1e18 before multiplication to keep units consistent.
  *      Admins must configure price feeds and stake decimals per strategy (scoped by operator set) before use.
  */
-contract BN254PriceWeightedTableCalculator is BN254TableCalculatorBase, PermissionControllerMixin {
+contract BN254PriceWeightedTableCalculator is
+    BN254TableCalculatorBase,
+    PermissionControllerMixin
+{
     /// @notice AllocationManager for stake queries
     IAllocationManager public immutable allocationManager;
     /// @notice Lookahead blocks used in slashable stake lookup
@@ -47,9 +56,13 @@ contract BN254PriceWeightedTableCalculator is BN254TableCalculatorBase, Permissi
     mapping(bytes32 => mapping(IStrategy => StrategyConfig)) public strategyConfigs;
 
     /// @notice Emitted when price feeds are set for strategies
-    event StrategyPriceFeedsSet(OperatorSet indexed operatorSet, IStrategy[] strategies, address[] feeds);
+    event StrategyPriceFeedsSet(
+        OperatorSet indexed operatorSet, IStrategy[] strategies, address[] feeds
+    );
     /// @notice Emitted when stake decimals are set for strategies
-    event StrategyStakeDecimalsSet(OperatorSet indexed operatorSet, IStrategy[] strategies, uint8[] stakeDecimals);
+    event StrategyStakeDecimalsSet(
+        OperatorSet indexed operatorSet, IStrategy[] strategies, uint8[] stakeDecimals
+    );
 
     error ArrayLengthMismatch();
 
@@ -134,7 +147,7 @@ contract BN254PriceWeightedTableCalculator is BN254TableCalculatorBase, Permissi
                 AggregatorV3Interface feed = cfg.priceFeed;
                 if (address(feed) == address(0)) continue;
 
-                (, int256 price, , , ) = feed.latestRoundData();
+                (, int256 price,,,) = feed.latestRoundData();
                 if (price <= 0) continue;
 
                 uint8 priceDecimals = feed.decimals();
@@ -175,5 +188,3 @@ contract BN254PriceWeightedTableCalculator is BN254TableCalculatorBase, Permissi
         return amount / (10 ** (decimals_ - 18));
     }
 }
-
-

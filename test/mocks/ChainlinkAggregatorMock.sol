@@ -3,10 +3,7 @@ pragma solidity ^0.8.27;
 
 interface IAggregatorV3MockLike {
     function decimals() external view returns (uint8);
-    function latestRoundData()
-        external
-        view
-        returns (uint80, int256, uint256, uint256, uint80);
+    function latestRoundData() external view returns (uint80, int256, uint256, uint256, uint80);
 }
 
 contract ChainlinkAggregatorMock is IAggregatorV3MockLike {
@@ -20,7 +17,9 @@ contract ChainlinkAggregatorMock is IAggregatorV3MockLike {
         currentUpdatedAt = block.timestamp;
     }
 
-    function setAnswer(int256 _answer) external {
+    function setAnswer(
+        int256 _answer
+    ) external {
         currentAnswer = _answer;
         currentUpdatedAt = block.timestamp;
     }
@@ -37,5 +36,3 @@ contract ChainlinkAggregatorMock is IAggregatorV3MockLike {
         return (0, currentAnswer, 0, currentUpdatedAt, 0);
     }
 }
-
-
