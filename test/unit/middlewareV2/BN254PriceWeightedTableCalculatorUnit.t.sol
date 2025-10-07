@@ -215,3 +215,4 @@ contract BN254PriceWeightedTableCalculatorUnitTests is MockEigenLayerDeployer {
         assertEq(resultWeights.length, 0);
     }
 }
+
