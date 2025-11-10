@@ -169,7 +169,7 @@ library CoreDeployLib {
         DeploymentConfigData memory config
     ) internal {
         // Deploy core implementations
-        address permissionControllerImpl = address(new PermissionController("1.0.0"));
+        address permissionControllerImpl = address(new PermissionController());
 
         address strategyManagerImpl = address(
             new StrategyManager(
@@ -197,8 +197,7 @@ library CoreDeployLib {
                 IPauserRegistry(deployments.pauserRegistry),
                 IPermissionController(deployments.permissionController),
                 config.allocationManager.deallocationDelay,
-                config.allocationManager.allocationConfigurationDelay,
-                "1.0.0"
+                config.allocationManager.allocationConfigurationDelay
             )
         );
 
@@ -273,9 +272,7 @@ library CoreDeployLib {
 
         address eigenPodImpl = address(
             new EigenPod(
-                IETHPOSDeposit(ethPOSDeposit),
-                IEigenPodManager(deployments.eigenPodManager),
-                "1.0.0"
+                IETHPOSDeposit(ethPOSDeposit), IEigenPodManager(deployments.eigenPodManager)
             )
         );
 
@@ -287,8 +284,7 @@ library CoreDeployLib {
                 IETHPOSDeposit(ethPOSDeposit),
                 IBeacon(deployments.eigenPodBeacon),
                 IDelegationManager(deployments.delegationManager),
-                IPauserRegistry(deployments.pauserRegistry),
-                "1.0.0"
+                IPauserRegistry(deployments.pauserRegistry)
             )
         );
 
@@ -308,8 +304,7 @@ library CoreDeployLib {
         address baseStrategyImpl = address(
             new StrategyBase(
                 IStrategyManager(deployments.strategyManager),
-                IPauserRegistry(deployments.pauserRegistry),
-                "1.0.0"
+                IPauserRegistry(deployments.pauserRegistry)
             )
         );
 
@@ -318,8 +313,7 @@ library CoreDeployLib {
         address strategyFactoryImpl = address(
             new StrategyFactory(
                 IStrategyManager(deployments.strategyManager),
-                IPauserRegistry(deployments.pauserRegistry),
-                "1.0.0"
+                IPauserRegistry(deployments.pauserRegistry)
             )
         );
 
@@ -352,8 +346,7 @@ library CoreDeployLib {
                     MAX_REWARDS_DURATION: config.rewardsCoordinator.maxRewardsDuration,
                     MAX_RETROACTIVE_LENGTH: config.rewardsCoordinator.maxRetroactiveLength,
                     MAX_FUTURE_LENGTH: config.rewardsCoordinator.maxFutureLength,
-                    GENESIS_REWARDS_TIMESTAMP: config.rewardsCoordinator.genesisRewardsTimestamp,
-                    version: "1.0.0"
+                    GENESIS_REWARDS_TIMESTAMP: config.rewardsCoordinator.genesisRewardsTimestamp
                 })
             )
         );

@@ -78,8 +78,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
                 MAX_REWARDS_DURATION: MAX_REWARDS_DURATION,
                 MAX_RETROACTIVE_LENGTH: MAX_RETROACTIVE_LENGTH,
                 MAX_FUTURE_LENGTH: MAX_FUTURE_LENGTH,
-                GENESIS_REWARDS_TIMESTAMP: GENESIS_REWARDS_TIMESTAMP,
-                version: "v0.0.1"
+                GENESIS_REWARDS_TIMESTAMP: GENESIS_REWARDS_TIMESTAMP
             })
         );
 
@@ -169,9 +168,8 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         IERC20 token3 = new ERC20PresetFixedSupply(
             "pepe wif avs", "MOCK3", mockTokenInitialSupply, address(this)
         );
-        strategyImplementation = new StrategyBase(
-            IStrategyManager(address(strategyManagerMock)), pauserRegistry, "v0.0.1"
-        );
+        strategyImplementation =
+            new StrategyBase(IStrategyManager(address(strategyManagerMock)), pauserRegistry);
         strategyMock1 = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(

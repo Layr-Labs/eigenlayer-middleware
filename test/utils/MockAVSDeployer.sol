@@ -279,9 +279,7 @@ contract MockAVSDeployer is Test {
         );
 
         IStrategy eigenStrategy = IStrategy(
-            new EigenStrategy(
-                IStrategyManager(address(strategyManagerMock)), pauserRegistry, "v0.0.1"
-            )
+            new EigenStrategy(IStrategyManager(address(strategyManagerMock)), pauserRegistry)
         );
 
         allocationManagerView =
@@ -294,8 +292,7 @@ contract MockAVSDeployer is Test {
             pauserRegistry,
             permissionControllerMock,
             uint32(7 days), // DEALLOCATION_DELAY
-            uint32(1 days), // ALLOCATION_CONFIGURATION_DELAY
-            "v0.0.1" // Added config parameter
+            uint32(1 days) // ALLOCATION_CONFIGURATION_DELAY
         );
         proxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(allocationManager))),

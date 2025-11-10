@@ -191,11 +191,11 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
 
         // Deploy EigenPod Contracts
-        pod = new EigenPod(ethPOSDeposit, eigenPodManager, "v0.0.1");
+        pod = new EigenPod(ethPOSDeposit, eigenPodManager);
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
-        PermissionController permissionControllerImplementation = new PermissionController("v0.0.1");
+        PermissionController permissionControllerImplementation = new PermissionController();
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         DelegationManager delegationImplementation = new DelegationManager(
@@ -209,9 +209,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
         StrategyManager strategyManagerImplementation =
             new StrategyManager(allocationManager, delegationManager, pauserRegistry, "v0.0.1");
-        EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
-            ethPOSDeposit, eigenPodBeacon, delegationManager, pauserRegistry, "v0.0.1"
-        );
+        EigenPodManager eigenPodManagerImplementation =
+            new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegationManager, pauserRegistry);
         AVSDirectory avsDirectoryImplementation =
             new AVSDirectory(delegationManager, pauserRegistry, "v0.0.1");
 
@@ -226,13 +225,11 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 MAX_REWARDS_DURATION: MAX_REWARDS_DURATION,
                 MAX_RETROACTIVE_LENGTH: MAX_RETROACTIVE_LENGTH,
                 MAX_FUTURE_LENGTH: MAX_FUTURE_LENGTH,
-                GENESIS_REWARDS_TIMESTAMP: GENESIS_REWARDS_TIMESTAMP,
-                version: "v0.0.1"
+                GENESIS_REWARDS_TIMESTAMP: GENESIS_REWARDS_TIMESTAMP
             })
         );
 
-        IStrategy eigenStrategy =
-            IStrategy(new EigenStrategy(strategyManager, pauserRegistry, "v0.0.1"));
+        IStrategy eigenStrategy = IStrategy(new EigenStrategy(strategyManager, pauserRegistry));
 
         AllocationManagerView allocationManagerView = new AllocationManagerView(
             delegationManager, eigenStrategy, uint32(7 days), uint32(1 days)
@@ -245,8 +242,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             pauserRegistry,
             permissionController,
             uint32(7 days), // DEALLOCATION_DELAY
-            uint32(1 days), // ALLOCATION_CONFIGURATION_DELAY
-            "v0.0.1" // Added config parameter
+            uint32(1 days) // ALLOCATION_CONFIGURATION_DELAY
         );
 
         // Third, upgrade the proxy contracts to point to the implementations
@@ -322,7 +318,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
 
         // Deploy and whitelist strategies
-        baseStrategyImplementation = new StrategyBase(strategyManager, pauserRegistry, "v0.0.1");
+        baseStrategyImplementation = new StrategyBase(strategyManager, pauserRegistry);
         for (uint256 i = 0; i < MAX_STRATEGY_COUNT; i++) {
             string memory number = uint256(i).toString();
             string memory stratName = string.concat("StrategyToken", number);
