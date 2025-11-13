@@ -105,6 +105,8 @@ contract End2EndForkTest is Test {
     }
 
     function testEndToEndSetup_M2Migration() public {
+        // Skip this test as holesky is deprecated
+        vm.skip(true);
         (
             OperatorLib.Operator[] memory operators,
             DeploymentData memory coreDeployment,
