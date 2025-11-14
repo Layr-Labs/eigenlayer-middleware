@@ -125,6 +125,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     uint32 GENESIS_REWARDS_TIMESTAMP = 1712188800;
     /// @notice Equivalent to 100%, but in basis points.
     uint16 internal constant ONE_HUNDRED_IN_BIPS = 10000;
+    
 
     uint32 defaultOperatorSplitBips = 1000;
     /// @notice Delay in timestamp before a posted root can be claimed against
