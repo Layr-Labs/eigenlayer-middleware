@@ -125,6 +125,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     uint32 GENESIS_REWARDS_TIMESTAMP = 1712188800;
     /// @notice Equivalent to 100%, but in basis points.
     uint16 internal constant ONE_HUNDRED_IN_BIPS = 10000;
+    
 
     uint32 defaultOperatorSplitBips = 1000;
     /// @notice Delay in timestamp before a posted root can be claimed against
@@ -133,6 +134,11 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     uint32 calculationIntervalSeconds = 14 days;
     /// @notice the commission for all operators across all avss
     uint16 globalCommissionBips = 1000;
+
+    /// @notice The deallocation delay for the AllocationManager
+    uint32 DEALLOCATION_DELAY = 7 days;
+    /// @notice The allocation configuration delay for the AllocationManager
+    uint32 ALLOCATION_CONFIGURATION_DELAY = 1 days;
 
     function setUp() public virtual {
         // Deploy ProxyAdmin
@@ -231,19 +237,22 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
         IStrategy eigenStrategy = IStrategy(new EigenStrategy(strategyManager, pauserRegistry));
 
-        AllocationManagerView allocationManagerView = new AllocationManagerView(
-            delegationManager, eigenStrategy, uint32(7 days), uint32(1 days)
-        );
+        AllocationManagerView allocationManagerView = new AllocationManagerView({
+            _delegation: delegationManager,
+            _eigenStrategy: eigenStrategy,
+            _DEALLOCATION_DELAY: DEALLOCATION_DELAY,
+            _ALLOCATION_CONFIGURATION_DELAY: ALLOCATION_CONFIGURATION_DELAY
+        });
 
-        AllocationManager allocationManagerImplementation = new AllocationManager(
-            allocationManagerView,
-            delegationManager,
-            eigenStrategy,
-            pauserRegistry,
-            permissionController,
-            uint32(7 days), // DEALLOCATION_DELAY
-            uint32(1 days) // ALLOCATION_CONFIGURATION_DELAY
-        );
+        AllocationManager allocationManagerImplementation = new AllocationManager({
+            _allocationManagerView: allocationManagerView,
+            _delegation: delegationManager,
+            _eigenStrategy: eigenStrategy,
+            _pauserRegistry: pauserRegistry,
+            _permissionController: permissionController,
+            _DEALLOCATION_DELAY: DEALLOCATION_DELAY,
+            _ALLOCATION_CONFIGURATION_DELAY: ALLOCATION_CONFIGURATION_DELAY
+        });
 
         // Third, upgrade the proxy contracts to point to the implementations
         uint256 minWithdrawalDelayBlocks = 7 days / 12 seconds;

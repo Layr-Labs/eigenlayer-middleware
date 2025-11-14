@@ -155,6 +155,11 @@ contract MockAVSDeployer is Test {
 
     uint256 MAX_QUORUM_BITMAP = type(uint192).max;
 
+    /// @notice The deallocation delay for the AllocationManager
+    uint32 public constant DEALLOCATION_DELAY = 7 days;
+    /// @notice The allocation configuration delay for the AllocationManager
+    uint32 public constant ALLOCATION_CONFIGURATION_DELAY = 1 days;
+
     function _deployMockEigenLayerAndAVS() internal {
         _deployMockEigenLayerAndAVS(numQuorums);
     }
@@ -282,18 +287,22 @@ contract MockAVSDeployer is Test {
             new EigenStrategy(IStrategyManager(address(strategyManagerMock)), pauserRegistry)
         );
 
-        allocationManagerView =
-            new AllocationManagerView(delegationMock, eigenStrategy, uint32(7 days), uint32(1 days));
+        allocationManagerView = new AllocationManagerView({
+            _delegation: delegationMock,
+            _eigenStrategy: eigenStrategy,
+            _DEALLOCATION_DELAY: DEALLOCATION_DELAY,
+            _ALLOCATION_CONFIGURATION_DELAY: ALLOCATION_CONFIGURATION_DELAY
+        });
 
-        allocationManagerImplementation = new AllocationManager(
-            allocationManagerView,
-            delegationMock,
-            eigenStrategy,
-            pauserRegistry,
-            permissionControllerMock,
-            uint32(7 days), // DEALLOCATION_DELAY
-            uint32(1 days) // ALLOCATION_CONFIGURATION_DELAY
-        );
+        allocationManagerImplementation = new AllocationManager({
+            _allocationManagerView: allocationManagerView,
+            _delegation: delegationMock,
+            _eigenStrategy: eigenStrategy,
+            _pauserRegistry: pauserRegistry,
+            _permissionController: permissionControllerMock,
+            _DEALLOCATION_DELAY: DEALLOCATION_DELAY,
+            _ALLOCATION_CONFIGURATION_DELAY: ALLOCATION_CONFIGURATION_DELAY
+        });
         proxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(allocationManager))),
             address(allocationManagerImplementation)
