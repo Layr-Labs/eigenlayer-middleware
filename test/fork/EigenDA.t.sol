@@ -220,6 +220,8 @@ contract EigenDATest is Test {
     IStrategyManager public strategyManager;
 
     function setUp() public virtual {
+        // Skip this test as holesky is deprecated
+        vm.skip(true);
         // Setup the Holesky fork and load EigenDA deployment data
         eigenDAData = _setupEigenDAFork("test/utils");
 
