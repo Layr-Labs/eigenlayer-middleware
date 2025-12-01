@@ -117,7 +117,10 @@ library BN254 {
     /**
      * @return r the sum of two points of G1
      */
-    function plus(G1Point memory p1, G1Point memory p2) internal view returns (G1Point memory r) {
+    function plus(
+        G1Point memory p1,
+        G1Point memory p2
+    ) internal view returns (G1Point memory r) {
         uint256[4] memory input;
         input[0] = p1.X;
         input[1] = p1.Y;
@@ -187,7 +190,10 @@ library BN254 {
      *         p == p.scalar_mul(1) and p.plus(p) == p.scalar_mul(2) for all
      *         points p.
      */
-    function scalar_mul(G1Point memory p, uint256 s) internal view returns (G1Point memory r) {
+    function scalar_mul(
+        G1Point memory p,
+        uint256 s
+    ) internal view returns (G1Point memory r) {
         uint256[3] memory input;
         input[0] = p.X;
         input[1] = p.Y;

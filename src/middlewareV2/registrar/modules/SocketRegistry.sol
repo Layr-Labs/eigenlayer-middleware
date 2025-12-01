@@ -7,10 +7,12 @@ import {
     OperatorSetLib,
     OperatorSet
 } from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
-import {IPermissionController} from
-    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
-import {PermissionControllerMixin} from
-    "eigenlayer-contracts/src/contracts/mixins/PermissionControllerMixin.sol";
+import {
+    IPermissionController
+} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {
+    PermissionControllerMixin
+} from "eigenlayer-contracts/src/contracts/mixins/PermissionControllerMixin.sol";
 
 /// @notice A module that allows for the setting and removal of operator sockets
 /// @dev This contract assumes a single socket per operator
@@ -29,7 +31,10 @@ abstract contract SocketRegistry is SocketRegistryStorage, PermissionControllerM
     }
 
     /// @inheritdoc ISocketRegistryV2
-    function updateSocket(address operator, string memory socket) external checkCanCall(operator) {
+    function updateSocket(
+        address operator,
+        string memory socket
+    ) external checkCanCall(operator) {
         _setOperatorSocket(operator, socket);
     }
 
@@ -39,7 +44,10 @@ abstract contract SocketRegistry is SocketRegistryStorage, PermissionControllerM
      * @param socket The socket (any arbitrary string as deemed useful by an AVS) to set.
      * @dev This function sets a single socket per operator, regardless of operatorSet.
      */
-    function _setOperatorSocket(address operator, string memory socket) internal {
+    function _setOperatorSocket(
+        address operator,
+        string memory socket
+    ) internal {
         _operatorToSocket[operator] = socket;
         emit OperatorSocketSet(operator, socket);
     }

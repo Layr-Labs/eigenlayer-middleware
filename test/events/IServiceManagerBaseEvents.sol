@@ -8,7 +8,6 @@ import {
 
 interface IServiceManagerBaseEvents {
     /// RewardsCoordinator EVENTS ///
-
     /// @notice emitted when an AVS creates a valid RewardsSubmission
     event AVSRewardsSubmissionCreated(
         address indexed avs,

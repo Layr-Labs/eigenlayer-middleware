@@ -3,17 +3,20 @@ pragma solidity ^0.8.27;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ISignatureUtilsMixinTypes} from
-    "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
+import {
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-import {IRewardsCoordinator} from
-    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {
+    IRewardsCoordinator
+} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {
     IAllocationManager,
     IAllocationManagerTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {IPermissionController} from
-    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {
+    IPermissionController
+} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 
 import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
@@ -94,12 +97,13 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     }
 
     /// @inheritdoc IServiceManager
-    function setAppointee(address appointee, address target, bytes4 selector) external onlyOwner {
+    function setAppointee(
+        address appointee,
+        address target,
+        bytes4 selector
+    ) external onlyOwner {
         _permissionController.setAppointee({
-            account: address(this),
-            appointee: appointee,
-            target: target,
-            selector: selector
+            account: address(this), appointee: appointee, target: target, selector: selector
         });
     }
 
@@ -110,10 +114,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         bytes4 selector
     ) external onlyOwner {
         _permissionController.removeAppointee({
-            account: address(this),
-            appointee: appointee,
-            target: target,
-            selector: selector
+            account: address(this), appointee: appointee, target: target, selector: selector
         });
     }
 
@@ -147,12 +148,10 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
             // transfer token to ServiceManager and approve RewardsCoordinator to transfer again
             // in createAVSRewardsSubmission() call
-            rewardsSubmissions[i].token.safeTransferFrom(
-                msg.sender, address(this), rewardsSubmissions[i].amount
-            );
-            rewardsSubmissions[i].token.safeIncreaseAllowance(
-                address(_rewardsCoordinator), rewardsSubmissions[i].amount
-            );
+            rewardsSubmissions[i].token
+                .safeTransferFrom(msg.sender, address(this), rewardsSubmissions[i].amount);
+            rewardsSubmissions[i].token
+                .safeIncreaseAllowance(address(_rewardsCoordinator), rewardsSubmissions[i].amount);
         }
 
         _rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
@@ -173,26 +172,26 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      * smaller array of submissions if necessary.
      */
     function createOperatorDirectedAVSRewardsSubmission(
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[] calldata
-            operatorDirectedRewardsSubmissions
+        IRewardsCoordinator
+                .OperatorDirectedRewardsSubmission[] calldata operatorDirectedRewardsSubmissions
     ) public virtual onlyRewardsInitiator {
         for (uint256 i = 0; i < operatorDirectedRewardsSubmissions.length; ++i) {
             // Calculate total amount of token to transfer
             uint256 totalAmount = 0;
             for (
-                uint256 j = 0; j < operatorDirectedRewardsSubmissions[i].operatorRewards.length; ++j
+                uint256 j = 0;
+                j < operatorDirectedRewardsSubmissions[i].operatorRewards.length;
+                ++j
             ) {
                 totalAmount += operatorDirectedRewardsSubmissions[i].operatorRewards[j].amount;
             }
 
             // Transfer token to ServiceManager and approve RewardsCoordinator to transfer again
             // in createOperatorDirectedAVSRewardsSubmission() call
-            operatorDirectedRewardsSubmissions[i].token.safeTransferFrom(
-                msg.sender, address(this), totalAmount
-            );
-            operatorDirectedRewardsSubmissions[i].token.safeIncreaseAllowance(
-                address(_rewardsCoordinator), totalAmount
-            );
+            operatorDirectedRewardsSubmissions[i].token
+                .safeTransferFrom(msg.sender, address(this), totalAmount);
+            operatorDirectedRewardsSubmissions[i].token
+                .safeIncreaseAllowance(address(_rewardsCoordinator), totalAmount);
         }
 
         _rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(
@@ -238,9 +237,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         uint32[] memory operatorSetIds
     ) public virtual onlyRegistryCoordinator {
         IAllocationManager.DeregisterParams memory params = IAllocationManagerTypes.DeregisterParams({
-            operator: operator,
-            avs: address(this),
-            operatorSetIds: operatorSetIds
+            operator: operator, avs: address(this), operatorSetIds: operatorSetIds
         });
         _allocationManager.deregisterFromOperatorSets(params);
     }

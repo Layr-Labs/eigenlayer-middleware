@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IAllocationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 
@@ -28,8 +29,7 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         IPauserRegistry _pauserRegistry,
         string memory _version
     )
-        RegistryCoordinator(
-            IRegistryCoordinatorTypes.RegistryCoordinatorParams(
+        RegistryCoordinator(IRegistryCoordinatorTypes.RegistryCoordinatorParams(
                 _serviceManager,
                 IRegistryCoordinatorTypes.SlashingRegistryParams(
                     _stakeRegistry,
@@ -39,8 +39,7 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
                     _allocationManager,
                     _pauserRegistry
                 )
-            )
-        )
+            ))
     {
         _transferOwnership(msg.sender);
     }
@@ -51,7 +50,10 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
         quorumCount = count;
     }
 
-    function setOperatorId(address operator, bytes32 operatorId) external {
+    function setOperatorId(
+        address operator,
+        bytes32 operatorId
+    ) external {
         _operatorInfo[operator].operatorId = operatorId;
     }
 
@@ -73,12 +75,18 @@ contract RegistryCoordinatorHarness is RegistryCoordinator, Test {
     }
 
     // @notice exposes the internal `_deregisterOperator` function, overriding all access controls
-    function _deregisterOperatorExternal(address operator, bytes calldata quorumNumbers) external {
+    function _deregisterOperatorExternal(
+        address operator,
+        bytes calldata quorumNumbers
+    ) external {
         _deregisterOperator(operator, quorumNumbers);
     }
 
     // @notice exposes the internal `_updateOperatorBitmap` function, overriding all access controls
-    function _updateOperatorBitmapExternal(bytes32 operatorId, uint192 quorumBitmap) external {
+    function _updateOperatorBitmapExternal(
+        bytes32 operatorId,
+        uint192 quorumBitmap
+    ) external {
         _updateOperatorBitmap(operatorId, quorumBitmap);
     }
 

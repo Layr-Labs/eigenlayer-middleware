@@ -99,8 +99,7 @@ contract BLSSignatureChecker is BLSSignatureCheckerStorage {
                 }
 
                 // Get the quorums the nonsigner was registered for at referenceBlockNumber
-                nonSigners.quorumBitmaps[j] = registryCoordinator
-                    .getQuorumBitmapAtBlockNumberByIndex({
+                nonSigners.quorumBitmaps[j] = registryCoordinator.getQuorumBitmapAtBlockNumberByIndex({
                     operatorId: nonSigners.pubkeyHashes[j],
                     blockNumber: referenceBlockNumber,
                     index: params.nonSignerQuorumBitmapIndices[j]
@@ -144,12 +143,12 @@ contract BLSSignatureChecker is BLSSignatureCheckerStorage {
                 apk = apk.plus(params.quorumApks[i]);
 
                 // Get the total and starting signed stake for the quorum at referenceBlockNumber
-                stakeTotals.totalStakeForQuorum[i] = stakeRegistry
-                    .getTotalStakeAtBlockNumberFromIndex({
-                    quorumNumber: uint8(quorumNumbers[i]),
-                    blockNumber: referenceBlockNumber,
-                    index: params.totalStakeIndices[i]
-                });
+                stakeTotals.totalStakeForQuorum[i] =
+                    stakeRegistry.getTotalStakeAtBlockNumberFromIndex({
+                        quorumNumber: uint8(quorumNumbers[i]),
+                        blockNumber: referenceBlockNumber,
+                        index: params.totalStakeIndices[i]
+                    });
                 stakeTotals.signedStakeForQuorum[i] = stakeTotals.totalStakeForQuorum[i];
 
                 // Keep track of the nonSigners index in the quorum
@@ -160,8 +159,9 @@ contract BLSSignatureChecker is BLSSignatureCheckerStorage {
                 for (uint256 j = 0; j < params.nonSignerPubkeys.length; j++) {
                     // if the nonSigner is a part of the quorum, subtract their stake from the running total
                     if (BitmapUtils.isSet(nonSigners.quorumBitmaps[j], uint8(quorumNumbers[i]))) {
-                        stakeTotals.signedStakeForQuorum[i] -= stakeRegistry
-                            .getStakeAtBlockNumberAndIndex({
+                        stakeTotals.signedStakeForQuorum[
+                            i
+                        ] -= stakeRegistry.getStakeAtBlockNumberAndIndex({
                             quorumNumber: uint8(quorumNumbers[i]),
                             blockNumber: referenceBlockNumber,
                             operatorId: nonSigners.pubkeyHashes[j],

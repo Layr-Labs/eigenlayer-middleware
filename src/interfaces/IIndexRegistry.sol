@@ -100,7 +100,10 @@ interface IIndexRegistry is IIndexRegistryErrors, IIndexRegistryEvents {
      *         4) the operator is not already deregistered
      *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
      */
-    function deregisterOperator(bytes32 operatorId, bytes calldata quorumNumbers) external;
+    function deregisterOperator(
+        bytes32 operatorId,
+        bytes calldata quorumNumbers
+    ) external;
 
     /*
      * @notice Initializes a new quorum `quorumNumber`.

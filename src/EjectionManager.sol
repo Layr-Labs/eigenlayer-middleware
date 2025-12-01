@@ -97,7 +97,10 @@ contract EjectionManager is OwnableUpgradeable, EjectionManagerStorage {
     }
 
     /// @inheritdoc IEjectionManager
-    function setEjector(address ejector, bool status) external onlyOwner {
+    function setEjector(
+        address ejector,
+        bool status
+    ) external onlyOwner {
         _setEjector(ejector, status);
     }
 
@@ -116,7 +119,10 @@ contract EjectionManager is OwnableUpgradeable, EjectionManagerStorage {
     }
 
     ///@dev internal function to set the ejector
-    function _setEjector(address ejector, bool status) internal {
+    function _setEjector(
+        address ejector,
+        bool status
+    ) internal {
         isEjector[ejector] = status;
         emit EjectorUpdated(ejector, status);
     }

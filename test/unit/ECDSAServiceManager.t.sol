@@ -7,10 +7,12 @@ import {
     ISignatureUtilsMixin,
     ISignatureUtilsMixinTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
-import {IDelegationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
-import {IRewardsCoordinator} from
-    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {
+    IDelegationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {
+    IRewardsCoordinator
+} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 
@@ -21,7 +23,10 @@ import {IECDSAStakeRegistryTypes} from "../../src/interfaces/IECDSAStakeRegistry
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract MockDelegationManager {
-    function operatorShares(address, address) external pure returns (uint256) {
+    function operatorShares(
+        address,
+        address
+    ) external pure returns (uint256) {
         return 1000; // Return a dummy value for simplicity
     }
 
@@ -53,7 +58,10 @@ contract MockAVSDirectory {
 }
 
 contract MockAllocationManager {
-    function setAVSRegistrar(address avs, address registrar) external {}
+    function setAVSRegistrar(
+        address avs,
+        address registrar
+    ) external {}
 }
 
 contract MockRewardsCoordinator {
@@ -110,12 +118,10 @@ contract ECDSAServiceManagerSetup is Test {
             strategies: new IECDSAStakeRegistryTypes.StrategyParams[](2)
         });
         quorum.strategies[0] = IECDSAStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(420)),
-            multiplier: 5000
+            strategy: IStrategy(address(420)), multiplier: 5000
         });
         quorum.strategies[1] = IECDSAStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(421)),
-            multiplier: 5000
+            strategy: IStrategy(address(421)), multiplier: 5000
         });
         address[] memory operators = new address[](0);
 

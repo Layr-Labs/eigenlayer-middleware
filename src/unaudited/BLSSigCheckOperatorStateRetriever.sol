@@ -87,15 +87,17 @@ contract BLSSigCheckOperatorStateRetriever is OperatorStateRetriever {
 
         // Extra scope for stack limit
         {
-            uint32[] memory signingOperatorQuorumBitmapIndices = registryCoordinator
-                .getQuorumBitmapIndicesAtBlockNumber(blockNumber, m.signingOperatorIds);
+            uint32[] memory signingOperatorQuorumBitmapIndices =
+                registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(
+                    blockNumber, m.signingOperatorIds
+                );
             uint256 bitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
             // Check that all operators are registered (this is like the check in getCheckSignaturesIndices, but we check against _signing_ operators)
             for (uint256 i = 0; i < operators.length; i++) {
-                uint192 signingOperatorQuorumBitmap = registryCoordinator
-                    .getQuorumBitmapAtBlockNumberByIndex(
-                    m.signingOperatorIds[i], blockNumber, signingOperatorQuorumBitmapIndices[i]
-                );
+                uint192 signingOperatorQuorumBitmap =
+                    registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(
+                        m.signingOperatorIds[i], blockNumber, signingOperatorQuorumBitmapIndices[i]
+                    );
                 require(
                     !uint256(signingOperatorQuorumBitmap).noBitsInCommon(bitmap),
                     OperatorNotRegistered()

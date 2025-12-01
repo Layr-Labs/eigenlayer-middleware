@@ -259,9 +259,7 @@ contract User is Test {
         IDelegationManagerTypes.QueuedWithdrawalParams[] memory params =
             new IDelegationManager.QueuedWithdrawalParams[](1);
         params[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
-            strategies: strategies,
-            depositShares: shares,
-            __deprecated_withdrawer: address(this)
+            strategies: strategies, depositShares: shares, __deprecated_withdrawer: address(this)
         });
 
         delegationManager.queueWithdrawals(params);
@@ -274,7 +272,10 @@ contract User is Test {
      */
     bytes4 internal constant EIP1271_MAGICVALUE = 0x1626ba7e;
 
-    function isValidSignature(bytes32 digestHash, bytes memory) public view returns (bytes4) {
+    function isValidSignature(
+        bytes32 digestHash,
+        bytes memory
+    ) public view returns (bytes4) {
         if (digests[digestHash]) {
             return EIP1271_MAGICVALUE;
         }
@@ -291,11 +292,9 @@ contract User is Test {
         returns (ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory)
     {
         ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory signature =
-        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
-            signature: new bytes(0),
-            salt: bytes32(salt++),
-            expiry: type(uint256).max
-        });
+            ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
+                signature: new bytes(0), salt: bytes32(salt++), expiry: type(uint256).max
+            });
 
         bytes32 digest = avsDirectory.calculateOperatorAVSRegistrationDigestHash({
             operator: address(this),
@@ -316,7 +315,10 @@ contract User is Test {
     }
 
     // Operator0.registerOperator: 0x00010203...
-    function _log(string memory s, bytes calldata quorums) internal virtual {
+    function _log(
+        string memory s,
+        bytes calldata quorums
+    ) internal virtual {
         emit log_named_string(string.concat(NAME, ".", s), quorums.toString());
     }
 
@@ -371,8 +373,7 @@ contract User is Test {
         while (churnIdx + stdIdx < allQuorums.length) {
             if (churnIdx == churnQuorums.length) {
                 kickParams[churnIdx + stdIdx] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
-                    quorumNumber: 0,
-                    operator: address(0)
+                    quorumNumber: 0, operator: address(0)
                 });
                 stdIdx++;
             } else if (
@@ -385,8 +386,7 @@ contract User is Test {
                 churnIdx++;
             } else if (standardQuorums[stdIdx] < churnQuorums[churnIdx]) {
                 kickParams[churnIdx + stdIdx] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
-                    quorumNumber: 0,
-                    operator: address(0)
+                    quorumNumber: 0, operator: address(0)
                 });
                 stdIdx++;
             } else {
@@ -414,11 +414,9 @@ contract User is Test {
         }
         signature[signature.length - 1] = bytes1(v);
         ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature =
-        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
-            signature: signature,
-            salt: _salt,
-            expiry: expiry
-        });
+            ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
+                signature: signature, salt: _salt, expiry: expiry
+            });
 
         return (kickParams, churnApproverSignature);
     }

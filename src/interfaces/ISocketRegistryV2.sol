@@ -24,5 +24,8 @@ interface ISocketRegistryV2 is ISocketRegistryEvents {
      * @dev Reverts for:
      *      - InvalidPermissions: The caller does not have permission to call this function (via core `PermissionController`)
      */
-    function updateSocket(address operator, string memory socket) external;
+    function updateSocket(
+        address operator,
+        string memory socket
+    ) external;
 }

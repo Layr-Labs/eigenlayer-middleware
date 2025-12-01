@@ -13,7 +13,10 @@ interface ISocketRegistry is ISocketRegistryErrors {
      * @param _socket The socket (any arbitrary string as deemed useful by an AVS) to set.
      * @dev Only callable by the SlashingRegistryCoordinator.
      */
-    function setOperatorSocket(bytes32 _operatorId, string memory _socket) external;
+    function setOperatorSocket(
+        bytes32 _operatorId,
+        string memory _socket
+    ) external;
 
     /**
      * @notice Gets the stored socket for an operator.

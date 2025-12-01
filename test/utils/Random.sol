@@ -9,7 +9,6 @@ library Random {
     /// -----------------------------------------------------------------------
     /// Constants
     /// -----------------------------------------------------------------------
-
     /// @dev Equivalent to: `uint256(keccak256("RANDOMNESS.SEED"))`.
     uint256 constant SEED = 0x93bfe7cafd9427243dc4fe8c6e706851eb6696ba8e48960dd74ecc96544938ce;
 
@@ -46,7 +45,11 @@ library Random {
     /// Native Types
     /// -----------------------------------------------------------------------
 
-    function Int256(Randomness r, int256 min, int256 max) internal returns (int256) {
+    function Int256(
+        Randomness r,
+        int256 min,
+        int256 max
+    ) internal returns (int256) {
         return max <= min ? min : r.Int256() % (max - min) + min;
     }
 
@@ -56,7 +59,11 @@ library Random {
         return r.unwrap() % 2 == 0 ? int256(r.Uint256()) : -int256(r.Uint256());
     }
 
-    function Int128(Randomness r, int128 min, int128 max) internal returns (int128) {
+    function Int128(
+        Randomness r,
+        int128 min,
+        int128 max
+    ) internal returns (int128) {
         return int128(Int256(r, min, max));
     }
 
@@ -66,7 +73,11 @@ library Random {
         return int128(Int256(r));
     }
 
-    function Int64(Randomness r, int64 min, int64 max) internal returns (int64) {
+    function Int64(
+        Randomness r,
+        int64 min,
+        int64 max
+    ) internal returns (int64) {
         return int64(Int256(r, min, max));
     }
 
@@ -76,11 +87,19 @@ library Random {
         return int64(Int256(r));
     }
 
-    function Int32(Randomness r, int32 min, int32 max) internal returns (int32) {
+    function Int32(
+        Randomness r,
+        int32 min,
+        int32 max
+    ) internal returns (int32) {
         return int32(Int256(r, min, max));
     }
 
-    function Uint256(Randomness r, uint256 min, uint256 max) internal returns (uint256) {
+    function Uint256(
+        Randomness r,
+        uint256 min,
+        uint256 max
+    ) internal returns (uint256) {
         return max <= min ? min : r.Uint256() % (max - min) + min;
     }
 
@@ -90,7 +109,11 @@ library Random {
         return r.shuffle().unwrap();
     }
 
-    function Uint128(Randomness r, uint128 min, uint128 max) internal returns (uint128) {
+    function Uint128(
+        Randomness r,
+        uint128 min,
+        uint128 max
+    ) internal returns (uint128) {
         return uint128(Uint256(r, min, max));
     }
 
@@ -100,7 +123,11 @@ library Random {
         return uint128(Uint256(r));
     }
 
-    function Uint64(Randomness r, uint64 min, uint64 max) internal returns (uint64) {
+    function Uint64(
+        Randomness r,
+        uint64 min,
+        uint64 max
+    ) internal returns (uint64) {
         return uint64(Uint256(r, min, max));
     }
 
@@ -110,7 +137,11 @@ library Random {
         return uint64(Uint256(r));
     }
 
-    function Uint32(Randomness r, uint32 min, uint32 max) internal returns (uint32) {
+    function Uint32(
+        Randomness r,
+        uint32 min,
+        uint32 max
+    ) internal returns (uint32) {
         return uint32(Uint256(r, min, max));
     }
 

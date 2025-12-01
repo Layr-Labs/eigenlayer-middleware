@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IAllocationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {ISlashingRegistryCoordinator} from "../../interfaces/ISlashingRegistryCoordinator.sol";
 import {ISlasher} from "../../interfaces/ISlasher.sol";
@@ -16,7 +17,6 @@ abstract contract SlasherStorage is ISlasher {
      *                            CONSTANTS AND IMMUTABLES
      *
      */
-
     /// @notice The `AllocationManager` tracks operator sets, operator set allocations, and slashing in EigenLayer.
     IAllocationManager public immutable allocationManager;
     /// @notice The `StrategyManager` handles strategy inflows/outflows.

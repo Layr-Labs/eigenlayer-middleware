@@ -8,8 +8,9 @@ import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
 import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {IAllocationManagerTypes} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IAllocationManagerTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {AVSRegistrarMock} from "../mocks/AVSRegistrarMock.sol";
 import {console2 as console} from "forge-std/Test.sol";
 
@@ -49,8 +50,7 @@ contract AVSRegistrarTest is MockAVSDeployer {
         IAllocationManagerTypes.CreateSetParams[] memory createSetParams =
             new IAllocationManagerTypes.CreateSetParams[](1);
         createSetParams[0] = IAllocationManagerTypes.CreateSetParams({
-            operatorSetId: operatorSetId,
-            strategies: new IStrategy[](0)
+            operatorSetId: operatorSetId, strategies: new IStrategy[](0)
         });
 
         // Create operator set
@@ -85,8 +85,7 @@ contract AVSRegistrarTest is MockAVSDeployer {
         IAllocationManagerTypes.CreateSetParams[] memory createSetParams =
             new IAllocationManagerTypes.CreateSetParams[](1);
         createSetParams[0] = IAllocationManagerTypes.CreateSetParams({
-            operatorSetId: operatorSetId,
-            strategies: new IStrategy[](0)
+            operatorSetId: operatorSetId, strategies: new IStrategy[](0)
         });
 
         // Create operator set

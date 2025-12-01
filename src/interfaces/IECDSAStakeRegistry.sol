@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {IERC1271Upgradeable} from
-    "@openzeppelin-upgrades/contracts/interfaces/IERC1271Upgradeable.sol";
+import {
+    IERC1271Upgradeable
+} from "@openzeppelin-upgrades/contracts/interfaces/IERC1271Upgradeable.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {ISignatureUtilsMixinTypes} from
-    "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
+import {
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 
 // TODO: many of these errors do not have test coverage.
 
@@ -180,7 +182,10 @@ interface IECDSAStakeRegistry is
      * @param newMinimumWeight The new weight an operator must have to join the operator set.
      * @param operators The list of operators to update after changing the minimum weight.
      */
-    function updateMinimumWeight(uint256 newMinimumWeight, address[] memory operators) external;
+    function updateMinimumWeight(
+        uint256 newMinimumWeight,
+        address[] memory operators
+    ) external;
 
     /*
      * @notice Sets a new cumulative threshold weight for message validation.

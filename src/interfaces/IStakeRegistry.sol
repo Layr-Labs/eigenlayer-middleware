@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {IDelegationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {
+    IDelegationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 /// @notice Interface containing all error definitions for the StakeRegistry contract.
@@ -125,7 +126,6 @@ interface IStakeRegistryEvents is IStakeRegistryTypes {
 
 interface IStakeRegistry is IStakeRegistryErrors, IStakeRegistryEvents {
     /// STATE
-
     /**
      * @notice Returns the EigenLayer delegation manager contract.
      */
@@ -165,7 +165,10 @@ interface IStakeRegistry is IStakeRegistryErrors, IStakeRegistryEvents {
      *     4) The operator is not already deregistered.
      *     5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for.
      */
-    function deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) external;
+    function deregisterOperator(
+        bytes32 operatorId,
+        bytes memory quorumNumbers
+    ) external;
 
     /**
      * @notice Called by the registry coordinator to update the stake of a list of operators for a specific quorum.
@@ -211,14 +214,20 @@ interface IStakeRegistry is IStakeRegistryErrors, IStakeRegistryEvents {
      * @param quorumNumber The quorum number to set the minimum stake for.
      * @param minimumStake The new minimum stake requirement.
      */
-    function setMinimumStakeForQuorum(uint8 quorumNumber, uint96 minimumStake) external;
+    function setMinimumStakeForQuorum(
+        uint8 quorumNumber,
+        uint96 minimumStake
+    ) external;
 
     /**
      * @notice Sets the look ahead time to `lookAheadBlocks` for checking operator shares for a specific quorum.
      * @param quorumNumber The quorum number to set the look ahead period for.
      * @param lookAheadBlocks The number of blocks to look ahead when checking shares.
      */
-    function setSlashableStakeLookahead(uint8 quorumNumber, uint32 lookAheadBlocks) external;
+    function setSlashableStakeLookahead(
+        uint8 quorumNumber,
+        uint32 lookAheadBlocks
+    ) external;
 
     /**
      * @notice Adds new strategies and their associated multipliers to the specified quorum.
@@ -228,7 +237,10 @@ interface IStakeRegistry is IStakeRegistryErrors, IStakeRegistryEvents {
      * @param quorumNumber The quorum number to add strategies to.
      * @param strategyParams The strategy parameters to add.
      */
-    function addStrategies(uint8 quorumNumber, StrategyParams[] memory strategyParams) external;
+    function addStrategies(
+        uint8 quorumNumber,
+        StrategyParams[] memory strategyParams
+    ) external;
 
     /**
      * @notice Removes strategies and their associated weights from the specified quorum.
@@ -237,7 +249,10 @@ interface IStakeRegistry is IStakeRegistryErrors, IStakeRegistryEvents {
      * @dev Higher indices should be *first* in the list of `indicesToRemove`, since otherwise
      *     the removal of lower index entries will cause a shift in the indices of the other strategiesToRemove.
      */
-    function removeStrategies(uint8 quorumNumber, uint256[] calldata indicesToRemove) external;
+    function removeStrategies(
+        uint8 quorumNumber,
+        uint256[] calldata indicesToRemove
+    ) external;
 
     /**
      * @notice Modifies the weights of strategies that are already in the mapping strategyParams.

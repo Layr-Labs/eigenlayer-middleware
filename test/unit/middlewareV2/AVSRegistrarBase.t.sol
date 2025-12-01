@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {TransparentUpgradeableProxy} from
-    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    TransparentUpgradeableProxy
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {MockEigenLayerDeployer} from "./MockDeployer.sol";
 import {IAVSRegistrarErrors, IAVSRegistrarEvents} from "src/interfaces/IAVSRegistrarInternal.sol";
 import {AVSRegistrar} from "src/middlewareV2/registrar/AVSRegistrar.sol";
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IAllocationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 import {
     OperatorSet,
@@ -47,7 +49,10 @@ abstract contract AVSRegistrarBase is
         _deployMockEigenLayer();
     }
 
-    function _registerKey(address operator, uint32[] memory operatorSetIds) internal {
+    function _registerKey(
+        address operator,
+        uint32[] memory operatorSetIds
+    ) internal {
         for (uint32 i; i < operatorSetIds.length; ++i) {
             keyRegistrarMock.setIsRegistered(
                 operator, OperatorSet({avs: AVS, id: operatorSetIds[i]}), true

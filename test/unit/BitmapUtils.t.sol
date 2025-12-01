@@ -46,7 +46,10 @@ contract BitmapUtilsUnitTests_bitwiseOperations is BitmapUtilsUnitTests {
         }
     }
 
-    function test_setBit(uint256 bitmap, uint8 bitToSet) public {
+    function test_setBit(
+        uint256 bitmap,
+        uint8 bitToSet
+    ) public {
         // Ensure that numberToAdd isn't already in the bitmap
         cheats.assume(bitmap | (1 << bitToSet) != bitmap);
         uint256 updatedBitmap = bitmapUtilsWrapper.setBit(bitmap, bitToSet);
@@ -64,7 +67,10 @@ contract BitmapUtilsUnitTests_bitwiseOperations is BitmapUtilsUnitTests {
         }
     }
 
-    function testFuzz_noBitsInCommon(uint256 a, uint256 b) public {
+    function testFuzz_noBitsInCommon(
+        uint256 a,
+        uint256 b
+    ) public {
         // 1000 and 0111 have no bits in common
         assertTrue(bitmapUtilsWrapper.noBitsInCommon(8, 7), "noBitsInCommon function is broken");
         // 1101 and 0010 have no bits in common
@@ -82,7 +88,10 @@ contract BitmapUtilsUnitTests_bitwiseOperations is BitmapUtilsUnitTests {
         assertTrue(bitmapUtilsWrapper.noBitsInCommon(a, b), "noBitsInCommon function is broken");
     }
 
-    function testFuzz_isSubsetOf(uint256 a, uint256 b) public {
+    function testFuzz_isSubsetOf(
+        uint256 a,
+        uint256 b
+    ) public {
         // 1000 is a subset of 1000
         assertTrue(bitmapUtilsWrapper.isSubsetOf(8, 8), "isSubsetOf function is broken");
         // 1000 is a subset of 1001
@@ -98,7 +107,10 @@ contract BitmapUtilsUnitTests_bitwiseOperations is BitmapUtilsUnitTests {
         }
     }
 
-    function testFuzz_plus(uint256 a, uint256 b) public {
+    function testFuzz_plus(
+        uint256 a,
+        uint256 b
+    ) public {
         uint256 bitwisePlus = bitmapUtilsWrapper.plus(a, b);
         for (uint256 i = 0; i < 256; ++i) {
             if ((a >> i) & 1 == 1 || (b >> i) & 1 == 1) {
@@ -108,7 +120,10 @@ contract BitmapUtilsUnitTests_bitwiseOperations is BitmapUtilsUnitTests {
         }
     }
 
-    function testFuzz_minus(uint256 a, uint256 b) public {
+    function testFuzz_minus(
+        uint256 a,
+        uint256 b
+    ) public {
         uint256 bitwiseMinus = bitmapUtilsWrapper.minus(a, b);
         for (uint256 i = 0; i < 256; ++i) {
             if ((a >> i) & 1 == 1 && (b >> i) & 1 == 0) {
@@ -148,7 +163,10 @@ contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
     }
 
     // ensure that the bitmap encoding of a two uint8's (i.e. a two byte array) matches the expected output
-    function testFuzz_TwoByteEncoding(uint8 firstFuzzedNumber, uint8 secondFuzzedNumber) public {
+    function testFuzz_TwoByteEncoding(
+        uint8 firstFuzzedNumber,
+        uint8 secondFuzzedNumber
+    ) public {
         cheats.assume(secondFuzzedNumber > firstFuzzedNumber);
         bytes1 firstSingleByte = bytes1(firstFuzzedNumber);
         bytes1 secondSingleByte = bytes1(secondFuzzedNumber);
@@ -173,7 +191,11 @@ contract BitmapUtilsUnitTests_bytesArrayToBitmap is BitmapUtilsUnitTests {
 
     // ensure that converting bytes array => bitmap => bytes array returns the original bytes array (i.e. is lossless and artifactless)
     // note that this only works on ordered arrays, because unordered arrays will be returned ordered
-    function testFuzz_BytesArrayToBitmapToBytesArray(uint8 a, uint8 b, uint8 c) public view {
+    function testFuzz_BytesArrayToBitmapToBytesArray(
+        uint8 a,
+        uint8 b,
+        uint8 c
+    ) public view {
         a = uint8(bound(a, 0, 31));
         b = uint8(bound(b, 0, 31));
         c = uint8(bound(c, 0, 31));

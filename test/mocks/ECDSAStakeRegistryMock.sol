@@ -2,8 +2,9 @@
 pragma solidity ^0.8.27;
 
 import "../../src/unaudited/ECDSAStakeRegistry.sol";
-import {CheckpointsUpgradeable} from
-    "@openzeppelin-upgrades/contracts/utils/CheckpointsUpgradeable.sol";
+import {
+    CheckpointsUpgradeable
+} from "@openzeppelin-upgrades/contracts/utils/CheckpointsUpgradeable.sol";
 
 /**
  * @title Mock for ECDSAStakeRegistry
@@ -21,7 +22,10 @@ contract ECDSAStakeRegistryMock is ECDSAStakeRegistry {
      * @param blockNumber The block number
      * @param weight The weight to set
      */
-    function setTotalWeightAtBlock(uint32 blockNumber, uint256 weight) external {
+    function setTotalWeightAtBlock(
+        uint32 blockNumber,
+        uint256 weight
+    ) external {
         _totalWeightHistory.push(weight);
     }
 
@@ -30,7 +34,10 @@ contract ECDSAStakeRegistryMock is ECDSAStakeRegistry {
      * @param blockNumber The block number
      * @param weight The weight to set
      */
-    function setThresholdWeightAtBlock(uint32 blockNumber, uint256 weight) external {
+    function setThresholdWeightAtBlock(
+        uint32 blockNumber,
+        uint256 weight
+    ) external {
         _thresholdWeightHistory.push(weight);
     }
 }

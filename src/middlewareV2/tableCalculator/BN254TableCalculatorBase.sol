@@ -2,15 +2,18 @@
 pragma solidity ^0.8.27;
 
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
-import {IOperatorTableCalculator} from
-    "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
+import {
+    IOperatorTableCalculator
+} from "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 import {Merkle} from "eigenlayer-contracts/src/contracts/libraries/Merkle.sol";
 import {BN254} from "eigenlayer-contracts/src/contracts/libraries/BN254.sol";
-import {IBN254CertificateVerifierTypes} from
-    "eigenlayer-contracts/src/contracts/interfaces/IBN254CertificateVerifier.sol";
-import {LeafCalculatorMixin} from
-    "eigenlayer-contracts/src/contracts/mixins/LeafCalculatorMixin.sol";
+import {
+    IBN254CertificateVerifierTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/IBN254CertificateVerifier.sol";
+import {
+    LeafCalculatorMixin
+} from "eigenlayer-contracts/src/contracts/mixins/LeafCalculatorMixin.sol";
 import {IBN254TableCalculator} from "../../interfaces/IBN254TableCalculator.sol";
 
 /**
@@ -138,16 +141,16 @@ abstract contract BN254TableCalculatorBase is IBN254TableCalculator, LeafCalcula
         ) = _buildRegisteredOperatorData(operatorSet);
 
         if (registeredOperatorInfos.length == 0) {
-            return (
-                new IBN254CertificateVerifierTypes.BN254OperatorInfoWitness[](0),
-                BN254.G1Point(0, 0)
-            );
+            return
+                (
+                    new IBN254CertificateVerifierTypes.BN254OperatorInfoWitness[](0),
+                    BN254.G1Point(0, 0)
+                );
         }
 
         // Prepare outputs with max length then resize
-        nonSignerWitnesses = new IBN254CertificateVerifierTypes.BN254OperatorInfoWitness[](
-            registeredOperators.length
-        );
+        nonSignerWitnesses = new IBN254CertificateVerifierTypes
+            .BN254OperatorInfoWitness[](registeredOperators.length);
         nonSignerApk = BN254.G1Point(0, 0);
 
         uint256 nonSignerCount = 0;
@@ -164,12 +167,12 @@ abstract contract BN254TableCalculatorBase is IBN254TableCalculator, LeafCalcula
             BN254OperatorInfo memory opInfo = registeredOperatorInfos[idx];
             nonSignerApk = nonSignerApk.plus(opInfo.pubkey);
 
-            nonSignerWitnesses[nonSignerCount] = IBN254CertificateVerifierTypes
-                .BN254OperatorInfoWitness({
-                operatorIndex: uint32(idx),
-                operatorInfoProof: Merkle.getProofKeccak(operatorInfoLeaves, idx),
-                operatorInfo: opInfo
-            });
+            nonSignerWitnesses[nonSignerCount] =
+                IBN254CertificateVerifierTypes.BN254OperatorInfoWitness({
+                    operatorIndex: uint32(idx),
+                    operatorInfoProof: Merkle.getProofKeccak(operatorInfoLeaves, idx),
+                    operatorInfo: opInfo
+                });
             nonSignerCount++;
         }
 

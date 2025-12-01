@@ -9,8 +9,9 @@ import {
     IRewardsCoordinatorTypes,
     IERC20
 } from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
-import {PermissionController} from
-    "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
+import {
+    PermissionController
+} from "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
 import {StrategyBase} from "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IServiceManagerBaseEvents} from "../events/IServiceManagerBaseEvents.sol";
@@ -69,17 +70,17 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         // Deploy rewards coordinator
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
-                delegationManager: delegationMock,
-                strategyManager: IStrategyManager(address(strategyManagerMock)),
-                allocationManager: allocationManagerMock,
-                pauserRegistry: pauserRegistry,
-                permissionController: permissionControllerMock,
-                CALCULATION_INTERVAL_SECONDS: CALCULATION_INTERVAL_SECONDS,
-                MAX_REWARDS_DURATION: MAX_REWARDS_DURATION,
-                MAX_RETROACTIVE_LENGTH: MAX_RETROACTIVE_LENGTH,
-                MAX_FUTURE_LENGTH: MAX_FUTURE_LENGTH,
-                GENESIS_REWARDS_TIMESTAMP: GENESIS_REWARDS_TIMESTAMP
-            })
+                    delegationManager: delegationMock,
+                    strategyManager: IStrategyManager(address(strategyManagerMock)),
+                    allocationManager: allocationManagerMock,
+                    pauserRegistry: pauserRegistry,
+                    permissionController: permissionControllerMock,
+                    CALCULATION_INTERVAL_SECONDS: CALCULATION_INTERVAL_SECONDS,
+                    MAX_REWARDS_DURATION: MAX_REWARDS_DURATION,
+                    MAX_RETROACTIVE_LENGTH: MAX_RETROACTIVE_LENGTH,
+                    MAX_FUTURE_LENGTH: MAX_FUTURE_LENGTH,
+                    GENESIS_REWARDS_TIMESTAMP: GENESIS_REWARDS_TIMESTAMP
+                })
         );
 
         rewardsCoordinator = RewardsCoordinator(
@@ -136,7 +137,10 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
     }
 
     /// @notice deploy token to owner and approve ServiceManager. Used for deploying reward tokens
-    function _deployMockRewardTokens(address owner, uint256 numTokens) internal virtual {
+    function _deployMockRewardTokens(
+        address owner,
+        uint256 numTokens
+    ) internal virtual {
         cheats.startPrank(owner);
         for (uint256 i = 0; i < numTokens; ++i) {
             IERC20 token =
@@ -235,7 +239,10 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         return arr;
     }
 
-    function _maxTimestamp(uint32 timestamp1, uint32 timestamp2) internal pure returns (uint32) {
+    function _maxTimestamp(
+        uint32 timestamp1,
+        uint32 timestamp2
+    ) internal pure returns (uint32) {
         return timestamp1 > timestamp2 ? timestamp1 : timestamp2;
     }
 
@@ -398,13 +405,13 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
 
             // 2. Create reward submission input param
             IRewardsCoordinatorTypes.RewardsSubmission memory rewardsSubmission =
-            IRewardsCoordinatorTypes.RewardsSubmission({
-                strategiesAndMultipliers: defaultStrategyAndMultipliers,
-                token: rewardTokens[i],
-                amount: amounts[i],
-                startTimestamp: uint32(startTimestamp),
-                duration: uint32(duration)
-            });
+                IRewardsCoordinatorTypes.RewardsSubmission({
+                    strategiesAndMultipliers: defaultStrategyAndMultipliers,
+                    token: rewardTokens[i],
+                    amount: amounts[i],
+                    startTimestamp: uint32(startTimestamp),
+                    duration: uint32(duration)
+                });
             rewardsSubmissions[i] = rewardsSubmission;
 
             // 3. expected event emitted for this rewardsSubmission
@@ -501,13 +508,13 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
 
             // 2. Create reward submission input param
             IRewardsCoordinatorTypes.RewardsSubmission memory rewardsSubmission =
-            IRewardsCoordinatorTypes.RewardsSubmission({
-                strategiesAndMultipliers: defaultStrategyAndMultipliers,
-                token: rewardToken,
-                amount: amounts[i],
-                startTimestamp: uint32(startTimestamp),
-                duration: uint32(duration)
-            });
+                IRewardsCoordinatorTypes.RewardsSubmission({
+                    strategiesAndMultipliers: defaultStrategyAndMultipliers,
+                    token: rewardToken,
+                    amount: amounts[i],
+                    startTimestamp: uint32(startTimestamp),
+                    duration: uint32(duration)
+                });
             rewardsSubmissions[i] = rewardsSubmission;
 
             // 3. expected event emitted for this avs rewards submission
@@ -862,8 +869,8 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
                 ) + CALCULATION_INTERVAL_SECONDS - 1,
                 block.timestamp - 1 // Must be in past for operator directed rewards
             );
-            submissionStartTimestamp =
-                submissionStartTimestamp - (submissionStartTimestamp % CALCULATION_INTERVAL_SECONDS);
+            submissionStartTimestamp = submissionStartTimestamp
+                - (submissionStartTimestamp % CALCULATION_INTERVAL_SECONDS);
 
             // loop and find the latest startTimestamp and the longest duration, then warp start + duration + 1
             if (submissionStartTimestamp > latestStartTimestamp) {
@@ -877,8 +884,7 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
             IRewardsCoordinatorTypes.OperatorReward[] memory operatorRewards =
                 new IRewardsCoordinatorTypes.OperatorReward[](1);
             operatorRewards[0] = IRewardsCoordinatorTypes.OperatorReward({
-                operator: address(0x1),
-                amount: amounts[i]
+                operator: address(0x1), amount: amounts[i]
             });
 
             rewardsSubmissions[i] = IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission({
@@ -925,12 +931,10 @@ contract ServiceManagerBase_UnitTests is MockAVSDeployer, IServiceManagerBaseEve
         uint32[] memory operatorSetIds
     ) public {
         // Mock the expected call to allocationManager
-        IAllocationManagerTypes.DeregisterParams memory expectedParams = IAllocationManagerTypes
-            .DeregisterParams({
-            operator: operator,
-            avs: address(serviceManager),
-            operatorSetIds: operatorSetIds
-        });
+        IAllocationManagerTypes.DeregisterParams memory expectedParams =
+            IAllocationManagerTypes.DeregisterParams({
+                operator: operator, avs: address(serviceManager), operatorSetIds: operatorSetIds
+            });
 
         cheats.expectCall(
             address(allocationManagerMock),

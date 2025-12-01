@@ -12,7 +12,10 @@ import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 
 contract AVSDirectoryMock is IAVSDirectory {
-    function initialize(address initialOwner, uint256 initialPausedStatus) external {}
+    function initialize(
+        address initialOwner,
+        uint256 initialPausedStatus
+    ) external {}
 
     function createOperatorSets(
         uint32[] calldata operatorSetIds
@@ -70,13 +73,19 @@ contract AVSDirectoryMock is IAVSDirectory {
         address operator
     ) external {}
 
-    function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool) {}
+    function operatorSaltIsSpent(
+        address operator,
+        bytes32 salt
+    ) external view returns (bool) {}
 
     function operatorSetsEnabled(
         address avs
     ) external view returns (bool) {}
 
-    function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool) {}
+    function isOperatorSet(
+        address avs,
+        uint32 operatorSetId
+    ) external view returns (bool) {}
 
     function getNumOperatorSetsOfOperator(
         address operator

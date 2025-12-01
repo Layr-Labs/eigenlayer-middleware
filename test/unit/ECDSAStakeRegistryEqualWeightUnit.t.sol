@@ -5,8 +5,9 @@ import {
     ISignatureUtilsMixin,
     ISignatureUtilsMixinTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
-import {IDelegationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {
+    IDelegationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 import {
@@ -14,8 +15,9 @@ import {
     IECDSAStakeRegistryTypes
 } from "../../src/interfaces/IECDSAStakeRegistry.sol";
 import {ECDSAStakeRegistrySetup} from "./ECDSAStakeRegistryUnit.t.sol";
-import {ECDSAStakeRegistryEqualWeight} from
-    "../../src/unaudited/examples/ECDSAStakeRegistryEqualWeight.sol";
+import {
+    ECDSAStakeRegistryEqualWeight
+} from "../../src/unaudited/examples/ECDSAStakeRegistryEqualWeight.sol";
 
 contract EqualWeightECDSARegistry is ECDSAStakeRegistrySetup {
     ECDSAStakeRegistryEqualWeight internal fixedWeightRegistry;

@@ -122,7 +122,13 @@ library BitmapUtils {
      */
     function bitmapToBytesArray(
         uint256 bitmap
-    ) internal pure returns (bytes memory /*bytesArray*/ ) {
+    )
+        internal
+        pure
+        returns (
+            bytes memory /*bytesArray*/
+        )
+    {
         // initialize an empty uint256 to be used as a bitmask inside the loop
         uint256 bitMask;
         // allocate only the needed amount of memory
@@ -163,7 +169,10 @@ library BitmapUtils {
     }
 
     /// @notice Returns `true` if `bit` is in `bitmap`. Returns `false` otherwise.
-    function isSet(uint256 bitmap, uint8 bit) internal pure returns (bool) {
+    function isSet(
+        uint256 bitmap,
+        uint8 bit
+    ) internal pure returns (bool) {
         return 1 == ((bitmap >> bit) & 1);
     }
 
@@ -173,7 +182,10 @@ library BitmapUtils {
      * the original bitmap. Using this correctly requires an assignment statement:
      * `bitmap = bitmap.setBit(bit);`
      */
-    function setBit(uint256 bitmap, uint8 bit) internal pure returns (uint256) {
+    function setBit(
+        uint256 bitmap,
+        uint8 bit
+    ) internal pure returns (uint256) {
         return bitmap | (1 << bit);
     }
 
@@ -189,14 +201,20 @@ library BitmapUtils {
     /**
      * @notice Returns true if `a` and `b` have no common set bits
      */
-    function noBitsInCommon(uint256 a, uint256 b) internal pure returns (bool) {
+    function noBitsInCommon(
+        uint256 a,
+        uint256 b
+    ) internal pure returns (bool) {
         return a & b == 0;
     }
 
     /**
      * @notice Returns true if `a` is a subset of `b`: ALL of the bits in `a` are also in `b`
      */
-    function isSubsetOf(uint256 a, uint256 b) internal pure returns (bool) {
+    function isSubsetOf(
+        uint256 a,
+        uint256 b
+    ) internal pure returns (bool) {
         return a & b == a;
     }
 
@@ -204,7 +222,10 @@ library BitmapUtils {
      * @notice Returns a new bitmap that contains all bits set in either `a` or `b`
      * @dev Result is the union of `a` and `b`
      */
-    function plus(uint256 a, uint256 b) internal pure returns (uint256) {
+    function plus(
+        uint256 a,
+        uint256 b
+    ) internal pure returns (uint256) {
         return a | b;
     }
 
@@ -212,7 +233,10 @@ library BitmapUtils {
      * @notice Returns a new bitmap that clears all set bits of `b` from `a`
      * @dev Negates `b` and returns the intersection of the result with `a`
      */
-    function minus(uint256 a, uint256 b) internal pure returns (uint256) {
+    function minus(
+        uint256 a,
+        uint256 b
+    ) internal pure returns (uint256) {
         return a & ~b;
     }
 
@@ -220,7 +244,10 @@ library BitmapUtils {
      * @notice Returns a new bitmap that contains only bits set in both `a` and `b`
      * @dev Result is the intersection of `a` and `b`
      */
-    function and(uint256 a, uint256 b) internal pure returns (uint256) {
+    function and(
+        uint256 a,
+        uint256 b
+    ) internal pure returns (uint256) {
         return a & b;
     }
 }

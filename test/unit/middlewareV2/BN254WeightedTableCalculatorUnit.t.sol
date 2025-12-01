@@ -5,23 +5,28 @@ import {
     KeyRegistrar,
     IKeyRegistrarTypes
 } from "eigenlayer-contracts/src/contracts/permissions/KeyRegistrar.sol";
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IAllocationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
-import {IPermissionController} from
-    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {
+    IPermissionController
+} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {
     OperatorSet,
     OperatorSetLib
 } from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
-import {PermissionControllerMixin} from
-    "eigenlayer-contracts/src/contracts/mixins/PermissionControllerMixin.sol";
+import {
+    PermissionControllerMixin
+} from "eigenlayer-contracts/src/contracts/mixins/PermissionControllerMixin.sol";
 
-import {BN254WeightedTableCalculator} from
-    "../../../src/middlewareV2/tableCalculator/unaudited/BN254WeightedTableCalculator.sol";
-import {BN254TableCalculatorBase} from
-    "../../../src/middlewareV2/tableCalculator/BN254TableCalculatorBase.sol";
+import {
+    BN254WeightedTableCalculator
+} from "../../../src/middlewareV2/tableCalculator/unaudited/BN254WeightedTableCalculator.sol";
+import {
+    BN254TableCalculatorBase
+} from "../../../src/middlewareV2/tableCalculator/BN254TableCalculatorBase.sol";
 import {MockEigenLayerDeployer} from "./MockDeployer.sol";
 
 // Harness to test internal functions
@@ -33,10 +38,7 @@ contract BN254WeightedTableCalculatorHarness is BN254WeightedTableCalculator {
         uint256 _LOOKAHEAD_BLOCKS
     )
         BN254WeightedTableCalculator(
-            _keyRegistrar,
-            _allocationManager,
-            _permissionController,
-            _LOOKAHEAD_BLOCKS
+            _keyRegistrar, _allocationManager, _permissionController, _LOOKAHEAD_BLOCKS
         )
     {}
 

@@ -21,9 +21,15 @@ contract StakeRegistryMock is IStakeRegistry {
         uint8 quorumNumber
     ) external view returns (uint256) {}
 
-    function setMinimumStakeForQuorum(uint8 quorumNumber, uint96 minimumStake) external {}
+    function setMinimumStakeForQuorum(
+        uint8 quorumNumber,
+        uint96 minimumStake
+    ) external {}
 
-    function setSlashableStakeLookahead(uint8 quorumNumber, uint32 lookAheadBlocks) external {}
+    function setSlashableStakeLookahead(
+        uint8 quorumNumber,
+        uint32 lookAheadBlocks
+    ) external {}
 
     function set_updateOperatorStakeReturnBitmap(
         uint192 newValue
@@ -77,7 +83,10 @@ contract StakeRegistryMock is IStakeRegistry {
      *         4) the operator is not already deregistered
      *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
      */
-    function deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) external {}
+    function deregisterOperator(
+        bytes32 operatorId,
+        bytes memory quorumNumbers
+    ) external {}
 
     /**
      * @notice Initialize a new quorum created by the registry coordinator by setting strategies, weights, and minimum stake
@@ -89,7 +98,10 @@ contract StakeRegistryMock is IStakeRegistry {
     ) external {}
 
     /// @notice Adds new strategies and the associated multipliers to the @param quorumNumber.
-    function addStrategies(uint8 quorumNumber, StrategyParams[] memory strategyParams) external {}
+    function addStrategies(
+        uint8 quorumNumber,
+        StrategyParams[] memory strategyParams
+    ) external {}
 
     /**
      * @notice This function is used for removing strategies and their associated weights from the
@@ -97,7 +109,10 @@ contract StakeRegistryMock is IStakeRegistry {
      * @dev higher indices should be *first* in the list of @param indicesToRemove, since otherwise
      * the removal of lower index entries will cause a shift in the indices of the other strategiesToRemove
      */
-    function removeStrategies(uint8 quorumNumber, uint256[] calldata indicesToRemove) external {}
+    function removeStrategies(
+        uint8 quorumNumber,
+        uint256[] calldata indicesToRemove
+    ) external {}
 
     /**
      * @notice This function is used for modifying the weights of strategies that are already in the

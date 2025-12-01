@@ -2,8 +2,9 @@
 pragma solidity ^0.8.27;
 
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
-import {IOperatorTableCalculator} from
-    "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
+import {
+    IOperatorTableCalculator
+} from "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 import {IECDSATableCalculator} from "../../interfaces/IECDSATableCalculator.sol";
 

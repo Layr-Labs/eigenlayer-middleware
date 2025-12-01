@@ -3,8 +3,9 @@ pragma solidity ^0.8.27;
 
 import {IAllowlist} from "../../../interfaces/IAllowlist.sol";
 
-import {EnumerableSetUpgradeable} from
-    "openzeppelin-contracts-upgradeable/contracts/utils/structs/EnumerableSetUpgradeable.sol";
+import {
+    EnumerableSetUpgradeable
+} from "openzeppelin-contracts-upgradeable/contracts/utils/structs/EnumerableSetUpgradeable.sol";
 
 abstract contract AllowlistStorage is IAllowlist {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;

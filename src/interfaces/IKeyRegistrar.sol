@@ -15,7 +15,10 @@ interface IKeyRegistrar {
         address operator
     ) external returns (bool);
 
-    function removeKey(OperatorSet calldata operatorSet, address operator) external;
+    function removeKey(
+        OperatorSet calldata operatorSet,
+        address operator
+    ) external;
 
     function isRegistered(
         OperatorSet calldata operatorSet,

@@ -25,7 +25,10 @@ struct Operator {
 library OperatorKeyOperationsLib {
     Vm private constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
-    function sign(Wallet memory wallet, bytes32 digest) internal pure returns (bytes memory) {
+    function sign(
+        Wallet memory wallet,
+        bytes32 digest
+    ) internal pure returns (bytes memory) {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(wallet.privateKey, digest);
         return abi.encodePacked(r, s, v);
     }

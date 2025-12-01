@@ -2,8 +2,9 @@
 pragma solidity ^0.8.27;
 
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
-import {ISignatureUtilsMixin} from
-    "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
+import {
+    ISignatureUtilsMixin
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {
@@ -26,8 +27,9 @@ import {QuorumBitmapHistoryLib} from "./libraries/QuorumBitmapHistoryLib.sol";
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import {EIP712Upgradeable} from
-    "@openzeppelin-upgrades/contracts/utils/cryptography/EIP712Upgradeable.sol";
+import {
+    EIP712Upgradeable
+} from "@openzeppelin-upgrades/contracts/utils/cryptography/EIP712Upgradeable.sol";
 
 import {Pausable} from "eigenlayer-contracts/src/contracts/permissions/Pausable.sol";
 import {SlashingRegistryCoordinatorStorage} from "./SlashingRegistryCoordinatorStorage.sol";
@@ -82,11 +84,7 @@ contract SlashingRegistryCoordinator is
         string memory _version
     )
         SlashingRegistryCoordinatorStorage(
-            _stakeRegistry,
-            _blsApkRegistry,
-            _indexRegistry,
-            _socketRegistry,
-            _allocationManager
+            _stakeRegistry, _blsApkRegistry, _indexRegistry, _socketRegistry, _allocationManager
         )
         SemVerMixin(_version)
         Pausable(_pauserRegistry)
@@ -182,13 +180,12 @@ contract SlashingRegistryCoordinator is
                 quorumNumbers: quorumNumbers,
                 socket: socket,
                 checkMaxOperatorCount: true
-            }).numOperatorsPerQuorum;
+            })
+            .numOperatorsPerQuorum;
         } else if (registrationType == RegistrationType.CHURN) {
             // Decode registration data from bytes
             (
-                ,
-                ,
-                ,
+                ,,,
                 OperatorKickParam[] memory operatorKickParams,
                 SignatureWithSaltAndExpiry memory churnApproverSignature
             ) = abi.decode(
@@ -382,7 +379,10 @@ contract SlashingRegistryCoordinator is
      * @param operator The operator to force deregister from the avs
      * @param quorumNumbers The quorum numbers to eject the operator from
      */
-    function _kickOperator(address operator, bytes memory quorumNumbers) internal virtual {
+    function _kickOperator(
+        address operator,
+        bytes memory quorumNumbers
+    ) internal virtual {
         OperatorInfo storage operatorInfo = _operatorInfo[operator];
         // Only proceed if operator is currently registered
         require(operatorInfo.status == OperatorStatus.REGISTERED, OperatorNotRegistered());
@@ -532,7 +532,10 @@ contract SlashingRegistryCoordinator is
      * @param quorumNumbers the quorum numbers to deregister from
      * the core EigenLayer contract AllocationManager
      */
-    function _deregisterOperator(address operator, bytes memory quorumNumbers) internal virtual {
+    function _deregisterOperator(
+        address operator,
+        bytes memory quorumNumbers
+    ) internal virtual {
         // Fetch the operator's info and ensure they are registered
         OperatorInfo storage operatorInfo = _operatorInfo[operator];
         bytes32 operatorId = operatorInfo.operatorId;
@@ -590,9 +593,7 @@ contract SlashingRegistryCoordinator is
     ) internal virtual {
         allocationManager.deregisterFromOperatorSets(
             IAllocationManagerTypes.DeregisterParams({
-                operator: operator,
-                avs: avs,
-                operatorSetIds: _getOperatorSetIds(quorumNumbers)
+                operator: operator, avs: avs, operatorSetIds: _getOperatorSetIds(quorumNumbers)
             })
         );
     }
@@ -743,7 +744,10 @@ contract SlashingRegistryCoordinator is
      * @param socket The new socket address to set for the operator
      * @dev Emits an OperatorSocketUpdate event after updating
      */
-    function _setOperatorSocket(bytes32 operatorId, string memory socket) internal {
+    function _setOperatorSocket(
+        bytes32 operatorId,
+        string memory socket
+    ) internal {
         socketRegistry.setOperatorSocket(operatorId, socket);
         emit OperatorSocketUpdate(operatorId, socket);
     }
@@ -819,9 +823,7 @@ contract SlashingRegistryCoordinator is
 
         // Initialize CreateSetParams with quorumNumber as operatorSetId
         createSetParams[0] = IAllocationManagerTypes.CreateSetParamsV2({
-            operatorSetId: quorumNumber,
-            strategies: strategies,
-            slasher: slasher
+            operatorSetId: quorumNumber, strategies: strategies, slasher: slasher
         });
         allocationManager.createOperatorSets({avs: avs, params: createSetParams});
 
@@ -860,7 +862,10 @@ contract SlashingRegistryCoordinator is
      * @notice Record an update to an operator's quorum bitmap.
      * @param newBitmap is the most up-to-date set of bitmaps the operator is registered for
      */
-    function _updateOperatorBitmap(bytes32 operatorId, uint192 newBitmap) internal {
+    function _updateOperatorBitmap(
+        bytes32 operatorId,
+        uint192 newBitmap
+    ) internal {
         QuorumBitmapHistoryLib.updateOperatorBitmap(_operatorBitmapHistory, operatorId, newBitmap);
     }
 

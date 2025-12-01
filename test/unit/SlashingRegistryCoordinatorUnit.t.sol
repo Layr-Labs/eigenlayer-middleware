@@ -24,25 +24,30 @@ import {ISlashingRegistryCoordinator} from "../../src/interfaces/ISlashingRegist
 import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
 import {IStakeRegistry, IStakeRegistryTypes} from "../../src/interfaces/IStakeRegistry.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import {TransparentUpgradeableProxy} from
-    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    TransparentUpgradeableProxy
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
-import {PermissionController} from
-    "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
+import {
+    PermissionController
+} from "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
-import {IPermissionController} from
-    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
-import {IDelegationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {
+    IPermissionController
+} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {
+    IDelegationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IStrategyFactory} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyFactory.sol";
 import {IEigenPodManager} from "eigenlayer-contracts/src/contracts/interfaces/IEigenPodManager.sol";
 import {DelegationManagerHarness} from "../mocks/DelegationManagerHarness.sol";
 import {SlashingRegistryCoordinator} from "../../src/SlashingRegistryCoordinator.sol";
-import {ISlashingRegistryCoordinatorTypes} from
-    "../../src/interfaces/ISlashingRegistryCoordinator.sol";
+import {
+    ISlashingRegistryCoordinatorTypes
+} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 import {IBLSApkRegistry, IBLSApkRegistryTypes} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
 import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
@@ -131,8 +136,8 @@ contract SlashingRegistryCoordinatorUnitTestSetup is
         view
         returns (IStakeRegistryTypes.StrategyParams[] memory)
     {
-        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
-            new IStakeRegistryTypes.StrategyParams[](1);
+        IStakeRegistryTypes.StrategyParams[] memory
+            strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
         strategyParams[0] =
             IStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 1 ether});
         return strategyParams;
@@ -144,9 +149,7 @@ contract SlashingRegistryCoordinatorUnitTestSetup is
         returns (ISlashingRegistryCoordinatorTypes.OperatorSetParam memory)
     {
         return ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 10,
-            kickBIPsOfOperatorStake: 0,
-            kickBIPsOfTotalStake: 0
+            maxOperatorCount: 10, kickBIPsOfOperatorStake: 0, kickBIPsOfTotalStake: 0
         });
     }
 
@@ -218,16 +221,14 @@ contract SlashingRegistryCoordinatorUnitTestSetup is
         vm.stopPrank();
 
         vm.startPrank(strategyManagerOwner);
-        IStrategyManager(coreDeployment.strategyManager).setStrategyWhitelister(
-            coreDeployment.strategyFactory
-        );
+        IStrategyManager(coreDeployment.strategyManager)
+            .setStrategyWhitelister(coreDeployment.strategyFactory);
         vm.stopPrank();
 
         vm.startPrank(proxyAdminOwner);
         mockStrategy = IStrategy(
-            StrategyFactory(coreDeployment.strategyFactory).deployNewStrategy(
-                IERC20(address(mockToken))
-            )
+            StrategyFactory(coreDeployment.strategyFactory)
+                .deployNewStrategy(IERC20(address(mockToken)))
         );
         vm.stopPrank();
 
@@ -249,23 +250,24 @@ contract SlashingRegistryCoordinatorUnitTestSetup is
         middlewareConfig.instantSlasher.slasher = slasher;
 
         vm.startPrank(proxyAdminOwner);
-        MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployments = MiddlewareDeployLib
-            .deployMiddleware(
-            address(proxyAdmin),
-            coreDeployment.allocationManager,
-            coreDeployment.strategyManager,
-            address(pauserRegistry),
-            middlewareConfig
-        );
+        MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployments =
+            MiddlewareDeployLib.deployMiddleware(
+                address(proxyAdmin),
+                coreDeployment.allocationManager,
+                coreDeployment.strategyManager,
+                address(pauserRegistry),
+                middlewareConfig
+            );
         vm.stopPrank();
 
         vm.startPrank(serviceManager);
-        PermissionController(coreDeployment.permissionController).setAppointee(
-            address(serviceManager),
-            address(instantSlasher),
-            coreDeployment.allocationManager,
-            AllocationManager.slashOperator.selector
-        );
+        PermissionController(coreDeployment.permissionController)
+            .setAppointee(
+                address(serviceManager),
+                address(instantSlasher),
+                coreDeployment.allocationManager,
+                AllocationManager.slashOperator.selector
+            );
 
         slashingRegistryCoordinator =
             SlashingRegistryCoordinator(middlewareDeployments.slashingRegistryCoordinator);
@@ -275,26 +277,29 @@ contract SlashingRegistryCoordinatorUnitTestSetup is
         blsApkRegistry = BLSApkRegistry(middlewareDeployments.blsApkRegistry);
         indexRegistry = IndexRegistry(middlewareDeployments.indexRegistry);
 
-        PermissionController(coreDeployment.permissionController).setAppointee(
-            address(serviceManager),
-            address(slashingRegistryCoordinator),
-            coreDeployment.allocationManager,
-            bytes4(keccak256("createOperatorSets(address,(uint32,address[],address)[])"))
-        );
+        PermissionController(coreDeployment.permissionController)
+            .setAppointee(
+                address(serviceManager),
+                address(slashingRegistryCoordinator),
+                coreDeployment.allocationManager,
+                bytes4(keccak256("createOperatorSets(address,(uint32,address[],address)[])"))
+            );
 
-        PermissionController(coreDeployment.permissionController).setAppointee(
-            address(serviceManager),
-            address(instantSlasher),
-            coreDeployment.allocationManager,
-            AllocationManager.slashOperator.selector
-        );
+        PermissionController(coreDeployment.permissionController)
+            .setAppointee(
+                address(serviceManager),
+                address(instantSlasher),
+                coreDeployment.allocationManager,
+                AllocationManager.slashOperator.selector
+            );
 
-        PermissionController(coreDeployment.permissionController).setAppointee(
-            address(serviceManager),
-            proxyAdminOwner,
-            coreDeployment.allocationManager,
-            AllocationManager.updateAVSMetadataURI.selector
-        );
+        PermissionController(coreDeployment.permissionController)
+            .setAppointee(
+                address(serviceManager),
+                proxyAdminOwner,
+                coreDeployment.allocationManager,
+                AllocationManager.updateAVSMetadataURI.selector
+            );
 
         vm.stopPrank();
 
@@ -304,16 +309,13 @@ contract SlashingRegistryCoordinatorUnitTestSetup is
             IStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 1 ether});
 
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 10,
-            kickBIPsOfOperatorStake: 0,
-            kickBIPsOfTotalStake: 0
-        });
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+                maxOperatorCount: 10, kickBIPsOfOperatorStake: 0, kickBIPsOfTotalStake: 0
+            });
 
         vm.startPrank(proxyAdminOwner);
-        IAllocationManager(coreDeployment.allocationManager).updateAVSMetadataURI(
-            serviceManager, "fake-avs-metadata"
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .updateAVSMetadataURI(serviceManager, "fake-avs-metadata");
         slashingRegistryCoordinator.createTotalDelegatedStakeQuorum(
             operatorSetParams, 1 ether, strategyParams
         );
@@ -325,9 +327,10 @@ contract SlashingRegistryCoordinatorUnitTestSetup is
         vm.label(coreDeployment.allocationManager, "AllocationManager Proxy");
 
         vm.prank(serviceManager);
-        IAllocationManager(coreDeployment.allocationManager).setAVSRegistrar(
-            address(serviceManager), IAVSRegistrar(address(slashingRegistryCoordinator))
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .setAVSRegistrar(
+                address(serviceManager), IAVSRegistrar(address(slashingRegistryCoordinator))
+            );
 
         for (uint256 i = 0; i < operatorIds.length(); i++) {
             bytes32 operatorId = operatorIds.at(i);
@@ -338,15 +341,15 @@ contract SlashingRegistryCoordinatorUnitTestSetup is
             vm.startPrank(operator.key.addr);
 
             mockToken.approve(address(coreDeployment.strategyManager), STAKE_AMOUNT);
-            IStrategyManager(coreDeployment.strategyManager).depositIntoStrategy(
-                mockStrategy, mockToken, STAKE_AMOUNT
-            );
+            IStrategyManager(coreDeployment.strategyManager)
+                .depositIntoStrategy(mockStrategy, mockToken, STAKE_AMOUNT);
 
-            IDelegationManager(coreDeployment.delegationManager).registerAsOperator(
-                address(0), // no delegation approver
-                0, // no allocation delay
-                string.concat("operator-metadata_", vm.toString(i))
-            );
+            IDelegationManager(coreDeployment.delegationManager)
+                .registerAsOperator(
+                    address(0), // no delegation approver
+                    0, // no allocation delay
+                    string.concat("operator-metadata_", vm.toString(i))
+                );
 
             vm.stopPrank();
         }
@@ -360,19 +363,18 @@ contract SlashingRegistryCoordinatorUnitTestSetup is
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
             createPubkeyRegistrationParams(operator, operator.key.addr);
 
-        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
-            .RegisterParams({
-            avs: address(serviceManager),
-            operatorSetIds: operatorSetIds,
-            data: abi.encode(
-                ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, pubkeyParams
-            )
-        });
+        IAllocationManagerTypes.RegisterParams memory registerParams =
+            IAllocationManagerTypes.RegisterParams({
+                avs: address(serviceManager),
+                operatorSetIds: operatorSetIds,
+                data: abi.encode(
+                    ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, socket, pubkeyParams
+                )
+            });
 
         vm.prank(operator.key.addr);
-        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
-            operator.key.addr, registerParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .registerForOperatorSets(operator.key.addr, registerParams);
     }
 
     // Helper function to register an operator in the SlashingRegistryCoordinator for a single quorum
@@ -387,13 +389,14 @@ contract SlashingRegistryCoordinatorUnitTestSetup is
         registerOperatorInSlashingRegistryCoordinator(operator, socket, operatorSetIds);
     }
 
-    function _setOperatorWeight(address operator, uint96 weight) internal {
-        DelegationManagerHarness(address(coreDeployment.delegationManager)).setOperatorShares(
-            operator, mockStrategy, weight
-        );
-        DelegationManagerHarness(address(coreDeployment.delegationManager)).setIsOperator(
-            operator, true
-        );
+    function _setOperatorWeight(
+        address operator,
+        uint96 weight
+    ) internal {
+        DelegationManagerHarness(address(coreDeployment.delegationManager))
+            .setOperatorShares(operator, mockStrategy, weight);
+        DelegationManagerHarness(address(coreDeployment.delegationManager))
+            .setIsOperator(operator, true);
     }
 
     function _useDelegationManagerHarness() internal {
@@ -447,7 +450,10 @@ contract SlashingRegistryCoordinatorUnitTestSetup is
         );
     }
 
-    function _verifyOperatorBitmap(bytes32 operatorId, uint192 expectedBitmap) internal view {
+    function _verifyOperatorBitmap(
+        bytes32 operatorId,
+        uint192 expectedBitmap
+    ) internal view {
         uint192 currentBitmap = slashingRegistryCoordinator.getCurrentQuorumBitmap(operatorId);
         assertEq(currentBitmap, expectedBitmap, "Operator bitmap does not match expected bitmap");
     }
@@ -470,9 +476,7 @@ contract SlashingRegistryCoordinator_Initialize is SlashingRegistryCoordinatorUn
     }
 }
 
-contract SlashingRegistryCoordinator_SetChurnApprover is
-    SlashingRegistryCoordinatorUnitTestSetup
-{
+contract SlashingRegistryCoordinator_SetChurnApprover is SlashingRegistryCoordinatorUnitTestSetup {
     address newChurnApprover = address(0x123);
 
     function test_setChurnApprover() public {
@@ -588,12 +592,10 @@ contract SlashingRegistryCoordinator_AVSSupport is SlashingRegistryCoordinatorUn
         super.setUp();
         testOperator = OperatorWalletLib.createOperator("test_operator");
         _useDelegationManagerHarness();
-        DelegationManagerHarness(address(coreDeployment.delegationManager)).setOperatorShares(
-            testOperator.key.addr, mockStrategy, STAKE_AMOUNT
-        );
-        DelegationManagerHarness(address(coreDeployment.delegationManager)).setIsOperator(
-            testOperator.key.addr, true
-        );
+        DelegationManagerHarness(address(coreDeployment.delegationManager))
+            .setOperatorShares(testOperator.key.addr, mockStrategy, STAKE_AMOUNT);
+        DelegationManagerHarness(address(coreDeployment.delegationManager))
+            .setIsOperator(testOperator.key.addr, true);
 
         // Store the original AVS and set new AVS
         oldAVS = slashingRegistryCoordinator.avs();
@@ -605,21 +607,22 @@ contract SlashingRegistryCoordinator_AVSSupport is SlashingRegistryCoordinatorUn
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
             createPubkeyRegistrationParams(testOperator, testOperator.key.addr);
 
-        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
-            .RegisterParams({
-            avs: oldAVS, // Using old AVS that no longer matches
-            operatorSetIds: new uint32[](1),
-            data: abi.encode(
-                ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, "socket:8545", pubkeyParams
-            )
-        });
+        IAllocationManagerTypes.RegisterParams memory registerParams =
+            IAllocationManagerTypes.RegisterParams({
+                avs: oldAVS, // Using old AVS that no longer matches
+                operatorSetIds: new uint32[](1),
+                data: abi.encode(
+                    ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL,
+                    "socket:8545",
+                    pubkeyParams
+                )
+            });
         registerParams.operatorSetIds[0] = 0;
 
         vm.prank(testOperator.key.addr);
         vm.expectRevert(bytes4(keccak256("InvalidAVS()")));
-        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
-            testOperator.key.addr, registerParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .registerForOperatorSets(testOperator.key.addr, registerParams);
     }
 
     function test_RevertsWhen_DeregisterOldAVS() public {
@@ -633,18 +636,17 @@ contract SlashingRegistryCoordinator_AVSSupport is SlashingRegistryCoordinatorUn
         vm.prank(proxyAdminOwner);
         slashingRegistryCoordinator.setAVS(address(0x123));
 
-        IAllocationManagerTypes.DeregisterParams memory deregisterParams = IAllocationManagerTypes
-            .DeregisterParams({
-            operator: testOperator.key.addr,
-            avs: oldAVS, // Using old AVS that no longer matches
-            operatorSetIds: operatorSetIds
-        });
+        IAllocationManagerTypes.DeregisterParams memory deregisterParams =
+            IAllocationManagerTypes.DeregisterParams({
+                operator: testOperator.key.addr,
+                avs: oldAVS, // Using old AVS that no longer matches
+                operatorSetIds: operatorSetIds
+            });
 
         vm.prank(testOperator.key.addr);
         vm.expectRevert(bytes4(keccak256("InvalidAVS()")));
-        IAllocationManager(coreDeployment.allocationManager).deregisterFromOperatorSets(
-            deregisterParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .deregisterFromOperatorSets(deregisterParams);
     }
 }
 
@@ -659,9 +661,7 @@ contract SlashingRegistryCoordinator_CreateSlashableStakeQuorum is
         super.setUp();
 
         operatorSetParams = ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 10,
-            kickBIPsOfOperatorStake: 5000,
-            kickBIPsOfTotalStake: 100
+            maxOperatorCount: 10, kickBIPsOfOperatorStake: 5000, kickBIPsOfTotalStake: 100
         });
     }
 
@@ -831,9 +831,7 @@ contract SlashingRegistryCoordinator_CreateTotalDelegatedStakeQuorum is
     }
 }
 
-contract SlashingRegistryCoordinator_RegisterOperator is
-    SlashingRegistryCoordinatorUnitTestSetup
-{
+contract SlashingRegistryCoordinator_RegisterOperator is SlashingRegistryCoordinatorUnitTestSetup {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
     Operator internal testOperator;
@@ -849,20 +847,21 @@ contract SlashingRegistryCoordinator_RegisterOperator is
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
             createPubkeyRegistrationParams(testOperator, testOperator.key.addr);
 
-        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
-            .RegisterParams({
-            avs: address(serviceManager),
-            operatorSetIds: new uint32[](1),
-            data: abi.encode(
-                ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, "socket:8545", pubkeyParams
-            )
-        });
+        IAllocationManagerTypes.RegisterParams memory registerParams =
+            IAllocationManagerTypes.RegisterParams({
+                avs: address(serviceManager),
+                operatorSetIds: new uint32[](1),
+                data: abi.encode(
+                    ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL,
+                    "socket:8545",
+                    pubkeyParams
+                )
+            });
         registerParams.operatorSetIds[0] = 0; // Use quorum 0
 
         vm.prank(testOperator.key.addr);
-        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
-            testOperator.key.addr, registerParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .registerForOperatorSets(testOperator.key.addr, registerParams);
 
         ISlashingRegistryCoordinator.OperatorInfo memory operatorInfo =
             slashingRegistryCoordinator.getOperator(testOperator.key.addr);
@@ -879,62 +878,65 @@ contract SlashingRegistryCoordinator_RegisterOperator is
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
             createPubkeyRegistrationParams(testOperator, testOperator.key.addr);
 
-        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
-            .RegisterParams({
-            avs: address(serviceManager),
-            operatorSetIds: new uint32[](1),
-            data: abi.encode(
-                ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, "socket:8545", pubkeyParams
-            )
-        });
+        IAllocationManagerTypes.RegisterParams memory registerParams =
+            IAllocationManagerTypes.RegisterParams({
+                avs: address(serviceManager),
+                operatorSetIds: new uint32[](1),
+                data: abi.encode(
+                    ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL,
+                    "socket:8545",
+                    pubkeyParams
+                )
+            });
         registerParams.operatorSetIds[0] = 0; // Use quorum 0
 
         vm.prank(testOperator.key.addr);
         vm.expectRevert(bytes4(keccak256("CurrentlyPaused()")));
-        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
-            testOperator.key.addr, registerParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .registerForOperatorSets(testOperator.key.addr, registerParams);
     }
 
     function test_RevertsWhen_EmptyQuorumNumbers() public {
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
             createPubkeyRegistrationParams(testOperator, testOperator.key.addr);
 
-        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
-            .RegisterParams({
-            avs: address(serviceManager),
-            operatorSetIds: new uint32[](0), // Empty array
-            data: abi.encode(
-                ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, "socket:8545", pubkeyParams
-            )
-        });
+        IAllocationManagerTypes.RegisterParams memory registerParams =
+            IAllocationManagerTypes.RegisterParams({
+                avs: address(serviceManager),
+                operatorSetIds: new uint32[](0), // Empty array
+                data: abi.encode(
+                    ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL,
+                    "socket:8545",
+                    pubkeyParams
+                )
+            });
 
         vm.prank(testOperator.key.addr);
         vm.expectRevert(); // Should revert due to empty quorum numbers
-        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
-            testOperator.key.addr, registerParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .registerForOperatorSets(testOperator.key.addr, registerParams);
     }
 
     function test_RevertsWhen_InvalidQuorum() public {
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
             createPubkeyRegistrationParams(testOperator, testOperator.key.addr);
 
-        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
-            .RegisterParams({
-            avs: address(serviceManager),
-            operatorSetIds: new uint32[](1),
-            data: abi.encode(
-                ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, "socket:8545", pubkeyParams
-            )
-        });
+        IAllocationManagerTypes.RegisterParams memory registerParams =
+            IAllocationManagerTypes.RegisterParams({
+                avs: address(serviceManager),
+                operatorSetIds: new uint32[](1),
+                data: abi.encode(
+                    ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL,
+                    "socket:8545",
+                    pubkeyParams
+                )
+            });
         registerParams.operatorSetIds[0] = 99; // Use non-existent quorum
 
         vm.prank(testOperator.key.addr);
         vm.expectRevert(); // Should revert due to invalid quorum
-        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
-            testOperator.key.addr, registerParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .registerForOperatorSets(testOperator.key.addr, registerParams);
     }
 
     function test_RevertsWhen_AlreadyRegisteredForQuorum() public {
@@ -943,21 +945,22 @@ contract SlashingRegistryCoordinator_RegisterOperator is
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
             createPubkeyRegistrationParams(testOperator, testOperator.key.addr);
 
-        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
-            .RegisterParams({
-            avs: address(serviceManager),
-            operatorSetIds: new uint32[](1),
-            data: abi.encode(
-                ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, "socket:8545", pubkeyParams
-            )
-        });
+        IAllocationManagerTypes.RegisterParams memory registerParams =
+            IAllocationManagerTypes.RegisterParams({
+                avs: address(serviceManager),
+                operatorSetIds: new uint32[](1),
+                data: abi.encode(
+                    ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL,
+                    "socket:8545",
+                    pubkeyParams
+                )
+            });
         registerParams.operatorSetIds[0] = 0; // Use quorum 0
 
         vm.prank(testOperator.key.addr);
         vm.expectRevert(); // Should revert because operator is already registered for this quorum
-        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
-            testOperator.key.addr, registerParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .registerForOperatorSets(testOperator.key.addr, registerParams);
     }
 
     function test_RevertsWhen_NotAllocationManager() public {
@@ -980,11 +983,11 @@ contract SlashingRegistryCoordinator_RegisterOperator is
 
     function test_RevertsWhen_MaxOperatorCountReached() public {
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 2, // Only allow 2 operators
-            kickBIPsOfOperatorStake: 0,
-            kickBIPsOfTotalStake: 0
-        });
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+                maxOperatorCount: 2, // Only allow 2 operators
+                kickBIPsOfOperatorStake: 0,
+                kickBIPsOfTotalStake: 0
+            });
 
         vm.prank(proxyAdminOwner);
         slashingRegistryCoordinator.createTotalDelegatedStakeQuorum(
@@ -1007,20 +1010,21 @@ contract SlashingRegistryCoordinator_RegisterOperator is
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
             createPubkeyRegistrationParams(operator3, operator3.key.addr);
 
-        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
-            .RegisterParams({
-            avs: address(serviceManager),
-            operatorSetIds: operatorSetIds,
-            data: abi.encode(
-                ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, "socket3:8545", pubkeyParams
-            )
-        });
+        IAllocationManagerTypes.RegisterParams memory registerParams =
+            IAllocationManagerTypes.RegisterParams({
+                avs: address(serviceManager),
+                operatorSetIds: operatorSetIds,
+                data: abi.encode(
+                    ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL,
+                    "socket3:8545",
+                    pubkeyParams
+                )
+            });
 
         vm.prank(operator3.key.addr);
         vm.expectRevert(MaxOperatorCountReached.selector);
-        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
-            operator3.key.addr, registerParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .registerForOperatorSets(operator3.key.addr, registerParams);
 
         _verifyOperatorStatus(
             operator1.key.addr, ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED
@@ -1058,17 +1062,16 @@ contract SlashingRegistryCoordinator_DeregisterOperator is
     }
 
     function test_deregisterOperator() public {
-        IAllocationManagerTypes.DeregisterParams memory deregisterParams = IAllocationManagerTypes
-            .DeregisterParams({
-            operator: testOperator.key.addr,
-            avs: address(serviceManager),
-            operatorSetIds: operatorSetIds
-        });
+        IAllocationManagerTypes.DeregisterParams memory deregisterParams =
+            IAllocationManagerTypes.DeregisterParams({
+                operator: testOperator.key.addr,
+                avs: address(serviceManager),
+                operatorSetIds: operatorSetIds
+            });
 
         vm.prank(testOperator.key.addr);
-        IAllocationManager(coreDeployment.allocationManager).deregisterFromOperatorSets(
-            deregisterParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .deregisterFromOperatorSets(deregisterParams);
 
         ISlashingRegistryCoordinator.OperatorInfo memory operatorInfo =
             slashingRegistryCoordinator.getOperator(testOperator.key.addr);
@@ -1079,55 +1082,52 @@ contract SlashingRegistryCoordinator_DeregisterOperator is
     }
 
     function test_emitsDeregisteredEvent() public {
-        IAllocationManagerTypes.DeregisterParams memory deregisterParams = IAllocationManagerTypes
-            .DeregisterParams({
-            operator: testOperator.key.addr,
-            avs: address(serviceManager),
-            operatorSetIds: operatorSetIds
-        });
+        IAllocationManagerTypes.DeregisterParams memory deregisterParams =
+            IAllocationManagerTypes.DeregisterParams({
+                operator: testOperator.key.addr,
+                avs: address(serviceManager),
+                operatorSetIds: operatorSetIds
+            });
 
         vm.expectEmit(true, true, true, true);
         emit OperatorDeregistered(testOperator.key.addr, testOperatorId);
 
         vm.prank(testOperator.key.addr);
-        IAllocationManager(coreDeployment.allocationManager).deregisterFromOperatorSets(
-            deregisterParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .deregisterFromOperatorSets(deregisterParams);
     }
 
     function test_RevertsWhen_Paused() public {
         vm.prank(pauser);
         slashingRegistryCoordinator.pause(2); // PAUSED_DEREGISTER_OPERATOR = 2
 
-        IAllocationManagerTypes.DeregisterParams memory deregisterParams = IAllocationManagerTypes
-            .DeregisterParams({
-            operator: testOperator.key.addr,
-            avs: address(serviceManager),
-            operatorSetIds: operatorSetIds
-        });
+        IAllocationManagerTypes.DeregisterParams memory deregisterParams =
+            IAllocationManagerTypes.DeregisterParams({
+                operator: testOperator.key.addr,
+                avs: address(serviceManager),
+                operatorSetIds: operatorSetIds
+            });
 
         vm.prank(testOperator.key.addr);
         vm.expectRevert(bytes4(keccak256("CurrentlyPaused()")));
-        IAllocationManager(coreDeployment.allocationManager).deregisterFromOperatorSets(
-            deregisterParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .deregisterFromOperatorSets(deregisterParams);
     }
 
     function test_RevertsWhen_NotRegistered() public {
         address nonRegisteredOperator = address(0xdead);
 
-        IAllocationManagerTypes.DeregisterParams memory deregisterParams = IAllocationManagerTypes
-            .DeregisterParams({
-            operator: nonRegisteredOperator,
-            avs: address(serviceManager),
-            operatorSetIds: operatorSetIds
-        });
+        IAllocationManagerTypes.DeregisterParams memory deregisterParams =
+            IAllocationManagerTypes.DeregisterParams({
+                operator: nonRegisteredOperator,
+                avs: address(serviceManager),
+                operatorSetIds: operatorSetIds
+            });
 
         vm.prank(nonRegisteredOperator);
         vm.expectRevert(bytes4(keccak256("NotMemberOfSet()")));
-        IAllocationManager(coreDeployment.allocationManager).deregisterFromOperatorSets(
-            deregisterParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .deregisterFromOperatorSets(deregisterParams);
     }
 
     function test_RevertsWhen_IncorrectQuorums() public {
@@ -1135,18 +1135,17 @@ contract SlashingRegistryCoordinator_DeregisterOperator is
         uint32[] memory incorrectOperatorSetIds = new uint32[](1);
         incorrectOperatorSetIds[0] = 99; // Non-existent quorum
 
-        IAllocationManagerTypes.DeregisterParams memory deregisterParams = IAllocationManagerTypes
-            .DeregisterParams({
-            operator: testOperator.key.addr,
-            avs: address(serviceManager),
-            operatorSetIds: incorrectOperatorSetIds
-        });
+        IAllocationManagerTypes.DeregisterParams memory deregisterParams =
+            IAllocationManagerTypes.DeregisterParams({
+                operator: testOperator.key.addr,
+                avs: address(serviceManager),
+                operatorSetIds: incorrectOperatorSetIds
+            });
 
         vm.prank(testOperator.key.addr);
         vm.expectRevert();
-        IAllocationManager(coreDeployment.allocationManager).deregisterFromOperatorSets(
-            deregisterParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .deregisterFromOperatorSets(deregisterParams);
     }
 
     function test_RevertsWhen_NotAllocationManager() public {
@@ -1172,31 +1171,31 @@ contract SlashingRegistryCoordinator_DeregisterOperator is
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
             createPubkeyRegistrationParams(testOperator, testOperator.key.addr);
 
-        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
-            .RegisterParams({
-            avs: address(serviceManager),
-            operatorSetIds: additionalOperatorSetIds,
-            data: abi.encode(
-                ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, "socket:8545", pubkeyParams
-            )
-        });
+        IAllocationManagerTypes.RegisterParams memory registerParams =
+            IAllocationManagerTypes.RegisterParams({
+                avs: address(serviceManager),
+                operatorSetIds: additionalOperatorSetIds,
+                data: abi.encode(
+                    ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL,
+                    "socket:8545",
+                    pubkeyParams
+                )
+            });
 
         vm.prank(testOperator.key.addr);
-        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
-            testOperator.key.addr, registerParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .registerForOperatorSets(testOperator.key.addr, registerParams);
 
-        IAllocationManagerTypes.DeregisterParams memory deregisterParams = IAllocationManagerTypes
-            .DeregisterParams({
-            operator: testOperator.key.addr,
-            avs: address(serviceManager),
-            operatorSetIds: operatorSetIds // Contains only quorum 0
-        });
+        IAllocationManagerTypes.DeregisterParams memory deregisterParams =
+            IAllocationManagerTypes.DeregisterParams({
+                operator: testOperator.key.addr,
+                avs: address(serviceManager),
+                operatorSetIds: operatorSetIds // Contains only quorum 0
+            });
 
         vm.prank(testOperator.key.addr);
-        IAllocationManager(coreDeployment.allocationManager).deregisterFromOperatorSets(
-            deregisterParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .deregisterFromOperatorSets(deregisterParams);
 
         ISlashingRegistryCoordinator.OperatorInfo memory operatorInfo =
             slashingRegistryCoordinator.getOperator(testOperator.key.addr);
@@ -1272,11 +1271,11 @@ contract SlashingRegistryCoordinator_SetOperatorSetParams is
 
     function test_setOperatorSetParams() public {
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory newParams =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 20,
-            kickBIPsOfOperatorStake: 1000, // 10%
-            kickBIPsOfTotalStake: 500 // 5%
-        });
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+                maxOperatorCount: 20,
+                kickBIPsOfOperatorStake: 1000, // 10%
+                kickBIPsOfTotalStake: 500 // 5%
+            });
 
         vm.prank(proxyAdminOwner);
         slashingRegistryCoordinator.setOperatorSetParams(quorumNumber, newParams);
@@ -1290,11 +1289,9 @@ contract SlashingRegistryCoordinator_SetOperatorSetParams is
 
     function test_RevertsWhen_CallerNotOwner() public {
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory newParams =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 20,
-            kickBIPsOfOperatorStake: 1000,
-            kickBIPsOfTotalStake: 500
-        });
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+                maxOperatorCount: 20, kickBIPsOfOperatorStake: 1000, kickBIPsOfTotalStake: 500
+            });
 
         vm.prank(address(1));
         vm.expectRevert("Ownable: caller is not the owner");
@@ -1303,11 +1300,9 @@ contract SlashingRegistryCoordinator_SetOperatorSetParams is
 
     function test_emitsOperatorSetParamsUpdatedEvent() public {
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory newParams =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 20,
-            kickBIPsOfOperatorStake: 1000,
-            kickBIPsOfTotalStake: 500
-        });
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+                maxOperatorCount: 20, kickBIPsOfOperatorStake: 1000, kickBIPsOfTotalStake: 500
+            });
 
         vm.expectEmit(true, true, true, true);
         emit OperatorSetParamsUpdated(quorumNumber, newParams);
@@ -1319,11 +1314,9 @@ contract SlashingRegistryCoordinator_SetOperatorSetParams is
     function test_RevertsWhen_QuorumDoesNotExist() public {
         // Define new operator set params
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory newParams =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 20,
-            kickBIPsOfOperatorStake: 1000,
-            kickBIPsOfTotalStake: 500
-        });
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+                maxOperatorCount: 20, kickBIPsOfOperatorStake: 1000, kickBIPsOfTotalStake: 500
+            });
 
         /// Quorum 1 doesn't exist yet
         vm.prank(proxyAdminOwner);
@@ -1350,12 +1343,13 @@ contract SlashingRegistryCoordinator_EjectOperator is SlashingRegistryCoordinato
         quorumNumbers[0] = bytes1(uint8(0));
 
         vm.prank(serviceManager);
-        IPermissionController(coreDeployment.permissionController).setAppointee(
-            address(serviceManager),
-            address(slashingRegistryCoordinator),
-            address(coreDeployment.allocationManager),
-            AllocationManager.deregisterFromOperatorSets.selector
-        );
+        IPermissionController(coreDeployment.permissionController)
+            .setAppointee(
+                address(serviceManager),
+                address(slashingRegistryCoordinator),
+                address(coreDeployment.allocationManager),
+                AllocationManager.deregisterFromOperatorSets.selector
+            );
 
         registerOperatorInSlashingRegistryCoordinator(testOperator, "socket:8545", operatorSetIds);
     }
@@ -1402,20 +1396,21 @@ contract SlashingRegistryCoordinator_EjectOperator is SlashingRegistryCoordinato
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
             createPubkeyRegistrationParams(testOperator, testOperator.key.addr);
 
-        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
-            .RegisterParams({
-            avs: address(serviceManager),
-            operatorSetIds: operatorSetIds,
-            data: abi.encode(
-                ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, "socket:8545", pubkeyParams
-            )
-        });
+        IAllocationManagerTypes.RegisterParams memory registerParams =
+            IAllocationManagerTypes.RegisterParams({
+                avs: address(serviceManager),
+                operatorSetIds: operatorSetIds,
+                data: abi.encode(
+                    ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL,
+                    "socket:8545",
+                    pubkeyParams
+                )
+            });
 
         vm.prank(testOperator.key.addr);
         vm.expectRevert(bytes4(keccak256("EjectionCooldownNotElapsed()")));
-        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
-            testOperator.key.addr, registerParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .registerForOperatorSets(testOperator.key.addr, registerParams);
     }
 
     function test_CanRegisterAfterEjectionCooldown() public {
@@ -1427,14 +1422,16 @@ contract SlashingRegistryCoordinator_EjectOperator is SlashingRegistryCoordinato
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
             createPubkeyRegistrationParams(testOperator, testOperator.key.addr);
 
-        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
-            .RegisterParams({
-            avs: address(serviceManager),
-            operatorSetIds: operatorSetIds,
-            data: abi.encode(
-                ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, "socket:8545", pubkeyParams
-            )
-        });
+        IAllocationManagerTypes.RegisterParams memory registerParams =
+            IAllocationManagerTypes.RegisterParams({
+                avs: address(serviceManager),
+                operatorSetIds: operatorSetIds,
+                data: abi.encode(
+                    ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL,
+                    "socket:8545",
+                    pubkeyParams
+                )
+            });
 
         /// TODO: EjectionCooldown is somewhat pointless based on this
         uint32 deallocationDelay =
@@ -1442,19 +1439,16 @@ contract SlashingRegistryCoordinator_EjectOperator is SlashingRegistryCoordinato
         vm.roll(block.number + deallocationDelay + 1);
 
         OperatorSet memory operatorSet = OperatorSet(address(serviceManager), operatorSetIds[0]);
-        bool isMember = IAllocationManager(coreDeployment.allocationManager).isMemberOfOperatorSet(
-            testOperator.key.addr, operatorSet
-        );
+        bool isMember = IAllocationManager(coreDeployment.allocationManager)
+            .isMemberOfOperatorSet(testOperator.key.addr, operatorSet);
         assertFalse(isMember);
 
         vm.prank(testOperator.key.addr);
-        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
-            testOperator.key.addr, registerParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .registerForOperatorSets(testOperator.key.addr, registerParams);
 
-        isMember = IAllocationManager(coreDeployment.allocationManager).isMemberOfOperatorSet(
-            testOperator.key.addr, operatorSet
-        );
+        isMember = IAllocationManager(coreDeployment.allocationManager)
+            .isMemberOfOperatorSet(testOperator.key.addr, operatorSet);
         assertTrue(isMember);
 
         ISlashingRegistryCoordinator.OperatorInfo memory operatorInfo =
@@ -1477,19 +1471,20 @@ contract SlashingRegistryCoordinator_EjectOperator is SlashingRegistryCoordinato
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
             createPubkeyRegistrationParams(testOperator, testOperator.key.addr);
 
-        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
-            .RegisterParams({
-            avs: address(serviceManager),
-            operatorSetIds: additionalOperatorSetIds,
-            data: abi.encode(
-                ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, "socket:8545", pubkeyParams
-            )
-        });
+        IAllocationManagerTypes.RegisterParams memory registerParams =
+            IAllocationManagerTypes.RegisterParams({
+                avs: address(serviceManager),
+                operatorSetIds: additionalOperatorSetIds,
+                data: abi.encode(
+                    ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL,
+                    "socket:8545",
+                    pubkeyParams
+                )
+            });
 
         vm.prank(testOperator.key.addr);
-        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
-            testOperator.key.addr, registerParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .registerForOperatorSets(testOperator.key.addr, registerParams);
 
         bytes memory multiQuorumNumbers = new bytes(2);
         multiQuorumNumbers[0] = bytes1(uint8(0));
@@ -1518,9 +1513,7 @@ contract SlashingRegistryCoordinator_EjectOperator is SlashingRegistryCoordinato
     }
 }
 
-contract SlashingRegistryCoordinator_RegisterWithChurn is
-    SlashingRegistryCoordinatorUnitTestSetup
-{
+contract SlashingRegistryCoordinator_RegisterWithChurn is SlashingRegistryCoordinatorUnitTestSetup {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
     OperatorSetParam operatorSetParams;
@@ -1542,9 +1535,7 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
 
         _useDelegationManagerHarness();
         operatorSetParams = ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 4,
-            kickBIPsOfOperatorStake: 5000,
-            kickBIPsOfTotalStake: 5000
+            maxOperatorCount: 4, kickBIPsOfOperatorStake: 5000, kickBIPsOfTotalStake: 5000
         });
         testOperator = operatorsByID[operatorIds.at(0)];
         operatorToKick = operatorsByID[operatorIds.at(1)];
@@ -1591,12 +1582,13 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
         registerOperatorInSlashingRegistryCoordinator(extraOperator3, "socket:8545", operatorSetIds);
 
         vm.prank(serviceManager);
-        IPermissionController(coreDeployment.permissionController).setAppointee(
-            address(serviceManager),
-            address(slashingRegistryCoordinator),
-            address(coreDeployment.allocationManager),
-            AllocationManager.deregisterFromOperatorSets.selector
-        );
+        IPermissionController(coreDeployment.permissionController)
+            .setAppointee(
+                address(serviceManager),
+                address(slashingRegistryCoordinator),
+                address(coreDeployment.allocationManager),
+                AllocationManager.deregisterFromOperatorSets.selector
+            );
     }
 
     function _signChurnApproval(
@@ -1612,9 +1604,7 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(churnApproverPrivateKey, digestHash);
         return ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
-            signature: abi.encodePacked(r, s, v),
-            salt: salt,
-            expiry: expiry
+            signature: abi.encodePacked(r, s, v), salt: salt, expiry: expiry
         });
     }
 
@@ -1627,8 +1617,7 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
 
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             operatorKickParams[i] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
-                operator: operatorToKick,
-                quorumNumber: uint8(quorumNumbers[i])
+                operator: operatorToKick, quorumNumber: uint8(quorumNumbers[i])
             });
         }
 
@@ -1644,27 +1633,26 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
             createPubkeyRegistrationParams(operator, operator.key.addr);
 
-        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
-            .RegisterParams({
-            avs: address(serviceManager),
-            operatorSetIds: new uint32[](quorumNumbers.length),
-            data: abi.encode(
-                ISlashingRegistryCoordinatorTypes.RegistrationType.CHURN,
-                socket,
-                pubkeyParams,
-                operatorKickParams,
-                churnApproverSignature
-            )
-        });
+        IAllocationManagerTypes.RegisterParams memory registerParams =
+            IAllocationManagerTypes.RegisterParams({
+                avs: address(serviceManager),
+                operatorSetIds: new uint32[](quorumNumbers.length),
+                data: abi.encode(
+                    ISlashingRegistryCoordinatorTypes.RegistrationType.CHURN,
+                    socket,
+                    pubkeyParams,
+                    operatorKickParams,
+                    churnApproverSignature
+                )
+            });
 
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             registerParams.operatorSetIds[i] = uint8(quorumNumbers[i]);
         }
 
         vm.prank(operator.key.addr);
-        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
-            operator.key.addr, registerParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .registerForOperatorSets(operator.key.addr, registerParams);
     }
 
     function _setupChurnTest(
@@ -1730,14 +1718,17 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
         ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams =
             new ISlashingRegistryCoordinatorTypes.OperatorKickParam[](1);
         operatorKickParams[0] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
-            operator: operatorToKick.key.addr,
-            quorumNumber: uint8(1)
+            operator: operatorToKick.key.addr, quorumNumber: uint8(1)
         });
 
         ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature =
-        _signChurnApproval(
-            testOperator.key.addr, testOperatorId, operatorKickParams, defaultSalt, defaultExpiry
-        );
+            _signChurnApproval(
+                testOperator.key.addr,
+                testOperatorId,
+                operatorKickParams,
+                defaultSalt,
+                defaultExpiry
+            );
 
         _setOperatorWeight(testOperator.key.addr, registeringStake);
         _setOperatorWeight(operatorToKick.key.addr, operatorToKickStake);
@@ -1745,18 +1736,18 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
             createPubkeyRegistrationParams(testOperator, testOperator.key.addr);
 
-        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
-            .RegisterParams({
-            avs: address(serviceManager),
-            operatorSetIds: new uint32[](twoQuorumNumbers.length),
-            data: abi.encode(
-                ISlashingRegistryCoordinatorTypes.RegistrationType.CHURN,
-                "socket:8545",
-                pubkeyParams,
-                operatorKickParams,
-                churnApproverSignature
-            )
-        });
+        IAllocationManagerTypes.RegisterParams memory registerParams =
+            IAllocationManagerTypes.RegisterParams({
+                avs: address(serviceManager),
+                operatorSetIds: new uint32[](twoQuorumNumbers.length),
+                data: abi.encode(
+                    ISlashingRegistryCoordinatorTypes.RegistrationType.CHURN,
+                    "socket:8545",
+                    pubkeyParams,
+                    operatorKickParams,
+                    churnApproverSignature
+                )
+            });
 
         for (uint256 i = 0; i < twoQuorumNumbers.length; i++) {
             registerParams.operatorSetIds[i] = uint8(twoQuorumNumbers[i]);
@@ -1764,9 +1755,8 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
 
         vm.prank(testOperator.key.addr);
         vm.expectRevert(abi.encodeWithSignature("InputLengthMismatch()"));
-        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
-            testOperator.key.addr, registerParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .registerForOperatorSets(testOperator.key.addr, registerParams);
     }
 
     function test_registerOperatorWithChurn_revert_churnApproverSaltUsed() public {
@@ -1776,50 +1766,47 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
         ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams =
             new ISlashingRegistryCoordinatorTypes.OperatorKickParam[](quorumNumbers.length);
         operatorKickParams[0] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
-            operator: operatorToKick.key.addr,
-            quorumNumber: uint8(quorumNumbers[0])
+            operator: operatorToKick.key.addr, quorumNumber: uint8(quorumNumbers[0])
         });
 
         ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature =
-        _signChurnApproval(
-            testOperator.key.addr,
-            testOperatorId,
-            operatorKickParams,
-            bytes32(uint256(1)), // Salt 1
-            defaultExpiry
-        );
+            _signChurnApproval(
+                testOperator.key.addr,
+                testOperatorId,
+                operatorKickParams,
+                bytes32(uint256(1)), // Salt 1
+                defaultExpiry
+            );
 
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
             createPubkeyRegistrationParams(testOperator, testOperator.key.addr);
 
-        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
-            .RegisterParams({
-            avs: address(serviceManager),
-            operatorSetIds: new uint32[](quorumNumbers.length),
-            data: abi.encode(
-                ISlashingRegistryCoordinatorTypes.RegistrationType.CHURN,
-                "socket:8545",
-                pubkeyParams,
-                operatorKickParams,
-                churnApproverSignature
-            )
-        });
+        IAllocationManagerTypes.RegisterParams memory registerParams =
+            IAllocationManagerTypes.RegisterParams({
+                avs: address(serviceManager),
+                operatorSetIds: new uint32[](quorumNumbers.length),
+                data: abi.encode(
+                    ISlashingRegistryCoordinatorTypes.RegistrationType.CHURN,
+                    "socket:8545",
+                    pubkeyParams,
+                    operatorKickParams,
+                    churnApproverSignature
+                )
+            });
 
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             registerParams.operatorSetIds[i] = uint8(quorumNumbers[i]);
         }
 
         vm.prank(testOperator.key.addr);
-        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
-            testOperator.key.addr, registerParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .registerForOperatorSets(testOperator.key.addr, registerParams);
 
         Operator memory anotherOperator = extraOperator1;
         _setOperatorWeight(anotherOperator.key.addr, registeringStake * 2);
 
         operatorKickParams[0] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
-            operator: operatorToKick.key.addr,
-            quorumNumber: uint8(quorumNumbers[0])
+            operator: operatorToKick.key.addr, quorumNumber: uint8(quorumNumbers[0])
         });
 
         churnApproverSignature = _signChurnApproval(
@@ -1850,9 +1837,8 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
 
         vm.prank(anotherOperator.key.addr);
         vm.expectRevert(abi.encodeWithSignature("AlreadyMemberOfSet()"));
-        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
-            anotherOperator.key.addr, registerParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .registerForOperatorSets(anotherOperator.key.addr, registerParams);
     }
 
     function test_registerOperatorWithChurn_revert_cannotChurnSelf() public {
@@ -1867,25 +1853,29 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
         });
 
         ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature =
-        _signChurnApproval(
-            testOperator.key.addr, testOperatorId, operatorKickParams, defaultSalt, defaultExpiry
-        );
+            _signChurnApproval(
+                testOperator.key.addr,
+                testOperatorId,
+                operatorKickParams,
+                defaultSalt,
+                defaultExpiry
+            );
 
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
             createPubkeyRegistrationParams(testOperator, testOperator.key.addr);
 
-        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
-            .RegisterParams({
-            avs: address(serviceManager),
-            operatorSetIds: new uint32[](quorumNumbers.length),
-            data: abi.encode(
-                ISlashingRegistryCoordinatorTypes.RegistrationType.CHURN,
-                "socket:8545",
-                pubkeyParams,
-                operatorKickParams,
-                churnApproverSignature
-            )
-        });
+        IAllocationManagerTypes.RegisterParams memory registerParams =
+            IAllocationManagerTypes.RegisterParams({
+                avs: address(serviceManager),
+                operatorSetIds: new uint32[](quorumNumbers.length),
+                data: abi.encode(
+                    ISlashingRegistryCoordinatorTypes.RegistrationType.CHURN,
+                    "socket:8545",
+                    pubkeyParams,
+                    operatorKickParams,
+                    churnApproverSignature
+                )
+            });
 
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             registerParams.operatorSetIds[i] = uint8(quorumNumbers[i]);
@@ -1893,9 +1883,8 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
 
         vm.prank(testOperator.key.addr);
         vm.expectRevert(abi.encodeWithSignature("CannotChurnSelf()"));
-        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
-            testOperator.key.addr, registerParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .registerForOperatorSets(testOperator.key.addr, registerParams);
     }
 
     function test_registerOperatorWithChurn_revert_quorumOperatorCountMismatch() public {
@@ -1910,29 +1899,29 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
         });
 
         ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature =
-        _signChurnApproval(
-            testOperator.key.addr,
-            testOperatorId,
-            operatorKickParams,
-            bytes32(uint256(2)), // Different salt from previous tests
-            defaultExpiry
-        );
+            _signChurnApproval(
+                testOperator.key.addr,
+                testOperatorId,
+                operatorKickParams,
+                bytes32(uint256(2)), // Different salt from previous tests
+                defaultExpiry
+            );
 
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
             createPubkeyRegistrationParams(testOperator, testOperator.key.addr);
 
-        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
-            .RegisterParams({
-            avs: address(serviceManager),
-            operatorSetIds: new uint32[](quorumNumbers.length),
-            data: abi.encode(
-                ISlashingRegistryCoordinatorTypes.RegistrationType.CHURN,
-                "socket:8545",
-                pubkeyParams,
-                operatorKickParams,
-                churnApproverSignature
-            )
-        });
+        IAllocationManagerTypes.RegisterParams memory registerParams =
+            IAllocationManagerTypes.RegisterParams({
+                avs: address(serviceManager),
+                operatorSetIds: new uint32[](quorumNumbers.length),
+                data: abi.encode(
+                    ISlashingRegistryCoordinatorTypes.RegistrationType.CHURN,
+                    "socket:8545",
+                    pubkeyParams,
+                    operatorKickParams,
+                    churnApproverSignature
+                )
+            });
 
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             registerParams.operatorSetIds[i] = uint8(quorumNumbers[i]);
@@ -1940,9 +1929,8 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
 
         vm.prank(testOperator.key.addr);
         vm.expectRevert(abi.encodeWithSignature("QuorumOperatorCountMismatch()"));
-        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
-            testOperator.key.addr, registerParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .registerForOperatorSets(testOperator.key.addr, registerParams);
     }
 
     /// @dev Asserts that an operator cannot be churned out if it is not registered for the quorum
@@ -1957,9 +1945,7 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
             IStakeRegistryTypes.StrategyParams({strategy: mockStrategy, multiplier: 1 ether});
 
         operatorSetParams = ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 1,
-            kickBIPsOfOperatorStake: 5000,
-            kickBIPsOfTotalStake: 5000
+            maxOperatorCount: 1, kickBIPsOfOperatorStake: 5000, kickBIPsOfTotalStake: 5000
         });
 
         vm.startPrank(proxyAdminOwner);
@@ -1982,37 +1968,36 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
         });
 
         ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature =
-        _signChurnApproval(
-            testOperator.key.addr,
-            testOperatorId,
-            operatorKickParams,
-            bytes32(uint256(4)),
-            defaultExpiry
-        );
+            _signChurnApproval(
+                testOperator.key.addr,
+                testOperatorId,
+                operatorKickParams,
+                bytes32(uint256(4)),
+                defaultExpiry
+            );
 
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkeyParams =
             createPubkeyRegistrationParams(testOperator, testOperator.key.addr);
 
-        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
-            .RegisterParams({
-            avs: address(serviceManager),
-            operatorSetIds: new uint32[](1),
-            data: abi.encode(
-                ISlashingRegistryCoordinatorTypes.RegistrationType.CHURN,
-                "socket:8545",
-                pubkeyParams,
-                operatorKickParams,
-                churnApproverSignature
-            )
-        });
+        IAllocationManagerTypes.RegisterParams memory registerParams =
+            IAllocationManagerTypes.RegisterParams({
+                avs: address(serviceManager),
+                operatorSetIds: new uint32[](1),
+                data: abi.encode(
+                    ISlashingRegistryCoordinatorTypes.RegistrationType.CHURN,
+                    "socket:8545",
+                    pubkeyParams,
+                    operatorKickParams,
+                    churnApproverSignature
+                )
+            });
 
         registerParams.operatorSetIds[0] = uint32(2);
 
         vm.prank(testOperator.key.addr);
         vm.expectRevert(abi.encodeWithSignature("OperatorNotRegisteredForQuorum()"));
-        IAllocationManager(coreDeployment.allocationManager).registerForOperatorSets(
-            testOperator.key.addr, registerParams
-        );
+        IAllocationManager(coreDeployment.allocationManager)
+            .registerForOperatorSets(testOperator.key.addr, registerParams);
     }
 }
 
@@ -2063,12 +2048,13 @@ contract SlashingRegistryCoordinator_UpdateOperators is SlashingRegistryCoordina
         _setOperatorWeight(testOperator2.key.addr, defaultStake);
 
         vm.prank(serviceManager);
-        IPermissionController(coreDeployment.permissionController).setAppointee(
-            address(serviceManager),
-            address(slashingRegistryCoordinator),
-            address(coreDeployment.allocationManager),
-            AllocationManager.deregisterFromOperatorSets.selector
-        );
+        IPermissionController(coreDeployment.permissionController)
+            .setAppointee(
+                address(serviceManager),
+                address(slashingRegistryCoordinator),
+                address(coreDeployment.allocationManager),
+                AllocationManager.deregisterFromOperatorSets.selector
+            );
     }
 
     function test_updateOperators() public {
@@ -2274,12 +2260,13 @@ contract SlashingRegistryCoordinator_UpdateOperatorsForQuorum is
         _setOperatorWeight(testOperator2.key.addr, defaultStake);
 
         vm.prank(serviceManager);
-        IPermissionController(coreDeployment.permissionController).setAppointee(
-            address(serviceManager),
-            address(slashingRegistryCoordinator),
-            address(coreDeployment.allocationManager),
-            AllocationManager.deregisterFromOperatorSets.selector
-        );
+        IPermissionController(coreDeployment.permissionController)
+            .setAppointee(
+                address(serviceManager),
+                address(slashingRegistryCoordinator),
+                address(coreDeployment.allocationManager),
+                AllocationManager.deregisterFromOperatorSets.selector
+            );
     }
 
     function test_updateOperators() public {

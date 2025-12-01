@@ -7,8 +7,9 @@ import {
     ISignatureUtilsMixin,
     ISignatureUtilsMixinTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
-import {IDelegationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {
+    IDelegationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 import {ECDSAStakeRegistry} from "../../src/unaudited/ECDSAStakeRegistry.sol";
@@ -32,7 +33,10 @@ contract MockServiceManager {
 }
 
 contract MockDelegationManager {
-    function operatorShares(address, address) external pure returns (uint256) {
+    function operatorShares(
+        address,
+        address
+    ) external pure returns (uint256) {
         return 1000; // Return a dummy value for simplicity
     }
 
@@ -126,8 +130,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
             strategies: new IECDSAStakeRegistryTypes.StrategyParams[](1)
         });
         validQuorum.strategies[0] = IECDSAStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(420)),
-            multiplier: 10000
+            strategy: IStrategy(address(420)), multiplier: 10000
         });
 
         address[] memory operators = new address[](2);
@@ -221,9 +224,7 @@ contract ECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
                 MockServiceManager.registerOperatorToAVS.selector,
                 operator1,
                 ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
-                    signature: signatureData,
-                    salt: bytes32(uint256(0x120)),
-                    expiry: 10
+                    signature: signatureData, salt: bytes32(uint256(0x120)), expiry: 10
                 })
             ),
             abi.encode(50)
@@ -962,8 +963,7 @@ contract ECDSAStakeRegistryEventsTest is ECDSAStakeRegistrySetup {
             strategies: new IECDSAStakeRegistryTypes.StrategyParams[](1)
         });
         newQuorum.strategies[0] = IECDSAStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(0x1234)),
-            multiplier: 10000
+            strategy: IStrategy(address(0x1234)), multiplier: 10000
         });
 
         vm.expectEmit(true, true, true, true);
@@ -1377,7 +1377,10 @@ contract ECDSAStakeRegistryFuzzTests is ECDSAStakeRegistrySetup {
         );
     }
 
-    function testFuzz_RegisterDeregisterOperator(address operator, uint256 operatorPk) public {
+    function testFuzz_RegisterDeregisterOperator(
+        address operator,
+        uint256 operatorPk
+    ) public {
         vm.assume(operator != address(0));
         vm.assume(operatorPk != 0);
         vm.assume(!registry.operatorRegistered(operator));

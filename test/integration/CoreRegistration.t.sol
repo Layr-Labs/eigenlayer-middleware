@@ -14,12 +14,15 @@ import {
     IDelegationManagerTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {RewardsCoordinator} from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
-import {IRewardsCoordinator} from
-    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
-import {PermissionController} from
-    "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
-import {ITransparentUpgradeableProxy} from
-    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    IRewardsCoordinator
+} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {
+    PermissionController
+} from "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
+import {
+    ITransparentUpgradeableProxy
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {
     ISignatureUtilsMixin,
     ISignatureUtilsMixinTypes
@@ -151,9 +154,9 @@ contract Test_CoreRegistration is MockAVSDeployer {
 
         // Get operator signature
         ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature =
-        _getOperatorSignature(
-            operatorPrivateKey, operator, address(serviceManager), emptySalt, maxExpiry
-        );
+            _getOperatorSignature(
+                operatorPrivateKey, operator, address(serviceManager), emptySalt, maxExpiry
+            );
 
         // set operator as registered in Eigenlayer
         delegationMock.setIsOperator(operator, true);
@@ -240,9 +243,9 @@ contract Test_CoreRegistration is MockAVSDeployer {
     ) internal {
         // Get operator signature
         ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature =
-        _getOperatorSignature(
-            operatorPrivateKey, operator, address(serviceManager), emptySalt, maxExpiry
-        );
+            _getOperatorSignature(
+                operatorPrivateKey, operator, address(serviceManager), emptySalt, maxExpiry
+            );
 
         // set operator as registered in Eigenlayer
         delegationMock.setIsOperator(operator, true);

@@ -10,7 +10,6 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
      *                            CONSTANTS AND IMMUTABLES
      *
      */
-
     /// @notice the ServiceManager for this AVS, which forwards calls onto EigenLayer's core contracts
     IServiceManager public immutable serviceManager;
 

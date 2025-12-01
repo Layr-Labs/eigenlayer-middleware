@@ -48,11 +48,17 @@ contract BLSSigCheckUtilsHarness {
      * Comparators library functions
      *
      */
-    function lt(uint256 a, uint256 b) public pure returns (bool) {
+    function lt(
+        uint256 a,
+        uint256 b
+    ) public pure returns (bool) {
         return Comparators.lt(a, b);
     }
 
-    function gt(uint256 a, uint256 b) public pure returns (bool) {
+    function gt(
+        uint256 a,
+        uint256 b
+    ) public pure returns (bool) {
         return Comparators.gt(a, b);
     }
 
@@ -67,7 +73,10 @@ contract BLSSigCheckUtilsHarness {
         return namespace.erc7201Slot();
     }
 
-    function offset(bytes32 slot, uint256 pos) public pure returns (bytes32) {
+    function offset(
+        bytes32 slot,
+        uint256 pos
+    ) public pure returns (bytes32) {
         return slot.offset(pos);
     }
 
@@ -77,31 +86,52 @@ contract BLSSigCheckUtilsHarness {
         return slot.deriveArray();
     }
 
-    function deriveMappingAddress(bytes32 slot, address key) public pure returns (bytes32) {
+    function deriveMappingAddress(
+        bytes32 slot,
+        address key
+    ) public pure returns (bytes32) {
         return slot.deriveMapping(key);
     }
 
-    function deriveMappingBool(bytes32 slot, bool key) public pure returns (bytes32) {
+    function deriveMappingBool(
+        bytes32 slot,
+        bool key
+    ) public pure returns (bytes32) {
         return slot.deriveMapping(key);
     }
 
-    function deriveMappingBytes32(bytes32 slot, bytes32 key) public pure returns (bytes32) {
+    function deriveMappingBytes32(
+        bytes32 slot,
+        bytes32 key
+    ) public pure returns (bytes32) {
         return slot.deriveMapping(key);
     }
 
-    function deriveMappingUint256(bytes32 slot, uint256 key) public pure returns (bytes32) {
+    function deriveMappingUint256(
+        bytes32 slot,
+        uint256 key
+    ) public pure returns (bytes32) {
         return slot.deriveMapping(key);
     }
 
-    function deriveMappingInt256(bytes32 slot, int256 key) public pure returns (bytes32) {
+    function deriveMappingInt256(
+        bytes32 slot,
+        int256 key
+    ) public pure returns (bytes32) {
         return slot.deriveMapping(key);
     }
 
-    function deriveMappingString(bytes32 slot, string memory key) public pure returns (bytes32) {
+    function deriveMappingString(
+        bytes32 slot,
+        string memory key
+    ) public pure returns (bytes32) {
         return slot.deriveMapping(key);
     }
 
-    function deriveMappingBytes(bytes32 slot, bytes memory key) public pure returns (bytes32) {
+    function deriveMappingBytes(
+        bytes32 slot,
+        bytes memory key
+    ) public pure returns (bytes32) {
         return slot.deriveMapping(key);
     }
 

@@ -7,12 +7,14 @@ import {console2 as console} from "forge-std/Test.sol";
 import {DelegationManager} from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IEigenPodManager} from "eigenlayer-contracts/src/contracts/interfaces/IEigenPodManager.sol";
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IAllocationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
-import {IPermissionController} from
-    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {
+    IPermissionController
+} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 
 contract DelegationManagerHarness is DelegationManager {
     constructor(
@@ -34,7 +36,10 @@ contract DelegationManagerHarness is DelegationManager {
         )
     {}
 
-    function setIsOperator(address operator, bool isOperator) external {
+    function setIsOperator(
+        address operator,
+        bool isOperator
+    ) external {
         if (isOperator) {
             delegatedTo[operator] = operator;
         } else {
@@ -42,7 +47,11 @@ contract DelegationManagerHarness is DelegationManager {
         }
     }
 
-    function setOperatorShares(address operator, IStrategy strategy, uint256 shares) external {
+    function setOperatorShares(
+        address operator,
+        IStrategy strategy,
+        uint256 shares
+    ) external {
         operatorShares[operator][strategy] = shares;
     }
 }

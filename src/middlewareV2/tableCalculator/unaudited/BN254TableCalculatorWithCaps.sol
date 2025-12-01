@@ -2,14 +2,17 @@
 pragma solidity ^0.8.27;
 
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IAllocationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
-import {IPermissionController} from
-    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
-import {PermissionControllerMixin} from
-    "eigenlayer-contracts/src/contracts/mixins/PermissionControllerMixin.sol";
+import {
+    IPermissionController
+} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {
+    PermissionControllerMixin
+} from "eigenlayer-contracts/src/contracts/mixins/PermissionControllerMixin.sol";
 
 import "../BN254TableCalculatorBase.sol";
 import {WeightCapUtils} from "../../../unaudited/libraries/WeightCapUtils.sol";

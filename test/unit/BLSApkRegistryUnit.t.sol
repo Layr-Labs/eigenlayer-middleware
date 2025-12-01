@@ -66,13 +66,13 @@ contract BLSApkRegistryUnitTests is BLSMockAVSDeployer, IBLSApkRegistryEvents {
 
         //privKey*G2
         pubkeyRegistrationParams.pubkeyG2.X[1] =
-            19101821850089705274637533855249918363070101489527618151493230256975900223847;
+        19101821850089705274637533855249918363070101489527618151493230256975900223847;
         pubkeyRegistrationParams.pubkeyG2.X[0] =
-            5334410886741819556325359147377682006012228123419628681352847439302316235957;
+        5334410886741819556325359147377682006012228123419628681352847439302316235957;
         pubkeyRegistrationParams.pubkeyG2.Y[1] =
-            354176189041917478648604979334478067325821134838555150300539079146482658331;
+        354176189041917478648604979334478067325821134838555150300539079146482658331;
         pubkeyRegistrationParams.pubkeyG2.Y[0] =
-            4185483097059047421902184823581361466320657066600218863748375739772335928910;
+        4185483097059047421902184823581361466320657066600218863748375739772335928910;
 
         // Initialize 3 quorums
         _initializeQuorum();
@@ -192,7 +192,10 @@ contract BLSApkRegistryUnitTests is BLSMockAVSDeployer, IBLSApkRegistryEvents {
     /**
      * @dev register operator, assumes operator has a registered BLS public key and that quorumNumbers are valid
      */
-    function _registerOperator(address operator, bytes memory quorumNumbers) internal {
+    function _registerOperator(
+        address operator,
+        bytes memory quorumNumbers
+    ) internal {
         bytes32 operatorId = blsApkRegistry.getOperatorId(operator);
         cheats.prank(address(registryCoordinator));
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
@@ -203,7 +206,10 @@ contract BLSApkRegistryUnitTests is BLSMockAVSDeployer, IBLSApkRegistryEvents {
     /**
      * @dev deregister operator, assumes operator has a registered BLS public key and that quorumNumbers are valid
      */
-    function _deregisterOperator(address operator, bytes memory quorumNumbers) internal {
+    function _deregisterOperator(
+        address operator,
+        bytes memory quorumNumbers
+    ) internal {
         bytes32 operatorId = blsApkRegistry.getOperatorId(operator);
         cheats.prank(address(registryCoordinator));
         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
@@ -645,7 +651,10 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
      * @dev register/deregister up to 200 operators and check quorum apk updates
      * Test uses only the defaultQuorumNumber
      */
-    function testFuzz_quorumApkUpdates(uint256 numOperators, uint256[200] memory randSeed) public {
+    function testFuzz_quorumApkUpdates(
+        uint256 numOperators,
+        uint256[200] memory randSeed
+    ) public {
         numOperators = uint256(bound(numOperators, 1, 200));
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);

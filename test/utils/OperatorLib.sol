@@ -9,15 +9,17 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
-import {ISlashingRegistryCoordinatorTypes} from
-    "../../src/interfaces/ISlashingRegistryCoordinator.sol";
+import {
+    ISlashingRegistryCoordinatorTypes
+} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 import {IRegistryCoordinator} from "../../src/RegistryCoordinator.sol";
 import {OperatorStateRetriever} from "../../src/OperatorStateRetriever.sol";
 import {RegistryCoordinator} from "../../src/RegistryCoordinator.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {IDelegationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {
+    IDelegationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {
     ISignatureUtilsMixin,
     ISignatureUtilsMixinTypes
@@ -141,7 +143,11 @@ library OperatorLib {
         );
     }
 
-    function mintMockTokens(Operator memory operator, address token, uint256 amount) internal {
+    function mintMockTokens(
+        Operator memory operator,
+        address token,
+        uint256 amount
+    ) internal {
         ERC20Mock(token).mint(operator.key.addr, amount);
     }
 
@@ -163,7 +169,10 @@ library OperatorLib {
         return shares;
     }
 
-    function registerAsOperator(Operator memory operator, address delegationManager) internal {
+    function registerAsOperator(
+        Operator memory operator,
+        address delegationManager
+    ) internal {
         IDelegationManager delegationManagerInstance = IDelegationManager(delegationManager);
 
         delegationManagerInstance.registerAsOperator(operator.key.addr, 0, "");
@@ -182,8 +191,10 @@ library OperatorLib {
         bytes32 salt = keccak256(abi.encodePacked(block.timestamp, operator.key.addr));
         uint256 expiry = block.timestamp + 1 hours;
 
-        bytes32 operatorRegistrationDigestHash = avsDirectoryInstance
-            .calculateOperatorAVSRegistrationDigestHash(operator.key.addr, serviceManager, salt, expiry);
+        bytes32 operatorRegistrationDigestHash =
+            avsDirectoryInstance.calculateOperatorAVSRegistrationDigestHash(
+                operator.key.addr, serviceManager, salt, expiry
+            );
 
         bytes memory signature = signWithOperatorKey(operator, operatorRegistrationDigestHash);
         // Get the pubkey registration message hash that needs to be signed
@@ -194,19 +205,17 @@ library OperatorLib {
         BN254.G1Point memory blsSig =
             signMessage(operator.signingKey, pubkeyRegistrationMessageHash);
 
-        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params = IBLSApkRegistryTypes
-            .PubkeyRegistrationParams({
-            pubkeyG1: operator.signingKey.publicKeyG1,
-            pubkeyG2: operator.signingKey.publicKeyG2,
-            pubkeyRegistrationSignature: blsSig
-        });
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params =
+            IBLSApkRegistryTypes.PubkeyRegistrationParams({
+                pubkeyG1: operator.signingKey.publicKeyG1,
+                pubkeyG2: operator.signingKey.publicKeyG2,
+                pubkeyRegistrationSignature: blsSig
+            });
 
         ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature =
-        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
-            signature: signature,
-            salt: salt,
-            expiry: expiry
-        });
+            ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
+                signature: signature, salt: salt, expiry: expiry
+            });
 
         // Convert quorumNumbers to bytes using BitmapUtils
         uint256 quorumBitmap = 0;
@@ -254,12 +263,12 @@ library OperatorLib {
         BN254.G1Point memory signature =
             signMessage(operator.signingKey, pubkeyRegistrationMessageHash);
 
-        IBLSApkRegistryTypes.PubkeyRegistrationParams memory blsParams = IBLSApkRegistryTypes
-            .PubkeyRegistrationParams({
-            pubkeyG1: operator.signingKey.publicKeyG1,
-            pubkeyG2: operator.signingKey.publicKeyG2,
-            pubkeyRegistrationSignature: signature
-        });
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory blsParams =
+            IBLSApkRegistryTypes.PubkeyRegistrationParams({
+                pubkeyG1: operator.signingKey.publicKeyG1,
+                pubkeyG2: operator.signingKey.publicKeyG2,
+                pubkeyRegistrationSignature: signature
+            });
 
         registrationParamsData = abi.encode(
             ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL,
@@ -267,8 +276,9 @@ library OperatorLib {
             blsParams
         );
 
-        IAllocationManagerTypes.RegisterParams memory params = IAllocationManagerTypes
-            .RegisterParams({avs: avs, operatorSetIds: operatorSetIds, data: registrationParamsData});
+        IAllocationManagerTypes.RegisterParams memory params = IAllocationManagerTypes.RegisterParams({
+            avs: avs, operatorSetIds: operatorSetIds, data: registrationParamsData
+        });
 
         // Register the operator in the Allocation Manager
         allocationManagerInstance.registerForOperatorSets(operator.key.addr, params);
@@ -282,8 +292,10 @@ library OperatorLib {
     ) internal {
         IAllocationManager allocationManagerInstance = IAllocationManager(allocationManager);
 
-        IAllocationManagerTypes.DeregisterParams memory params = IAllocationManagerTypes
-            .DeregisterParams({operator: operator.key.addr, avs: avs, operatorSetIds: operatorSetIds});
+        IAllocationManagerTypes.DeregisterParams memory params =
+            IAllocationManagerTypes.DeregisterParams({
+                operator: operator.key.addr, avs: avs, operatorSetIds: operatorSetIds
+            });
 
         // Deregister the operator in the Allocation Manager
         allocationManagerInstance.deregisterFromOperatorSets(params);

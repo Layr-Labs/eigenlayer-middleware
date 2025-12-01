@@ -2,10 +2,12 @@
 pragma solidity ^0.8.27;
 
 import {ECDSAStakeRegistryPermissioned} from "./ECDSAStakeRegistryPermissioned.sol";
-import {IDelegationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
-import {CheckpointsUpgradeable} from
-    "@openzeppelin-upgrades/contracts/utils/CheckpointsUpgradeable.sol";
+import {
+    IDelegationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {
+    CheckpointsUpgradeable
+} from "@openzeppelin-upgrades/contracts/utils/CheckpointsUpgradeable.sol";
 
 /// @title ECDSA Stake Registry with Equal Weight
 /// @dev THIS CONTRACT IS NOT AUDITED

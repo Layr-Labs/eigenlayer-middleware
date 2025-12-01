@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
-import {IRewardsCoordinator} from
-    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {
+    IRewardsCoordinator
+} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {IServiceManagerUI} from "./IServiceManagerUI.sol";
 
 interface IServiceManagerErrors {
@@ -79,7 +80,11 @@ interface IServiceManager is IServiceManagerUI, IServiceManagerErrors, IServiceM
      * @param target The address of the target to set the appointee for.
      * @param selector The function selector to set the appointee for.
      */
-    function setAppointee(address appointee, address target, bytes4 selector) external;
+    function setAppointee(
+        address appointee,
+        address target,
+        bytes4 selector
+    ) external;
 
     /**
      * @notice Calls `removeAppointee` on the `PermissionController` contract.
@@ -88,7 +93,11 @@ interface IServiceManager is IServiceManagerUI, IServiceManagerErrors, IServiceM
      * @param target The address of the target to remove the appointee for.
      * @param selector The function selector to remove the appointee for.
      */
-    function removeAppointee(address appointee, address target, bytes4 selector) external;
+    function removeAppointee(
+        address appointee,
+        address target,
+        bytes4 selector
+    ) external;
 
     /**
      * @notice Deregisters an operator from specified operator sets

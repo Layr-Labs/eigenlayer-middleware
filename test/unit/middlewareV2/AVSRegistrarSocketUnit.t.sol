@@ -2,10 +2,13 @@
 pragma solidity ^0.8.27;
 
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
-import {PermissionControllerMixin} from
-    "eigenlayer-contracts/src/contracts/mixins/PermissionControllerMixin.sol";
+import {
+    PermissionControllerMixin
+} from "eigenlayer-contracts/src/contracts/mixins/PermissionControllerMixin.sol";
 import "./AVSRegistrarBase.t.sol";
-import {AVSRegistrarWithSocket} from "src/middlewareV2/registrar/presets/AVSRegistrarWithSocket.sol";
+import {
+    AVSRegistrarWithSocket
+} from "src/middlewareV2/registrar/presets/AVSRegistrarWithSocket.sol";
 import {ISocketRegistryEvents, ISocketRegistryV2} from "src/interfaces/ISocketRegistryV2.sol";
 
 contract AVSRegistrarSocketUnitTests is AVSRegistrarBase, ISocketRegistryEvents {

@@ -114,10 +114,10 @@ contract IndexRegistry is IndexRegistryStorage {
         // If this is the first time we're using this operatorIndex, push its first update
         // This maintains an invariant: existing indices have nonzero history
         if (_operatorIndexHistory[quorumNumber][newOperatorCount - 1].length == 0) {
-            _operatorIndexHistory[quorumNumber][newOperatorCount - 1].push(
+            _operatorIndexHistory[quorumNumber][newOperatorCount
+                    - 1].push(
                 OperatorUpdate({
-                    operatorId: OPERATOR_DOES_NOT_EXIST_ID,
-                    fromBlockNumber: uint32(block.number)
+                    operatorId: OPERATOR_DOES_NOT_EXIST_ID, fromBlockNumber: uint32(block.number)
                 })
             );
         }
@@ -149,7 +149,9 @@ contract IndexRegistry is IndexRegistryStorage {
             lastUpdate.numOperators = newOperatorCount;
         } else {
             _operatorCountHistory[quorumNumber].push(
-                QuorumUpdate({numOperators: newOperatorCount, fromBlockNumber: uint32(block.number)})
+                QuorumUpdate({
+                    numOperators: newOperatorCount, fromBlockNumber: uint32(block.number)
+                })
             );
         }
     }

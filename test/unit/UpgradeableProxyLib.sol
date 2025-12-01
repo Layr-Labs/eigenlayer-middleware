@@ -28,12 +28,19 @@ library UpgradeableProxyLib {
         return address(new TransparentUpgradeableProxy(emptyContract, admin, ""));
     }
 
-    function upgrade(address proxy, address impl) internal {
+    function upgrade(
+        address proxy,
+        address impl
+    ) internal {
         ProxyAdmin admin = getProxyAdmin(proxy);
         admin.upgrade(ITransparentUpgradeableProxy(payable(proxy)), impl);
     }
 
-    function upgradeAndCall(address proxy, address impl, bytes memory initData) internal {
+    function upgradeAndCall(
+        address proxy,
+        address impl,
+        bytes memory initData
+    ) internal {
         ProxyAdmin admin = getProxyAdmin(proxy);
         admin.upgradeAndCall(ITransparentUpgradeableProxy(payable(proxy)), impl, initData);
     }

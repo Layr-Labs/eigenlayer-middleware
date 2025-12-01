@@ -9,7 +9,10 @@ contract BLSApkRegistryHarness is BLSApkRegistry {
         ISlashingRegistryCoordinator _slashingRegistryCoordinator
     ) BLSApkRegistry(_slashingRegistryCoordinator) {}
 
-    function setBLSPublicKey(address account, BN254.G1Point memory pk) external {
+    function setBLSPublicKey(
+        address account,
+        BN254.G1Point memory pk
+    ) external {
         bytes32 pubkeyHash = BN254.hashG1Point(pk);
         // store updates
         operatorToPubkeyHash[account] = pubkeyHash;
