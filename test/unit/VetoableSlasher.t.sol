@@ -223,18 +223,12 @@ contract VetoableSlasherTest is Test {
         vm.stopPrank();
 
         vm.startPrank(serviceManager);
-        PermissionController(coreDeployment.permissionController).setAppointee(
-            address(serviceManager),
-            address(vetoableSlasher),
-            coreDeployment.allocationManager,
-            AllocationManager.slashOperator.selector
-        );
 
         PermissionController(coreDeployment.permissionController).setAppointee(
             address(serviceManager),
             address(slashingRegistryCoordinator),
             coreDeployment.allocationManager,
-            AllocationManager.createOperatorSets.selector
+            bytes4(keccak256("createOperatorSets(address,(uint32,address[],address)[])"))
         );
 
         PermissionController(coreDeployment.permissionController).setAppointee(
@@ -277,7 +271,7 @@ contract VetoableSlasherTest is Test {
             serviceManager, "fake-avs-metadata"
         );
         slashingRegistryCoordinator.createSlashableStakeQuorum(
-            operatorSetParams, 1 ether, strategyParams, 0
+            operatorSetParams, 1 ether, strategyParams, 0, address(vetoableSlasher)
         );
         vm.stopPrank();
 

@@ -45,6 +45,10 @@ abstract contract SlashingRegistryCoordinatorStorage is ISlashingRegistryCoordin
     /// @notice the Index Registry contract that will keep track of operators' indexes
     IIndexRegistry public immutable indexRegistry;
 
+    /// @notice For delegated stake quorums, the address that is set to slash
+    /// @dev This address is set to the burn address as 0 addresses are not valid slasher addresses
+    address public constant DELEGATED_STAKE_SLASHER = 0x00000000000000000000000000000000000E16E4;
+
     /// EigenLayer contracts
     /// @notice the AllocationManager that tracks OperatorSets and Slashing in EigenLayer
     IAllocationManager public immutable allocationManager;

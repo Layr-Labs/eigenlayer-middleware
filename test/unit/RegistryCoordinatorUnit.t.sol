@@ -2417,7 +2417,11 @@ contract RegistryCoordinatorUnitTests_BeforeMigration is RegistryCoordinatorUnit
         // Attempt to create quorum with slashable stake type before enabling operator sets
         cheats.prank(registryCoordinatorOwner);
         registryCoordinator.createSlashableStakeQuorum(
-            operatorSetParams, minimumStake, strategyParams, lookAheadPeriod
+            operatorSetParams,
+            minimumStake,
+            strategyParams,
+            lookAheadPeriod,
+            registryCoordinatorOwner
         );
         assertEq(registryCoordinator.quorumCount(), 1, "New quorum 0 should be created");
         assertFalse(registryCoordinator.isM2Quorum(0), "Quorum created should not be an M2 quorum");
@@ -2523,7 +2527,11 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         // Create slashable stake quorum
         cheats.prank(registryCoordinatorOwner);
         registryCoordinator.createSlashableStakeQuorum(
-            operatorSetParams, minimumStake, strategyParams, lookAheadPeriod
+            operatorSetParams,
+            minimumStake,
+            strategyParams,
+            lookAheadPeriod,
+            registryCoordinatorOwner
         );
     }
 

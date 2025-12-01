@@ -7,6 +7,8 @@ import {IOperatorTableCalculator} from
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 import {Merkle} from "eigenlayer-contracts/src/contracts/libraries/Merkle.sol";
 import {BN254} from "eigenlayer-contracts/src/contracts/libraries/BN254.sol";
+import {IBN254CertificateVerifierTypes} from
+    "eigenlayer-contracts/src/contracts/interfaces/IBN254CertificateVerifier.sol";
 import {LeafCalculatorMixin} from
     "eigenlayer-contracts/src/contracts/mixins/LeafCalculatorMixin.sol";
 import {IBN254TableCalculator} from "../../interfaces/IBN254TableCalculator.sol";
@@ -98,6 +100,87 @@ abstract contract BN254TableCalculatorBase is IBN254TableCalculator, LeafCalcula
         return operatorInfos;
     }
 
+    /// @inheritdoc IBN254TableCalculator
+    function getOperatorIndex(
+        OperatorSet calldata operatorSet,
+        address operator
+    ) external view virtual returns (bool found, uint32 index) {
+        (,, address[] memory registeredOperators) = _buildRegisteredOperatorData(operatorSet);
+
+        uint32 includedIndex = 0;
+        for (uint256 i = 0; i < registeredOperators.length; i++) {
+            if (registeredOperators[i] == operator) {
+                return (true, includedIndex);
+            }
+            includedIndex++;
+        }
+
+        return (false, 0);
+    }
+
+    /// @inheritdoc IBN254TableCalculator
+    function getNonSignerWitnessesAndApk(
+        OperatorSet calldata operatorSet,
+        address[] calldata signingOperators
+    )
+        external
+        view
+        returns (
+            IBN254CertificateVerifierTypes.BN254OperatorInfoWitness[] memory nonSignerWitnesses,
+            BN254.G1Point memory nonSignerApk
+        )
+    {
+        // Early return if no operators with weights
+        (
+            bytes32[] memory operatorInfoLeaves,
+            BN254OperatorInfo[] memory registeredOperatorInfos,
+            address[] memory registeredOperators
+        ) = _buildRegisteredOperatorData(operatorSet);
+
+        if (registeredOperatorInfos.length == 0) {
+            return (
+                new IBN254CertificateVerifierTypes.BN254OperatorInfoWitness[](0),
+                BN254.G1Point(0, 0)
+            );
+        }
+
+        // Prepare outputs with max length then resize
+        nonSignerWitnesses = new IBN254CertificateVerifierTypes.BN254OperatorInfoWitness[](
+            registeredOperators.length
+        );
+        nonSignerApk = BN254.G1Point(0, 0);
+
+        uint256 nonSignerCount = 0;
+        for (uint256 idx = 0; idx < registeredOperators.length; idx++) {
+            bool signerFound = false;
+            for (uint256 k = 0; k < signingOperators.length; k++) {
+                if (signingOperators[k] == registeredOperators[idx]) {
+                    signerFound = true;
+                    break;
+                }
+            }
+            if (signerFound) continue;
+
+            BN254OperatorInfo memory opInfo = registeredOperatorInfos[idx];
+            nonSignerApk = nonSignerApk.plus(opInfo.pubkey);
+
+            nonSignerWitnesses[nonSignerCount] = IBN254CertificateVerifierTypes
+                .BN254OperatorInfoWitness({
+                operatorIndex: uint32(idx),
+                operatorInfoProof: Merkle.getProofKeccak(operatorInfoLeaves, idx),
+                operatorInfo: opInfo
+            });
+            nonSignerCount++;
+        }
+
+        // Resize witnesses to actual count
+        assembly {
+            mstore(nonSignerWitnesses, nonSignerCount)
+        }
+
+        return (nonSignerWitnesses, nonSignerApk);
+    }
+
     /**
      * @notice Abstract function to get the operator weights for a given operatorSet
      * @param operatorSet The operatorSet to get the weights for
@@ -116,6 +199,59 @@ abstract contract BN254TableCalculatorBase is IBN254TableCalculator, LeafCalcula
     ) internal view virtual returns (address[] memory operators, uint256[][] memory weights);
 
     /**
+     * @dev Helper that constructs the included operators, infos, and Merkle leaves for registered operators only.
+     *      It preserves deterministic ordering implied by `_getOperatorWeights` output while filtering out
+     *      unregistered operators.
+     */
+    function _buildRegisteredOperatorData(
+        OperatorSet calldata operatorSet
+    )
+        internal
+        view
+        returns (
+            bytes32[] memory operatorInfoLeaves,
+            BN254OperatorInfo[] memory registeredOperatorInfos,
+            address[] memory registeredOperators
+        )
+    {
+        (address[] memory operators, uint256[][] memory weights) = _getOperatorWeights(operatorSet);
+
+        // If there are no weights, return empty
+        if (weights.length == 0) {
+            return (new bytes32[](0), new BN254OperatorInfo[](0), new address[](0));
+        }
+
+        operatorInfoLeaves = new bytes32[](operators.length);
+        registeredOperatorInfos = new BN254OperatorInfo[](operators.length);
+        registeredOperators = new address[](operators.length);
+
+        uint256 includedCount = 0;
+        for (uint256 i = 0; i < operators.length; i++) {
+            if (!keyRegistrar.isRegistered(operatorSet, operators[i])) {
+                continue;
+            }
+
+            (BN254.G1Point memory g1Point,) = keyRegistrar.getBN254Key(operatorSet, operators[i]);
+            BN254OperatorInfo memory info =
+                BN254OperatorInfo({pubkey: g1Point, weights: weights[i]});
+
+            registeredOperatorInfos[includedCount] = info;
+            registeredOperators[includedCount] = operators[i];
+            operatorInfoLeaves[includedCount] = calculateOperatorInfoLeaf(info);
+            includedCount++;
+        }
+
+        // Shrink arrays to included count
+        assembly {
+            mstore(operatorInfoLeaves, includedCount)
+            mstore(registeredOperatorInfos, includedCount)
+            mstore(registeredOperators, includedCount)
+        }
+
+        return (operatorInfoLeaves, registeredOperatorInfos, registeredOperators);
+    }
+
+    /**
      * @notice Calculates the operator table for a given operatorSet, also calculates the aggregate pubkey for the operatorSet
      * @param operatorSet The operatorSet to calculate the operator table for
      * @return operatorSetInfo The BN254OperatorSetInfo containing merkle root, operator count, aggregate pubkey, and total weights
@@ -130,7 +266,6 @@ abstract contract BN254TableCalculatorBase is IBN254TableCalculator, LeafCalcula
     function _calculateOperatorTable(
         OperatorSet calldata operatorSet
     ) internal view returns (BN254OperatorSetInfo memory operatorSetInfo) {
-        // Get the weights for all operators in the operatorSet
         (address[] memory operators, uint256[][] memory weights) = _getOperatorWeights(operatorSet);
 
         // If there are no weights, return an empty operator set info
@@ -143,39 +278,11 @@ abstract contract BN254TableCalculatorBase is IBN254TableCalculator, LeafCalcula
             });
         }
 
-        // Initialize arrays
-        uint256 subArrayLength = weights[0].length;
-        uint256[] memory totalWeights = new uint256[](subArrayLength);
-        bytes32[] memory operatorInfoLeaves = new bytes32[](operators.length);
-        BN254.G1Point memory aggregatePubkey;
-        uint256 operatorCount = 0;
+        (bytes32[] memory operatorInfoLeaves, BN254OperatorInfo[] memory registeredOperatorInfos,) =
+            _buildRegisteredOperatorData(operatorSet);
 
-        for (uint256 i = 0; i < operators.length; i++) {
-            // Skip if the operator has not registered their key
-            if (!keyRegistrar.isRegistered(operatorSet, operators[i])) {
-                continue;
-            }
-
-            // Read the weights for the operator and encode them into the operatorInfoLeaves
-            // for all weights, add them to the total weights. The ith index returns the weights array for the ith operator
-            for (uint256 j = 0; j < subArrayLength; j++) {
-                totalWeights[j] += weights[i][j];
-            }
-            (BN254.G1Point memory g1Point,) = keyRegistrar.getBN254Key(operatorSet, operators[i]);
-
-            // Use `LeafCalculatorMixin` to calculate the leaf hash for the operator info
-            operatorInfoLeaves[operatorCount] =
-                calculateOperatorInfoLeaf(BN254OperatorInfo({pubkey: g1Point, weights: weights[i]}));
-
-            // Add the operator's G1 point to the aggregate pubkey
-            aggregatePubkey = aggregatePubkey.plus(g1Point);
-
-            // Increment the operator count
-            operatorCount++;
-        }
-
-        // If there are no operators, return an empty operator set info
-        if (operatorCount == 0) {
+        // If there are no included operators, return an empty operator set info
+        if (registeredOperatorInfos.length == 0) {
             return BN254OperatorSetInfo({
                 operatorInfoTreeRoot: bytes32(0),
                 numOperators: 0,
@@ -184,16 +291,23 @@ abstract contract BN254TableCalculatorBase is IBN254TableCalculator, LeafCalcula
             });
         }
 
-        // Resize the operatorInfoLeaves array to the number of operators and merkleize
-        assembly {
-            mstore(operatorInfoLeaves, operatorCount)
+        uint256 subArrayLength = registeredOperatorInfos[0].weights.length;
+        uint256[] memory totalWeights = new uint256[](subArrayLength);
+        BN254.G1Point memory aggregatePubkey;
+
+        for (uint256 i = 0; i < registeredOperatorInfos.length; i++) {
+            BN254OperatorInfo memory info = registeredOperatorInfos[i];
+            for (uint256 j = 0; j < subArrayLength; j++) {
+                totalWeights[j] += info.weights[j];
+            }
+            aggregatePubkey = aggregatePubkey.plus(info.pubkey);
         }
 
         bytes32 operatorInfoTreeRoot = operatorInfoLeaves.merkleizeKeccak();
 
         return BN254OperatorSetInfo({
             operatorInfoTreeRoot: operatorInfoTreeRoot,
-            numOperators: operatorCount,
+            numOperators: registeredOperatorInfos.length,
             aggregatePubkey: aggregatePubkey,
             totalWeights: totalWeights
         });

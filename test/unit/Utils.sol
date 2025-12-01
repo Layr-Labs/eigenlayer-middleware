@@ -12,7 +12,7 @@ contract Utils {
         IPauserRegistry pauserRegistry,
         address admin
     ) public returns (StrategyBase) {
-        StrategyBase newStrategy = new StrategyBase(strategyManager, pauserRegistry, "v0.0.1");
+        StrategyBase newStrategy = new StrategyBase(strategyManager, pauserRegistry);
         newStrategy = StrategyBase(
             address(new TransparentUpgradeableProxy(address(newStrategy), address(admin), ""))
         );

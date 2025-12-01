@@ -125,7 +125,8 @@ contract SlashingRegistryCoordinator is
             minimumStake,
             strategyParams,
             IStakeRegistryTypes.StakeType.TOTAL_DELEGATED,
-            0
+            0,
+            DELEGATED_STAKE_SLASHER
         );
     }
 
@@ -134,14 +135,16 @@ contract SlashingRegistryCoordinator is
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
         IStakeRegistryTypes.StrategyParams[] memory strategyParams,
-        uint32 lookAheadPeriod
+        uint32 lookAheadPeriod,
+        address slasher
     ) external virtual onlyOwner {
         _createQuorum(
             operatorSetParams,
             minimumStake,
             strategyParams,
             IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE,
-            lookAheadPeriod
+            lookAheadPeriod,
+            slasher
         );
     }
 
@@ -780,13 +783,15 @@ contract SlashingRegistryCoordinator is
      * registered
      * @param strategyParams a list of strategies and multipliers used by the StakeRegistry to
      * calculate an operator's stake weight for the quorum
+     * @param slasher the address of the slasher to use for the quorum (operatorSet)
      */
     function _createQuorum(
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
         IStakeRegistryTypes.StrategyParams[] memory strategyParams,
         IStakeRegistryTypes.StakeType stakeType,
-        uint32 lookAheadPeriod
+        uint32 lookAheadPeriod,
+        address slasher
     ) internal {
         // The previous quorum count is the new quorum's number,
         // this is because quorum numbers begin from index 0.
@@ -803,8 +808,8 @@ contract SlashingRegistryCoordinator is
         _setOperatorSetParams(quorumNumber, operatorSetParams);
 
         // Create array of CreateSetParams for the new quorum
-        IAllocationManagerTypes.CreateSetParams[] memory createSetParams =
-            new IAllocationManagerTypes.CreateSetParams[](1);
+        IAllocationManagerTypes.CreateSetParamsV2[] memory createSetParams =
+            new IAllocationManagerTypes.CreateSetParamsV2[](1);
 
         // Extract strategies from strategyParams
         IStrategy[] memory strategies = new IStrategy[](strategyParams.length);
@@ -813,9 +818,10 @@ contract SlashingRegistryCoordinator is
         }
 
         // Initialize CreateSetParams with quorumNumber as operatorSetId
-        createSetParams[0] = IAllocationManagerTypes.CreateSetParams({
+        createSetParams[0] = IAllocationManagerTypes.CreateSetParamsV2({
             operatorSetId: quorumNumber,
-            strategies: strategies
+            strategies: strategies,
+            slasher: slasher
         });
         allocationManager.createOperatorSets({avs: avs, params: createSetParams});
 

@@ -11,6 +11,8 @@ import {
     BN254,
     IOperatorTableCalculatorTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
+import {IBN254CertificateVerifierTypes} from
+    "eigenlayer-contracts/src/contracts/interfaces/IBN254CertificateVerifier.sol";
 import {IBN254TableCalculator} from "../../../src/interfaces/IBN254TableCalculator.sol";
 import {
     OperatorSet,
@@ -836,5 +838,467 @@ contract BN254TableCalculatorBaseUnitTests_getOperatorInfos is BN254TableCalcula
                 assertEq(infos[i].pubkey.Y, 0, "Unregistered operator pubkey Y should be 0");
             }
         }
+    }
+}
+
+/**
+ * @title BN254TableCalculatorBaseUnitTests_getOperatorIndex
+ * @notice Unit tests for BN254TableCalculatorBase.getOperatorIndex
+ */
+contract BN254TableCalculatorBaseUnitTests_getOperatorIndex is BN254TableCalculatorBaseUnitTests {
+    function test_getOperatorIndex_allRegistered() public {
+        // Register all operators
+        _registerOperatorKey(
+            operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1
+        );
+        _registerOperatorKey(
+            operator2, defaultOperatorSet, bn254G1Key2, bn254G2Key2, BN254_PRIV_KEY_2
+        );
+        _registerOperatorKey(
+            operator3, defaultOperatorSet, bn254G1Key3, bn254G2Key3, BN254_PRIV_KEY_3
+        );
+
+        // Provide weights for all
+        address[] memory operators = new address[](3);
+        operators[0] = operator1;
+        operators[1] = operator2;
+        operators[2] = operator3;
+
+        uint256[][] memory weights = new uint256[][](3);
+        weights[0] = _createSingleWeightArray(100)[0];
+        weights[1] = _createSingleWeightArray(200)[0];
+        weights[2] = _createSingleWeightArray(300)[0];
+
+        calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
+
+        (bool found1, uint32 idx1) = calculator.getOperatorIndex(defaultOperatorSet, operator1);
+        (bool found2, uint32 idx2) = calculator.getOperatorIndex(defaultOperatorSet, operator2);
+        (bool found3, uint32 idx3) = calculator.getOperatorIndex(defaultOperatorSet, operator3);
+
+        assertTrue(found1, "operator1 should be found");
+        assertTrue(found2, "operator2 should be found");
+        assertTrue(found3, "operator3 should be found");
+        assertEq(uint256(idx1), 0, "operator1 index");
+        assertEq(uint256(idx2), 1, "operator2 index");
+        assertEq(uint256(idx3), 2, "operator3 index");
+    }
+
+    function test_getOperatorIndex_unregisteredExcluded() public {
+        // Register operator1 and operator3 only
+        _registerOperatorKey(
+            operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1
+        );
+        _registerOperatorKey(
+            operator3, defaultOperatorSet, bn254G1Key3, bn254G2Key3, BN254_PRIV_KEY_3
+        );
+
+        // Ordered operators with weights
+        address[] memory operators = new address[](3);
+        operators[0] = operator1; // registered -> index 0
+        operators[1] = operator2; // not registered -> excluded
+        operators[2] = operator3; // registered -> index 1
+
+        uint256[][] memory weights = new uint256[][](3);
+        weights[0] = _createSingleWeightArray(100)[0];
+        weights[1] = _createSingleWeightArray(200)[0];
+        weights[2] = _createSingleWeightArray(300)[0];
+
+        calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
+
+        (bool f1, uint32 i1) = calculator.getOperatorIndex(defaultOperatorSet, operator1);
+        (bool f2, uint32 i2) = calculator.getOperatorIndex(defaultOperatorSet, operator2);
+        (bool f3, uint32 i3) = calculator.getOperatorIndex(defaultOperatorSet, operator3);
+
+        assertTrue(f1, "operator1 should be found");
+        assertEq(uint256(i1), 0, "operator1 index should be 0");
+
+        assertTrue(!f2, "operator2 should not be found");
+        assertEq(uint256(i2), 0, "operator2 index irrelevant when not found");
+
+        assertTrue(f3, "operator3 should be found");
+        assertEq(uint256(i3), 1, "operator3 index should be 1");
+    }
+
+    function test_getOperatorIndex_emptySet() public {
+        address[] memory operators = new address[](0);
+        uint256[][] memory weights = new uint256[][](0);
+        calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
+
+        (bool found, uint32 idx) = calculator.getOperatorIndex(defaultOperatorSet, operator1);
+        assertTrue(!found, "no operator should be found");
+        assertEq(uint256(idx), 0, "index should be 0 when not found");
+    }
+
+    function test_getOperatorIndex_noRegistrations() public {
+        // Operators and weights exist but none registered -> none found
+        address[] memory operators = new address[](2);
+        operators[0] = operator1;
+        operators[1] = operator2;
+
+        uint256[][] memory weights = new uint256[][](2);
+        weights[0] = _createSingleWeightArray(100)[0];
+        weights[1] = _createSingleWeightArray(200)[0];
+
+        calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
+
+        (bool f1, uint32 i1) = calculator.getOperatorIndex(defaultOperatorSet, operator1);
+        (bool f2, uint32 i2) = calculator.getOperatorIndex(defaultOperatorSet, operator2);
+
+        assertTrue(!f1, "operator1 should not be found");
+        assertTrue(!f2, "operator2 should not be found");
+        assertEq(uint256(i1), 0, "operator1 index irrelevant when not found");
+        assertEq(uint256(i2), 0, "operator2 index irrelevant when not found");
+    }
+}
+
+/**
+ * @title BN254TableCalculatorBaseUnitTests_getNonSignerWitnessesAndApk
+ * @notice Unit tests for BN254TableCalculatorBase.getNonSignerWitnessesAndApk
+ * @dev Uses the base harness with mocked weights and real KeyRegistrar registrations
+ */
+contract BN254TableCalculatorBaseUnitTests_getNonSignerWitnessesAndApk is
+    BN254TableCalculatorBaseUnitTests
+{
+    function test_emptySigningOperators_allNonSigners_base() public {
+        // Operators and weights
+        address[] memory operators = new address[](2);
+        operators[0] = operator1;
+        operators[1] = operator2;
+        uint256[][] memory weights = new uint256[][](2);
+        weights[0] = _createSingleWeightArray(100)[0];
+        weights[1] = _createSingleWeightArray(200)[0];
+        calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
+
+        // Register both
+        _registerOperatorKey(
+            operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1
+        );
+        _registerOperatorKey(
+            operator2, defaultOperatorSet, bn254G1Key2, bn254G2Key2, BN254_PRIV_KEY_2
+        );
+
+        BN254OperatorSetInfo memory info = calculator.calculateOperatorTable(defaultOperatorSet);
+
+        address[] memory signing = new address[](0);
+        (
+            IBN254CertificateVerifierTypes.BN254OperatorInfoWitness[] memory witnesses,
+            BN254.G1Point memory nonSignerApk
+        ) = calculator.getNonSignerWitnessesAndApk(defaultOperatorSet, signing);
+
+        assertEq(witnesses.length, 2, "all operators should be non-signers");
+        assertEq(uint256(witnesses[0].operatorIndex), 0);
+        assertEq(uint256(witnesses[1].operatorIndex), 1);
+        for (uint256 i = 0; i < witnesses.length; i++) {
+            bytes32 leaf = calculateOperatorInfoLeaf(witnesses[i].operatorInfo);
+            bool ok = Merkle.verifyInclusionKeccak(
+                witnesses[i].operatorInfoProof,
+                info.operatorInfoTreeRoot,
+                leaf,
+                witnesses[i].operatorIndex
+            );
+            assertTrue(ok);
+        }
+        BN254.G1Point memory expected = BN254.plus(bn254G1Key1, bn254G1Key2);
+        assertEq(nonSignerApk.X, expected.X);
+        assertEq(nonSignerApk.Y, expected.Y);
+    }
+
+    function test_signingOperatorsWithDuplicatesAndUnknowns_base() public {
+        // Three operators
+        address[] memory operators = new address[](3);
+        operators[0] = operator1;
+        operators[1] = operator2;
+        operators[2] = operator3;
+        uint256[][] memory weights = new uint256[][](3);
+        weights[0] = _createSingleWeightArray(100)[0];
+        weights[1] = _createSingleWeightArray(200)[0];
+        weights[2] = _createSingleWeightArray(300)[0];
+        calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
+
+        // Register all
+        _registerOperatorKey(
+            operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1
+        );
+        _registerOperatorKey(
+            operator2, defaultOperatorSet, bn254G1Key2, bn254G2Key2, BN254_PRIV_KEY_2
+        );
+        _registerOperatorKey(
+            operator3, defaultOperatorSet, bn254G1Key3, bn254G2Key3, BN254_PRIV_KEY_3
+        );
+
+        BN254OperatorSetInfo memory info = calculator.calculateOperatorTable(defaultOperatorSet);
+
+        // Signing list with duplicate and unknown
+        address[] memory signing = new address[](3);
+        signing[0] = operator1;
+        signing[1] = operator1;
+        signing[2] = address(0xdead);
+
+        (
+            IBN254CertificateVerifierTypes.BN254OperatorInfoWitness[] memory witnesses,
+            BN254.G1Point memory nonSignerApk
+        ) = calculator.getNonSignerWitnessesAndApk(defaultOperatorSet, signing);
+
+        // Expect operator2 and operator3 as non-signers
+        assertEq(witnesses.length, 2);
+        assertEq(uint256(witnesses[0].operatorIndex), 1);
+        assertEq(uint256(witnesses[1].operatorIndex), 2);
+        for (uint256 i = 0; i < witnesses.length; i++) {
+            bytes32 leaf = calculateOperatorInfoLeaf(witnesses[i].operatorInfo);
+            bool ok = Merkle.verifyInclusionKeccak(
+                witnesses[i].operatorInfoProof,
+                info.operatorInfoTreeRoot,
+                leaf,
+                witnesses[i].operatorIndex
+            );
+            assertTrue(ok);
+        }
+        BN254.G1Point memory expected = BN254.plus(bn254G1Key2, bn254G1Key3);
+        assertEq(nonSignerApk.X, expected.X);
+        assertEq(nonSignerApk.Y, expected.Y);
+    }
+
+    function testFuzz_nonSignerSelection_base(
+        uint8 maskRaw
+    ) public {
+        // Use up to 3 operators (keys already prepared)
+        uint8 n = 3;
+        address[] memory operators = new address[](n);
+        operators[0] = operator1;
+        operators[1] = operator2;
+        operators[2] = operator3;
+        uint256[][] memory weights = new uint256[][](n);
+        for (uint256 i = 0; i < n; i++) {
+            weights[i] = _createSingleWeightArray(100 + i)[0];
+        }
+        calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
+
+        // Register all
+        _registerOperatorKey(
+            operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1
+        );
+        _registerOperatorKey(
+            operator2, defaultOperatorSet, bn254G1Key2, bn254G2Key2, BN254_PRIV_KEY_2
+        );
+        _registerOperatorKey(
+            operator3, defaultOperatorSet, bn254G1Key3, bn254G2Key3, BN254_PRIV_KEY_3
+        );
+
+        BN254OperatorSetInfo memory info = calculator.calculateOperatorTable(defaultOperatorSet);
+
+        // Build signing subset by mask
+        uint8 mask = uint8(bound(maskRaw, 0, (1 << n) - 1));
+        uint8 countSigners = 0;
+        for (uint8 i = 0; i < n; i++) {
+            if ((mask & (1 << i)) != 0) countSigners++;
+        }
+        address[] memory signing = new address[](countSigners);
+        uint8 s = 0;
+        for (uint8 i2 = 0; i2 < n; i2++) {
+            if ((mask & (1 << i2)) != 0) {
+                signing[s++] = operators[i2];
+            }
+        }
+
+        (
+            IBN254CertificateVerifierTypes.BN254OperatorInfoWitness[] memory witnesses,
+            BN254.G1Point memory nonSignerApk
+        ) = calculator.getNonSignerWitnessesAndApk(defaultOperatorSet, signing);
+
+        // Expected count and APK
+        uint256 expectedCount = n - countSigners;
+        assertEq(witnesses.length, expectedCount, "non-signer count mismatch");
+
+        // Check ordering strictly increasing and proofs
+        uint32 prev = 0;
+        for (uint256 i3 = 0; i3 < witnesses.length; i3++) {
+            if (i3 > 0) {
+                assertTrue(witnesses[i3].operatorIndex > prev, "indices must increase");
+            }
+            prev = witnesses[i3].operatorIndex;
+            bytes32 leaf = calculateOperatorInfoLeaf(witnesses[i3].operatorInfo);
+            bool ok = Merkle.verifyInclusionKeccak(
+                witnesses[i3].operatorInfoProof,
+                info.operatorInfoTreeRoot,
+                leaf,
+                witnesses[i3].operatorIndex
+            );
+            assertTrue(ok);
+        }
+
+        // Compute expected APK
+        BN254.G1Point memory expectedApk;
+        for (uint8 i4 = 0; i4 < n; i4++) {
+            if ((mask & (1 << i4)) == 0) {
+                if (i4 == 0) expectedApk = BN254.plus(expectedApk, bn254G1Key1);
+                if (i4 == 1) expectedApk = BN254.plus(expectedApk, bn254G1Key2);
+                if (i4 == 2) expectedApk = BN254.plus(expectedApk, bn254G1Key3);
+            }
+        }
+        assertEq(nonSignerApk.X, expectedApk.X);
+        assertEq(nonSignerApk.Y, expectedApk.Y);
+    }
+
+    function test_singleNonSigner_producesWitnessAndApk_base() public {
+        // Set operators and weights to include both operators
+        address[] memory operators = new address[](2);
+        operators[0] = operator1;
+        operators[1] = operator2;
+        uint256[][] memory weights = new uint256[][](2);
+        weights[0] = _createSingleWeightArray(100)[0];
+        weights[1] = _createSingleWeightArray(200)[0];
+        calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
+
+        // Register both operators
+        _registerOperatorKey(
+            operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1
+        );
+        _registerOperatorKey(
+            operator2, defaultOperatorSet, bn254G1Key2, bn254G2Key2, BN254_PRIV_KEY_2
+        );
+
+        BN254OperatorSetInfo memory info = calculator.calculateOperatorTable(defaultOperatorSet);
+
+        address[] memory signing = new address[](1);
+        signing[0] = operator1;
+
+        (
+            IBN254CertificateVerifierTypes.BN254OperatorInfoWitness[] memory witnesses,
+            BN254.G1Point memory nonSignerApk
+        ) = calculator.getNonSignerWitnessesAndApk(defaultOperatorSet, signing);
+
+        assertEq(witnesses.length, 1);
+        assertEq(uint256(witnesses[0].operatorIndex), 1);
+        bytes32 leaf = calculateOperatorInfoLeaf(witnesses[0].operatorInfo);
+        bool ok = Merkle.verifyInclusionKeccak(
+            witnesses[0].operatorInfoProof,
+            info.operatorInfoTreeRoot,
+            leaf,
+            witnesses[0].operatorIndex
+        );
+        assertTrue(ok);
+        assertEq(nonSignerApk.X, bn254G1Key2.X);
+        assertEq(nonSignerApk.Y, bn254G1Key2.Y);
+    }
+
+    function test_multipleNonSigners_sortedIndicesAndValidProofs_base() public {
+        // Include three operators
+        address[] memory operators = new address[](3);
+        operators[0] = operator1;
+        operators[1] = operator2;
+        operators[2] = operator3;
+        uint256[][] memory weights = new uint256[][](3);
+        weights[0] = _createSingleWeightArray(100)[0];
+        weights[1] = _createSingleWeightArray(101)[0];
+        weights[2] = _createSingleWeightArray(102)[0];
+        calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
+
+        // Register all
+        _registerOperatorKey(
+            operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1
+        );
+        _registerOperatorKey(
+            operator2, defaultOperatorSet, bn254G1Key2, bn254G2Key2, BN254_PRIV_KEY_2
+        );
+        _registerOperatorKey(
+            operator3, defaultOperatorSet, bn254G1Key3, bn254G2Key3, BN254_PRIV_KEY_3
+        );
+
+        BN254OperatorSetInfo memory info = calculator.calculateOperatorTable(defaultOperatorSet);
+
+        address[] memory signing = new address[](1);
+        signing[0] = operator1;
+        (
+            IBN254CertificateVerifierTypes.BN254OperatorInfoWitness[] memory witnesses,
+            BN254.G1Point memory nonSignerApk
+        ) = calculator.getNonSignerWitnessesAndApk(defaultOperatorSet, signing);
+
+        assertEq(witnesses.length, 2);
+        assertEq(uint256(witnesses[0].operatorIndex), 1);
+        assertEq(uint256(witnesses[1].operatorIndex), 2);
+        for (uint256 i = 0; i < witnesses.length; i++) {
+            bytes32 leaf = calculateOperatorInfoLeaf(witnesses[i].operatorInfo);
+            bool ok = Merkle.verifyInclusionKeccak(
+                witnesses[i].operatorInfoProof,
+                info.operatorInfoTreeRoot,
+                leaf,
+                witnesses[i].operatorIndex
+            );
+            assertTrue(ok);
+        }
+        BN254.G1Point memory expected = BN254.plus(bn254G1Key2, bn254G1Key3);
+        assertEq(nonSignerApk.X, expected.X);
+        assertEq(nonSignerApk.Y, expected.Y);
+    }
+
+    function test_allSigners_returnsEmpty_base() public {
+        // Two operators, both sign
+        address[] memory operators = new address[](2);
+        operators[0] = operator1;
+        operators[1] = operator2;
+        uint256[][] memory weights = new uint256[][](2);
+        weights[0] = _createSingleWeightArray(100)[0];
+        weights[1] = _createSingleWeightArray(200)[0];
+        calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
+
+        _registerOperatorKey(
+            operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1
+        );
+        _registerOperatorKey(
+            operator2, defaultOperatorSet, bn254G1Key2, bn254G2Key2, BN254_PRIV_KEY_2
+        );
+
+        address[] memory signing = new address[](2);
+        signing[0] = operator1;
+        signing[1] = operator2;
+        (
+            IBN254CertificateVerifierTypes.BN254OperatorInfoWitness[] memory witnesses,
+            BN254.G1Point memory nonSignerApk
+        ) = calculator.getNonSignerWitnessesAndApk(defaultOperatorSet, signing);
+        assertEq(witnesses.length, 0);
+        assertEq(nonSignerApk.X, 0);
+        assertEq(nonSignerApk.Y, 0);
+    }
+
+    function test_unregisteredExcludedFromTree_base() public {
+        // Three operators, second unregistered
+        address[] memory operators = new address[](3);
+        operators[0] = operator1;
+        operators[1] = operator2; // will remain unregistered
+        operators[2] = operator3;
+        uint256[][] memory weights = new uint256[][](3);
+        weights[0] = _createSingleWeightArray(100)[0];
+        weights[1] = _createSingleWeightArray(200)[0];
+        weights[2] = _createSingleWeightArray(300)[0];
+        calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
+
+        _registerOperatorKey(
+            operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1
+        );
+        _registerOperatorKey(
+            operator3, defaultOperatorSet, bn254G1Key3, bn254G2Key3, BN254_PRIV_KEY_3
+        );
+
+        BN254OperatorSetInfo memory info = calculator.calculateOperatorTable(defaultOperatorSet);
+        assertEq(info.numOperators, 2);
+
+        address[] memory signing = new address[](1);
+        signing[0] = operator1;
+        (
+            IBN254CertificateVerifierTypes.BN254OperatorInfoWitness[] memory witnesses,
+            BN254.G1Point memory nonSignerApk
+        ) = calculator.getNonSignerWitnessesAndApk(defaultOperatorSet, signing);
+        assertEq(witnesses.length, 1);
+        assertEq(uint256(witnesses[0].operatorIndex), 1);
+        bytes32 leaf = calculateOperatorInfoLeaf(witnesses[0].operatorInfo);
+        bool ok = Merkle.verifyInclusionKeccak(
+            witnesses[0].operatorInfoProof,
+            info.operatorInfoTreeRoot,
+            leaf,
+            witnesses[0].operatorIndex
+        );
+        assertTrue(ok);
+        assertEq(nonSignerApk.X, bn254G1Key3.X);
+        assertEq(nonSignerApk.Y, bn254G1Key3.Y);
     }
 }

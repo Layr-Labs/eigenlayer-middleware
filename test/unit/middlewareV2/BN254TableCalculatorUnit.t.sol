@@ -43,6 +43,7 @@ contract BN254TableCalculatorHarness is BN254TableCalculator {
  * @notice Base contract for all BN254TableCalculator unit tests
  */
 contract BN254TableCalculatorUnitTests is MockEigenLayerDeployer, IOperatorTableCalculatorTypes {
+    using BN254 for BN254.G1Point;
     using OperatorSetLib for OperatorSet;
 
     // Test contracts

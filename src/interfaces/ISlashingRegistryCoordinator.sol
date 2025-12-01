@@ -407,13 +407,16 @@ interface ISlashingRegistryCoordinator is
      * @param strategyParams A list of strategies and multipliers used by the StakeRegistry to calculate
      * an operator's stake weight for the quorum.
      * @param lookAheadPeriod The number of blocks to look ahead when calculating slashable stake.
+     * @param slasher The address of the slasher to use for the operatorSet (quorum) in EigenLayer core
      * @dev Can only be called when operator sets are enabled.
+     * @dev The lookahead period is set to 0 and slasher is set to DELEGATED_STAKE_SLASHER for total delegated stake quorums
      */
     function createSlashableStakeQuorum(
         OperatorSetParam memory operatorSetParams,
         uint96 minimumStake,
         IStakeRegistryTypes.StrategyParams[] memory strategyParams,
-        uint32 lookAheadPeriod
+        uint32 lookAheadPeriod,
+        address slasher
     ) external;
 
     /**
