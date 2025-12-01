@@ -105,6 +105,7 @@ contract End2EndForkTest is Test {
     }
 
     function testEndToEndSetup_M2Migration() public {
+        vm.skip(true); // TODO: change fork to using Hoodi once DA migrates
         (
             OperatorLib.Operator[] memory operators,
             DeploymentData memory coreDeployment,
@@ -204,7 +205,7 @@ contract End2EndForkTest is Test {
             address(middlewareDeployment.serviceManager),
             address(middlewareDeployment.registryCoordinator),
             coreDeployment.allocationManager,
-            AllocationManager.createOperatorSets.selector
+            bytes4(keccak256("createOperatorSets(address,(uint32,address[],address)[])"))
         );
         vm.stopPrank();
     }
@@ -365,7 +366,7 @@ contract End2EndForkTest is Test {
         });
 
         RegistryCoordinator(middlewareDeployment.registryCoordinator).createSlashableStakeQuorum(
-            operatorSetParams, 100, strategyParams, 10
+            operatorSetParams, 100, strategyParams, 10, address(middlewareDeployment.serviceManager)
         );
         vm.stopPrank();
 

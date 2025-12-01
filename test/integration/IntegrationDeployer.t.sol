@@ -18,6 +18,7 @@ import "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
 import "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
+import "eigenlayer-contracts/src/contracts/core/AllocationManagerView.sol";
 import "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 import "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPodManager.sol";
@@ -133,6 +134,11 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     /// @notice the commission for all operators across all avss
     uint16 globalCommissionBips = 1000;
 
+    /// @notice The deallocation delay for the AllocationManager
+    uint32 DEALLOCATION_DELAY = 7 days;
+    /// @notice The allocation configuration delay for the AllocationManager
+    uint32 ALLOCATION_CONFIGURATION_DELAY = 1 days;
+
     function setUp() public virtual {
         // Deploy ProxyAdmin
         proxyAdmin = new ProxyAdmin();
@@ -190,11 +196,11 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
 
         // Deploy EigenPod Contracts
-        pod = new EigenPod(ethPOSDeposit, eigenPodManager, "v0.0.1");
+        pod = new EigenPod(ethPOSDeposit, eigenPodManager);
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
-        PermissionController permissionControllerImplementation = new PermissionController("v0.0.1");
+        PermissionController permissionControllerImplementation = new PermissionController();
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         DelegationManager delegationImplementation = new DelegationManager(
@@ -208,9 +214,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
         StrategyManager strategyManagerImplementation =
             new StrategyManager(allocationManager, delegationManager, pauserRegistry, "v0.0.1");
-        EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
-            ethPOSDeposit, eigenPodBeacon, delegationManager, pauserRegistry, "v0.0.1"
-        );
+        EigenPodManager eigenPodManagerImplementation =
+            new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegationManager, pauserRegistry);
         AVSDirectory avsDirectoryImplementation =
             new AVSDirectory(delegationManager, pauserRegistry, "v0.0.1");
 
@@ -225,23 +230,28 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 MAX_REWARDS_DURATION: MAX_REWARDS_DURATION,
                 MAX_RETROACTIVE_LENGTH: MAX_RETROACTIVE_LENGTH,
                 MAX_FUTURE_LENGTH: MAX_FUTURE_LENGTH,
-                GENESIS_REWARDS_TIMESTAMP: GENESIS_REWARDS_TIMESTAMP,
-                version: "v0.0.1"
+                GENESIS_REWARDS_TIMESTAMP: GENESIS_REWARDS_TIMESTAMP
             })
         );
 
-        IStrategy eigenStrategy =
-            IStrategy(new EigenStrategy(strategyManager, pauserRegistry, "v0.0.1"));
+        IStrategy eigenStrategy = IStrategy(new EigenStrategy(strategyManager, pauserRegistry));
 
-        AllocationManager allocationManagerImplementation = new AllocationManager(
-            delegationManager,
-            eigenStrategy,
-            pauserRegistry,
-            permissionController,
-            uint32(7 days), // DEALLOCATION_DELAY
-            uint32(1 days), // ALLOCATION_CONFIGURATION_DELAY
-            "v0.0.1" // Added config parameter
-        );
+        AllocationManagerView allocationManagerView = new AllocationManagerView({
+            _delegation: delegationManager,
+            _eigenStrategy: eigenStrategy,
+            _DEALLOCATION_DELAY: DEALLOCATION_DELAY,
+            _ALLOCATION_CONFIGURATION_DELAY: ALLOCATION_CONFIGURATION_DELAY
+        });
+
+        AllocationManager allocationManagerImplementation = new AllocationManager({
+            _allocationManagerView: allocationManagerView,
+            _delegation: delegationManager,
+            _eigenStrategy: eigenStrategy,
+            _pauserRegistry: pauserRegistry,
+            _permissionController: permissionController,
+            _DEALLOCATION_DELAY: DEALLOCATION_DELAY,
+            _ALLOCATION_CONFIGURATION_DELAY: ALLOCATION_CONFIGURATION_DELAY
+        });
 
         // Third, upgrade the proxy contracts to point to the implementations
         uint256 minWithdrawalDelayBlocks = 7 days / 12 seconds;
@@ -316,7 +326,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
 
         // Deploy and whitelist strategies
-        baseStrategyImplementation = new StrategyBase(strategyManager, pauserRegistry, "v0.0.1");
+        baseStrategyImplementation = new StrategyBase(strategyManager, pauserRegistry);
         for (uint256 i = 0; i < MAX_STRATEGY_COUNT; i++) {
             string memory number = uint256(i).toString();
             string memory stratName = string.concat("StrategyToken", number);
@@ -486,38 +496,38 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         serviceManager.setAppointee({
             appointee: serviceManager.owner(),
             target: address(allocationManager),
-            selector: IAllocationManager.setAVSRegistrar.selector
+            selector: AllocationManager.setAVSRegistrar.selector
         });
 
         // 2. set AVS metadata
         serviceManager.setAppointee({
             appointee: serviceManager.owner(),
             target: address(allocationManager),
-            selector: IAllocationManager.updateAVSMetadataURI.selector
+            selector: AllocationManager.updateAVSMetadataURI.selector
         });
         // 3. create operator sets
         serviceManager.setAppointee({
             appointee: address(registryCoordinator),
             target: address(allocationManager),
-            selector: IAllocationManager.createOperatorSets.selector
+            selector: bytes4(keccak256("createOperatorSets(address,(uint32,address[],address)[])"))
         });
         // 4. deregister operator from operator sets
         serviceManager.setAppointee({
             appointee: address(registryCoordinator),
             target: address(allocationManager),
-            selector: IAllocationManager.deregisterFromOperatorSets.selector
+            selector: AllocationManager.deregisterFromOperatorSets.selector
         });
         // 5. add strategies to operator sets
         serviceManager.setAppointee({
             appointee: address(registryCoordinator),
             target: address(stakeRegistry),
-            selector: IAllocationManager.addStrategiesToOperatorSet.selector
+            selector: AllocationManager.addStrategiesToOperatorSet.selector
         });
         // 6. remove strategies from operator sets
         serviceManager.setAppointee({
             appointee: address(registryCoordinator),
             target: address(stakeRegistry),
-            selector: IAllocationManager.removeStrategiesFromOperatorSet.selector
+            selector: AllocationManager.removeStrategiesFromOperatorSet.selector
         });
         cheats.stopPrank();
         _setOperatorSetsEnabled(false);
@@ -530,31 +540,31 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             account: avsAccountIdentifier,
             appointee: address(avsAccountIdentifier),
             target: address(allocationManager),
-            selector: IAllocationManager.setAVSRegistrar.selector
+            selector: AllocationManager.setAVSRegistrar.selector
         });
         permissionController.setAppointee({
             account: avsAccountIdentifier,
             appointee: address(slashingRegistryCoordinator),
             target: address(allocationManager),
-            selector: IAllocationManager.createOperatorSets.selector
+            selector: bytes4(keccak256("createOperatorSets(address,(uint32,address[],address)[])"))
         });
         permissionController.setAppointee({
             account: avsAccountIdentifier,
             appointee: address(slashingRegistryCoordinator),
             target: address(allocationManager),
-            selector: IAllocationManager.deregisterFromOperatorSets.selector
+            selector: AllocationManager.deregisterFromOperatorSets.selector
         });
         permissionController.setAppointee({
             account: avsAccountIdentifier,
             appointee: address(stakeRegistry),
             target: address(allocationManager),
-            selector: IAllocationManager.addStrategiesToOperatorSet.selector
+            selector: AllocationManager.addStrategiesToOperatorSet.selector
         });
         permissionController.setAppointee({
             account: avsAccountIdentifier,
             appointee: address(stakeRegistry),
             target: address(allocationManager),
-            selector: IAllocationManager.removeStrategiesFromOperatorSet.selector
+            selector: AllocationManager.removeStrategiesFromOperatorSet.selector
         });
         // set AVS Registrar to slashingRegistryCoordinator
         allocationManager.setAVSRegistrar(

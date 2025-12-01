@@ -33,7 +33,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: stable
+          version: v1.3.5
 
       # Run Forge's formatting checker to ensure consistent code style.
       - name: Forge Fmt
@@ -73,7 +73,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: stable
+          version: v1.3.5
 
       # Install LCOV for coverage report generation.
       - name: Install LCOV

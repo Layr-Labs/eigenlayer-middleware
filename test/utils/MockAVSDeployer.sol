@@ -55,6 +55,8 @@ import {PermissionController} from
 import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {AllocationManagerView} from
+    "eigenlayer-contracts/src/contracts/core/AllocationManagerView.sol";
 
 import {BLSApkRegistryHarness} from "../harnesses/BLSApkRegistryHarness.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
@@ -96,6 +98,7 @@ contract MockAVSDeployer is Test {
     AVSDirectory public avsDirectoryImplementation;
     AVSDirectoryMock public avsDirectoryMock;
     AllocationManagerMock public allocationManagerMock;
+    AllocationManagerView public allocationManagerView;
     AllocationManager public allocationManager;
     AllocationManager public allocationManagerImplementation;
     RewardsCoordinator public rewardsCoordinator;
@@ -151,6 +154,11 @@ contract MockAVSDeployer is Test {
     }
 
     uint256 MAX_QUORUM_BITMAP = type(uint192).max;
+
+    /// @notice The deallocation delay for the AllocationManager
+    uint32 public constant DEALLOCATION_DELAY = 7 days;
+    /// @notice The allocation configuration delay for the AllocationManager
+    uint32 public constant ALLOCATION_CONFIGURATION_DELAY = 1 days;
 
     function _deployMockEigenLayerAndAVS() internal {
         _deployMockEigenLayerAndAVS(numQuorums);
@@ -276,20 +284,25 @@ contract MockAVSDeployer is Test {
         );
 
         IStrategy eigenStrategy = IStrategy(
-            new EigenStrategy(
-                IStrategyManager(address(strategyManagerMock)), pauserRegistry, "v0.0.1"
-            )
+            new EigenStrategy(IStrategyManager(address(strategyManagerMock)), pauserRegistry)
         );
 
-        allocationManagerImplementation = new AllocationManager(
-            delegationMock,
-            eigenStrategy,
-            pauserRegistry,
-            permissionControllerMock,
-            uint32(7 days), // DEALLOCATION_DELAY
-            uint32(1 days), // ALLOCATION_CONFIGURATION_DELAY
-            "v0.0.1" // Added config parameter
-        );
+        allocationManagerView = new AllocationManagerView({
+            _delegation: delegationMock,
+            _eigenStrategy: eigenStrategy,
+            _DEALLOCATION_DELAY: DEALLOCATION_DELAY,
+            _ALLOCATION_CONFIGURATION_DELAY: ALLOCATION_CONFIGURATION_DELAY
+        });
+
+        allocationManagerImplementation = new AllocationManager({
+            _allocationManagerView: allocationManagerView,
+            _delegation: delegationMock,
+            _eigenStrategy: eigenStrategy,
+            _pauserRegistry: pauserRegistry,
+            _permissionController: permissionControllerMock,
+            _DEALLOCATION_DELAY: DEALLOCATION_DELAY,
+            _ALLOCATION_CONFIGURATION_DELAY: ALLOCATION_CONFIGURATION_DELAY
+        });
         proxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(allocationManager))),
             address(allocationManagerImplementation)

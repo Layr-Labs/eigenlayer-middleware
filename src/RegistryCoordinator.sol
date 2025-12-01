@@ -289,13 +289,7 @@ contract RegistryCoordinator is SlashingRegistryCoordinator, RegistryCoordinator
      * @notice Returns the version of the contract
      * @return The version string
      */
-    function version()
-        public
-        view
-        virtual
-        override(ISemVerMixin, SemVerMixin)
-        returns (string memory)
-    {
+    function version() public view virtual override(SemVerMixin) returns (string memory) {
         return "v0.0.1";
     }
 }
