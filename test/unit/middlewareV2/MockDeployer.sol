@@ -60,7 +60,7 @@ abstract contract MockEigenLayerDeployer is Test {
         keyRegistrarMock = new KeyRegistrarMock();
 
         // Deploy the actual PermissionController & KeyRegistrar implementations
-        permissionControllerImplementation = new PermissionController("9.9.9");
+        permissionControllerImplementation = new PermissionController();
         permissionController = PermissionController(
             address(
                 new TransparentUpgradeableProxy(

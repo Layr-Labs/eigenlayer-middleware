@@ -32,6 +32,29 @@ contract KeyRegistrarMock is IKeyRegistrar {
 
     function configureOperatorSet(OperatorSet memory operatorSet, CurveType curveType) external {}
 
+    function configureOperatorSetWithMinDelay(
+        OperatorSet memory operatorSet,
+        CurveType curveType,
+        uint64 minDelaySeconds
+    ) external {}
+
+    function finalizeScheduledRotation(
+        address operator,
+        OperatorSet memory operatorSet
+    ) external returns (bool) {}
+
+    function rotateKey(
+        address operator,
+        OperatorSet memory operatorSet,
+        bytes calldata pubkey,
+        bytes calldata signature
+    ) external {}
+
+    function setMinKeyRotationDelay(
+        OperatorSet memory operatorSet,
+        uint64 minDelaySeconds
+    ) external {}
+
     function registerKey(
         address operator,
         OperatorSet memory operatorSet,

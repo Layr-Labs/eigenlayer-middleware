@@ -6,6 +6,8 @@ import {stdJson} from "forge-std/StdJson.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from
     "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {AllocationManagerView} from
+    "eigenlayer-contracts/src/contracts/core/AllocationManagerView.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {DelegationManager} from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import {StrategyManager} from "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
@@ -27,6 +29,8 @@ import {
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
+import {IAllocationManagerView} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IEigenPodManager} from "eigenlayer-contracts/src/contracts/interfaces/IEigenPodManager.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
@@ -165,7 +169,7 @@ library CoreDeployLib {
         DeploymentConfigData memory config
     ) internal {
         // Deploy core implementations
-        address permissionControllerImpl = address(new PermissionController("1.0.0"));
+        address permissionControllerImpl = address(new PermissionController());
 
         address strategyManagerImpl = address(
             new StrategyManager(
@@ -176,15 +180,24 @@ library CoreDeployLib {
             )
         );
 
+        address allocationManagerView = address(
+            new AllocationManagerView(
+                IDelegationManager(deployments.delegationManager),
+                IStrategy(deployments.eigenStrategy),
+                config.allocationManager.deallocationDelay,
+                config.allocationManager.allocationConfigurationDelay
+            )
+        );
+
         address allocationManagerImpl = address(
             new AllocationManager(
+                IAllocationManagerView(allocationManagerView),
                 IDelegationManager(deployments.delegationManager),
                 IStrategy(deployments.eigenStrategy),
                 IPauserRegistry(deployments.pauserRegistry),
                 IPermissionController(deployments.permissionController),
                 config.allocationManager.deallocationDelay,
-                config.allocationManager.allocationConfigurationDelay,
-                "1.0.0"
+                config.allocationManager.allocationConfigurationDelay
             )
         );
 
@@ -259,9 +272,7 @@ library CoreDeployLib {
 
         address eigenPodImpl = address(
             new EigenPod(
-                IETHPOSDeposit(ethPOSDeposit),
-                IEigenPodManager(deployments.eigenPodManager),
-                "1.0.0"
+                IETHPOSDeposit(ethPOSDeposit), IEigenPodManager(deployments.eigenPodManager)
             )
         );
 
@@ -273,8 +284,7 @@ library CoreDeployLib {
                 IETHPOSDeposit(ethPOSDeposit),
                 IBeacon(deployments.eigenPodBeacon),
                 IDelegationManager(deployments.delegationManager),
-                IPauserRegistry(deployments.pauserRegistry),
-                "1.0.0"
+                IPauserRegistry(deployments.pauserRegistry)
             )
         );
 
@@ -294,8 +304,7 @@ library CoreDeployLib {
         address baseStrategyImpl = address(
             new StrategyBase(
                 IStrategyManager(deployments.strategyManager),
-                IPauserRegistry(deployments.pauserRegistry),
-                "1.0.0"
+                IPauserRegistry(deployments.pauserRegistry)
             )
         );
 
@@ -304,8 +313,7 @@ library CoreDeployLib {
         address strategyFactoryImpl = address(
             new StrategyFactory(
                 IStrategyManager(deployments.strategyManager),
-                IPauserRegistry(deployments.pauserRegistry),
-                "1.0.0"
+                IPauserRegistry(deployments.pauserRegistry)
             )
         );
 
@@ -338,8 +346,7 @@ library CoreDeployLib {
                     MAX_REWARDS_DURATION: config.rewardsCoordinator.maxRewardsDuration,
                     MAX_RETROACTIVE_LENGTH: config.rewardsCoordinator.maxRetroactiveLength,
                     MAX_FUTURE_LENGTH: config.rewardsCoordinator.maxFutureLength,
-                    GENESIS_REWARDS_TIMESTAMP: config.rewardsCoordinator.genesisRewardsTimestamp,
-                    version: "1.0.0"
+                    GENESIS_REWARDS_TIMESTAMP: config.rewardsCoordinator.genesisRewardsTimestamp
                 })
             )
         );

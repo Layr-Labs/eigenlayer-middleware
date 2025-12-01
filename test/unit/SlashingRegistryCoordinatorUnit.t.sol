@@ -6,7 +6,8 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {InstantSlasher} from "../../src/slashers/InstantSlasher.sol";
 import {
     IAllocationManager,
-    IAllocationManagerTypes
+    IAllocationManagerTypes,
+    IAllocationManagerActions
 } from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {OperatorSetLib} from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 
@@ -278,7 +279,7 @@ contract SlashingRegistryCoordinatorUnitTestSetup is
             address(serviceManager),
             address(slashingRegistryCoordinator),
             coreDeployment.allocationManager,
-            AllocationManager.createOperatorSets.selector
+            bytes4(keccak256("createOperatorSets(address,(uint32,address[],address)[])"))
         );
 
         PermissionController(coreDeployment.permissionController).setAppointee(
@@ -669,7 +670,7 @@ contract SlashingRegistryCoordinator_CreateSlashableStakeQuorum is
 
         vm.prank(proxyAdminOwner);
         slashingRegistryCoordinator.createSlashableStakeQuorum(
-            operatorSetParams, minimumStake, getStrategyParams(), lookAheadPeriod
+            operatorSetParams, minimumStake, getStrategyParams(), lookAheadPeriod, proxyAdminOwner
         );
 
         assertEq(slashingRegistryCoordinator.quorumCount(), initialQuorumCount + 1);
@@ -691,7 +692,7 @@ contract SlashingRegistryCoordinator_CreateSlashableStakeQuorum is
 
         vm.prank(proxyAdminOwner);
         slashingRegistryCoordinator.createSlashableStakeQuorum(
-            operatorSetParams, minimumStake, strategyParams, lookAheadPeriod
+            operatorSetParams, minimumStake, strategyParams, lookAheadPeriod, proxyAdminOwner
         );
 
         assertEq(slashingRegistryCoordinator.quorumCount(), quorumNumber + 1);
@@ -707,7 +708,7 @@ contract SlashingRegistryCoordinator_CreateSlashableStakeQuorum is
 
         vm.prank(address(0xdead));
         slashingRegistryCoordinator.createSlashableStakeQuorum(
-            operatorSetParams, minimumStake, getStrategyParams(), lookAheadPeriod
+            operatorSetParams, minimumStake, getStrategyParams(), lookAheadPeriod, proxyAdminOwner
         );
     }
 
@@ -718,13 +719,17 @@ contract SlashingRegistryCoordinator_CreateSlashableStakeQuorum is
         // So we need to create 191 more
         for (uint8 i = 0; i < 191; i++) {
             slashingRegistryCoordinator.createSlashableStakeQuorum(
-                operatorSetParams, minimumStake, getStrategyParams(), lookAheadPeriod
+                operatorSetParams,
+                minimumStake,
+                getStrategyParams(),
+                lookAheadPeriod,
+                proxyAdminOwner
             );
         }
 
         vm.expectRevert(MaxQuorumsReached.selector);
         slashingRegistryCoordinator.createSlashableStakeQuorum(
-            operatorSetParams, minimumStake, getStrategyParams(), lookAheadPeriod
+            operatorSetParams, minimumStake, getStrategyParams(), lookAheadPeriod, proxyAdminOwner
         );
 
         vm.stopPrank();
@@ -739,7 +744,11 @@ contract SlashingRegistryCoordinator_CreateSlashableStakeQuorum is
         vm.prank(proxyAdminOwner);
         vm.expectRevert(LookAheadPeriodTooLong.selector);
         slashingRegistryCoordinator.createSlashableStakeQuorum(
-            operatorSetParams, minimumStake, getStrategyParams(), tooLongLookAheadPeriod
+            operatorSetParams,
+            minimumStake,
+            getStrategyParams(),
+            tooLongLookAheadPeriod,
+            proxyAdminOwner
         );
     }
 }
@@ -1345,7 +1354,7 @@ contract SlashingRegistryCoordinator_EjectOperator is SlashingRegistryCoordinato
             address(serviceManager),
             address(slashingRegistryCoordinator),
             address(coreDeployment.allocationManager),
-            IAllocationManager.deregisterFromOperatorSets.selector
+            AllocationManager.deregisterFromOperatorSets.selector
         );
 
         registerOperatorInSlashingRegistryCoordinator(testOperator, "socket:8545", operatorSetIds);
@@ -1586,7 +1595,7 @@ contract SlashingRegistryCoordinator_RegisterWithChurn is
             address(serviceManager),
             address(slashingRegistryCoordinator),
             address(coreDeployment.allocationManager),
-            IAllocationManager.deregisterFromOperatorSets.selector
+            AllocationManager.deregisterFromOperatorSets.selector
         );
     }
 
@@ -2058,7 +2067,7 @@ contract SlashingRegistryCoordinator_UpdateOperators is SlashingRegistryCoordina
             address(serviceManager),
             address(slashingRegistryCoordinator),
             address(coreDeployment.allocationManager),
-            IAllocationManager.deregisterFromOperatorSets.selector
+            AllocationManager.deregisterFromOperatorSets.selector
         );
     }
 
@@ -2269,7 +2278,7 @@ contract SlashingRegistryCoordinator_UpdateOperatorsForQuorum is
             address(serviceManager),
             address(slashingRegistryCoordinator),
             address(coreDeployment.allocationManager),
-            IAllocationManager.deregisterFromOperatorSets.selector
+            AllocationManager.deregisterFromOperatorSets.selector
         );
     }
 

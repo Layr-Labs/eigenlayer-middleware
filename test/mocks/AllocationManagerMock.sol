@@ -9,6 +9,8 @@ import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSR
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
+import {IDelegationManager} from
+    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
 contract AllocationManagerIntermediate is IAllocationManager {
     mapping(address avs => address avsRegistrar) internal _avsRegistrar;
@@ -58,9 +60,20 @@ contract AllocationManagerIntermediate is IAllocationManager {
 
     function createOperatorSets(address avs, CreateSetParams[] calldata params) external virtual {}
 
+    function createOperatorSets(
+        address avs,
+        CreateSetParamsV2[] calldata params
+    ) external virtual {}
+
     function createRedistributingOperatorSets(
         address avs,
         CreateSetParams[] calldata params,
+        address[] calldata redistributionRecipients
+    ) external virtual {}
+
+    function createRedistributingOperatorSets(
+        address avs,
+        CreateSetParamsV2[] calldata params,
         address[] calldata redistributionRecipients
     ) external virtual {}
 
@@ -218,6 +231,45 @@ contract AllocationManagerIntermediate is IAllocationManager {
     function isRedistributingOperatorSet(
         OperatorSet memory operatorSet
     ) external pure virtual returns (bool) {}
+
+    function ALLOCATION_CONFIGURATION_DELAY() external pure virtual returns (uint32) {}
+
+    function delegation() external pure virtual returns (IDelegationManager) {}
+
+    function eigenStrategy() external pure virtual returns (IStrategy) {}
+
+    function getPendingSlasher(
+        OperatorSet memory operatorSet
+    ) external view virtual returns (address pendingSlasher, uint32 effectBlock) {}
+
+    function migrateSlashers(
+        OperatorSet[] memory operatorSets
+    ) external virtual {}
+
+    function updateSlasher(OperatorSet memory operatorSet, address slasher) external virtual {}
+
+    function getSlasher(
+        OperatorSet memory operatorSet
+    ) external view virtual returns (address slasher) {}
+
+    // Pause functions
+    function pause(
+        uint256 newPausedStatus
+    ) external virtual {}
+
+    function unpause(
+        uint256 newPausedStatus
+    ) external virtual {}
+
+    function paused() external view virtual returns (uint256) {}
+
+    function paused(
+        uint8 index
+    ) external view virtual returns (bool) {}
+
+    function pauseAll() external virtual {}
+
+    function pauserRegistry() external view virtual returns (IPauserRegistry) {}
 }
 
 contract AllocationManagerMock is AllocationManagerIntermediate {

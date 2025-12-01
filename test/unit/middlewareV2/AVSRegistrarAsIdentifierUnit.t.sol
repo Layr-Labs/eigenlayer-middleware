@@ -13,6 +13,7 @@ import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {TransparentUpgradeableProxy} from
     "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 
 contract AVSRegistrarAsIdentifierUnitTests is AVSRegistrarBase {
     AVSRegistrarAsIdentifier public avsRegistrarAsIdentifier;
@@ -86,7 +87,7 @@ contract AVSRegistrarAsIdentifierUnitTests_initialize is AVSRegistrarAsIdentifie
         vm.mockCall(
             address(allocationManagerMock),
             abi.encodeWithSelector(
-                IAllocationManager.updateAVSMetadataURI.selector,
+                AllocationManager.updateAVSMetadataURI.selector,
                 address(avsRegistrarAsIdentifier),
                 METADATA_URI
             ),
@@ -95,7 +96,7 @@ contract AVSRegistrarAsIdentifierUnitTests_initialize is AVSRegistrarAsIdentifie
         vm.mockCall(
             address(allocationManagerMock),
             abi.encodeWithSelector(
-                IAllocationManager.setAVSRegistrar.selector,
+                AllocationManager.setAVSRegistrar.selector,
                 address(avsRegistrarAsIdentifier),
                 avsRegistrarAsIdentifier
             ),
@@ -117,7 +118,7 @@ contract AVSRegistrarAsIdentifierUnitTests_initialize is AVSRegistrarAsIdentifie
         vm.expectCall(
             address(allocationManagerMock),
             abi.encodeWithSelector(
-                IAllocationManager.updateAVSMetadataURI.selector,
+                AllocationManager.updateAVSMetadataURI.selector,
                 address(avsRegistrarAsIdentifier),
                 METADATA_URI
             )
@@ -125,7 +126,7 @@ contract AVSRegistrarAsIdentifierUnitTests_initialize is AVSRegistrarAsIdentifie
         vm.expectCall(
             address(allocationManagerMock),
             abi.encodeWithSelector(
-                IAllocationManager.setAVSRegistrar.selector,
+                AllocationManager.setAVSRegistrar.selector,
                 address(avsRegistrarAsIdentifier),
                 avsRegistrarAsIdentifier
             )
@@ -147,12 +148,12 @@ contract AVSRegistrarAsIdentifierUnitTests_initialize is AVSRegistrarAsIdentifie
         // Initialize first
         vm.mockCall(
             address(allocationManagerMock),
-            abi.encodeWithSelector(IAllocationManager.updateAVSMetadataURI.selector),
+            abi.encodeWithSelector(AllocationManager.updateAVSMetadataURI.selector),
             ""
         );
         vm.mockCall(
             address(allocationManagerMock),
-            abi.encodeWithSelector(IAllocationManager.setAVSRegistrar.selector),
+            abi.encodeWithSelector(AllocationManager.setAVSRegistrar.selector),
             ""
         );
         vm.mockCall(

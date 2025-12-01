@@ -19,8 +19,6 @@ import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
 import {ISlashingRegistryCoordinator} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 import {ISocketRegistry} from "../../src/interfaces/ISocketRegistry.sol";
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IDelegationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
@@ -35,6 +33,7 @@ import {
     OperatorSet,
     IAllocationManagerTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {
     ISignatureUtilsMixin,
@@ -220,6 +219,7 @@ contract EigenDATest is Test {
     IStrategyManager public strategyManager;
 
     function setUp() public virtual {
+        vm.skip(true); // TODO: change fork to using Hoodi once DA migrates
         // Setup the Holesky fork and load EigenDA deployment data
         eigenDAData = _setupEigenDAFork("test/utils");
 
@@ -687,7 +687,7 @@ contract EigenDATest is Test {
 
         vm.startPrank(serviceManagerOwner);
         registryCoordinator.createSlashableStakeQuorum(
-            operatorSetParam, minimumStake, strategyParams, lookAheadPeriod
+            operatorSetParam, minimumStake, strategyParams, lookAheadPeriod, serviceManagerOwner
         );
         vm.stopPrank();
     }
@@ -787,16 +787,16 @@ contract EigenDATest is Test {
         serviceManager.setAppointee(
             address(registryCoordinator),
             allocationManagerAddr,
-            IAllocationManager.createOperatorSets.selector
+            bytes4(keccak256("createOperatorSets(address,(uint32,address[],address)[])"))
         );
         serviceManager.setAppointee(
             serviceManagerOwner,
             allocationManagerAddr,
-            IAllocationManager.updateAVSMetadataURI.selector
+            AllocationManager.updateAVSMetadataURI.selector
         );
 
         serviceManager.setAppointee(
-            serviceManagerOwner, allocationManagerAddr, IAllocationManager.setAVSRegistrar.selector
+            serviceManagerOwner, allocationManagerAddr, AllocationManager.setAVSRegistrar.selector
         );
 
         console.log("Appointees set for required permissions");
