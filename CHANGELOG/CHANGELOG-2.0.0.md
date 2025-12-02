@@ -10,8 +10,7 @@ This release brings 2 UX improvements to the middleware repo. We increment the m
 - Update `createSlashableStakeQuorum` to take in a slasher address
 
 🔧 Improvements
-- Move to foundry v1.5.0 and update formatting
-- Upgrade solc to 0.8.29
+- Update `foundry.toml` solc to 0.8.29
 
 ## Changelog
 
