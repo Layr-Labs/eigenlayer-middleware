@@ -1,6 +1,6 @@
 {
   "lib/eigenlayer-contracts": {
-    "rev": "b9c1a6118534d19dafec502849e557ea68dff494"
+    "rev": "1564be7b5ac19af78ef58cd3b153bd88ef9fcad4"
   },
   "lib/forge-std": {
     "rev": "77041d2ce690e692d6e03cc812b57d1ddaa4d505"
