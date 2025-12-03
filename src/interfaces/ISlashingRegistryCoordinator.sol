@@ -393,6 +393,7 @@ interface ISlashingRegistryCoordinator is
      * an operator's stake weight for the quorum.
      * @dev For m2 AVS this function has the same behavior as createQuorum before.
      * @dev For migrated AVS that enable operator sets this will create a quorum that measures total delegated stake for operator set.
+     * @dev The slasher is set to DELEGATED_STAKE_SLASHER for total delegated stake quorums. This address cannot slash an operatorSet.
      */
     function createTotalDelegatedStakeQuorum(
         OperatorSetParam memory operatorSetParams,
@@ -409,7 +410,6 @@ interface ISlashingRegistryCoordinator is
      * @param lookAheadPeriod The number of blocks to look ahead when calculating slashable stake.
      * @param slasher The address of the slasher to use for the operatorSet (quorum) in EigenLayer core
      * @dev Can only be called when operator sets are enabled.
-     * @dev The lookahead period is set to 0 and slasher is set to DELEGATED_STAKE_SLASHER for total delegated stake quorums
      */
     function createSlashableStakeQuorum(
         OperatorSetParam memory operatorSetParams,
