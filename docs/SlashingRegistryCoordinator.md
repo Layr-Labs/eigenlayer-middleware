@@ -66,12 +66,21 @@ struct OperatorSetParam {
 #### `createTotalDelegatedStakeQuorum`
 
 ```solidity
+/**
+ * @notice Creates a new quorum that tracks total delegated stake for operators.
+ * @param operatorSetParams Configures the quorum's max operator count and churn parameters.
+ * @param minimumStake Sets the minimum stake required for an operator to register or remain registered.
+ * @param strategyParams A list of strategies and multipliers used by the StakeRegistry to calculate
+ * an operator's stake weight for the quorum.
+ * @dev For m2 AVS this function has the same behavior as createQuorum before.
+ * @dev For migrated AVS that enable operator sets this will create a quorum that measures total delegated stake for operator set.
+ * @dev The slasher is set to DELEGATED_STAKE_SLASHER for total delegated stake quorums. This address cannot slash an operatorSet. 
+ */
 function createTotalDelegatedStakeQuorum(
     OperatorSetParam memory operatorSetParams,
     uint96 minimumStake,
     IStakeRegistryTypes.StrategyParams[] memory strategyParams
-) 
-    external
+) external;
 ```
 
 This function creates a new quorum that tracks the total delegated stake for operators. The quorum is initialized with the provided parameters and integrated with the underlying registry contracts.
@@ -79,7 +88,7 @@ This function creates a new quorum that tracks the total delegated stake for ope
 *Effects:*
 * Increments the `quorumCount` by 1
 * Sets the operator set parameters for the new quorum
-* Creates an operator set in the `AllocationManager`
+* Creates an operator set in the `AllocationManager` with a slasher address that is the the `DELEGATED_STAKE_SLASHER`
 * Initializes the quorum in all registry contracts:
   * `StakeRegistry`: Sets minimum stake and strategy parameters
   * `IndexRegistry`: Prepares the quorum for tracking operator indices
@@ -93,19 +102,31 @@ This function creates a new quorum that tracks the total delegated stake for ope
 #### `createSlashableStakeQuorum`
 
 ```solidity
+/**
+ * @notice Creates a new quorum that tracks slashable stake for operators.
+ * @param operatorSetParams Configures the quorum's max operator count and churn parameters.
+ * @param minimumStake Sets the minimum stake required for an operator to register or remain registered.
+ * @param strategyParams A list of strategies and multipliers used by the StakeRegistry to calculate
+ * an operator's stake weight for the quorum.
+ * @param lookAheadPeriod The number of blocks to look ahead when calculating slashable stake.
+ * @param slasher The address of the slasher to use for the operatorSet (quorum) in EigenLayer core
+ * @dev Can only be called when operator sets are enabled.
+ */
 function createSlashableStakeQuorum(
     OperatorSetParam memory operatorSetParams,
     uint96 minimumStake,
     IStakeRegistryTypes.StrategyParams[] memory strategyParams,
-    uint32 lookAheadPeriod
-) 
-    external
+    uint32 lookAheadPeriod,
+    address slasher
+) external;
 ```
 
 This function creates a new quorum that specifically tracks slashable stake for operators. This type of quorum provides slashing enforcement through the `AllocationManager`.
 
 *Effects:*
-* Same as `createTotalDelegatedStakeQuorum`, but initializes the quorum with slashable stake type
+* Same as `createTotalDelegatedStakeQuorum`, but 
+    - initializes the quorum with slashable stake type
+    - Sets the `slasher` to an address that is controlled by the AVS
 * Additionally configures the `lookAheadPeriod` for slashable stake calculation
 
 *Requirements:*
