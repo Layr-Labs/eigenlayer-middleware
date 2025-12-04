@@ -41,9 +41,9 @@ jobs:
 
       - name: Compare outputs
         run: |
-          if diff --unified pr target; then
+          if diff --unified target pr; then
             echo "No differences found"
           else
-            echo "::error::Differences found between PR and target branch storage layouts"
+            echo "::error::Differences found between target and PR branch storage layouts"
             exit 1
           fi
