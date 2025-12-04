@@ -66,20 +66,31 @@ struct OperatorSetParam {
 #### `createTotalDelegatedStakeQuorum`
 
 ```solidity
+/**
+ * @notice Creates a new quorum that tracks total delegated stake for operators.
+ * @param operatorSetParams Configures the quorum's max operator count and churn parameters.
+ * @param minimumStake Sets the minimum stake required for an operator to register or remain registered.
+ * @param strategyParams A list of strategies and multipliers used by the StakeRegistry to calculate
+ * an operator's stake weight for the quorum.
+ * @dev For m2 AVS this function has the same behavior as createQuorum before.
+ * @dev For migrated AVS that enable operator sets this will create a quorum that measures total delegated stake for operator set.
+ * @dev The slasher is set to DELEGATED_STAKE_SLASHER for total delegated stake quorums. This address cannot slash an operatorSet.
+ */
 function createTotalDelegatedStakeQuorum(
     OperatorSetParam memory operatorSetParams,
     uint96 minimumStake,
     IStakeRegistryTypes.StrategyParams[] memory strategyParams
-) 
-    external
+) external;
 ```
 
 This function creates a new quorum that tracks the total delegated stake for operators. The quorum is initialized with the provided parameters and integrated with the underlying registry contracts.
 
+Note that this function *does not* allow for stake to be slashed. To create a quorum with slashable delegated stake, see [`createSlashableStakeQuorum`](#createslashablestakequorum).
+
 *Effects:*
 * Increments the `quorumCount` by 1
 * Sets the operator set parameters for the new quorum
-* Creates an operator set in the `AllocationManager`
+* Creates an operator set in the `AllocationManager` with a slasher address that is the the `DELEGATED_STAKE_SLASHER`
 * Initializes the quorum in all registry contracts:
   * `StakeRegistry`: Sets minimum stake and strategy parameters
   * `IndexRegistry`: Prepares the quorum for tracking operator indices
@@ -93,19 +104,31 @@ This function creates a new quorum that tracks the total delegated stake for ope
 #### `createSlashableStakeQuorum`
 
 ```solidity
+/**
+ * @notice Creates a new quorum that tracks slashable stake for operators.
+ * @param operatorSetParams Configures the quorum's max operator count and churn parameters.
+ * @param minimumStake Sets the minimum stake required for an operator to register or remain registered.
+ * @param strategyParams A list of strategies and multipliers used by the StakeRegistry to calculate
+ * an operator's stake weight for the quorum.
+ * @param lookAheadPeriod The number of blocks to look ahead when calculating slashable stake.
+ * @param slasher The address of the slasher to use for the operatorSet (quorum) in EigenLayer core
+ * @dev Can only be called when operator sets are enabled.
+ */
 function createSlashableStakeQuorum(
     OperatorSetParam memory operatorSetParams,
     uint96 minimumStake,
     IStakeRegistryTypes.StrategyParams[] memory strategyParams,
-    uint32 lookAheadPeriod
-) 
-    external
+    uint32 lookAheadPeriod,
+    address slasher
+) external;
 ```
 
 This function creates a new quorum that specifically tracks slashable stake for operators. This type of quorum provides slashing enforcement through the `AllocationManager`.
 
 *Effects:*
-* Same as `createTotalDelegatedStakeQuorum`, but initializes the quorum with slashable stake type
+* Same as `createTotalDelegatedStakeQuorum`, but
+    - initializes the quorum with slashable stake type
+    - Sets the `slasher` to an address that is controlled by the AVS
 * Additionally configures the `lookAheadPeriod` for slashable stake calculation
 
 *Requirements:*
@@ -117,7 +140,7 @@ This function creates a new quorum that specifically tracks slashable stake for 
 function setOperatorSetParams(
     uint8 quorumNumber,
     OperatorSetParam memory operatorSetParams
-) 
+)
     external
 ```
 
@@ -151,7 +174,7 @@ function registerOperator(
     address avs,
     uint32[] calldata operatorSetIds,
     bytes calldata data
-) 
+)
     external
     onlyAllocationManager
     onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR)
@@ -184,7 +207,7 @@ function deregisterOperator(
     address operator,
     address avs,
     uint32[] calldata operatorSetIds
-) 
+)
     external
     onlyAllocationManager
     onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR)
@@ -210,7 +233,7 @@ This function is called by the `AllocationManager` when an operator wants to der
 ```solidity
 function updateSocket(
     string memory socket
-) 
+)
     external
 ```
 
@@ -229,7 +252,7 @@ This function allows a registered operator to update their socket information.
 function ejectOperator(
     address operator,
     bytes memory quorumNumbers
-) 
+)
     external
     onlyEjector
 ```
@@ -261,7 +284,7 @@ The `SlashingRegistryCoordinator` manages operator stakes through the `StakeRegi
 function updateOperatorsForQuorum(
     address[][] memory operatorsPerQuorum,
     bytes calldata quorumNumbers
-) 
+)
     external
 ```
 
@@ -308,18 +331,18 @@ The contract implements two helper functions to calculate these thresholds:
 function _individualKickThreshold(
     uint96 operatorStake,
     OperatorSetParam memory setParams
-)   
-    internal 
-    pure 
+)
+    internal
+    pure
 ```
 
 ```solidity
 function _totalKickThreshold(
     uint96 totalStake,
     OperatorSetParam memory setParams
-) 
-    internal 
-    pure 
+)
+    internal
+    pure
 ```
 
 #### Churn Approval
@@ -340,7 +363,7 @@ function calculateOperatorChurnApprovalDigestHash(
     OperatorKickParam[] memory operatorKickParams,
     bytes32 salt,
     uint256 expiry
-) 
+)
     public
 ```
 
@@ -349,7 +372,7 @@ function calculateOperatorChurnApprovalDigestHash(
 ```solidity
 function setChurnApprover(
     address _churnApprover
-) 
+)
     external
 ```
 
@@ -377,11 +400,11 @@ The `SlashingRegistryCoordinator` integrates with `AllocationManager`, and is id
 ```solidity
 function setAVS(
     address _avs
-) 
+)
     external
 ```
 
-This function sets the AVS address for the AVS (this identitiy is used for UAM integration). Note: updating this will break existing operator sets, this value should only be set once. 
+This function sets the AVS address for the AVS (this identitiy is used for UAM integration). Note: updating this will break existing operator sets, this value should only be set once.
 This value should be the address of the `ServiceManager` contract.
 
 *Effects:*
@@ -395,7 +418,7 @@ This value should be the address of the `ServiceManager` contract.
 ```solidity
 function supportsAVS(
     address _avs
-)  
+)
     public
 ```
 
@@ -420,7 +443,7 @@ These functions allow the contract owner to configure various parameters and rol
 ```solidity
 function setEjector(
     address _ejector
-) 
+)
     external
 ```
 
@@ -438,7 +461,7 @@ This function updates the address that is authorized to forcibly eject operators
 ```solidity
 function setEjectionCooldown(
     uint256 _ejectionCooldown
-) 
+)
     external
 ```
 

@@ -50,18 +50,18 @@ contract PermissionControllerIntermediate is IPermissionController {
         address caller,
         address target,
         bytes4 selector
-    ) external virtual returns (bool) {}
+    ) external view virtual returns (bool) {}
 
     function getAppointeePermissions(
         address account,
         address appointee
-    ) external virtual returns (address[] memory, bytes4[] memory) {}
+    ) external view virtual returns (address[] memory, bytes4[] memory) {}
 
     function getAppointees(
         address account,
         address target,
         bytes4 selector
-    ) external virtual returns (address[] memory) {}
+    ) external view virtual returns (address[] memory) {}
 
     /**
      * @notice Returns the version of the contract
@@ -90,7 +90,7 @@ contract PermissionControllerMock is PermissionControllerIntermediate {
         address caller,
         address target,
         bytes4 selector
-    ) external override returns (bool) {
+    ) external view override returns (bool) {
         if (account == caller) return true;
         return _canCall[account][caller][target][selector];
     }

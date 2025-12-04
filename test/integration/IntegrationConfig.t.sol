@@ -204,7 +204,8 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
                     operatorSetParams: operatorSet,
                     minimumStake: minimumStake,
                     strategyParams: strategyParams,
-                    lookAheadPeriod: 0
+                    lookAheadPeriod: 0,
+                    slasher: registryCoordinatorOwner
                 });
             } else if (quorumType == BOTH) {
                 // randomly choose one of the two
@@ -222,7 +223,8 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
                         operatorSetParams: operatorSet,
                         minimumStake: minimumStake,
                         strategyParams: strategyParams,
-                        lookAheadPeriod: 0
+                        lookAheadPeriod: 0,
+                        slasher: registryCoordinatorOwner
                     });
                 }
             }

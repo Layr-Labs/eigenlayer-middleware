@@ -189,12 +189,6 @@ contract InstantSlasherTest is Test {
         vm.stopPrank();
 
         vm.startPrank(serviceManager);
-        PermissionController(coreDeployment.permissionController).setAppointee(
-            address(serviceManager),
-            address(instantSlasher),
-            coreDeployment.allocationManager,
-            AllocationManager.slashOperator.selector
-        );
 
         slashingRegistryCoordinator =
             SlashingRegistryCoordinator(middlewareDeployments.slashingRegistryCoordinator);
@@ -205,14 +199,7 @@ contract InstantSlasherTest is Test {
             address(serviceManager),
             address(slashingRegistryCoordinator),
             coreDeployment.allocationManager,
-            AllocationManager.createOperatorSets.selector
-        );
-
-        PermissionController(coreDeployment.permissionController).setAppointee(
-            address(serviceManager),
-            address(instantSlasher),
-            coreDeployment.allocationManager,
-            AllocationManager.slashOperator.selector
+            bytes4(keccak256("createOperatorSets(address,(uint32,address[],address)[])"))
         );
 
         PermissionController(coreDeployment.permissionController).setAppointee(
@@ -255,7 +242,7 @@ contract InstantSlasherTest is Test {
             serviceManager, "fake-avs-metadata"
         );
         slashingRegistryCoordinator.createSlashableStakeQuorum(
-            operatorSetParams, 1 ether, strategyParams, 0
+            operatorSetParams, 1 ether, strategyParams, 0, address(instantSlasher)
         );
         vm.stopPrank();
 
@@ -276,6 +263,8 @@ contract InstantSlasherTest is Test {
     }
 
     function test_fulfillSlashingRequest() public {
+        // Roll block number so we don't underflow in the DM when calculating `prevQueuedScaledShares`
+        vm.roll(block.number + ALLOCATION_CONFIGURATION_DELAY + 1);
         vm.startPrank(operatorWallet.key.addr);
         IDelegationManager(coreDeployment.delegationManager).registerAsOperator(
             address(0), 1, "metadata"
@@ -297,9 +286,7 @@ contract InstantSlasherTest is Test {
         (bool isSet,) = IAllocationManager(coreDeployment.allocationManager).getAllocationDelay(
             operatorWallet.key.addr
         );
-        assertFalse(isSet, "Operator allocation delay not set");
-
-        vm.roll(block.number + ALLOCATION_CONFIGURATION_DELAY + 1);
+        assertTrue(isSet, "Operator allocation delay set");
 
         IStrategy[] memory allocStrategies = new IStrategy[](1);
         allocStrategies[0] = mockStrategy;
