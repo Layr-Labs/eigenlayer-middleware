@@ -49,7 +49,7 @@ sequenceDiagram
     AVS->>AVSRegistrar: Tx1: Deploy AVSRegistrar
     AVS->>AllocationManager: Tx2: updateMetadataURI()
     AVS->>AllocationManager: Tx3: setAVSRegistrar(AVSRegistrar)
-    AllocationManager-->>: check supportsAVS()
+    AllocationManager-->>AVSRegistrar: check supportsAVS()
     AVS->>KeyRegistrar: Tx4: configureOperatorSet(operatorSet, keyMaterial)
 ```
 
