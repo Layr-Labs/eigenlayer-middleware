@@ -7,8 +7,9 @@ import "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ITransparentUpgradeableProxy} from
-    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    ITransparentUpgradeableProxy
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
@@ -262,7 +263,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             ITransparentUpgradeableProxy(payable(address(delegationManager))),
             address(delegationImplementation),
             abi.encodeWithSelector(
-                DelegationManager.initialize.selector, 0 /* initialPausedStatus */
+                DelegationManager.initialize.selector,
+                0 /* initialPausedStatus */
             )
         );
         // StrategyManager
@@ -427,8 +429,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         );
 
         serviceManager.initialize({
-            initialOwner: registryCoordinatorOwner,
-            rewardsInitiator: address(msg.sender)
+            initialOwner: registryCoordinatorOwner, rewardsInitiator: address(msg.sender)
         });
 
         IStakeRegistryTypes.StakeType[] memory quorumStakeTypes =

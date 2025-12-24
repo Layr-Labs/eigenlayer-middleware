@@ -100,8 +100,9 @@ contract RegistryCoordinatorUnitTests is MockAVSDeployer {
         }
 
         operatorToRegister = _incrementAddress(defaultOperator, defaultMaxOperatorCount);
-        operatorToRegisterPubKey =
-            BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, defaultMaxOperatorCount)));
+        operatorToRegisterPubKey = BN254.hashToG1(
+            keccak256(abi.encodePacked(pseudoRandomNumber, defaultMaxOperatorCount))
+        );
         bytes32 operatorToRegisterId = BN254.hashG1Point(operatorToRegisterPubKey);
         bytes32 operatorToKickId;
         address operatorToKick;
@@ -125,8 +126,7 @@ contract RegistryCoordinatorUnitTests is MockAVSDeployer {
             operatorIdsToSwap[0] = operatorToRegisterId;
 
             operatorKickParams[0] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
-                quorumNumber: uint8(quorumNumbers[0]),
-                operator: operatorToKick
+                quorumNumber: uint8(quorumNumbers[0]), operator: operatorToKick
             });
         }
 
@@ -246,17 +246,16 @@ contract RegistryCoordinatorUnitTests_Initialization_Setters is RegistryCoordina
         _deployMockEigenLayerAndAVS(0);
 
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: defaultMaxOperatorCount,
-            kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
-            kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
-        });
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+                maxOperatorCount: defaultMaxOperatorCount,
+                kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
+                kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
+            });
         uint96 minimumStake = 1;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(1000)),
-            multiplier: 1e16
+            strategy: IStrategy(address(1000)), multiplier: 1e16
         });
 
         uint8 quorumCountBefore = registryCoordinator.quorumCount();
@@ -992,8 +991,8 @@ contract RegistryCoordinatorUnitTests_DeregisterOperator_EjectOperator is
         for (uint256 i = 0; i < numOperators; i++) {
             // limit to maxQuorumsToRegisterFor quorums via mask so we don't run out of gas, make them all register for quorum 0 as well
             quorumBitmaps[i] = uint256(
-                keccak256(abi.encodePacked("quorumBitmap", pseudoRandomNumber, i))
-            ) & (1 << maxQuorumsToRegisterFor - 1) | 1;
+                    keccak256(abi.encodePacked("quorumBitmap", pseudoRandomNumber, i))
+                ) & (1 << maxQuorumsToRegisterFor - 1) | 1;
         }
 
         cheats.roll(registrationBlockNumber);
@@ -1705,8 +1704,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
             operatorIdsToSwap[0] = operatorToRegisterId;
 
             operatorKickParams[0] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
-                quorumNumber: defaultQuorumNumber,
-                operator: operatorToKick
+                quorumNumber: defaultQuorumNumber, operator: operatorToKick
             });
         }
 
@@ -1744,13 +1742,13 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         {
             ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptyAVSRegSig;
             ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory signatureWithExpiry =
-            _signOperatorChurnApproval(
-                operatorToRegister,
-                operatorToRegisterId,
-                operatorKickParams,
-                defaultSalt,
-                block.timestamp + 10
-            );
+                _signOperatorChurnApproval(
+                    operatorToRegister,
+                    operatorToRegisterId,
+                    operatorKickParams,
+                    defaultSalt,
+                    block.timestamp + 10
+                );
             cheats.prank(operatorToRegister);
             uint256 gasBefore = gasleft();
             registryCoordinator.registerOperatorWithChurn(
@@ -1821,13 +1819,13 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
 
         cheats.roll(registrationBlockNumber);
         ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory signatureWithExpiry =
-        _signOperatorChurnApproval(
-            operatorToRegister,
-            operatorToRegisterId,
-            operatorKickParams,
-            defaultSalt,
-            block.timestamp + 10
-        );
+            _signOperatorChurnApproval(
+                operatorToRegister,
+                operatorToRegisterId,
+                operatorKickParams,
+                defaultSalt,
+                block.timestamp + 10
+            );
         cheats.prank(operatorToRegister);
         cheats.expectRevert(bytes4(keccak256("InsufficientStakeForChurn()")));
         registryCoordinator.registerOperatorWithChurn(
@@ -1866,13 +1864,13 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
 
         cheats.roll(registrationBlockNumber);
         ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory signatureWithExpiry =
-        _signOperatorChurnApproval(
-            operatorToRegister,
-            operatorToRegisterId,
-            operatorKickParams,
-            defaultSalt,
-            block.timestamp + 10
-        );
+            _signOperatorChurnApproval(
+                operatorToRegister,
+                operatorToRegisterId,
+                operatorKickParams,
+                defaultSalt,
+                block.timestamp + 10
+            );
         cheats.prank(operatorToRegister);
         cheats.expectRevert(bytes4(keccak256("CannotKickOperatorAboveThreshold()")));
         registryCoordinator.registerOperatorWithChurn(
@@ -1893,8 +1891,7 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
         ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory emptyAVSRegSig;
 
         (
-            address operatorToRegister,
-            ,
+            address operatorToRegister,,
             ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams
         ) = _test_registerOperatorWithChurn_SetUp(pseudoRandomNumber, quorumNumbers, defaultStake);
 
@@ -1938,13 +1935,13 @@ contract RegistryCoordinatorUnitTests_RegisterOperatorWithChurn is RegistryCoord
 
         cheats.roll(registrationBlockNumber);
         ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry =
-        _signOperatorChurnApproval(
-            operatorToRegister,
-            operatorToRegisterId,
-            operatorKickParams,
-            defaultSalt,
-            block.timestamp - 1
-        );
+            _signOperatorChurnApproval(
+                operatorToRegister,
+                operatorToRegisterId,
+                operatorKickParams,
+                defaultSalt,
+                block.timestamp - 1
+            );
         cheats.prank(operatorToRegister);
         cheats.expectRevert(bytes4(keccak256("SignatureExpired()")));
         registryCoordinator.registerOperatorWithChurn(
@@ -2039,9 +2036,8 @@ contract RegistryCoordinatorUnitTests_UpdateOperators is RegistryCoordinatorUnit
         operatorsToUpdate[0] = defaultOperator;
 
         // force a staticcall to the `updateOperators` function -- this should *pass* because the call should be a strict no-op!
-        (bool success,) = address(registryCoordinator).staticcall(
-            abi.encodeWithSignature("updateOperators(address[])", operatorsToUpdate)
-        );
+        (bool success,) = address(registryCoordinator)
+            .staticcall(abi.encodeWithSignature("updateOperators(address[])", operatorsToUpdate));
         require(success, "staticcall failed!");
     }
 
@@ -2362,17 +2358,14 @@ contract RegistryCoordinatorUnitTests_BeforeMigration is RegistryCoordinatorUnit
         _deployMockEigenLayerAndAVS(0);
         // Set up test params
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 10,
-            kickBIPsOfOperatorStake: 0,
-            kickBIPsOfTotalStake: 0
-        });
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+                maxOperatorCount: 10, kickBIPsOfOperatorStake: 0, kickBIPsOfTotalStake: 0
+            });
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(0x1)),
-            multiplier: 1000
+            strategy: IStrategy(address(0x1)), multiplier: 1000
         });
 
         // Get initial quorum count
@@ -2398,17 +2391,14 @@ contract RegistryCoordinatorUnitTests_BeforeMigration is RegistryCoordinatorUnit
     function test_CreateSlashableStakeQuorum_Reverts() public {
         _deployMockEigenLayerAndAVS(0);
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 10,
-            kickBIPsOfOperatorStake: 0,
-            kickBIPsOfTotalStake: 0
-        });
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+                maxOperatorCount: 10, kickBIPsOfOperatorStake: 0, kickBIPsOfTotalStake: 0
+            });
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(0x1)),
-            multiplier: 1000
+            strategy: IStrategy(address(0x1)), multiplier: 1000
         });
         uint32 lookAheadPeriod = 100;
 
@@ -2447,22 +2437,20 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         );
         bytes memory signature = OperatorKeyOperationsLib.sign(operatorToRegister.key, digestHash);
         ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature =
-        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
-            signature: signature,
-            salt: salt,
-            expiry: expiry
-        });
+            ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
+                signature: signature, salt: salt, expiry: expiry
+            });
 
         bytes32 messageHash =
             registryCoordinator.calculatePubkeyRegistrationMessageHash(operatorToRegister.key.addr);
         IBLSApkRegistryTypes.PubkeyRegistrationParams memory operatorRegisterApkParams =
-        IBLSApkRegistryTypes.PubkeyRegistrationParams({
-            pubkeyRegistrationSignature: SigningKeyOperationsLib.sign(
-                operatorToRegister.signingKey, messageHash
-            ),
-            pubkeyG1: operatorToRegister.signingKey.publicKeyG1,
-            pubkeyG2: operatorToRegister.signingKey.publicKeyG2
-        });
+            IBLSApkRegistryTypes.PubkeyRegistrationParams({
+                pubkeyRegistrationSignature: SigningKeyOperationsLib.sign(
+                    operatorToRegister.signingKey, messageHash
+                ),
+                pubkeyG1: operatorToRegister.signingKey.publicKeyG1,
+                pubkeyG2: operatorToRegister.signingKey.publicKeyG2
+            });
 
         string memory socket = "socket";
 
@@ -2512,11 +2500,9 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
 
         // Create quorum params
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 10,
-            kickBIPsOfOperatorStake: 1000,
-            kickBIPsOfTotalStake: 100
-        });
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+                maxOperatorCount: 10, kickBIPsOfOperatorStake: 1000, kickBIPsOfTotalStake: 100
+            });
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
@@ -2541,16 +2527,15 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
 
         // Create quorum params
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 10,
-            kickBIPsOfOperatorStake: 1000,
-            kickBIPsOfTotalStake: 100
-        });
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+                maxOperatorCount: 10, kickBIPsOfOperatorStake: 1000, kickBIPsOfTotalStake: 100
+            });
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] =
-            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(1)), multiplier: 10000
+        });
 
         // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);
@@ -2566,17 +2551,16 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
 
         // Create quorum params
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 10,
-            kickBIPsOfOperatorStake: 1000,
-            kickBIPsOfTotalStake: 100
-        });
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+                maxOperatorCount: 10, kickBIPsOfOperatorStake: 1000, kickBIPsOfTotalStake: 100
+            });
 
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] =
-            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(1)), multiplier: 10000
+        });
 
         // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);
@@ -2611,17 +2595,16 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
 
         // Create quorum params
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 10,
-            kickBIPsOfOperatorStake: 1000,
-            kickBIPsOfTotalStake: 100
-        });
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+                maxOperatorCount: 10, kickBIPsOfOperatorStake: 1000, kickBIPsOfTotalStake: 100
+            });
 
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] =
-            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(1)), multiplier: 10000
+        });
 
         // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);
@@ -2642,8 +2625,7 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         ISlashingRegistryCoordinatorTypes.OperatorKickParam[] memory operatorKickParams =
             new ISlashingRegistryCoordinatorTypes.OperatorKickParam[](1);
         operatorKickParams[0] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
-            operator: address(0x1),
-            quorumNumber: 0
+            operator: address(0x1), quorumNumber: 0
         });
 
         ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature;
@@ -2669,17 +2651,18 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
         _deployMockEigenLayerAndAVS(0);
 
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: defaultMaxOperatorCount,
-            kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
-            kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
-        });
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+                maxOperatorCount: defaultMaxOperatorCount,
+                kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
+                kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
+            });
 
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] =
-            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(1)), multiplier: 10000
+        });
 
         cheats.prank(registryCoordinatorOwner);
         registryCoordinator.createTotalDelegatedStakeQuorum(
@@ -2696,17 +2679,16 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
 
         // Create quorum params
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 10,
-            kickBIPsOfOperatorStake: 1000,
-            kickBIPsOfTotalStake: 100
-        });
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+                maxOperatorCount: 10, kickBIPsOfOperatorStake: 1000, kickBIPsOfTotalStake: 100
+            });
 
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] =
-            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(1)), multiplier: 10000
+        });
 
         // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);
@@ -2742,17 +2724,16 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
 
         // Create quorum params
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 10,
-            kickBIPsOfOperatorStake: 1000,
-            kickBIPsOfTotalStake: 100
-        });
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+                maxOperatorCount: 10, kickBIPsOfOperatorStake: 1000, kickBIPsOfTotalStake: 100
+            });
 
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] =
-            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(1)), multiplier: 10000
+        });
 
         // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);
@@ -2785,17 +2766,16 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
 
         // Create quorum params
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 10,
-            kickBIPsOfOperatorStake: 1000,
-            kickBIPsOfTotalStake: 100
-        });
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+                maxOperatorCount: 10, kickBIPsOfOperatorStake: 1000, kickBIPsOfTotalStake: 100
+            });
 
         uint96 minimumStake = 100;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
-        strategyParams[0] =
-            IStakeRegistryTypes.StrategyParams({strategy: IStrategy(address(1)), multiplier: 10000});
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(1)), multiplier: 10000
+        });
 
         // Create total delegated stake quorum
         cheats.prank(registryCoordinatorOwner);

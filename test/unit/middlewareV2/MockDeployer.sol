@@ -4,10 +4,12 @@ pragma solidity ^0.8.27;
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {KeyRegistrar} from "eigenlayer-contracts/src/contracts/permissions/KeyRegistrar.sol";
-import {PermissionController} from
-    "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    PermissionController
+} from "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
+import {
+    IAllocationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
 import {AllocationManagerMock} from "test/mocks/AllocationManagerMock.sol";
 import "test/mocks/KeyRegistrarMock.sol";

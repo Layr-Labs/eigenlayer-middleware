@@ -11,21 +11,24 @@ import {
     BN254,
     IOperatorTableCalculatorTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
-import {IBN254CertificateVerifierTypes} from
-    "eigenlayer-contracts/src/contracts/interfaces/IBN254CertificateVerifier.sol";
+import {
+    IBN254CertificateVerifierTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/IBN254CertificateVerifier.sol";
 import {IBN254TableCalculator} from "../../../src/interfaces/IBN254TableCalculator.sol";
 import {
     OperatorSet,
     OperatorSetLib
 } from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 import {BLSWallet, OperatorWalletLib} from "test/utils/OperatorWalletLib.sol";
-import {BN254TableCalculatorBase} from
-    "../../../src/middlewareV2/tableCalculator/BN254TableCalculatorBase.sol";
+import {
+    BN254TableCalculatorBase
+} from "../../../src/middlewareV2/tableCalculator/BN254TableCalculatorBase.sol";
 import {MockEigenLayerDeployer} from "./MockDeployer.sol";
 import {Random} from "test/utils/Random.sol";
 import {Merkle} from "eigenlayer-contracts/src/contracts/libraries/Merkle.sol";
-import {LeafCalculatorMixin} from
-    "eigenlayer-contracts/src/contracts/mixins/LeafCalculatorMixin.sol";
+import {
+    LeafCalculatorMixin
+} from "eigenlayer-contracts/src/contracts/mixins/LeafCalculatorMixin.sol";
 
 // Mock implementation for testing abstract contract
 contract BN254TableCalculatorBaseHarness is BN254TableCalculatorBase {
@@ -573,9 +576,7 @@ contract BN254TableCalculatorBaseUnitTests_getOperatorSetWeights is
  * @title BN254TableCalculatorBaseUnitTests_getOperatorWeights
  * @notice Unit tests for BN254TableCalculatorBase.getOperatorWeights
  */
-contract BN254TableCalculatorBaseUnitTests_getOperatorWeights is
-    BN254TableCalculatorBaseUnitTests
-{
+contract BN254TableCalculatorBaseUnitTests_getOperatorWeights is BN254TableCalculatorBaseUnitTests {
     function test_operatorExists() public {
         // Set operators and weights
         address[] memory operators = new address[](3);
@@ -634,7 +635,10 @@ contract BN254TableCalculatorBaseUnitTests_getOperatorWeights is
         assertEq(op1Weights.length, 0, "Should return empty array for empty set");
     }
 
-    function testFuzz_getOperatorWeights(address operator, uint256 weight) public {
+    function testFuzz_getOperatorWeights(
+        address operator,
+        uint256 weight
+    ) public {
         weight = bound(weight, 0, 1e18);
 
         // Set single operator

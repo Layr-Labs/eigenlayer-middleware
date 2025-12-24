@@ -5,8 +5,9 @@ import {IBLSApkRegistry} from "./IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./IStakeRegistry.sol";
 import {IIndexRegistry} from "./IIndexRegistry.sol";
 import {BN254} from "../libraries/BN254.sol";
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IAllocationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IBLSApkRegistry} from "./IBLSApkRegistry.sol";
 import {IStakeRegistry, IStakeRegistryTypes} from "./IStakeRegistry.sol";
 import {IIndexRegistry} from "./IIndexRegistry.sol";
@@ -238,7 +239,6 @@ interface ISlashingRegistryCoordinator is
     ISlashingRegistryCoordinatorEvents
 {
     /// IMMUTABLES & CONSTANTS
-
     /**
      * @notice EIP-712 typehash for operator churn approval signatures.
      * @return The typehash constant.
@@ -383,7 +383,10 @@ interface ISlashingRegistryCoordinator is
      * @dev Can only be called by the ejector address.
      * @dev The operator cannot re-register until ejectionCooldown period has passed.
      */
-    function ejectOperator(address operator, bytes memory quorumNumbers) external;
+    function ejectOperator(
+        address operator,
+        bytes memory quorumNumbers
+    ) external;
 
     /**
      * @notice Creates a new quorum that tracks total delegated stake for operators.

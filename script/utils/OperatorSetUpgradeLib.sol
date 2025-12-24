@@ -2,8 +2,9 @@
 pragma solidity ^0.8.0;
 // Deploy L2AVS proxy
 
-import {ITransparentUpgradeableProxy} from
-    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    ITransparentUpgradeableProxy
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {Vm} from "forge-std/Vm.sol";
@@ -30,12 +31,19 @@ library OperatorSetUpgradeLib {
     bytes32 internal constant ADMIN_SLOT =
         0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
 
-    function upgrade(address proxy, address implementation, bytes memory data) internal {
+    function upgrade(
+        address proxy,
+        address implementation,
+        bytes memory data
+    ) internal {
         ProxyAdmin admin = ProxyAdmin(getAdmin(proxy));
         admin.upgradeAndCall(ITransparentUpgradeableProxy(payable(proxy)), implementation, data);
     }
 
-    function upgrade(address proxy, address implementation) internal {
+    function upgrade(
+        address proxy,
+        address implementation
+    ) internal {
         ProxyAdmin admin = ProxyAdmin(getAdmin(proxy));
         admin.upgrade(ITransparentUpgradeableProxy(payable(proxy)), implementation);
     }

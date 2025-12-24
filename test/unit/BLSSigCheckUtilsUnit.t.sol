@@ -107,7 +107,10 @@ contract BLSSigCheckUtilsUnitTests is Test {
     /**
      * @notice Fuzz test with random points
      */
-    function testFuzz_isOnCurve_randomPoints(uint256 x, uint256 y) public pure {
+    function testFuzz_isOnCurve_randomPoints(
+        uint256 x,
+        uint256 y
+    ) public pure {
         BN254.G1Point memory point = BN254.G1Point(x, y);
 
         // Calculate expected result
@@ -262,9 +265,9 @@ contract BLSSigCheckUtilsUnitTests is Test {
 
         // Another valid point
         testPoints[2].x =
-            9727523064272218541460723335320998459488975639302513747055235660443850046724;
+        9727523064272218541460723335320998459488975639302513747055235660443850046724;
         testPoints[2].y =
-            5031696974169251245229961296941447383441169981934237515842977230762345915487;
+        5031696974169251245229961296941447383441169981934237515842977230762345915487;
         testPoints[2].shouldBeOnCurve = true;
 
         // Invalid point
@@ -299,7 +302,10 @@ contract BLSSigCheckUtilsUnitTests is Test {
         assertFalse(harness.gt(1, 1), "1 > 1 should be false");
     }
 
-    function testFuzz_comparators(uint256 a, uint256 b) public {
+    function testFuzz_comparators(
+        uint256 a,
+        uint256 b
+    ) public {
         bool ltResult = harness.lt(a, b);
         bool gtResult = harness.gt(a, b);
 

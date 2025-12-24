@@ -2,8 +2,9 @@
 pragma solidity ^0.8.12;
 
 import {ISocketRegistryV2} from "../../../interfaces/ISocketRegistryV2.sol";
-import {IPermissionController} from
-    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {
+    IPermissionController
+} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 
 /**
  * @title Storage variables for the `SocketRegistry` contract.
@@ -15,7 +16,6 @@ abstract contract SocketRegistryStorage is ISocketRegistryV2 {
      *                                    STATE
      *
      */
-
     /// @notice A mapping from operator address to socket
     mapping(address operator => string operatorSocket) internal _operatorToSocket;
 

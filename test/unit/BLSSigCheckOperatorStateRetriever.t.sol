@@ -6,8 +6,9 @@ import {IStakeRegistryErrors} from "../../src/interfaces/IStakeRegistry.sol";
 import {ISlashingRegistryCoordinatorTypes} from "../../src/interfaces/IRegistryCoordinator.sol";
 import {IBLSSignatureCheckerTypes} from "../../src/interfaces/IBLSSignatureChecker.sol";
 import {BN256G2} from "../../src/unaudited/BN256G2.sol";
-import {BLSSigCheckOperatorStateRetriever} from
-    "../../src/unaudited/BLSSigCheckOperatorStateRetriever.sol";
+import {
+    BLSSigCheckOperatorStateRetriever
+} from "../../src/unaudited/BLSSigCheckOperatorStateRetriever.sol";
 import {OperatorStateRetrieverUnitTests} from "./OperatorStateRetrieverUnit.t.sol";
 
 contract BLSSigCheckOperatorStateRetrieverUnitTests is
@@ -104,9 +105,13 @@ contract BLSSigCheckOperatorStateRetrieverUnitTests is
 
         // Call the function under test
         IBLSSignatureCheckerTypes.NonSignerStakesAndSignature memory result =
-        sigCheckOperatorStateRetriever.getNonSignerStakesAndSignature(
-            registryCoordinator, quorumNumbers, dummySigma, signingOperators, uint32(block.number)
-        );
+            sigCheckOperatorStateRetriever.getNonSignerStakesAndSignature(
+                registryCoordinator,
+                quorumNumbers,
+                dummySigma,
+                signingOperators,
+                uint32(block.number)
+            );
 
         // Non-signers
         assertEq(result.nonSignerQuorumBitmapIndices.length, 0, "Should have no non-signer");
@@ -194,9 +199,13 @@ contract BLSSigCheckOperatorStateRetrieverUnitTests is
 
         // Call under test
         IBLSSignatureCheckerTypes.NonSignerStakesAndSignature memory result =
-        sigCheckOperatorStateRetriever.getNonSignerStakesAndSignature(
-            registryCoordinator, quorumNumbers, dummySigma, signingOperators, uint32(block.number)
-        );
+            sigCheckOperatorStateRetriever.getNonSignerStakesAndSignature(
+                registryCoordinator,
+                quorumNumbers,
+                dummySigma,
+                signingOperators,
+                uint32(block.number)
+            );
 
         // Validate
         // One non-signer => otherOperator
@@ -303,13 +312,13 @@ contract BLSSigCheckOperatorStateRetrieverUnitTests is
 
         // Call the function under test
         IBLSSignatureCheckerTypes.NonSignerStakesAndSignature memory result =
-        sigCheckOperatorStateRetriever.getNonSignerStakesAndSignature(
-            registryCoordinator,
-            quorumNumbers,
-            dummySigma,
-            signingOperators,
-            registrationBlockNumber
-        );
+            sigCheckOperatorStateRetriever.getNonSignerStakesAndSignature(
+                registryCoordinator,
+                quorumNumbers,
+                dummySigma,
+                signingOperators,
+                registrationBlockNumber
+            );
 
         // Non-signers
         assertEq(result.nonSignerQuorumBitmapIndices.length, 0, "Should have no non-signer");
@@ -559,17 +568,16 @@ contract BLSSigCheckOperatorStateRetrieverUnitTests is
         cheats.roll(initialBlock + 10);
 
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: defaultMaxOperatorCount,
-            kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
-            kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
-        });
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+                maxOperatorCount: defaultMaxOperatorCount,
+                kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
+                kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
+            });
         uint96 minimumStake = 1;
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(address(1000)),
-            multiplier: 1e16
+            strategy: IStrategy(address(1000)), multiplier: 1e16
         });
 
         // Create quorum 8
@@ -652,9 +660,13 @@ contract BLSSigCheckOperatorStateRetrieverUnitTests is
         // Call the function under test
         vm.expectRevert(OperatorStateRetriever.OperatorNotRegistered.selector);
         IBLSSignatureCheckerTypes.NonSignerStakesAndSignature memory result =
-        sigCheckOperatorStateRetriever.getNonSignerStakesAndSignature(
-            registryCoordinator, quorumNumbers, dummySigma, signingOperators, uint32(block.number)
-        );
+            sigCheckOperatorStateRetriever.getNonSignerStakesAndSignature(
+                registryCoordinator,
+                quorumNumbers,
+                dummySigma,
+                signingOperators,
+                uint32(block.number)
+            );
     }
 
     function test_getNonSignerStakesAndSignature_nonSignersAreSorted() public {
@@ -699,9 +711,13 @@ contract BLSSigCheckOperatorStateRetrieverUnitTests is
 
         // Call the function under test
         IBLSSignatureCheckerTypes.NonSignerStakesAndSignature memory result =
-        sigCheckOperatorStateRetriever.getNonSignerStakesAndSignature(
-            registryCoordinator, quorumNumbers, dummySigma, signingOperators, uint32(block.number)
-        );
+            sigCheckOperatorStateRetriever.getNonSignerStakesAndSignature(
+                registryCoordinator,
+                quorumNumbers,
+                dummySigma,
+                signingOperators,
+                uint32(block.number)
+            );
 
         // Verify we have 2 non-signers
         assertEq(result.nonSignerQuorumBitmapIndices.length, 2, "Should have 2 non-signers");
@@ -775,9 +791,13 @@ contract BLSSigCheckOperatorStateRetrieverUnitTests is
 
         // Call the function under test
         IBLSSignatureCheckerTypes.NonSignerStakesAndSignature memory result =
-        sigCheckOperatorStateRetriever.getNonSignerStakesAndSignature(
-            registryCoordinator, quorumNumbers, dummySigma, signingOperators, uint32(block.number)
-        );
+            sigCheckOperatorStateRetriever.getNonSignerStakesAndSignature(
+                registryCoordinator,
+                quorumNumbers,
+                dummySigma,
+                signingOperators,
+                uint32(block.number)
+            );
 
         // Verify we have the correct number of non-signers
         uint256 expectedNonSigners = numOperators - numSigners;

@@ -2,8 +2,9 @@
 pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
-import {TransparentUpgradeableProxy} from
-    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    TransparentUpgradeableProxy
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {Allowlist} from "src/middlewareV2/registrar/modules/Allowlist.sol";
@@ -88,7 +89,10 @@ contract AllowlistUnitTests is Test, IAllowlistErrors, IAllowlistEvents {
         alternativeOperatorSet = OperatorSet({avs: avs2, id: 1});
     }
 
-    function _addOperatorToAllowlist(address operator, OperatorSet memory operatorSet) internal {
+    function _addOperatorToAllowlist(
+        address operator,
+        OperatorSet memory operatorSet
+    ) internal {
         cheats.prank(allowlistOwner);
         allowlist.addOperatorToAllowlist(operatorSet, operator);
     }

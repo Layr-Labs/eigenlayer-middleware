@@ -31,23 +31,23 @@ contract BLSMockAVSDeployer is MockAVSDeployer {
     function _setAggregatePublicKeysAndSignature() internal {
         // aggSignerPrivKey*g2
         aggSignerApkG2.X[1] =
-            19101821850089705274637533855249918363070101489527618151493230256975900223847;
+        19101821850089705274637533855249918363070101489527618151493230256975900223847;
         aggSignerApkG2.X[0] =
-            5334410886741819556325359147377682006012228123419628681352847439302316235957;
+        5334410886741819556325359147377682006012228123419628681352847439302316235957;
         aggSignerApkG2.Y[1] =
-            354176189041917478648604979334478067325821134838555150300539079146482658331;
+        354176189041917478648604979334478067325821134838555150300539079146482658331;
         aggSignerApkG2.Y[0] =
-            4185483097059047421902184823581361466320657066600218863748375739772335928910;
+        4185483097059047421902184823581361466320657066600218863748375739772335928910;
 
         // 100*aggSignerPrivKey*g2
         oneHundredQuorumApkG2.X[1] =
-            6187649255575786743153792867265230878737103598736372524337965086852090105771;
+        6187649255575786743153792867265230878737103598736372524337965086852090105771;
         oneHundredQuorumApkG2.X[0] =
-            5334877400925935887383922877430837542135722474116902175395820705628447222839;
+        5334877400925935887383922877430837542135722474116902175395820705628447222839;
         oneHundredQuorumApkG2.Y[1] =
-            4668116328019846503695710811760363536142902258271850958815598072072236299223;
+        4668116328019846503695710811760363536142902258271850958815598072072236299223;
         oneHundredQuorumApkG2.Y[0] =
-            21446056442597180561077194011672151329458819211586246807143487001691968661015;
+        21446056442597180561077194011672151329458819211586246807143487001691968661015;
 
         sigma = BN254.hashToG1(msgHash).scalar_mul(aggSignerPrivKey);
     }
@@ -101,8 +101,7 @@ contract BLSMockAVSDeployer is MockAVSDeployer {
         uint256 numNonSigners,
         uint256 quorumBitmap
     ) internal returns (uint32, BLSSignatureChecker.NonSignerStakesAndSignature memory) {
-        (uint256[] memory signerPrivateKeys, uint256[] memory nonSignerPrivateKeys) =
-        _generateSignerAndNonSignerPrivateKeys(
+        (uint256[] memory signerPrivateKeys, uint256[] memory nonSignerPrivateKeys) = _generateSignerAndNonSignerPrivateKeys(
             pseudoRandomNumber, maxOperatorsToRegister - numNonSigners, numNonSigners
         );
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
@@ -153,23 +152,23 @@ contract BLSMockAVSDeployer is MockAVSDeployer {
             _registerOperatorWithCoordinator(operators[i], quorumBitmap, pubkeys[i], defaultStake);
         }
 
-        uint32 referenceBlockNumber = registrationBlockNumber
-            + blocksBetweenRegistrations * uint32(maxOperatorsToRegister) + 1;
+        uint32 referenceBlockNumber = registrationBlockNumber + blocksBetweenRegistrations
+            * uint32(maxOperatorsToRegister) + 1;
         cheats.roll(referenceBlockNumber + 100);
 
         OperatorStateRetriever.CheckSignaturesIndices memory checkSignaturesIndices =
-        operatorStateRetriever.getCheckSignaturesIndices(
-            registryCoordinator, referenceBlockNumber, quorumNumbers, nonSignerOperatorIds
-        );
+            operatorStateRetriever.getCheckSignaturesIndices(
+                registryCoordinator, referenceBlockNumber, quorumNumbers, nonSignerOperatorIds
+            );
 
         nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices =
-            checkSignaturesIndices.nonSignerQuorumBitmapIndices;
+        checkSignaturesIndices.nonSignerQuorumBitmapIndices;
         nonSignerStakesAndSignature.apkG2 = aggSignerApkG2;
         nonSignerStakesAndSignature.sigma = sigma;
         nonSignerStakesAndSignature.quorumApkIndices = checkSignaturesIndices.quorumApkIndices;
         nonSignerStakesAndSignature.totalStakeIndices = checkSignaturesIndices.totalStakeIndices;
         nonSignerStakesAndSignature.nonSignerStakeIndices =
-            checkSignaturesIndices.nonSignerStakeIndices;
+        checkSignaturesIndices.nonSignerStakeIndices;
 
         return (referenceBlockNumber, nonSignerStakesAndSignature);
     }

@@ -2,12 +2,15 @@
 pragma solidity ^0.8.27;
 
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import {TransparentUpgradeableProxy} from
-    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ITransparentUpgradeableProxy} from
-    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    TransparentUpgradeableProxy
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    ITransparentUpgradeableProxy
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    IAllocationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 
 import {TaskAVSRegistrarBase} from "../../src/avs/task/TaskAVSRegistrarBase.sol";
@@ -18,12 +21,14 @@ import {ITaskAVSRegistrarBaseEvents} from "../../src/interfaces/ITaskAVSRegistra
 import {MockTaskAVSRegistrar} from "../mocks/MockTaskAVSRegistrar.sol";
 import {MockEigenLayerDeployer} from "./middlewareV2/MockDeployer.sol";
 import {IAllowlist} from "../../src/interfaces/IAllowlist.sol";
-import {OperatorSet} from
-    "../../lib/eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
+import {
+    OperatorSet
+} from "../../lib/eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 import {IAllowlistErrors} from "../../src/interfaces/IAllowlist.sol";
 import {IAllowlistEvents} from "../../src/interfaces/IAllowlist.sol";
-import {IAVSRegistrar} from
-    "../../lib/eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
+import {
+    IAVSRegistrar
+} from "../../lib/eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IAVSRegistrarInternal} from "../../src/interfaces/IAVSRegistrarInternal.sol";
 
 // Base test contract with common setup
@@ -396,7 +401,10 @@ contract TaskAVSRegistrarBaseUnitTests_setAvsConfig is TaskAVSRegistrarBaseUnitT
         registrar.setAvsConfig(config);
     }
 
-    function testFuzz_setAvsConfig(uint32 aggregatorId, uint8 numExecutors) public {
+    function testFuzz_setAvsConfig(
+        uint32 aggregatorId,
+        uint8 numExecutors
+    ) public {
         // Bound inputs
         vm.assume(numExecutors > 0 && numExecutors <= 10);
         vm.assume(aggregatorId > 0);
@@ -726,7 +734,10 @@ contract TaskAVSRegistrarBaseUnitTests_Allowlist is TaskAVSRegistrarBaseUnitTest
     }
 
     // Helper function to add operators to allowlist
-    function _addOperatorToAllowlist(OperatorSet memory operatorSet, address operator) internal {
+    function _addOperatorToAllowlist(
+        OperatorSet memory operatorSet,
+        address operator
+    ) internal {
         vm.prank(owner);
         registrar.addOperatorToAllowlist(operatorSet, operator);
     }

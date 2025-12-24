@@ -4,8 +4,9 @@ pragma solidity ^0.8.27;
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 import {IAVSRegistrarInternal} from "../../interfaces/IAVSRegistrarInternal.sol";
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IAllocationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
 /// @notice A minimal storage contract for the AVSRegistrar
 abstract contract AVSRegistrarStorage is IAVSRegistrar, IAVSRegistrarInternal {
@@ -14,7 +15,6 @@ abstract contract AVSRegistrarStorage is IAVSRegistrar, IAVSRegistrarInternal {
      *                            CONSTANTS AND IMMUTABLES
      *
      */
-
     /// @notice The allocation manager in EigenLayer core
     IAllocationManager public immutable allocationManager;
 
@@ -25,7 +25,10 @@ abstract contract AVSRegistrarStorage is IAVSRegistrar, IAVSRegistrarInternal {
     /// @dev In practice, the AVS address in EigenLayer core is address that initialized the Metadata URI.
     address public avs;
 
-    constructor(IAllocationManager _allocationManager, IKeyRegistrar _keyRegistrar) {
+    constructor(
+        IAllocationManager _allocationManager,
+        IKeyRegistrar _keyRegistrar
+    ) {
         allocationManager = _allocationManager;
         keyRegistrar = _keyRegistrar;
     }

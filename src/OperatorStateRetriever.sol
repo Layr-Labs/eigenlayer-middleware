@@ -118,8 +118,10 @@ contract OperatorStateRetriever {
         CheckSignaturesIndices memory checkSignaturesIndices;
 
         // get the indices of the quorumBitmap updates for each of the operators in the nonSignerOperatorIds array
-        checkSignaturesIndices.nonSignerQuorumBitmapIndices = registryCoordinator
-            .getQuorumBitmapIndicesAtBlockNumber(referenceBlockNumber, nonSignerOperatorIds);
+        checkSignaturesIndices.nonSignerQuorumBitmapIndices =
+            registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(
+                referenceBlockNumber, nonSignerOperatorIds
+            );
 
         // get the indices of the totalStake updates for each of the quorums in the quorumNumbers array
         checkSignaturesIndices.totalStakeIndices =
@@ -138,24 +140,28 @@ contract OperatorStateRetriever {
 
             for (uint256 i = 0; i < nonSignerOperatorIds.length; i++) {
                 // get the quorumBitmap for the operator at the given blocknumber and index
-                uint192 nonSignerQuorumBitmap = registryCoordinator
-                    .getQuorumBitmapAtBlockNumberByIndex(
-                    nonSignerOperatorIds[i],
-                    referenceBlockNumber,
-                    checkSignaturesIndices.nonSignerQuorumBitmapIndices[i]
-                );
+                uint192 nonSignerQuorumBitmap =
+                    registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(
+                        nonSignerOperatorIds[i],
+                        referenceBlockNumber,
+                        checkSignaturesIndices.nonSignerQuorumBitmapIndices[i]
+                    );
 
                 require(nonSignerQuorumBitmap != 0, OperatorNotRegistered());
 
                 // if the operator was a part of the quorum and the quorum is a part of the provided quorumNumbers
                 if ((nonSignerQuorumBitmap >> uint8(quorumNumbers[quorumNumberIndex])) & 1 == 1) {
                     // get the index of the stake update for the operator at the given blocknumber and quorum number
-                    checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex][numNonSignersForQuorum]
-                    = stakeRegistry.getStakeUpdateIndexAtBlockNumber(
-                        nonSignerOperatorIds[i],
-                        uint8(quorumNumbers[quorumNumberIndex]),
-                        referenceBlockNumber
-                    );
+                    checkSignaturesIndices.nonSignerStakeIndices[
+                        quorumNumberIndex
+                    ][
+                        numNonSignersForQuorum
+                    ] =
+                        stakeRegistry.getStakeUpdateIndexAtBlockNumber(
+                            nonSignerOperatorIds[i],
+                            uint8(quorumNumbers[quorumNumberIndex]),
+                            referenceBlockNumber
+                        );
                     numNonSignersForQuorum++;
                 }
             }
@@ -167,7 +173,7 @@ contract OperatorStateRetriever {
                     checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex][i];
             }
             checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex] =
-                nonSignerStakeIndicesForQuorum;
+            nonSignerStakeIndicesForQuorum;
         }
 
         IBLSApkRegistry blsApkRegistry = registryCoordinator.blsApkRegistry();

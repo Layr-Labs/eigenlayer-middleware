@@ -13,7 +13,6 @@ abstract contract SocketRegistryStorage is ISocketRegistry {
      *                            CONSTANTS AND IMMUTABLES
      *
      */
-
     /// @notice The address of the SlashingRegistryCoordinator
     address public immutable slashingRegistryCoordinator;
 

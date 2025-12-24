@@ -327,7 +327,10 @@ contract DelegationMock is DelegationIntermediate {
         _weightOf[operator][strategy] = actualWeight;
     }
 
-    function setIsOperator(address operator, bool isOperator) external {
+    function setIsOperator(
+        address operator,
+        bool isOperator
+    ) external {
         _isOperator[operator] = isOperator;
     }
 

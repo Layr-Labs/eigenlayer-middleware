@@ -24,7 +24,10 @@ interface IAllowlist is IAllowlistErrors, IAllowlistEvents {
      * @param operator The operator to add to the allowlist
      * @dev Only callable by the owner
      */
-    function addOperatorToAllowlist(OperatorSet memory operatorSet, address operator) external;
+    function addOperatorToAllowlist(
+        OperatorSet memory operatorSet,
+        address operator
+    ) external;
 
     /**
      * @notice Removes an operator from the allowlist

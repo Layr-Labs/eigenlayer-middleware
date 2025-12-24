@@ -52,8 +52,10 @@ contract OperatorSetUser is User {
         bytes memory data = abi.encode(
             ISlashingRegistryCoordinatorTypes.RegistrationType.NORMAL, NAME, pubkeyParams
         );
-        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
-            .RegisterParams({avs: avs, operatorSetIds: _getOperatorSetIds(quorums), data: data});
+        IAllocationManagerTypes.RegisterParams memory registerParams =
+            IAllocationManagerTypes.RegisterParams({
+                avs: avs, operatorSetIds: _getOperatorSetIds(quorums), data: data
+            });
 
         allocationManager.registerForOperatorSets({operator: address(this), params: registerParams});
 
@@ -102,8 +104,10 @@ contract OperatorSetUser is User {
             churnApproverSignature
         );
 
-        IAllocationManagerTypes.RegisterParams memory registerParams = IAllocationManagerTypes
-            .RegisterParams({avs: avs, operatorSetIds: _getOperatorSetIds(allQuorums), data: data});
+        IAllocationManagerTypes.RegisterParams memory registerParams =
+            IAllocationManagerTypes.RegisterParams({
+                avs: avs, operatorSetIds: _getOperatorSetIds(allQuorums), data: data
+            });
         allocationManager.registerForOperatorSets({operator: address(this), params: registerParams});
     }
 
@@ -112,8 +116,10 @@ contract OperatorSetUser is User {
     ) public virtual override createSnapshot {
         _log("deregisterOperator", quorums);
         uint32[] memory operatorSetIds = _getOperatorSetIds(quorums);
-        IAllocationManagerTypes.DeregisterParams memory deregisterParams = IAllocationManagerTypes
-            .DeregisterParams({avs: avs, operator: address(this), operatorSetIds: operatorSetIds});
+        IAllocationManagerTypes.DeregisterParams memory deregisterParams =
+            IAllocationManagerTypes.DeregisterParams({
+                avs: avs, operator: address(this), operatorSetIds: operatorSetIds
+            });
         allocationManager.deregisterFromOperatorSets({params: deregisterParams});
     }
 
@@ -175,8 +181,7 @@ contract OperatorSetUser is User {
         while (churnIdx + stdIdx < allQuorums.length) {
             if (churnIdx == churnQuorums.length) {
                 kickParams[churnIdx + stdIdx] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
-                    quorumNumber: 0,
-                    operator: address(0)
+                    quorumNumber: 0, operator: address(0)
                 });
                 stdIdx++;
             } else if (
@@ -189,8 +194,7 @@ contract OperatorSetUser is User {
                 churnIdx++;
             } else if (standardQuorums[stdIdx] < churnQuorums[churnIdx]) {
                 kickParams[churnIdx + stdIdx] = ISlashingRegistryCoordinatorTypes.OperatorKickParam({
-                    quorumNumber: 0,
-                    operator: address(0)
+                    quorumNumber: 0, operator: address(0)
                 });
                 stdIdx++;
             } else {
@@ -218,11 +222,9 @@ contract OperatorSetUser is User {
         }
         signature[signature.length - 1] = bytes1(v);
         ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory churnApproverSignature =
-        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
-            signature: signature,
-            salt: _salt,
-            expiry: expiry
-        });
+            ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
+                signature: signature, salt: _salt, expiry: expiry
+            });
 
         return (kickParams, churnApproverSignature);
     }

@@ -98,7 +98,11 @@ library BN256G2 {
         return FIELD_MODULUS;
     }
 
-    function submod(uint256 a, uint256 b, uint256 n) internal pure returns (uint256) {
+    function submod(
+        uint256 a,
+        uint256 b,
+        uint256 n
+    ) internal pure returns (uint256) {
         return addmod(a, n - b, n);
     }
 
@@ -114,7 +118,11 @@ library BN256G2 {
         );
     }
 
-    function _FQ2Muc(uint256 xx, uint256 xy, uint256 c) internal pure returns (uint256, uint256) {
+    function _FQ2Muc(
+        uint256 xx,
+        uint256 xy,
+        uint256 c
+    ) internal pure returns (uint256, uint256) {
         return (mulmod(xx, c, FIELD_MODULUS), mulmod(xy, c, FIELD_MODULUS));
     }
 
@@ -146,7 +154,10 @@ library BN256G2 {
         return _FQ2Mul(xx, xy, yx, yy);
     }
 
-    function _FQ2Inv(uint256 x, uint256 y) internal view returns (uint256, uint256) {
+    function _FQ2Inv(
+        uint256 x,
+        uint256 y
+    ) internal view returns (uint256, uint256) {
         uint256 inv = _modInv(
             addmod(mulmod(y, y, FIELD_MODULUS), mulmod(x, x, FIELD_MODULUS), FIELD_MODULUS),
             FIELD_MODULUS
@@ -172,7 +183,10 @@ library BN256G2 {
         return yyx == 0 && yyy == 0;
     }
 
-    function _modInv(uint256 a, uint256 n) internal view returns (uint256 result) {
+    function _modInv(
+        uint256 a,
+        uint256 n
+    ) internal view returns (uint256 result) {
         bool success;
         assembly ("memory-safe") {
             let freemem := mload(0x40)
@@ -219,11 +233,11 @@ library BN256G2 {
     ) internal pure returns (uint256[6] memory pt3) {
         if (pt1zx == 0 && pt1zy == 0) {
             (pt3[PTXX], pt3[PTXY], pt3[PTYX], pt3[PTYY], pt3[PTZX], pt3[PTZY]) =
-                (pt2xx, pt2xy, pt2yx, pt2yy, pt2zx, pt2zy);
+            (pt2xx, pt2xy, pt2yx, pt2yy, pt2zx, pt2zy);
             return pt3;
         } else if (pt2zx == 0 && pt2zy == 0) {
             (pt3[PTXX], pt3[PTXY], pt3[PTYX], pt3[PTYY], pt3[PTZX], pt3[PTZY]) =
-                (pt1xx, pt1xy, pt1yx, pt1yy, pt1zx, pt1zy);
+            (pt1xx, pt1xy, pt1yx, pt1yy, pt1zx, pt1zy);
             return pt3;
         }
 

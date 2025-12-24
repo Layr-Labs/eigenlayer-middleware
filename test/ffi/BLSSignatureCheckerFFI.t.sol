@@ -136,8 +136,7 @@ contract BLSSignatureCheckerFFITests is MockAVSDeployer, G2Operations {
         uint256 numNonSigners,
         uint256 quorumBitmap
     ) internal returns (uint32, BLSSignatureChecker.NonSignerStakesAndSignature memory) {
-        (uint256[] memory signerPrivateKeys, uint256[] memory nonSignerPrivateKeys) =
-        _generateSignerAndNonSignerPrivateKeys(
+        (uint256[] memory signerPrivateKeys, uint256[] memory nonSignerPrivateKeys) = _generateSignerAndNonSignerPrivateKeys(
             pseudoRandomNumber, maxOperatorsToRegister - numNonSigners, numNonSigners
         );
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
@@ -188,23 +187,23 @@ contract BLSSignatureCheckerFFITests is MockAVSDeployer, G2Operations {
             _registerOperatorWithCoordinator(operators[i], quorumBitmap, pubkeys[i], defaultStake);
         }
 
-        uint32 referenceBlockNumber = registrationBlockNumber
-            + blocksBetweenRegistrations * uint32(maxOperatorsToRegister) + 1;
+        uint32 referenceBlockNumber = registrationBlockNumber + blocksBetweenRegistrations
+            * uint32(maxOperatorsToRegister) + 1;
         cheats.roll(referenceBlockNumber + 100);
 
         OperatorStateRetriever.CheckSignaturesIndices memory checkSignaturesIndices =
-        operatorStateRetriever.getCheckSignaturesIndices(
-            registryCoordinator, referenceBlockNumber, quorumNumbers, nonSignerOperatorIds
-        );
+            operatorStateRetriever.getCheckSignaturesIndices(
+                registryCoordinator, referenceBlockNumber, quorumNumbers, nonSignerOperatorIds
+            );
 
         nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices =
-            checkSignaturesIndices.nonSignerQuorumBitmapIndices;
+        checkSignaturesIndices.nonSignerQuorumBitmapIndices;
         nonSignerStakesAndSignature.apkG2 = aggSignerApkG2;
         nonSignerStakesAndSignature.sigma = sigma;
         nonSignerStakesAndSignature.quorumApkIndices = checkSignaturesIndices.quorumApkIndices;
         nonSignerStakesAndSignature.totalStakeIndices = checkSignaturesIndices.totalStakeIndices;
         nonSignerStakesAndSignature.nonSignerStakeIndices =
-            checkSignaturesIndices.nonSignerStakeIndices;
+        checkSignaturesIndices.nonSignerStakeIndices;
 
         return (referenceBlockNumber, nonSignerStakesAndSignature);
     }

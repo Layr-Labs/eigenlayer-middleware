@@ -7,8 +7,9 @@ import {
     IOperatorTableCalculator,
     IOperatorTableCalculatorTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
-import {IBN254CertificateVerifierTypes} from
-    "eigenlayer-contracts/src/contracts/interfaces/IBN254CertificateVerifier.sol";
+import {
+    IBN254CertificateVerifierTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/IBN254CertificateVerifier.sol";
 
 interface IBN254TableCalculator is IOperatorTableCalculator, IOperatorTableCalculatorTypes {
     /**

@@ -170,7 +170,10 @@ interface IBLSApkRegistry is IBLSApkRegistryErrors, IBLSApkRegistryEvents {
      *      3. `quorumNumbers` is ordered ascending
      *      4. The operator is not already registered
      */
-    function registerOperator(address operator, bytes calldata quorumNumbers) external;
+    function registerOperator(
+        address operator,
+        bytes calldata quorumNumbers
+    ) external;
 
     /*
      * @notice Deregisters `operator`'s pubkey from `quorumNumbers`.
@@ -184,7 +187,10 @@ interface IBLSApkRegistry is IBLSApkRegistryErrors, IBLSApkRegistryEvents {
      *      4. The operator is not already deregistered
      *      5. `quorumNumbers` is a subset of the operator's registered quorums
      */
-    function deregisterOperator(address operator, bytes calldata quorumNumbers) external;
+    function deregisterOperator(
+        address operator,
+        bytes calldata quorumNumbers
+    ) external;
 
     /*
      * @notice Initializes `quorumNumber` by pushing its first APK update.

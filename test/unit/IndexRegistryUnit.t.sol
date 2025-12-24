@@ -124,13 +124,19 @@ contract IndexRegistryUnitTests is MockAVSDeployer, IIndexRegistryEvents {
     }
 
     /// @dev deregister an operator for a given set of quorums
-    function _deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal {
+    function _deregisterOperator(
+        bytes32 operatorId,
+        bytes memory quorumNumbers
+    ) internal {
         cheats.prank(address(registryCoordinator));
         indexRegistry.deregisterOperator(operatorId, quorumNumbers);
     }
 
     /// @dev deregister an operator for a single quorum
-    function _deregisterOperatorSingleQuorum(bytes32 operatorId, uint8 quorumNumber) internal {
+    function _deregisterOperatorSingleQuorum(
+        bytes32 operatorId,
+        uint8 quorumNumber
+    ) internal {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(quorumNumber);
         cheats.prank(address(registryCoordinator));
@@ -139,7 +145,11 @@ contract IndexRegistryUnitTests is MockAVSDeployer, IIndexRegistryEvents {
 
     /// @dev Uses `rand` to return a random uint, with a range given by `min` and `max` (inclusive)
     /// @return `min` <= result <= `max`
-    function _randUint(bytes32 rand, uint256 min, uint256 max) internal pure returns (uint256) {
+    function _randUint(
+        bytes32 rand,
+        uint256 min,
+        uint256 max
+    ) internal pure returns (uint256) {
         // hashing makes for more uniform randomness
         rand = keccak256(abi.encodePacked(rand));
 
@@ -259,8 +269,9 @@ contract IndexRegistryUnitTests_configAndGetters is IndexRegistryUnitTests {
         bytes32[] memory currRegisteredOperatorIds = new bytes32[](numOperators);
         uint256 currIndex = 0;
         for (uint256 i = 0; i < numOperators; i++) {
-            uint256 rand =
-                _randUint({rand: keccak256(abi.encodePacked(bytes32(i), randSalt)), min: 0, max: 1});
+            uint256 rand = _randUint({
+                rand: keccak256(abi.encodePacked(bytes32(i), randSalt)), min: 0, max: 1
+            });
 
             // Roll block number
             currBlockNumber += 10;
@@ -303,8 +314,9 @@ contract IndexRegistryUnitTests_configAndGetters is IndexRegistryUnitTests {
         uint256 currIndex = 0;
         uint32 currBlockNumber = uint32(block.number);
         for (uint256 i = 0; i < numOperators; i++) {
-            uint256 rand =
-                _randUint({rand: keccak256(abi.encodePacked(bytes32(i), randSalt)), min: 0, max: 1});
+            uint256 rand = _randUint({
+                rand: keccak256(abi.encodePacked(bytes32(i), randSalt)), min: 0, max: 1
+            });
 
             // Roll block number
             currBlockNumber += 10;
@@ -344,8 +356,9 @@ contract IndexRegistryUnitTests_configAndGetters is IndexRegistryUnitTests {
         bytes32[] memory currRegisteredOperatorIds = new bytes32[](numOperators);
         uint256 currIndex = 0;
         for (uint256 i = 0; i < numOperators; i++) {
-            uint256 rand =
-                _randUint({rand: keccak256(abi.encodePacked(bytes32(i), randSalt)), min: 0, max: 1});
+            uint256 rand = _randUint({
+                rand: keccak256(abi.encodePacked(bytes32(i), randSalt)), min: 0, max: 1
+            });
 
             // deregister operator, must also have at least one registered operator
             if (rand == 0 && currIndex > 0) {
@@ -468,7 +481,10 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
      * We ensure that none of the invalid quorumNumbers are initialized by masking out the initialized quorums and
      * expect a revert on registerOperator
      */
-    function testFuzz_Revert_WhenInvalidQuorums(uint192 bitmap, uint192 invalidBitmap) public {
+    function testFuzz_Revert_WhenInvalidQuorums(
+        uint192 bitmap,
+        uint192 invalidBitmap
+    ) public {
         cheats.assume(bitmap > initializedQuorumBitmap);
         cheats.assume(invalidBitmap > initializedQuorumBitmap);
         // mask out quorums that are already initialized and the quorums that are not going to be registered
@@ -752,7 +768,10 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
      * we ensure that none of the invalid quorumNumbers are initialized by masking out the initialized quorums and
      * expect a revert on deregisterOperator
      */
-    function testFuzz_Revert_WhenInvalidQuorums(uint192 bitmap, uint192 invalidBitmap) public {
+    function testFuzz_Revert_WhenInvalidQuorums(
+        uint192 bitmap,
+        uint192 invalidBitmap
+    ) public {
         cheats.assume(bitmap > initializedQuorumBitmap);
         cheats.assume(invalidBitmap > initializedQuorumBitmap);
         // mask out quorums that are already initialized and the quorums that are not going to be registered
@@ -875,8 +894,8 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
             // get operator index, if operator index is new quorumCount
             // then other operator indexes are unchanged
             // otherwise the popped index operatorId will replace the deregistered operator's index
-            uint32 operatorIndex =
-                IndexRegistry(address(indexRegistry)).currentOperatorIndex(quorumNumber, operatorId);
+            uint32 operatorIndex = IndexRegistry(address(indexRegistry))
+                .currentOperatorIndex(quorumNumber, operatorId);
             uint32 quorumCountBefore =
                 indexRegistry.getLatestQuorumUpdate(quorumNumber).numOperators;
 
@@ -884,10 +903,11 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
                 operatorIndex <= quorumCountBefore - 1,
                 "operator index should be less than quorumCount"
             );
-            bytes32 operatorIdAtBeforeQuorumCount = indexRegistry.getLatestOperatorUpdate({
-                quorumNumber: quorumNumber,
-                operatorIndex: quorumCountBefore - 1
-            }).operatorId;
+            bytes32 operatorIdAtBeforeQuorumCount =
+                indexRegistry.getLatestOperatorUpdate({
+                quorumNumber: quorumNumber, operatorIndex: quorumCountBefore - 1
+            })
+            .operatorId;
 
             if (operatorIndex != quorumCountBefore - 1) {
                 // expect popped index operator to be reassigned
@@ -951,8 +971,8 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
             // get operator index, if operator index is new quorumCount
             // then other operator indexes are unchanged
             // otherwise the popped index operatorId will replace the deregistered operator's index
-            uint32 operatorIndex =
-                IndexRegistry(address(indexRegistry)).currentOperatorIndex(quorumNumber, operatorId);
+            uint32 operatorIndex = IndexRegistry(address(indexRegistry))
+                .currentOperatorIndex(quorumNumber, operatorId);
             uint32 quorumCountBefore =
                 indexRegistry.getLatestQuorumUpdate(quorumNumber).numOperators;
 
@@ -960,10 +980,11 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
                 operatorIndex <= quorumCountBefore - 1,
                 "operator index should be less than quorumCount"
             );
-            bytes32 operatorIdAtBeforeQuorumCount = indexRegistry.getLatestOperatorUpdate({
-                quorumNumber: quorumNumber,
-                operatorIndex: quorumCountBefore - 1
-            }).operatorId;
+            bytes32 operatorIdAtBeforeQuorumCount =
+                indexRegistry.getLatestOperatorUpdate({
+                quorumNumber: quorumNumber, operatorIndex: quorumCountBefore - 1
+            })
+            .operatorId;
 
             if (operatorIndex != quorumCountBefore - 1) {
                 // expect popped index operator to be reassigned
@@ -1047,8 +1068,10 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
                 expectedFromBlockNumber: block.number
             });
 
-            IIndexRegistry.OperatorUpdate memory operatorUpdate = indexRegistry
-                .getLatestOperatorUpdate({quorumNumber: uint8(quorumsToRemove[i]), operatorIndex: 0});
+            IIndexRegistry.OperatorUpdate memory operatorUpdate =
+                indexRegistry.getLatestOperatorUpdate({
+                    quorumNumber: uint8(quorumsToRemove[i]), operatorIndex: 0
+                });
             assertEq(
                 operatorUpdate.fromBlockNumber, block.number, "fromBlockNumber not set correctly"
             );
@@ -1102,8 +1125,10 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
             });
 
             // Check operator's index for removed quorums
-            IIndexRegistry.OperatorUpdate memory operatorUpdate = indexRegistry
-                .getLatestOperatorUpdate({quorumNumber: uint8(quorumsToRemove[i]), operatorIndex: 1});
+            IIndexRegistry.OperatorUpdate memory operatorUpdate =
+                indexRegistry.getLatestOperatorUpdate({
+                    quorumNumber: uint8(quorumsToRemove[i]), operatorIndex: 1
+                });
             assertEq(
                 operatorUpdate.fromBlockNumber, block.number, "fromBlockNumber not set correctly"
             );

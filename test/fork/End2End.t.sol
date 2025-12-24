@@ -8,10 +8,12 @@ import {OperatorLib} from "../utils/OperatorLib.sol";
 import {UpgradeableProxyLib} from "../unit/UpgradeableProxyLib.sol";
 import {MiddlewareDeployLib} from "../utils/MiddlewareDeployLib.sol";
 import {BN254} from "../../src/libraries/BN254.sol";
-import {IDelegationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
-import {IAllocationManagerTypes} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IDelegationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {
+    IAllocationManagerTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
 import {IStakeRegistry, IStakeRegistryTypes} from "../../src/interfaces/IStakeRegistry.sol";
@@ -20,8 +22,9 @@ import {RegistryCoordinator} from "../../src/RegistryCoordinator.sol";
 import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
-import {PermissionController} from
-    "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
+import {
+    PermissionController
+} from "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
 import {ServiceManagerMock} from "../mocks/ServiceManagerMock.sol";
 import {
     ISlashingRegistryCoordinator,
@@ -195,19 +198,20 @@ contract End2EndForkTest is Test {
 
         // Set the metadata URI, AVS Registrar and UAM apointee for operator set creation
         vm.startPrank(middlewareDeployment.serviceManager);
-        AllocationManager(coreDeployment.allocationManager).updateAVSMetadataURI(
-            middlewareDeployment.serviceManager, "metadata"
-        );
-        AllocationManager(coreDeployment.allocationManager).setAVSRegistrar(
-            middlewareDeployment.serviceManager,
-            IAVSRegistrar(middlewareDeployment.registryCoordinator)
-        );
-        PermissionController(coreDeployment.permissionController).setAppointee(
-            address(middlewareDeployment.serviceManager),
-            address(middlewareDeployment.registryCoordinator),
-            coreDeployment.allocationManager,
-            bytes4(keccak256("createOperatorSets(address,(uint32,address[],address)[])"))
-        );
+        AllocationManager(coreDeployment.allocationManager)
+            .updateAVSMetadataURI(middlewareDeployment.serviceManager, "metadata");
+        AllocationManager(coreDeployment.allocationManager)
+            .setAVSRegistrar(
+                middlewareDeployment.serviceManager,
+                IAVSRegistrar(middlewareDeployment.registryCoordinator)
+            );
+        PermissionController(coreDeployment.permissionController)
+            .setAppointee(
+                address(middlewareDeployment.serviceManager),
+                address(middlewareDeployment.registryCoordinator),
+                coreDeployment.allocationManager,
+                bytes4(keccak256("createOperatorSets(address,(uint32,address[],address)[])"))
+            );
         vm.stopPrank();
     }
 
@@ -249,18 +253,16 @@ contract End2EndForkTest is Test {
     ) internal {
         // Verify and register operators
         for (uint256 i = 0; i < 5; i++) {
-            bool isRegistered = IDelegationManager(coreDeployment.delegationManager).isOperator(
-                operators[i].key.addr
-            );
+            bool isRegistered = IDelegationManager(coreDeployment.delegationManager)
+                .isOperator(operators[i].key.addr);
             assertFalse(isRegistered, "Operator should not be registered");
         }
 
         _registerOperatorsAsEigenLayerOperators(operators, coreDeployment.delegationManager);
 
         for (uint256 i = 0; i < 5; i++) {
-            bool isRegistered = IDelegationManager(coreDeployment.delegationManager).isOperator(
-                operators[i].key.addr
-            );
+            bool isRegistered = IDelegationManager(coreDeployment.delegationManager)
+                .isOperator(operators[i].key.addr);
             assertTrue(isRegistered, "Operator should be registered");
         }
 
@@ -300,17 +302,14 @@ contract End2EndForkTest is Test {
 
         // Create first quorum
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 10,
-            kickBIPsOfOperatorStake: 100,
-            kickBIPsOfTotalStake: 100
-        });
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+                maxOperatorCount: 10, kickBIPsOfOperatorStake: 100, kickBIPsOfTotalStake: 100
+            });
 
         IStakeRegistry.StrategyParams[] memory strategyParams =
             new IStakeRegistry.StrategyParams[](1);
         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(middlewareConfig.strategy),
-            multiplier: 1 ether
+            strategy: IStrategy(middlewareConfig.strategy), multiplier: 1 ether
         });
 
         RegistryCoordinator(middlewareDeployment.registryCoordinator)
@@ -339,9 +338,8 @@ contract End2EndForkTest is Test {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(uint8(0));
         vm.prank(middlewareConfig.admin);
-        RegistryCoordinator(middlewareDeployment.registryCoordinator).updateOperatorsForQuorum(
-            middlewareConfig.operators, quorumNumbers
-        );
+        RegistryCoordinator(middlewareDeployment.registryCoordinator)
+            .updateOperatorsForQuorum(middlewareConfig.operators, quorumNumbers);
     }
 
     function _setupSecondQuorumAndOperatorSet(
@@ -355,20 +353,22 @@ contract End2EndForkTest is Test {
         IStakeRegistry.StrategyParams[] memory strategyParams =
             new IStakeRegistry.StrategyParams[](1);
         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
-            strategy: IStrategy(middlewareConfig.strategy),
-            multiplier: 1 ether
+            strategy: IStrategy(middlewareConfig.strategy), multiplier: 1 ether
         });
 
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 10,
-            kickBIPsOfOperatorStake: 0,
-            kickBIPsOfTotalStake: 0
-        });
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+                maxOperatorCount: 10, kickBIPsOfOperatorStake: 0, kickBIPsOfTotalStake: 0
+            });
 
-        RegistryCoordinator(middlewareDeployment.registryCoordinator).createSlashableStakeQuorum(
-            operatorSetParams, 100, strategyParams, 10, address(middlewareDeployment.serviceManager)
-        );
+        RegistryCoordinator(middlewareDeployment.registryCoordinator)
+            .createSlashableStakeQuorum(
+                operatorSetParams,
+                100,
+                strategyParams,
+                10,
+                address(middlewareDeployment.serviceManager)
+            );
         vm.stopPrank();
 
         _setupOperatorAllocations(
@@ -397,9 +397,8 @@ contract End2EndForkTest is Test {
         quorumNumbers[0] = bytes1(uint8(1));
 
         vm.prank(middlewareConfig.admin);
-        RegistryCoordinator(middlewareDeployment.registryCoordinator).updateOperatorsForQuorum(
-            middlewareConfig.operators, quorumNumbers
-        );
+        RegistryCoordinator(middlewareDeployment.registryCoordinator)
+            .updateOperatorsForQuorum(middlewareConfig.operators, quorumNumbers);
     }
 
     function _setupOperatorAllocations(
@@ -431,9 +430,7 @@ contract End2EndForkTest is Test {
         IAllocationManagerTypes.AllocateParams[] memory allocParams =
             new IAllocationManagerTypes.AllocateParams[](1);
         allocParams[0] = IAllocationManagerTypes.AllocateParams({
-            operatorSet: operatorSet,
-            strategies: allocStrategies,
-            newMagnitudes: magnitudes
+            operatorSet: operatorSet, strategies: allocStrategies, newMagnitudes: magnitudes
         });
 
         for (uint256 i = 0; i < 5; i++) {
@@ -452,14 +449,14 @@ contract End2EndForkTest is Test {
         ConfigData memory middlewareConfig,
         MiddlewareDeployLib.MiddlewareDeployData memory middlewareDeployment
     ) internal {
-        IAllocationManagerTypes.SlashingParams memory slashingParams = IAllocationManagerTypes
-            .SlashingParams({
-            operator: operators[0].key.addr,
-            operatorSetId: 1,
-            strategies: new IStrategy[](1),
-            wadsToSlash: new uint256[](1),
-            description: "Test slashing"
-        });
+        IAllocationManagerTypes.SlashingParams memory slashingParams =
+            IAllocationManagerTypes.SlashingParams({
+                operator: operators[0].key.addr,
+                operatorSetId: 1,
+                strategies: new IStrategy[](1),
+                wadsToSlash: new uint256[](1),
+                description: "Test slashing"
+            });
 
         slashingParams.strategies[0] = IStrategy(middlewareConfig.strategy);
         slashingParams.wadsToSlash[0] = 0.5e18;

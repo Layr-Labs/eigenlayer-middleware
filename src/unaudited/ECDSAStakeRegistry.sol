@@ -7,28 +7,29 @@ import {
     IECDSAStakeRegistryTypes
 } from "./ECDSAStakeRegistryStorage.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {IDelegationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
-import {ISignatureUtilsMixinTypes} from
-    "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
+import {
+    IDelegationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {IServiceManager} from "../interfaces/IServiceManager.sol";
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import {CheckpointsUpgradeable} from
-    "@openzeppelin-upgrades/contracts/utils/CheckpointsUpgradeable.sol";
-import {SignatureCheckerUpgradeable} from
-    "@openzeppelin-upgrades/contracts/utils/cryptography/SignatureCheckerUpgradeable.sol";
-import {IERC1271Upgradeable} from
-    "@openzeppelin-upgrades/contracts/interfaces/IERC1271Upgradeable.sol";
+import {
+    CheckpointsUpgradeable
+} from "@openzeppelin-upgrades/contracts/utils/CheckpointsUpgradeable.sol";
+import {
+    SignatureCheckerUpgradeable
+} from "@openzeppelin-upgrades/contracts/utils/cryptography/SignatureCheckerUpgradeable.sol";
+import {
+    IERC1271Upgradeable
+} from "@openzeppelin-upgrades/contracts/interfaces/IERC1271Upgradeable.sol";
 
 /// @title ECDSA Stake Registry
 /// @dev THIS CONTRACT IS NOT AUDITED
 /// @notice Manages operator registration and quorum updates for an AVS using ECDSA signatures.
-contract ECDSAStakeRegistry is
-    IERC1271Upgradeable,
-    OwnableUpgradeable,
-    ECDSAStakeRegistryStorage
-{
+contract ECDSAStakeRegistry is IERC1271Upgradeable, OwnableUpgradeable, ECDSAStakeRegistryStorage {
     using SignatureCheckerUpgradeable for address;
     using CheckpointsUpgradeable for CheckpointsUpgradeable.History;
 
@@ -334,7 +335,10 @@ contract ECDSAStakeRegistry is
     /// @dev Internal function to update an operator's signing key
     /// @param operator The address of the operator to update the signing key for
     /// @param newSigningKey The new signing key to set for the operator
-    function _updateOperatorSigningKey(address operator, address newSigningKey) internal {
+    function _updateOperatorSigningKey(
+        address operator,
+        address newSigningKey
+    ) internal {
         address oldSigningKey = address(uint160(_operatorSigningKeyHistory[operator].latest()));
         if (newSigningKey == oldSigningKey) {
             return;
@@ -463,7 +467,10 @@ contract ECDSAStakeRegistry is
     /// @notice Ensures that signers are sorted in ascending order by address.
     /// @param lastSigner The address of the last signer.
     /// @param currentSigner The address of the current signer.
-    function _validateSortedSigners(address lastSigner, address currentSigner) internal pure {
+    function _validateSortedSigners(
+        address lastSigner,
+        address currentSigner
+    ) internal pure {
         if (lastSigner >= currentSigner) {
             revert NotSorted();
         }
@@ -540,7 +547,10 @@ contract ECDSAStakeRegistry is
     /// @notice Validates that the cumulative stake of signed messages meets or exceeds the required threshold.
     /// @param signedWeight The cumulative weight of the signers that have signed the message.
     /// @param referenceBlock The block number to verify the stake threshold for
-    function _validateThresholdStake(uint256 signedWeight, uint32 referenceBlock) internal view {
+    function _validateThresholdStake(
+        uint256 signedWeight,
+        uint32 referenceBlock
+    ) internal view {
         uint256 totalWeight = _getTotalWeight(referenceBlock);
         if (signedWeight > totalWeight) {
             revert InvalidSignedWeight();

@@ -3,8 +3,9 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ITransparentUpgradeableProxy} from
-    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    ITransparentUpgradeableProxy
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {EigenStrategy} from "eigenlayer-contracts/src/contracts/strategies/EigenStrategy.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
@@ -50,13 +51,16 @@ import {RewardsCoordinatorMock} from "../mocks/RewardsCoordinatorMock.sol";
 import {PermissionControllerMock} from "../mocks/PermissionControllerMock.sol";
 
 import {RewardsCoordinator} from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
-import {PermissionController} from
-    "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
+import {
+    PermissionController
+} from "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
 import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
-import {IRewardsCoordinator} from
-    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
-import {AllocationManagerView} from
-    "eigenlayer-contracts/src/contracts/core/AllocationManagerView.sol";
+import {
+    IRewardsCoordinator
+} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {
+    AllocationManagerView
+} from "eigenlayer-contracts/src/contracts/core/AllocationManagerView.sol";
 
 import {BLSApkRegistryHarness} from "../harnesses/BLSApkRegistryHarness.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
@@ -309,8 +313,7 @@ contract MockAVSDeployer is Test {
         );
 
         serviceManager.initialize({
-            initialOwner: registryCoordinatorOwner,
-            rewardsInitiator: proxyAdminOwner
+            initialOwner: registryCoordinatorOwner, rewardsInitiator: proxyAdminOwner
         });
 
         // set the public key for an operator, using harnessed function to bypass checks
@@ -487,8 +490,8 @@ contract MockAVSDeployer is Test {
         for (uint256 i = 0; i < operatorMetadatas.length; i++) {
             // limit to 16 quorums so we don't run out of gas, make them all register for quorum 0 as well
             operatorMetadatas[i].quorumBitmap = uint256(
-                keccak256(abi.encodePacked("quorumBitmap", pseudoRandomNumber, i))
-            ) & (1 << maxQuorumsToRegisterFor - 1) | 1;
+                    keccak256(abi.encodePacked("quorumBitmap", pseudoRandomNumber, i))
+                ) & (1 << maxQuorumsToRegisterFor - 1) | 1;
             operatorMetadatas[i].operator = _incrementAddress(defaultOperator, i);
             operatorMetadatas[i].pubkey =
                 BN254.hashToG1(keccak256(abi.encodePacked("pubkey", pseudoRandomNumber, i)));
@@ -554,11 +557,17 @@ contract MockAVSDeployer is Test {
         return uint96(actualWeight);
     }
 
-    function _incrementAddress(address start, uint256 inc) internal pure returns (address) {
+    function _incrementAddress(
+        address start,
+        uint256 inc
+    ) internal pure returns (address) {
         return address(uint160(uint256(uint160(start) + inc)));
     }
 
-    function _incrementBytes32(bytes32 start, uint256 inc) internal pure returns (bytes32) {
+    function _incrementBytes32(
+        bytes32 start,
+        uint256 inc
+    ) internal pure returns (bytes32) {
         return bytes32(uint256(start) + inc);
     }
 
@@ -574,9 +583,7 @@ contract MockAVSDeployer is Test {
         );
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(churnApproverPrivateKey, digestHash);
         return ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
-            signature: abi.encodePacked(r, s, v),
-            expiry: expiry,
-            salt: salt
+            signature: abi.encodePacked(r, s, v), expiry: expiry, salt: salt
         });
     }
 

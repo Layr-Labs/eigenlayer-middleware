@@ -4,8 +4,9 @@ pragma solidity ^0.8.27;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
-import {IRewardsCoordinator} from
-    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {
+    IRewardsCoordinator
+} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
 import "./AVSDirectoryMock.sol";
 
@@ -51,14 +52,20 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
         OperatorDirectedRewardsSubmission[] calldata operatorDirectedRewardsSubmissions
     ) external override {}
 
-    function processClaim(RewardsMerkleClaim calldata claim, address recipient) external override {}
+    function processClaim(
+        RewardsMerkleClaim calldata claim,
+        address recipient
+    ) external override {}
 
     function processClaims(
         RewardsMerkleClaim[] calldata claims,
         address recipient
     ) external override {}
 
-    function submitRoot(bytes32 root, uint32 rewardsCalculationEndTimestamp) external override {}
+    function submitRoot(
+        bytes32 root,
+        uint32 rewardsCalculationEndTimestamp
+    ) external override {}
 
     function disableRoot(
         uint32 rootIndex
@@ -68,7 +75,10 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
         address claimer
     ) external override {}
 
-    function setClaimerFor(address earner, address claimer) external override {}
+    function setClaimerFor(
+        address earner,
+        address claimer
+    ) external override {}
 
     function setActivationDelay(
         uint32 _activationDelay
@@ -78,15 +88,25 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
         uint16 split
     ) external override {}
 
-    function setOperatorAVSSplit(address operator, address avs, uint16 split) external override {}
+    function setOperatorAVSSplit(
+        address operator,
+        address avs,
+        uint16 split
+    ) external override {}
 
-    function setOperatorPISplit(address operator, uint16 split) external override {}
+    function setOperatorPISplit(
+        address operator,
+        uint16 split
+    ) external override {}
 
     function setRewardsUpdater(
         address _rewardsUpdater
     ) external override {}
 
-    function setRewardsForAllSubmitter(address _submitter, bool _newValue) external override {}
+    function setRewardsForAllSubmitter(
+        address _submitter,
+        bool _newValue
+    ) external override {}
 
     function activationDelay() external view override returns (uint32) {}
 

@@ -4,10 +4,12 @@ pragma solidity ^0.8.12;
 import {Vm} from "forge-std/Vm.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import {TransparentUpgradeableProxy} from
-    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {AllocationManagerView} from
-    "eigenlayer-contracts/src/contracts/core/AllocationManagerView.sol";
+import {
+    TransparentUpgradeableProxy
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    AllocationManagerView
+} from "eigenlayer-contracts/src/contracts/core/AllocationManagerView.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {DelegationManager} from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import {StrategyManager} from "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
@@ -17,8 +19,9 @@ import {RewardsCoordinator} from "eigenlayer-contracts/src/contracts/core/Reward
 import {StrategyBase} from "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import {EigenPod} from "eigenlayer-contracts/src/contracts/pods/EigenPod.sol";
 import {IETHPOSDeposit} from "eigenlayer-contracts/src/contracts/interfaces/IETHPOSDeposit.sol";
-import {StrategyBaseTVLLimits} from
-    "eigenlayer-contracts/src/contracts/strategies/StrategyBaseTVLLimits.sol";
+import {
+    StrategyBaseTVLLimits
+} from "eigenlayer-contracts/src/contracts/strategies/StrategyBaseTVLLimits.sol";
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -26,25 +29,31 @@ import {
     ISignatureUtilsMixin,
     ISignatureUtilsMixinTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
-import {IDelegationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {
+    IDelegationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
-import {IAllocationManagerView} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IAllocationManagerView
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IEigenPodManager} from "eigenlayer-contracts/src/contracts/interfaces/IEigenPodManager.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {StrategyFactory} from "eigenlayer-contracts/src/contracts/strategies/StrategyFactory.sol";
-import {IPermissionController} from
-    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IPermissionController
+} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {
+    IAllocationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
-import {PermissionController} from
-    "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
-import {IRewardsCoordinatorTypes} from
-    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {
+    PermissionController
+} from "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
+import {
+    IRewardsCoordinatorTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 import {UpgradeableProxyLib} from "../unit/UpgradeableProxyLib.sol";
 
@@ -342,7 +351,8 @@ library CoreDeployLib {
                     allocationManager: IAllocationManager(deployments.allocationManager),
                     pauserRegistry: IPauserRegistry(deployments.pauserRegistry),
                     permissionController: IPermissionController(deployments.permissionController),
-                    CALCULATION_INTERVAL_SECONDS: config.rewardsCoordinator.calculationIntervalSeconds,
+                    CALCULATION_INTERVAL_SECONDS: config.rewardsCoordinator
+                    .calculationIntervalSeconds,
                     MAX_REWARDS_DURATION: config.rewardsCoordinator.maxRewardsDuration,
                     MAX_RETROACTIVE_LENGTH: config.rewardsCoordinator.maxRetroactiveLength,
                     MAX_FUTURE_LENGTH: config.rewardsCoordinator.maxFutureLength,

@@ -4,10 +4,12 @@ pragma solidity ^0.8.27;
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {IPermissionController} from
-    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {
+    IAllocationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IPermissionController
+} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 
 import {IAVSRegistrarInternal} from "../../../interfaces/IAVSRegistrarInternal.sol";
@@ -34,7 +36,10 @@ contract AVSRegistrarAsIdentifier is AVSRegistrar {
      * @param metadataURI The metadataURI for the AVS
      * @dev This function enables the address of the AVS in the core protocol to be the proxy AVSRegistrarAsIdentifier contract
      */
-    function initialize(address admin, string memory metadataURI) public initializer {
+    function initialize(
+        address admin,
+        string memory metadataURI
+    ) public initializer {
         __AVSRegistrar_init(address(this));
 
         // Set the metadataURI and the registrar for the AVS to this registrar contract

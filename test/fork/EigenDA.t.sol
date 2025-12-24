@@ -19,15 +19,18 @@ import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
 import {ISlashingRegistryCoordinator} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 import {ISocketRegistry} from "../../src/interfaces/ISocketRegistry.sol";
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
-import {IDelegationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {
+    IDelegationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {IRewardsCoordinator} from
-    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
-import {IPermissionController} from
-    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {
+    IRewardsCoordinator
+} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {
+    IPermissionController
+} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 import {
     IAllocationManager,
     OperatorSet,
@@ -42,8 +45,9 @@ import {
 
 // Import concrete implementation for deployment
 import {RegistryCoordinator, IRegistryCoordinatorTypes} from "../../src/RegistryCoordinator.sol";
-import {ISlashingRegistryCoordinatorTypes} from
-    "../../src/interfaces/ISlashingRegistryCoordinator.sol";
+import {
+    ISlashingRegistryCoordinatorTypes
+} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 import {ServiceManagerBase} from "../../src/ServiceManagerBase.sol";
 import {BLSApkRegistry} from "../../src/BLSApkRegistry.sol";
 import {IndexRegistry} from "../../src/IndexRegistry.sol";
@@ -508,10 +512,10 @@ contract EigenDATest is Test {
         bytes32 salt = keccak256(abi.encodePacked(block.timestamp, operators[0].key.addr));
         uint256 expiry = block.timestamp + 1 hours;
 
-        bytes32 operatorRegistrationDigestHash = avsDirectory
-            .calculateOperatorAVSRegistrationDigestHash(
-            operators[0].key.addr, address(serviceManager), salt, expiry
-        );
+        bytes32 operatorRegistrationDigestHash =
+            avsDirectory.calculateOperatorAVSRegistrationDigestHash(
+                operators[0].key.addr, address(serviceManager), salt, expiry
+            );
 
         bytes memory signature =
             OperatorLib.signWithOperatorKey(operators[0], operatorRegistrationDigestHash);
@@ -522,19 +526,17 @@ contract EigenDATest is Test {
         BN254.G1Point memory blsSig =
             OperatorLib.signMessage(operators[0].signingKey, pubkeyRegistrationMessageHash);
 
-        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params = IBLSApkRegistryTypes
-            .PubkeyRegistrationParams({
-            pubkeyG1: operators[0].signingKey.publicKeyG1,
-            pubkeyG2: operators[0].signingKey.publicKeyG2,
-            pubkeyRegistrationSignature: blsSig
-        });
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params =
+            IBLSApkRegistryTypes.PubkeyRegistrationParams({
+                pubkeyG1: operators[0].signingKey.publicKeyG1,
+                pubkeyG2: operators[0].signingKey.publicKeyG2,
+                pubkeyRegistrationSignature: blsSig
+            });
 
         ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature =
-        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
-            signature: signature,
-            salt: salt,
-            expiry: expiry
-        });
+            ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry({
+                signature: signature, salt: salt, expiry: expiry
+            });
 
         uint256 quorumBitmap = 0;
         for (uint256 i = 0; i < quorumsToRegister.length; i++) {
@@ -543,9 +545,8 @@ contract EigenDATest is Test {
         bytes memory quorumNumbersBytes = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
         vm.expectRevert(bytes4(keccak256("M2QuorumRegistrationIsDisabled()")));
-        IRegistryCoordinator(address(registryCoordinator)).registerOperator(
-            quorumNumbersBytes, "socket", params, operatorSignature
-        );
+        IRegistryCoordinator(address(registryCoordinator))
+            .registerOperator(quorumNumbersBytes, "socket", params, operatorSignature);
 
         vm.stopPrank();
         console.log("Successfully verified M2 registration is disabled");
@@ -646,11 +647,11 @@ contract EigenDATest is Test {
         console.log("Creating a new slashable stake quorum (quorum 1)...");
 
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParam =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 100,
-            kickBIPsOfOperatorStake: 10500, // 105%
-            kickBIPsOfTotalStake: 100 // 1%
-        });
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+                maxOperatorCount: 100,
+                kickBIPsOfOperatorStake: 10500, // 105%
+                kickBIPsOfTotalStake: 100 // 1%
+            });
 
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
@@ -673,11 +674,11 @@ contract EigenDATest is Test {
 
         // Define parameters for the new quorum
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParam =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: 100,
-            kickBIPsOfOperatorStake: 10500, // 105%
-            kickBIPsOfTotalStake: 100 // 1%
-        });
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+                maxOperatorCount: 100,
+                kickBIPsOfOperatorStake: 10500, // 105%
+                kickBIPsOfTotalStake: 100 // 1%
+            });
 
         IStakeRegistryTypes.StrategyParams[] memory strategyParams =
             new IStakeRegistryTypes.StrategyParams[](1);
@@ -821,20 +822,19 @@ contract EigenDATest is Test {
         );
 
         IRegistryCoordinatorTypes.SlashingRegistryParams memory slashingParams =
-        IRegistryCoordinatorTypes.SlashingRegistryParams({
-            stakeRegistry: stakeRegistry,
-            blsApkRegistry: apkRegistry,
-            indexRegistry: indexRegistry,
-            socketRegistry: ISocketRegistry(socketRegistry),
-            allocationManager: allocationManager,
-            pauserRegistry: IPauserRegistry(eigenDAData.permissions.pauserRegistry)
-        });
+            IRegistryCoordinatorTypes.SlashingRegistryParams({
+                stakeRegistry: stakeRegistry,
+                blsApkRegistry: apkRegistry,
+                indexRegistry: indexRegistry,
+                socketRegistry: ISocketRegistry(socketRegistry),
+                allocationManager: allocationManager,
+                pauserRegistry: IPauserRegistry(eigenDAData.permissions.pauserRegistry)
+            });
 
         IRegistryCoordinatorTypes.RegistryCoordinatorParams memory params =
-        IRegistryCoordinatorTypes.RegistryCoordinatorParams({
-            serviceManager: serviceManager,
-            slashingParams: slashingParams
-        });
+            IRegistryCoordinatorTypes.RegistryCoordinatorParams({
+                serviceManager: serviceManager, slashingParams: slashingParams
+            });
 
         newRegistryCoordinatorImpl = address(new RegistryCoordinator(params));
 

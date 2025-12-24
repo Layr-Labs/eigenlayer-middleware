@@ -5,7 +5,8 @@ import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVe
 import {SemVerMixin} from "eigenlayer-contracts/src/contracts/mixins/SemVerMixin.sol";
 import {IBLSApkRegistryTypes} from "./interfaces/IBLSApkRegistry.sol";
 import {
-    IRegistryCoordinator, IRegistryCoordinatorTypes
+    IRegistryCoordinator,
+    IRegistryCoordinatorTypes
 } from "./interfaces/IRegistryCoordinator.sol";
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";

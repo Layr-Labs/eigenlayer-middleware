@@ -17,7 +17,10 @@ contract BeaconChainOracleMock {
         return blockRoots[uint64(timestamp)];
     }
 
-    function setBlockRoot(uint64 timestamp, bytes32 blockRoot) public {
+    function setBlockRoot(
+        uint64 timestamp,
+        bytes32 blockRoot
+    ) public {
         blockRoots[timestamp] = blockRoot;
     }
 }

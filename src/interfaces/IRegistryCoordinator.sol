@@ -7,16 +7,18 @@ import {
     ISlashingRegistryCoordinatorEvents,
     ISlashingRegistryCoordinatorTypes
 } from "./ISlashingRegistryCoordinator.sol";
-import {ISignatureUtilsMixinTypes} from
-    "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
+import {
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {IBLSApkRegistry, IBLSApkRegistryTypes} from "./IBLSApkRegistry.sol";
 import {IServiceManager} from "./IServiceManager.sol";
 import {IStakeRegistry} from "./IStakeRegistry.sol";
 import {IIndexRegistry} from "./IIndexRegistry.sol";
 import {ISocketRegistry} from "./ISocketRegistry.sol";
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IAllocationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
 interface IRegistryCoordinatorErrors is ISlashingRegistryCoordinatorErrors {
     /// @notice Thrown when operator sets mode is already enabled.

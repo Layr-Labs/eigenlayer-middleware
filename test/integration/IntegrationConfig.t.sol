@@ -6,12 +6,12 @@ import "forge-std/Test.sol";
 import "./IntegrationDeployer.t.sol";
 import "../ffi/util/G2Operations.sol";
 import "./utils/BitmapStrings.t.sol";
-import {ISlashingRegistryCoordinatorTypes} from
-    "../../src/interfaces/ISlashingRegistryCoordinator.sol";
+import {
+    ISlashingRegistryCoordinatorTypes
+} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 
 contract Constants {
     /// IECDSAStakeRegistryTypes.Quorum Config:
-
     /// @dev Default OperatorSetParam values used to initialize quorums
     /// NOTE: This means each quorum has an operator limit of MAX_OPERATOR_COUNT by default
     ///       This is a low number because each operator receives its own BLS keypair, which
@@ -172,11 +172,11 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
 
         // Default OperatorSetParams for all quorums
         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSet =
-        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-            maxOperatorCount: MAX_OPERATOR_COUNT,
-            kickBIPsOfOperatorStake: KICK_BIPS_OPERATOR_STAKE,
-            kickBIPsOfTotalStake: KICK_BIPS_TOTAL_STAKE
-        });
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam({
+                maxOperatorCount: MAX_OPERATOR_COUNT,
+                kickBIPsOfOperatorStake: KICK_BIPS_OPERATOR_STAKE,
+                kickBIPsOfTotalStake: KICK_BIPS_TOTAL_STAKE
+            });
 
         // Initialize each quorum
         for (uint256 i = 0; i < quorumCount; i++) {
@@ -249,11 +249,9 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
 
         // Decide how many operators to register for each quorum initially
         uint256 initialOperators = _randInitialOperators(operatorSet);
-        emit log(
-            string.concat(
+        emit log(string.concat(
                 "Registering ", initialOperators.toString(), " initial operators in each quorum"
-            )
-        );
+            ));
 
         // For each initial operator, register for all quorums
         for (uint256 j = 0; j < initialOperators; j++) {
@@ -411,7 +409,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
             // more stake than the outgoing operator by kickBIPsOfOperatorStake
             while (
                 _getWeight(quorum, incomingOperator)
-                    <= _individualKickThreshold(operatorToChurnStake, params)
+                        <= _individualKickThreshold(operatorToChurnStake, params)
                     || operatorToChurnStake
                         >= _totalKickThreshold(
                             currentTotalStake + _getWeight(quorum, incomingOperator), params
@@ -443,7 +441,10 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
         return totalStake * setParams.kickBIPsOfTotalStake / BIPS_DENOMINATOR;
     }
 
-    function _getWeight(uint8 quorum, User operator) internal view returns (uint96) {
+    function _getWeight(
+        uint8 quorum,
+        User operator
+    ) internal view returns (uint96) {
         return stakeRegistry.weightOfOperatorForQuorum(quorum, address(operator));
     }
 
@@ -477,10 +478,12 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
     ) internal returns (User) {
         uint32 curNumOperators = indexRegistry.totalOperatorsForQuorum(quorum);
 
-        bytes32 randId = indexRegistry.getLatestOperatorUpdate({
+        bytes32 randId =
+            indexRegistry.getLatestOperatorUpdate({
             quorumNumber: quorum,
             operatorIndex: uint32(_randUint({min: 0, max: curNumOperators - 1}))
-        }).operatorId;
+        })
+        .operatorId;
 
         return User(blsApkRegistry.getOperatorFromPubkeyHash(randId));
     }
@@ -505,7 +508,10 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
 
     /// @dev Uses `random` to return a random uint, with a range given by `min` and `max` (inclusive)
     /// @return `min` <= result <= `max`
-    function _randUint(uint256 min, uint256 max) internal returns (uint256) {
+    function _randUint(
+        uint256 min,
+        uint256 max
+    ) internal returns (uint256) {
         uint256 range = max - min + 1;
 
         // calculate the number of bits needed for the range
@@ -618,8 +624,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
 
         for (uint256 i = 0; i < params.length; i++) {
             params[i] = IStakeRegistryTypes.StrategyParams({
-                strategy: allStrats[i],
-                multiplier: DEFAULT_STRATEGY_MULTIPLIER
+                strategy: allStrats[i], multiplier: DEFAULT_STRATEGY_MULTIPLIER
             });
         }
 

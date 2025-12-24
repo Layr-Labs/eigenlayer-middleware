@@ -36,8 +36,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         for (uint8 i = 0; i < numQuorums; i++) {
             quorumEjectionParams.push(
                 IEjectionManagerTypes.QuorumEjectionParams({
-                    rateLimitWindow: ratelimitWindow,
-                    ejectableStakePercent: ejectableStakePercent
+                    rateLimitWindow: ratelimitWindow, ejectableStakePercent: ejectableStakePercent
                 })
             );
         }
@@ -522,10 +521,9 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         ratelimitWindow = 2 days;
         ejectableStakePercent = 2000;
         IEjectionManagerTypes.QuorumEjectionParams memory _quorumEjectionParams =
-        IEjectionManagerTypes.QuorumEjectionParams({
-            rateLimitWindow: ratelimitWindow,
-            ejectableStakePercent: ejectableStakePercent
-        });
+            IEjectionManagerTypes.QuorumEjectionParams({
+                rateLimitWindow: ratelimitWindow, ejectableStakePercent: ejectableStakePercent
+            });
 
         cheats.expectEmit(true, true, true, true, address(ejectionManager));
         emit QuorumEjectionParamsSet(quorumNumber, ratelimitWindow, ejectableStakePercent);
@@ -567,8 +565,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         ejectionManager.setQuorumEjectionParams(
             0,
             IEjectionManagerTypes.QuorumEjectionParams({
-                rateLimitWindow: 7 days,
-                ejectableStakePercent: 9999
+                rateLimitWindow: 7 days, ejectableStakePercent: 9999
             })
         );
 
@@ -577,7 +574,10 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         ejectionManager.amountEjectableForQuorum(1);
     }
 
-    function _registerOperators(uint8 numOperators, uint96 stake) internal {
+    function _registerOperators(
+        uint8 numOperators,
+        uint96 stake
+    ) internal {
         for (uint256 i = 0; i < numOperators; i++) {
             BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(i)));
             address operator = _incrementAddress(defaultOperator, i);

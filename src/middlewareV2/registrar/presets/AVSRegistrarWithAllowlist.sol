@@ -2,8 +2,9 @@
 pragma solidity ^0.8.27;
 
 import {IAVSRegistrarWithAllowlist} from "../../../interfaces/IAVSRegistrarWithAllowlist.sol";
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IAllocationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
 
 import {AVSRegistrar} from "../AVSRegistrar.sol";
@@ -16,7 +17,10 @@ contract AVSRegistrarWithAllowlist is AVSRegistrar, Allowlist, IAVSRegistrarWith
         IKeyRegistrar _keyRegistrar
     ) AVSRegistrar(_allocationManager, _keyRegistrar) {}
 
-    function initialize(address avs, address admin) external initializer {
+    function initialize(
+        address avs,
+        address admin
+    ) external initializer {
         // Initialize the AVSRegistrar
         __AVSRegistrar_init(avs);
 

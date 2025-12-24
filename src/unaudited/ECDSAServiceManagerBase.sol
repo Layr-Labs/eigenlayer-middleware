@@ -4,21 +4,25 @@ pragma solidity ^0.8.27;
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ISignatureUtilsMixinTypes} from
-    "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
+import {
+    ISignatureUtilsMixinTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IServiceManager} from "../interfaces/IServiceManager.sol";
 import {IServiceManagerUI} from "../interfaces/IServiceManagerUI.sol";
-import {IDelegationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {
+    IDelegationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {IRewardsCoordinator} from
-    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {
+    IRewardsCoordinator
+} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {IECDSAStakeRegistryTypes} from "../interfaces/IECDSAStakeRegistry.sol";
 import {ECDSAStakeRegistry} from "../unaudited/ECDSAStakeRegistry.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IAllocationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
 abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable {
     using SafeERC20 for IERC20;
@@ -112,8 +116,8 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
     }
 
     function createOperatorDirectedAVSRewardsSubmission(
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[] calldata
-            operatorDirectedRewardsSubmissions
+        IRewardsCoordinator
+                .OperatorDirectedRewardsSubmission[] calldata operatorDirectedRewardsSubmissions
     ) external virtual onlyRewardsInitiator {
         _createOperatorDirectedAVSRewardsSubmission(operatorDirectedRewardsSubmissions);
     }
@@ -195,12 +199,10 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
         IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions
     ) internal virtual {
         for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
-            rewardsSubmissions[i].token.safeTransferFrom(
-                msg.sender, address(this), rewardsSubmissions[i].amount
-            );
-            rewardsSubmissions[i].token.safeIncreaseAllowance(
-                rewardsCoordinator, rewardsSubmissions[i].amount
-            );
+            rewardsSubmissions[i].token
+                .safeTransferFrom(msg.sender, address(this), rewardsSubmissions[i].amount);
+            rewardsSubmissions[i].token
+                .safeIncreaseAllowance(rewardsCoordinator, rewardsSubmissions[i].amount);
         }
 
         IRewardsCoordinator(rewardsCoordinator).createAVSRewardsSubmission(rewardsSubmissions);
@@ -212,31 +214,32 @@ abstract contract ECDSAServiceManagerBase is IServiceManager, OwnableUpgradeable
      * @param operatorDirectedRewardsSubmissions The operator-directed rewards submissions being created.
      */
     function _createOperatorDirectedAVSRewardsSubmission(
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[] calldata
-            operatorDirectedRewardsSubmissions
+        IRewardsCoordinator
+                .OperatorDirectedRewardsSubmission[] calldata operatorDirectedRewardsSubmissions
     ) internal virtual {
         for (uint256 i = 0; i < operatorDirectedRewardsSubmissions.length; ++i) {
             // Calculate total amount of token to transfer
             uint256 totalAmount = 0;
             for (
-                uint256 j = 0; j < operatorDirectedRewardsSubmissions[i].operatorRewards.length; ++j
+                uint256 j = 0;
+                j < operatorDirectedRewardsSubmissions[i].operatorRewards.length;
+                ++j
             ) {
                 totalAmount += operatorDirectedRewardsSubmissions[i].operatorRewards[j].amount;
             }
 
             // Transfer token to ServiceManager and approve RewardsCoordinator to transfer again
             // in createOperatorDirectedAVSRewardsSubmission() call
-            operatorDirectedRewardsSubmissions[i].token.safeTransferFrom(
-                msg.sender, address(this), totalAmount
-            );
-            operatorDirectedRewardsSubmissions[i].token.safeIncreaseAllowance(
-                rewardsCoordinator, totalAmount
-            );
+            operatorDirectedRewardsSubmissions[i].token
+                .safeTransferFrom(msg.sender, address(this), totalAmount);
+            operatorDirectedRewardsSubmissions[i].token
+                .safeIncreaseAllowance(rewardsCoordinator, totalAmount);
         }
 
-        IRewardsCoordinator(rewardsCoordinator).createOperatorDirectedAVSRewardsSubmission(
-            address(this), operatorDirectedRewardsSubmissions
-        );
+        IRewardsCoordinator(rewardsCoordinator)
+            .createOperatorDirectedAVSRewardsSubmission(
+                address(this), operatorDirectedRewardsSubmissions
+            );
     }
 
     /**

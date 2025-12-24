@@ -30,7 +30,10 @@ contract KeyRegistrarMock is IKeyRegistrar {
         address initialOwner
     ) external {}
 
-    function configureOperatorSet(OperatorSet memory operatorSet, CurveType curveType) external {}
+    function configureOperatorSet(
+        OperatorSet memory operatorSet,
+        CurveType curveType
+    ) external {}
 
     function configureOperatorSetWithMinDelay(
         OperatorSet memory operatorSet,
@@ -62,7 +65,10 @@ contract KeyRegistrarMock is IKeyRegistrar {
         bytes calldata signature
     ) external {}
 
-    function deregisterKey(address operator, OperatorSet memory operatorSet) external {}
+    function deregisterKey(
+        address operator,
+        OperatorSet memory operatorSet
+    ) external {}
 
     function isRegistered(
         OperatorSet memory operatorSet,

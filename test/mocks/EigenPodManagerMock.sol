@@ -25,7 +25,10 @@ contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
         return podShares[podOwner];
     }
 
-    function setPodOwnerShares(address podOwner, int256 shares) external {
+    function setPodOwnerShares(
+        address podOwner,
+        int256 shares
+    ) external {
         podShares[podOwner] = shares;
     }
 
@@ -125,7 +128,10 @@ contract EigenPodManagerMock is Test, Pausable, IEigenPodManager {
 
     function burnableETHShares() external view returns (uint256) {}
 
-    function increaseBurnableShares(IStrategy strategy, uint256 addedSharesToBurn) external {}
+    function increaseBurnableShares(
+        IStrategy strategy,
+        uint256 addedSharesToBurn
+    ) external {}
 
     function increaseBurnOrRedistributableShares(
         OperatorSet calldata,

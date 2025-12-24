@@ -3,12 +3,14 @@ pragma solidity ^0.8.27;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-import {IDelegationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {
+    IDelegationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IAllocationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 
 import {StakeRegistryStorage, IStrategy} from "./StakeRegistryStorage.sol";
@@ -54,10 +56,7 @@ contract StakeRegistry is StakeRegistryStorage {
         IAllocationManager _allocationManager
     )
         StakeRegistryStorage(
-            _slashingRegistryCoordinator,
-            _delegationManager,
-            _avsDirectory,
-            _allocationManager
+            _slashingRegistryCoordinator, _delegationManager, _avsDirectory, _allocationManager
         )
     {}
 
@@ -87,9 +86,7 @@ contract StakeRegistry is StakeRegistryStorage {
 
             // Update the operator's stake
             int256 stakeDelta = _recordOperatorStakeUpdate({
-                operatorId: operatorId,
-                quorumNumber: quorumNumber,
-                newStake: currentStake
+                operatorId: operatorId, quorumNumber: quorumNumber, newStake: currentStake
             });
 
             // Update this quorum's total stake by applying the operator's delta
@@ -115,9 +112,7 @@ contract StakeRegistry is StakeRegistryStorage {
 
             // Update the operator's stake for the quorum and retrieve the shares removed
             int256 stakeDelta = _recordOperatorStakeUpdate({
-                operatorId: operatorId,
-                quorumNumber: quorumNumber,
-                newStake: 0
+                operatorId: operatorId, quorumNumber: quorumNumber, newStake: 0
             });
 
             // Apply the operator's stake delta to the total stake for this quorum
@@ -159,9 +154,7 @@ contract StakeRegistry is StakeRegistryStorage {
             // Update the operator's stake and retrieve the delta
             // If we're deregistering them, their weight is set to 0
             int256 stakeDelta = _recordOperatorStakeUpdate({
-                operatorId: operatorIds[i],
-                quorumNumber: quorumNumber,
-                newStake: stakeWeights[i]
+                operatorId: operatorIds[i], quorumNumber: quorumNumber, newStake: stakeWeights[i]
             });
 
             totalStakeDelta += stakeDelta;
@@ -186,9 +179,7 @@ contract StakeRegistry is StakeRegistryStorage {
 
         _totalStakeHistory[quorumNumber].push(
             StakeUpdate({
-                updateBlockNumber: uint32(block.number),
-                nextUpdateBlockNumber: 0,
-                stake: 0
+                updateBlockNumber: uint32(block.number), nextUpdateBlockNumber: 0, stake: 0
             })
         );
     }
@@ -208,9 +199,7 @@ contract StakeRegistry is StakeRegistryStorage {
 
         _totalStakeHistory[quorumNumber].push(
             StakeUpdate({
-                updateBlockNumber: uint32(block.number),
-                nextUpdateBlockNumber: 0,
-                stake: 0
+                updateBlockNumber: uint32(block.number), nextUpdateBlockNumber: 0, stake: 0
             })
         );
     }
@@ -247,9 +236,7 @@ contract StakeRegistry is StakeRegistryStorage {
                 strategiesToAdd[i] = _strategyParams[i].strategy;
             }
             allocationManager.addStrategiesToOperatorSet({
-                avs: avs,
-                operatorSetId: quorumNumber,
-                strategies: strategiesToAdd
+                avs: avs, operatorSetId: quorumNumber, strategies: strategiesToAdd
             });
         }
     }
@@ -286,9 +273,7 @@ contract StakeRegistry is StakeRegistryStorage {
         address avs = registryCoordinator.avs();
         if (allocationManager.isOperatorSet(OperatorSet(avs, quorumNumber))) {
             allocationManager.removeStrategiesFromOperatorSet({
-                avs: avs,
-                operatorSetId: quorumNumber,
-                strategies: _strategiesToRemove
+                avs: avs, operatorSetId: quorumNumber, strategies: _strategiesToRemove
             });
         }
     }
@@ -342,7 +327,10 @@ contract StakeRegistry is StakeRegistryStorage {
         );
     }
 
-    function _setMinimumStakeForQuorum(uint8 quorumNumber, uint96 minimumStake) internal {
+    function _setMinimumStakeForQuorum(
+        uint8 quorumNumber,
+        uint96 minimumStake
+    ) internal {
         minimumStakeForQuorum[quorumNumber] = minimumStake;
         emit MinimumStakeForQuorumUpdated(quorumNumber, minimumStake);
     }
@@ -476,12 +464,18 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     /// @notice Returns the change between a previous and current value as a signed int
-    function _calculateDelta(uint96 prev, uint96 cur) internal pure returns (int256) {
+    function _calculateDelta(
+        uint96 prev,
+        uint96 cur
+    ) internal pure returns (int256) {
         return int256(uint256(cur)) - int256(uint256(prev));
     }
 
     /// @notice Adds or subtracts delta from value, according to its sign
-    function _applyDelta(uint96 value, int256 delta) internal pure returns (uint96) {
+    function _applyDelta(
+        uint96 value,
+        int256 delta
+    ) internal pure returns (uint96) {
         if (delta < 0) {
             return value - uint96(uint256(-delta));
         } else {
@@ -560,7 +554,9 @@ contract StakeRegistry is StakeRegistryStorage {
 
                 // calculate added weight for strategy and multiplier
                 if (strategyShares[opIndex][stratIndex] > 0) {
-                    weights[opIndex] += uint96(
+                    weights[
+                        opIndex
+                    ] += uint96(
                         strategyShares[opIndex][stratIndex] * strategyAndMultiplier.multiplier
                             / WEIGHTING_DIVISOR
                     );
@@ -684,8 +680,8 @@ contract StakeRegistry is StakeRegistryStorage {
         uint32 blockNumber
     ) external view returns (uint96) {
         return operatorStakeHistory[operatorId][quorumNumber][_getStakeUpdateIndexForOperatorAtBlockNumber(
-            operatorId, quorumNumber, blockNumber
-        )].stake;
+                operatorId, quorumNumber, blockNumber
+            )].stake;
     }
 
     /// @inheritdoc IStakeRegistry
@@ -781,7 +777,10 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param quorumNumber The quorum number to set the stake type for
      * @param _stakeType The type of stake to track (TOTAL_DELEGATED, TOTAL_SLASHABLE, or BOTH)
      */
-    function _setStakeType(uint8 quorumNumber, IStakeRegistryTypes.StakeType _stakeType) internal {
+    function _setStakeType(
+        uint8 quorumNumber,
+        IStakeRegistryTypes.StakeType _stakeType
+    ) internal {
         stakeTypePerQuorum[quorumNumber] = _stakeType;
         emit StakeTypeSet(_stakeType);
     }
@@ -791,7 +790,10 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param quorumNumber The quorum number to set the look ahead period for
      * @param _lookAheadBlocks The number of blocks to look ahead when checking shares
      */
-    function _setLookAheadPeriod(uint8 quorumNumber, uint32 _lookAheadBlocks) internal {
+    function _setLookAheadPeriod(
+        uint8 quorumNumber,
+        uint32 _lookAheadBlocks
+    ) internal {
         require(
             stakeTypePerQuorum[quorumNumber] == IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE,
             QuorumNotSlashable()

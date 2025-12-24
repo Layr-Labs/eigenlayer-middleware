@@ -3,8 +3,9 @@ pragma solidity ^0.8.27;
 
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IAVSRegistrarInternal} from "../../interfaces/IAVSRegistrarInternal.sol";
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IAllocationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {
     OperatorSetLib,
     OperatorSet

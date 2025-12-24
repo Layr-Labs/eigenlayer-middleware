@@ -15,11 +15,17 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
  * _Available since v5.1._
  */
 library Comparators {
-    function lt(uint256 a, uint256 b) internal pure returns (bool) {
+    function lt(
+        uint256 a,
+        uint256 b
+    ) internal pure returns (bool) {
         return a < b;
     }
 
-    function gt(uint256 a, uint256 b) internal pure returns (bool) {
+    function gt(
+        uint256 a,
+        uint256 b
+    ) internal pure returns (bool) {
         return a > b;
     }
 }
@@ -74,7 +80,10 @@ library SlotDerivation {
     /**
      * @dev Add an offset to a slot to get the n-th element of a structure or an array.
      */
-    function offset(bytes32 slot, uint256 pos) internal pure returns (bytes32 result) {
+    function offset(
+        bytes32 slot,
+        uint256 pos
+    ) internal pure returns (bytes32 result) {
         unchecked {
             return bytes32(uint256(slot) + pos);
         }
@@ -95,7 +104,10 @@ library SlotDerivation {
     /**
      * @dev Derive the location of a mapping element from the key.
      */
-    function deriveMapping(bytes32 slot, address key) internal pure returns (bytes32 result) {
+    function deriveMapping(
+        bytes32 slot,
+        address key
+    ) internal pure returns (bytes32 result) {
         assembly ("memory-safe") {
             mstore(0x00, and(key, shr(96, not(0))))
             mstore(0x20, slot)
@@ -106,7 +118,10 @@ library SlotDerivation {
     /**
      * @dev Derive the location of a mapping element from the key.
      */
-    function deriveMapping(bytes32 slot, bool key) internal pure returns (bytes32 result) {
+    function deriveMapping(
+        bytes32 slot,
+        bool key
+    ) internal pure returns (bytes32 result) {
         assembly ("memory-safe") {
             mstore(0x00, iszero(iszero(key)))
             mstore(0x20, slot)
@@ -117,7 +132,10 @@ library SlotDerivation {
     /**
      * @dev Derive the location of a mapping element from the key.
      */
-    function deriveMapping(bytes32 slot, bytes32 key) internal pure returns (bytes32 result) {
+    function deriveMapping(
+        bytes32 slot,
+        bytes32 key
+    ) internal pure returns (bytes32 result) {
         assembly ("memory-safe") {
             mstore(0x00, key)
             mstore(0x20, slot)
@@ -128,7 +146,10 @@ library SlotDerivation {
     /**
      * @dev Derive the location of a mapping element from the key.
      */
-    function deriveMapping(bytes32 slot, uint256 key) internal pure returns (bytes32 result) {
+    function deriveMapping(
+        bytes32 slot,
+        uint256 key
+    ) internal pure returns (bytes32 result) {
         assembly ("memory-safe") {
             mstore(0x00, key)
             mstore(0x20, slot)
@@ -139,7 +160,10 @@ library SlotDerivation {
     /**
      * @dev Derive the location of a mapping element from the key.
      */
-    function deriveMapping(bytes32 slot, int256 key) internal pure returns (bytes32 result) {
+    function deriveMapping(
+        bytes32 slot,
+        int256 key
+    ) internal pure returns (bytes32 result) {
         assembly ("memory-safe") {
             mstore(0x00, key)
             mstore(0x20, slot)
@@ -168,7 +192,10 @@ library SlotDerivation {
     /**
      * @dev Derive the location of a mapping element from the key.
      */
-    function deriveMapping(bytes32 slot, bytes memory key) internal pure returns (bytes32 result) {
+    function deriveMapping(
+        bytes32 slot,
+        bytes memory key
+    ) internal pure returns (bytes32 result) {
         assembly ("memory-safe") {
             let length := mload(key)
             let begin := add(key, 0x20)
@@ -355,7 +382,10 @@ library Arrays {
     /**
      * @dev Swaps the elements memory location `ptr1` and `ptr2`.
      */
-    function _swap(uint256 ptr1, uint256 ptr2) private pure {
+    function _swap(
+        uint256 ptr1,
+        uint256 ptr2
+    ) private pure {
         assembly {
             let value1 := mload(ptr1)
             let value2 := mload(ptr2)
@@ -452,7 +482,10 @@ library Arrays {
      *
      * See C++'s https://en.cppreference.com/w/cpp/algorithm/lower_bound[lower_bound].
      */
-    function lowerBound(uint256[] storage array, uint256 element) internal view returns (uint256) {
+    function lowerBound(
+        uint256[] storage array,
+        uint256 element
+    ) internal view returns (uint256) {
         uint256 low = 0;
         uint256 high = array.length;
 
@@ -486,7 +519,10 @@ library Arrays {
      *
      * See C++'s https://en.cppreference.com/w/cpp/algorithm/upper_bound[upper_bound].
      */
-    function upperBound(uint256[] storage array, uint256 element) internal view returns (uint256) {
+    function upperBound(
+        uint256[] storage array,
+        uint256 element
+    ) internal view returns (uint256) {
         uint256 low = 0;
         uint256 high = array.length;
 
@@ -731,7 +767,10 @@ library Arrays {
      *
      * WARNING: this does not clear elements if length is reduced, of initialize elements if length is increased.
      */
-    function unsafeSetLength(address[] storage array, uint256 len) internal {
+    function unsafeSetLength(
+        address[] storage array,
+        uint256 len
+    ) internal {
         assembly ("memory-safe") {
             sstore(array.slot, len)
         }
@@ -742,7 +781,10 @@ library Arrays {
      *
      * WARNING: this does not clear elements if length is reduced, of initialize elements if length is increased.
      */
-    function unsafeSetLength(bytes32[] storage array, uint256 len) internal {
+    function unsafeSetLength(
+        bytes32[] storage array,
+        uint256 len
+    ) internal {
         assembly ("memory-safe") {
             sstore(array.slot, len)
         }
@@ -753,7 +795,10 @@ library Arrays {
      *
      * WARNING: this does not clear elements if length is reduced, of initialize elements if length is increased.
      */
-    function unsafeSetLength(uint256[] storage array, uint256 len) internal {
+    function unsafeSetLength(
+        uint256[] storage array,
+        uint256 len
+    ) internal {
         assembly ("memory-safe") {
             sstore(array.slot, len)
         }
@@ -764,7 +809,10 @@ library Arrays {
      *
      * WARNING: this does not clear elements if length is reduced, of initialize elements if length is increased.
      */
-    function unsafeSetLength(bytes[] storage array, uint256 len) internal {
+    function unsafeSetLength(
+        bytes[] storage array,
+        uint256 len
+    ) internal {
         assembly ("memory-safe") {
             sstore(array.slot, len)
         }
@@ -775,7 +823,10 @@ library Arrays {
      *
      * WARNING: this does not clear elements if length is reduced, of initialize elements if length is increased.
      */
-    function unsafeSetLength(string[] storage array, uint256 len) internal {
+    function unsafeSetLength(
+        string[] storage array,
+        uint256 len
+    ) internal {
         assembly ("memory-safe") {
             sstore(array.slot, len)
         }

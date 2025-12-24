@@ -102,7 +102,10 @@ abstract contract RegistryCoordinatorMock is IRegistryCoordinator {
 
     // Keep existing implementations
     function blsApkRegistry() external view virtual returns (IBLSApkRegistry) {}
-    function ejectOperator(address operator, bytes calldata quorumNumbers) external virtual {}
+    function ejectOperator(
+        address operator,
+        bytes calldata quorumNumbers
+    ) external virtual {}
     function getOperatorSetParams(
         uint8 quorumNumber
     ) external view virtual returns (OperatorSetParam memory) {}

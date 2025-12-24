@@ -137,7 +137,10 @@ interface IEjectionManager is IEjectionManagerErrors, IEjectionManagerEvents {
      * @param ejector The address to permission.
      * @param status The status to set for the given address.
      */
-    function setEjector(address ejector, bool status) external;
+    function setEjector(
+        address ejector,
+        bool status
+    ) external;
 
     /* VIEW */
 

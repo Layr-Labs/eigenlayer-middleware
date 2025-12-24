@@ -20,7 +20,10 @@ abstract contract IntegrationBase is IntegrationConfig {
 
     /// RegistryCoordinator:
 
-    function assert_HasOperatorInfoWithId(User user, string memory err) internal {
+    function assert_HasOperatorInfoWithId(
+        User user,
+        string memory err
+    ) internal {
         bytes32 expectedId = user.operatorId();
         bytes32 actualId = slashingRegistryCoordinator.getOperatorId(address(user));
 
@@ -28,7 +31,10 @@ abstract contract IntegrationBase is IntegrationConfig {
     }
 
     /// @dev Also checks that the user has NEVER_REGISTERED status
-    function assert_HasNoOperatorInfo(User user, string memory err) internal {
+    function assert_HasNoOperatorInfo(
+        User user,
+        string memory err
+    ) internal {
         ISlashingRegistryCoordinatorTypes.OperatorInfo memory info = _getOperatorInfo(user);
 
         assertEq(info.operatorId, bytes32(0), err);
@@ -37,21 +43,30 @@ abstract contract IntegrationBase is IntegrationConfig {
         );
     }
 
-    function assert_HasRegisteredStatus(User user, string memory err) internal {
+    function assert_HasRegisteredStatus(
+        User user,
+        string memory err
+    ) internal {
         ISlashingRegistryCoordinatorTypes.OperatorStatus status =
             slashingRegistryCoordinator.getOperatorStatus(address(user));
 
         assertTrue(status == ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED, err);
     }
 
-    function assert_HasDeregisteredStatus(User user, string memory err) internal {
+    function assert_HasDeregisteredStatus(
+        User user,
+        string memory err
+    ) internal {
         ISlashingRegistryCoordinatorTypes.OperatorStatus status =
             slashingRegistryCoordinator.getOperatorStatus(address(user));
 
         assertTrue(status == ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED, err);
     }
 
-    function assert_EmptyQuorumBitmap(User user, string memory err) internal {
+    function assert_EmptyQuorumBitmap(
+        User user,
+        string memory err
+    ) internal {
         uint192 bitmap = slashingRegistryCoordinator.getCurrentQuorumBitmap(user.operatorId());
 
         assertTrue(bitmap == 0, err);
@@ -99,7 +114,10 @@ abstract contract IntegrationBase is IntegrationConfig {
     }
 
     /// @dev Checks whether each of the quorums has been initialized in the RegistryCoordinator
-    function assert_QuorumsExist(bytes memory quorums, string memory err) internal {
+    function assert_QuorumsExist(
+        bytes memory quorums,
+        string memory err
+    ) internal {
         uint8 count = slashingRegistryCoordinator.quorumCount();
         for (uint256 i = 0; i < quorums.length; i++) {
             uint8 quorum = uint8(quorums[i]);
@@ -110,7 +128,10 @@ abstract contract IntegrationBase is IntegrationConfig {
 
     /// BLSApkRegistry:
 
-    function assert_NoRegisteredPubkey(User user, string memory err) internal {
+    function assert_NoRegisteredPubkey(
+        User user,
+        string memory err
+    ) internal {
         (uint256 pubkeyX, uint256 pubkeyY) = blsApkRegistry.operatorToPubkey(address(user));
         bytes32 pubkeyHash = blsApkRegistry.operatorToPubkeyHash(address(user));
 
@@ -119,7 +140,10 @@ abstract contract IntegrationBase is IntegrationConfig {
         assertEq(pubkeyHash, 0, err);
     }
 
-    function assert_HasRegisteredPubkey(User user, string memory err) internal {
+    function assert_HasRegisteredPubkey(
+        User user,
+        string memory err
+    ) internal {
         BN254.G1Point memory expectedPubkey = user.pubkeyG1();
         (uint256 actualPkX, uint256 actualPkY) = blsApkRegistry.operatorToPubkey(address(user));
 
@@ -136,7 +160,11 @@ abstract contract IntegrationBase is IntegrationConfig {
 
     /// StakeRegistry:
 
-    function assert_NoExistingStake(User user, bytes memory quorums, string memory err) internal {
+    function assert_NoExistingStake(
+        User user,
+        bytes memory quorums,
+        string memory err
+    ) internal {
         bytes32 operatorId = user.operatorId();
 
         for (uint256 i = 0; i < quorums.length; i++) {
@@ -186,7 +214,10 @@ abstract contract IntegrationBase is IntegrationConfig {
 
     /// @dev Checks that we're specifically UNDER the max operator count, i.e. we are allowing
     /// at least one more operator to register
-    function assert_BelowMaxOperators(bytes memory quorums, string memory err) internal {
+    function assert_BelowMaxOperators(
+        bytes memory quorums,
+        string memory err
+    ) internal {
         for (uint256 i = 0; i < quorums.length; i++) {
             uint8 quorum = uint8(quorums[i]);
 
@@ -200,14 +231,20 @@ abstract contract IntegrationBase is IntegrationConfig {
 
     /// AVSDirectory:
 
-    function assert_NotRegisteredToAVS(User operator, string memory err) internal {
+    function assert_NotRegisteredToAVS(
+        User operator,
+        string memory err
+    ) internal {
         IAVSDirectoryTypes.OperatorAVSRegistrationStatus status =
             avsDirectory.avsOperatorStatus(address(serviceManager), address(operator));
 
         assertTrue(status == IAVSDirectoryTypes.OperatorAVSRegistrationStatus.UNREGISTERED, err);
     }
 
-    function assert_IsRegisteredToAVS(User operator, string memory err) internal {
+    function assert_IsRegisteredToAVS(
+        User operator,
+        string memory err
+    ) internal {
         IAVSDirectory.OperatorAVSRegistrationStatus status =
             avsDirectory.avsOperatorStatus(address(serviceManager), address(operator));
 
@@ -273,7 +310,10 @@ abstract contract IntegrationBase is IntegrationConfig {
         }
     }
 
-    function assert_Snap_Unchanged_OperatorInfo(User user, string memory err) internal {
+    function assert_Snap_Unchanged_OperatorInfo(
+        User user,
+        string memory err
+    ) internal {
         ISlashingRegistryCoordinatorTypes.OperatorInfo memory curInfo = _getOperatorInfo(user);
         ISlashingRegistryCoordinatorTypes.OperatorInfo memory prevInfo = _getPrevOperatorInfo(user);
 
@@ -281,7 +321,10 @@ abstract contract IntegrationBase is IntegrationConfig {
         assertTrue(prevInfo.status == curInfo.status, err);
     }
 
-    function assert_Snap_Unchanged_QuorumBitmap(User user, string memory err) internal {
+    function assert_Snap_Unchanged_QuorumBitmap(
+        User user,
+        string memory err
+    ) internal {
         bytes32 operatorId = user.operatorId();
 
         uint192 curBitmap = _getQuorumBitmap(operatorId);
@@ -325,7 +368,10 @@ abstract contract IntegrationBase is IntegrationConfig {
         }
     }
 
-    function assert_Snap_Unchanged_QuorumApk(bytes memory quorums, string memory err) internal {
+    function assert_Snap_Unchanged_QuorumApk(
+        bytes memory quorums,
+        string memory err
+    ) internal {
         BN254.G1Point[] memory curApks = _getQuorumApks(quorums);
         BN254.G1Point[] memory prevApks = _getPrevQuorumApks(quorums);
 
@@ -523,7 +569,10 @@ abstract contract IntegrationBase is IntegrationConfig {
         }
     }
 
-    function assert_Snap_Unchanged_TotalStake(bytes memory quorums, string memory err) internal {
+    function assert_Snap_Unchanged_TotalStake(
+        bytes memory quorums,
+        string memory err
+    ) internal {
         uint96[] memory curTotalStakes = _getTotalStakes(quorums);
         uint96[] memory prevTotalStakes = _getPrevTotalStakes(quorums);
 
@@ -533,7 +582,10 @@ abstract contract IntegrationBase is IntegrationConfig {
     }
 
     /// @dev After registering for quorums, checks that the totalOperatorsForQuorum increased by 1
-    function assert_Snap_Added_OperatorCount(bytes memory quorums, string memory err) internal {
+    function assert_Snap_Added_OperatorCount(
+        bytes memory quorums,
+        string memory err
+    ) internal {
         uint32[] memory curOperatorCounts = _getOperatorCounts(quorums);
         uint32[] memory prevOperatorCounts = _getPrevOperatorCounts(quorums);
 
@@ -542,7 +594,10 @@ abstract contract IntegrationBase is IntegrationConfig {
         }
     }
 
-    function assert_Snap_Reduced_OperatorCount(bytes memory quorums, string memory err) internal {
+    function assert_Snap_Reduced_OperatorCount(
+        bytes memory quorums,
+        string memory err
+    ) internal {
         uint32[] memory curOperatorCounts = _getOperatorCounts(quorums);
         uint32[] memory prevOperatorCounts = _getPrevOperatorCounts(quorums);
 
@@ -738,7 +793,10 @@ abstract contract IntegrationBase is IntegrationConfig {
         assertEq(prevQueuedWithdrawals + withdrawals.length, curQueuedWithdrawals, err);
     }
 
-    function assert_Snap_Added_QueuedWithdrawal(User staker, string memory err) internal {
+    function assert_Snap_Added_QueuedWithdrawal(
+        User staker,
+        string memory err
+    ) internal {
         uint256 curQueuedWithdrawal = _getCumulativeWithdrawals(staker);
         // Use timewarp to get previous cumulative withdrawals
         uint256 prevQueuedWithdrawal = _getPrevCumulativeWithdrawals(staker);
@@ -810,7 +868,10 @@ abstract contract IntegrationBase is IntegrationConfig {
         return tokens;
     }
 
-    function _contains(bytes32[] memory operatorIds, User operator) internal view returns (bool) {
+    function _contains(
+        bytes32[] memory operatorIds,
+        User operator
+    ) internal view returns (bool) {
         bytes32 checkId = operator.operatorId();
 
         for (uint256 i = 0; i < operatorIds.length; i++) {
@@ -941,7 +1002,10 @@ abstract contract IntegrationBase is IntegrationConfig {
 
     /// StakeRegistry:
 
-    function _getStakes(User user, bytes memory quorums) internal view returns (uint96[] memory) {
+    function _getStakes(
+        User user,
+        bytes memory quorums
+    ) internal view returns (uint96[] memory) {
         bytes32 operatorId = user.operatorId();
         uint96[] memory stakes = new uint96[](quorums.length);
 
@@ -959,7 +1023,10 @@ abstract contract IntegrationBase is IntegrationConfig {
         return _getStakes(user, quorums);
     }
 
-    function _getWeights(User user, bytes memory quorums) internal view returns (uint96[] memory) {
+    function _getWeights(
+        User user,
+        bytes memory quorums
+    ) internal view returns (uint96[] memory) {
         uint96[] memory weights = new uint96[](quorums.length);
 
         for (uint256 i = 0; i < quorums.length; i++) {
@@ -978,7 +1045,10 @@ abstract contract IntegrationBase is IntegrationConfig {
 
     /// @dev Calculates the amount added to the user's stake weight for each quorum since the last snapshot
     /// NOTE: Fails if the user's stake weight was reduced
-    function _getAddedWeight(User user, bytes memory quorums) internal returns (uint96[] memory) {
+    function _getAddedWeight(
+        User user,
+        bytes memory quorums
+    ) internal returns (uint96[] memory) {
         uint96[] memory curWeights = _getWeights(user, quorums);
         uint96[] memory prevWeights = _getPrevWeights(user, quorums);
 

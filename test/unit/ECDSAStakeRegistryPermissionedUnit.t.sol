@@ -5,8 +5,9 @@ import {
     ISignatureUtilsMixin,
     ISignatureUtilsMixinTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtilsMixin.sol";
-import {IDelegationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {
+    IDelegationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 import {
@@ -15,8 +16,9 @@ import {
     IECDSAStakeRegistryErrors
 } from "../../src/interfaces/IECDSAStakeRegistry.sol";
 import {ECDSAStakeRegistrySetup} from "./ECDSAStakeRegistryUnit.t.sol";
-import {ECDSAStakeRegistryPermissioned} from
-    "../../src/unaudited/examples/ECDSAStakeRegistryPermissioned.sol";
+import {
+    ECDSAStakeRegistryPermissioned
+} from "../../src/unaudited/examples/ECDSAStakeRegistryPermissioned.sol";
 
 contract PermissionedECDSAStakeRegistryTest is ECDSAStakeRegistrySetup {
     ECDSAStakeRegistryPermissioned internal permissionedRegistry;

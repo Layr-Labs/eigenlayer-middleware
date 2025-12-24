@@ -7,8 +7,9 @@ import {
 } from "eigenlayer-contracts/src/contracts/permissions/KeyRegistrar.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
-import {IOperatorTableCalculatorTypes} from
-    "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
+import {
+    IOperatorTableCalculatorTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
 import {IECDSATableCalculator} from "../../../src/interfaces/IECDSATableCalculator.sol";
 import {
     OperatorSet,
@@ -16,8 +17,9 @@ import {
 } from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 import {SlashingLib} from "eigenlayer-contracts/src/contracts/libraries/SlashingLib.sol";
 import {AllocationManagerMock} from "eigenlayer-contracts/src/test/mocks/AllocationManagerMock.sol";
-import {ECDSATableCalculatorBase} from
-    "../../../src/middlewareV2/tableCalculator/ECDSATableCalculatorBase.sol";
+import {
+    ECDSATableCalculatorBase
+} from "../../../src/middlewareV2/tableCalculator/ECDSATableCalculatorBase.sol";
 import {MockEigenLayerDeployer} from "./MockDeployer.sol";
 import "test/utils/Random.sol";
 
@@ -519,7 +521,10 @@ contract ECDSATableCalculatorBaseUnitTests_calculateOperatorTableBytes is
         assertEq(decodedInfos.length, 0, "Should encode empty array");
     }
 
-    function testFuzz_encodesCorrectly(Randomness r, uint256 weight) public rand(r) {
+    function testFuzz_encodesCorrectly(
+        Randomness r,
+        uint256 weight
+    ) public rand(r) {
         weight = r.Uint256() % 1e18 + 1; // 1 to 1e18
 
         // Register operator
@@ -674,9 +679,7 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorSetWeights is
  * @title ECDSATableCalculatorBaseUnitTests_getOperatorWeights
  * @notice Unit tests for ECDSATableCalculatorBase.getOperatorWeights
  */
-contract ECDSATableCalculatorBaseUnitTests_getOperatorWeights is
-    ECDSATableCalculatorBaseUnitTests
-{
+contract ECDSATableCalculatorBaseUnitTests_getOperatorWeights is ECDSATableCalculatorBaseUnitTests {
     function test_operatorExists() public {
         // Set operators and weights
         address[] memory operators = new address[](3);
@@ -798,7 +801,10 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeights is
         assertEq(diffWeights.length, 0, "Different operator should return empty array");
     }
 
-    function testFuzz_multipleOperators(Randomness r, uint8 numOperators) public rand(r) {
+    function testFuzz_multipleOperators(
+        Randomness r,
+        uint8 numOperators
+    ) public rand(r) {
         numOperators = uint8(r.Uint256() % 10 + 1); // 1-10 operators
 
         address[] memory operators = new address[](numOperators);

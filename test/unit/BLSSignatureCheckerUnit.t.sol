@@ -183,16 +183,16 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         );
 
         IBLSSignatureCheckerTypes.NonSignerStakesAndSignature memory incorrectLengthInputs =
-        IBLSSignatureCheckerTypes.NonSignerStakesAndSignature({
-            nonSignerQuorumBitmapIndices: nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices,
-            nonSignerPubkeys: nonSignerStakesAndSignature.nonSignerPubkeys,
-            quorumApks: nonSignerStakesAndSignature.quorumApks,
-            apkG2: nonSignerStakesAndSignature.apkG2,
-            sigma: nonSignerStakesAndSignature.sigma,
-            quorumApkIndices: nonSignerStakesAndSignature.quorumApkIndices,
-            totalStakeIndices: nonSignerStakesAndSignature.totalStakeIndices,
-            nonSignerStakeIndices: nonSignerStakesAndSignature.nonSignerStakeIndices
-        });
+            IBLSSignatureCheckerTypes.NonSignerStakesAndSignature({
+                nonSignerQuorumBitmapIndices: nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices,
+                nonSignerPubkeys: nonSignerStakesAndSignature.nonSignerPubkeys,
+                quorumApks: nonSignerStakesAndSignature.quorumApks,
+                apkG2: nonSignerStakesAndSignature.apkG2,
+                sigma: nonSignerStakesAndSignature.sigma,
+                quorumApkIndices: nonSignerStakesAndSignature.quorumApkIndices,
+                totalStakeIndices: nonSignerStakesAndSignature.totalStakeIndices,
+                nonSignerStakeIndices: nonSignerStakesAndSignature.nonSignerStakeIndices
+            });
         // make one part of the input incorrect length
         incorrectLengthInputs.quorumApks = new BN254.G1Point[](5);
 
@@ -230,7 +230,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
 
         // reset the input to correct values
         incorrectLengthInputs.nonSignerStakeIndices =
-            nonSignerStakesAndSignature.nonSignerStakeIndices;
+        nonSignerStakesAndSignature.nonSignerStakeIndices;
         // make one part of the input incorrect length
         incorrectLengthInputs.nonSignerQuorumBitmapIndices =
             new uint32[](nonSignerStakesAndSignature.nonSignerPubkeys.length + 1);
@@ -241,7 +241,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
 
         // reset the input to correct values
         incorrectLengthInputs.nonSignerQuorumBitmapIndices =
-            nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices;
+        nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices;
         // sanity check for call passing with the correct values
         blsSignatureChecker.checkSignatures(
             msgHash, quorumNumbers, referenceBlockNumber, incorrectLengthInputs
@@ -256,7 +256,8 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
         ( /*uint32 referenceBlockNumber*/
-            , BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
+            ,
+            BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
         ) = _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(
             pseudoRandomNumber, numNonSigners, quorumBitmap
         );
@@ -308,10 +309,11 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         (
             nonSignerStakesAndSignature.nonSignerPubkeys[0],
             nonSignerStakesAndSignature.nonSignerPubkeys[1]
-        ) = (
-            nonSignerStakesAndSignature.nonSignerPubkeys[1],
-            nonSignerStakesAndSignature.nonSignerPubkeys[0]
-        );
+        ) =
+            (
+                nonSignerStakesAndSignature.nonSignerPubkeys[1],
+                nonSignerStakesAndSignature.nonSignerPubkeys[0]
+            );
         cheats.expectRevert(IBLSSignatureCheckerErrors.NonSignerPubkeysNotSorted.selector);
         blsSignatureChecker.checkSignatures(
             msgHash, quorumNumbers, referenceBlockNumber, nonSignerStakesAndSignature
@@ -525,8 +527,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
             1, numNonSigners, quorumBitmap
         );
 
-        (bool pairingSuccessful, bool signatureIsValid) = blsSignatureChecker
-            .trySignatureAndApkVerification(
+        (bool pairingSuccessful, bool signatureIsValid) = blsSignatureChecker.trySignatureAndApkVerification(
             msgHash,
             nonSignerStakesAndSignature.quorumApks[0],
             nonSignerStakesAndSignature.apkG2,
@@ -574,8 +575,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
             [type(uint256).max, type(uint256).max], [type(uint256).max, type(uint256).max]
         );
 
-        (bool pairingSuccessful, bool signatureIsValid) = blsSignatureChecker
-            .trySignatureAndApkVerification(
+        (bool pairingSuccessful, bool signatureIsValid) = blsSignatureChecker.trySignatureAndApkVerification(
             msgHash,
             nonSignerStakesAndSignature.quorumApks[0],
             invalidG2Point,

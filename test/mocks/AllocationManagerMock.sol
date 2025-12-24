@@ -9,8 +9,9 @@ import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSR
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {ISemVerMixin} from "eigenlayer-contracts/src/contracts/interfaces/ISemVerMixin.sol";
-import {IDelegationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {
+    IDelegationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
 contract AllocationManagerIntermediate is IAllocationManager {
     mapping(address avs => address avsRegistrar) internal _avsRegistrar;
@@ -44,9 +45,15 @@ contract AllocationManagerIntermediate is IAllocationManager {
         DeregisterParams calldata params
     ) external virtual {}
 
-    function setAllocationDelay(address operator, uint32 delay) external virtual {}
+    function setAllocationDelay(
+        address operator,
+        uint32 delay
+    ) external virtual {}
 
-    function setAVSRegistrar(address avs, IAVSRegistrar avsRegistrar) external {
+    function setAVSRegistrar(
+        address avs,
+        IAVSRegistrar avsRegistrar
+    ) external {
         _avsRegistrar[avs] = address(avsRegistrar);
     }
 
@@ -56,9 +63,15 @@ contract AllocationManagerIntermediate is IAllocationManager {
         return IAVSRegistrar(_avsRegistrar[avs]);
     }
 
-    function updateAVSMetadataURI(address avs, string calldata metadataURI) external virtual {}
+    function updateAVSMetadataURI(
+        address avs,
+        string calldata metadataURI
+    ) external virtual {}
 
-    function createOperatorSets(address avs, CreateSetParams[] calldata params) external virtual {}
+    function createOperatorSets(
+        address avs,
+        CreateSetParams[] calldata params
+    ) external virtual {}
 
     function createOperatorSets(
         address avs,
@@ -246,7 +259,10 @@ contract AllocationManagerIntermediate is IAllocationManager {
         OperatorSet[] memory operatorSets
     ) external virtual {}
 
-    function updateSlasher(OperatorSet memory operatorSet, address slasher) external virtual {}
+    function updateSlasher(
+        OperatorSet memory operatorSet,
+        address slasher
+    ) external virtual {}
 
     function getSlasher(
         OperatorSet memory operatorSet
@@ -280,8 +296,8 @@ contract AllocationManagerMock is AllocationManagerIntermediate {
     mapping(
         bytes32 operatorSetKey
             => mapping(
-                address operator => mapping(IStrategy strategy => uint256 minimumSlashableStake)
-            )
+            address operator => mapping(IStrategy strategy => uint256 minimumSlashableStake)
+        )
     ) internal _minimumSlashableStake;
 
     function DEALLOCATION_DELAY() external pure override returns (uint32) {

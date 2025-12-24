@@ -5,12 +5,14 @@ import {
     KeyRegistrar,
     IKeyRegistrarTypes
 } from "eigenlayer-contracts/src/contracts/permissions/KeyRegistrar.sol";
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    IAllocationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
-import {IOperatorTableCalculatorTypes} from
-    "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
+import {
+    IOperatorTableCalculatorTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/IOperatorTableCalculator.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {
     OperatorSet,
@@ -18,8 +20,9 @@ import {
 } from "eigenlayer-contracts/src/contracts/libraries/OperatorSetLib.sol";
 import {BN254} from "eigenlayer-contracts/src/contracts/libraries/BN254.sol";
 
-import {BN254TableCalculator} from
-    "../../../src/middlewareV2/tableCalculator/BN254TableCalculator.sol";
+import {
+    BN254TableCalculator
+} from "../../../src/middlewareV2/tableCalculator/BN254TableCalculator.sol";
 import {MockEigenLayerDeployer} from "./MockDeployer.sol";
 import "test/utils/Random.sol";
 
@@ -279,7 +282,10 @@ contract BN254TableCalculatorUnitTests_getOperatorWeights is BN254TableCalculato
         assertEq(resultWeights[0][0], 1000, "Weight should match");
     }
 
-    function testFuzz_getOperatorWeights(uint8 numOperators, uint256 baseWeight) public {
+    function testFuzz_getOperatorWeights(
+        uint8 numOperators,
+        uint256 baseWeight
+    ) public {
         numOperators = uint8(bound(numOperators, 1, 10));
         baseWeight = bound(baseWeight, 1, 1e18);
 

@@ -3,16 +3,21 @@ pragma solidity ^0.8.27;
 
 import "./AVSRegistrarBase.t.sol";
 import {IKeyRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IKeyRegistrar.sol";
-import {IPermissionController} from
-    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
-import {PermissionController} from
-    "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
-import {AVSRegistrarAsIdentifier} from
-    "src/middlewareV2/registrar/presets/AVSRegistrarAsIdentifier.sol";
-import {IAllocationManager} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {TransparentUpgradeableProxy} from
-    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    IPermissionController
+} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {
+    PermissionController
+} from "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
+import {
+    AVSRegistrarAsIdentifier
+} from "src/middlewareV2/registrar/presets/AVSRegistrarAsIdentifier.sol";
+import {
+    IAllocationManager
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {
+    TransparentUpgradeableProxy
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
 
 contract AVSRegistrarAsIdentifierUnitTests is AVSRegistrarBase {
@@ -272,9 +277,7 @@ contract AVSRegistrarAsIdentifierUnitTests_registerOperator is AVSRegistrarAsIde
     }
 }
 
-contract AVSRegistrarAsIdentifierUnitTests_deregisterOperator is
-    AVSRegistrarAsIdentifierUnitTests
-{
+contract AVSRegistrarAsIdentifierUnitTests_deregisterOperator is AVSRegistrarAsIdentifierUnitTests {
     using ArrayLib for *;
 
     function testFuzz_revert_notAllocationManager(

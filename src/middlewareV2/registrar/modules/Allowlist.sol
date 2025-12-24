@@ -4,10 +4,12 @@ pragma solidity ^0.8.27;
 import {IAllowlist} from "../../../interfaces/IAllowlist.sol";
 import {AllowlistStorage} from "./AllowlistStorage.sol";
 
-import {OwnableUpgradeable} from
-    "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
-import {EnumerableSetUpgradeable} from
-    "openzeppelin-contracts-upgradeable/contracts/utils/structs/EnumerableSetUpgradeable.sol";
+import {
+    OwnableUpgradeable
+} from "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import {
+    EnumerableSetUpgradeable
+} from "openzeppelin-contracts-upgradeable/contracts/utils/structs/EnumerableSetUpgradeable.sol";
 
 import {
     OperatorSet,

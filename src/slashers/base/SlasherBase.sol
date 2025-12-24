@@ -36,8 +36,7 @@ abstract contract SlasherBase is SlasherStorage {
         IAllocationManager.SlashingParams memory params
     ) internal virtual returns (uint256 slashId) {
         (slashId,) = allocationManager.slashOperator({
-            avs: slashingRegistryCoordinator.avs(),
-            params: params
+            avs: slashingRegistryCoordinator.avs(), params: params
         });
         emit OperatorSlashed(
             slashId, params.operator, params.operatorSetId, params.wadsToSlash, params.description
@@ -50,7 +49,10 @@ abstract contract SlasherBase is SlasherStorage {
     }
 
     /// @notice Internal function to optionally fulfill burn or redistribution instead of waiting for cron job
-    function _fulfillBurnOrRedistribution(uint32 operatorSetId, uint256 slashId) internal virtual {
+    function _fulfillBurnOrRedistribution(
+        uint32 operatorSetId,
+        uint256 slashId
+    ) internal virtual {
         strategyManager.clearBurnOrRedistributableShares({
             operatorSet: OperatorSet({avs: slashingRegistryCoordinator.avs(), id: operatorSetId}),
             slashId: slashId

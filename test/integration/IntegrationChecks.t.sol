@@ -36,7 +36,10 @@ contract IntegrationChecks is IntegrationBase {
      *                             POST-REGISTER CHECKS
      *
      */
-    function check_Register_State(User operator, bytes memory quorums) internal {
+    function check_Register_State(
+        User operator,
+        bytes memory quorums
+    ) internal {
         _log("check_Register_State", operator);
 
         // AllocationManager
@@ -92,9 +95,8 @@ contract IntegrationChecks is IntegrationBase {
     ) internal {
         _log("check_Churned_State", incomingOperator);
 
-        bytes memory combinedQuorums = churnedQuorums.orderedBytesArrayToBitmap().plus(
-            standardQuorums.orderedBytesArrayToBitmap()
-        ).bitmapToBytesArray();
+        bytes memory combinedQuorums = churnedQuorums.orderedBytesArrayToBitmap()
+            .plus(standardQuorums.orderedBytesArrayToBitmap()).bitmapToBytesArray();
 
         // RegistryCoordinator
         assert_HasOperatorInfoWithId(incomingOperator, "operatorInfo should have operatorId");
@@ -329,7 +331,10 @@ contract IntegrationChecks is IntegrationBase {
     /// @dev Validate state when, after exiting from the core contracts, updateOperators is called
     /// We expect that the operator is completely deregistered.
     /// NOTE: This is a combination of check_Deregister_State and check_CompleteDeregister_State
-    function check_WithdrawUpdate_State(User operator, bytes memory quorums) internal {
+    function check_WithdrawUpdate_State(
+        User operator,
+        bytes memory quorums
+    ) internal {
         _log("check_WithdrawUpdate_State", operator);
 
         // AllocationManager
@@ -372,7 +377,10 @@ contract IntegrationChecks is IntegrationBase {
     }
 
     /// @dev Used to validate a stake update after NO core balance changes occured
-    function check_NoUpdate_State(User operator, bytes memory quorums) internal {
+    function check_NoUpdate_State(
+        User operator,
+        bytes memory quorums
+    ) internal {
         _log("check_NoChangeUpdate_State", operator);
 
         // RegistryCoordinator
@@ -407,7 +415,10 @@ contract IntegrationChecks is IntegrationBase {
      */
 
     /// @dev Check that the operator correctly deregistered from some quorums
-    function check_Deregister_State(User operator, bytes memory quorums) internal {
+    function check_Deregister_State(
+        User operator,
+        bytes memory quorums
+    ) internal {
         _log("check_Deregister_State", operator);
 
         // AllocationManager
@@ -470,7 +481,10 @@ contract IntegrationChecks is IntegrationBase {
 
     /// example output:
     /// - check_Register_State(Operator0)
-    function _log(string memory s, User user) internal {
+    function _log(
+        string memory s,
+        User user
+    ) internal {
         emit log(string.concat("- ", s, "(", user.NAME(), ")"));
     }
 }
