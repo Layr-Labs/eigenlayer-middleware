@@ -166,6 +166,7 @@ interface ISlashingRegistryCoordinatorEvents is ISlashingRegistryCoordinatorType
      * @param strategyParams The strategy parameters for stake calculation.
      * @param stakeType The type of stake being tracked (TOTAL_DELEGATED or TOTAL_SLASHABLE).
      * @param lookAheadPeriod The number of blocks to look ahead when calculating slashable stake (only used for TOTAL_SLASHABLE).
+     * @param slasher The address of the slasher to use for the operatorSet (quorum) in EigenLayer core. The slasher is set to DELEGATED_STAKE_SLASHER for total delegated stake quorums.
      */
     event QuorumCreated(
         uint8 indexed quorumNumber,
@@ -173,7 +174,8 @@ interface ISlashingRegistryCoordinatorEvents is ISlashingRegistryCoordinatorType
         uint96 minimumStake,
         IStakeRegistryTypes.StrategyParams[] strategyParams,
         IStakeRegistryTypes.StakeType stakeType,
-        uint32 lookAheadPeriod
+        uint32 lookAheadPeriod,
+        address slasher
     );
 
     /**
