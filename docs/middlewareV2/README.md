@@ -187,3 +187,42 @@ See the [`AVSRegistrar`](./AVSRegistrar.md#system-diagrams) for how an AVS is in
 
 #### Certificate Verifier
 The [`CertificateVerifier`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/main/docs/multichain/destination/CertificateVerifier.md) is responsible for verifying certificates from an offchain task, on-chain. The stakes in the certificate verifier are defined by the AVS-deployed `OperatorTableCalculator` and transported via an off-chain process run by Eigen labs. The `CertificateVerifier` contracts support two signature schemes: ECDSA for individual signatures and BN254 for aggregated signatures. See [multichain docs](https://github.com/Layr-Labs/eigenlayer-contracts/tree/main/docs/multichain) for more information.
+
+---
+
+### Migration
+
+Migration from a `SlashignRegistryCoordinator` in MiddlewareV1 to MiddlewareV2 requires a net-new deployment and migration. 
+
+| MiddlewareV1 | MiddlewareV2 | Migration Path |
+| -------- | -------- | -------- |
+| `SlashingRegistryCoordinator` registration |  `AVSRegistrar` | `AVSRegisrar` is the `SlashingRegistryCoordinator` |
+| `SlashingRegistryCoordinator` quorum (operator set) membership |  `AVSRegistrar` | The `AllocationManager` manages operator set membership and introspection |
+| `StakeRegistry` | `OperatorTableCalculator` | The `OperatorTableCalculator` calculates the weight of an operator for a given operatorSet. |
+| `BLSSignatureChecker` | `BN254CertificateVerifier` | To validate certificates, AVSs MUST opt into the `EigenLayer` multichain protocol |
+| `AVSSync` | `EigenLayer Multichain` | Operator stake weights are updated via the multichain protocol. Please see the [core docs](https://github.com/Layr-Labs/eigenlayer-contracts/tree/main/docs/multichain) for more information on registering for transport. As part of the multichain protocol, operators of an AVS MUST register their key material in the core `KeyRegistrar` contract. |
+| `BLSApkRegistry` | `KeyRegistrar` | The `KeyRegistrar` is an Eigenlayer-core contract that manages operator BN254 and ECDSA keys |
+
+As part of `MiddlewareV2`, AVS developers must deploy the following contracts:
+1. `AVSRegistrar`
+2. `OperatorTableCalculator` 
+
+The majority of middleware complexity has been subsumed by core protocol contracts and offchain processes. Migration requires a parallel system to be deployed and proceeds in the following steps:
+
+Phase 1: Initialization
+1. Register a new AVS in the core protocol via `AllocationManager.setAVSMetadataURI`
+2. Deploy a new AVSRegistrar and set it via `AllocationManager.setAVSRegistrar`
+3. Create operatorSets via `AllocationManager.createOperatorSet`. This function will also set the slasher for the operatorSet. 
+4. Configure CurveType via `KeyRegistrar.configureOperatorSet`
+5. Deploy an `OperatorTableCalculator`
+
+Phase 2: Operator Re-Registration
+All operators will need to re-register for the new AVS and set. 
+1. Register key via `KeyRegistrar.registerKey`
+2. Register to operatorSet via `AllocationManager.registerForOperatorSets`
+
+Phase 3: Activation
+1. Activate the offchain node software for the new AVS of your operators. *Note: This stage is AVS dependent and will be different depending on your offchain assumptions.*
+
+Phase 4: Decommisison old AVS
+1. Decommission your old AVS once sufficient guarantees (eg. signing rate) for the new AVS are met. 
