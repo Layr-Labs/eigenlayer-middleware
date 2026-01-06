@@ -788,7 +788,7 @@ contract SlashingRegistryCoordinator_CreateTotalDelegatedStakeQuorum is
             strategyParams: strategyParams,
             stakeType: IStakeRegistryTypes.StakeType.TOTAL_DELEGATED,
             lookAheadPeriod: 0,
-            slasher: proxyAdminOwner
+            slasher: slashingRegistryCoordinator.DELEGATED_STAKE_SLASHER()
         });
 
         vm.prank(proxyAdminOwner);

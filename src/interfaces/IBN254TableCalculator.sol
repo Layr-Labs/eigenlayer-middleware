@@ -27,6 +27,7 @@ interface IBN254TableCalculator is IOperatorTableCalculator, IOperatorTableCalcu
      * @param operatorSet The operatorSet to get the operatorInfos for
      * @return operatorInfos The array of BN254OperatorInfo structs containing pubkeys and weights for registered operators
      * @dev Only returns operators that have registered their BN254 keys with the KeyRegistrar
+     * @dev Note: This function is not intended to derive the index of an operator. Use `getOperatorIndex` instead.
      */
     function getOperatorInfos(
         OperatorSet calldata operatorSet
