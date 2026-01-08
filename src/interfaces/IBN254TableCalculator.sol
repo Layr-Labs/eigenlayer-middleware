@@ -27,6 +27,7 @@ interface IBN254TableCalculator is IOperatorTableCalculator, IOperatorTableCalcu
      * @param operatorSet The operatorSet to get the operatorInfos for
      * @return operatorInfos The array of BN254OperatorInfo structs containing pubkeys and weights for registered operators
      * @dev Only returns operators that have registered their BN254 keys with the KeyRegistrar
+     * @dev Note: This function is not intended to derive the index of an operator. Use `getOperatorIndex` instead.
      */
     function getOperatorInfos(
         OperatorSet calldata operatorSet
@@ -54,6 +55,10 @@ interface IBN254TableCalculator is IOperatorTableCalculator, IOperatorTableCalcu
      * @return nonSignerWitnesses The witnesses for operators that did not sign
      * @return nonSignerApk The aggregate BN254 G1 public key of the non-signers
      * @dev Reconstructs the operator info merkle tree deterministically to produce proofs and indices.
+     * @dev The output of this function is only valid when the operator table has been freshly updated and the current operator set state exactly matches the state at
+     *      a given `referenceTimestamp`. It is recommended to call this function at blockchain state that matches the `referenceTimestamp` of the certificate being verified.
+     *      In all other cases, the generated `nonSignerWitnesses` will be inconsistent with verification logic.
+     * @dev This function is intended to be called offchain due to large gas costs.
      */
     function getNonSignerWitnessesAndApk(
         OperatorSet calldata operatorSet,

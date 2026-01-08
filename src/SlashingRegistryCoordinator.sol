@@ -849,7 +849,8 @@ contract SlashingRegistryCoordinator is
             minimumStake: minimumStake,
             strategyParams: strategyParams,
             stakeType: stakeType,
-            lookAheadPeriod: lookAheadPeriod
+            lookAheadPeriod: lookAheadPeriod,
+            slasher: slasher
         });
 
         // Hook to allow for any post-create quorum logic

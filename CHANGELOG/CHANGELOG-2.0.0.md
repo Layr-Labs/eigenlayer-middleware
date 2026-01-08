@@ -8,6 +8,7 @@ This release brings 2 UX improvements to the middleware repo. We increment the m
 
 ⛔ Breaking Changes
 - Update `createSlashableStakeQuorum` to take in a slasher address
+- The `QuorumCreated` event now emits the `slasher` address of the quorum. 
 
 🔧 Improvements
 - Update `foundry.toml` solc to 0.8.29

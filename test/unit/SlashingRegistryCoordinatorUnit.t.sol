@@ -687,7 +687,8 @@ contract SlashingRegistryCoordinator_CreateSlashableStakeQuorum is
             minimumStake: minimumStake,
             strategyParams: strategyParams,
             stakeType: IStakeRegistryTypes.StakeType.TOTAL_SLASHABLE,
-            lookAheadPeriod: lookAheadPeriod
+            lookAheadPeriod: lookAheadPeriod,
+            slasher: proxyAdminOwner
         });
 
         vm.prank(proxyAdminOwner);
@@ -786,7 +787,8 @@ contract SlashingRegistryCoordinator_CreateTotalDelegatedStakeQuorum is
             minimumStake: minimumStake,
             strategyParams: strategyParams,
             stakeType: IStakeRegistryTypes.StakeType.TOTAL_DELEGATED,
-            lookAheadPeriod: 0
+            lookAheadPeriod: 0,
+            slasher: slashingRegistryCoordinator.DELEGATED_STAKE_SLASHER()
         });
 
         vm.prank(proxyAdminOwner);
