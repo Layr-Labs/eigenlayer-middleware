@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
+import {ISocketRegistry} from "./interfaces/ISocketRegistry.sol";
 import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
@@ -92,6 +93,90 @@ contract OperatorStateRetriever {
         }
 
         return operators;
+    }
+
+    /**
+     * @notice This function is intended to to be called by AVS operators every time a new task is created (i.e.)
+     * the AVS coordinator makes a request to AVS operators. Since all of the crucial information is kept onchain,
+     * operators don't need to run indexers to fetch the data.
+     * @param registryCoordinator is the registry coordinator to fetch the AVS registry information from
+     * @param operatorId the id of the operator to fetch the quorums lists
+     * @param blockNumber is the block number to get the operator state for
+     * @return quorumBitmap the quorumBitmap of the operator at the given blockNumber
+     * @return operators a 2d array of Operators. For each quorum, an ordered list of Operators
+     * @return sockets a 2d array of sockets. For each quorum, an ordered list of sockets
+     */
+    function getOperatorStateWithSocket(
+        ISlashingRegistryCoordinator registryCoordinator,
+        bytes32 operatorId,
+        uint32 blockNumber
+    )
+        external
+        view
+        returns (uint256 quorumBitmap, Operator[][] memory operators, string[][] memory sockets)
+    {
+        bytes32[] memory operatorIds = new bytes32[](1);
+        operatorIds[0] = operatorId;
+        uint256 index =
+            registryCoordinator.getQuorumBitmapIndicesAtBlockNumber(blockNumber, operatorIds)[0];
+
+        quorumBitmap =
+            registryCoordinator.getQuorumBitmapAtBlockNumberByIndex(operatorId, blockNumber, index);
+
+        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
+
+        (operators, sockets) =
+            getOperatorStateWithSocket(registryCoordinator, quorumNumbers, blockNumber);
+    }
+
+    /// @dev Used below to avoid stack too deep.
+    struct Registries {
+        IStakeRegistry stakeRegistry;
+        IIndexRegistry indexRegistry;
+        IBLSApkRegistry blsApkRegistry;
+        ISocketRegistry socketRegistry;
+    }
+
+    /**
+     * @notice returns the ordered list of operators (id, stake, socket) for each quorum. The AVS coordinator
+     * may call this function directly to get the operator state for a given block number
+     * @param registryCoordinator is the registry coordinator to fetch the AVS registry information from
+     * @param quorumNumbers are the ids of the quorums to get the operator state for
+     * @param blockNumber is the block number to get the operator state for
+     * @return operators a 2d array of Operators. For each quorum, an ordered list of Operators
+     * @return sockets a 2d array of sockets. For each quorum, an ordered list of sockets
+     */
+    function getOperatorStateWithSocket(
+        ISlashingRegistryCoordinator registryCoordinator,
+        bytes memory quorumNumbers,
+        uint32 blockNumber
+    ) public view returns (Operator[][] memory operators, string[][] memory sockets) {
+        Registries memory registries = Registries({
+            stakeRegistry: registryCoordinator.stakeRegistry(),
+            indexRegistry: registryCoordinator.indexRegistry(),
+            blsApkRegistry: registryCoordinator.blsApkRegistry(),
+            socketRegistry: registryCoordinator.socketRegistry()
+        });
+
+        operators = new Operator[][](quorumNumbers.length);
+        sockets = new string[][](quorumNumbers.length);
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+            bytes32[] memory operatorIds =
+                registries.indexRegistry.getOperatorListAtBlockNumber(quorumNumber, blockNumber);
+            operators[i] = new Operator[](operatorIds.length);
+            sockets[i] = new string[](operatorIds.length);
+            for (uint256 j = 0; j < operatorIds.length; j++) {
+                operators[i][j] = Operator({
+                    operator: registries.blsApkRegistry.getOperatorFromPubkeyHash(operatorIds[j]),
+                    operatorId: bytes32(operatorIds[j]),
+                    stake: registries.stakeRegistry.getStakeAtBlockNumber(
+                        bytes32(operatorIds[j]), quorumNumber, blockNumber
+                    )
+                });
+                sockets[i][j] = registries.socketRegistry.getOperatorSocket(bytes32(operatorIds[j]));
+            }
+        }
     }
 
     /**
