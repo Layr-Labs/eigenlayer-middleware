@@ -53,7 +53,7 @@ contract WeightCapUtilsUnitTests is Test {
         assertEq(resultOperators.length, 2);
         assertEq(resultOperators[0], operator1);
         assertEq(resultOperators[1], operator2);
-
+        
         uint256[] memory resultTotals = _extractTotalWeights(resultWeights);
         assertEq(resultTotals[0], 100 ether);
         assertEq(resultTotals[1], 200 ether);

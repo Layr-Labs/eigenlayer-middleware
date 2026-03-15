@@ -1,0 +1,26 @@
+{
+  "description": "Basic AVS configuration with BN254TableCalculator and simple registrar",
+  
+  "_comment_core_addresses": "Core EigenLayer protocol addresses - update these for your network",
+  "allocationManager": "0x75dfE5B44C2E530568001400D3f704bC8AE350CC",
+  "keyRegistrar": "0x...",
+  "avsDirectory": "0x141d6995556135D4997b2ff72EB443Be300353bC", 
+  "permissionController": "0xa2348c77802238Db39f0CefAa500B62D3FDD682b",
+  "proxyAdmin": "",
+  
+  "_comment_avs_config": "Your AVS specific configuration",
+  "avsOwner": "0x...",
+  "metadataURI": "https://your-avs.com/metadata.json",
+  
+  "_comment_registrar": "Registrar type: 0=BASIC, 1=WITH_ALLOWLIST, 2=WITH_SOCKET, 3=AS_IDENTIFIER",
+  "registrarType": 0,
+  "useProxy": true,
+  
+  "_comment_calculator": "Calculator type: 0=BN254_BASIC, 1=BN254_WEIGHTED, 2=BN254_WITH_CAPS, 3=ECDSA_BASIC",
+  "calculatorType": 0,
+  "lookaheadBlocks": 100,
+  
+  "_comment_optional": "Optional fields for weighted calculators (leave empty if not using)",
+  "strategies": [],
+  "multipliers": []
+} 

@@ -1,0 +1,36 @@
+{
+  "description": "Weighted AVS configuration with BN254WeightedTableCalculator and custom strategy weights",
+  
+  "_comment_core_addresses": "Core EigenLayer protocol addresses - update these for your network",
+  "allocationManager": "0x75dfE5B44C2E530568001400D3f704bC8AE350CC",
+  "keyRegistrar": "0x...",
+  "avsDirectory": "0x141d6995556135D4997b2ff72EB443Be300353bC", 
+  "permissionController": "0xa2348c77802238Db39f0CefAa500B62D3FDD682b",
+  "proxyAdmin": "",
+  
+  "_comment_avs_config": "Your AVS specific configuration",
+  "avsOwner": "0x...",
+  "metadataURI": "https://your-avs.com/metadata.json",
+  
+  "_comment_registrar": "Using AS_IDENTIFIER for full AVS setup",
+  "registrarType": 3,
+  "useProxy": true,
+  
+  "_comment_calculator": "Using weighted calculator for custom strategy weights",
+  "calculatorType": 1,
+  "lookaheadBlocks": 100,
+  
+  "_comment_strategy_weights": "Custom multipliers for different strategies (in basis points: 10000 = 1x)",
+  "strategies": [
+    "0x...",
+    "0x...",
+    "0x..."
+  ],
+  "multipliers": [
+    20000,
+    15000,
+    5000
+  ],
+  
+  "_comment_multiplier_explanation": "Above example: 2x weight for strategy 1, 1.5x for strategy 2, 0.5x for strategy 3"
+} 
