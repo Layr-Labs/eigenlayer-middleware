@@ -89,7 +89,7 @@ contract IndexRegistry is IndexRegistryStorage {
     function initializeQuorum(
         uint8 quorumNumber
     ) public virtual onlyRegistryCoordinator {
-        require(_operatorCountHistory[quorumNumber].length == 0, QuorumDoesNotExist());
+        require(_operatorCountHistory[quorumNumber].length == 0, QuorumAlreadyExists());
 
         _operatorCountHistory[quorumNumber].push(
             QuorumUpdate({numOperators: 0, fromBlockNumber: uint32(block.number)})

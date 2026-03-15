@@ -6,6 +6,8 @@ interface IIndexRegistryErrors {
     error OnlyRegistryCoordinator();
     /// @notice Thrown when attempting to query a quorum that has no history.
     error QuorumDoesNotExist();
+    /// @notice Thrown when attempting to initialize a quorum that already exists.
+    error QuorumAlreadyExists();
     /// @notice Thrown when attempting to look up an operator that does not exist at the specified block number.
     error OperatorIdDoesNotExist();
 }
